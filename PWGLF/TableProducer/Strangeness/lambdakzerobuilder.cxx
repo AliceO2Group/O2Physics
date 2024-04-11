@@ -65,6 +65,8 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "TableHelper.h"
+#include "Tools/ML/MlResponse.h"
+#include "Tools/ML/model.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -93,6 +95,14 @@ using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeroBuilder {
+  o2::ml::OnnxModel mlModelK0Short;
+  o2::ml::OnnxModel mlModelLambda;
+  o2::ml::OnnxModel mlModelAntiLambda;
+  o2::ml::OnnxModel mlModelGamma;
+
+  std::map<std::string, std::string> metadata;
+  std::map<std::string, std::string> headers;
+
   Produces<aod::V0Indices> v0indices;
   Produces<aod::StoredV0Cores> v0cores;
   Produces<aod::V0TrackXs> v0trackXs;
@@ -114,6 +124,7 @@ struct lambdakzeroBuilder {
   Produces<aod::V0AntiLambdaMLScores> antiLambdaMLSelections;  // AntiLambda scores
   Produces<aod::V0K0ShortMLScores> k0ShortMLSelections;        // K0Short scores
 
+  o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Configurables related to table creation
@@ -156,16 +167,43 @@ struct lambdakzeroBuilder {
   Configurable<float> maximumPt{"maximumPt", 1000.0f, "Maximum pT to store candidate"};
   Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta"};
 
+  // Machine learning evaluation for pre-selection and corresponding information generation
+  struct : ConfigurableGroup {
+    // ML classifiers: master flags to populate ML Selection tables
+    Configurable<bool> calculateK0ShortScores{"mlConfigurations.calculateK0ShortScores", false, "calculate K0Short ML scores"};
+    Configurable<bool> calculateLambdaScores{"mlConfigurations.calculateLambdaScores", false, "calculate Lambda ML scores"};
+    Configurable<bool> calculateAntiLambdaScores{"mlConfigurations.calculateAntiLambdaScores", false, "calculate AntiLambda ML scores"};
+    Configurable<bool> calculateGammaScores{"mlConfigurations.calculateGammaScores", false, "calculate Gamma ML scores"};
+
+    // ML input for ML calculation
+    Configurable<std::string> modelPathCCDB{"mlConfigurations.modelPathCCDB", "", "ML Model path in CCDB"};
+    Configurable<int64_t> timestampCCDB{"mlConfigurations.timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+    Configurable<bool> loadModelsFromCCDB{"mlConfigurations.loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+    Configurable<bool> enableOptimizations{"mlConfigurations.enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+
+    // Local paths for test purposes
+    Configurable<std::string> localModelPathLambda{"mlConfigurations.localModelPathLambda", "Lambda_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    Configurable<std::string> localModelPathAntiLambda{"mlConfigurations.localModelPathAntiLambda", "AntiLambda_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    Configurable<std::string> localModelPathGamma{"mlConfigurations.localModelPathGamma", "Gamma_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    Configurable<std::string> localModelPathK0Short{"mlConfigurations.localModelPathK0Short", "KZeroShort_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+
+    // Thresholds for choosing to populate V0Cores tables with pre-selections
+    Configurable<float> thresholdGamma{"mlConfigurations.thresholdGamma", -1.0f, "Threshold to keep gamma candidates"};
+    Configurable<float> thresholdLambda{"mlConfigurations.thresholdLambda", -1.0f, "Threshold to keep Lambda candidates"};
+    Configurable<float> thresholdAntiLambda{"mlConfigurations.thresholdAntiLambda", -1.0f, "Threshold to keep AntiLambda candidates"};
+    Configurable<float> thresholdK0Short{"mlConfigurations.thresholdK0Short", -1.0f, "Threshold to keep K0Short candidates"};
+  } mlConfigurations;
+
   // Operation and minimisation criteria
   struct : ConfigurableGroup {
-  Configurable<double> d_bz_input{"dcaFitterConfigurations.d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<bool> d_UseAbsDCA{"dcaFitterConfigurations.d_UseAbsDCA", true, "Use Abs DCAs"};
-  Configurable<bool> d_UseWeightedPCA{"dcaFitterConfigurations.d_UseWeightedPCA", false, "Vertices use cov matrices"};
-  Configurable<bool> d_UseCollinearFit{"dcaFitterConfigurations.d_UseCollinearFit", false, "Fit V0s via the collinear Method in DCAFitter"};
-  Configurable<float> d_maxDZIni{"dcaFitterConfigurations.d_maxDZIni", 1e9, "Dont consider a seed (circles intersection) if Z distance exceeds this"};
-  Configurable<float> d_maxDXYIni{"dcaFitterConfigurations.d_maxDXYIni", 4, "Dont consider a seed (circles intersection) if XY distance exceeds this"};
-  Configurable<int> useMatCorrType{"dcaFitterConfigurations.useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
-  Configurable<int> rejDiffCollTracks{"dcaFitterConfigurations.rejDiffCollTracks", 0, "rejDiffCollTracks"};
+    Configurable<double> d_bz_input{"dcaFitterConfigurations.d_bz", -999, "bz field, -999 is automatic"};
+    Configurable<bool> d_UseAbsDCA{"dcaFitterConfigurations.d_UseAbsDCA", true, "Use Abs DCAs"};
+    Configurable<bool> d_UseWeightedPCA{"dcaFitterConfigurations.d_UseWeightedPCA", false, "Vertices use cov matrices"};
+    Configurable<bool> d_UseCollinearFit{"dcaFitterConfigurations.d_UseCollinearFit", false, "Fit V0s via the collinear Method in DCAFitter"};
+    Configurable<float> d_maxDZIni{"dcaFitterConfigurations.d_maxDZIni", 1e9, "Dont consider a seed (circles intersection) if Z distance exceeds this"};
+    Configurable<float> d_maxDXYIni{"dcaFitterConfigurations.d_maxDXYIni", 4, "Dont consider a seed (circles intersection) if XY distance exceeds this"};
+    Configurable<int> useMatCorrType{"dcaFitterConfigurations.useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
+    Configurable<int> rejDiffCollTracks{"dcaFitterConfigurations.rejDiffCollTracks", 0, "rejDiffCollTracks"};
   } dcaFitterConfigurations;
 
   // CCDB options
@@ -627,6 +665,18 @@ struct lambdakzeroBuilder {
       return;
     }
 
+    // machine learning initialization if requested
+    if (mlConfigurations.calculateK0ShortScores || 
+        mlConfigurations.calculateLambdaScores || 
+        mlConfigurations.calculateAntiLambdaScores || 
+        mlConfigurations.calculateGammaScores)
+    {
+      int64_t timeStampML = bc.timestamp();
+      if(mlConfigurations.timestampCCDB.value!=-1)
+        timeStampML = mlConfigurations.timestampCCDB.value;
+      LoadMachines(timeStampML);
+    }
+
     // In case override, don't proceed, please - no CCDB access required
     if (dcaFitterConfigurations.d_bz_input > -990) {
       d_bz = dcaFitterConfigurations.d_bz_input;
@@ -670,6 +720,48 @@ struct lambdakzeroBuilder {
       // (setMatLUT has implicit and problematic init field call if not)
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
+  }
+
+  // function to load models for ML-based classifiers
+  void LoadMachines(int64_t timeStampML){ 
+    if(mlConfigurations.loadModelsFromCCDB){
+      ccdbApi.init(ccdbConfigurations.ccdburl);
+      LOG(info) << "Fetching models for timestamp: " << timeStampML;
+
+      if (mlConfigurations.calculateLambdaScores) {
+        bool retrieveSuccessLambda = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathLambda.value);
+        if (retrieveSuccessLambda) mlModelLambda.initModel(mlConfigurations.localModelPathLambda.value, mlConfigurations.enableOptimizations.value);
+        else{
+        LOG(fatal) << "Error encountered while fetching/loading the Lambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        }
+      
+      if (mlConfigurations.calculateAntiLambdaScores) {
+        bool retrieveSuccessAntiLambda = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathAntiLambda.value);
+        if (retrieveSuccessAntiLambda) mlModelAntiLambda.initModel(mlConfigurations.localModelPathAntiLambda.value, mlConfigurations.enableOptimizations.value);
+        else{
+        LOG(fatal) << "Error encountered while fetching/loading the AntiLambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        }
+
+      if (mlConfigurations.calculateGammaScores) {
+        bool retrieveSuccessGamma = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathGamma.value);
+        if (retrieveSuccessGamma) mlModelGamma.initModel(mlConfigurations.localModelPathGamma.value, mlConfigurations.enableOptimizations.value);
+        else{
+          LOG(fatal) << "Error encountered while fetching/loading the Gamma model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        }
+      
+      if (mlConfigurations.calculateK0ShortScores) {
+        bool retrieveSuccessKZeroShort = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathK0Short.value);
+        if (retrieveSuccessKZeroShort) mlModelK0Short.initModel(mlConfigurations.localModelPathK0Short.value, mlConfigurations.enableOptimizations.value);
+        else{
+          LOG(fatal) << "Error encountered while fetching/loading the K0Short model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+      }
+    } else {
+      if (mlConfigurations.calculateLambdaScores) mlModelLambda.initModel(mlConfigurations.localModelPathLambda.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateAntiLambdaScores) mlModelAntiLambda.initModel(mlConfigurations.localModelPathAntiLambda.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateGammaScores) mlModelGamma.initModel(mlConfigurations.localModelPathGamma.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateK0ShortScores) mlModelK0Short.initModel(mlConfigurations.localModelPathK0Short.value, mlConfigurations.enableOptimizations.value); 
+    }
+    LOG(info) << "ML Models loaded.";
   }
 
   template <class TTrackTo, typename TV0Object>
@@ -991,8 +1083,8 @@ struct lambdakzeroBuilder {
       }
 
       int ivanovMap = 0;
+      float pt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
       if (downscalingOptions.downscale_adaptive) {
-        float pt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
         ivanovMap = DownsampleMap(pt);
         if (ivanovMap == 0)
           continue; // skip this V0, passes nothing
@@ -1007,6 +1099,45 @@ struct lambdakzeroBuilder {
       if (V0.v0Type() > 0) {
         if (V0.v0Type() > 1 && !storePhotonCandidates)
           continue;
+
+        float gammaScore = -1.0f, lambdaScore = -1.0f, antiLambdaScore = -1.0f, k0ShortScore = -1.0f;
+
+        // evaluate machine learning at this point: check if requested 
+        if (mlConfigurations.calculateK0ShortScores || 
+            mlConfigurations.calculateLambdaScores || 
+            mlConfigurations.calculateAntiLambdaScores || 
+            mlConfigurations.calculateGammaScores)
+        { 
+          // machine learning is on, go for calculation of thresholds
+          // FIXME THIS NEEDS ADJUSTING
+          std::vector<float> inputFeatures{pt, 0.0f, 
+                                           0.0f, v0candidate.V0radius, 
+                                           v0candidate.cosPA, v0candidate.dcaV0dau, 
+                                           v0candidate.posDCAxy, v0candidate.negDCAxy};
+
+          // calculate classifier
+          float* lambdaProbability = mlModelLambda.evalModel(inputFeatures);
+          float* gammaProbability = mlModelGamma.evalModel(inputFeatures);
+
+          // save score
+          gammaScore = gammaProbability[1];
+          lambdaScore = lambdaProbability[1];
+
+          // Skip anything that doesn't fulfull any of the desired conditions 
+          if( gammaScore < mlConfigurations.thresholdGamma.value && 
+              lambdaScore < mlConfigurations.thresholdLambda.value &&
+              antiLambdaScore < mlConfigurations.thresholdAntiLambda.value && 
+              k0ShortScore < mlConfigurations.thresholdK0Short.value){
+                continue; // skipped as uninteresting in any hypothesis considered
+              }
+
+          // at this stage, the candidate is interesting -> populate table 
+          gammaMLSelections(gammaScore);
+          lambdaMLSelections(lambdaScore);
+          antiLambdaMLSelections(antiLambdaScore);
+          k0ShortMLSelections(k0ShortScore);
+        }
+
         // populates the various tables for analysis
         statisticsRegistry.v0stats[kCountStandardV0]++;
         v0indices(V0.posTrackId(), V0.negTrackId(),
