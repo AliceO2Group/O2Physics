@@ -45,7 +45,7 @@ struct Reducer {
   Configurable<LabeledArray<float>> params{"params", {defparams[0], 1, 7, {"pars"}, {"0bin", "l", "a", "n1", "p1", "n2", "p2"}}, "Multiplicity distribution parameterization"};
 
   Configurable<std::vector<double>> etaBins{"eta", {-1.5, -0.5, 0.5, 1.5}, "eta binning"};
-  Configurable<std::vector<double>> phiBins{"phi", {0., PI/2., PI, 3.*PI/2., 2.*PI}, "phi binning"};
+  Configurable<std::vector<double>> phiBins{"phi", {0., PI / 2., PI, 3. * PI / 2., 2. * PI}, "phi binning"};
 
   Preslice<aod::Collisions> cperBC = aod::collision::bcId;
   Preslice<aod::McCollisions> mccperBC = aod::mccollision::bcId;
@@ -193,7 +193,7 @@ struct Reducer {
         continue;
       }
       rmcc(bcId, weights[i], mcc.posX(), mcc.posY(), mcc.posZ(), mcc.impactParameter(), mcc.multMCFT0A(), mcc.multMCFT0C(), mcc.multMCNParticlesEta05(), mcc.multMCNParticlesEta10());
-      if constexpr (requires {mcc.processId(); mcc.pdf1();}) {
+      if constexpr (requires {mcc.processId(); mcc.pdf1(); }) {
         rhepmci(rmcc.lastIndex(), mcc.xsectGen(), mcc.ptHard(), mcc.nMPI(), mcc.processId(), mcc.id1(), mcc.id2(), mcc.pdfId1(), mcc.pdfId2(), mcc.x1(), mcc.x2(), mcc.scalePdf(), mcc.pdf1(), mcc.pdf2());
       }
       // remember used events so that the index relation can be preserved
@@ -219,7 +219,7 @@ struct Reducer {
       auto stracks = tracks.sliceBy(perC, c.globalIndex());
       for (auto& track : stracks) {
         auto bin = findBin(track.eta(), track.phi());
-        if (bin >=0) {
+        if (bin >= 0) {
           binned[bin] += 1;
         }
       }
