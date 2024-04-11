@@ -622,7 +622,7 @@ struct HfCorrelatorDsHadrons {
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcCandEfficiency, "Process MC for calculating candidate reconstruction efficiency", false);
 
   /// Ds-Hadron correlation - for calculating associated particle tracking efficiency using MC reco-level analysis
-  void processMcTrackEfficiency(soa::Join<aod::Collisions, aod::FT0Mults> const&,
+  void processMcTrackEfficiency(soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels> const&,
                                 soa::Join<aod::McCollisions, aod::MultsExtraMC> const&,
                                 CandDsMcGen const& mcParticles,
                                 TracksWithMc const& tracksData)
@@ -652,7 +652,10 @@ struct HfCorrelatorDsHadrons {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
-        auto collision = track.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults>>();
+        auto collision = track.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels>>();
+        if (!collision.sel8()) {
+          continue;
+        }
         multiplicity = collision.multFT0M();
         posZ = collision.posZ();
         registry.fill(HIST("hZVtx"), posZ);
