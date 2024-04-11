@@ -1,6 +1,6 @@
 {
   "rawyields": {
-    "inputdir": "/Users/fgrosa/cernbox/alice_work/analyses/np_Dplus_vsmult_pp13TeV/outputs/rawyields/MB_INELgtr0",
+    "inputdir": "path/to/RawYields/files",
     "inputfiles": [
       "RawYieldsDplus_outFD_pos10.root",
       "RawYieldsDplus_outFD_pos11.root",
@@ -26,7 +26,7 @@
     "histoname": "hRawYields"
   },
   "efficiencies": {
-    "inputdir": "/Users/fgrosa/cernbox/alice_work/analyses/np_Dplus_vsmult_pp13TeV/outputs/efficiencies/MB_INELgtr0",
+    "inputdir": "path/to/efficiencies/files",
     "inputfiles": [
       "Eff_times_Acc_Dplus_outFD_pos10.root",
       "Eff_times_Acc_Dplus_outFD_pos11.root",
@@ -56,6 +56,13 @@
   },
   "minimisation": {
     "correlated": "true"
+  },
+  "central_efficiency": {
+    "fileName": "path/to/central/efficiency/file.root",
+    "histonames": {
+      "prompt": "hAccEffPrompt",
+      "nonprompt": "hAccEffFD"
+    }
   },
   "output": {
     "directory": ".",
