@@ -561,7 +561,7 @@ struct EventSelectionQaTask {
         std::map<std::string, std::string> metadata;
         metadata["runNumber"] = Form("%d", runNumber);
         auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
-        uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
+        nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
         tsSOR = grpecs->getTimeStart();         // ms
         tsEOR = grpecs->getTimeEnd();           // ms
         // calculate SOR and EOR orbits
