@@ -463,7 +463,7 @@ struct AnalysisTrackSelection {
       auto track = tracks.rawIteratorAt(trackIdx);
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       VarManager::FillTrack<TTrackFillMap>(track);
-      VarManager::fgValues[VarManager::kBarrelNAssocsInBunch] = float(evIndices.size());
+      VarManager::fgValues[VarManager::kBarrelNAssocsInBunch] = static_cast<float>(evIndices.size());
       fHistMan->FillHistClass("TrackBarrel_AmbiguityInBunch", VarManager::fgValues);
     } // end loop over in-bunch ambiguous tracks
 
@@ -474,7 +474,7 @@ struct AnalysisTrackSelection {
       auto track = tracks.rawIteratorAt(trackIdx);
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       VarManager::FillTrack<TTrackFillMap>(track);
-      VarManager::fgValues[VarManager::kBarrelNAssocsOutOfBunch] = float(evIndices.size());
+      VarManager::fgValues[VarManager::kBarrelNAssocsOutOfBunch] = static_cast<float>(evIndices.size());
       fHistMan->FillHistClass("TrackBarrel_AmbiguityOutOfBunch", VarManager::fgValues);
     } // end loop over out-of-bunch ambiguous tracks
 
