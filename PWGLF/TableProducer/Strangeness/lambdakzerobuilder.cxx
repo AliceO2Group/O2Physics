@@ -54,6 +54,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -107,6 +108,12 @@ struct lambdakzeroBuilder {
   Produces<aod::V0fCTrackXs> v0fctrackXs;
   Produces<aod::V0fCCovs> v0fccovs;
 
+  // produces calls for machine-learning selections 
+  Produces<aod::V0GammaMLScores> gammaMLSelections;            // gamma scores
+  Produces<aod::V0LambdaMLScores> lambdaMLSelections;          // lambda scores
+  Produces<aod::V0AntiLambdaMLScores> antiLambdaMLSelections;  // AntiLambda scores
+  Produces<aod::V0K0ShortMLScores> k0ShortMLSelections;        // K0Short scores
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Configurables related to table creation
@@ -121,19 +128,19 @@ struct lambdakzeroBuilder {
   Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
 
   // downscaling for testing
-  Configurable<float> downscaleFactor{"downscaleFactor", 2, "Downscale factor (0: build nothing, 1: build all)"};
   unsigned int randomSeed = 0;
 
   TRandom3 prng;
   // downscaling for Marian Ivanov -> different strategies
   struct : ConfigurableGroup {
-    Configurable<bool> downscale_adaptive{"downscale_adaptive", false, "Downscale: use pT-dependent techniques"};
-    Configurable<float> downscale_mass{"downscale_mass", .139, "Downscale: Tsallis Mass"};
-    Configurable<float> downscale_sqrts{"downscale_sqrts", 13.6, "Downscale: Tsallis sqrts"};
-    Configurable<float> downscale_factorPt{"downscale_factorPt", 1.0, "Downscale: factor Pt"};
-    Configurable<float> downscale_factor1Pt{"downscale_factor1Pt", 1.0, "Downscale: factor 1/Pt"};
-    Configurable<float> downscale_factorUniform{"downscale_factorUniform", 1e-3, "Downscale: factor Pt"};
-    Configurable<int> downscale_triggerMaskSelection{"downscale_triggerMaskSelection", 0, "Downscale: trigger mask selection"};
+    Configurable<float> downscaleFactor{"downscalingOptions.downscaleFactor", 2, "Downscale factor (0: build nothing, 1: build all)"};
+    Configurable<bool> downscale_adaptive{"downscalingOptions.downscale_adaptive", false, "Downscale: use pT-dependent techniques"};
+    Configurable<float> downscale_mass{"downscalingOptions.downscale_mass", .139, "Downscale: Tsallis Mass"};
+    Configurable<float> downscale_sqrts{"downscalingOptions.downscale_sqrts", 13.6, "Downscale: Tsallis sqrts"};
+    Configurable<float> downscale_factorPt{"downscalingOptions.downscale_factorPt", 1.0, "Downscale: factor Pt"};
+    Configurable<float> downscale_factor1Pt{"downscalingOptions.downscale_factor1Pt", 1.0, "Downscale: factor 1/Pt"};
+    Configurable<float> downscale_factorUniform{"downscalingOptions.downscale_factorUniform", 1e-3, "Downscale: factor Pt"};
+    Configurable<int> downscale_triggerMaskSelection{"downscalingOptions.downscale_triggerMaskSelection", 0, "Downscale: trigger mask selection"};
   } downscalingOptions;
 
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
@@ -150,26 +157,25 @@ struct lambdakzeroBuilder {
   Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta"};
 
   // Operation and minimisation criteria
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
-  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
-  Configurable<bool> d_UseCollinearFit{"d_UseCollinearFit", false, "Fit V0s via the collinear Method in DCAFitter"};
-  Configurable<float> d_maxDZIni{"d_maxDZIni", 1e9, "Dont consider a seed (circles intersection) if Z distance exceeds this"};
-  Configurable<float> d_maxDXYIni{"d_maxDXYIni", 4, "Dont consider a seed (circles intersection) if XY distance exceeds this"};
-  Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
-  Configurable<int> rejDiffCollTracks{"rejDiffCollTracks", 0, "rejDiffCollTracks"};
-  Configurable<bool> d_doTrackQA{"d_doTrackQA", false, "do track QA"};
-  Configurable<bool> d_QA_checkMC{"d_QA_checkMC", true, "check MC truth in QA"};
-  Configurable<bool> d_QA_checkdEdx{"d_QA_checkdEdx", false, "check dEdx in QA"};
+  struct : ConfigurableGroup {
+  Configurable<double> d_bz_input{"dcaFitterConfigurations.d_bz", -999, "bz field, -999 is automatic"};
+  Configurable<bool> d_UseAbsDCA{"dcaFitterConfigurations.d_UseAbsDCA", true, "Use Abs DCAs"};
+  Configurable<bool> d_UseWeightedPCA{"dcaFitterConfigurations.d_UseWeightedPCA", false, "Vertices use cov matrices"};
+  Configurable<bool> d_UseCollinearFit{"dcaFitterConfigurations.d_UseCollinearFit", false, "Fit V0s via the collinear Method in DCAFitter"};
+  Configurable<float> d_maxDZIni{"dcaFitterConfigurations.d_maxDZIni", 1e9, "Dont consider a seed (circles intersection) if Z distance exceeds this"};
+  Configurable<float> d_maxDXYIni{"dcaFitterConfigurations.d_maxDXYIni", 4, "Dont consider a seed (circles intersection) if XY distance exceeds this"};
+  Configurable<int> useMatCorrType{"dcaFitterConfigurations.useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> rejDiffCollTracks{"dcaFitterConfigurations.rejDiffCollTracks", 0, "rejDiffCollTracks"};
+  } dcaFitterConfigurations;
 
   // CCDB options
   struct : ConfigurableGroup {
-    Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-    Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-    Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-    Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-    Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-    Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+    Configurable<std::string> ccdburl{"ccdbConfigurations.ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> grpPath{"ccdbConfigurations.grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+    Configurable<std::string> grpmagPath{"ccdbConfigurations.grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<std::string> lutPath{"ccdbConfigurations.lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+    Configurable<std::string> geoPath{"ccdbConfigurations.geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+    Configurable<std::string> mVtxPath{"ccdbConfigurations.mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   } ccdbConfigurations;
 
   // round some V0 core variables up to a certain level of precision if requested
@@ -179,16 +185,19 @@ struct lambdakzeroBuilder {
   Configurable<float> precisionDCAs{"precisionDCAs", 0.01f, "precision to keep the DCAs with"};
 
   // generate and fill extra QA histograms if requested
-  Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
-  Configurable<int> dQANBinsRadius{"dQANBinsRadius", 500, "Number of radius bins in QA histo"};
-  Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
-  Configurable<int> dQANBinsMass{"dQANBinsMass", 400, "Number of mass bins for QA histograms"};
-  Configurable<float> dQAMaxPt{"dQAMaxPt", 5, "max pT in QA histo"};
-  Configurable<float> dQAGammaMassWindow{"dQAGammaMassWindow", 0.05, "gamma mass window for ITS cluster map QA"};
-  Configurable<float> dQAK0ShortMassWindow{"dQAK0ShortMassWindow", 0.005, "K0 mass window for ITS cluster map QA"};
-  Configurable<float> dQALambdaMassWindow{"dQALambdaMassWindow", 0.005, "Lambda/AntiLambda mass window for ITS cluster map QA"};
-
-  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
+  struct : ConfigurableGroup {
+    Configurable<bool> d_doQA{"qaConfigurations.d_doQA", false, "Do basic QA"};
+    Configurable<int> dQANBinsRadius{"qaConfigurations.dQANBinsRadius", 500, "Number of radius bins in QA histo"};
+    Configurable<int> dQANBinsPtCoarse{"qaConfigurations.dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
+    Configurable<int> dQANBinsMass{"qaConfigurations.dQANBinsMass", 400, "Number of mass bins for QA histograms"};
+    Configurable<float> dQAMaxPt{"qaConfigurations.dQAMaxPt", 5, "max pT in QA histo"};
+    Configurable<float> dQAGammaMassWindow{"qaConfigurations.dQAGammaMassWindow", 0.05, "gamma mass window for ITS cluster map QA"};
+    Configurable<float> dQAK0ShortMassWindow{"qaConfigurations.dQAK0ShortMassWindow", 0.005, "K0 mass window for ITS cluster map QA"};
+    Configurable<float> dQALambdaMassWindow{"qaConfigurations.dQALambdaMassWindow", 0.005, "Lambda/AntiLambda mass window for ITS cluster map QA"};
+    Configurable<bool> d_doTrackQA{"qaConfigurations.d_doTrackQA", false, "do track QA"};
+    Configurable<bool> d_QA_checkMC{"qaConfigurations.d_QA_checkMC", true, "check MC truth in QA"};
+    Configurable<bool> d_QA_checkdEdx{"qaConfigurations.d_QA_checkdEdx", false, "check dEdx in QA"};
+  } qaConfigurations; 
 
   // for topo var QA
   struct : ConfigurableGroup {
@@ -205,6 +214,8 @@ struct lambdakzeroBuilder {
     ConfigurableAxis axisDCAXY{"axisConfigurations.axisDCAXY", {500, -50, 50}, "(cm)"};
     ConfigurableAxis axisDCACHI2{"axisConfigurations.axisDCACHI2", {500, 0, 50}, "#chi^{2}"};
     ConfigurableAxis axisPositionGuess{"axisConfigurations.axisPositionGuess", {240, 0, 120}, "(cm)"};
+
+    ConfigurableAxis axisPtQA{"axisConfigurations.axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
   } axisConfigurations;
 
   // default parameters from central Pb-Pb (worst case scenario), PbPb 2023 pass1
@@ -373,7 +384,7 @@ struct lambdakzeroBuilder {
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
     for (Int_t ii = 0; ii < kNV0Steps; ii++)
       registry.fill(HIST("hV0Criteria"), ii, statisticsRegistry.v0stats[ii]);
-    if (d_doTrackQA) {
+    if (qaConfigurations.d_doTrackQA) {
       for (Int_t ii = 0; ii < 10; ii++) {
         registry.fill(HIST("hPositiveITSClusters"), ii, statisticsRegistry.posITSclu[ii]);
         registry.fill(HIST("hNegativeITSClusters"), ii, statisticsRegistry.negITSclu[ii]);
@@ -404,13 +415,13 @@ struct lambdakzeroBuilder {
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     // Optionally, add extra QA histograms to processing chain
-    if (d_doQA) {
+    if (qaConfigurations.d_doQA) {
       // Basic histograms containing invariant masses of all built candidates
-      const AxisSpec axisVsPtCoarse{static_cast<int32_t>(dQANBinsPtCoarse), 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
-      const AxisSpec axisGammaMass{static_cast<int32_t>(dQANBinsMass), 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisK0ShortMass{static_cast<int32_t>(dQANBinsMass), 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisLambdaMass{static_cast<int32_t>(5 * dQANBinsMass), 1.01f, 2.01f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisHypertritonMass{static_cast<int32_t>(dQANBinsMass), 2.900f, 3.300f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisVsPtCoarse{static_cast<int32_t>(qaConfigurations.dQANBinsPtCoarse), 0, qaConfigurations.dQAMaxPt, "#it{p}_{T} (GeV/c)"};
+      const AxisSpec axisGammaMass{static_cast<int32_t>(qaConfigurations.dQANBinsMass), 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisK0ShortMass{static_cast<int32_t>(qaConfigurations.dQANBinsMass), 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisLambdaMass{static_cast<int32_t>(5 * qaConfigurations.dQANBinsMass), 1.01f, 2.01f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisHypertritonMass{static_cast<int32_t>(qaConfigurations.dQANBinsMass), 2.900f, 3.300f, "Inv. Mass (GeV/c^{2})"};
 
       registry.add("h2dGammaMass", "h2dGammaMass", kTH2F, {axisVsPtCoarse, axisGammaMass});
       registry.add("h2dK0ShortMass", "h2dK0ShortMass", kTH2F, {axisVsPtCoarse, axisK0ShortMass});
@@ -435,27 +446,27 @@ struct lambdakzeroBuilder {
       registry.add("h2dXIU_AntiLambda", "h2dXIU_AntiLambda", kTH3D, {axisConfigurations.axisX, axisConfigurations.axisX, axisConfigurations.axisRadius});
 
       // QA plots of topological variables using axisPtQA
-      registry.add("h2dTopoVarPointingAngle", "h2dTopoVarPointingAngle", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarPointingAngle});
-      registry.add("h2dTopoVarRAP", "h2dTopoVarRAP", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarRAP});
-      registry.add("h2dTopoVarV0Radius", "h2dTopoVarV0Radius", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarV0Radius});
-      registry.add("h2dTopoVarDCAV0Dau", "h2dTopoVarDCAV0Dau", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarDCAV0Dau});
-      registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarDCAToPV});
-      registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarDCAToPV});
-      registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarDCAV0ToPV});
+      registry.add("h2dTopoVarPointingAngle", "h2dTopoVarPointingAngle", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisTopoVarPointingAngle});
+      registry.add("h2dTopoVarRAP", "h2dTopoVarRAP", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisTopoVarRAP});
+      registry.add("h2dTopoVarV0Radius", "h2dTopoVarV0Radius", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisTopoVarV0Radius});
+      registry.add("h2dTopoVarDCAV0Dau", "h2dTopoVarDCAV0Dau", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisTopoVarDCAV0Dau});
+      registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisTopoVarDCAToPV});
+      registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisTopoVarDCAToPV});
+      registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisTopoVarDCAV0ToPV});
 
       // QA for PCM
-      registry.add("h2d_pcm_DCAXY_True", "h2d_pcm_DCAXY_True", kTH2D, {axisPtQA, axisConfigurations.axisDCAXY});
-      registry.add("h2d_pcm_DCAXY_Bg", "h2d_pcm_DCAXY_Bg", kTH2D, {axisPtQA, axisConfigurations.axisDCAXY});
-      registry.add("h2d_pcm_DCACHI2_True", "h2d_pcm_DCACHI2_True", kTH2D, {axisPtQA, axisConfigurations.axisDCACHI2});
-      registry.add("h2d_pcm_DCACHI2_Bg", "h2d_pcm_DCACHI2_Bg", kTH2D, {axisPtQA, axisConfigurations.axisDCACHI2});
-      registry.add("h2d_pcm_DeltaDistanceRadii_True", "h2d_pcm_DeltaDistanceRadii_True", kTH2D, {axisPtQA, axisConfigurations.axisDeltaDistanceRadii});
-      registry.add("h2d_pcm_DeltaDistanceRadii_Bg", "h2d_pcm_DeltaDistanceRadii_Bg", kTH2D, {axisPtQA, axisConfigurations.axisDeltaDistanceRadii});
-      registry.add("h2d_pcm_PositionGuess_True", "h2d_pcm_PositionGuess_True", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
-      registry.add("h2d_pcm_PositionGuess_Bg", "h2d_pcm_PositionGuess_Bg", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
-      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_True", "h2d_pcm_RadiallyOutgoingAtThisRadius1_True", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
-      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_True", "h2d_pcm_RadiallyOutgoingAtThisRadius2_True", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
-      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
-      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_DCAXY_True", "h2d_pcm_DCAXY_True", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisDCAXY});
+      registry.add("h2d_pcm_DCAXY_Bg", "h2d_pcm_DCAXY_Bg", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisDCAXY});
+      registry.add("h2d_pcm_DCACHI2_True", "h2d_pcm_DCACHI2_True", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisDCACHI2});
+      registry.add("h2d_pcm_DCACHI2_Bg", "h2d_pcm_DCACHI2_Bg", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisDCACHI2});
+      registry.add("h2d_pcm_DeltaDistanceRadii_True", "h2d_pcm_DeltaDistanceRadii_True", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisDeltaDistanceRadii});
+      registry.add("h2d_pcm_DeltaDistanceRadii_Bg", "h2d_pcm_DeltaDistanceRadii_Bg", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisDeltaDistanceRadii});
+      registry.add("h2d_pcm_PositionGuess_True", "h2d_pcm_PositionGuess_True", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_PositionGuess_Bg", "h2d_pcm_PositionGuess_Bg", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_True", "h2d_pcm_RadiallyOutgoingAtThisRadius1_True", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_True", "h2d_pcm_RadiallyOutgoingAtThisRadius2_True", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisPositionGuess});
     }
 
     mRunNumber = 0;
@@ -468,13 +479,13 @@ struct lambdakzeroBuilder {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    if (useMatCorrType == 1) {
+    if (dcaFitterConfigurations.useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(ccdbConfigurations.geoPath);
       }
     }
-    if (useMatCorrType == 2) {
+    if (dcaFitterConfigurations.useMatCorrType == 2) {
       LOGF(info, "LUT correction requested, loading LUT");
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath));
       LOGF(info, "LUT load done!");
@@ -595,17 +606,17 @@ struct lambdakzeroBuilder {
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
     fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(d_maxDZIni);
-    fitter.setMaxDXYIni(d_maxDXYIni);
+    fitter.setMaxDZIni(dcaFitterConfigurations.d_maxDZIni);
+    fitter.setMaxDXYIni(dcaFitterConfigurations.d_maxDXYIni);
     fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(d_UseAbsDCA);
-    fitter.setWeightedFinalPCA(d_UseWeightedPCA);
+    fitter.setUseAbsDCA(dcaFitterConfigurations.d_UseAbsDCA);
+    fitter.setWeightedFinalPCA(dcaFitterConfigurations.d_UseWeightedPCA);
 
     // Material correction in the DCA fitter
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-    if (useMatCorrType == 1)
+    if (dcaFitterConfigurations.useMatCorrType == 1)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
-    if (useMatCorrType == 2)
+    if (dcaFitterConfigurations.useMatCorrType == 2)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     fitter.setMatCorrType(matCorr);
   }
@@ -617,8 +628,8 @@ struct lambdakzeroBuilder {
     }
 
     // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
-      d_bz = d_bz_input;
+    if (dcaFitterConfigurations.d_bz_input > -990) {
+      d_bz = dcaFitterConfigurations.d_bz_input;
       fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
       if (fabs(d_bz) > 1e-5) {
@@ -654,7 +665,7 @@ struct lambdakzeroBuilder {
     // Set magnetic field value once known
     fitter.setBz(d_bz);
 
-    if (useMatCorrType == 2) {
+    if (dcaFitterConfigurations.useMatCorrType == 2) {
       // setMatLUT only after magfield has been initalized
       // (setMatLUT has implicit and problematic init field call if not)
       o2::base::Propagator::Instance()->setMatLUT(lut);
@@ -723,7 +734,7 @@ struct lambdakzeroBuilder {
     //---/---/---/
     // Move close to minima
     int nCand = 0;
-    fitter.setCollinear(d_UseCollinearFit || V0.isCollinearV0());
+    fitter.setCollinear(dcaFitterConfigurations.d_UseCollinearFit || V0.isCollinearV0());
     try {
       nCand = fitter.process(lPositiveTrack, lNegativeTrack);
     } catch (...) {
@@ -856,16 +867,16 @@ struct lambdakzeroBuilder {
     if (!keepCandidate)
       return false;
 
-    if (d_doTrackQA) {
+    if (qaConfigurations.d_doTrackQA) {
       if (posTrack.itsNCls() < 10)
         statisticsRegistry.posITSclu[posTrack.itsNCls()]++;
       if (negTrack.itsNCls() < 10)
         statisticsRegistry.negITSclu[negTrack.itsNCls()]++;
     }
 
-    if (d_doQA) {
-      bool mcUnchecked = !d_QA_checkMC;
-      bool dEdxUnchecked = !d_QA_checkdEdx;
+    if (qaConfigurations.d_doQA) {
+      bool mcUnchecked = !qaConfigurations.d_QA_checkMC;
+      bool dEdxUnchecked = !qaConfigurations.d_QA_checkdEdx;
 
       auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * v0candidate.posP[0] + v0candidate.negP[0], 2.0f * v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
@@ -887,19 +898,19 @@ struct lambdakzeroBuilder {
       }
 
       // Fill ITS cluster maps with specific mass cuts
-      if (TMath::Abs(lGammaMass - 0.0) < dQAGammaMassWindow && ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))) {
+      if (TMath::Abs(lGammaMass - 0.0) < qaConfigurations.dQAGammaMassWindow && ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_Gamma"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_Gamma"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-      if (TMath::Abs(v0candidate.k0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
+      if (TMath::Abs(v0candidate.k0ShortMass - 0.497) < qaConfigurations.dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_K0Short"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_K0Short"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-      if (TMath::Abs(v0candidate.lambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
+      if (TMath::Abs(v0candidate.lambdaMass - 1.116) < qaConfigurations.dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_Lambda"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_Lambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-      if (TMath::Abs(v0candidate.antiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
+      if (TMath::Abs(v0candidate.antiLambdaMass - 1.116) < qaConfigurations.dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_AntiLambda"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_AntiLambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
@@ -968,7 +979,7 @@ struct lambdakzeroBuilder {
     // Loops over all V0s in the time frame
     for (auto& V0 : V0s) {
       // downscale some V0s if requested to do so
-      if (downscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > downscaleFactor) {
+      if (downscalingOptions.downscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > downscalingOptions.downscaleFactor) {
         return;
       }
 
