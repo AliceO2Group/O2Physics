@@ -244,17 +244,16 @@ DECLARE_SOA_COLUMN(ProcessId, id, int);
 
 DECLARE_SOA_TABLE(RFeatMins, "AOD", "RFEATMIN",
                   soa::Index<>,
-                  rmccol::Weight,
                   features::GeneratedCentralMultiplicity,
                   features::ReconstructedCentralMultiplicity,
+                  features::ProcessId,
+                  features::ImpactParameter,
                   features::ReconstructedVertexX,
                   features::ReconstructedVertexY,
                   features::ReconstructedVertexZ,
                   features::TimeRes,
                   features::ReconstructedForwardMultiplicityA,
-                  features::ReconstructedForwardMultiplicityC,
-                  features::ImpactParameter,
-                  features::ProcessId);
+                  features::ReconstructedForwardMultiplicityC);
 
 } // namespace o2::aod
 namespace o2::soa

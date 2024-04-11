@@ -69,6 +69,8 @@ struct Pi0EtaToGammaGammaMC {
   Configurable<float> maxY_track{"maxY_track", 0.9, "maximum rapidity for generated particles"};                 // for PCM and dielectron
   Configurable<float> minPhi_track{"minPhi_track", 0, "minimum azimuthal angle for generated particles"};        // for PCM and dielectron
   Configurable<float> maxPhi_track{"maxPhi_track", 2 * M_PI, "maximum azimuthal angle for generated particles"}; // for PCM and dielectron
+  Configurable<float> maxRgen{"maxRgen", 100.f, "maximum radius for generated particles"};
+  Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
 
   Configurable<float> maxY_phos{"maxY_phos", 0.9, "maximum rapidity for generated particles"};                     // for EMC
   Configurable<float> minPhi_phos{"minPhi_phos", 3 / 2 * M_PI, "minimum azimuthal angle for generated particles"}; // for PCM and dielectron
@@ -461,9 +463,18 @@ struct Pi0EtaToGammaGammaMC {
               if (photonid1 < 0 || photonid2 < 0) {
                 continue;
               }
-
               auto g1mc = mcparticles.iteratorAt(photonid1);
               auto g2mc = mcparticles.iteratorAt(photonid2);
+
+              if constexpr (pairtype == PairType::kPCMPCM) {
+                if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_track, margin_z_mc, mcparticles)) {
+                  continue;
+                }
+                if (!IsConversionPointInAcceptance(g2mc, maxRgen, maxY_track, margin_z_mc, mcparticles)) {
+                  continue;
+                }
+              }
+
               pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
               etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
 
@@ -536,6 +547,12 @@ struct Pi0EtaToGammaGammaMC {
                     continue;
                   }
                   auto g1mc = mcparticles.iteratorAt(photonid1);
+
+                  if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == kPCMDalitzMuMu) {
+                    if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_track, margin_z_mc, mcparticles)) {
+                      continue;
+                    }
+                  }
 
                   if (cut2.IsPhotonConversionSelected()) {                                                 // v0photon + photon conversion on ITSib stored in dielectron table. pi0 -> gamma gamma
                     int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles); // photon conversion stored in dielectron table
