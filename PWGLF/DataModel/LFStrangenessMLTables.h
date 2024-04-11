@@ -27,18 +27,41 @@ namespace o2::aod
 {
 namespace v0mlcandidates
 {
+DECLARE_SOA_COLUMN(PosITSCls, posITSCls, int);
+DECLARE_SOA_COLUMN(NegITSCls, negITSCls, int);
+DECLARE_SOA_COLUMN(PosTPCRows, posTPCRows, float);
+DECLARE_SOA_COLUMN(NegTPCRows, negTPCRows, float);
+DECLARE_SOA_COLUMN(PosTPCSigmaPi, posTPCSigmaPi, float);
+DECLARE_SOA_COLUMN(NegTPCSigmaPi, negTPCSigmaPi, float);
+DECLARE_SOA_COLUMN(PosTPCSigmaPr, posTPCSigmaPr, float);
+DECLARE_SOA_COLUMN(NegTPCSigmaPr, negTPCSigmaPr, float);
+DECLARE_SOA_COLUMN(PosTPCSigmaEl, posTPCSigmaEl, float);
+DECLARE_SOA_COLUMN(NegTPCSigmaEl, negTPCSigmaEl, float);
+DECLARE_SOA_COLUMN(TOFSigmaLaPr, tofSigmaLaPr, float);
+DECLARE_SOA_COLUMN(TOFSigmaLaPi, tofSigmaLaPi, float);
+DECLARE_SOA_COLUMN(TOFSigmaALaPi, tofSigmaALaPi, float);
+DECLARE_SOA_COLUMN(TOFSigmaALaPr, tofSigmaALaPr, float);
+DECLARE_SOA_COLUMN(TOFSigmaK0PiPlus, tofSigmaK0PiPlus, float);
+DECLARE_SOA_COLUMN(TOFSigmaK0PiMinus, tofSigmaK0PiMinus, float);
 DECLARE_SOA_COLUMN(LambdaMass, lambdaMass, float);
-DECLARE_SOA_COLUMN(AntiLambdaMass, antilambdaMass, float);
+DECLARE_SOA_COLUMN(AntiLambdaMass, antiLambdaMass, float);
 DECLARE_SOA_COLUMN(GammaMass, gammaMass, float);
 DECLARE_SOA_COLUMN(KZeroShortMass, kZeroShortMass, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(PT, pT, float);
 DECLARE_SOA_COLUMN(Qt, qt, float);
 DECLARE_SOA_COLUMN(Alpha, alpha, float);
-DECLARE_SOA_COLUMN(Radius, radius, float);
-DECLARE_SOA_COLUMN(CosPA, cosPA, float);
-DECLARE_SOA_COLUMN(DCADau, dcaDau, float);
-DECLARE_SOA_COLUMN(DCANegPV, dcaNegPV, float);
-DECLARE_SOA_COLUMN(DCAPosPV, dcaPosPV, float);
+DECLARE_SOA_COLUMN(PosEta, posEta, float);
+DECLARE_SOA_COLUMN(NegEta, negEta, float);
+DECLARE_SOA_COLUMN(V0Eta, v0Eta, float);
+DECLARE_SOA_COLUMN(Z, z, float);
+DECLARE_SOA_COLUMN(V0radius, v0radius, float);
+DECLARE_SOA_COLUMN(PA, pa, float);
+DECLARE_SOA_COLUMN(DCApostopv, dcapostopv, float);
+DECLARE_SOA_COLUMN(DCAnegtopv, dcanegtopv, float);
+DECLARE_SOA_COLUMN(DCAV0daughters, dcaV0daughters, float);
+DECLARE_SOA_COLUMN(DCAv0topv, dcav0topv, float);
+DECLARE_SOA_COLUMN(PsiPair, psiPair, float);
+DECLARE_SOA_COLUMN(V0type, v0type, uint8_t);
 DECLARE_SOA_COLUMN(IsLambda, isLambda, bool);
 DECLARE_SOA_COLUMN(IsAntiLambda, isAntiLambda, bool);
 DECLARE_SOA_COLUMN(IsGamma, isGamma, bool);
@@ -46,21 +69,44 @@ DECLARE_SOA_COLUMN(IsKZeroShort, isKZeroShort, bool);
 } // namespace v0mlcandidates
 
 DECLARE_SOA_TABLE(V0MLCandidates, "AOD", "V0MLCANDIDATES",
-				v0mlcandidates::LambdaMass,
-				v0mlcandidates::AntiLambdaMass,
-				v0mlcandidates::GammaMass,
-				v0mlcandidates::KZeroShortMass,
-				v0mlcandidates::Pt,  
+				v0mlcandidates::PosITSCls,
+				v0mlcandidates::NegITSCls,
+				v0mlcandidates::PosTPCRows,
+				v0mlcandidates::NegTPCRows, 
+				v0mlcandidates::PosTPCSigmaPi,
+				v0mlcandidates::NegTPCSigmaPi,
+				v0mlcandidates::PosTPCSigmaPr,
+				v0mlcandidates::NegTPCSigmaPr,
+				v0mlcandidates::PosTPCSigmaEl,
+				v0mlcandidates::NegTPCSigmaEl,
+				v0mlcandidates::TOFSigmaLaPr, 
+				v0mlcandidates::TOFSigmaLaPi, 
+				v0mlcandidates::TOFSigmaALaPi,
+				v0mlcandidates::TOFSigmaALaPr, 
+				v0mlcandidates::TOFSigmaK0PiPlus,
+				v0mlcandidates::TOFSigmaK0PiMinus, 
+				v0mlcandidates::LambdaMass, 
+				v0mlcandidates::AntiLambdaMass, 
+				v0mlcandidates::GammaMass, 
+				v0mlcandidates::KZeroShortMass, 
+				v0mlcandidates::PT, 
 				v0mlcandidates::Qt, 
 				v0mlcandidates::Alpha,
-				v0mlcandidates::Radius,
-				v0mlcandidates::CosPA,
-				v0mlcandidates::DCADau, 
-				v0mlcandidates::DCANegPV,
-				v0mlcandidates::DCAPosPV,
-				v0mlcandidates::IsLambda,
-				v0mlcandidates::IsAntiLambda,
-				v0mlcandidates::IsGamma,
+				v0mlcandidates::PosEta, 
+				v0mlcandidates::NegEta, 
+				v0mlcandidates::V0Eta, 
+				v0mlcandidates::Z, 
+				v0mlcandidates::V0radius,
+				v0mlcandidates::PA, 
+				v0mlcandidates::DCApostopv, 
+				v0mlcandidates::DCAnegtopv, 
+				v0mlcandidates::DCAV0daughters, 
+				v0mlcandidates::DCAv0topv, 
+				v0mlcandidates::PsiPair, 
+				v0mlcandidates::V0type, 
+				v0mlcandidates::IsLambda, 
+				v0mlcandidates::IsAntiLambda, 
+				v0mlcandidates::IsGamma, 
 				v0mlcandidates::IsKZeroShort);
 
 

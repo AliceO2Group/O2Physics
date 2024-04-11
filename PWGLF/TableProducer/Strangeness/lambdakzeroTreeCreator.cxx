@@ -64,37 +64,28 @@ using std::array;
 using std::cout;
 using std::endl;
 
+using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+
 struct lambdakzeroTreeCreator{
     Produces<aod::V0MLCandidates> v0MLCandidates;
     HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-    // selection switches: please, use just one at a time 
+    // selection switches: please, use just one at a time! 
     Configurable<bool> fGetAllCandidates{"fGetAllCandidates", true, "If True, create a Tree containing all available candidates"};
     Configurable<bool> fGetLambdaOnly{"fGetLambdaOnly", false, "If True, apply cuts to select only lambda signal and bkg candidates"};
-    Configurable<bool> fGetAntiLambdaOnly{"fGetAntiLambdaOnly", false, "If True, apply cuts to select only lambda signal and bkg candidates"};
+    Configurable<bool> fGetAntiLambdaOnly{"fGetAntiLambdaOnly", false, "If True, apply cuts to select only antilambda signal and bkg candidates"};
     Configurable<bool> fGetGammaOnly{"fGetGammaOnly", false, "If True, apply cuts to select only Gamma signal and bkg candidates"};
     Configurable<bool> fGetK0ShortOnly{"fGetK0ShortOnly", false, "If True, apply cuts to select only K0Short signal and bkg candidates"};
     
     // Base selection criteria
 
-    /// Selection criteria: acceptance
-    Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
-    Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
-
-    // PID (TPC)
-    Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 4, "TpcPidNsigmaCut"};
-    Configurable<bool> allowTPConly{"allowTPConly", false, "Accept V0s that are TPC-only"};
-    
-    // Track quality
-    Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
-
     // Lambda standard criteria::
-    //Configurable<float> lambdaWindow{"lambdaWindow", 0.01, "Accept +/- this wrt Lambda mass (GeV/c^{2})"};
     Configurable<float> Lambdav0cospa{"Lambdav0cospa", 0.90, "min V0 CosPA"};
     Configurable<float> Lambdadcav0dau{"Lambdadcav0dau", 1.0, "max DCA V0 Daughters (cm)"};
     Configurable<float> Lambdadcanegtopv{"Lambdadcanegtopv", .05, "min DCA Neg To PV (cm)"};
     Configurable<float> Lambdadcapostopv{"Lambdadcapostopv", .05, "min DCA Pos To PV (cm)"};
     Configurable<float> Lambdav0radius{"Lambdav0radius", 1.5, "minimum V0 radius (cm)"};
+    Configurable<float> LambdaWindow{"LambdaWindow", 0.01, "Mass window around expected (in GeV/c2)"};
 
     // Anti-Lambda standard criteria::
     Configurable<float> AntiLambdav0cospa{"AntiLambdav0cospa", 0.90, "min V0 CosPA"};
@@ -102,6 +93,7 @@ struct lambdakzeroTreeCreator{
     Configurable<float> AntiLambdadcanegtopv{"AntiLambdadcanegtopv", .05, "min DCA Neg To PV (cm)"};
     Configurable<float> AntiLambdadcapostopv{"AntiLambdadcapostopv", .05, "min DCA Pos To PV (cm)"};
     Configurable<float> AntiLambdav0radius{"AntiLambdav0radius", 1.5, "minimum V0 radius (cm)"};
+    Configurable<float> AntiLambdaWindow{"AntiLambdaWindow", 0.01, "Mass window around expected (in GeV/c2)"};
 
     // Photon standard criteria:
     Configurable<float> PhotonMinRadius{"PhotonMinRadius", 1.0, "minimum photon conversion radius (cm)"};
@@ -110,8 +102,16 @@ struct lambdakzeroTreeCreator{
     Configurable<float> PhotonMaxMass{"PhotonMaxMass", 0.2, "Maximum photon mass (GeV/c^{2})"};
     Configurable<float> PhotonMaxqt{"PhotonMaxqt", 0.1, "Maximum photon qt value (AP plot) (GeV/c)"};
     Configurable<float> PhotonMaxalpha{"PhotonMaxalpha", 1.0, "Max photon alpha absolute value (AP plot)"};
+    Configurable<float> PhotonWindow{"PhotonWindow", 0.01, "Mass window around expected (in GeV/c2)"};
 
-    // TODO: Include here K0Short standard criteria
+    // KZeroShort standard criteria:
+    // TODO: update criteria
+    Configurable<float> K0Shortv0cospa{"K0Shortv0cospa", 0.90, "min V0 CosPA"};
+    Configurable<float> K0Shortdcav0dau{"K0Shortdcav0dau", 1.0, "max DCA V0 Daughters (cm)"};
+    Configurable<float> K0Shortdcanegtopv{"K0Shortdcanegtopv", .05, "min DCA Neg To PV (cm)"};
+    Configurable<float> K0Shortdcapostopv{"K0Shortdcapostopv", .05, "min DCA Pos To PV (cm)"};
+    Configurable<float> K0Shortv0radius{"K0Shortv0radius", 1.5, "minimum V0 radius (cm)"};
+    Configurable<float> K0ShortWindow{"K0ShortWindow", 0.01, "Mass window around expected (in GeV/c2)"};
 
     // Axis:
     ConfigurableAxis vertexZ{"vertexZ", {30, -15.0f, 15.0f}, ""};
@@ -123,28 +123,77 @@ struct lambdakzeroTreeCreator{
 
     // Helper struct to pass v0 information
   struct {
-    float LambdaMass;
-    float AntiLambdaMass;
-    float GammaMass;
-    float KZeroShortMass;
-    float pT;
-    float qt;
-    float alpha;
-    float v0radius;
-    float v0cosPA;
-    float dcapostopv;
-    float dcanegtopv;
-    float dcaV0daughters;
-    bool isLambda;
-    bool isAntiLambda;
-    bool isGamma;
-    bool isKZeroShort;
+  int posITSCls;
+  int negITSCls;
+  float posTPCRows;
+  float negTPCRows;
+  float posTPCSigmaPi;
+  float negTPCSigmaPi;
+  float posTPCSigmaPr;
+  float negTPCSigmaPr;
+  float posTPCSigmaEl;
+  float negTPCSigmaEl;
+  float TOFSigmaLaPr;
+  float TOFSigmaLaPi;
+  float TOFSigmaALaPi;
+  float TOFSigmaALaPr;
+  float TOFSigmaK0PiPlus;
+  float TOFSigmaK0PiMinus;
+  float LambdaMass;
+  float AntiLambdaMass;
+  float GammaMass;
+  float KZeroShortMass;
+  float pT;
+  float qt;
+  float alpha;
+  float posEta;
+  float negEta;
+  float v0Eta;
+  float Z;
+  float v0radius;
+  float PA;
+  float dcapostopv;
+  float dcanegtopv;
+  float dcaV0daughters;
+  float dcav0topv;
+  float PsiPair;
+  uint8_t v0type;
+  bool isLambda;
+  bool isAntiLambda;
+  bool isGamma;
+  bool isKZeroShort; 
   } Candidate;
   
   // Process candidate and store properties in object
   template <typename TV0Object>
   bool processCandidate(TV0Object const& cand)
   {    
+    auto posTrackExtra = cand.template posTrackExtra_as<dauTracks>();
+    auto negTrackExtra = cand.template negTrackExtra_as<dauTracks>();
+
+    // Track quality
+    Candidate.posITSCls = posTrackExtra.itsNCls();
+    Candidate.negITSCls = negTrackExtra.itsNCls();
+    Candidate.posTPCRows = posTrackExtra.tpcCrossedRows();
+    Candidate.negTPCRows = negTrackExtra.tpcCrossedRows();
+
+    // TPC PID
+    Candidate.posTPCSigmaPi = posTrackExtra.tpcNSigmaPi();
+    Candidate.negTPCSigmaPi = negTrackExtra.tpcNSigmaPi();
+    Candidate.posTPCSigmaPr = posTrackExtra.tpcNSigmaPr();
+    Candidate.negTPCSigmaPr = negTrackExtra.tpcNSigmaPr();
+    Candidate.posTPCSigmaEl = posTrackExtra.tpcNSigmaEl();
+    Candidate.negTPCSigmaEl = negTrackExtra.tpcNSigmaEl();
+
+    // TOF PID: 
+    Candidate.TOFSigmaLaPr = cand.tofNSigmaLaPr();
+    Candidate.TOFSigmaLaPi = cand.tofNSigmaLaPi();
+    Candidate.TOFSigmaALaPi = cand.tofNSigmaALaPi();
+    Candidate.TOFSigmaALaPr = cand.tofNSigmaALaPr();
+    Candidate.TOFSigmaK0PiPlus = cand.tofNSigmaK0PiPlus();
+    Candidate.TOFSigmaK0PiMinus = cand.tofNSigmaK0PiMinus();
+
+    // General  
     Candidate.LambdaMass = cand.mLambda();
     Candidate.AntiLambdaMass = cand.mAntiLambda();
     Candidate.GammaMass = cand.mGamma();
@@ -152,11 +201,24 @@ struct lambdakzeroTreeCreator{
     Candidate.pT = cand.pt();
     Candidate.qt = cand.qtarm();
     Candidate.alpha = cand.alpha();
+    Candidate.posEta = cand.positiveeta();
+    Candidate.negEta = cand.negativeeta();
+    Candidate.v0Eta = cand.eta();
+    Candidate.Z = cand.z();
+
+    // Topological 
     Candidate.v0radius = cand.v0radius();
-    Candidate.v0cosPA = cand.v0cosPA();
+    Candidate.PA = TMath::ACos(cand.v0cosPA());
     Candidate.dcapostopv = cand.dcapostopv();
     Candidate.dcanegtopv = cand.dcanegtopv();
     Candidate.dcaV0daughters = cand.dcaV0daughters();
+    Candidate.dcav0topv = cand.dcav0topv();
+    Candidate.PsiPair = cand.psipair();
+
+    // Debug  
+    Candidate.v0type = cand.v0Type();
+
+    // MC flags
     Candidate.isLambda = (cand.pdgCode()==3122);
     Candidate.isAntiLambda = (cand.pdgCode()==-3122);
     Candidate.isGamma = (cand.pdgCode()==22);
@@ -171,18 +233,8 @@ struct lambdakzeroTreeCreator{
   {    
     // FIXME: there are smarter ways to perform this selection
     // Lambda base selection criteria:
-
-    if( lambda.v0radius() < Lambdav0radius) 
+    if ((std::abs(lambda.mLambda() - 1.115683) > LambdaWindow) || (lambda.v0radius() < Lambdav0radius) || ( lambda.v0cosPA() < Lambdav0cospa) || (TMath::Abs(lambda.dcapostopv()) < Lambdadcapostopv) || (TMath::Abs(lambda.dcanegtopv()) < Lambdadcanegtopv) || ( lambda.dcaV0daughters() > Lambdadcav0dau))
       return false;
-    if( lambda.v0cosPA() < Lambdav0cospa) 
-      return false;
-    if(TMath::Abs(lambda.dcapostopv()) < Lambdadcapostopv) 
-      return false;
-    if(TMath::Abs(lambda.dcanegtopv()) < Lambdadcanegtopv) 
-      return false;
-    if( lambda.dcaV0daughters() > Lambdadcav0dau) 
-      return false;
-  
     return processCandidate(lambda);
   }
 
@@ -192,18 +244,8 @@ struct lambdakzeroTreeCreator{
   {    
     // FIXME: there are smarter ways to perform this selection
     // AntiLambda base selection criteria:
-
-    if( antilambda.v0radius() < AntiLambdav0radius) 
+    if ((std::abs(antilambda.mAntiLambda() - 1.115683) > AntiLambdaWindow) || (antilambda.v0radius() < AntiLambdav0radius) || (antilambda.v0cosPA() < AntiLambdav0cospa) || (TMath::Abs(antilambda.dcapostopv()) < AntiLambdadcapostopv) || (TMath::Abs(antilambda.dcanegtopv()) < AntiLambdadcanegtopv) || (antilambda.dcaV0daughters() > AntiLambdadcav0dau))
       return false;
-    if( antilambda.v0cosPA() < AntiLambdav0cospa) 
-      return false;
-    if(TMath::Abs(antilambda.dcapostopv()) < AntiLambdadcapostopv) 
-      return false;
-    if(TMath::Abs(antilambda.dcanegtopv()) < AntiLambdadcanegtopv) 
-      return false;
-    if( antilambda.dcaV0daughters() > AntiLambdadcav0dau) 
-      return false;
-  
     return processCandidate(antilambda);
   }
 
@@ -213,19 +255,8 @@ struct lambdakzeroTreeCreator{
   {    
     // FIXME: there are smarter ways to perform this selection
     // Gamma selection criteria:
-    if( gamma.mGamma() > PhotonMaxMass ) 
-      return false;
-    if( gamma.v0radius() < PhotonMinRadius ) 
-      return false;
-    if( gamma.v0radius() > PhotonMaxRadius ) 
-      return false;
-    if( gamma.pt() < PhotonMinPt) 
-      return false;
-    if( gamma.qtarm() > PhotonMaxqt) 
-      return false;
-    if(TMath::Abs(gamma.alpha()) > PhotonMaxalpha) 
-      return false;
-    
+    if ((std::abs(gamma.mGamma()) > PhotonWindow) || (gamma.mGamma() > PhotonMaxMass) || (gamma.v0radius() < PhotonMinRadius) || (gamma.v0radius() > PhotonMaxRadius) || (gamma.pt() < PhotonMinPt) || (gamma.qtarm() > PhotonMaxqt) || (TMath::Abs(gamma.alpha()) > PhotonMaxalpha))
+      return false;    
     return processCandidate(gamma);
   }
 
@@ -234,12 +265,13 @@ struct lambdakzeroTreeCreator{
   bool processK0ShortCandidate(TV0Object const& kzero)
   {    
     // FIXME: there are smarter ways to perform this selection
-    // TODO: Include KZeroShort selection criteria
-    
+    // TODO: Update KZeroShort selection criteria
+    if ((std::abs(kzero.mK0Short() - 0.497) > K0ShortWindow) || (kzero.v0radius() < K0Shortv0radius) || (kzero.v0cosPA() < K0Shortv0cospa) || (TMath::Abs(kzero.dcapostopv()) < K0Shortdcapostopv) || (TMath::Abs(kzero.dcanegtopv()) < K0Shortdcanegtopv) || (kzero.dcaV0daughters() > K0Shortdcav0dau))
+      return false;    
     return processCandidate(kzero);
   }
 
-  void process(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas> const& v0s)
+  void process(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFNSigmas> const& v0s)
   {
     histos.fill(HIST("hEventVertexZMC"), coll.posZ());
     for (auto& cand: v0s){ // looping over lambdas 
@@ -266,10 +298,14 @@ struct lambdakzeroTreeCreator{
       }
 
       // Filling TTree for ML analysis
-      v0MLCandidates(Candidate.LambdaMass, Candidate.AntiLambdaMass, Candidate.GammaMass, Candidate.KZeroShortMass, 
-      Candidate.pT, Candidate.qt, Candidate.alpha, Candidate.v0radius, Candidate.v0cosPA,
-      Candidate.dcapostopv, Candidate.dcanegtopv, Candidate.dcaV0daughters, 
-      Candidate.isLambda, Candidate.isAntiLambda, Candidate.isGamma, Candidate.isKZeroShort);
+      v0MLCandidates(Candidate.posITSCls, Candidate.negITSCls, Candidate.posTPCRows, Candidate.negTPCRows, 
+      Candidate.posTPCSigmaPi, Candidate.negTPCSigmaPi, Candidate.posTPCSigmaPr, Candidate.negTPCSigmaPr, 
+      Candidate.posTPCSigmaEl, Candidate.negTPCSigmaEl, Candidate.TOFSigmaLaPr, Candidate.TOFSigmaLaPi, 
+      Candidate.TOFSigmaALaPi, Candidate.TOFSigmaALaPr, Candidate.TOFSigmaK0PiPlus, Candidate.TOFSigmaK0PiMinus, 
+      Candidate.LambdaMass, Candidate.AntiLambdaMass, Candidate.GammaMass, Candidate.KZeroShortMass, Candidate.pT, 
+      Candidate.qt, Candidate.alpha, Candidate.posEta, Candidate.negEta, Candidate.v0Eta, Candidate.Z, 
+      Candidate.v0radius, Candidate.PA, Candidate.dcapostopv, Candidate.dcanegtopv, Candidate.dcaV0daughters, Candidate.dcav0topv, Candidate.PsiPair, 
+      Candidate.v0type, Candidate.isLambda, Candidate.isAntiLambda, Candidate.isGamma, Candidate.isKZeroShort);
   }
 
 }
