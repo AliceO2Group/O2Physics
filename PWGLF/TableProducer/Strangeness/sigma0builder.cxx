@@ -50,8 +50,8 @@ using std::cout;
 using std::endl;
 
 struct sigma0builder{
-  Produces<aod::V0MLSigmaCandidates> v0MLSigmas; // save sigma0 candidates for analysis
-  Produces<aod::V0MLSigmaMCCandidates> v0MLMCSigmas; // save sigma0 candidates for analysis
+  Produces<aod::V0SigmaCandidates> v0Sigmas; // save sigma0 candidates for analysis
+  Produces<aod::V0SigmaMCCandidates> v0MCSigmas; // save sigma0 candidates for analysis
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -68,21 +68,6 @@ struct sigma0builder{
     // Event counter
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
     histos.add("hEventVertexZMC", "hEventVertexZMC", kTH1F, {vertexZ});
-    
-    // Number of reconstructed sigma per collision as QA
-    histos.add("hNSigmaCandidates", "hNSigmaCandidates", kTH1F, {{100,-0.5f, 99.5f}});
-    histos.add("hNSigmaCandidatesMC", "hNSigmaCandidatesMC", kTH1F, {{100,-0.5f, 99.5f}});
-    histos.add("hNGammaCandidatesMC", "hNGammaCandidatesMC", kTH1F, {{100,-0.5f, 99.5f}});
-    histos.add("hNLambdaCandidatesMC", "hNLambdaCandidatesMC", kTH1F, {{100,-0.5f, 99.5f}});
-
-    // Invariant Mass
-    histos.add("InvMassSigmaMC", "InvMassSigmaMC", kTH1F, {axisSigmaMass});
-
-    if(doprocessCounterQA){
-      histos.add("hGammaIndices", "hGammaIndices", {HistType::kTH1F, {{4000,0.0f, 400000.0f}}});
-      histos.add("hCollIndices", "hCollIndices", {HistType::kTH1F, {{4000,0.0f, 4000.0f}}});
-      histos.add("h2dIndices", "h2dIndices", {HistType::kTH2F, {{4000,0.0f, 40000.0f},{4000,0.0f, 400000.0f}}});
-    }
   }
 
   // Helper struct to pass v0 information
@@ -111,90 +96,35 @@ struct sigma0builder{
     return true;
   }
 
-  // This process function cross-checks index correctness 
-  void processCounterQA(soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas> const& v0s)
-  {
-   for (auto& gamma: v0s) {
-     histos.fill(HIST("hGammaIndices"), gamma.globalIndex());
-     histos.fill(HIST("hCollIndices"), gamma.straCollisionId());
-     histos.fill(HIST("h2dIndices"), gamma.straCollisionId(), gamma.globalIndex());
-   }
- }
-
   void processMonteCarlo(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0LambdaMLScores, aod::V0GammaMLScores> const& v0s)
   {
-    int SigmaCounter = 0;
-    int GammaCounter = 0;
-    int LambdaCounter = 0;
-
     histos.fill(HIST("hEventVertexZMC"), coll.posZ());
 
     for (auto& gamma: v0s) { // selecting photons from Sigma0
 
       if ((gamma.pdgCode()!=22) || (gamma.pdgCodeMother()!=3212)) continue;
-      GammaCounter++;
       for (auto& lambda: v0s){ // selecting lambdas from Sigma0
         if ((lambda.pdgCode()!=3122) || (lambda.pdgCodeMother()!=3212)) continue;
-        LambdaCounter++;
-        
+
         //if (gamma.motherMCPartId()!=lambda.motherMCPartId()) continue; 
         if(!processSigmaCandidate(coll, lambda,gamma)) continue;  
-	      SigmaCounter ++;
-
         bool fIsSigma = (gamma.motherMCPartId()==lambda.motherMCPartId());
 
-        // Sigma related
-        float fSigmapT = sigmaCandidate.pT;
-        float fSigmaMass = sigmaCandidate.mass; 
-      
-        // Daughters related
-        /// Photon
-        float fPhotonPt = gamma.pt();
-        float fPhotonMass = gamma.mGamma();
-        float fPhotonQt = gamma.qtarm();
-        float fPhotonAlpha = gamma.alpha();
-        float fPhotonRadius = gamma.v0radius(); 
-        float fPhotonCosPA = gamma.v0cosPA();
-        float fPhotonDCADau = gamma.dcaV0daughters();
-        float fPhotonDCANegPV = gamma.dcanegtopv();
-        float fPhotonDCAPosPV = gamma.dcapostopv();
-        float fPhotonZconv = gamma.z(); 
-      
-        // Lambda
-        float fLambdaPt = lambda.pt();
-        float fLambdaMass = lambda.mLambda();
-        float fLambdaQt = lambda.qtarm();
-        float fLambdaAlpha = lambda.alpha();
-        float fLambdaRadius = lambda.v0radius();
-        float fLambdaCosPA = lambda.v0cosPA();
-        float fLambdaDCADau = lambda.dcaV0daughters();
-        float fLambdaDCANegPV = lambda.dcanegtopv();
-        float fLambdaDCAPosPV = lambda.dcapostopv();
-
         // Filling TTree for ML analysis
-        v0MLMCSigmas(fSigmapT, fSigmaMass, fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha, fPhotonRadius, fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV, fPhotonZconv, fLambdaPt, fLambdaMass, fLambdaQt, fLambdaAlpha, fLambdaRadius, fLambdaCosPA, fLambdaDCADau, fLambdaDCANegPV, fLambdaDCAPosPV, fIsSigma, gamma.gammaBDTScore(), lambda.lambdaBDTScore());
-        histos.fill(HIST("InvMassSigmaMC"), fSigmaMass);
+        v0MCSigmas(fIsSigma);
       }
     }
-    histos.fill(HIST("hNSigmaCandidatesMC"), SigmaCounter);
-    histos.fill(HIST("hNGammaCandidatesMC"), GammaCounter);
-    histos.fill(HIST("hNLambdaCandidatesMC"), LambdaCounter);
   }
 
     void processRealData(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0LambdaMLScores, aod::V0GammaMLScores> const& v0s)
   {
-    int SigmaCounter = 0;
-
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
     for (auto& gamma: v0s) { // selecting photons from Sigma0
       for (auto& lambda: v0s){ // selecting lambdas from Sigma0
         if(!processSigmaCandidate(coll, lambda,gamma))
           continue; 
-        SigmaCounter ++; 
-        
-        //bool fIsSigma = false;
-
+    
         // Sigma related
         float fSigmapT = sigmaCandidate.pT;
         float fSigmaMass = sigmaCandidate.mass; 
@@ -224,16 +154,17 @@ struct sigma0builder{
         float fLambdaDCAPosPV = lambda.dcapostopv();
 
         // Filling TTree for ML analysis
-        v0MLSigmas(fSigmapT, fSigmaMass, fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha, fPhotonRadius, fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV, fPhotonZconv, fLambdaPt, fLambdaMass, fLambdaQt, fLambdaAlpha, fLambdaRadius, fLambdaCosPA, fLambdaDCADau, fLambdaDCANegPV, fLambdaDCAPosPV, gamma.gammaBDTScore(), lambda.lambdaBDTScore());
+        v0Sigmas(fSigmapT, fSigmaMass, fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha, 
+        fPhotonRadius, fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV, 
+        fPhotonZconv, fLambdaPt, fLambdaMass, fLambdaQt, fLambdaAlpha, fLambdaRadius, 
+        fLambdaCosPA, fLambdaDCADau, fLambdaDCANegPV, fLambdaDCAPosPV, 
+        gamma.gammaBDTScore(), lambda.lambdaBDTScore());
 
       }
     }
-    histos.fill(HIST("hNSigmaCandidates"), SigmaCounter);
   }
-
-  PROCESS_SWITCH(sigma0builder, processCounterQA, "Check standard counter correctness", true);
-  PROCESS_SWITCH(sigma0builder, processMonteCarlo, "Do Monte-Carlo-based analysis", true);
-  PROCESS_SWITCH(sigma0builder, processRealData, "Do real data analysis", false);
+  PROCESS_SWITCH(sigma0builder, processMonteCarlo, "Do Monte-Carlo-based analysis", false);
+  PROCESS_SWITCH(sigma0builder, processRealData, "Do real data analysis", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
