@@ -62,11 +62,6 @@ using std::array;
 using std::cout;
 using std::endl;
 
-//OnnxModel bdt;
-OnnxModel lambda_bdt;
-OnnxModel antilambda_bdt;
-OnnxModel gamma_bdt;
-OnnxModel kzeroshort_bdt;
 
 // For original data loops
 using V0OriginalDatas = soa::Join<aod::V0Indices, aod::V0Cores>;
@@ -74,10 +69,14 @@ using V0OriginalDatas = soa::Join<aod::V0Indices, aod::V0Cores>;
 // For derived data analysis
 using V0DerivedDatas = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs>;
 
-std::map<std::string, std::string> metadata;
-std::map<std::string, std::string> headers;
-
 struct lambdakzeromlselection{
+  o2::ml::OnnxModel lambda_bdt;;
+  o2::ml::OnnxModel antilambda_bdt;
+  o2::ml::OnnxModel gamma_bdt;
+  o2::ml::OnnxModel kzeroshort_bdt;
+
+  std::map<std::string, std::string> metadata;
+
   Produces<aod::V0GammaMLScores> gammaMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
   Produces<aod::V0LambdaMLScores> lambdaMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -120,7 +119,6 @@ struct lambdakzeromlselection{
 
       /// Fetching model for specific timestamp
       LOG(info) << "Fetching model for timestamp: " << timestampCCDB.value;
-      //headers = ccdbApi.retrieveHeaders(BDTPathCCDB.value, metadata, timestampCCDB.value);
 
       if (PredictLambda) {
         bool retrieveSuccessLambda = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathLambda.value);

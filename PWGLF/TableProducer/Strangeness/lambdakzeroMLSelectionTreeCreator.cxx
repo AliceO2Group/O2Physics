@@ -66,7 +66,7 @@ using std::endl;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
-struct lambdakzeroTreeCreator{
+struct lambdakzeroMLSelectionTreeCreator{
     Produces<aod::V0MLCandidates> v0MLCandidates;
     HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -314,6 +314,6 @@ struct lambdakzeroTreeCreator{
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<lambdakzeroTreeCreator>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<lambdakzeroMLSelectionTreeCreator>(cfgc)};
   
 }
