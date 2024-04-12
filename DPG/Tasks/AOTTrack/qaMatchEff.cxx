@@ -71,15 +71,15 @@ struct qaMatchEff {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   //
   // Track selections
-  Configurable<bool> b_useTrackSelections{"b_useTrackSelections", false, "Boolean to switch the track selections on/off."};
-  Configurable<bool> b_useAnalysisTrackSelections{"b_useAnalysisTrackSelections", false, "Boolean to switch if the analysis track selections are used. If true, all the Explicit track cuts are ignored."};
+  Configurable<bool> isUseTrackSelections{"isUseTrackSelections", false, "Boolean to switch the track selections on/off."};
+  Configurable<bool> isUseAnalysisTrackSelections{"isUseAnalysisTrackSelections", false, "Boolean to switch if the analysis track selections are used. If true, all the Explicit track cuts are ignored."};
   // kinematics
   Configurable<float> ptMinCutInnerWallTPC{"ptMinCutInnerWallTPC", 0.1f, "Minimum transverse momentum calculated at the inner wall of TPC (GeV/c)"};
   Configurable<float> ptMinCut{"ptMinCut", 0.1f, "Minimum transverse momentum (GeV/c)"};
   Configurable<float> ptMaxCut{"ptMaxCut", 100.f, "Maximum transverse momentum (GeV/c)"};
   Configurable<float> etaMinCut{"etaMinCut", -2.0f, "Minimum pseudorapidity"};
   Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
-  Configurable<bool> b_useTPCinnerWallPt{"b_useTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
+  Configurable<bool> isUseTPCinnerWallPt{"isUseTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
   // DCA and PID cuts
   Configurable<LabeledArray<float>> dcaMaxCut{"dcaMaxCut", {parTableDCA[0], nParDCA, nParVaDCA, parClassDCA, parNameDCA}, "Track DCA cuts"};
   Configurable<LabeledArray<float>> nSigmaPID{"nSigmaPID", {parTablePID[0], nParPID, nParVaPID, parClassPID, parNamePID}, "PID nSigma cuts TPC and TOF"};
@@ -214,7 +214,7 @@ struct qaMatchEff {
     }
     //
     /// initialize the track selections
-    if (b_useTrackSelections) {
+    if (isUseTrackSelections) {
       // kinematics
       cutObject.SetEtaRange(etaMinCut, etaMaxCut);
       cutObject.SetPtRange(ptMinCut, ptMaxCut);
@@ -244,7 +244,7 @@ struct qaMatchEff {
       LOG(info) << "############";
       cutObject.SetRequireHitsInITSLayers(customMinITShits, set_customITShitmap);
 
-      if (b_useAnalysisTrackSelections) {
+      if (isUseAnalysisTrackSelections) {
         LOG(info) << "### Using analysis track selections";
         cutObject = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, 0);
         LOG(info) << "### Analysis track selections set";
@@ -1251,11 +1251,11 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedKineCuts(T& track)
   {
-    if (!b_useTrackSelections)
+    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
       return false;
-    if (b_useTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
+    if (isUseTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
       return false; // pt selection active only if the required pt is that calculated at the inner wall of TPC
     }
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kEtaRange))
@@ -1271,7 +1271,7 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedTPCCuts(T& track)
   {
-    if (!b_useTrackSelections)
+    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kTPCNCls))
       return false;
@@ -1287,7 +1287,7 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedITSCuts(T& track)
   {
-    if (!b_useTrackSelections)
+    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kITSChi2NDF))
       return false;
@@ -1377,7 +1377,7 @@ struct qaMatchEff {
       /// Using pt calculated at the inner wall of TPC
       /// Caveat: tgl still from tracking: this is not the value of tgl at the
       /// inner wall of TPC
-      if (b_useTPCinnerWallPt)
+      if (isUseTPCinnerWallPt)
         trackPt = tpcinner_pt;
       else
         trackPt = reco_pt;
@@ -1394,7 +1394,7 @@ struct qaMatchEff {
       // Using pt calculated at the inner wall of TPC
       // Caveat: tgl still from tracking: this is not the value of tgl at the
       // inner wall of TPC
-      // if (b_useTPCinnerWallPtForITS)
+      // if (isUseTPCinnerWallPtForITS)
       //   ITStrackPt = tpcinner_pt;
       // else
       //   ITStrackPt = reco_pt;
@@ -2168,7 +2168,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/PID/etahist_tpc_noidminus"))->Fill(track.eta());
             }
           } // not pions, nor kaons, nor protons
-        } // end if DATA
+        }   // end if DATA
         //
         if (trkWITS && isTrackSelectedITSCuts(track)) { ////////////////////////////////////////////   ITS tag inside TPC tagged
           if constexpr (IS_MC) {                        ////////////////////////   MC
@@ -2507,7 +2507,7 @@ struct qaMatchEff {
             }
           }
         } //  end if ITS
-      } //  end if TPC
+      }   //  end if TPC
       //
       // all tracks with pt>0.5
       if (trackPt > 0.5) {
@@ -2532,8 +2532,8 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/etahist_tpcits_05"))->Fill(track.eta());
             }
           } //  end if ITS
-        } //  end if TPC
-      } //  end if pt > 0.5
+        }   //  end if TPC
+      }     //  end if pt > 0.5
       //
       // positive only
       if (track.signed1Pt() > 0) {
@@ -2558,9 +2558,9 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/etahist_tpcits_pos"))->Fill(track.eta());
             }
           } //  end if ITS
-        } //  end if TPC
-          //
-      } // end positive
+        }   //  end if TPC
+            //
+      }     // end positive
       //
       // negative only
       if (track.signed1Pt() < 0) {
@@ -2585,9 +2585,9 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/etahist_tpcits_neg"))->Fill(track.eta());
             }
           } //  end if ITS
-        } //  end if TPC
-          //
-      } // end negative
+        }   //  end if TPC
+            //
+      }     // end negative
 
       if constexpr (IS_MC) { // MC
         auto mcpart = track.mcParticle();
@@ -2611,7 +2611,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/primsec/phihist_tpcits_prim"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/primsec/etahist_tpcits_prim"))->Fill(track.eta());
             } //  end if ITS
-          } //  end if TPC
+          }   //  end if TPC
           //  end if primaries
         } else if (mcpart.getProcess() == 4) {
           //
@@ -2633,7 +2633,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/primsec/phihist_tpcits_secd"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/primsec/etahist_tpcits_secd"))->Fill(track.eta());
             } //  end if ITS
-          } //  end if TPC
+          }   //  end if TPC
           // end if secondaries from decay
         } else {
           //
@@ -2655,8 +2655,8 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/primsec/phihist_tpcits_secm"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/primsec/etahist_tpcits_secm"))->Fill(track.eta());
             } //  end if ITS
-          } //  end if TPC
-        } // end if secondaries from material
+          }   //  end if TPC
+        }     // end if secondaries from material
         //
         // protons only
         if (tpPDGCode == 2212) {
@@ -2723,7 +2723,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_prminus"))->Fill(track.eta());
               }
             } //  end if ITS
-          } //  end if TPC
+          }   //  end if TPC
         }
         //
         // pions only
@@ -2791,7 +2791,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_piminus"))->Fill(track.eta());
               }
             } //  end if ITS
-          } //  end if TPC
+          }   //  end if TPC
           //
           // only primary pions
           if (mcpart.isPhysicalPrimary()) {
@@ -2804,7 +2804,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi_prim"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi_prim"))->Fill(track.eta());
               } //  end if ITS
-            } //  end if TPC
+            }   //  end if TPC
             //  end if primaries
           } else if (mcpart.getProcess() == 4) {
             //
@@ -2818,7 +2818,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi_secd"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi_secd"))->Fill(track.eta());
               } //  end if ITS
-            } //  end if TPC
+            }   //  end if TPC
             // end if secondaries from decay
           } else {
             //
@@ -2832,9 +2832,9 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi_secm"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi_secm"))->Fill(track.eta());
               } //  end if ITS
-            } //  end if TPC
-          } // end if secondaries from material  //
-        } // end pions only
+            }   //  end if TPC
+          }     // end if secondaries from material  //
+        }       // end pions only
         //
         // no primary/sec-d pions
         if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary()))) {
@@ -2858,8 +2858,8 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/PID/etahist_tpcits_nopi"))->Fill(track.eta());
               histos.get<TH1>(HIST("MC/PID/pdghist_num"))->Fill(pdg_fill);
             } //  end if ITS
-          } //  end if TPC
-        } // end if not prim/sec-d pi
+          }   //  end if TPC
+        }     // end if not prim/sec-d pi
         //
         // kaons only
         if (tpPDGCode == 321) {
@@ -2926,7 +2926,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_kaminus"))->Fill(track.eta());
               }
             } //  end if ITS
-          } //  end if TPC
+          }   //  end if TPC
         }
         //
         // pions and kaons together
@@ -2940,7 +2940,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/PID/phihist_tpcits_piK"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/PID/etahist_tpcits_piK"))->Fill(track.eta());
             } //  end if ITS
-          } //  end if TPC
+          }   //  end if TPC
         }
       }
       //
