@@ -122,7 +122,7 @@ struct lambdakzeromlselection {
 
       if (PredictLambda) {
         bool retrieveSuccessLambda = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathLambda.value);
-        if (retrieveSuccessLambda){
+        if (retrieveSuccessLambda) {
           lambda_bdt.initModel(BDTLocalPathLambda.value, enableOptimizations.value);
         } else {
           LOG(fatal) << "Error encountered while fetching/loading the Lambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
