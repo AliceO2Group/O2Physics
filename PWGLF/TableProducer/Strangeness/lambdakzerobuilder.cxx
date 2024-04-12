@@ -729,36 +729,36 @@ struct lambdakzeroBuilder {
 
       if (mlConfigurations.calculateLambdaScores) {
         bool retrieveSuccessLambda = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathLambda.value);
-        if (retrieveSuccessLambda)
+        if (retrieveSuccessLambda){
           mlModelLambda.initModel(mlConfigurations.localModelPathLambda.value, mlConfigurations.enableOptimizations.value);
-        else {
+        }else {
           LOG(fatal) << "Error encountered while fetching/loading the Lambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }
 
       if (mlConfigurations.calculateAntiLambdaScores) {
         bool retrieveSuccessAntiLambda = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathAntiLambda.value);
-        if (retrieveSuccessAntiLambda)
+        if (retrieveSuccessAntiLambda){
           mlModelAntiLambda.initModel(mlConfigurations.localModelPathAntiLambda.value, mlConfigurations.enableOptimizations.value);
-        else {
+        } else {
           LOG(fatal) << "Error encountered while fetching/loading the AntiLambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }
 
       if (mlConfigurations.calculateGammaScores) {
         bool retrieveSuccessGamma = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathGamma.value);
-        if (retrieveSuccessGamma)
+        if (retrieveSuccessGamma) {
           mlModelGamma.initModel(mlConfigurations.localModelPathGamma.value, mlConfigurations.enableOptimizations.value);
-        else {
+        } else {
           LOG(fatal) << "Error encountered while fetching/loading the Gamma model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }
 
       if (mlConfigurations.calculateK0ShortScores) {
         bool retrieveSuccessKZeroShort = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathK0Short.value);
-        if (retrieveSuccessKZeroShort)
+        if (retrieveSuccessKZeroShort) {
           mlModelK0Short.initModel(mlConfigurations.localModelPathK0Short.value, mlConfigurations.enableOptimizations.value);
-        else {
+        } else {
           LOG(fatal) << "Error encountered while fetching/loading the K0Short model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }

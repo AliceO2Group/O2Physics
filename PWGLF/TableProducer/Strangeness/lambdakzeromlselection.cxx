@@ -122,36 +122,36 @@ struct lambdakzeromlselection {
 
       if (PredictLambda) {
         bool retrieveSuccessLambda = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathLambda.value);
-        if (retrieveSuccessLambda)
+        if (retrieveSuccessLambda){
           lambda_bdt.initModel(BDTLocalPathLambda.value, enableOptimizations.value);
-        else {
+        } else {
           LOG(fatal) << "Error encountered while fetching/loading the Lambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }
 
       if (PredictAntiLambda) {
         bool retrieveSuccessAntiLambda = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathAntiLambda.value);
-        if (retrieveSuccessAntiLambda)
+        if (retrieveSuccessAntiLambda) {
           antilambda_bdt.initModel(BDTLocalPathAntiLambda.value, enableOptimizations.value);
-        else {
+        } else {
           LOG(fatal) << "Error encountered while fetching/loading the AntiLambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }
 
       if (PredictGamma) {
         bool retrieveSuccessGamma = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathGamma.value);
-        if (retrieveSuccessGamma)
+        if (retrieveSuccessGamma) {
           gamma_bdt.initModel(BDTLocalPathGamma.value, enableOptimizations.value);
-        else {
+        } else {
           LOG(fatal) << "Error encountered while fetching/loading the Gamma model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }
 
       if (PredictKZeroShort) {
         bool retrieveSuccessKZeroShort = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathKZeroShort.value);
-        if (retrieveSuccessKZeroShort)
+        if (retrieveSuccessKZeroShort) {
           kzeroshort_bdt.initModel(BDTLocalPathKZeroShort.value, enableOptimizations.value);
-        else {
+        } else {
           LOG(fatal) << "Error encountered while fetching/loading the KZeroShort model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }
