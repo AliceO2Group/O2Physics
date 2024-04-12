@@ -200,6 +200,7 @@ def main(config):
     hist_corry_nonprompt.Write()
     hist_covariance.Write()
     hist_corrfrac_prompt.Write()
+    hist_corrfrac_nonprompt.Write()
     if cfg["central_efficiency"]["computerawfrac"]:
         hist_frac_raw_prompt.Write()
         hist_frac_raw_nonprompt.Write()
