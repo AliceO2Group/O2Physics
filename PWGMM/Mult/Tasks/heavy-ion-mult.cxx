@@ -342,9 +342,13 @@ struct HeavyIonMultiplicity {
         histos.fill(HIST("EventHist"), 2);
         if (collision.selection_bit(kNoTimeFrameBorder)) {
           histos.fill(HIST("EventHist"), 3);
-          histos.fill(HIST("VtxZHist"), collision.posZ());
           if constexpr (hasCentrality) {
             cent = collision.centFT0C();
+            if (cent < 0.0 || cent > 100.0) {
+              return;
+            }
+            histos.fill(HIST("EventHist"), 4);
+            histos.fill(HIST("VtxZHist"), collision.posZ());
             histos.fill(HIST("CentPercentileHist"), cent);
             histos.fill(HIST("hdatazvtxcent"), collision.posZ(), cent);
             for (auto& track : tracks) {
@@ -380,9 +384,13 @@ struct HeavyIonMultiplicity {
           histos.fill(HIST("EventHist"), 2);
           if (RecCollision.selection_bit(kNoTimeFrameBorder)) {
             histos.fill(HIST("EventHist"), 3);
-            histos.fill(HIST("VtxZHist"), RecCollision.posZ());
             if constexpr (hasCentrality) {
               cent = RecCollision.centFT0C();
+              if (cent < 0.0 || cent > 100.0) {
+                continue;
+              }
+              histos.fill(HIST("EventHist"), 4);
+              histos.fill(HIST("VtxZHist"), RecCollision.posZ());
               histos.fill(HIST("CentPercentileMCRecHist"), cent);
               histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), cent);
 

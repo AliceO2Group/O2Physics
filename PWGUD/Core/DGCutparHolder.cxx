@@ -102,6 +102,10 @@ void DGCutparHolder::SetFITAmpLimits(std::vector<float> FITAmpLimits)
 {
   mFITAmpLimits = FITAmpLimits;
 }
+void DGCutparHolder::SetCollisionSel(std::vector<int> collisionSel)
+{
+  mCollisionSel = collisionSel;
+}
 
 // getter
 int DGCutparHolder::NDtcoll() const { return mNDtcoll; }
@@ -130,3 +134,4 @@ bool DGCutparHolder::withTCE() const { return mTCE; }
 bool DGCutparHolder::withTOR() const { return mTOR; }
 float DGCutparHolder::maxFITtime() const { return mMaxFITtime; }
 std::vector<float> DGCutparHolder::FITAmpLimits() const { return mFITAmpLimits; }
+std::vector<int> DGCutparHolder::collisionSel() const { return mCollisionSel; }

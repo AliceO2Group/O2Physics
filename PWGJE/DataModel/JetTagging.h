@@ -18,6 +18,7 @@
 #define PWGJE_DATAMODEL_JETTAGGING_H_
 
 #include <cmath>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/Jet.h"
 
@@ -44,7 +45,7 @@ using JTrackTag = JTracksTag::iterator;
   namespace _name_##tagging                                     \
   {                                                             \
     DECLARE_SOA_COLUMN(Origin, origin, int);                    \
-    DECLARE_SOA_COLUMN(JetProb, jetProb, float);                \
+    DECLARE_SOA_COLUMN(JetProb, jetProb, std::vector<float>);   \
     DECLARE_SOA_COLUMN(Algorithm2, algorithm2, int);            \
     DECLARE_SOA_COLUMN(Algorithm3, algorithm3, int);            \
   }                                                             \
