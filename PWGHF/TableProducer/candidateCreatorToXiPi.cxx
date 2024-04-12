@@ -478,7 +478,7 @@ struct HfCandidateCreatorToXiPiMc {
       origin = RecoDecay::OriginType::None;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign, 1, nullptr, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign, 1, nullptr, false)) {
           debugGenCharmBar = 1;
           ptCharmBaryonGen = particle.pt();
           etaCharmBaryonGen = particle.eta();
@@ -510,7 +510,7 @@ struct HfCandidateCreatorToXiPiMc {
 
       if (matchXicMc) {
         //  Xic → Xi pi
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign, 1, nullptr, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign, 1, nullptr, false)) {
           debugGenCharmBar = 1;
           ptCharmBaryonGen = particle.pt();
           etaCharmBaryonGen = particle.eta();

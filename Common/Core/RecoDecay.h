@@ -602,6 +602,7 @@ class RecoDecay
   /// \param arrPDGFinal  array of PDG codes of particles to be considered final if found
   /// \param depthMax  maximum decay tree level; Daughters at this level (or beyond) will be considered final. If -1, all levels are considered.
   /// \param stage  decay tree level; If different from 0, the particle itself will be added in the list in case it has no daughters.
+  /// \param checkProcess switch on to check the daughter production process
   /// \note Final state is defined as particles from arrPDGFinal plus final daughters of any other decay branch.
   /// \note Antiparticles of particles in arrPDGFinal are accepted as well.
   template <std::size_t N, typename T>
@@ -609,10 +610,15 @@ class RecoDecay
                            std::vector<int>* list,
                            const std::array<int, N>& arrPDGFinal,
                            int8_t depthMax = -1,
-                           int8_t stage = 0)
+                           int8_t stage = 0,
+                           bool checkProcess = false)
   {
     if (!list) {
       // Printf("getDaughters: Error: No list!");
+      return;
+    }
+    // If the particle is neither the original particle nor coming from a decay, we do nothing and exit.
+    if (checkProcess && stage != 0 && particle.getProcess() != TMCProcess::kPDecay) {
       return;
     }
     bool isFinal = false;                     // Flag to indicate the end of recursion
@@ -657,7 +663,7 @@ class RecoDecay
     // Call itself to get daughters of daughters recursively.
     stage++;
     for (auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
-      getDaughters(dau, list, arrPDGFinal, depthMax, stage);
+      getDaughters(dau, list, arrPDGFinal, depthMax, stage, checkProcess);
     }
   }
 
@@ -728,7 +734,7 @@ class RecoDecay
           return -1;
         }
         // Get the list of actual final daughters.
-        getDaughters(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+        getDaughters(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax, checkProcess);
         // printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
         // for (auto i : arrAllDaughtersIndex) {
         //   printf(" %d", i);
@@ -756,9 +762,6 @@ class RecoDecay
       // Check daughter's PDG code.
       auto PDGParticleI = particleI.pdgCode(); // PDG code of the ith daughter
       // Printf("MC Rec: Daughter %d PDG: %d", iProng, PDGParticleI);
-      if (checkProcess && particleI.getProcess() != TMCProcess::kPDecay) { // production process of the ith daughter
-        continue;
-      }
       bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
       for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
         if (PDGParticleI == coefFlavourOscillation * sgn * arrPDGDaughters[iProngCp]) {
@@ -848,7 +851,7 @@ class RecoDecay
         return false;
       }
       // Get the list of actual final daughters.
-      getDaughters(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+      getDaughters(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax, checkProcess);
       // printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
       // for (auto i : arrAllDaughtersIndex) {
       //   printf(" %d", i);
@@ -873,9 +876,6 @@ class RecoDecay
       for (auto indexDaughterI : arrAllDaughtersIndex) {
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
         auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
-        if (checkProcess && candidateDaughterI.getProcess() != TMCProcess::kPDecay) {             // production process of the ith daughter
-          continue;
-        }
         // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
         bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
