@@ -65,40 +65,40 @@ struct multiplicityPbPb {
     const AxisSpec axisPhi{nBinsPhi, -0.4, 6.8, "#phi"};
     const AxisSpec axisZvtx{nBinsZvtx, -30, 30, "Z_{vtx} (cm)"};
 
-    histos.add("etaHistogram", "; ", kTH1F, {axisEta});
-    histos.add("MCGENetaHistogram", "; ", kTH1F, {axisEta});
-    histos.add("ptHistogram", "; ", kTH1F, {axisPt});
-    histos.add("MCGENptHistogram", "; ", kTH1F, {axisPt});
+    histos.add("etaHistogram", "; ", kTH1D, {axisEta});
+    histos.add("MCGENetaHistogram", "; ", kTH1D, {axisEta});
+    histos.add("ptHistogram", "; ", kTH1D, {axisPt});
+    histos.add("MCGENptHistogram", "; ", kTH1D, {axisPt});
 
-    histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
-    histos.add("MCGENeventCounter", "eventCounter", kTH1F, {axisCounter});
+    histos.add("eventCounter", "eventCounter", kTH1D, {axisCounter});
+    histos.add("MCGENeventCounter", "eventCounter", kTH1D, {axisCounter});
 
-    histos.add("DCAxy", "; DCA_{xy} (cm)", kTH1F, {axisDCAxy});
-    histos.add("DCAz", "; DCA_{z} (cm)", kTH1F, {axisDCAz});
+    histos.add("DCAxy", "; DCA_{xy} (cm)", kTH1D, {axisDCAxy});
+    histos.add("DCAz", "; DCA_{z} (cm)", kTH1D, {axisDCAz});
 
-    histos.add("Multiplicity", "; tracks; events", kTH1F, {axisNtrk});
-    histos.add("MCGENMultiplicity", "; tracks; events", kTH1F, {axisNtrk});
+    histos.add("Multiplicity", "; tracks; events", kTH1D, {axisNtrk});
+    histos.add("MCGENMultiplicity", "; tracks; events", kTH1D, {axisNtrk});
 
-    histos.add("Multiplicity_01", "; tracks; events", kTH1F, {axisNtrk});         // |eta|<0.1
-    histos.add("Multiplicity_01_10", "; tracks; events", kTH1F, {axisNtrk});      // |eta|<0.1, |Zvtx|<10 cm
-    histos.add("MCGENMultiplicity_01", "; tracks; events", kTH1F, {axisNtrk});    // |eta|<0.1
-    histos.add("MCGENMultiplicity_01_10", "; tracks; events", kTH1F, {axisNtrk}); // |eta|<0.1, |Zvtx|<10 cm
+    histos.add("Multiplicity_01", "; tracks; events", kTH1D, {axisNtrk});         // |eta|<0.1
+    histos.add("Multiplicity_01_10", "; tracks; events", kTH1D, {axisNtrk});      // |eta|<0.1, |Zvtx|<10 cm
+    histos.add("MCGENMultiplicity_01", "; tracks; events", kTH1D, {axisNtrk});    // |eta|<0.1
+    histos.add("MCGENMultiplicity_01_10", "; tracks; events", kTH1D, {axisNtrk}); // |eta|<0.1, |Zvtx|<10 cm
 
-    histos.add("PhiTracks", "; #phi; tracks", kTH1F, {axisPhi});
+    histos.add("PhiTracks", "; #phi; tracks", kTH1D, {axisPhi});
 
-    histos.add("ZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
-    histos.add("ZvtxEvents_01", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx}); // |eta|<0.1
-    histos.add("MCGENZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
-    histos.add("MCGENZvtxEvents_01", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx}); // |eta|<0.1
+    histos.add("ZvtxEvents", "; Z_{vtx} (cm); events", kTH1D, {axisZvtx});
+    histos.add("ZvtxEvents_01", "; Z_{vtx} (cm); events", kTH1D, {axisZvtx}); // |eta|<0.1
+    histos.add("MCGENZvtxEvents", "; Z_{vtx} (cm); events", kTH1D, {axisZvtx});
+    histos.add("MCGENZvtxEvents_01", "; Z_{vtx} (cm); events", kTH1D, {axisZvtx}); // |eta|<0.1
 
-    histos.add("EtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2F, {axisEta, axisZvtx});
-    histos.add("NtrkZvtxEvents", "; N_{trk}; Z_{vtx} (cm); events", kTH2F, {axisNtrk, axisZvtx});
+    histos.add("EtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2D, {axisEta, axisZvtx});
+    histos.add("NtrkZvtxEvents", "; N_{trk}; Z_{vtx} (cm); events", kTH2D, {axisNtrk, axisZvtx});
 
-    histos.add("MCGENEtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2F, {axisEta, axisZvtx});
-    histos.add("MCGENNtrkZvtxEvents", "; N_{trk}; Z_{vtx} (cm); events", kTH2F, {axisNtrk, axisZvtx});
+    histos.add("MCGENEtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2D, {axisEta, axisZvtx});
+    histos.add("MCGENNtrkZvtxEvents", "; N_{trk}; Z_{vtx} (cm); events", kTH2D, {axisNtrk, axisZvtx});
 
-    histos.add("PhiEtaTracks", "; #phi; #eta; tracks", kTH2F, {axisPhi, axisEta});
-    histos.add("MCGENPhiEtaTracks", "; #phi; #eta; tracks", kTH2F, {axisPhi, axisEta});
+    histos.add("PhiEtaTracks", "; #phi; #eta; tracks", kTH2D, {axisPhi, axisEta});
+    histos.add("MCGENPhiEtaTracks", "; #phi; #eta; tracks", kTH2D, {axisPhi, axisEta});
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks, aod::McParticles const&)
@@ -137,7 +137,7 @@ struct multiplicityPbPb {
     }
 
     histos.fill(HIST("Multiplicity"), trackCounter);
-    histos.fill(HIST("Multiplicity_01"), trackCounter_01);
+    histos.fill(HIST("Multiplicity_01"), trackCounter_01); // to be deleted
     histos.fill(HIST("Multiplicity_01_10"), trackCounter_01_10);
 
     histos.fill(HIST("NtrkZvtxEvents"), trackCounter, collision.posZ());

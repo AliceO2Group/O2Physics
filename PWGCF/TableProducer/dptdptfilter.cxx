@@ -515,7 +515,7 @@ struct DptDptFilterTracks {
   std::string cfgCCDBPeriod{"LHC22o"};
 
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
-  Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy. Default 4"};
+  Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy;50-53 w tighter pT DCAz. Default 4"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries. Default 0"};

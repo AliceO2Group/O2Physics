@@ -124,15 +124,17 @@ struct lambdakzeroBuilder {
   Configurable<float> downscaleFactor{"downscaleFactor", 2, "Downscale factor (0: build nothing, 1: build all)"};
   unsigned int randomSeed = 0;
 
-  // downscaling for Marian Ivanov -> different strategies
   TRandom3 prng;
-  Configurable<bool> downscale_adaptive{"downscale_adaptive", false, "Downscale: use pT-dependent techniques"};
-  Configurable<float> downscale_mass{"downscale_mass", .139, "Downscale: Tsallis Mass"};
-  Configurable<float> downscale_sqrts{"downscale_sqrts", 13.6, "Downscale: Tsallis sqrts"};
-  Configurable<float> downscale_factorPt{"downscale_factorPt", 1.0, "Downscale: factor Pt"};
-  Configurable<float> downscale_factor1Pt{"downscale_factor1Pt", 1.0, "Downscale: factor 1/Pt"};
-  Configurable<float> downscale_factorUniform{"downscale_factorPt", 1e-3, "Downscale: factor Pt"};
-  Configurable<int> downscale_triggerMaskSelection{"downscale_triggerMaskSelection", 0, "Downscale: trigger mask selection"};
+  // downscaling for Marian Ivanov -> different strategies
+  struct : ConfigurableGroup {
+    Configurable<bool> downscale_adaptive{"downscale_adaptive", false, "Downscale: use pT-dependent techniques"};
+    Configurable<float> downscale_mass{"downscale_mass", .139, "Downscale: Tsallis Mass"};
+    Configurable<float> downscale_sqrts{"downscale_sqrts", 13.6, "Downscale: Tsallis sqrts"};
+    Configurable<float> downscale_factorPt{"downscale_factorPt", 1.0, "Downscale: factor Pt"};
+    Configurable<float> downscale_factor1Pt{"downscale_factor1Pt", 1.0, "Downscale: factor 1/Pt"};
+    Configurable<float> downscale_factorUniform{"downscale_factorUniform", 1e-3, "Downscale: factor Pt"};
+    Configurable<int> downscale_triggerMaskSelection{"downscale_triggerMaskSelection", 0, "Downscale: trigger mask selection"};
+  } downscalingOptions;
 
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
@@ -161,12 +163,14 @@ struct lambdakzeroBuilder {
   Configurable<bool> d_QA_checkdEdx{"d_QA_checkdEdx", false, "check dEdx in QA"};
 
   // CCDB options
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+    Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+    Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+    Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  } ccdbConfigurations;
 
   // round some V0 core variables up to a certain level of precision if requested
   // useful to keep derived data sizes under control
@@ -187,19 +191,21 @@ struct lambdakzeroBuilder {
   ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
   // for topo var QA
-  ConfigurableAxis axisTopoVarPointingAngle{"axisTopoVarPointingAngle", {50, 0.0, 1.0}, "pointing angle"};
-  ConfigurableAxis axisTopoVarRAP{"axisTopoVarRAP", {50, 0.0, 1.0}, "radius x pointing angle axis"};
-  ConfigurableAxis axisTopoVarV0Radius{"axisTopoVarV0Radius", {500, 0.0, 100.0}, "V0 decay radius (cm)"};
-  ConfigurableAxis axisTopoVarDCAV0Dau{"axisTopoVarDCAV0Dau", {200, 0.0, 2.0}, "DCA between V0 daughters (cm)"};
-  ConfigurableAxis axisTopoVarDCAToPV{"axisTopoVarDCAToPV", {200, -1, 1.0}, "single track DCA to PV (cm)"};
-  ConfigurableAxis axisTopoVarDCAV0ToPV{"axisTopoVarDCAV0ToPV", {200, 0, 5.0}, "V0 DCA to PV (cm)"};
+  struct : ConfigurableGroup {
+    ConfigurableAxis axisTopoVarPointingAngle{"axisConfigurations.axisTopoVarPointingAngle", {50, 0.0, 1.0}, "pointing angle"};
+    ConfigurableAxis axisTopoVarRAP{"axisConfigurations.axisTopoVarRAP", {50, 0.0, 1.0}, "radius x pointing angle axis"};
+    ConfigurableAxis axisTopoVarV0Radius{"axisConfigurations.axisTopoVarV0Radius", {500, 0.0, 100.0}, "V0 decay radius (cm)"};
+    ConfigurableAxis axisTopoVarDCAV0Dau{"axisConfigurations.axisTopoVarDCAV0Dau", {200, 0.0, 2.0}, "DCA between V0 daughters (cm)"};
+    ConfigurableAxis axisTopoVarDCAToPV{"axisConfigurations.axisTopoVarDCAToPV", {200, -1, 1.0}, "single track DCA to PV (cm)"};
+    ConfigurableAxis axisTopoVarDCAV0ToPV{"axisConfigurations.axisTopoVarDCAV0ToPV", {200, 0, 5.0}, "V0 DCA to PV (cm)"};
 
-  ConfigurableAxis axisX{"axisX", {200, 0, 200}, "X_{IU}"};
-  ConfigurableAxis axisRadius{"axisRadius", {500, 0, 50}, "Radius (cm)"};
-  ConfigurableAxis axisDeltaDistanceRadii{"axisDeltaDistanceRadii", {500, -50, 50}, "(cm)"};
-  ConfigurableAxis axisDCAXY{"axisDCAXY", {500, -50, 50}, "(cm)"};
-  ConfigurableAxis axisDCACHI2{"axisDCACHI2", {500, 0, 50}, "#chi^{2}"};
-  ConfigurableAxis axisPositionGuess{"axisPositionGuess", {240, 0, 120}, "(cm)"};
+    ConfigurableAxis axisX{"axisConfigurations.axisX", {200, 0, 200}, "X_{IU}"};
+    ConfigurableAxis axisRadius{"axisConfigurations.axisRadius", {500, 0, 50}, "Radius (cm)"};
+    ConfigurableAxis axisDeltaDistanceRadii{"axisConfigurations.axisDeltaDistanceRadii", {500, -50, 50}, "(cm)"};
+    ConfigurableAxis axisDCAXY{"axisConfigurations.axisDCAXY", {500, -50, 50}, "(cm)"};
+    ConfigurableAxis axisDCACHI2{"axisConfigurations.axisDCACHI2", {500, 0, 50}, "#chi^{2}"};
+    ConfigurableAxis axisPositionGuess{"axisConfigurations.axisPositionGuess", {240, 0, 120}, "(cm)"};
+  } axisConfigurations;
 
   // default parameters from central Pb-Pb (worst case scenario), PbPb 2023 pass1
   // fuctional form: [0]+[1]*x+[2]*TMath::Exp(-x/[3])
@@ -301,9 +307,9 @@ struct lambdakzeroBuilder {
   {
     const float a = 6.81, b = 59.24;
     const float c = 0.082, d = 0.151;
-    float mt = TMath::Sqrt(downscale_mass * downscale_mass + pt * pt);
-    float n = a + b / downscale_sqrts;
-    float T = c + d / downscale_sqrts;
+    float mt = TMath::Sqrt(downscalingOptions.downscale_mass * downscalingOptions.downscale_mass + pt * pt);
+    float n = a + b / downscalingOptions.downscale_sqrts;
+    float T = c + d / downscalingOptions.downscale_sqrts;
     float p0 = n * T;
     float result = TMath::Power((1. + mt / p0), -n);
     result *= pt;
@@ -315,13 +321,13 @@ struct lambdakzeroBuilder {
     float prob = TsallisCharged(pt);
     float probNorm = TsallisCharged(1.);
     int triggerMask = 0;
-    if (prng.Rndm() * prob / probNorm < downscale_factorPt)
+    if (prng.Rndm() * prob / probNorm < downscalingOptions.downscale_factorPt)
       triggerMask |= 1;
-    if ((prng.Rndm() * ((prob / probNorm) * pt * pt)) < downscale_factor1Pt)
+    if ((prng.Rndm() * ((prob / probNorm) * pt * pt)) < downscalingOptions.downscale_factor1Pt)
       triggerMask |= 2;
-    if (prng.Rndm() < downscale_factorPt)
+    if (prng.Rndm() < downscalingOptions.downscale_factorPt)
       triggerMask |= 4;
-    if (prng.Rndm() < downscale_factorUniform)
+    if (prng.Rndm() < downscalingOptions.downscale_factorUniform)
       triggerMask |= 8;
     return triggerMask;
   }
@@ -384,7 +390,6 @@ struct lambdakzeroBuilder {
   {
     prng.SetSeed(0);
     resetHistos();
-
     auto h = registry.add<TH1>("hV0Criteria", "hV0Criteria", kTH1D, {{10, -0.5f, 9.5f}});
     h->GetXaxis()->SetBinLabel(1, "All sel");
     h->GetXaxis()->SetBinLabel(2, "TPC requirement");
@@ -418,39 +423,39 @@ struct lambdakzeroBuilder {
       const AxisSpec axisITSCluMap{static_cast<int32_t>(128), -0.5f, +127.5f, "Packed ITS map"};
 
       // Histogram to bookkeep cluster maps
-      registry.add("h2dITSCluMap_Gamma", "h2dITSCluMap_Gamma", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_K0Short", "h2dITSCluMap_K0Short", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_Lambda", "h2dITSCluMap_Lambda", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
-      registry.add("h2dITSCluMap_AntiLambda", "h2dITSCluMap_AntiLambda", kTH3D, {axisITSCluMap, axisITSCluMap, axisRadius});
+      registry.add("h2dITSCluMap_Gamma", "h2dITSCluMap_Gamma", kTH3D, {axisITSCluMap, axisITSCluMap, axisConfigurations.axisRadius});
+      registry.add("h2dITSCluMap_K0Short", "h2dITSCluMap_K0Short", kTH3D, {axisITSCluMap, axisITSCluMap, axisConfigurations.axisRadius});
+      registry.add("h2dITSCluMap_Lambda", "h2dITSCluMap_Lambda", kTH3D, {axisITSCluMap, axisITSCluMap, axisConfigurations.axisRadius});
+      registry.add("h2dITSCluMap_AntiLambda", "h2dITSCluMap_AntiLambda", kTH3D, {axisITSCluMap, axisITSCluMap, axisConfigurations.axisRadius});
 
       // Histogram to bookkeep cluster maps
-      registry.add("h2dXIU_Gamma", "h2dXIU_Gamma", kTH3D, {axisX, axisX, axisRadius});
-      registry.add("h2dXIU_K0Short", "h2dXIU_K0Short", kTH3D, {axisX, axisX, axisRadius});
-      registry.add("h2dXIU_Lambda", "h2dXIU_Lambda", kTH3D, {axisX, axisX, axisRadius});
-      registry.add("h2dXIU_AntiLambda", "h2dXIU_AntiLambda", kTH3D, {axisX, axisX, axisRadius});
+      registry.add("h2dXIU_Gamma", "h2dXIU_Gamma", kTH3D, {axisConfigurations.axisX, axisConfigurations.axisX, axisConfigurations.axisRadius});
+      registry.add("h2dXIU_K0Short", "h2dXIU_K0Short", kTH3D, {axisConfigurations.axisX, axisConfigurations.axisX, axisConfigurations.axisRadius});
+      registry.add("h2dXIU_Lambda", "h2dXIU_Lambda", kTH3D, {axisConfigurations.axisX, axisConfigurations.axisX, axisConfigurations.axisRadius});
+      registry.add("h2dXIU_AntiLambda", "h2dXIU_AntiLambda", kTH3D, {axisConfigurations.axisX, axisConfigurations.axisX, axisConfigurations.axisRadius});
 
       // QA plots of topological variables using axisPtQA
-      registry.add("h2dTopoVarPointingAngle", "h2dTopoVarPointingAngle", kTH2D, {axisPtQA, axisTopoVarPointingAngle});
-      registry.add("h2dTopoVarRAP", "h2dTopoVarRAP", kTH2D, {axisPtQA, axisTopoVarRAP});
-      registry.add("h2dTopoVarV0Radius", "h2dTopoVarV0Radius", kTH2D, {axisPtQA, axisTopoVarV0Radius});
-      registry.add("h2dTopoVarDCAV0Dau", "h2dTopoVarDCAV0Dau", kTH2D, {axisPtQA, axisTopoVarDCAV0Dau});
-      registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
-      registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisPtQA, axisTopoVarDCAToPV});
-      registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisPtQA, axisTopoVarDCAV0ToPV});
+      registry.add("h2dTopoVarPointingAngle", "h2dTopoVarPointingAngle", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarPointingAngle});
+      registry.add("h2dTopoVarRAP", "h2dTopoVarRAP", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarRAP});
+      registry.add("h2dTopoVarV0Radius", "h2dTopoVarV0Radius", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarV0Radius});
+      registry.add("h2dTopoVarDCAV0Dau", "h2dTopoVarDCAV0Dau", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarDCAV0Dau});
+      registry.add("h2dTopoVarPosDCAToPV", "h2dTopoVarPosDCAToPV", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarDCAToPV});
+      registry.add("h2dTopoVarNegDCAToPV", "h2dTopoVarNegDCAToPV", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarDCAToPV});
+      registry.add("h2dTopoVarDCAV0ToPV", "h2dTopoVarDCAV0ToPV", kTH2D, {axisPtQA, axisConfigurations.axisTopoVarDCAV0ToPV});
 
       // QA for PCM
-      registry.add("h2d_pcm_DCAXY_True", "h2d_pcm_DCAXY_True", kTH2D, {axisPtQA, axisDCAXY});
-      registry.add("h2d_pcm_DCAXY_Bg", "h2d_pcm_DCAXY_Bg", kTH2D, {axisPtQA, axisDCAXY});
-      registry.add("h2d_pcm_DCACHI2_True", "h2d_pcm_DCACHI2_True", kTH2D, {axisPtQA, axisDCACHI2});
-      registry.add("h2d_pcm_DCACHI2_Bg", "h2d_pcm_DCACHI2_Bg", kTH2D, {axisPtQA, axisDCACHI2});
-      registry.add("h2d_pcm_DeltaDistanceRadii_True", "h2d_pcm_DeltaDistanceRadii_True", kTH2D, {axisPtQA, axisDeltaDistanceRadii});
-      registry.add("h2d_pcm_DeltaDistanceRadii_Bg", "h2d_pcm_DeltaDistanceRadii_Bg", kTH2D, {axisPtQA, axisDeltaDistanceRadii});
-      registry.add("h2d_pcm_PositionGuess_True", "h2d_pcm_PositionGuess_True", kTH2D, {axisPtQA, axisPositionGuess});
-      registry.add("h2d_pcm_PositionGuess_Bg", "h2d_pcm_PositionGuess_Bg", kTH2D, {axisPtQA, axisPositionGuess});
-      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_True", "h2d_pcm_RadiallyOutgoingAtThisRadius1_True", kTH2D, {axisPtQA, axisPositionGuess});
-      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_True", "h2d_pcm_RadiallyOutgoingAtThisRadius2_True", kTH2D, {axisPtQA, axisPositionGuess});
-      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", kTH2D, {axisPtQA, axisPositionGuess});
-      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", kTH2D, {axisPtQA, axisPositionGuess});
+      registry.add("h2d_pcm_DCAXY_True", "h2d_pcm_DCAXY_True", kTH2D, {axisPtQA, axisConfigurations.axisDCAXY});
+      registry.add("h2d_pcm_DCAXY_Bg", "h2d_pcm_DCAXY_Bg", kTH2D, {axisPtQA, axisConfigurations.axisDCAXY});
+      registry.add("h2d_pcm_DCACHI2_True", "h2d_pcm_DCACHI2_True", kTH2D, {axisPtQA, axisConfigurations.axisDCACHI2});
+      registry.add("h2d_pcm_DCACHI2_Bg", "h2d_pcm_DCACHI2_Bg", kTH2D, {axisPtQA, axisConfigurations.axisDCACHI2});
+      registry.add("h2d_pcm_DeltaDistanceRadii_True", "h2d_pcm_DeltaDistanceRadii_True", kTH2D, {axisPtQA, axisConfigurations.axisDeltaDistanceRadii});
+      registry.add("h2d_pcm_DeltaDistanceRadii_Bg", "h2d_pcm_DeltaDistanceRadii_Bg", kTH2D, {axisPtQA, axisConfigurations.axisDeltaDistanceRadii});
+      registry.add("h2d_pcm_PositionGuess_True", "h2d_pcm_PositionGuess_True", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_PositionGuess_Bg", "h2d_pcm_PositionGuess_Bg", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_True", "h2d_pcm_RadiallyOutgoingAtThisRadius1_True", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_True", "h2d_pcm_RadiallyOutgoingAtThisRadius2_True", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius1_Bg", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
+      registry.add("h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", "h2d_pcm_RadiallyOutgoingAtThisRadius2_Bg", kTH2D, {axisPtQA, axisConfigurations.axisPositionGuess});
     }
 
     mRunNumber = 0;
@@ -458,7 +463,7 @@ struct lambdakzeroBuilder {
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
 
-    ccdb->setURL(ccdburl);
+    ccdb->setURL(ccdbConfigurations.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
@@ -466,12 +471,13 @@ struct lambdakzeroBuilder {
     if (useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        ccdb->get<TGeoManager>(geoPath);
+        ccdb->get<TGeoManager>(ccdbConfigurations.geoPath);
       }
     }
     if (useMatCorrType == 2) {
       LOGF(info, "LUT correction requested, loading LUT");
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath));
+      LOGF(info, "LUT load done!");
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false) {
@@ -619,7 +625,7 @@ struct lambdakzeroBuilder {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
+      mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(ccdbConfigurations.mVtxPath, bc.timestamp());
       mRunNumber = bc.runNumber();
       return;
     }
@@ -628,22 +634,22 @@ struct lambdakzeroBuilder {
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (doprocessRun2) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp);
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbConfigurations.grpPath, timestamp);
       if (!grpo) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpPath << " of object GRPObject for timestamp " << timestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpPath << " of object GRPObject for timestamp " << timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpo);
     } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, timestamp);
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, timestamp);
       if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField for timestamp " << timestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField for timestamp " << timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
     }
     // Fetch magnetic field from ccdb for current collision
     d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
-    mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
+    mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(ccdbConfigurations.mVtxPath, bc.timestamp());
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
     fitter.setBz(d_bz);
@@ -974,7 +980,7 @@ struct lambdakzeroBuilder {
       }
 
       int ivanovMap = 0;
-      if (downscale_adaptive) {
+      if (downscalingOptions.downscale_adaptive) {
         float pt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
         ivanovMap = DownsampleMap(pt);
         if (ivanovMap == 0)
@@ -1015,7 +1021,7 @@ struct lambdakzeroBuilder {
           v0dauPositionsIU(posPositionIU[0], posPositionIU[1], posPositionIU[2],
                            negPositionIU[0], negPositionIU[1], negPositionIU[2]);
         }
-        if (downscale_adaptive) {
+        if (downscalingOptions.downscale_adaptive) {
           v0ivanovs(ivanovMap);
         }
       } else {
