@@ -45,6 +45,7 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   using MaskedCollisions = soa::Join<aod::FDCollisions, aod::FDColMasks>;
   using MaskedCollision = MaskedCollisions::iterator;
   aod::femtodreamcollision::BitMaskType MaskBit = -1;
+  float mMassOne = -999, mMassTwo = -999, mMassThree = -999;
 
   Configurable<bool> ConfMixIfTripletPresent{"ConfMixIfTripletPresent", true, "Use for mixing only events which have a TTV0 triplet"};
   Configurable<bool> ConfMixIfTVOPairPresent{"ConfMixIfTVOPairPresent", false, "Use for mixing only events which have a TV0 pair (at least one track and one V0)"};
@@ -56,6 +57,7 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   Configurable<o2::aod::femtodreamparticle::cutContainerType> ConfTPCPIDBit{"ConfTPCPIDBit", 16, "PID TPC bit from cutCulator "};
   Configurable<o2::aod::femtodreamparticle::cutContainerType> ConfTPCTOFPIDBit{"ConfTPCTOFPIDBit", 8, "PID TPCTOF bit from cutCulator"};
   Configurable<float> ConfMaxpT{"ConfMaxpT", 4.05f, "Maximum transverse momentum of the particles"};
+  Configurable<float> ConfMinpT{"ConfMinpT", 0.3f, "Minimum transverse momentum of the particles"};
   Configurable<float> ConfPIDthrMom{"ConfPIDthrMom", 1.f, "Momentum threshold from which TPC and TOF are required for PID"};
   Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
   Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
@@ -64,14 +66,17 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   Partition<aod::FDParticles> SelectedParts = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                               ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCTOFPIDBit)) &&
                                               (ncheckbit(aod::femtodreamparticle::cut, ConfCutPart)) &&
-                                              (aod::femtodreamparticle::pt < ConfMaxpT);
+                                              (aod::femtodreamparticle::pt < ConfMaxpT) &&
+                                              (aod::femtodreamparticle::pt > ConfMinpT);
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> SelectedPartsMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfPIDthrMom, ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCPIDBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTPCTOFPIDBit)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, ConfCutPart)) &&
-                                                                            (aod::femtodreamparticle::pt < ConfMaxpT);
+                                                                            (aod::femtodreamparticle::pt < ConfMaxpT) &&
+                                                                            (aod::femtodreamparticle::pt > ConfMinpT);
 
   /// Histogramming of selected tracks
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoSelectedParts;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 5> trackHistoALLSelectedParts;
 
   /// V0 selection
   Configurable<int> ConfPDGCodeV0{"ConfPDGCodeV0", 3122, "V0 PDG code"};
@@ -111,6 +116,9 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 2> particleHistoSelectedV0s;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 3> particleHistoPosChild;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 4> particleHistoNegChild;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 5> particleHistoALLSelectedV0s;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 6> particleHistoALLPosChild;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 7> particleHistoALLNegChild;
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -120,8 +128,8 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (track)"};
   ConfigurableAxis ConfTempFitVarBinsV0{"ConfTempFitVarBinsV0", {300, 0.9, 1}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0)"};
   ConfigurableAxis ConfTempFitVarBinsV0Child{"ConfTempFitVarBinsV0Child", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0 child)"};
-  ConfigurableAxis ConfTempFitVarpTV0Bins{"ConfTempFitVarpTV0Bins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
-  ConfigurableAxis ConfTempFitVarpTV0Child{"ConfTempFitVarpTV0Child", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0 child)"};
+  ConfigurableAxis ConfTempFitVarpTV0Bins{"ConfTempFitVarpTV0Bins", {35, 0, 6}, "pT binning of the pT vs. TempFitVar plot (V0)"};
+  ConfigurableAxis ConfTempFitVarpTV0Child{"ConfTempFitVarpTV0Child", {35, 0, 6}, "pT binning of the pT vs. TempFitVar plot (V0 child)"};
   ConfigurableAxis ConfInvMassBins{"ConfInvMassBins", {200, 1, 1.2}, "InvMass binning"};
 
   /// Correlations
@@ -131,6 +139,7 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
 
   ConfigurableAxis ConfQ3Bins{"ConfQ3Bins", {2000, 0., 8.}, "binning Q3"};
+  ConfigurableAxis ConfQ3BinsFor4D{"ConfQ3BinsFor4D", {500, 0., 2.}, "binning Q3 for 4D hist"};
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
@@ -154,12 +163,20 @@ struct femtoDreamTripletTaskTrackTrackV0 {
 
     eventHisto.init(&qaRegistry);
     trackHistoSelectedParts.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBinsTrack, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
+    trackHistoALLSelectedParts.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBinsTrack, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
     particleHistoSelectedV0s.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Bins, ConfDummy, ConfDummy, ConfTempFitVarBinsV0, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfInvMassBins, ConfIsMC, ConfPDGCodeV0);
     particleHistoPosChild.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Child, ConfDummy, ConfDummy, ConfTempFitVarBinsV0Child, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, 0);
     particleHistoNegChild.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Child, ConfDummy, ConfDummy, ConfTempFitVarBinsV0Child, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, 0);
+    particleHistoALLSelectedV0s.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Bins, ConfDummy, ConfDummy, ConfTempFitVarBinsV0, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfInvMassBins, ConfIsMC, ConfPDGCodeV0);
+    particleHistoALLPosChild.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Child, ConfDummy, ConfDummy, ConfTempFitVarBinsV0Child, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, 0);
+    particleHistoALLNegChild.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTV0Child, ConfDummy, ConfDummy, ConfTempFitVarBinsV0Child, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, 0);
 
     ThreeBodyQARegistry.add("TripletTaskQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     ThreeBodyQARegistry.add("TripletTaskQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
+    ThreeBodyQARegistry.add("TripletTaskQA/hMinvSE", ";Q_{3};M_{inv}", kTH2F, {ConfQ3Bins, ConfInvMassBins});
+    ThreeBodyQARegistry.add("TripletTaskQA/hMinvME", ";Q_{3};M_{inv}", kTH2F, {ConfQ3Bins, ConfInvMassBins});
+    ThreeBodyQARegistry.add("TripletTaskQA/particle_pT_in_Triplet_SE", "; p_{T1} ; p_{T2} ; p_{T3} ; Q_{3}", kTHnSparseF, {ConfTempFitVarpTBins, ConfTempFitVarpTBins, ConfTempFitVarpTV0Bins, ConfQ3BinsFor4D});
+    ThreeBodyQARegistry.add("TripletTaskQA/particle_pT_in_Triplet_ME", "; p_{T1} ; p_{T2} ; p_{T3} ; Q_{3}", kTHnSparseF, {ConfTempFitVarpTBins, ConfTempFitVarpTBins, ConfTempFitVarpTV0Bins, ConfQ3BinsFor4D});
     std::vector<double> tmpVecMult = ConfMultBins;
     framework::AxisSpec multAxis = {tmpVecMult, "Multiplicity"};
     ThreeBodyQARegistry.add("TripletTaskQA/hSEMultVSGoodTracks", ";Mult;GoodT", kTH2F, {multAxis, {100, 0, 100}});
@@ -176,6 +193,11 @@ struct femtoDreamTripletTaskTrackTrackV0 {
       pairCloseRejectionTrackV0.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
     }
 
+    // get masses
+    mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePart)->Mass();
+    mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePart)->Mass();
+    mMassThree = TDatabasePDG::Instance()->GetParticle(ConfPDGCodeV0)->Mass();
+
     // get bit for the collision mask
     std::bitset<8 * sizeof(aod::femtodreamcollision::BitMaskType)> mask;
     int index = 0;
@@ -187,6 +209,7 @@ struct femtoDreamTripletTaskTrackTrackV0 {
             containsNameValuePair(device.options, "ConfTPCTOFPIDBit", ConfTPCTOFPIDBit.value) &&
             containsNameValuePair(device.options, "ConfPIDthrMom", ConfPIDthrMom.value) &&
             containsNameValuePair(device.options, "ConfMaxpT", ConfMaxpT.value) &&
+            containsNameValuePair(device.options, "ConfMinpT", ConfMinpT.value) &&
             containsNameValuePair(device.options, "ConfCutV0", ConfCutV0.value) &&
             containsNameValuePair(device.options, "Conf_ChildPos_CutV0", Conf_ChildPos_CutV0.value) &&
             containsNameValuePair(device.options, "Conf_ChildPos_TPCBitV0", Conf_ChildPos_TPCBitV0.value) &&
@@ -250,10 +273,6 @@ struct femtoDreamTripletTaskTrackTrackV0 {
       const auto& posChild = parts.iteratorAt(V0.index() - 2);
       const auto& negChild = parts.iteratorAt(V0.index() - 1);
 
-      particleHistoSelectedV0s.fillQA<isMC, false>(V0, aod::femtodreamparticle::kPt, multCol, centCol);
-      particleHistoPosChild.fillQA<isMC, false>(posChild, aod::femtodreamparticle::kPt, multCol, centCol);
-      particleHistoNegChild.fillQA<isMC, false>(negChild, aod::femtodreamparticle::kPt, multCol, centCol);
-
       if (((posChild.cut() & Conf_ChildPos_CutV0) == Conf_ChildPos_CutV0 &&
            (posChild.pidcut() & Conf_ChildPos_TPCBitV0) == Conf_ChildPos_TPCBitV0 &&
            (negChild.cut() & Conf_ChildNeg_CutV0) == Conf_ChildNeg_CutV0 &&
@@ -300,7 +319,11 @@ struct femtoDreamTripletTaskTrackTrackV0 {
         if (!pairCleanerTrackV0.isCleanPair(T1, V0, parts)) {
           continue;
         }
-        sameEventCont.setTriplet<isMC>(T1, T2, V0, multCol);
+        // fill inv Mass as a function of Q3 for purity fits
+        auto Q3 = FemtoDreamMath::getQ3(T1, mMassOne, T2, mMassTwo, V0, mMassThree);
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hMinvSE"), Q3, V0.mLambda());
+        ThreeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_SE"), T1.pt(), T2.pt(), V0.pt(), Q3);
+        sameEventCont.setTriplet<isMC>(T1, T2, V0, multCol, Q3);
       }
     }
   }
@@ -313,7 +336,23 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   {
     fillCollision(col);
     auto thegroupSelectedTracks = SelectedParts->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    auto thegroupSelectedV0s = SelectedV0s->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    for (auto& part : thegroupSelectedTracks) {
+      trackHistoALLSelectedParts.fillQA<false, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+    }
+    auto thegroupSelectedV0s = SelectedV0s->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache); /// Histograming V0s
+    for (auto& V0 : thegroupSelectedV0s) {
+      const auto& posChild = parts.iteratorAt(V0.index() - 2);
+      const auto& negChild = parts.iteratorAt(V0.index() - 1);
+
+      if (((posChild.cut() & Conf_ChildPos_CutV0) == Conf_ChildPos_CutV0 &&
+           (posChild.pidcut() & Conf_ChildPos_TPCBitV0) == Conf_ChildPos_TPCBitV0 &&
+           (negChild.cut() & Conf_ChildNeg_CutV0) == Conf_ChildNeg_CutV0 &&
+           (negChild.pidcut() & Conf_ChildNeg_TPCBitV0) == Conf_ChildNeg_TPCBitV0)) {
+        particleHistoALLSelectedV0s.fillQA<false, false>(V0, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        particleHistoALLPosChild.fillQA<false, false>(posChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        particleHistoALLNegChild.fillQA<false, false>(negChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+      }
+    }
     if (thegroupSelectedTracks.size() < 2 || thegroupSelectedV0s.size() < 1) {
       return;
     }
@@ -328,7 +367,23 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   {
     fillCollision(col);
     auto thegroupSelectedTracks = SelectedParts->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    for (auto& part : thegroupSelectedTracks) {
+      trackHistoALLSelectedParts.fillQA<false, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+    }
     auto thegroupSelectedV0s = SelectedV0s->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    for (auto& V0 : thegroupSelectedV0s) {
+      const auto& posChild = parts.iteratorAt(V0.index() - 2);
+      const auto& negChild = parts.iteratorAt(V0.index() - 1);
+
+      if (((posChild.cut() & Conf_ChildPos_CutV0) == Conf_ChildPos_CutV0 &&
+           (posChild.pidcut() & Conf_ChildPos_TPCBitV0) == Conf_ChildPos_TPCBitV0 &&
+           (negChild.cut() & Conf_ChildNeg_CutV0) == Conf_ChildNeg_CutV0 &&
+           (negChild.pidcut() & Conf_ChildNeg_TPCBitV0) == Conf_ChildNeg_TPCBitV0)) {
+        particleHistoALLSelectedV0s.fillQA<false, false>(V0, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        particleHistoALLPosChild.fillQA<false, false>(posChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        particleHistoALLNegChild.fillQA<false, false>(negChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+      }
+    }
     if (thegroupSelectedTracks.size() < 2 || thegroupSelectedV0s.size() < 1) {
       return;
     }
@@ -346,7 +401,23 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   {
     fillCollision(col);
     auto thegroupSelectedTracks = SelectedPartsMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    for (auto& part : thegroupSelectedTracks) {
+      trackHistoALLSelectedParts.fillQA<true, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+    }
     auto thegroupSelectedV0s = SelectedV0sMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    for (auto& V0 : thegroupSelectedV0s) {
+      const auto& posChild = parts.iteratorAt(V0.index() - 2);
+      const auto& negChild = parts.iteratorAt(V0.index() - 1);
+
+      if (((posChild.cut() & Conf_ChildPos_CutV0) == Conf_ChildPos_CutV0 &&
+           (posChild.pidcut() & Conf_ChildPos_TPCBitV0) == Conf_ChildPos_TPCBitV0 &&
+           (negChild.cut() & Conf_ChildNeg_CutV0) == Conf_ChildNeg_CutV0 &&
+           (negChild.pidcut() & Conf_ChildNeg_TPCBitV0) == Conf_ChildNeg_TPCBitV0)) {
+        particleHistoALLSelectedV0s.fillQA<true, false>(V0, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        particleHistoALLPosChild.fillQA<true, false>(posChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        particleHistoALLNegChild.fillQA<true, false>(negChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+      }
+    }
     if (thegroupSelectedTracks.size() < 2 || thegroupSelectedV0s.size() < 1) {
       return;
     }
@@ -364,7 +435,23 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   {
     fillCollision(col);
     auto thegroupSelectedTracks = SelectedPartsMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    for (auto& part : thegroupSelectedTracks) {
+      trackHistoALLSelectedParts.fillQA<true, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+    }
     auto thegroupSelectedV0s = SelectedV0sMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    for (auto& V0 : thegroupSelectedV0s) {
+      const auto& posChild = parts.iteratorAt(V0.index() - 2);
+      const auto& negChild = parts.iteratorAt(V0.index() - 1);
+
+      if (((posChild.cut() & Conf_ChildPos_CutV0) == Conf_ChildPos_CutV0 &&
+           (posChild.pidcut() & Conf_ChildPos_TPCBitV0) == Conf_ChildPos_TPCBitV0 &&
+           (negChild.cut() & Conf_ChildNeg_CutV0) == Conf_ChildNeg_CutV0 &&
+           (negChild.pidcut() & Conf_ChildNeg_TPCBitV0) == Conf_ChildNeg_TPCBitV0)) {
+        particleHistoALLSelectedV0s.fillQA<true, false>(V0, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        particleHistoALLPosChild.fillQA<true, false>(posChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        particleHistoALLNegChild.fillQA<true, false>(negChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+      }
+    }
     if (thegroupSelectedTracks.size() < 2 || thegroupSelectedV0s.size() < 1) {
       return;
     }
@@ -408,7 +495,11 @@ struct femtoDreamTripletTaskTrackTrackV0 {
           continue;
         }
       }
-      mixedEventCont.setTriplet<isMC>(T1, T2, V0, multCol);
+      // fill inv Mass as a function of Q3 for purity fits
+      auto Q3 = FemtoDreamMath::getQ3(T1, mMassOne, T2, mMassTwo, V0, mMassThree);
+      ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hMinvME"), Q3, V0.mLambda());
+      ThreeBodyQARegistry.fill(HIST("TripletTaskQA/particle_pT_in_Triplet_ME"), T1.pt(), T2.pt(), V0.pt(), Q3);
+      mixedEventCont.setTriplet<isMC>(T1, T2, V0, multCol, Q3);
     }
   }
 
