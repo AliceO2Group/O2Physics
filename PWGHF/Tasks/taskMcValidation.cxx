@@ -36,25 +36,26 @@ using namespace o2::framework::expressions;
 
 namespace
 {
-static const int nCharmHadrons = 7;
-static const std::array<int, nCharmHadrons> PDGArrayParticle = {o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kJPsi};
-static const std::array<unsigned int, nCharmHadrons> nDaughters = {3, 3, 2, 3, 3, 3, 2};
-static const std::array<std::array<int, 3>, nCharmHadrons> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0}, {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}, {kElectron, -kElectron, 0}}};
-static const std::array<std::string, nCharmHadrons> labels = {"D^{+}", "D*^{+}", "D^{0}", "D_{s}^{+}", "#Lambda_{c}^{+}", "#Xi_{c}^{+}", "J/#psi"};
-static const std::array<std::string, nCharmHadrons> particleNames = {"Dplus", "Dstar", "D0", "Ds", "Lc2pKpi", "Xic2pKpi", "Jpsi2ee"};
+static const int nCharmHadrons = 6;
+static const std::array<int, nCharmHadrons> PDGArrayParticle = {o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kD0,
+                                                                o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus};
+static const std::array<unsigned int, nCharmHadrons> nDaughters = {3, 3, 2, 3, 3, 3};
+static const std::array<std::array<int, 3>, nCharmHadrons> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0},
+                                                                           {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}}};
+static const std::array<std::string, nCharmHadrons> labels = {"D^{+}", "D*^{+}", "D^{0}", "D_{s}^{+}", "#Lambda_{c}^{+}", "#Xi_{c}^{+}"};
+static const std::array<std::string, nCharmHadrons> particleNames = {"Dplus", "Dstar", "D0", "Ds", "Lc2pKpi", "Xic2pKpi"};
 static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 } // namespace
 
 /// Generated Level Validation
 ///
 /// - Number of HF quarks produced per collision
-/// - Number of D±      → π± K∓ π±        per collision
-///             D*±     → π± K∓ π±,
-///             D0(bar) → π± K∓,
-///             Ds±     → K± K∓ π±,
-///             Λc±     → p(bar) K∓ π±
-///             Ξc±     → p(bar) K∓ π±
-///             J/psi   → e∓ e±
+/// - Number of candidates per collision D±      → π± K∓ π±        
+///                                      D*±     → π± K∓ π±,
+///                                      D0(bar) → π± K∓,
+///                                      Ds±     → K± K∓ π±,
+///                                      Λc±     → p(bar) K∓ π±
+///                                      Ξc±     → p(bar) K∓ π±
 /// - Momentum Conservation for these particles
 
 struct HfTaskMcValidationGen {
@@ -71,7 +72,7 @@ struct HfTaskMcValidationGen {
   AxisSpec axisResiduals{100, -0.01, 0.01};
   AxisSpec axisPt{100, 0., 50.};
   AxisSpec axisY{100, -5., 5.};
-  AxisSpec axisSpecies{7, -0.5, 6.5};
+  AxisSpec axisSpecies{nCharmHadrons, -0.5, nCharmHadrons - 0.5};
   AxisSpec axisDecLen{100, 0., 10000.};
 
   HistogramRegistry registry{
@@ -92,14 +93,12 @@ struct HfTaskMcValidationGen {
      {"hCounterPerCollisionPromptDstar", "Event counter - prompt Dstar; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hCounterPerCollisionPromptLambdaC", "Event counter - prompt LambdaC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hCounterPerCollisionPromptXiC", "Event counter - prompt XiC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionPromptJPsi", "Event counter - prompt JPsi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hCounterPerCollisionNonPromptDzero", "Event counter - non-prompt D0; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hCounterPerCollisionNonPromptDplus", "Event counter - non-prompt DPlus; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hCounterPerCollisionNonPromptDs", "Event counter - non-prompt Ds; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hCounterPerCollisionNonPromptDstar", "Event counter - non-prompt Dstar; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hCounterPerCollisionNonPromptLambdaC", "Event counter - non-prompt LambdaC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hCounterPerCollisionNonPromptXiC", "Event counter - non-prompt XiC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionNonPromptJPsi", "Event counter - non-prompt JPsi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"hPtVsYCharmQuark", "Y vs. Pt - charm quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
      {"hPtVsYBeautyQuark", "Y vs. Pt - beauty quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
      {"hPromptCharmHadronsPtDistr", "Pt distribution vs prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisSpecies, axisPt}}},
@@ -265,25 +264,23 @@ struct HfTaskMcValidationGen {
     registry.fill(HIST("hCounterPerCollisionPromptDs"), counterPrompt[3]);
     registry.fill(HIST("hCounterPerCollisionPromptLambdaC"), counterPrompt[4]);
     registry.fill(HIST("hCounterPerCollisionPromptXiC"), counterPrompt[5]);
-    registry.fill(HIST("hCounterPerCollisionPromptJPsi"), counterPrompt[6]);
     registry.fill(HIST("hCounterPerCollisionNonPromptDplus"), counterNonPrompt[0]);
     registry.fill(HIST("hCounterPerCollisionNonPromptDstar"), counterNonPrompt[1]);
     registry.fill(HIST("hCounterPerCollisionNonPromptDzero"), counterNonPrompt[2]);
     registry.fill(HIST("hCounterPerCollisionNonPromptDs"), counterNonPrompt[3]);
     registry.fill(HIST("hCounterPerCollisionNonPromptLambdaC"), counterNonPrompt[4]);
     registry.fill(HIST("hCounterPerCollisionNonPromptXiC"), counterNonPrompt[5]);
-    registry.fill(HIST("hCounterPerCollisionNonPromptJPsi"), counterNonPrompt[6]);
   }
 };
 
 /// Reconstruction Level Validation
 ///
-/// D±      → π± K∓ π±
-/// Ds±     → K± K∓ π±,
+/// D±      → π± K∓ π±        
+/// D*±     → π± K∓ π±,
 /// D0(bar) → π± K∓,
+/// Ds±     → K± K∓ π±,
 /// Λc±     → p(bar) K∓ π±
 /// Ξc±     → p(bar) K∓ π±
-/// J/psi   → e∓ e±
 ///   - Gen-Rec Level Momentum Difference per component;
 ///   - Gen-Rec Level Difference for secondary Vertex coordinates and decay length;
 struct HfTaskMcValidationRec {
@@ -546,15 +543,12 @@ struct HfTaskMcValidationRec {
 
       // determine which kind of candidate it is
       bool isD0Sel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
-      bool isJPsiSel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::JpsiToEE);
-      if (!isD0Sel && !isJPsiSel) {
+      if (!isD0Sel) {
         continue;
       }
       int whichHad = -1;
       if (isD0Sel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::D0ToPiK)) {
         whichHad = 2;
-      } else if (isJPsiSel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::JpsiToEE)) {
-        whichHad = 6;
       }
       int whichOrigin = -1;
       if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
