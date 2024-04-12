@@ -80,17 +80,17 @@ struct cascadeMLSelectionTreeCreator{
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // Selection criteria - compatible with core wagon autodetect
-  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.95, "v0setting_cospa"};
+  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.9, "v0setting_cospa"};
   Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"};
-  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"};
-  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"};
+  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.05, "v0setting_dcapostopv"};
+  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.05, "v0setting_dcanegtopv"};
   Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"};
-  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"};
+  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.9, "cascadesetting_cospa"};
   Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "cascadesetting_dcacascdau"};
-  Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "cascadesetting_dcabachtopv"};
+  Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.05, "cascadesetting_dcabachtopv"};
   Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.5, "cascadesetting_cascradius"};
   Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"};
-  Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
+  Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.005, "cascadesetting_mindcav0topv"};
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   // Axis:
