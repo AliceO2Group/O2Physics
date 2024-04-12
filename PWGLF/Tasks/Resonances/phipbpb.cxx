@@ -804,11 +804,11 @@ struct phipbpb {
               auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
               auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
               // auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+              auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
               auto cosThetaStarOP = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
               auto cosThetaStarOPbeam = beamvector.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(beamvector.Mag2());
               auto SA_A0 = 1 - (cosThetaStarOP * cosThetaStarOP);
               // auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
-              auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
               auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
               auto v2 = TMath::Cos(2.0 * phiminuspsi);
               if (!fillRapidity) {
@@ -880,10 +880,10 @@ struct phipbpb {
           eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
           auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
           auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
-          auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
-          auto cosThetaStarOPbeam = TMath::Abs(beamvector.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(beamvector.Mag2()));
+          auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
+          auto cosThetaStarOP = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
+          auto cosThetaStarOPbeam = beamvector.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(beamvector.Mag2());
           auto SA_A0 = 1 - (cosThetaStarOP * cosThetaStarOP);
-          auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
           auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
           auto v2 = TMath::Cos(2.0 * phiminuspsi);
           if (!fillRapidity) {
