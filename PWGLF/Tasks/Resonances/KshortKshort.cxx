@@ -90,18 +90,38 @@ struct strangeness_tutorial {
   // Configurable for track selection and multiplicity
   Configurable<float> cfgPTcut{"cfgPTcut", 0.2f, "Track PT cut"};
   Configurable<int> cfgNmixedEvents{"cfgNmixedEvents", 5, "Number of mixed events"};
-  Configurable<bool> cfgMultFT0{"cfgMultFT0", false, "Use FT0 multiplicity"};
-  Configurable<bool> cfgMultFOTM{"cfgMultFOTM", false, "Use FOTM multiplicity"};
-  Configurable<bool> cfgMultFT0C{"cfgMultFT0C", true, "Use FT0C multiplicity"};
+  Configurable<bool> cfgMultFOTM{"cfgMultFOTM", true, "Use FOTM multiplicity if pp else use 0 here for PbPb"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 5., 10., 30., 50., 70., 100., 110., 150.}, "Binning of the centrality axis"};
+
+  // Other cuts on Ks and glueball
+  Configurable<bool> rapidityks{"rapidityks", true, "rapidity cut on K0s"};
+  Configurable<bool> masslambda{"masslambda", false, "mass under lambda hypothesis"};
+  Configurable<float> competingcascrejlambda{"competingcascrejlambda", 4.3, "rejecting competing cascade lambda"};
+  Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 4.3, "rejecting competing cascade anti-lambda"};
+  Configurable<int> tpcCrossedrows{"tpcCrossedrows", 70, "TPC crossed rows"};
+  Configurable<float> tpcCrossedrowsOverfcls{"tpcCrossedrowsOverfcls", 0.8, "TPC crossed rows over findable clusters"};
+  Configurable<bool> piluprejection{"piluprejection", false, "Pileup rejection"};
+  Configurable<bool> goodzvertex{"goodzvertex", false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
+  Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
+
+  // Mass and pT axis as configurables
+  Configurable<float> cPtMin{"cPtMin", 0.0f, "Minimum pT"};
+  Configurable<float> cPtMax{"cPtMax", 15.0f, "Maximum pT"};
+  Configurable<int> cPtBins{"cPtBins", 150, "Number of pT bins"};
+  Configurable<float> cMassMin{"cMassMin", 0.9f, "Minimum mass of glueball"};
+  Configurable<float> cMassMax{"cMassMax", 2.4f, "Maximum mass of glueball"};
+  Configurable<int> cMassBins{"cMassBins", 150, "Number of mass bins for glueball"};
+  Configurable<float> ksMassMin{"ksMassMin", 0.45f, "Minimum mass of K0s"};
+  Configurable<float> ksMassMax{"ksMassMax", 0.55f, "Maximum mass of K0s"};
+  Configurable<int> ksMassBins{"ksMassBins", 200, "Number of mass bins for K0s"};
 
   void init(InitContext const&)
   {
     // Axes
-    AxisSpec K0ShortMassAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
-    AxisSpec glueballMassAxis = {150, 0.9f, 2.4f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec K0ShortMassAxis = {ksMassBins, ksMassMin, ksMassMax, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec glueballMassAxis = {cMassBins, cMassMin, cMassMax, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"}; // for histogram
-    AxisSpec ptAxis = {150, 0.0f, 15.0f, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxis = {cPtBins, cPtMin, cPtMax, "#it{p}_{T} (GeV/#it{c})"};
     // AxisSpec multiplicityAxis = {110, 0.0f, 150.0f, "Multiplicity Axis"};
     AxisSpec multiplicityAxis = {binsCent, "Multiplicity Axis"};
 
@@ -120,7 +140,8 @@ struct strangeness_tutorial {
     // K0s topological/PID cuts
     if (QAv0) {
       // Invariant Mass
-      rKzeroShort.add("hMassK0ShortSelected", "hMassK0ShortSelected", {HistType::kTH1F, {K0ShortMassAxis}});
+      rKzeroShort.add("hMassK0Shortbefore", "hMassK0Shortbefore", kTH2F, {K0ShortMassAxis, ptAxis});
+      rKzeroShort.add("hMassK0ShortSelected", "hMassK0ShortSelected", kTH2F, {K0ShortMassAxis, ptAxis});
       // Topological cuts
       rKzeroShort.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
       rKzeroShort.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}});
@@ -138,11 +159,19 @@ struct strangeness_tutorial {
   bool SelectionV0(Collision const& collision, V0 const& candidate,
                    float multiplicity)
   {
+    if (QAv0) {
+      rKzeroShort.fill(HIST("hMassK0Shortbefore"), candidate.mK0Short(), candidate.pt());
+    }
+
     if (!DCAv0topv && fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
 
-    if (TMath::Abs(candidate.yK0Short()) > 0.5) {
+    if (rapidityks && TMath::Abs(candidate.yK0Short()) >= 0.5) {
+      return false;
+    }
+
+    if (masslambda && TMath::Abs(candidate.mLambda() - candidate.mK0Short()) >= competingcascrejlambda && TMath::Abs(candidate.mAntiLambda() - candidate.mK0Short()) >= competingcascrejlambdaanti) {
       return false;
     }
 
@@ -182,7 +211,7 @@ struct strangeness_tutorial {
     }
 
     if (QAv0) {
-      rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short());
+      rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short(), candidate.pt());
       rKzeroShort.fill(HIST("hLT"), CtauK0s);
       rKzeroShort.fill(HIST("hDCAV0Daughters"), candidate.dcaV0daughters());
       rKzeroShort.fill(HIST("hV0CosPA"), candidate.v0cosPA());
@@ -208,9 +237,9 @@ struct strangeness_tutorial {
 
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsCrossedRows() < 70)
+    if (track.tpcNClsCrossedRows() < tpcCrossedrows)
       return false;
-    if (track.tpcCrossedRowsOverFindableCls() < 0.8)
+    if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedrowsOverfcls)
       return false;
 
     if (charge < 0 && sign > 0) {
@@ -267,16 +296,25 @@ struct strangeness_tutorial {
     if (!collision.sel8()) {
       return;
     }
-    if (timFrameEvsel && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
+    if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return;
+    }
+    if (itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return;
+    }
+
     float multiplicity = 0.0f;
-    if (cfgMultFT0)
-      multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
-    else if (cfgMultFOTM)
+    if (cfgMultFOTM) {
       multiplicity = collision.centFT0M();
-    else if (cfgMultFT0C)
+    } else {
       multiplicity = collision.centFT0C();
+    }
 
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
     rEventSelection.fill(HIST("hmultiplicity"), multiplicity);
@@ -327,7 +365,7 @@ struct strangeness_tutorial {
       lv2.SetPtEtaPhiM(v2.pt(), v2.eta(), v2.phi(), massK0s);
       lv3 = lv1 + lv2;
 
-      if (TMath::Abs(lv3.Rapidity() <= 0.5)) {
+      if (TMath::Abs(lv3.Rapidity() < 0.5)) {
         if (inv_mass1D) {
           hglue.fill(HIST("h1glueInvMassDS"), lv3.M());
         }
@@ -354,76 +392,166 @@ struct strangeness_tutorial {
   void processME(EventCandidates const& collisions, TrackCandidates const& tracks, V0TrackCandidate const& v0s)
   {
     const double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass();
+    if (cfgMultFOTM) {
+      for (auto& [c1, tracks1, c2, tracks2] : pair2) // two different centrality c1 and c2 and tracks corresponding to them
+      {
 
-    for (auto& [c1, tracks1, c2, tracks2] : pair1) // two different centrality c1 and c2 and tracks corresponding to them
-    {
+        if (!c1.sel8()) {
+          continue;
+        }
+        if (!c2.sel8()) {
+          continue;
+        }
 
-      if (!c1.sel8()) {
-        continue;
-      }
-      if (!c2.sel8()) {
-        continue;
-      }
+        if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+          continue;
+        }
 
-      if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
-        return;
-      }
+        if (piluprejection && !c1.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+          continue;
+        }
+        if (piluprejection && !c2.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+          continue;
+        }
+        if (goodzvertex && (!c1.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) || !c2.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+          continue;
+        }
+        if (itstpctracks && (!c1.selection_bit(o2::aod::evsel::kIsVertexITSTPC) || !c2.selection_bit(o2::aod::evsel::kIsVertexITSTPC))) {
+          continue;
+        }
 
-      float multiplicity = 0.0f;
-      if (cfgMultFT0)
-        multiplicity = c1.multZeqFT0A() + c1.multZeqFT0C();
-      else if (cfgMultFOTM)
+        float multiplicity = 0.0f;
         multiplicity = c1.centFT0M();
-      else if (cfgMultFT0C)
+
+        for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
+          if (t1.size() == 0 || t2.size() == 0) {
+            continue;
+          }
+
+          if (!SelectionV0(c1, t1, multiplicity))
+            continue;
+          if (!SelectionV0(c2, t2, multiplicity))
+            continue;
+
+          auto postrack1 = t1.template posTrack_as<TrackCandidates>();
+          auto negtrack1 = t1.template negTrack_as<TrackCandidates>();
+          auto postrack2 = t2.template posTrack_as<TrackCandidates>();
+          auto negtrack2 = t2.template negTrack_as<TrackCandidates>();
+          if (postrack1.globalIndex() == postrack2.globalIndex()) {
+            continue;
+          }
+          if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
+            continue;
+          }
+          double nTPCSigmaPos1[1]{postrack1.tpcNSigmaPi()};
+          double nTPCSigmaNeg1[1]{negtrack1.tpcNSigmaPi()};
+          double nTPCSigmaPos2[1]{postrack2.tpcNSigmaPi()};
+          double nTPCSigmaNeg2[1]{negtrack2.tpcNSigmaPi()};
+
+          if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0], t1)) {
+            continue;
+          }
+          if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0], t2)) {
+            continue;
+          }
+          if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0], t1)) {
+            continue;
+          }
+          if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0], t2)) {
+            continue;
+          }
+
+          TLorentzVector lv1, lv2, lv3;
+          lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massK0s);
+          lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massK0s);
+          lv3 = lv1 + lv2;
+          if (TMath::Abs(lv3.Rapidity() < 0.5)) {
+            if (inv_mass1D) {
+              hglue.fill(HIST("h1glueInvMassME"), lv3.M());
+            }
+            hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M());
+          }
+        }
+      }
+    } else {
+      for (auto& [c1, tracks1, c2, tracks2] : pair1) // two different centrality c1 and c2 and tracks corresponding to them
+      {
+
+        if (!c1.sel8()) {
+          continue;
+        }
+        if (!c2.sel8()) {
+          continue;
+        }
+
+        if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+          continue;
+        }
+
+        if (piluprejection && !c1.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+          continue;
+        }
+        if (piluprejection && !c2.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+          continue;
+        }
+        if (goodzvertex && (!c1.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) || !c2.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+          continue;
+        }
+        if (itstpctracks && (!c1.selection_bit(o2::aod::evsel::kIsVertexITSTPC) || !c2.selection_bit(o2::aod::evsel::kIsVertexITSTPC))) {
+          continue;
+        }
+
+        float multiplicity = 0.0f;
         multiplicity = c1.centFT0C();
 
-      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
-        if (t1.size() == 0 || t2.size() == 0) {
-          continue;
-        }
-
-        if (!SelectionV0(c1, t1, multiplicity))
-          continue;
-        if (!SelectionV0(c2, t2, multiplicity))
-          continue;
-
-        auto postrack1 = t1.template posTrack_as<TrackCandidates>();
-        auto negtrack1 = t1.template negTrack_as<TrackCandidates>();
-        auto postrack2 = t2.template posTrack_as<TrackCandidates>();
-        auto negtrack2 = t2.template negTrack_as<TrackCandidates>();
-        if (postrack1.globalIndex() == postrack2.globalIndex()) {
-          continue;
-        }
-        if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
-          continue;
-        }
-        double nTPCSigmaPos1[1]{postrack1.tpcNSigmaPi()};
-        double nTPCSigmaNeg1[1]{negtrack1.tpcNSigmaPi()};
-        double nTPCSigmaPos2[1]{postrack2.tpcNSigmaPi()};
-        double nTPCSigmaNeg2[1]{negtrack2.tpcNSigmaPi()};
-
-        if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0], t1)) {
-          continue;
-        }
-        if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0], t2)) {
-          continue;
-        }
-        if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0], t1)) {
-          continue;
-        }
-        if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0], t2)) {
-          continue;
-        }
-
-        TLorentzVector lv1, lv2, lv3;
-        lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massK0s);
-        lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massK0s);
-        lv3 = lv1 + lv2;
-        if (TMath::Abs(lv3.Rapidity() <= 0.5)) {
-          if (inv_mass1D) {
-            hglue.fill(HIST("h1glueInvMassME"), lv3.M());
+        for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
+          if (t1.size() == 0 || t2.size() == 0) {
+            continue;
           }
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M());
+
+          if (!SelectionV0(c1, t1, multiplicity))
+            continue;
+          if (!SelectionV0(c2, t2, multiplicity))
+            continue;
+
+          auto postrack1 = t1.template posTrack_as<TrackCandidates>();
+          auto negtrack1 = t1.template negTrack_as<TrackCandidates>();
+          auto postrack2 = t2.template posTrack_as<TrackCandidates>();
+          auto negtrack2 = t2.template negTrack_as<TrackCandidates>();
+          if (postrack1.globalIndex() == postrack2.globalIndex()) {
+            continue;
+          }
+          if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
+            continue;
+          }
+          double nTPCSigmaPos1[1]{postrack1.tpcNSigmaPi()};
+          double nTPCSigmaNeg1[1]{negtrack1.tpcNSigmaPi()};
+          double nTPCSigmaPos2[1]{postrack2.tpcNSigmaPi()};
+          double nTPCSigmaNeg2[1]{negtrack2.tpcNSigmaPi()};
+
+          if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0], t1)) {
+            continue;
+          }
+          if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0], t2)) {
+            continue;
+          }
+          if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0], t1)) {
+            continue;
+          }
+          if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0], t2)) {
+            continue;
+          }
+
+          TLorentzVector lv1, lv2, lv3;
+          lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massK0s);
+          lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massK0s);
+          lv3 = lv1 + lv2;
+          if (TMath::Abs(lv3.Rapidity() < 0.5)) {
+            if (inv_mass1D) {
+              hglue.fill(HIST("h1glueInvMassME"), lv3.M());
+            }
+            hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M());
+          }
         }
       }
     }

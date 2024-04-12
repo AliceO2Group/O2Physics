@@ -1415,6 +1415,9 @@ struct JetFinderHFQATask {
 
   void processRho(JetCollision const& collision, CandidateTableData const& candidates, BkgRhoTable const& bkgRhos, soa::Filtered<JetTracks> const& tracks)
   {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
     for (auto const& candidate : candidates) {
       auto bkgRho = jethfutilities::slicedPerCandidate(bkgRhos, candidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos).iteratorAt(0);
       int nTracks = 0;
@@ -1435,7 +1438,9 @@ struct JetFinderHFQATask {
 
   void processRandomCone(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataSubJoined const& jets, CandidateTableData const& candidates, BkgRhoTable const& bkgRhos, soa::Filtered<JetTracks> const& tracks)
   {
-
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
     for (auto const& candidate : candidates) {
       auto bkgRho = jethfutilities::slicedPerCandidate(bkgRhos, candidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos).iteratorAt(0);
       TRandom3 randomNumber(0);
