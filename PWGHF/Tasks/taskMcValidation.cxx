@@ -83,40 +83,40 @@ struct HfTaskMcValidationGen {
      {"hPyDiffMotherDaughterGen", "Py Difference Mother-Daughters; #Delta#it{p}_{y}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {axisResiduals}}},
      {"hPzDiffMotherDaughterGen", "Pz Difference Mother-Daughters; #Delta#it{p}_{z}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {axisResiduals}}},
      {"hPDiffMotherDaughterGen", "P  Difference Mother-Daughters; #Delta#it{p}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {axisResiduals}}},
-     {"hCountAverageC", "Event counter - Average Number Charm quark; Events Per Collision; entries", {HistType::kTH1F, {axisNquarks}}},
-     {"hCountAverageB", "Event counter - Average Number Beauty quark; Events Per Collision; entries", {HistType::kTH1F, {axisNquarks}}},
-     {"hCountAverageCbar", "Event counter - Average Number Anti-Charm quark; Events Per Collision; entries", {HistType::kTH1F, {axisNquarks}}},
-     {"hCountAverageBbar", "Event counter - Average Number Anti-Beauty quark; Events Per Collision; entries", {HistType::kTH1F, {axisNquarks}}},
-     {"hCounterPerCollisionPromptDzero", "Event counter - prompt D0; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionPromptDplus", "Event counter - prompt DPlus; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionPromptDs", "Event counter - prompt Ds; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionPromptDstar", "Event counter - prompt Dstar; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionPromptLambdaC", "Event counter - prompt LambdaC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionPromptXiC", "Event counter - prompt XiC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionNonPromptDzero", "Event counter - non-prompt D0; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionNonPromptDplus", "Event counter - non-prompt DPlus; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionNonPromptDs", "Event counter - non-prompt Ds; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionNonPromptDstar", "Event counter - non-prompt Dstar; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionNonPromptLambdaC", "Event counter - non-prompt LambdaC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hCounterPerCollisionNonPromptXiC", "Event counter - non-prompt XiC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"hPtVsYCharmQuark", "Y vs. Pt - charm quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
-     {"hPtVsYBeautyQuark", "Y vs. Pt - beauty quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
-     {"hPromptCharmHadronsPtDistr", "Pt distribution vs prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisSpecies, axisPt}}},
-     {"hPromptCharmHadronsYDistr", "Y distribution vs prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
-     {"hPromptCharmHadronsDecLenDistr", "Decay length distribution vs prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}},
-     {"hNonPromptCharmHadronsPtDistr", "Pt distribution vs non-prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisSpecies, axisPt}}},
-     {"hNonPromptCharmHadronsYDistr", "Y distribution vs non-prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
-     {"hNonPromptCharmHadronsDecLenDistr", "Decay length distribution vs non-prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}}}};
+     {"quarks/hCountC", "Event counter - Number of charm quarks; Events Per Collision; entries", {HistType::kTH1F, {axisNquarks}}},
+     {"quarks/hCountB", "Event counter - Number of beauty quarks; Events Per Collision; entries", {HistType::kTH1F, {axisNquarks}}},
+     {"quarks/hCountCbar", "Event counter - Number of anti-charm quarks; Events Per Collision; entries", {HistType::kTH1F, {axisNquarks}}},
+     {"quarks/hCountBbar", "Event counter - Number of anti-beauty quarks; Events Per Collision; entries", {HistType::kTH1F, {axisNquarks}}},
+     {"quarks/hPtVsYCharmQuark", "Y vs. Pt - charm quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
+     {"quarks/hPtVsYBeautyQuark", "Y vs. Pt - beauty quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
+     {"promptCharmHadrons/hCountPromptDzero", "Event counter - Prompt D0; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptDplus", "Event counter - Prompt DPlus; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptDs", "Event counter - Prompt Ds; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptDstar", "Event counter - Prompt Dstar; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptLambdaC", "Event counter - Prompt LambdaC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptXiC", "Event counter - Prompt XiC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptDzero", "Event counter - Non-prompt D0; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptDplus", "Event counter - Non-prompt DPlus; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptDs", "Event counter - Non-prompt Ds; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptDstar", "Event counter - Non-prompt Dstar; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptLambdaC", "Event counter - Non-prompt LambdaC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptXiC", "Event counter - Non-prompt XiC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hPromptPtDistr", "Pt distribution vs prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisSpecies, axisPt}}},
+     {"promptCharmHadrons/hPromptYDistr", "Y distribution vs prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
+     {"promptCharmHadrons/hPromptDecLenDistr", "Decay length distribution vs prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}},
+     {"nonPromptCharmHadrons/hNonPromptPtDistr", "Pt distribution vs non-prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisSpecies, axisPt}}},
+     {"nonPromptCharmHadrons/hNonPromptYDistr", "Y distribution vs non-prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
+     {"nonPromptCharmHadrons/hNonPromptDecLenDistr", "Decay length distribution vs non-prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}}}};
 
   void init(InitContext&)
   {
     for (auto iBin = 1; iBin <= nCharmHadrons; ++iBin) {
-      registry.get<TH2>(HIST("hPromptCharmHadronsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      registry.get<TH2>(HIST("hPromptCharmHadronsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      registry.get<TH2>(HIST("hPromptCharmHadronsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      registry.get<TH2>(HIST("hNonPromptCharmHadronsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      registry.get<TH2>(HIST("hNonPromptCharmHadronsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      registry.get<TH2>(HIST("hNonPromptCharmHadronsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("promptCharmHadrons/hPromptPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("promptCharmHadrons/hPromptYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("promptCharmHadrons/hPromptDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("nonPromptCharmHadrons/hNonPromptPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("nonPromptCharmHadrons/hNonPromptYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("nonPromptCharmHadrons/hNonPromptDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
     }
   }
 
@@ -167,19 +167,19 @@ struct HfTaskMcValidationGen {
         switch (particlePdgCode) {
           case kCharm:
             cPerCollision++;
-            registry.fill(HIST("hPtVsYCharmQuark"), particle.pt(), particle.y());
+            registry.fill(HIST("quarks/hPtVsYCharmQuark"), particle.pt(), particle.y());
             break;
           case kCharmBar:
             cBarPerCollision++;
-            registry.fill(HIST("hPtVsYCharmQuark"), particle.pt(), particle.y());
+            registry.fill(HIST("quarks/hPtVsYCharmQuark"), particle.pt(), particle.y());
             break;
           case kBottom:
             bPerCollision++;
-            registry.fill(HIST("hPtVsYBeautyQuark"), particle.pt(), particle.y());
+            registry.fill(HIST("quarks/hPtVsYBeautyQuark"), particle.pt(), particle.y());
             break;
           case kBottomBar:
             bBarPerCollision++;
-            registry.fill(HIST("hPtVsYBeautyQuark"), particle.pt(), particle.y());
+            registry.fill(HIST("quarks/hPtVsYBeautyQuark"), particle.pt(), particle.y());
             break;
         }
       }
@@ -240,36 +240,36 @@ struct HfTaskMcValidationGen {
         auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
         if (origin == RecoDecay::OriginType::Prompt) {
           if (std::abs(particle.y()) < 0.5) {
-            registry.fill(HIST("hPromptCharmHadronsPtDistr"), iD, particle.pt());
+            registry.fill(HIST("promptCharmHadrons/hPromptPtDistr"), iD, particle.pt());
           }
-          registry.fill(HIST("hPromptCharmHadronsYDistr"), iD, particle.y());
-          registry.fill(HIST("hPromptCharmHadronsDecLenDistr"), iD, decayLength * 10000);
+          registry.fill(HIST("promptCharmHadrons/hPromptYDistr"), iD, particle.y());
+          registry.fill(HIST("promptCharmHadrons/hPromptDecLenDistr"), iD, decayLength * 10000);
         } else if (origin == RecoDecay::OriginType::NonPrompt) {
           if (std::abs(particle.y()) < 0.5) {
-            registry.fill(HIST("hNonPromptCharmHadronsPtDistr"), iD, particle.pt());
+            registry.fill(HIST("nonPromptCharmHadrons/hNonPromptPtDistr"), iD, particle.pt());
           }
-          registry.fill(HIST("hNonPromptCharmHadronsYDistr"), iD, particle.y());
-          registry.fill(HIST("hNonPromptCharmHadronsDecLenDistr"), iD, decayLength * 10000);
+          registry.fill(HIST("nonPromptCharmHadrons/hNonPromptYDistr"), iD, particle.y());
+          registry.fill(HIST("nonPromptCharmHadrons/hNonPromptDecLenDistr"), iD, decayLength * 10000);
         }
       }
     } // end particles
 
-    registry.fill(HIST("hCountAverageC"), cPerCollision);
-    registry.fill(HIST("hCountAverageB"), bPerCollision);
-    registry.fill(HIST("hCountAverageCbar"), cBarPerCollision);
-    registry.fill(HIST("hCountAverageBbar"), bBarPerCollision);
-    registry.fill(HIST("hCounterPerCollisionPromptDplus"), counterPrompt[0]);
-    registry.fill(HIST("hCounterPerCollisionPromptDstar"), counterPrompt[1]);
-    registry.fill(HIST("hCounterPerCollisionPromptDzero"), counterPrompt[2]);
-    registry.fill(HIST("hCounterPerCollisionPromptDs"), counterPrompt[3]);
-    registry.fill(HIST("hCounterPerCollisionPromptLambdaC"), counterPrompt[4]);
-    registry.fill(HIST("hCounterPerCollisionPromptXiC"), counterPrompt[5]);
-    registry.fill(HIST("hCounterPerCollisionNonPromptDplus"), counterNonPrompt[0]);
-    registry.fill(HIST("hCounterPerCollisionNonPromptDstar"), counterNonPrompt[1]);
-    registry.fill(HIST("hCounterPerCollisionNonPromptDzero"), counterNonPrompt[2]);
-    registry.fill(HIST("hCounterPerCollisionNonPromptDs"), counterNonPrompt[3]);
-    registry.fill(HIST("hCounterPerCollisionNonPromptLambdaC"), counterNonPrompt[4]);
-    registry.fill(HIST("hCounterPerCollisionNonPromptXiC"), counterNonPrompt[5]);
+    registry.fill(HIST("quarks/hCountC"), cPerCollision);
+    registry.fill(HIST("quarks/hCountB"), bPerCollision);
+    registry.fill(HIST("quarks/hCountCbar"), cBarPerCollision);
+    registry.fill(HIST("quarks/hCountBbar"), bBarPerCollision);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptDplus"), counterPrompt[0]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptDstar"), counterPrompt[1]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptDzero"), counterPrompt[2]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptDs"), counterPrompt[3]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptLambdaC"), counterPrompt[4]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptXiC"), counterPrompt[5]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDplus"), counterNonPrompt[0]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDstar"), counterNonPrompt[1]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDzero"), counterNonPrompt[2]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDs"), counterNonPrompt[3]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptLambdaC"), counterNonPrompt[4]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptXiC"), counterNonPrompt[5]);
   }
 };
 
@@ -282,7 +282,7 @@ struct HfTaskMcValidationGen {
 /// Λc±     → p(bar) K∓ π±
 /// Ξc±     → p(bar) K∓ π±
 ///   - Gen-Rec Level Momentum Difference per component;
-///   - Gen-Rec Level Difference for secondary Vertex coordinates and decay length;
+///   - Gen-Rec Level Difference for secondary-vertex coordinates and decay length;
 struct HfTaskMcValidationRec {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
@@ -323,10 +323,10 @@ struct HfTaskMcValidationRec {
      {"histYvtxReco", "Position of reco PV in #it{Y};#it{Y}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histZvtxReco", "Position of reco PV in #it{Z};#it{Z}^{reco} (cm);entries", {HistType::kTH1F, {{200, -20, 20.}}}},
      {"histDeltaZvtx", "Residual distribution of PV in #it{Z} as a function of number of contributors;number of contributors;#it{Z}^{reco} - #it{Z}^{gen} (cm);entries", {HistType::kTH2F, {{100, -0.5, 99.5}, {1000, -0.5, 0.5}}}},
-     {"histAmbiguousTrackNumCollisions", "Number of collisions associated to an ambiguous track;number of collisions;entries", {HistType::kTH1F, {{30, -0.5, 29.5}}}},
-     {"histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}},
-     {"histFracGoodContributors", "Fraction of PV contributors originating from the correct collision;fraction;entries", {HistType::kTH1F, {{101, 0., 1.01}}}},
-     {"histCollisionsSameBC", "Collisions in same BC;number of contributors collision 1;number of contributors collision 2;#it{R}_{xy} collision 1 (cm);#it{R}_{xy} collision 2 (cm);number of contributors from beauty collision 1;number of contributors from beauty collision 2;", {HistType::kTHnSparseF, {axisMult, axisMult, axisR, axisR, axisSmallNum, axisSmallNum}}}}};
+     {"trackToCollChecks/histAmbiguousTrackNumCollisions", "Number of collisions associated to an ambiguous track;number of collisions;entries", {HistType::kTH1F, {{30, -0.5, 29.5}}}},
+     {"trackToCollChecks/histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}},
+     {"trackToCollChecks/histFracGoodContributors", "Fraction of PV contributors originating from the correct collision;fraction;entries", {HistType::kTH1F, {{101, 0., 1.01}}}},
+     {"trackToCollChecks/histCollisionsSameBC", "Collisions in same BC;number of contributors collision 1;number of contributors collision 2;#it{R}_{xy} collision 1 (cm);#it{R}_{xy} collision 2 (cm);number of contributors from beauty collision 1;number of contributors from beauty collision 2;", {HistType::kTHnSparseF, {axisMult, axisMult, axisR, axisR, axisSmallNum, axisSmallNum}}}}};
 
   /// RMS calculation
   /// \param vec  vector of values to compute RMS
@@ -346,17 +346,17 @@ struct HfTaskMcValidationRec {
 
   void init(InitContext&)
   {
-    histOriginTracks[0] = registry.add<THnSparse>("histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});           // tracks not associated to any collision
-    histOriginTracks[1] = registry.add<THnSparse>("histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});              // tracks associasted to a collision
-    histOriginTracks[2] = registry.add<THnSparse>("histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
-    histOriginTracks[3] = registry.add<THnSparse>("histOriginGoodAssociatedTracksAmbiguous", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits}); // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
+    histOriginTracks[0] = registry.add<THnSparse>("trackToCollChecks/histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});           // tracks not associated to any collision
+    histOriginTracks[1] = registry.add<THnSparse>("trackToCollChecks/histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});              // tracks associasted to a collision
+    histOriginTracks[2] = registry.add<THnSparse>("trackToCollChecks/histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
+    histOriginTracks[3] = registry.add<THnSparse>("trackToCollChecks/histOriginGoodAssociatedTracksAmbiguous", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits}); // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
     for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(1, "no MC particle");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(2, "no quark");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(3, "charm");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(4, "beauty");
     }
-    histAmbiguousTracks = registry.add<TH2>("histAmbiguousTracks", "Tracks that are ambiguous vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {axisOrigin, axisPt});
+    histAmbiguousTracks = registry.add<TH2>("trackToCollChecks/histAmbiguousTracks", "Tracks that are ambiguous vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {axisOrigin, axisPt});
     histTracks = registry.add<TH2>("histTracks", "Tracks vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {axisOrigin, axisPt});
     histTracks->GetXaxis()->SetBinLabel(1, "no MC particle");
     histTracks->GetXaxis()->SetBinLabel(2, "no quark");
@@ -367,24 +367,24 @@ struct HfTaskMcValidationRec {
     histAmbiguousTracks->GetXaxis()->SetBinLabel(3, "charm");
     histAmbiguousTracks->GetXaxis()->SetBinLabel(4, "beauty");
     for (auto iHad = 0; iHad < nCharmHadrons; ++iHad) {
-      histDeltaPt[iHad] = registry.add<TH1>(Form("histDeltaPt%s", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
-      histDeltaPx[iHad] = registry.add<TH1>(Form("histDeltaPx%s", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
-      histDeltaPy[iHad] = registry.add<TH1>(Form("histDeltaPy%s", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
-      histDeltaPz[iHad] = registry.add<TH1>(Form("histDeltaPz%s", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
-      histDeltaSecondaryVertexX[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexX%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
-      histDeltaSecondaryVertexY[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexY%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
-      histDeltaSecondaryVertexZ[iHad] = registry.add<TH1>(Form("histDeltaSecondaryVertexZ%s", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
-      histDeltaDecayLength[iHad] = registry.add<TH1>(Form("histDeltaDecayLength%s", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+      histDeltaPt[iHad] = registry.add<TH1>(Form("%s/histDeltaPt", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+      histDeltaPx[iHad] = registry.add<TH1>(Form("%s/histDeltaPx", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+      histDeltaPy[iHad] = registry.add<TH1>(Form("%s/histDeltaPy", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+      histDeltaPz[iHad] = registry.add<TH1>(Form("%s/histDeltaPz", particleNames[iHad].data()), Form("Pz difference reco - MC %s; #it{p}_{z}^{reco} - #it{p}_{z}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
+      histDeltaSecondaryVertexX[iHad] = registry.add<TH1>(Form("%s/histDeltaSecondaryVertexX", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta x (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+      histDeltaSecondaryVertexY[iHad] = registry.add<TH1>(Form("%s/histDeltaSecondaryVertexY", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta y (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+      histDeltaSecondaryVertexZ[iHad] = registry.add<TH1>(Form("%s/histDeltaSecondaryVertexZ", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+      histDeltaDecayLength[iHad] = registry.add<TH1>(Form("%s/histDeltaDecayLength", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
       for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
-        histPtReco[iHad][iOrigin] = registry.add<TH1>(Form("histPtReco%s%s", originNames[iOrigin].data(), particleNames[iHad].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
+        histPtReco[iHad][iOrigin] = registry.add<TH1>(Form("%s/histPtReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
         for (unsigned int iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
-          histPtDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histPtDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
-          histEtaDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histEtaDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
-          histImpactParameterDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("histImpactParameterDau%d%s%s", iDau, originNames[iOrigin].data(), particleNames[iHad].data()), Form("Daughter %d DCAxy reco - %s %s; DCAxy (cm); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
+          histPtDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("%s/histPtDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
+          histEtaDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("%s/histEtaDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
+          histImpactParameterDau[iHad][iOrigin][iDau] = registry.add<TH1>(Form("%s/histImpactParameterDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d DCAxy reco - %s %s; DCAxy (cm); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
         }
       }
     }
-    histContributors = registry.add<TH1>("histContributors", "PV contributors from correct/wrong MC collision;;entries", HistType::kTH1F, {axisDecision});
+    histContributors = registry.add<TH1>("trackToCollChecks/histContributors", "PV contributors from correct/wrong MC collision;;entries", HistType::kTH1F, {axisDecision});
     histContributors->GetXaxis()->SetBinLabel(1, "correct MC collision");
     histContributors->GetXaxis()->SetBinLabel(2, "wrong MC collision");
   }
@@ -432,7 +432,7 @@ struct HfTaskMcValidationRec {
         }
       }
       float frac = (nContributors > 0) ? static_cast<float>(nGoodContributors) / nContributors : 1.;
-      registry.fill(HIST("histFracGoodContributors"), frac);
+      registry.fill(HIST("trackToCollChecks/histFracGoodContributors"), frac);
       uint64_t mostProbableBC = collision.bc().globalBC();
       for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
         uint64_t mostProbableBC2 = collision2.bc().globalBC();
@@ -459,7 +459,7 @@ struct HfTaskMcValidationRec {
               }
             }
           }
-          registry.fill(HIST("histCollisionsSameBC"), collision.numContrib(), collision2.numContrib(), radColl1, radColl2, nFromBeautyColl1, nFromBeautyColl2);
+          registry.fill(HIST("trackToCollChecks/histCollisionsSameBC"), collision.numContrib(), collision2.numContrib(), radColl1, radColl2, nFromBeautyColl1, nFromBeautyColl2);
           break;
         }
       }
@@ -486,7 +486,7 @@ struct HfTaskMcValidationRec {
         histTracks->Fill(origin, track.pt());
         bool isAmbiguous = (track.compatibleCollIds().size() != 1);
         if (isAmbiguous) {
-          registry.fill(HIST("histAmbiguousTrackNumCollisions"), track.compatibleCollIds().size());
+          registry.fill(HIST("trackToCollChecks/histAmbiguousTrackNumCollisions"), track.compatibleCollIds().size());
           histAmbiguousTracks->Fill(origin, track.pt());
           std::vector<double> ambCollPosZ{};
           for (const auto& collIdx : track.compatibleCollIds()) {
@@ -495,7 +495,7 @@ struct HfTaskMcValidationRec {
           }
           // here we are only interested to tracks associated to multiple vertices
           if (ambCollPosZ.size() > 0) {
-            registry.fill(HIST("histAmbiguousTrackZvtxRMS"), computeRMS(ambCollPosZ));
+            registry.fill(HIST("trackToCollChecks/histAmbiguousTrackZvtxRMS"), computeRMS(ambCollPosZ));
           }
         }
         float deltaZ = -999.f;
