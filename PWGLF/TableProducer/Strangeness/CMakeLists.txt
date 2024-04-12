@@ -107,7 +107,12 @@ o2physics_add_dpl_workflow(v0qaanalysis
 # ML selection
 o2physics_add_dpl_workflow(lambdakzeromlselectiontreecreator
     SOURCES lambdakzeroMLSelectionTreeCreator.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascademlselectiontreecreator
+    SOURCES cascadeMLSelectionTreeCreator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdakzeromlselection
