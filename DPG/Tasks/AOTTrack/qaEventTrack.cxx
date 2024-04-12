@@ -78,9 +78,9 @@ struct qaEventTrack {
   Configurable<float> maxPhi{"maxPhi", 10.f, "Maximum phi of accepted tracks"};
 
   // option to check PID for tracking before filling resolution histogras
-  Configurable<bool> checkPIDforTracking {"checkPIDforTracking", false, "check for PID in tracking"};
-  Configurable<int> PartIdentifier {"PartIdentifier", 2, "Particle identifier for selected particle; 0: electron, 1: muon, 2: pion, 3: kaon, 4: proton, 5: deuteron, 6: triton, 7: helium3, 8: alpha"};
-  Configurable<bool> doExtraPIDqa {"doExtraPIDqa", false, "do extra QA for tracks with wrong PID in tracking"};
+  Configurable<bool> checkPIDforTracking{"checkPIDforTracking", false, "check for PID in tracking"};
+  Configurable<int> PartIdentifier{"PartIdentifier", 2, "Particle identifier for selected particle; 0: electron, 1: muon, 2: pion, 3: kaon, 4: proton, 5: deuteron, 6: triton, 7: helium3, 8: alpha"};
+  Configurable<bool> doExtraPIDqa{"doExtraPIDqa", false, "do extra QA for tracks with wrong PID in tracking"};
 
   // options to check the track variables only for PV contributors
   Configurable<bool> checkOnlyPVContributor{"checkOnlyPVContributor", false, "check the track variables only for primary vertex contributors"};
@@ -1568,7 +1568,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
               histos.fill(HIST("Tracks/Kine/resoInvPtEtaPlusWrongPIDinTrk"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
             }
             histos.fill(HIST("Tracks/Kine/resoInvPtVsPtEtaPlusWrongPIDinTrk"), track.signed1Pt() - 1.f / particle.pt(), particle.pt());
-          } else { // negative eta
+          } else {                                                                                                         // negative eta
             histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaMinusWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt()); //
             histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcEtaMinusWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
             histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcEtaMinusWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
