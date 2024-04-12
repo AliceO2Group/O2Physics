@@ -55,10 +55,12 @@
         }
     },
     "minimisation": {
-        "correlated": "true"
+        "correlated": true
     },
     "central_efficiency": {
-        "fileName": "path/to/central/efficiency/file.root",
+        "computerawfrac": true,
+        "inputdir": "path/to/central/efficiency",
+        "inputfile": "efficiency.root",
         "histonames": {
             "prompt": "hAccEffPrompt",
             "nonprompt": "hAccEffFD"
