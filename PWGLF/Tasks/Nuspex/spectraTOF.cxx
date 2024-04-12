@@ -33,6 +33,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "PWGLF/DataModel/spectraTOF.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 #include "TPDGCode.h"
 
@@ -796,8 +797,8 @@ struct tofSpectra {
     }
   }
 
-  template <bool fillHistograms = false, bool fillMultiplicity = false, typename CollisionType, typename TrackType>
-  bool isEventSelected(CollisionType const& collision, TrackType const& tracks)
+  template <bool fillHistograms = false, bool fillMultiplicity = false, typename CollisionType>
+  bool isEventSelected(CollisionType const& collision)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 1.f);
@@ -1131,7 +1132,7 @@ struct tofSpectra {
   void processStandard(CollisionCandidate::iterator const& collision,
                        TrackCandidates const& tracks)
   {
-    if (!isEventSelected<true, true>(collision, tracks)) {
+    if (!isEventSelected<true, true>(collision)) {
       return;
     }
     for (const auto& track : tracks) {
@@ -1148,7 +1149,7 @@ struct tofSpectra {
                       aod::SpTracks const& tracks)
   {
     for (const auto& collision : collisions) {
-      if (!isEventSelected<true, true>(collision, tracks)) {
+      if (!isEventSelected<true, true>(collision)) {
         return;
       }
       const auto& tracksInCollision = tracks.sliceByCached(aod::spectra::collisionId, collision.globalIndex(), cacheTrk);
@@ -1170,7 +1171,7 @@ struct tofSpectra {
                                                   aod::pid##tofTable##inputPid,                \
                                                   aod::pid##tpcTable##inputPid> const& tracks) \
   {                                                                                            \
-    if (!isEventSelected<false, false>(collision, tracks)) {                                   \
+    if (!isEventSelected<false, false>(collision)) {                                           \
       return;                                                                                  \
     }                                                                                          \
     for (const auto& track : tracks) {                                                         \
@@ -1591,26 +1592,24 @@ struct tofSpectra {
     const float multiplicity = getMultiplicity(collision);
 
     if (mcParticle.isPhysicalPrimary()) {
-      if (collision.sel8()) {
-        if (abs(collision.posZ()) < cfgCutVertex) {
-          if (includeCentralityMC) {
-            histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
-          } else {
-            histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt());
-          }
-        } else {
-          if (includeCentralityMC) {
-            histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
-          } else {
-            histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt());
-          }
-        }
-      } else {
+      if (isEventSelected<false, false>(collision)) {
         if (includeCentralityMC) {
-          histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
         } else {
-          histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt());
+          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt());
         }
+      } else if (collision.sel8()) {
+        if (includeCentralityMC) {
+          histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+        } else {
+          histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt());
+        }
+      }
+    } else {
+      if (includeCentralityMC) {
+        histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+      } else {
+        histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt());
       }
     }
   }
@@ -1689,6 +1688,36 @@ struct tofSpectra {
     }
   }
 
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
+  // Event selection
+  template <typename TMcParticles>
+  bool isTrueINELgt0(TMcParticles particles)
+  {
+    int nPart = 0;
+    for (const auto& particle : particles) {
+      if (particle.isPhysicalPrimary() == 0)
+        continue; // consider only primaries
+
+      const auto& pdgInfo = pdgDB->GetParticle(particle.pdgCode());
+      if (!pdgInfo) {
+        continue;
+      }
+      if (TMath::Abs(pdgInfo->Charge()) < 0.001) {
+        continue; // consider only charged particles
+      }
+
+      if (particle.eta() < -1.0 || particle.eta() > 1.0)
+        continue; // consider only particles in |eta| < 1
+
+      nPart++;
+    }
+    if (nPart > 0)
+      return true;
+    else
+      return false;
+  }
+
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
   SliceCache cache;
   void processMC(soa::Join<aod::Tracks, aod::TracksExtra,
@@ -1702,7 +1731,7 @@ struct tofSpectra {
     // Fill number of generated and reconstructed collisions for normalization
     histos.fill(HIST("MC/GenRecoCollisions"), 1.f, mcCollisions.size());
     histos.fill(HIST("MC/GenRecoCollisions"), 2.f, collisions.size());
-    // LOGF(info, "Enter processMC!");
+
     for (const auto& track : tracks) {
       if (!track.has_collision()) {
         if (track.sign() > 0) {
@@ -1712,7 +1741,7 @@ struct tofSpectra {
         }
         continue;
       };
-      if (!isEventSelected<false, false>(track.collision_as<CollisionCandidateMC>(), tracks)) {
+      if (!isEventSelected<false, false>(track.collision_as<CollisionCandidateMC>())) {
         continue;
       }
       if (!passesCutWoDCA(track)) {
@@ -1784,6 +1813,14 @@ struct tofSpectra {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       bool hasParticleInFT0C = false;
       bool hasParticleInFT0A = false;
+      if (cfgINELCut.value == 1) {
+        if (!isTrueINELgt0(particlesInCollision)) {
+          continue;
+        }
+        if (TMath::Abs(mcCollision.posZ()) > cfgCutVertex) {
+          continue;
+        }
+      }
 
       int nInelPart = 0;
       for (const auto& mcParticle : particlesInCollision) {
