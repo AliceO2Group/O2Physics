@@ -17,20 +17,26 @@ namespace pwgmm::mult
 {
 using namespace o2;
 
-// clang-format off
+// helper function to determine if collision/mccollison type contains centrality
 template <typename T>
-concept hasSimCent = (T*) //NOLINT
+static constexpr bool hasSimCent()
 {
-  requires {T::template contains<aod::HepMCHeavyIons>();}
-};
+  if constexpr (!soa::is_soa_join_v<T>) {
+    return false;
+  } else {
+    return T::template contains<aod::HepMCHeavyIons>();
+  }
+}
 
 template <typename T>
-concept hasRecoCent = (T*) //NOLINT
+static constexpr bool hasRecoCent()
 {
-  requires {T::template contains<aod::CentFT0Cs>() || T::template contains<aod::CentFT0Ms>();}
-};
-
-//clang-format on
+  if constexpr (!soa::is_soa_join_v<T>) {
+    return false;
+  } else {
+    return T::template contains<aod::CentFT0Cs>() || T::template contains<aod::CentFT0Ms>();
+  }
+}
 } // namespace pwgmm::mult
 
 #endif // PWGMM_MULT_CORE_INCLUDE_FUNCTIONS_H_
