@@ -66,6 +66,7 @@ DECLARE_SOA_COLUMN(LLL, hasLLL, bool); //! has L-L-L tripletD
 // jets
 DECLARE_SOA_COLUMN(JetChLowPt, hasJetChLowPt, bool);   //! low-pT charged jet
 DECLARE_SOA_COLUMN(JetChHighPt, hasJetChHighPt, bool); //! high-pT charged jet
+DECLARE_SOA_COLUMN(TrackHighPt, hasTrackHighPt, bool); //! high-pT track
 
 // hf-jets
 DECLARE_SOA_COLUMN(JetD0ChLowPt, hasJetD0ChLowPt, bool);   //! low-pT charged D0 jet
@@ -177,7 +178,8 @@ using CfFilter = CFFilters::iterator;
 // jets
 DECLARE_SOA_TABLE(JetFilters, "AOD", "JetFilters", //!
                   filtering::JetChLowPt,
-                  filtering::JetChHighPt);
+                  filtering::JetChHighPt,
+                  filtering::TrackHighPt);
 
 using JetFilter = JetFilters::iterator;
 

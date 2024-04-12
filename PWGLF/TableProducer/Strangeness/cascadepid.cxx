@@ -58,9 +58,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
+// For original data loops
+using CascOriginalDatas = soa::Join<aod::CascIndices, aod::CascCores>;
+using TracksWithAllExtras = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal>;
+
 // Cores with references and TOF pid
-using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using CascFullCores = soa::Join<aod::CascCores, aod::CascTOFs, aod::CascExtras, aod::CascCollRefs>;
+using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>;
+using CascDerivedDatas = soa::Join<aod::CascCores, aod::CascExtras, aod::CascCollRefs>;
 
 struct cascadepid {
   // TOF pid for strangeness (recalculated with topology)
@@ -70,7 +74,9 @@ struct cascadepid {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // For manual sliceBy
-  Preslice<CascFullCores> perCollision = o2::aod::v0data::straCollisionId;
+  Preslice<CascOriginalDatas> perCollisionOriginal = o2::aod::cascdata::collisionId;
+  ;
+  Preslice<CascDerivedDatas> perCollisionDerived = o2::aod::cascdata::straCollisionId;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -286,13 +292,14 @@ struct cascadepid {
       histos.add("h2dNSigmaXiPi", "h2dNSigmaXiPi", {HistType::kTH2F, {axisPt, axisNSigma}});
       histos.add("h2dNSigmaOmLaPi", "h2dNSigmaOmLaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
       histos.add("h2dNSigmaOmLaPr", "h2dNSigmaOmLaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
-      histos.add("h2dNSigmaOmPi", "h2dNSigmaOmPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+      histos.add("h2dNSigmaOmKa", "h2dNSigmaOmKa", {HistType::kTH2F, {axisPt, axisNSigma}});
     }
   }
 
-  void initCCDB(soa::Join<aod::StraCollisions, aod::StraStamps>::iterator const& collision)
+  template <typename TInformationClass>
+  void initCCDB(TInformationClass const& infoObject)
   {
-    if (mRunNumber == collision.runNumber()) {
+    if (mRunNumber == infoObject.runNumber()) {
       return;
     }
 
@@ -304,11 +311,11 @@ struct cascadepid {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mRunNumber = collision.runNumber();
+      mRunNumber = infoObject.runNumber();
       return;
     }
 
-    auto run3grp_timestamp = collision.timestamp();
+    auto run3grp_timestamp = infoObject.timestamp();
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
@@ -329,7 +336,7 @@ struct cascadepid {
 
     // if TOF Nsigma desired
     if (doNSigmas) {
-      nSigmaCalibObjects = ccdb->getForTimeStamp<TList>(nSigmaPath, collision.timestamp());
+      nSigmaCalibObjects = ccdb->getForTimeStamp<TList>(nSigmaPath, infoObject.timestamp());
       if (nSigmaCalibObjects) {
         LOGF(info, "loaded TList with this many objects: %i", nSigmaCalibObjects->GetEntries());
 
@@ -365,7 +372,7 @@ struct cascadepid {
           LOG(info) << "Problems finding omega sigma histograms!";
       }
     }
-    mRunNumber = collision.runNumber();
+    mRunNumber = infoObject.runNumber();
   }
 
   float velocity(float lMomentum, float lMass)
@@ -376,208 +383,234 @@ struct cascadepid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void process(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, CascFullCores const& Cascades, dauTracks const&)
+  template <class TCollision, typename TCascade, typename TTrack>
+  void processCascadeCandidate(TCollision const& collision, TCascade const& cascade, TTrack const& pTra, TTrack const& nTra, TTrack const& bTra)
   {
-    for (const auto& collision : collisions) {
-      // Fire up CCDB - based on StraCollisions for derived analysis
-      initCCDB(collision);
-      // Do analysis with collision-grouped V0s, retain full collision information
-      const uint64_t collIdx = collision.globalIndex();
-      auto CascTable_thisCollision = Cascades.sliceBy(perCollision, collIdx);
-      // cascade table sliced
-      for (auto const& cascade : CascTable_thisCollision) {
-        // initialize from positions and momenta as needed
-        o2::track::TrackPar posTrack = o2::track::TrackPar({cascade.xlambda(), cascade.ylambda(), cascade.zlambda()}, {cascade.pxpos(), cascade.pypos(), cascade.pzpos()}, +1);
-        o2::track::TrackPar negTrack = o2::track::TrackPar({cascade.xlambda(), cascade.ylambda(), cascade.zlambda()}, {cascade.pxneg(), cascade.pyneg(), cascade.pzneg()}, -1);
-        o2::track::TrackPar bachTrack = o2::track::TrackPar({cascade.x(), cascade.y(), cascade.z()}, {cascade.pxbach(), cascade.pybach(), cascade.pzbach()}, cascade.sign());
-        o2::track::TrackPar cascTrack = o2::track::TrackPar({cascade.x(), cascade.y(), cascade.z()}, {cascade.px(), cascade.py(), cascade.pz()}, cascade.sign());
+    // initialize from positions and momenta as needed
+    o2::track::TrackPar posTrack = o2::track::TrackPar({cascade.xlambda(), cascade.ylambda(), cascade.zlambda()}, {cascade.pxpos(), cascade.pypos(), cascade.pzpos()}, +1);
+    o2::track::TrackPar negTrack = o2::track::TrackPar({cascade.xlambda(), cascade.ylambda(), cascade.zlambda()}, {cascade.pxneg(), cascade.pyneg(), cascade.pzneg()}, -1);
+    o2::track::TrackPar bachTrack = o2::track::TrackPar({cascade.x(), cascade.y(), cascade.z()}, {cascade.pxbach(), cascade.pybach(), cascade.pzbach()}, cascade.sign());
+    o2::track::TrackPar cascTrack = o2::track::TrackPar({cascade.x(), cascade.y(), cascade.z()}, {cascade.px(), cascade.py(), cascade.pz()}, cascade.sign());
 
-        // start calculation: calculate velocities
-        float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
-        float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
-        float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
-        float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
-        float velocityBachelorPi = velocity(bachTrack.getP(), o2::constants::physics::MassPionCharged);
-        float velocityBachelorKa = velocity(bachTrack.getP(), o2::constants::physics::MassKaonCharged);
-        float velocityXi = velocity(cascTrack.getP(), o2::constants::physics::MassXiMinus);
-        float velocityOm = velocity(cascTrack.getP(), o2::constants::physics::MassOmegaMinus);
-        float velocityLa = velocity(std::hypot(cascade.pxlambda(), cascade.pylambda(), cascade.pzlambda()), o2::constants::physics::MassLambda);
+    // start calculation: calculate velocities
+    float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
+    float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
+    float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
+    float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
+    float velocityBachelorPi = velocity(bachTrack.getP(), o2::constants::physics::MassPionCharged);
+    float velocityBachelorKa = velocity(bachTrack.getP(), o2::constants::physics::MassKaonCharged);
+    float velocityXi = velocity(cascTrack.getP(), o2::constants::physics::MassXiMinus);
+    float velocityOm = velocity(cascTrack.getP(), o2::constants::physics::MassOmegaMinus);
+    float velocityLa = velocity(std::hypot(cascade.pxlambda(), cascade.pylambda(), cascade.pzlambda()), o2::constants::physics::MassLambda);
 
-        // calculate daughter length to TOF intercept
-        float lengthPositive = findInterceptLength(posTrack, d_bz);  // FIXME: tofPosition ok? adjust?
-        float lengthNegative = findInterceptLength(negTrack, d_bz);  // FIXME: tofPosition ok? adjust?
-        float lengthBachelor = findInterceptLength(bachTrack, d_bz); // FIXME: tofPosition ok? adjust?
+    // calculate daughter length to TOF intercept
+    float lengthPositive = findInterceptLength(posTrack, d_bz);  // FIXME: tofPosition ok? adjust?
+    float lengthNegative = findInterceptLength(negTrack, d_bz);  // FIXME: tofPosition ok? adjust?
+    float lengthBachelor = findInterceptLength(bachTrack, d_bz); // FIXME: tofPosition ok? adjust?
 
-        // calculate mother lengths
-        float lengthV0 = std::hypot(cascade.xlambda() - cascade.x(), cascade.ylambda() - cascade.y(), cascade.zlambda() - cascade.z());
-        float lengthCascade = -1e+6;
-        const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
-        bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(collVtx, cascTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE);
-        float d = -1.0f, d3d = 0.0f;
-        float linearToPV = std::hypot(cascade.x() - collision.posX(), cascade.y() - collision.posY(), cascade.z() - collision.posZ());
-        if (successPropag) {
-          std::array<float, 3> cascCloseToPVPosition;
-          cascTrack.getXYZGlo(cascCloseToPVPosition);
-          o2::math_utils::CircleXYf_t trcCircleCascade;
-          float sna, csa;
-          cascTrack.getCircleParams(d_bz, trcCircleCascade, sna, csa);
+    // calculate mother lengths
+    float lengthV0 = std::hypot(cascade.xlambda() - cascade.x(), cascade.ylambda() - cascade.y(), cascade.zlambda() - cascade.z());
+    float lengthCascade = -1e+6;
+    const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
+    bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(collVtx, cascTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE);
+    float d = -1.0f, d3d = 0.0f;
+    float linearToPV = std::hypot(cascade.x() - collision.posX(), cascade.y() - collision.posY(), cascade.z() - collision.posZ());
+    if (successPropag) {
+      std::array<float, 3> cascCloseToPVPosition;
+      cascTrack.getXYZGlo(cascCloseToPVPosition);
+      o2::math_utils::CircleXYf_t trcCircleCascade;
+      float sna, csa;
+      cascTrack.getCircleParams(d_bz, trcCircleCascade, sna, csa);
 
-          // calculate 2D distance between two points
-          d = std::hypot(cascade.x() - cascCloseToPVPosition[0], cascade.y() - cascCloseToPVPosition[1]);
-          d3d = std::hypot(cascade.x() - cascCloseToPVPosition[0], cascade.y() - cascCloseToPVPosition[1], cascade.z() - cascCloseToPVPosition[2]); // cross-check variable
-          float sinThetaOverTwo = d / (2.0f * trcCircleCascade.rC);
-          lengthCascade = 2.0f * trcCircleCascade.rC * TMath::ASin(sinThetaOverTwo);
-          lengthCascade *= sqrt(1.0f + cascTrack.getTgl() * cascTrack.getTgl());
-        }
+      // calculate 2D distance between two points
+      d = std::hypot(cascade.x() - cascCloseToPVPosition[0], cascade.y() - cascCloseToPVPosition[1]);
+      d3d = std::hypot(cascade.x() - cascCloseToPVPosition[0], cascade.y() - cascCloseToPVPosition[1], cascade.z() - cascCloseToPVPosition[2]); // cross-check variable
+      float sinThetaOverTwo = d / (2.0f * trcCircleCascade.rC);
+      lengthCascade = 2.0f * trcCircleCascade.rC * TMath::ASin(sinThetaOverTwo);
+      lengthCascade *= sqrt(1.0f + cascTrack.getTgl() * cascTrack.getTgl());
+    }
 
-        if (!successPropag) {
-          lengthCascade = linearToPV; // if propagation failed, use linear estimate (optional: actually do not define?)
-        }
+    if (!successPropag) {
+      lengthCascade = linearToPV; // if propagation failed, use linear estimate (optional: actually do not define?)
+    }
 
-        // lambda, xi and omega flight time is always defined
-        float lambdaFlight = lengthV0 / velocityLa;
-        float xiFlight = lengthCascade / velocityXi;
-        float omFlight = lengthCascade / velocityOm;
-        float posFlightPi = lengthPositive / velocityPositivePi;
-        float posFlightPr = lengthPositive / velocityPositivePr;
-        float negFlightPi = lengthNegative / velocityNegativePi;
-        float negFlightPr = lengthNegative / velocityNegativePr;
-        float bachFlightPi = lengthBachelor / velocityBachelorPi;
-        float bachFlightKa = lengthBachelor / velocityBachelorKa;
+    // lambda, xi and omega flight time is always defined
+    float lambdaFlight = lengthV0 / velocityLa;
+    float xiFlight = lengthCascade / velocityXi;
+    float omFlight = lengthCascade / velocityOm;
+    float posFlightPi = lengthPositive / velocityPositivePi;
+    float posFlightPr = lengthPositive / velocityPositivePr;
+    float negFlightPi = lengthNegative / velocityNegativePi;
+    float negFlightPr = lengthNegative / velocityNegativePr;
+    float bachFlightPi = lengthBachelor / velocityBachelorPi;
+    float bachFlightKa = lengthBachelor / velocityBachelorKa;
 
-        // initialize delta-times (actual PID variables)
-        float posDeltaTimeAsXiPi = -1e+6, posDeltaTimeAsXiPr = -1e+6;
-        float negDeltaTimeAsXiPi = -1e+6, negDeltaTimeAsXiPr = -1e+6;
-        float bachDeltaTimeAsXiPi = -1e+6;
-        float posDeltaTimeAsOmPi = -1e+6, posDeltaTimeAsOmPr = -1e+6;
-        float negDeltaTimeAsOmPi = -1e+6, negDeltaTimeAsOmPr = -1e+6;
-        float bachDeltaTimeAsOmKa = -1e+6;
+    // initialize delta-times (actual PID variables)
+    float posDeltaTimeAsXiPi = -1e+6, posDeltaTimeAsXiPr = -1e+6;
+    float negDeltaTimeAsXiPi = -1e+6, negDeltaTimeAsXiPr = -1e+6;
+    float bachDeltaTimeAsXiPi = -1e+6;
+    float posDeltaTimeAsOmPi = -1e+6, posDeltaTimeAsOmPr = -1e+6;
+    float negDeltaTimeAsOmPi = -1e+6, negDeltaTimeAsOmPr = -1e+6;
+    float bachDeltaTimeAsOmKa = -1e+6;
 
-        auto pTra = cascade.posTrackExtra_as<dauTracks>();
-        auto nTra = cascade.negTrackExtra_as<dauTracks>();
-        auto bTra = cascade.negTrackExtra_as<dauTracks>();
+    if (pTra.hasTOF()) {
+      posDeltaTimeAsXiPi = (pTra.tofSignal() - pTra.tofEvTime()) - (xiFlight + lambdaFlight + posFlightPi);
+      posDeltaTimeAsXiPr = (pTra.tofSignal() - pTra.tofEvTime()) - (xiFlight + lambdaFlight + posFlightPr);
+      posDeltaTimeAsOmPi = (pTra.tofSignal() - pTra.tofEvTime()) - (omFlight + lambdaFlight + posFlightPi);
+      posDeltaTimeAsOmPr = (pTra.tofSignal() - pTra.tofEvTime()) - (omFlight + lambdaFlight + posFlightPr);
+    }
+    if (nTra.hasTOF()) {
+      negDeltaTimeAsXiPi = (nTra.tofSignal() - nTra.tofEvTime()) - (xiFlight + lambdaFlight + negFlightPi);
+      negDeltaTimeAsXiPr = (nTra.tofSignal() - nTra.tofEvTime()) - (xiFlight + lambdaFlight + negFlightPr);
+      negDeltaTimeAsOmPi = (nTra.tofSignal() - nTra.tofEvTime()) - (omFlight + lambdaFlight + negFlightPi);
+      negDeltaTimeAsOmPr = (nTra.tofSignal() - nTra.tofEvTime()) - (omFlight + lambdaFlight + negFlightPr);
+    }
+    if (bTra.hasTOF()) {
+      bachDeltaTimeAsXiPi = (bTra.tofSignal() - bTra.tofEvTime()) - (xiFlight + bachFlightPi);
+      bachDeltaTimeAsOmKa = (bTra.tofSignal() - bTra.tofEvTime()) - (omFlight + bachFlightKa);
+    }
 
-        if (pTra.hasTOF()) {
-          posDeltaTimeAsXiPi = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (xiFlight + lambdaFlight + posFlightPi);
-          posDeltaTimeAsXiPr = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (xiFlight + lambdaFlight + posFlightPr);
-          posDeltaTimeAsOmPi = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (omFlight + lambdaFlight + posFlightPi);
-          posDeltaTimeAsOmPr = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (omFlight + lambdaFlight + posFlightPr);
-        }
-        if (nTra.hasTOF()) {
-          negDeltaTimeAsXiPi = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (xiFlight + lambdaFlight + negFlightPi);
-          negDeltaTimeAsXiPr = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (xiFlight + lambdaFlight + negFlightPr);
-          negDeltaTimeAsOmPi = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (omFlight + lambdaFlight + negFlightPi);
-          negDeltaTimeAsOmPr = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (omFlight + lambdaFlight + negFlightPr);
-        }
-        if (bTra.hasTOF()) {
-          bachDeltaTimeAsXiPi = (cascade.bachTOFSignal() - cascade.bachTOFEventTime()) - (xiFlight + bachFlightPi);
-          bachDeltaTimeAsOmKa = (cascade.bachTOFSignal() - cascade.bachTOFEventTime()) - (omFlight + bachFlightKa);
-        }
+    casctofpids(
+      posDeltaTimeAsXiPi, posDeltaTimeAsXiPr, negDeltaTimeAsXiPi, negDeltaTimeAsXiPr, bachDeltaTimeAsXiPi,
+      posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa);
 
-        casctofpids(
-          posDeltaTimeAsXiPi, posDeltaTimeAsXiPr, negDeltaTimeAsXiPi, negDeltaTimeAsXiPr, bachDeltaTimeAsXiPi,
-          posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa);
+    float nSigmaXiLaPr = -1e+6;
+    float nSigmaXiLaPi = -1e+6;
+    float nSigmaXiPi = -1e+6;
+    float nSigmaOmLaPr = -1e+6;
+    float nSigmaOmLaPi = -1e+6;
+    float nSigmaOmKa = -1e+6;
 
-        float nSigmaXiLaPr = -1e+6;
-        float nSigmaXiLaPi = -1e+6;
-        float nSigmaXiPi = -1e+6;
-        float nSigmaOmLaPr = -1e+6;
-        float nSigmaOmLaPi = -1e+6;
-        float nSigmaOmKa = -1e+6;
+    // go for Nsigma values if requested
+    if (doNSigmas) {
+      // Xi hypothesis ________________________
+      if (cascade.sign() < 0) {         // XiMinus
+        if (posDeltaTimeAsXiPr > -1e+5) // proton from Lambda from XiMinus has signal
+          nSigmaXiLaPr = (posDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.pt())) / hSigmaPosXiPr->Interpolate(cascade.pt());
+        if (negDeltaTimeAsXiPi > -1e+5) // pion from Lambda from XiMinus has signal
+          nSigmaXiLaPi = (negDeltaTimeAsXiPi - hMeanNegXiPi->Interpolate(cascade.pt())) / hSigmaNegXiPi->Interpolate(cascade.pt());
+        if (bachDeltaTimeAsXiPi > -1e+5) // pion from XiMinus has signal
+          nSigmaXiPi = (bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.pt())) / hSigmaBachXiPi->Interpolate(cascade.pt());
+        if (posDeltaTimeAsOmPr > -1e+5) // proton from Lambda from OmegaMinus has signal
+          nSigmaOmLaPr = (posDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.pt())) / hSigmaPosOmPr->Interpolate(cascade.pt());
+        if (negDeltaTimeAsOmPi > -1e+5) // pion from Lambda from OmegaMinus has signal
+          nSigmaOmLaPi = (negDeltaTimeAsOmPi - hMeanNegOmPi->Interpolate(cascade.pt())) / hSigmaNegOmPi->Interpolate(cascade.pt());
+        if (bachDeltaTimeAsOmKa > -1e+5) // kaon from OmegaMinus has signal
+          nSigmaOmKa = (bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.pt())) / hSigmaBachOmKa->Interpolate(cascade.pt());
+      } else {
+        if (posDeltaTimeAsXiPi > -1e+5) // proton from Lambda from XiMinus has signal
+          nSigmaXiLaPi = (posDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.pt())) / hSigmaPosXiPi->Interpolate(cascade.pt());
+        if (negDeltaTimeAsXiPr > -1e+5) // pion from Lambda from XiMinus has signal
+          nSigmaXiLaPr = (negDeltaTimeAsXiPr - hMeanNegXiPr->Interpolate(cascade.pt())) / hSigmaNegXiPr->Interpolate(cascade.pt());
+        if (bachDeltaTimeAsXiPi > -1e+5) // pion from XiMinus has signal
+          nSigmaXiPi = (bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.pt())) / hSigmaBachXiPi->Interpolate(cascade.pt());
+        if (posDeltaTimeAsOmPi > -1e+5) // proton from Lambda from OmegaMinus has signal
+          nSigmaOmLaPi = (posDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.pt())) / hSigmaPosOmPi->Interpolate(cascade.pt());
+        if (negDeltaTimeAsOmPr > -1e+5) // pion from Lambda from OmegaMinus has signal
+          nSigmaOmLaPr = (negDeltaTimeAsOmPr - hMeanNegOmPr->Interpolate(cascade.pt())) / hSigmaNegOmPr->Interpolate(cascade.pt());
+        if (bachDeltaTimeAsOmKa > -1e+5) // kaon from OmegaMinus has signal
+          nSigmaOmKa = (bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.pt())) / hSigmaBachOmKa->Interpolate(cascade.pt());
+      }
+      casctofnsigmas(nSigmaXiLaPi, nSigmaXiLaPr, nSigmaXiPi, nSigmaOmLaPi, nSigmaOmLaPr, nSigmaOmKa);
+    }
 
-        // go for Nsigma values if requested
-        if (doNSigmas) {
-          // Xi hypothesis ________________________
-          if (cascade.sign() < 0) {         // XiMinus
-            if (posDeltaTimeAsXiPr > -1e+5) // proton from Lambda from XiMinus has signal
-              nSigmaXiLaPr = (posDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.pt())) / hSigmaPosXiPr->Interpolate(cascade.pt());
-            if (negDeltaTimeAsXiPi > -1e+5) // pion from Lambda from XiMinus has signal
-              nSigmaXiLaPi = (negDeltaTimeAsXiPi - hMeanNegXiPi->Interpolate(cascade.pt())) / hSigmaNegXiPi->Interpolate(cascade.pt());
-            if (bachDeltaTimeAsXiPi > -1e+5) // pion from XiMinus has signal
-              nSigmaXiPi = (bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.pt())) / hSigmaBachXiPi->Interpolate(cascade.pt());
-            if (posDeltaTimeAsOmPr > -1e+5) // proton from Lambda from OmegaMinus has signal
-              nSigmaOmLaPr = (posDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.pt())) / hSigmaPosOmPr->Interpolate(cascade.pt());
-            if (negDeltaTimeAsOmPi > -1e+5) // pion from Lambda from OmegaMinus has signal
-              nSigmaOmLaPi = (negDeltaTimeAsOmPi - hMeanNegOmPi->Interpolate(cascade.pt())) / hSigmaNegOmPi->Interpolate(cascade.pt());
-            if (bachDeltaTimeAsOmKa > -1e+5) // kaon from OmegaMinus has signal
-              nSigmaOmKa = (bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.pt())) / hSigmaBachOmKa->Interpolate(cascade.pt());
-          } else {
-            if (posDeltaTimeAsXiPi > -1e+5) // proton from Lambda from XiMinus has signal
-              nSigmaXiLaPi = (posDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.pt())) / hSigmaPosXiPi->Interpolate(cascade.pt());
-            if (negDeltaTimeAsXiPr > -1e+5) // pion from Lambda from XiMinus has signal
-              nSigmaXiLaPr = (negDeltaTimeAsXiPr - hMeanNegXiPr->Interpolate(cascade.pt())) / hSigmaNegXiPr->Interpolate(cascade.pt());
-            if (bachDeltaTimeAsXiPi > -1e+5) // pion from XiMinus has signal
-              nSigmaXiPi = (bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.pt())) / hSigmaBachXiPi->Interpolate(cascade.pt());
-            if (posDeltaTimeAsOmPi > -1e+5) // proton from Lambda from OmegaMinus has signal
-              nSigmaOmLaPi = (posDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.pt())) / hSigmaPosOmPi->Interpolate(cascade.pt());
-            if (negDeltaTimeAsOmPr > -1e+5) // pion from Lambda from OmegaMinus has signal
-              nSigmaOmLaPr = (negDeltaTimeAsOmPr - hMeanNegOmPr->Interpolate(cascade.pt())) / hSigmaNegOmPr->Interpolate(cascade.pt());
-            if (bachDeltaTimeAsOmKa > -1e+5) // kaon from OmegaMinus has signal
-              nSigmaOmKa = (bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.pt())) / hSigmaBachOmKa->Interpolate(cascade.pt());
+    if (doQA) {
+      // fill QA histograms for cross-checking
+      histos.fill(HIST("hArcDebug"), cascade.pt(), lengthCascade - d3d); // for debugging purposes
+
+      if (cascade.dcaV0daughters() < qaV0DCADau && cascade.dcacascdaughters() < qaCascDCADau && cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > qaV0CosPA && cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > qaCascCosPA) {
+        if (cascade.sign() < 0) {
+          if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < qaTPCNSigma) {
+            histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPr);
+            histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPi);
+            histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
+            if (doQANSigma) {
+              histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.pt(), nSigmaXiLaPi);
+              histos.fill(HIST("h2dNSigmaXiLaPr"), cascade.pt(), nSigmaXiLaPr);
+              histos.fill(HIST("h2dNSigmaXiPi"), cascade.pt(), nSigmaXiPi);
+            }
           }
-          casctofnsigmas(nSigmaXiLaPi, nSigmaXiLaPr, nSigmaXiPi, nSigmaOmLaPi, nSigmaOmLaPr, nSigmaOmKa);
-        }
-
-        if (doQA) {
-          // fill QA histograms for cross-checking
-          histos.fill(HIST("hArcDebug"), cascade.pt(), lengthCascade - d3d); // for debugging purposes
-
-          if (cascade.dcaV0daughters() < qaV0DCADau && cascade.dcacascdaughters() < qaCascDCADau && cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > qaV0CosPA && cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > qaCascCosPA) {
-            if (cascade.sign() < 0) {
-              if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < qaTPCNSigma) {
-                histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPr);
-                histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPi);
-                histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
-                if (doQANSigma) {
-                  histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.pt(), nSigmaXiLaPi);
-                  histos.fill(HIST("h2dNSigmaXiLaPr"), cascade.pt(), nSigmaXiLaPr);
-                  histos.fill(HIST("h2dNSigmaXiPi"), cascade.pt(), nSigmaXiPi);
-                }
-              }
-              if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < qaTPCNSigma) {
-                histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPr);
-                histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPi);
-                histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
-                if (doQANSigma) {
-                  histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.pt(), nSigmaOmLaPi);
-                  histos.fill(HIST("h2dNSigmaOmLaPr"), cascade.pt(), nSigmaOmLaPr);
-                  histos.fill(HIST("h2dNSigmaOmKa"), cascade.pt(), nSigmaOmKa);
-                }
-              }
-            } else {
-              if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < qaTPCNSigma) {
-                histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPi);
-                histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPr);
-                histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
-                if (doQANSigma) {
-                  histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.pt(), nSigmaXiLaPi);
-                  histos.fill(HIST("h2dNSigmaXiLaPr"), cascade.pt(), nSigmaXiLaPr);
-                  histos.fill(HIST("h2dNSigmaXiPi"), cascade.pt(), nSigmaXiPi);
-                }
-              }
-              if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < qaTPCNSigma) {
-                histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPi);
-                histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPr);
-                histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
-                if (doQANSigma) {
-                  histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.pt(), nSigmaOmLaPi);
-                  histos.fill(HIST("h2dNSigmaOmLaPr"), cascade.pt(), nSigmaOmLaPr);
-                  histos.fill(HIST("h2dNSigmaOmKa"), cascade.pt(), nSigmaOmKa);
-                }
-              }
+          if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < qaTPCNSigma) {
+            histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPr);
+            histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPi);
+            histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
+            if (doQANSigma) {
+              histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.pt(), nSigmaOmLaPi);
+              histos.fill(HIST("h2dNSigmaOmLaPr"), cascade.pt(), nSigmaOmLaPr);
+              histos.fill(HIST("h2dNSigmaOmKa"), cascade.pt(), nSigmaOmKa);
+            }
+          }
+        } else {
+          if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < qaTPCNSigma) {
+            histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPi);
+            histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPr);
+            histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
+            if (doQANSigma) {
+              histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.pt(), nSigmaXiLaPi);
+              histos.fill(HIST("h2dNSigmaXiLaPr"), cascade.pt(), nSigmaXiLaPr);
+              histos.fill(HIST("h2dNSigmaXiPi"), cascade.pt(), nSigmaXiPi);
+            }
+          }
+          if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < qaTPCNSigma) {
+            histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPi);
+            histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPr);
+            histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
+            if (doQANSigma) {
+              histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.pt(), nSigmaOmLaPi);
+              histos.fill(HIST("h2dNSigmaOmLaPr"), cascade.pt(), nSigmaOmLaPr);
+              histos.fill(HIST("h2dNSigmaOmKa"), cascade.pt(), nSigmaOmKa);
             }
           }
         }
       }
     }
   }
-};
 
-Configurable<float> qaV0DCADau{"qaV0DCADau", 0.5, "DCA daughters (cm) for QA plots"};
-Configurable<float> qaCascDCADau{"qaCascDCADau", 0.5, "DCA daughters (cm) for QA plots"};
-Configurable<float> qaV0CosPA{"qaV0CosPA", 0.995, "CosPA for QA plots"};
-Configurable<float> qaCascCosPA{"qaCascCosPA", 0.995, "CosPA for QA plots"};
-Configurable<float> qaMassWindow{"qaMassWindow", 0.005, "Mass window around expected (in GeV/c2) for QA plots"};
+  void processStandardData(aod::Collisions const& collisions, CascOriginalDatas const& Cascades, TracksWithAllExtras const&, aod::BCsWithTimestamps const& bcs)
+  {
+    auto collision = collisions.begin();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    // Fire up CCDB - based on standard collisions
+    initCCDB(bc);
+    for (const auto& collision : collisions) {
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = collision.globalIndex();
+      auto CascTable_thisCollision = Cascades.sliceBy(perCollisionOriginal, collIdx);
+      // cascade table sliced
+      for (auto const& cascade : CascTable_thisCollision) {
+        // de-reference interlinks by hand for derived data
+        auto pTra = cascade.posTrack_as<TracksWithAllExtras>();
+        auto nTra = cascade.negTrack_as<TracksWithAllExtras>();
+        auto bTra = cascade.bachelor_as<TracksWithAllExtras>();
+
+        processCascadeCandidate(collision, cascade, pTra, nTra, bTra);
+      }
+    }
+  }
+
+  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, CascDerivedDatas const& Cascades, dauTracks const&)
+  {
+    for (const auto& collision : collisions) {
+      // Fire up CCDB - based on StraCollisions for derived analysis
+      initCCDB(collision);
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = collision.globalIndex();
+      auto CascTable_thisCollision = Cascades.sliceBy(perCollisionDerived, collIdx);
+      // cascade table sliced
+      for (auto const& cascade : CascTable_thisCollision) {
+        // de-reference interlinks by hand for derived data
+        auto pTra = cascade.posTrackExtra_as<dauTracks>();
+        auto nTra = cascade.negTrackExtra_as<dauTracks>();
+        auto bTra = cascade.bachTrackExtra_as<dauTracks>();
+
+        processCascadeCandidate(collision, cascade, pTra, nTra, bTra);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(cascadepid, processStandardData, "Process standard data", true);
+  PROCESS_SWITCH(cascadepid, processDerivedData, "Process derived data", false);
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

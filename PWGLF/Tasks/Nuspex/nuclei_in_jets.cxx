@@ -122,7 +122,7 @@ struct nuclei_in_jets {
   void init(InitContext const&)
   {
     // Global Properties and QC
-    registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
+    registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{15, 0, 15, "counter"}});
     registryQC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
     registryQC.add("jet_plus_ue_multiplicity", "jet + underlying-event multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("jet_multiplicity", "jet multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
@@ -135,26 +135,33 @@ struct nuclei_in_jets {
     registryQC.add("r_ue", "R ue", HistType::kTH1F, {{200, 0.0, 1.0, "#it{R}"}});
     registryQC.add("eta_leading", "eta_leading", HistType::kTH1F, {{100, -1, 1, "#eta"}});
     registryQC.add("phi_leading", "phi_leading", HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi(), "#phi"}});
+    registryQC.add("angle_jet_leading_track", "angle_jet_leading_track", HistType::kTH1F, {{200, 0.0, TMath::Pi() / 4.0, "#theta"}});
 
     // Antiprotons
-    registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH3F, {{20, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
-    registryData.add("antiproton_jet_tof", "antiproton_jet_tof", HistType::kTH3F, {{90, 0.5, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TOF}"}, {10, 0, 100, "#it{N}_{ch}"}});
-    registryData.add("antiproton_ue_tpc", "antiproton_ue_tpc", HistType::kTH3F, {{20, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
-    registryData.add("antiproton_ue_tof", "antiproton_ue_tof", HistType::kTH3F, {{90, 0.5, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TOF}"}, {10, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH3F, {{20, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {2, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antiproton_jet_tof", "antiproton_jet_tof", HistType::kTH3F, {{90, 0.5, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {2, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antiproton_ue_tpc", "antiproton_ue_tpc", HistType::kTH3F, {{20, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {2, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antiproton_ue_tof", "antiproton_ue_tof", HistType::kTH3F, {{90, 0.5, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {2, 0, 100, "#it{N}_{ch}"}});
+
+    // Eta - pt Maps Antiprotons
+    registryData.add("antip_tpc_jet_eta_pt", "antip_tpc_jet_eta_pt", HistType::kTH2F, {{60, 0.0, 3.0, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
+    registryData.add("antip_tpc_ue_eta_pt", "antip_tpc_ue_eta_pt", HistType::kTH2F, {{60, 0.0, 3.0, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
+    registryData.add("antip_tof_jet_eta_pt", "antip_tof_jet_eta_pt", HistType::kTH2F, {{60, 0.0, 3.0, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
+    registryData.add("antip_tof_ue_eta_pt", "antip_tof_ue_eta_pt", HistType::kTH2F, {{60, 0.0, 3.0, "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#eta"}});
 
     // DCA Distributions
-    registryData.add("antiproton_dca_jet", "antiproton_dca_jet", HistType::kTH3F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -0.5, 0.5, "DCA_{xy} (cm)"}, {10, 0, 100, "#it{N}_{ch}"}});
-    registryData.add("antiproton_dca_ue", "antiproton_dca_ue", HistType::kTH3F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -0.5, 0.5, "DCA_{xy} (cm)"}, {10, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antiproton_dca_jet", "antiproton_dca_jet", HistType::kTH3F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -0.5, 0.5, "DCA_{xy} (cm)"}, {2, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antiproton_dca_ue", "antiproton_dca_ue", HistType::kTH3F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -0.5, 0.5, "DCA_{xy} (cm)"}, {2, 0, 100, "#it{N}_{ch}"}});
 
     // Antideuterons
-    registryData.add("antideuteron_jet_tpc", "antideuteron_jet_tpc", HistType::kTH3F, {{10, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
-    registryData.add("antideuteron_jet_tof", "antideuteron_jet_tof", HistType::kTH3F, {{45, 0.5, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TOF}"}, {10, 0, 100, "#it{N}_{ch}"}});
-    registryData.add("antideuteron_ue_tpc", "antideuteron_ue_tpc", HistType::kTH3F, {{10, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
-    registryData.add("antideuteron_ue_tof", "antideuteron_ue_tof", HistType::kTH3F, {{45, 0.5, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TOF}"}, {10, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antideuteron_jet_tpc", "antideuteron_jet_tpc", HistType::kTH3F, {{10, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {2, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antideuteron_jet_tof", "antideuteron_jet_tof", HistType::kTH3F, {{45, 0.5, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {2, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antideuteron_ue_tpc", "antideuteron_ue_tpc", HistType::kTH3F, {{10, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {2, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antideuteron_ue_tof", "antideuteron_ue_tof", HistType::kTH3F, {{45, 0.5, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}, {2, 0, 100, "#it{N}_{ch}"}});
 
     // Antihelium-3
-    registryData.add("antihelium3_jet_tpc", "antihelium3_jet_tpc", HistType::kTH3F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
-    registryData.add("antihelium3_ue_tpc", "antihelium3_ue_tpc", HistType::kTH3F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {10, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antihelium3_jet_tpc", "antihelium3_jet_tpc", HistType::kTH3F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {2, 0, 100, "#it{N}_{ch}"}});
+    registryData.add("antihelium3_ue_tpc", "antihelium3_ue_tpc", HistType::kTH3F, {{40, 1.0, 7.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -10.0, 10.0, "n#sigma_{TPC}"}, {2, 0, 100, "#it{N}_{ch}"}});
 
     // Input Antiproton Distribution
     registryMC.add("antiproton_input", "antiproton_input", HistType::kTH1F, {{1000, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
@@ -396,6 +403,56 @@ struct nuclei_in_jets {
     return dNdpt;
   }
 
+  void get_perpendicular_cone(TVector3 p, TVector3& u, float sign)
+  {
+
+    // Initialization
+    float ux(0), uy(0), uz(0);
+
+    // Components of Vector p
+    float px = p.X();
+    float py = p.Y();
+    float pz = p.Z();
+
+    // Protection 1
+    if (px == 0 && py != 0) {
+
+      uy = -(pz * pz) / py;
+      ux = sign * sqrt(py * py - (pz * pz * pz * pz) / (py * py));
+      uz = pz;
+      u.SetXYZ(ux, uy, uz);
+      return;
+    }
+
+    // Protection 2
+    if (py == 0 && px != 0) {
+
+      ux = -(pz * pz) / px;
+      uy = sign * sqrt(px * px - (pz * pz * pz * pz) / (px * px));
+      uz = pz;
+      u.SetXYZ(ux, uy, uz);
+      return;
+    }
+
+    // Equation Parameters
+    float a = px * px + py * py;
+    float b = 2.0 * px * pz * pz;
+    float c = pz * pz * pz * pz - py * py * py * py - px * px * py * py;
+    float delta = b * b - 4.0 * a * c;
+
+    // Protection agains delta<0
+    if (delta < 0) {
+      return;
+    }
+
+    // Solutions
+    ux = (-b + sign * sqrt(delta)) / (2.0 * a);
+    uy = (-pz * pz - px * ux) / py;
+    uz = pz;
+    u.SetXYZ(ux, uy, uz);
+    return;
+  }
+
   // Process Data
   void processData(SelectedCollisions::iterator const& collision, FullTracks const& tracks)
   {
@@ -410,11 +467,15 @@ struct nuclei_in_jets {
     if (!collision.sel8())
       return;
 
-    if (abs(collision.posZ()) > 10)
+    // Event Counter: after event selection sel8
+    registryQC.fill(HIST("number_of_events_data"), 1.5);
+
+    // Cut on Zvertex
+    if (abs(collision.posZ()) > 10.0)
       return;
 
-    // Event Counter: after event selection
-    registryQC.fill(HIST("number_of_events_data"), 1.5);
+    // Event Counter: after |z|<10 cm cut
+    registryQC.fill(HIST("number_of_events_data"), 2.5);
 
     // Reduced Event
     std::vector<int> particle_ID;
@@ -456,7 +517,7 @@ struct nuclei_in_jets {
     // Event Counter: Skip Events with no trigger Particle (pmax=0)
     if (pt_max == 0)
       return;
-    registryQC.fill(HIST("number_of_events_data"), 2.5);
+    registryQC.fill(HIST("number_of_events_data"), 3.5);
 
     // Histogram with pt_leading
     registryQC.fill(HIST("pt_leading"), pt_max);
@@ -464,7 +525,7 @@ struct nuclei_in_jets {
     // Event Counter: Skip Events with pt<pt_leading_min
     if (pt_max < min_pt_leading)
       return;
-    registryQC.fill(HIST("number_of_events_data"), 3.5);
+    registryQC.fill(HIST("number_of_events_data"), 4.5);
 
     // Number of Stored Particles
     int nParticles = static_cast<int>(particle_ID.size());
@@ -472,16 +533,17 @@ struct nuclei_in_jets {
     // Event Counter: Skip Events with 0 Particles
     if (nParticles < 1)
       return;
-    registryQC.fill(HIST("number_of_events_data"), 4.5);
-
-    // Event Counter: Skip Events with no Particle of Interest
-    if (!containsParticleOfInterest)
-      return;
     registryQC.fill(HIST("number_of_events_data"), 5.5);
 
     // Momentum of the Leading Particle
     auto const& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
+    TVector3 p_highest_pt_track(leading_track.px(), leading_track.py(), leading_track.pz());
+
+    // Event Counter: Skip Events with no Particle of Interest
+    if (!containsParticleOfInterest)
+      return;
+    registryQC.fill(HIST("number_of_events_data"), 6.5);
 
     // Array of Particles inside Jet
     std::vector<int> jet_particle_ID;
@@ -562,6 +624,7 @@ struct nuclei_in_jets {
     // QA Plots
     registryQC.fill(HIST("eta_leading"), p_leading.Eta());
     registryQC.fill(HIST("phi_leading"), TVector2::Phi_0_2pi(p_leading.Phi()));
+    registryQC.fill(HIST("angle_jet_leading_track"), p_leading.Angle(p_highest_pt_track));
 
     // Rmax and Area Cut
     float Rmax(0);
@@ -580,10 +643,7 @@ struct nuclei_in_jets {
         Rmax = R;
     }
 
-    // Event Counter: Skip Events with Rmax=0
-    if (Rmax == 0)
-      return;
-    registryQC.fill(HIST("number_of_events_data"), 6.5);
+    // Rmax Distribution
     registryQC.fill(HIST("r_max_jet"), Rmax);
 
     // Event Counter: Skip Events with jet not fully inside acceptance
@@ -596,16 +656,18 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("jet_plus_ue_multiplicity"), nParticlesJetAndUE);
 
     // Perpendicular Cones for UE Estimate
-    TVector3 z(0.0, 0.0, p_leading.Mag());
-    TVector3 ue_axis = z.Cross(p_leading);
+    TVector3 ue_axis1(0.0, 0.0, 0.0);
+    TVector3 ue_axis2(0.0, 0.0, 0.0);
+    get_perpendicular_cone(p_leading, ue_axis1, +1.0);
+    get_perpendicular_cone(p_leading, ue_axis2, -1.0);
 
-    double dEta(200);
-    do {
-      double angle = gRandom->Uniform(0.0, TMath::TwoPi());
-      ue_axis.Rotate(angle, p_leading);
-      double eta_ue_axis = ue_axis.Eta();
-      dEta = (TMath::Abs(eta_ue_axis) + Rmax_jet_ue);
-    } while (dEta > max_eta);
+    // Protection against delta<0
+    if (ue_axis1.X() == 0 && ue_axis1.Y() == 0 && ue_axis1.Z() == 0)
+      return;
+    if (ue_axis2.X() == 0 && ue_axis2.Y() == 0 && ue_axis2.Z() == 0)
+      return;
+
+    registryQC.fill(HIST("number_of_events_data"), 8.5);
 
     // Store UE
     std::vector<int> ue_particle_ID;
@@ -620,24 +682,33 @@ struct nuclei_in_jets {
       const auto& ue_track = tracks.iteratorAt(particle_ID[i]);
 
       // Variables
-      float deltaEta = ue_track.eta() - ue_axis.Eta();
-      float deltaPhi = GetDeltaPhi(ue_track.phi(), ue_axis.Phi());
-      float dr = TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
+      float deltaEta1 = ue_track.eta() - ue_axis1.Eta();
+      float deltaPhi1 = GetDeltaPhi(ue_track.phi(), ue_axis1.Phi());
+      float dr1 = TMath::Sqrt(deltaEta1 * deltaEta1 + deltaPhi1 * deltaPhi1);
+      float deltaEta2 = ue_track.eta() - ue_axis2.Eta();
+      float deltaPhi2 = GetDeltaPhi(ue_track.phi(), ue_axis2.Phi());
+      float dr2 = TMath::Sqrt(deltaEta2 * deltaEta2 + deltaPhi2 * deltaPhi2);
 
       // Store Particles in the UE
-      if (dr < Rmax_jet_ue) {
-        registryQC.fill(HIST("eta_phi_ue"), deltaEta, deltaPhi);
-        registryQC.fill(HIST("r_ue"), dr);
+      if (dr1 < Rmax_jet_ue) {
+        registryQC.fill(HIST("eta_phi_ue"), deltaEta1, deltaPhi1);
+        registryQC.fill(HIST("r_ue"), dr1);
+        ue_particle_ID.push_back(particle_ID[i]);
+      }
+
+      if (dr2 < Rmax_jet_ue) {
+        registryQC.fill(HIST("eta_phi_ue"), deltaEta2, deltaPhi2);
+        registryQC.fill(HIST("r_ue"), dr2);
         ue_particle_ID.push_back(particle_ID[i]);
       }
     }
 
     // UE Multiplicity
     int nParticlesUE = static_cast<int>(ue_particle_ID.size());
-    registryQC.fill(HIST("ue_multiplicity"), nParticlesUE);
+    registryQC.fill(HIST("ue_multiplicity"), static_cast<float>(nParticlesUE) / 2.0);
 
     // Jet Multiplicity
-    int jet_Nch = nParticlesJetAndUE - nParticlesUE;
+    float jet_Nch = static_cast<float>(nParticlesJetAndUE) - static_cast<float>(nParticlesUE) / 2.0;
     registryQC.fill(HIST("jet_multiplicity"), jet_Nch);
 
     // Loop over particles inside Jet
@@ -670,6 +741,7 @@ struct nuclei_in_jets {
       float nsigmaTOFDe = jet_track.tofNSigmaDe();
       float nsigmaTPCHe = jet_track.tpcNSigmaHe();
       float pt = jet_track.pt();
+      float eta = jet_track.eta();
 
       // DCA
       if (isHighPurityAntiproton(jet_track) && TMath::Abs(jet_track.dcaZ()) < max_dcaz) {
@@ -688,6 +760,10 @@ struct nuclei_in_jets {
           registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr, jet_Nch);
         if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && jet_track.hasTOF())
           registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr, jet_Nch);
+        if (pt < 1.0 && TMath::Abs(nsigmaTPCPr) < 2.0)
+          registryData.fill(HIST("antip_tpc_jet_eta_pt"), pt, eta);
+        if (pt >= 0.5 && TMath::Abs(nsigmaTPCPr) < 2.0 && jet_track.hasTOF() && TMath::Abs(nsigmaTOFPr) < 2.0)
+          registryData.fill(HIST("antip_tof_jet_eta_pt"), pt, eta);
       }
 
       // Antideuteron
@@ -722,6 +798,7 @@ struct nuclei_in_jets {
       float nsigmaTOFDe = ue_track.tofNSigmaDe();
       float nsigmaTPCHe = ue_track.tpcNSigmaHe();
       float pt = ue_track.pt();
+      float eta = ue_track.eta();
 
       // DCA
       if (isHighPurityAntiproton(ue_track) && TMath::Abs(ue_track.dcaZ()) < max_dcaz) {
@@ -740,6 +817,10 @@ struct nuclei_in_jets {
           registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr, jet_Nch);
         if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && ue_track.hasTOF())
           registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr, jet_Nch);
+        if (pt < 1.0 && TMath::Abs(nsigmaTPCPr) < 2.0)
+          registryData.fill(HIST("antip_tpc_ue_eta_pt"), pt, eta);
+        if (pt >= 0.5 && TMath::Abs(nsigmaTPCPr) < 2.0 && ue_track.hasTOF() && TMath::Abs(nsigmaTOFPr) < 2.0)
+          registryData.fill(HIST("antip_tof_ue_eta_pt"), pt, eta);
       }
 
       // Antideuteron
