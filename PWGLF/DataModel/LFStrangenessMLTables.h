@@ -64,6 +64,8 @@ DECLARE_SOA_COLUMN(DCAV0daughters, dcaV0daughters, float);
 DECLARE_SOA_COLUMN(DCAv0topv, dcav0topv, float);
 DECLARE_SOA_COLUMN(PsiPair, psiPair, float);
 DECLARE_SOA_COLUMN(V0type, v0type, uint8_t);
+DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(SelHypothesis, selHypothesis, uint8_t);
 DECLARE_SOA_COLUMN(IsLambda, isLambda, bool);
 DECLARE_SOA_COLUMN(IsAntiLambda, isAntiLambda, bool);
 DECLARE_SOA_COLUMN(IsGamma, isGamma, bool);
@@ -108,6 +110,8 @@ DECLARE_SOA_TABLE(V0MLCandidates, "AOD", "V0MLCANDIDATES",
 				v0mlcandidates::DCAv0topv, 
 				v0mlcandidates::PsiPair, 
 				v0mlcandidates::V0type, 
+                                v0mlcandidates::Centrality, 
+                                v0mlcandidates::SelHypothesis,
 				v0mlcandidates::IsLambda, 
 				v0mlcandidates::IsAntiLambda, 
 				v0mlcandidates::IsGamma, 

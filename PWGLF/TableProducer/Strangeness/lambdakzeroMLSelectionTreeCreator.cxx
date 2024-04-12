@@ -69,14 +69,7 @@ using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 struct lambdakzeroMLSelectionTreeCreator{
     Produces<aod::V0MLCandidates> v0MLCandidates;
     HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-    // selection switches: please, use just one at a time! 
-    Configurable<bool> fGetAllCandidates{"fGetAllCandidates", true, "If True, create a Tree containing all available candidates"};
-    Configurable<bool> fGetLambdaOnly{"fGetLambdaOnly", false, "If True, apply cuts to select only lambda signal and bkg candidates"};
-    Configurable<bool> fGetAntiLambdaOnly{"fGetAntiLambdaOnly", false, "If True, apply cuts to select only antilambda signal and bkg candidates"};
-    Configurable<bool> fGetGammaOnly{"fGetGammaOnly", false, "If True, apply cuts to select only Gamma signal and bkg candidates"};
-    Configurable<bool> fGetK0ShortOnly{"fGetK0ShortOnly", false, "If True, apply cuts to select only K0Short signal and bkg candidates"};
-    
+  
     // Base selection criteria
 
     // Lambda standard criteria::
@@ -114,19 +107,19 @@ struct lambdakzeroMLSelectionTreeCreator{
     Configurable<float> K0ShortWindow{"K0ShortWindow", 0.01, "Mass window around expected (in GeV/c2)"};
 
     // Axis:
-    ConfigurableAxis vertexZ{"vertexZ", {30, -15.0f, 15.0f}, ""};
+    ConfigurableAxis centralityAxis{"centralityAxis", {100, 0.0f, 100.0f}, ""};
 
     void init(InitContext const&)
     {
-      histos.add("hEventVertexZMC", "hEventVertexZMC", kTH1F, {vertexZ});
+      histos.add("hEventCentrality", "hEventCentrality", kTH1F, {centralityAxis});
     }
 
     // Helper struct to pass v0 information
   struct {
   int posITSCls;
   int negITSCls;
-  int posITSClSize;
-  int negITSClSize;
+  uint32_t posITSClSize;
+  uint32_t negITSClSize;
   float posTPCRows;
   float negTPCRows;
   float posTPCSigmaPi;
@@ -160,6 +153,8 @@ struct lambdakzeroMLSelectionTreeCreator{
   float dcav0topv;
   float PsiPair;
   uint8_t v0type;
+  float centrality;
+  uint8_t SelHypothesis; 
   bool isLambda;
   bool isAntiLambda;
   bool isGamma;
@@ -167,9 +162,14 @@ struct lambdakzeroMLSelectionTreeCreator{
   } Candidate;
   
   // Process candidate and store properties in object
-  template <typename TV0Object>
-  bool processCandidate(TV0Object const& cand)
-  {    
+  template <typename TV0Object, typename TCollision>
+  void processCandidate(TCollision const& coll, TV0Object const& cand)
+  { 
+    bool lConsistentWithLambda = true;
+    bool lConsistentWithAntiLambda = true;
+    bool lConsistentWithGamma = true;
+    bool lConsistentWithK0Short = true;
+
     auto posTrackExtra = cand.template posTrackExtra_as<dauTracks>();
     auto negTrackExtra = cand.template negTrackExtra_as<dauTracks>();
 
@@ -219,89 +219,44 @@ struct lambdakzeroMLSelectionTreeCreator{
     Candidate.dcav0topv = cand.dcav0topv();
     Candidate.PsiPair = cand.psipair();
 
-    // Debug  
+    // Debug/Aditional  
     Candidate.v0type = cand.v0Type();
+    Candidate.centrality = coll.centFT0C();
+
+    // Applying selections and saving hypothesis
+    if ((std::abs(cand.mLambda() - 1.115683) > LambdaWindow) || (cand.v0radius() < Lambdav0radius) || ( cand.v0cosPA() < Lambdav0cospa) || (TMath::Abs(cand.dcapostopv()) < Lambdadcapostopv) || (TMath::Abs(cand.dcanegtopv()) < Lambdadcanegtopv) || ( cand.dcaV0daughters() > Lambdadcav0dau))
+      lConsistentWithLambda = false;
+    if ((std::abs(cand.mAntiLambda() - 1.115683) > AntiLambdaWindow) || (cand.v0radius() < AntiLambdav0radius) || (cand.v0cosPA() < AntiLambdav0cospa) || (TMath::Abs(cand.dcapostopv()) < AntiLambdadcapostopv) || (TMath::Abs(cand.dcanegtopv()) < AntiLambdadcanegtopv) || (cand.dcaV0daughters() > AntiLambdadcav0dau))
+      lConsistentWithAntiLambda = false;
+    if ((std::abs(cand.mGamma()) > PhotonWindow) || (cand.mGamma() > PhotonMaxMass) || (cand.v0radius() < PhotonMinRadius) || (cand.v0radius() > PhotonMaxRadius) || (cand.pt() < PhotonMinPt) || (cand.qtarm() > PhotonMaxqt) || (TMath::Abs(cand.alpha()) > PhotonMaxalpha))
+      lConsistentWithGamma = false;
+    if ((std::abs(cand.mK0Short() - 0.497) > K0ShortWindow) || (cand.v0radius() < K0Shortv0radius) || (cand.v0cosPA() < K0Shortv0cospa) || (TMath::Abs(cand.dcapostopv()) < K0Shortdcapostopv) || (TMath::Abs(cand.dcanegtopv()) < K0Shortdcanegtopv) || (cand.dcaV0daughters() > K0Shortdcav0dau))
+      lConsistentWithK0Short = false;    
+
+    Candidate.SelHypothesis = lConsistentWithLambda << 0 | lConsistentWithAntiLambda << 1 | lConsistentWithGamma << 2 | lConsistentWithK0Short << 3;
+    // 1: Consistent with Lambda only, 2: Consistent with Anti-Lambda only
+    // 3: Consistent with Lambda and Anti-Lambda, 4: Consistent with Gamma only
+    // 5: Consistent with Lambda and Gamma, 6: Consistent with Anti-Lambda and Gamma
+    // 7: Consistent with Lambda, Anti-Lambda, and Gamma, 8: Consistent with K0Short only
+    // 9: Consistent with Lambda and K0Short, 10: Consistent with Anti-Lambda and K0Short
+    // 11: Consistent with Lambda, Anti-Lambda, and K0Short, 12: Consistent with Gamma and K0Short
+    // 13: Consistent with Lambda, Gamma, and K0Short, 14: Consistent with Anti-Lambda, Gamma, and K0Short
+    // 15: Consistent with Lambda, Anti-Lambda, Gamma, and K0Short
 
     // MC flags
-    Candidate.isLambda = (cand.pdgCode()==3122);
-    Candidate.isAntiLambda = (cand.pdgCode()==-3122);
-    Candidate.isGamma = (cand.pdgCode()==22);
-    Candidate.isKZeroShort = (cand.pdgCode()==310);
+    Candidate.isLambda = false;
+    Candidate.isAntiLambda = false;
+    Candidate.isGamma = false;
+    Candidate.isKZeroShort = false;
 
-    return true;
-  }
+    if constexpr ( requires {cand.pdgCode();} ) {
+      Candidate.isLambda = (cand.pdgCode()==3122);
+      Candidate.isAntiLambda = (cand.pdgCode()==-3122);
+      Candidate.isGamma = (cand.pdgCode()==22);
+      Candidate.isKZeroShort = (cand.pdgCode()==310);
+    }
 
-  // Process lambda candidate 
-  template <typename TV0Object>
-  bool processLambdaCandidate(TV0Object const& lambda)
-  {    
-    // FIXME: there are smarter ways to perform this selection
-    // Lambda base selection criteria:
-    if ((std::abs(lambda.mLambda() - 1.115683) > LambdaWindow) || (lambda.v0radius() < Lambdav0radius) || ( lambda.v0cosPA() < Lambdav0cospa) || (TMath::Abs(lambda.dcapostopv()) < Lambdadcapostopv) || (TMath::Abs(lambda.dcanegtopv()) < Lambdadcanegtopv) || ( lambda.dcaV0daughters() > Lambdadcav0dau))
-      return false;
-    return processCandidate(lambda);
-  }
-
-  // Process antilambda candidate 
-  template <typename TV0Object>
-  bool processAntiLambdaCandidate(TV0Object const& antilambda)
-  {    
-    // FIXME: there are smarter ways to perform this selection
-    // AntiLambda base selection criteria:
-    if ((std::abs(antilambda.mAntiLambda() - 1.115683) > AntiLambdaWindow) || (antilambda.v0radius() < AntiLambdav0radius) || (antilambda.v0cosPA() < AntiLambdav0cospa) || (TMath::Abs(antilambda.dcapostopv()) < AntiLambdadcapostopv) || (TMath::Abs(antilambda.dcanegtopv()) < AntiLambdadcanegtopv) || (antilambda.dcaV0daughters() > AntiLambdadcav0dau))
-      return false;
-    return processCandidate(antilambda);
-  }
-
-  // Process gamma candidate
-  template <typename TV0Object>
-  bool processGammaCandidate(TV0Object const& gamma)
-  {    
-    // FIXME: there are smarter ways to perform this selection
-    // Gamma selection criteria:
-    if ((std::abs(gamma.mGamma()) > PhotonWindow) || (gamma.mGamma() > PhotonMaxMass) || (gamma.v0radius() < PhotonMinRadius) || (gamma.v0radius() > PhotonMaxRadius) || (gamma.pt() < PhotonMinPt) || (gamma.qtarm() > PhotonMaxqt) || (TMath::Abs(gamma.alpha()) > PhotonMaxalpha))
-      return false;    
-    return processCandidate(gamma);
-  }
-
-  // Process k0short candidate
-  template <typename TV0Object>
-  bool processK0ShortCandidate(TV0Object const& kzero)
-  {    
-    // FIXME: there are smarter ways to perform this selection
-    // TODO: Update KZeroShort selection criteria
-    if ((std::abs(kzero.mK0Short() - 0.497) > K0ShortWindow) || (kzero.v0radius() < K0Shortv0radius) || (kzero.v0cosPA() < K0Shortv0cospa) || (TMath::Abs(kzero.dcapostopv()) < K0Shortdcapostopv) || (TMath::Abs(kzero.dcanegtopv()) < K0Shortdcanegtopv) || (kzero.dcaV0daughters() > K0Shortdcav0dau))
-      return false;    
-    return processCandidate(kzero);
-  }
-
-  void process(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFNSigmas> const& v0s, dauTracks const&)
-  {
-    histos.fill(HIST("hEventVertexZMC"), coll.posZ());
-    for (auto& cand: v0s){ // looping over lambdas 
-
-      if(fGetLambdaOnly){ 
-        if (!processLambdaCandidate(cand))
-           continue;
-      }
-      if(fGetAntiLambdaOnly){ 
-        if (!processAntiLambdaCandidate(cand))
-           continue;
-      }
-      if(fGetGammaOnly){
-        if (!processGammaCandidate(cand))
-           continue;
-      }
-      if(fGetK0ShortOnly){
-        if(!processK0ShortCandidate(cand))
-           continue;
-      }
-      if(fGetAllCandidates) { 
-         if(!processCandidate(cand))
-            continue;
-      }
-
-      // Filling TTree for ML analysis
+    // Filling TTree for ML analysis
       v0MLCandidates(Candidate.posITSCls, Candidate.negITSCls, Candidate.posITSClSize, Candidate.negITSClSize, Candidate.posTPCRows, Candidate.negTPCRows, 
       Candidate.posTPCSigmaPi, Candidate.negTPCSigmaPi, Candidate.posTPCSigmaPr, Candidate.negTPCSigmaPr, 
       Candidate.posTPCSigmaEl, Candidate.negTPCSigmaEl, Candidate.TOFSigmaLaPr, Candidate.TOFSigmaLaPi, 
@@ -309,10 +264,27 @@ struct lambdakzeroMLSelectionTreeCreator{
       Candidate.LambdaMass, Candidate.AntiLambdaMass, Candidate.GammaMass, Candidate.KZeroShortMass, Candidate.pT, 
       Candidate.qt, Candidate.alpha, Candidate.posEta, Candidate.negEta, Candidate.v0Eta, Candidate.Z, 
       Candidate.v0radius, Candidate.PA, Candidate.dcapostopv, Candidate.dcanegtopv, Candidate.dcaV0daughters, Candidate.dcav0topv, Candidate.PsiPair, 
-      Candidate.v0type, Candidate.isLambda, Candidate.isAntiLambda, Candidate.isGamma, Candidate.isKZeroShort);
+      Candidate.v0type, Candidate.centrality, Candidate.SelHypothesis, Candidate.isLambda, Candidate.isAntiLambda, Candidate.isGamma, Candidate.isKZeroShort);
   }
 
-}
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFNSigmas> const& v0s, dauTracks const&)
+  {
+    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+    for (auto& cand: v0s){ // looping over lambdas 
+      processCandidate(coll, cand);
+    }
+  }
+
+  void processSimData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFNSigmas> const& v0s, dauTracks const&)
+  {
+    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+    for (auto& cand: v0s){ // looping over lambdas 
+      processCandidate(coll, cand);
+    }
+  }
+
+  PROCESS_SWITCH(lambdakzeroMLSelectionTreeCreator, processRealData, "Produce Run 3 v0 tables (real data)", false);  
+  PROCESS_SWITCH(lambdakzeroMLSelectionTreeCreator, processSimData, "Produce Run 3 v0 tables (simulation)", true);
 
 };
 
