@@ -101,7 +101,6 @@ struct lambdakzeroBuilder {
   o2::ml::OnnxModel mlModelGamma;
 
   std::map<std::string, std::string> metadata;
-  std::map<std::string, std::string> headers;
 
   Produces<aod::V0Indices> v0indices;
   Produces<aod::StoredV0Cores> v0cores;
