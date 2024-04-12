@@ -275,7 +275,7 @@ struct lambdakzeroMLSelectionTreeCreator{
     return processCandidate(kzero);
   }
 
-  void process(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFNSigmas> const& v0s)
+  void process(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFNSigmas> const& v0s, dauTracks const&)
   {
     histos.fill(HIST("hEventVertexZMC"), coll.posZ());
     for (auto& cand: v0s){ // looping over lambdas 

@@ -66,7 +66,7 @@ using std::endl;
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
 struct cascadeMLSelectionTreeCreator{
-  //Produces<aod::CascadeMLCandidates> cascadeMLCandidates;
+  Produces<aod::CascMLCandidates> cascadeMLCandidates;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // selection switches: please, use just one at a time! 
@@ -96,11 +96,15 @@ struct cascadeMLSelectionTreeCreator{
     // Helper struct to pass v0 information
   struct {
   int charge;
+  float centrality;
 
   // tracking properties
   int posITSCls;
   int negITSCls;
   int bachITSCls;
+  uint32_t posITSClsSizes;
+  uint32_t negITSClsSizes;
+  uint32_t bachITSClsSizes;
   float posTPCRows;
   float negTPCRows;
   float bachTPCRows;
@@ -164,6 +168,9 @@ struct cascadeMLSelectionTreeCreator{
     cascadeCandidate.posITSCls = posTrackExtra.itsNCls();
     cascadeCandidate.negITSCls = negTrackExtra.itsNCls();
     cascadeCandidate.bachITSCls = negTrackExtra.itsNCls();
+    cascadeCandidate.posITSClsSizes = posTrackExtra.itsClusterSizes();
+    cascadeCandidate.negITSClsSizes = negTrackExtra.itsClusterSizes();
+    cascadeCandidate.bachITSClsSizes = negTrackExtra.itsClusterSizes();
     cascadeCandidate.posTPCRows = posTrackExtra.tpcCrossedRows();
     cascadeCandidate.negTPCRows = negTrackExtra.tpcCrossedRows();
     cascadeCandidate.bachTPCRows = bachTrackExtra.tpcCrossedRows();
@@ -222,17 +229,78 @@ struct cascadeMLSelectionTreeCreator{
 
     // Mass window selections
 
-  
+
+    // populate
+    cascadeMLCandidates(
+      cascadeCandidate.charge,
+      cascadeCandidate.centrality,
+
+      // Track quality
+      cascadeCandidate.posITSCls,
+      cascadeCandidate.negITSCls,
+      cascadeCandidate.bachITSCls,
+      cascadeCandidate.posITSClsSizes,
+      cascadeCandidate.negITSClsSizes,
+      cascadeCandidate.bachITSClsSizes,
+      cascadeCandidate.posTPCRows,
+      cascadeCandidate.negTPCRows,
+      cascadeCandidate.bachTPCRows,
+
+      // TPC PID
+      cascadeCandidate.posTPCSigmaPi,
+      cascadeCandidate.negTPCSigmaPi,
+      cascadeCandidate.posTPCSigmaPr,
+      cascadeCandidate.negTPCSigmaPr,
+      cascadeCandidate.bachTPCSigmaPi,
+      cascadeCandidate.bachTPCSigmaKa,
+
+      // TOF PID
+      cascadeCandidate.TOFNSigmaXiLaPi,
+      cascadeCandidate.TOFNSigmaXiLaPr,
+      cascadeCandidate.TOFNSigmaXiPi,
+      cascadeCandidate.TOFNSigmaOmLaPi,
+      cascadeCandidate.TOFNSigmaOmLaPr,
+      cascadeCandidate.TOFNSigmaOmKa,
+
+      // Basic Kine
+      cascadeCandidate.mXi,
+      cascadeCandidate.mOmega,
+      cascadeCandidate.yXi,
+      cascadeCandidate.yOmega,
+      cascadeCandidate.mLambdaDaughter,
+      cascadeCandidate.pt,
+      cascadeCandidate.posEta,
+      cascadeCandidate.negEta,
+      cascadeCandidate.bachEta,
+
+      // Topological 
+      cascadeCandidate.v0radius,
+      cascadeCandidate.cascradius,
+      cascadeCandidate.dcapostopv,
+      cascadeCandidate.dcanegtopv,
+      cascadeCandidate.dcabachtopv,
+      cascadeCandidate.dcaV0Daughters,
+      cascadeCandidate.dcaCascDaughters,
+      cascadeCandidate.dcav0topv,
+      cascadeCandidate.v0CosPA,
+      cascadeCandidate.cascCosPA,
+
+      // MC identity
+      cascadeCandidate.isXiMinus,
+      cascadeCandidate.isXiPlus,
+      cascadeCandidate.isOmegaMinus,
+      cascadeCandidate.isOmegaPlus
+    );
   }
 
-  void processRealData(soa::Join<aod::StraCollision, aod::StraCents> const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascTOFNSigmas> const& cascades)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascTOFNSigmas> const& cascades, dauTracks const&)
   {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     for (auto& casc: cascades){ // looping over lambdas 
       processCandidate(coll, casc);
     }
   }
-  void processSimData(soa::Join<aod::StraCollision, aod::StraCents> const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascMCDatas, aod::CascTOFNSigmas> const& cascades)
+  void processSimData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascMCDatas, aod::CascTOFNSigmas> const& cascades, dauTracks const&)
   {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     for (auto& casc: cascades){ // looping over lambdas 
