@@ -233,10 +233,6 @@ struct HfTaskMcValidationGen {
         registry.fill(HIST("hPDiffMotherDaughterGen"), pDiff);
         registry.fill(HIST("hPtDiffMotherDaughterGen"), ptDiff);
 
-        if (!momentumCheck) {
-          continue;
-        }
-
         int origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
         if (origin == RecoDecay::OriginType::Prompt) {
           counterPrompt[iD]++;
