@@ -134,6 +134,7 @@ DECLARE_SOA_TABLE(V0K0ShortMLScores, "AOD", "V0K0MLScores",
 // Cascade candidates
 namespace cascmlcandidates
 {
+DECLARE_SOA_COLUMN(MassWindows, massWindows, uint8_t);
 DECLARE_SOA_COLUMN(Charge, charge, int);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 DECLARE_SOA_COLUMN(PosITSCls, posITSCls, int);
@@ -186,6 +187,7 @@ DECLARE_SOA_COLUMN(IsOmegaPlus, isOmegaPlus, bool);
 } // namespace cascmlcandidates
 
 DECLARE_SOA_TABLE(CascMLCandidates, "AOD", "CAMLCANDIDATES",
+        cascmlcandidates::MassWindows,
         cascmlcandidates::Charge,
         cascmlcandidates::Centrality,
         cascmlcandidates::PosITSCls,

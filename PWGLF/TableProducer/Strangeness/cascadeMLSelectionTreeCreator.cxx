@@ -95,62 +95,63 @@ struct cascadeMLSelectionTreeCreator{
 
     // Helper struct to pass v0 information
   struct {
-  int charge;
-  float centrality;
+    uint8_t massWindows;
+    int charge;
+    float centrality;
 
-  // tracking properties
-  int posITSCls;
-  int negITSCls;
-  int bachITSCls;
-  uint32_t posITSClsSizes;
-  uint32_t negITSClsSizes;
-  uint32_t bachITSClsSizes;
-  float posTPCRows;
-  float negTPCRows;
-  float bachTPCRows;
-  
-  // PID properties
-  float posTPCSigmaPi;
-  float negTPCSigmaPi;
-  float posTPCSigmaPr;
-  float negTPCSigmaPr;
-  float bachTPCSigmaPi;
-  float bachTPCSigmaKa;
-  float TOFNSigmaXiLaPi;
-  float TOFNSigmaXiLaPr;
-  float TOFNSigmaXiPi;
-  float TOFNSigmaOmLaPi;
-  float TOFNSigmaOmLaPr;
-  float TOFNSigmaOmKa;
+    // tracking properties
+    int posITSCls;
+    int negITSCls;
+    int bachITSCls;
+    uint32_t posITSClsSizes;
+    uint32_t negITSClsSizes;
+    uint32_t bachITSClsSizes;
+    float posTPCRows;
+    float negTPCRows;
+    float bachTPCRows;
+    
+    // PID properties
+    float posTPCSigmaPi;
+    float negTPCSigmaPi;
+    float posTPCSigmaPr;
+    float negTPCSigmaPr;
+    float bachTPCSigmaPi;
+    float bachTPCSigmaKa;
+    float TOFNSigmaXiLaPi;
+    float TOFNSigmaXiLaPr;
+    float TOFNSigmaXiPi;
+    float TOFNSigmaOmLaPi;
+    float TOFNSigmaOmLaPr;
+    float TOFNSigmaOmKa;
 
-  // Basic kine
-  float mXi;
-  float mOmega;
-  float yXi;
-  float yOmega;
-  float mLambdaDaughter;
-  float pt;
-  float posEta;
-  float negEta;
-  float bachEta;
+    // Basic kine
+    float mXi;
+    float mOmega;
+    float yXi;
+    float yOmega;
+    float mLambdaDaughter;
+    float pt;
+    float posEta;
+    float negEta;
+    float bachEta;
 
-  // Topological
-  float v0radius;
-  float cascradius;
-  float dcapostopv;
-  float dcanegtopv;
-  float dcabachtopv;
-  float dcaV0Daughters;
-  float dcaCascDaughters;
-  float dcav0topv;
-  float v0CosPA;
-  float cascCosPA;
+    // Topological
+    float v0radius;
+    float cascradius;
+    float dcapostopv;
+    float dcanegtopv;
+    float dcabachtopv;
+    float dcaV0Daughters;
+    float dcaCascDaughters;
+    float dcav0topv;
+    float v0CosPA;
+    float cascCosPA;
 
-  // reserved for MC operation
-  bool isXiMinus;
-  bool isXiPlus;
-  bool isOmegaMinus;
-  bool isOmegaPlus; 
+    // reserved for MC operation
+    bool isXiMinus;
+    bool isXiPlus;
+    bool isOmegaMinus;
+    bool isOmegaPlus; 
   } cascadeCandidate;
   
   // Process candidate and store properties in object
@@ -232,6 +233,7 @@ struct cascadeMLSelectionTreeCreator{
 
     // populate
     cascadeMLCandidates(
+      cascadeCandidate.massWindows,
       cascadeCandidate.charge,
       cascadeCandidate.centrality,
 
