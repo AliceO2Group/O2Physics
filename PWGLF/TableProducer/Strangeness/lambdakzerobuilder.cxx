@@ -1109,13 +1109,15 @@ struct lambdakzeroBuilder {
                                         v0candidate.cosPA, v0candidate.dcaV0dau, 
                                         v0candidate.posDCAxy, v0candidate.negDCAxy};
 
-        // calculate classifier
-        float* lambdaProbability = mlModelLambda.evalModel(inputFeatures);
-        float* gammaProbability = mlModelGamma.evalModel(inputFeatures);
-
-        // save score
-        gammaScore = gammaProbability[1];
-        lambdaScore = lambdaProbability[1];
+        // calculate scores
+        if(mlConfigurations.calculateLambdaScores){
+          float* lambdaProbability = mlModelLambda.evalModel(inputFeatures);
+          lambdaScore = lambdaProbability[1];
+        }
+        if(mlConfigurations.calculateGammaScores){
+          float* gammaProbability = mlModelGamma.evalModel(inputFeatures);
+          gammaScore = gammaProbability[1];
+        }
 
         // Skip anything that doesn't fulfull any of the desired conditions 
         if( gammaScore < mlConfigurations.thresholdGamma.value && 
