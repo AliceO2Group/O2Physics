@@ -72,7 +72,7 @@ struct qaMatchEff {
   //
   // Track selections
   Configurable<bool> b_useTrackSelections{"b_useTrackSelections", false, "Boolean to switch the track selections on/off."};
-  Configurable<int> filterbitTrackSelections{"filterbitTrackSelections", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<bool> b_useAnalysisTrackSelections{"b_useAnalysisTrackSelections", false, "Boolean to switch if the analysis track selections are used. If true, all the Explicit track cuts are ignored."};
   // kinematics
   Configurable<float> ptMinCutInnerWallTPC{"ptMinCutInnerWallTPC", 0.1f, "Minimum transverse momentum calculated at the inner wall of TPC (GeV/c)"};
   Configurable<float> ptMinCut{"ptMinCut", 0.1f, "Minimum transverse momentum (GeV/c)"};
@@ -186,12 +186,6 @@ struct qaMatchEff {
   //      ******     BE VERY CAREFUL!   --  FILTERS !!!  *****
   //
   Filter zPrimVtxLim = nabs(aod::collision::posZ) < zPrimVtxMax;
-  Filter trackFilter = (filterbitTrackSelections.node() == 0) ||
-                       ((filterbitTrackSelections.node() == 1) && requireGlobalTrackInFilter()) || /// filterbit 4 track selections + tight DCA cuts
-                       ((filterbitTrackSelections.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
-                       ((filterbitTrackSelections.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
-                       ((filterbitTrackSelections.node() == 4) && requireQualityTracksInFilter()) ||
-                       ((filterbitTrackSelections.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   //
   //
   //
@@ -208,9 +202,9 @@ struct qaMatchEff {
     else
       initData();
 
-    if ((!isitMC && (doprocessMCFilteredTracks || doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) || (isitMC && (doprocessDataFilteredTracks || doprocessData || doprocessDataNoColl || doprocessTrkIUMC)))
+    if ((!isitMC && (doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) || (isitMC && (doprocessData || doprocessDataNoColl || doprocessTrkIUMC)))
       LOGF(fatal, "Initialization set for MC and processData function flagged  (or viceversa)! Fix the configuration.");
-    if ((doprocessMCFilteredTracks && doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) || (doprocessDataFilteredTracks && doprocessData && doprocessDataNoColl && doprocessTrkIUData))
+    if ((doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) || (doprocessData && doprocessDataNoColl && doprocessTrkIUData))
       LOGF(fatal, "Cannot process for both without collision tag and with collision tag at the same time! Fix the configuration.");
     if (doprocessTrkIUMC && makethn) {
       LOGF(fatal, "No DCA for IU tracks. Put makethn = false.");
@@ -249,6 +243,12 @@ struct qaMatchEff {
       }
       LOG(info) << "############";
       cutObject.SetRequireHitsInITSLayers(customMinITShits, set_customITShitmap);
+
+      if (b_useAnalysisTrackSelections) {
+        LOG(info) << "### Using analysis track selections";
+        cutObject = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, 0);
+        LOG(info) << "### Analysis track selections set";
+      }
     }
   }
   // end Init function
@@ -2168,7 +2168,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/PID/etahist_tpc_noidminus"))->Fill(track.eta());
             }
           } // not pions, nor kaons, nor protons
-        }   // end if DATA
+        } // end if DATA
         //
         if (trkWITS && isTrackSelectedITSCuts(track)) { ////////////////////////////////////////////   ITS tag inside TPC tagged
           if constexpr (IS_MC) {                        ////////////////////////   MC
@@ -2507,7 +2507,7 @@ struct qaMatchEff {
             }
           }
         } //  end if ITS
-      }   //  end if TPC
+      } //  end if TPC
       //
       // all tracks with pt>0.5
       if (trackPt > 0.5) {
@@ -2532,8 +2532,8 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/etahist_tpcits_05"))->Fill(track.eta());
             }
           } //  end if ITS
-        }   //  end if TPC
-      }     //  end if pt > 0.5
+        } //  end if TPC
+      } //  end if pt > 0.5
       //
       // positive only
       if (track.signed1Pt() > 0) {
@@ -2558,9 +2558,9 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/etahist_tpcits_pos"))->Fill(track.eta());
             }
           } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end positive
+        } //  end if TPC
+          //
+      } // end positive
       //
       // negative only
       if (track.signed1Pt() < 0) {
@@ -2585,9 +2585,9 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/etahist_tpcits_neg"))->Fill(track.eta());
             }
           } //  end if ITS
-        }   //  end if TPC
-            //
-      }     // end negative
+        } //  end if TPC
+          //
+      } // end negative
 
       if constexpr (IS_MC) { // MC
         auto mcpart = track.mcParticle();
@@ -2611,7 +2611,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/primsec/phihist_tpcits_prim"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/primsec/etahist_tpcits_prim"))->Fill(track.eta());
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
           //  end if primaries
         } else if (mcpart.getProcess() == 4) {
           //
@@ -2633,7 +2633,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/primsec/phihist_tpcits_secd"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/primsec/etahist_tpcits_secd"))->Fill(track.eta());
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
           // end if secondaries from decay
         } else {
           //
@@ -2655,8 +2655,8 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/primsec/phihist_tpcits_secm"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/primsec/etahist_tpcits_secm"))->Fill(track.eta());
             } //  end if ITS
-          }   //  end if TPC
-        }     // end if secondaries from material
+          } //  end if TPC
+        } // end if secondaries from material
         //
         // protons only
         if (tpPDGCode == 2212) {
@@ -2723,7 +2723,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_prminus"))->Fill(track.eta());
               }
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
         }
         //
         // pions only
@@ -2791,7 +2791,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_piminus"))->Fill(track.eta());
               }
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
           //
           // only primary pions
           if (mcpart.isPhysicalPrimary()) {
@@ -2804,7 +2804,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi_prim"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi_prim"))->Fill(track.eta());
               } //  end if ITS
-            }   //  end if TPC
+            } //  end if TPC
             //  end if primaries
           } else if (mcpart.getProcess() == 4) {
             //
@@ -2818,7 +2818,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi_secd"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi_secd"))->Fill(track.eta());
               } //  end if ITS
-            }   //  end if TPC
+            } //  end if TPC
             // end if secondaries from decay
           } else {
             //
@@ -2832,9 +2832,9 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi_secm"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi_secm"))->Fill(track.eta());
               } //  end if ITS
-            }   //  end if TPC
-          }     // end if secondaries from material  //
-        }       // end pions only
+            } //  end if TPC
+          } // end if secondaries from material  //
+        } // end pions only
         //
         // no primary/sec-d pions
         if (!((tpPDGCode == 211) && (mcpart.isPhysicalPrimary()))) {
@@ -2858,8 +2858,8 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/PID/etahist_tpcits_nopi"))->Fill(track.eta());
               histos.get<TH1>(HIST("MC/PID/pdghist_num"))->Fill(pdg_fill);
             } //  end if ITS
-          }   //  end if TPC
-        }     // end if not prim/sec-d pi
+          } //  end if TPC
+        } // end if not prim/sec-d pi
         //
         // kaons only
         if (tpPDGCode == 321) {
@@ -2926,7 +2926,7 @@ struct qaMatchEff {
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_kaminus"))->Fill(track.eta());
               }
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
         }
         //
         // pions and kaons together
@@ -2940,7 +2940,7 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("MC/PID/phihist_tpcits_piK"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/PID/etahist_tpcits_piK"))->Fill(track.eta());
             } //  end if ITS
-          }   //  end if TPC
+          } //  end if TPC
         }
       }
       //
@@ -3018,13 +3018,6 @@ struct qaMatchEff {
   }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
 
-  void processMCFilteredTracks(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const& mcParticles)
-  {
-    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
-    fillGeneralHistos<true>(collision);
-  }
-  PROCESS_SWITCH(qaMatchEff, processMCFilteredTracks, "process MC with filtered tracks with filterbit selections", false);
-
   ////////////////////////////////////////////////////////////
   ///   Process MC with collision grouping and IU tracks   ///
   ////////////////////////////////////////////////////////////
@@ -3057,17 +3050,6 @@ struct qaMatchEff {
     fillGeneralHistos<false>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
-
-  void processDataFilteredTracks(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>> const& tracks, BCsWithTimeStamp const& bcs)
-  {
-    if (enableMonitorVsTime) {
-      // tracks.rawIteratorAt(0).collision().bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
-      setUpTimeMonitoring(bcs);
-    }
-    fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
-    fillGeneralHistos<false>(collision);
-  }
-  PROCESS_SWITCH(qaMatchEff, processDataFilteredTracks, "process data with filtered tracks with filterbit selections", false);
 
   /////////////////////////////////////////////////////////////
   ///   Process data with collision grouping and IU tracks  ///
