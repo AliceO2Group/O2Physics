@@ -78,15 +78,20 @@ struct cascadeMLSelectionTreeCreator{
   Configurable<float> xiMassWindow{"xiMassWindow", 0.060, "Xi Mass Window around mass peak to consider (+/-, in GeV/c^2)"};
   Configurable<float> omegaMassWindow{"omegaMassWindow", 0.060, "Omega Mass Window around mass peak to consider (+/-, in GeV/c^2)"};
 
-  // Master switch for selecting candidates
-  struct : ConfigurableGroup {
-    Configurable<float> Lambdav0cospa{"Lambdav0cospa", 0.90, "min V0 CosPA"};
-    Configurable<float> Lambdadcav0dau{"Lambdadcav0dau", 1.0, "max DCA V0 Daughters (cm)"};
-    Configurable<float> Lambdadcanegtopv{"Lambdadcanegtopv", .05, "min DCA Neg To PV (cm)"};
-    Configurable<float> Lambdadcapostopv{"Lambdadcapostopv", .05, "min DCA Pos To PV (cm)"};
-    Configurable<float> Lambdav0radius{"Lambdav0radius", 1.5, "minimum V0 radius (cm)"};
-    Configurable<float> LambdaWindow{"LambdaWindow", 0.01, "Mass window around expected (in GeV/c2)"};
-  } topoConfiguration;
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // Selection criteria - compatible with core wagon autodetect
+  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.95, "v0setting_cospa"};
+  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"};
+  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"};
+  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"};
+  Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"};
+  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"};
+  Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "cascadesetting_dcacascdau"};
+  Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "cascadesetting_dcabachtopv"};
+  Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.5, "cascadesetting_cascradius"};
+  Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"};
+  Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   // Axis:
   ConfigurableAxis centralityAxis{"centralityAxis", {100, 0.0f, 100.0f}, ""};
@@ -231,6 +236,30 @@ struct cascadeMLSelectionTreeCreator{
       cascadeCandidate.isOmegaPlus = (cand.pdgCode() == -3334);
     }
 
+    // base topological selections
+    if( cascadeCandidate.v0CosPA < v0setting_cospa )
+      return; 
+    if( cascadeCandidate.dcaV0Daughters > v0setting_dcav0dau )
+      return; 
+    if( cascadeCandidate.dcapostopv < v0setting_dcapostopv )
+      return; 
+    if( cascadeCandidate.dcapostopv < v0setting_dcanegtopv )
+      return; 
+    if( cascadeCandidate.dcabachtopv < cascadesetting_dcabachtopv )
+      return; 
+    if( cascadeCandidate.v0radius < v0setting_radius )
+      return; 
+    if( cascadeCandidate.cascCosPA < cascadesetting_cospa )
+      return; 
+    if( cascadeCandidate.dcaCascDaughters > cascadesetting_dcacascdau )
+      return; 
+    if( cascadeCandidate.cascradius < cascadesetting_cascradius )
+      return; 
+    if( std::abs(cascadeCandidate.mLambdaDaughter-1.116) > cascadesetting_v0masswindow )
+      return; 
+    if( cascadeCandidate.dcav0topv < cascadesetting_mindcav0topv )
+      return; 
+
     // Mass window selections
     cascadeCandidate.massWindows = 0;
     if(std::abs(cascadeCandidate.mXi-1.322) < xiMassWindow) {
@@ -296,8 +325,8 @@ struct cascadeMLSelectionTreeCreator{
       cascadeCandidate.dcaV0Daughters,
       cascadeCandidate.dcaCascDaughters,
       cascadeCandidate.dcav0topv,
-      cascadeCandidate.v0CosPA,
-      cascadeCandidate.cascCosPA,
+      TMath::ACos(cascadeCandidate.v0CosPA),
+      TMath::ACos(cascadeCandidate.cascCosPA),
 
       // MC identity
       cascadeCandidate.isXiMinus,
