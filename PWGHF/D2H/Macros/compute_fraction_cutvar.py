@@ -51,7 +51,7 @@ def main(config):
     infileCentralEff.Close()
 
     # Check if the histograms have the same binning, assuming the two sets of inputs are consistent
-    for i in range(1, hist_rawy[0].GetNbinsX() + 2): # +2 to include the upper edge of last bin
+    for i in range(1, hist_rawy[0].GetNbinsX() + 2):  # +2 to include the upper edge of last bin
         if hist_rawy[0].GetBinLowEdge(i) != hist_central_effp.GetBinLowEdge(i):
             raise ValueError("Histograms have different binning, check the input files")
 
@@ -100,14 +100,13 @@ def main(config):
         fillstyle=0,
         markerstyle=ROOT.kFullSquare,
     )
-    
+
     set_object_style(
         hist_frac_raw_nonprompt,
         color=ROOT.kAzure + 4,
         fillstyle=0,
         markerstyle=ROOT.kFullSquare,
     )
-    
 
     output = ROOT.TFile(os.path.join(cfg["output"]["directory"], cfg["output"]["file"]), "recreate")
     n_sets = len(hist_rawy)
@@ -135,8 +134,12 @@ def main(config):
         hist_covariance.SetBinError(ipt + 1, 0)
         corr_frac_prompt = minimiser.get_corr_prompt_fraction()
         corr_frac_nonprompt = minimiser.get_corr_nonprompt_fraction()
-        raw_frac_prompt = minimiser.get_raw_prompt_fraction(hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1))
-        raw_frac_nonprompt = minimiser.get_raw_nonprompt_fraction(hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1))
+        raw_frac_prompt = minimiser.get_raw_prompt_fraction(
+            hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
+        )
+        raw_frac_nonprompt = minimiser.get_raw_nonprompt_fraction(
+            hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
+        )
         hist_corrfrac_prompt.SetBinContent(ipt + 1, corr_frac_prompt[0])
         hist_corrfrac_prompt.SetBinError(ipt + 1, corr_frac_prompt[1])
         hist_corrfrac_nonprompt.SetBinContent(ipt + 1, corr_frac_nonprompt[0])
