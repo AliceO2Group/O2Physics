@@ -1817,9 +1817,6 @@ struct tofSpectra {
         if (!isTrueINELgt0(particlesInCollision)) {
           continue;
         }
-        if (TMath::Abs(mcCollision.posZ()) > cfgCutVertex) {
-          continue;
-        }
       }
 
       int nInelPart = 0;
