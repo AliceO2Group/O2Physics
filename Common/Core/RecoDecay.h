@@ -22,6 +22,7 @@
 #include <cmath>     // std::abs, std::sqrt
 #include <utility>   // std::move
 #include <vector>    // std::vector
+#include <iostream>
 
 #include "CommonConstants/MathConstants.h"
 #include "TMCProcess.h" // for VMC Particle Production Process
@@ -733,6 +734,10 @@ class RecoDecay
         //   printf(" %d", i);
         // }
         // printf("\n");
+        if (!checkProcess && arrAllDaughtersIndex.size() != N) {
+          // Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
+          return -1;
+        }
       }
       // Check that the daughter is in the list of final daughters.
       // (Check that the daughter is not a stepdaughter, i.e. particle pointing to the mother while not being its daughter.)
@@ -849,6 +854,11 @@ class RecoDecay
       //   printf(" %d", i);
       // }
       // printf("\n");
+      //  Check whether the number of final daughters is equal to the required number.
+      if (!checkProcess && arrAllDaughtersIndex.size() != N) {
+        // Printf("MC Gen: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
+        return false;
+      }
       if constexpr (acceptFlavourOscillation) {
         // Loop over decay candidate prongs to spot possible oscillation decay product
         for (auto indexDaughterI : arrAllDaughtersIndex) {
@@ -863,7 +873,7 @@ class RecoDecay
       for (auto indexDaughterI : arrAllDaughtersIndex) {
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
         auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
-        if (checkProcess && candidateDaughterI.getProcess() != TMCProcess::kPDecay) {               // production process of the ith daughter
+        if (checkProcess && candidateDaughterI.getProcess() != TMCProcess::kPDecay) {             // production process of the ith daughter
           continue;
         }
         // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
