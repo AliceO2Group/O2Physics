@@ -43,7 +43,7 @@ struct skimmerDalitzEE {
   Preslice<MyTracks> perCol = o2::aod::emprimaryelectron::emeventId;
 
   SliceCache cache_cefp;
-  Preslice<aod::EMPrimaryElectrons> perCol_cefp = o2::aod::emprimaryelectron::collisionId;
+  PresliceUnsorted<aod::EMPrimaryElectrons> perCol_cefp = o2::aod::emprimaryelectron::collisionId;
 
   Produces<aod::DalitzEEs> dalitzees;
   Produces<o2::aod::DalitzEEEMEventIds> dalitz_ee_eventid;
@@ -220,8 +220,8 @@ struct skimmerDalitzEE {
   void processCEFP(soa::Join<aod::Collisions, aod::EMEventsBz> const& collisions, aod::EMPrimaryElectrons const& tracks)
   {
     for (auto& collision : collisions) {
-      auto posTracks_per_coll = posTracks_cefp->sliceByCached(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);
-      auto negTracks_per_coll = negTracks_cefp->sliceByCached(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);
+      auto posTracks_per_coll = posTracks_cefp->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);
+      auto negTracks_per_coll = negTracks_cefp->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);
 
       int npair_uls = 0, npair_lspp = 0, npair_lsmm = 0;
       npair_uls = fillPairTable<EM_EEPairType::kULS, true>(collision, posTracks_per_coll, negTracks_per_coll); // ULS

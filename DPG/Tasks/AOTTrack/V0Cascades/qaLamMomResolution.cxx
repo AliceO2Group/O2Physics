@@ -298,16 +298,37 @@ struct qaLamMomResolution {
               // get daughter momenta at IU, charge, eta, nTPCclusters
               getTrackInfo(protonTrackIU, pionTrackIU);
 
-              // use track tuner to tune daughter tracks' pT
+              // optionally use track tuner to tune daughter tracks' pT at decay vertex
               if (useTrackTuner) {
+                // tune V0
                 tuneV0(v0data, protonTrackIU, pionTrackIU, mcparticles, bcs);
+                // get smeared parameters and cov matrix
                 std::array<float, 3> pPos{0., 0., 0.};
                 std::array<float, 3> pNeg{0., 0., 0.};
+                std::array<float, 21> cPos, cNeg;
                 mTrackParCovPos.getPxPyPzGlo(pPos);
                 mTrackParCovNeg.getPxPyPzGlo(pNeg);
+                mTrackParCovPos.getCovXYZPxPyPzGlo(cPos);
+                mTrackParCovNeg.getCovXYZPxPyPzGlo(cNeg);
+                // lambda
                 massLambda = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
                                                      std::array{pNeg[0], pNeg[1], pNeg[2]}},
                                           std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+                /// smeared daughter momenta at Lambda vertex
+                // proton
+                momProtonRec[0] = pPos[0];
+                momProtonRec[1] = pPos[1];
+                momProtonRec[2] = pPos[2];
+                momProtonRecErr[0] = sqrt(cPos[9]);
+                momProtonRecErr[1] = sqrt(cPos[14]);
+                momProtonRecErr[2] = sqrt(cPos[20]);
+                // pion
+                momPionRec[0] = pNeg[0];
+                momPionRec[1] = pNeg[1];
+                momPionRec[2] = pNeg[2];
+                momPionRecErr[0] = sqrt(cNeg[9]);
+                momPionRecErr[1] = sqrt(cNeg[14]);
+                momPionRecErr[2] = sqrt(cNeg[20]);
               }
 
               // fill table
@@ -358,16 +379,37 @@ struct qaLamMomResolution {
               // get daughter momenta at IU, charge, eta, nTPCclusters
               getTrackInfo(protonTrackIU, pionTrackIU);
 
-              // use track tuner to tune daughter tracks' pT
+              // optionally use track tuner to tune daughter tracks' pT at decay vertex
               if (useTrackTuner) {
+                // tune V0
                 tuneV0(v0data, pionTrackIU, protonTrackIU, mcparticles, bcs);
+                // get smeared parameters and cov matrix
                 std::array<float, 3> pPos{0., 0., 0.};
                 std::array<float, 3> pNeg{0., 0., 0.};
+                std::array<float, 21> cPos, cNeg;
                 mTrackParCovPos.getPxPyPzGlo(pPos);
                 mTrackParCovNeg.getPxPyPzGlo(pNeg);
+                mTrackParCovPos.getCovXYZPxPyPzGlo(cPos);
+                mTrackParCovNeg.getCovXYZPxPyPzGlo(cNeg);
+                // lambda
                 massLambda = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
                                                      std::array{pNeg[0], pNeg[1], pNeg[2]}},
                                           std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+                /// smeared daughter momenta at Lambda vertex
+                // proton
+                momProtonRec[0] = pNeg[0];
+                momProtonRec[1] = pNeg[1];
+                momProtonRec[2] = pNeg[2];
+                momProtonRecErr[0] = sqrt(cNeg[9]);
+                momProtonRecErr[1] = sqrt(cNeg[14]);
+                momProtonRecErr[2] = sqrt(cNeg[20]);
+                // pion
+                momPionRec[0] = pPos[0];
+                momPionRec[1] = pPos[1];
+                momPionRec[2] = pPos[2];
+                momPionRecErr[0] = sqrt(cPos[9]);
+                momPionRecErr[1] = sqrt(cPos[14]);
+                momPionRecErr[2] = sqrt(cPos[20]);
               }
 
               // fill table

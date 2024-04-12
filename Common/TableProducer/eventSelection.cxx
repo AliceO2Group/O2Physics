@@ -41,14 +41,18 @@ struct BcSelectionTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};
-  Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", 10, "Number of bcs at the start of ITS RO Frame border"};
-  Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", 20, "Number of bcs at the end of ITS RO Frame border"};
-  Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", 350, "Number of bcs to cut at the start of the Time Frame"};
-  Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", 4000, "Number of bcs to cut at the end of the Time Frame"};
+  Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"};
+  Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};
 
   int lastRunNumber = -1;
-  int64_t bcSOR = -1;     // global bc of the start of the first orbit
-  int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
+  int64_t bcSOR = -1;                    // global bc of the start of the first orbit
+  int64_t nBCsPerTF = -1;                // duration of TF in bcs, should be 128*3564 or 32*3564
+  int mITSROFrameStartBorderMargin = 10; // default value
+  int mITSROFrameEndBorderMargin = 20;   // default value
+  int mTimeFrameStartBorderMargin = 300; // default value
+  int mTimeFrameEndBorderMargin = 4000;  // default value
 
   void init(InitContext&)
   {
@@ -61,10 +65,18 @@ struct BcSelectionTask {
     histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTCEafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZEMafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZNCafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTVX", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTCE", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiZEM", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiZNC", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVXafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTCEafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZEMafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZNCafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
   }
 
   void processRun2(
@@ -223,42 +235,32 @@ struct BcSelectionTask {
     int run = bcs.iteratorAt(0).runNumber();
     if (run != lastRunNumber) {
       lastRunNumber = run; // do it only once
-      int64_t tsSOR = 0;
-      int64_t tsEOR = 0;
-
       if (run >= 500000) { // access CCDB for data or anchored MC only
         int64_t ts = bcs.iteratorAt(0).timestamp();
-
+        // access orbitShift, ITSROF and TF border margins
+        EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+        mITSROFrameStartBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
+        mITSROFrameEndBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
+        mTimeFrameStartBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
+        mTimeFrameEndBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
         // access orbit-reset timestamp
         auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
         int64_t tsOrbitReset = (*ctpx)[0]; // us
-        LOGP(info, "tsOrbitReset={} us", tsOrbitReset);
-
         // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
         std::map<std::string, std::string> metadata;
         metadata["runNumber"] = Form("%d", run);
         auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
         uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
-        tsSOR = grpecs->getTimeStart();                 // ms
-        tsEOR = grpecs->getTimeEnd();                   // ms
-
-        // calculate SOR and EOR orbits
+        int64_t tsSOR = grpecs->getTimeStart();         // ms
+        // calculate SOR orbit
         int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-        int64_t orbitEOR = (tsEOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-
         // adjust to the nearest TF edge
-        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF; // was with - 1;
-        orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF; // was with - 1;
-
-        // set nOrbits and minOrbit used for orbit-axis binning
-        // nOrbits = orbitEOR - orbitSOR;
-        // minOrbit = orbitSOR;
-
-        int nBCsPerOrbit = 3564;
+        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + par->fTimeFrameOrbitShift;
         // first bc of the first orbit (should coincide with TF start)
-        bcSOR = orbitSOR * nBCsPerOrbit;
+        bcSOR = orbitSOR * o2::constants::lhc::LHCMaxBunches;
         // duration of TF in bcs
-        nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit;
+        nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
+        LOGP(info, "tsOrbitReset={} us, SOR = {} ms, orbitSOR = {}, nBCsPerTF = {}", tsOrbitReset, tsSOR, orbitSOR, nBCsPerTF);
       }
     }
 
@@ -340,12 +342,12 @@ struct BcSelectionTask {
       // 2bc margin is also introduced at ehe beginning of ITS RO Frame to account for the uncertainty of the roFrameBiasInBC
       uint16_t bcInITSROF = (globalBC + 3564 - alppar->roFrameBiasInBC) % alppar->roFrameLengthInBC;
       LOGP(debug, "bcInITSROF={}", bcInITSROF);
-      selection |= bcInITSROF > confITSROFrameStartBorderMargin && bcInITSROF < alppar->roFrameLengthInBC - confITSROFrameEndBorderMargin ? BIT(kNoITSROFrameBorder) : 0;
+      selection |= bcInITSROF > mITSROFrameStartBorderMargin && bcInITSROF < alppar->roFrameLengthInBC - mITSROFrameEndBorderMargin ? BIT(kNoITSROFrameBorder) : 0;
 
       // check if bc is far from the Time Frame borders
       int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
       LOGP(debug, "bcInTF={}", bcInTF);
-      selection |= bcInTF > confTimeFrameStartBorderMargin && bcInTF < nBCsPerTF - confTimeFrameEndBorderMargin ? BIT(kNoTimeFrameBorder) : 0;
+      selection |= bcInTF > mTimeFrameStartBorderMargin && bcInTF < nBCsPerTF - mTimeFrameEndBorderMargin ? BIT(kNoTimeFrameBorder) : 0;
 
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
@@ -363,33 +365,49 @@ struct BcSelectionTask {
       // Cross sections in ub. Using dummy -1 if lumi estimator is not reliable
       float csTVX = isPP ? (injectionEnergy ? 0.0355e6 : 0.0594e6) : -1.;
       float csTCE = isPP ? -1. : 10.36e6;
-      float csZEM = isPP ? -1. : 415.2e6;
-      float csZNC = isPP ? -1. : 214.5e6;
+      float csZEM = isPP ? -1. : 415.2e6; // see AN: https://alice-notes.web.cern.ch/node/1515
+      float csZNC = isPP ? -1. : 214.5e6; // see AN: https://alice-notes.web.cern.ch/node/1515
       if (run > 543437 && run < 543514) {
         csTCE = 8.3e6;
       }
       if (run >= 543514) {
-        csTCE = 3.97e6;
+        csTCE = 4.10e6; // see AN: https://alice-notes.web.cern.ch/node/1515
       }
 
       // Fill TVX (T0 vertex) counters
       if (TESTBIT(selection, kIsTriggerTVX)) {
         histos.get<TH1>(HIST("hCounterTVX"))->Fill(srun, 1);
         histos.get<TH1>(HIST("hLumiTVX"))->Fill(srun, 1. / csTVX);
+        if (TESTBIT(selection, kNoITSROFrameBorder) && TESTBIT(selection, kNoTimeFrameBorder)) {
+          histos.get<TH1>(HIST("hCounterTVXafterBCcuts"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiTVXafterBCcuts"))->Fill(srun, 1. / csTVX);
+        }
       }
       // Fill counters and lumi histograms for Pb-Pb lumi monitoring
       // TODO: introduce pileup correction
       if (bc.has_ft0() ? (TESTBIT(selection, kIsTriggerTVX) && TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen)) : 0) {
         histos.get<TH1>(HIST("hCounterTCE"))->Fill(srun, 1);
         histos.get<TH1>(HIST("hLumiTCE"))->Fill(srun, 1. / csTCE);
+        if (TESTBIT(selection, kNoITSROFrameBorder) && TESTBIT(selection, kNoTimeFrameBorder)) {
+          histos.get<TH1>(HIST("hCounterTCEafterBCcuts"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiTCEafterBCcuts"))->Fill(srun, 1. / csTCE);
+        }
       }
       if (TESTBIT(selection, kIsBBZNA) || TESTBIT(selection, kIsBBZNC)) {
         histos.get<TH1>(HIST("hCounterZEM"))->Fill(srun, 1);
         histos.get<TH1>(HIST("hLumiZEM"))->Fill(srun, 1. / csZEM);
+        if (TESTBIT(selection, kNoITSROFrameBorder) && TESTBIT(selection, kNoTimeFrameBorder)) {
+          histos.get<TH1>(HIST("hCounterZEMafterBCcuts"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiZEMafterBCcuts"))->Fill(srun, 1. / csZEM);
+        }
       }
       if (TESTBIT(selection, kIsBBZNC)) {
         histos.get<TH1>(HIST("hCounterZNC"))->Fill(srun, 1);
         histos.get<TH1>(HIST("hLumiZNC"))->Fill(srun, 1. / csZNC);
+        if (TESTBIT(selection, kNoITSROFrameBorder) && TESTBIT(selection, kNoTimeFrameBorder)) {
+          histos.get<TH1>(HIST("hCounterZNCafterBCcuts"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiZNCafterBCcuts"))->Fill(srun, 1. / csZNC);
+        }
       }
 
       // Fill bc selection columns
@@ -436,6 +454,7 @@ struct EventSelectionTask {
     ccdb->setLocalObjectValidityChecking();
 
     histos.add("hColCounterAll", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hColCounterTVX", "", kTH1D, {{1, 0., 1.}});
     histos.add("hColCounterAcc", "", kTH1D, {{1, 0., 1.}});
   }
 
@@ -661,10 +680,13 @@ struct EventSelectionTask {
       // TODO apply other cuts for sel8
       // TODO introduce sel1 etc?
       // TODO introduce array of sel[0]... sel[8] or similar?
-      bool sel8 = bc.selection_bit(kIsTriggerTVX);
+      bool sel8 = bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder) && bc.selection_bit(kNoITSROFrameBorder);
 
       // fill counters
       histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
+      if (bc.selection_bit(kIsTriggerTVX)) {
+        histos.get<TH1>(HIST("hColCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
+      }
       if (sel8) {
         histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
       }

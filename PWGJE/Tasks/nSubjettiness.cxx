@@ -182,41 +182,42 @@ struct NSubjettinessTask {
   template <bool isMCP, typename T, typename U>
   void processJet(T const& jet, U const& tracks, float weight = 1.0)
   {
-
     nSub_Kt_results = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, tracks, 2, fastjet::contrib::KT_Axes());
     nSub_CA_results = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, tracks, 2, fastjet::contrib::CA_Axes());
     nSub_CASD_results = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, tracks, 2, fastjet::contrib::CA_Axes(), true, SD_z_cut, SD_beta);
 
-    if constexpr (isMCP) {
+    if (jet.tracksIds().size() > 1) {
+      if constexpr (isMCP) {
 
-      registry.fill(HIST("hNSubRatio21_Kt_Part"), nSub_Kt_results[2] / nSub_Kt_results[1], weight);
-      registry.fill(HIST("hNSubRatio21_CA_Part"), nSub_CA_results[2] / nSub_CA_results[1], weight);
-      registry.fill(HIST("hNSubRatio21_CASD_Part"), nSub_CASD_results[2] / nSub_CASD_results[1], weight);
-      registry.fill(HIST("hDeltaR_Kt_Part"), nSub_Kt_results[0], weight);
-      registry.fill(HIST("hDeltaR_CA_Part"), nSub_CA_results[0], weight);
-      registry.fill(HIST("hDeltaR_CASD_Part"), nSub_CASD_results[0], weight);
+        registry.fill(HIST("hNSubRatio21_Kt_Part"), nSub_Kt_results[2] / nSub_Kt_results[1], weight);
+        registry.fill(HIST("hNSubRatio21_CA_Part"), nSub_CA_results[2] / nSub_CA_results[1], weight);
+        registry.fill(HIST("hNSubRatio21_CASD_Part"), nSub_CASD_results[2] / nSub_CASD_results[1], weight);
+        registry.fill(HIST("hDeltaR_Kt_Part"), nSub_Kt_results[0], weight);
+        registry.fill(HIST("hDeltaR_CA_Part"), nSub_CA_results[0], weight);
+        registry.fill(HIST("hDeltaR_CASD_Part"), nSub_CASD_results[0], weight);
 
-      registry.fill(HIST("hNSubRatio21VsPt_Kt_Part"), jet.pt(), nSub_Kt_results[2] / nSub_Kt_results[1], weight);
-      registry.fill(HIST("hNSubRatio21VsPt_CA_Part"), jet.pt(), nSub_CA_results[2] / nSub_CA_results[1], weight);
-      registry.fill(HIST("hNSubRatio21VsPt_CASD_Part"), jet.pt(), nSub_CASD_results[2] / nSub_CASD_results[1], weight);
-      registry.fill(HIST("hDeltaRVsPt_Kt_Part"), jet.pt(), nSub_Kt_results[0], weight);
-      registry.fill(HIST("hDeltaRVsPt_CA_Part"), jet.pt(), nSub_CA_results[0], weight);
-      registry.fill(HIST("hDeltaRVsPt_CASD_Part"), jet.pt(), nSub_CASD_results[0], weight);
+        registry.fill(HIST("hNSubRatio21VsPt_Kt_Part"), jet.pt(), nSub_Kt_results[2] / nSub_Kt_results[1], weight);
+        registry.fill(HIST("hNSubRatio21VsPt_CA_Part"), jet.pt(), nSub_CA_results[2] / nSub_CA_results[1], weight);
+        registry.fill(HIST("hNSubRatio21VsPt_CASD_Part"), jet.pt(), nSub_CASD_results[2] / nSub_CASD_results[1], weight);
+        registry.fill(HIST("hDeltaRVsPt_Kt_Part"), jet.pt(), nSub_Kt_results[0], weight);
+        registry.fill(HIST("hDeltaRVsPt_CA_Part"), jet.pt(), nSub_CA_results[0], weight);
+        registry.fill(HIST("hDeltaRVsPt_CASD_Part"), jet.pt(), nSub_CASD_results[0], weight);
 
-    } else {
-      registry.fill(HIST("hNSubRatio21_Kt"), nSub_Kt_results[2] / nSub_Kt_results[1], weight);
-      registry.fill(HIST("hNSubRatio21_CA"), nSub_CA_results[2] / nSub_CA_results[1], weight);
-      registry.fill(HIST("hNSubRatio21_CASD"), nSub_CASD_results[2] / nSub_CASD_results[1], weight);
-      registry.fill(HIST("hDeltaR_Kt"), nSub_Kt_results[0], weight);
-      registry.fill(HIST("hDeltaR_CA"), nSub_CA_results[0], weight);
-      registry.fill(HIST("hDeltaR_CASD"), nSub_CASD_results[0], weight);
+      } else {
+        registry.fill(HIST("hNSubRatio21_Kt"), nSub_Kt_results[2] / nSub_Kt_results[1], weight);
+        registry.fill(HIST("hNSubRatio21_CA"), nSub_CA_results[2] / nSub_CA_results[1], weight);
+        registry.fill(HIST("hNSubRatio21_CASD"), nSub_CASD_results[2] / nSub_CASD_results[1], weight);
+        registry.fill(HIST("hDeltaR_Kt"), nSub_Kt_results[0], weight);
+        registry.fill(HIST("hDeltaR_CA"), nSub_CA_results[0], weight);
+        registry.fill(HIST("hDeltaR_CASD"), nSub_CASD_results[0], weight);
 
-      registry.fill(HIST("hNSubRatio21VsPt_Kt"), jet.pt(), nSub_Kt_results[2] / nSub_Kt_results[1], weight);
-      registry.fill(HIST("hNSubRatio21VsPt_CA"), jet.pt(), nSub_CA_results[2] / nSub_CA_results[1], weight);
-      registry.fill(HIST("hNSubRatio21VsPt_CASD"), jet.pt(), nSub_CASD_results[2] / nSub_CASD_results[1], weight);
-      registry.fill(HIST("hDeltaRVsPt_Kt"), jet.pt(), nSub_Kt_results[0], weight);
-      registry.fill(HIST("hDeltaRVsPt_CA"), jet.pt(), nSub_CA_results[0], weight);
-      registry.fill(HIST("hDeltaRVsPt_CASD"), jet.pt(), nSub_CASD_results[0], weight);
+        registry.fill(HIST("hNSubRatio21VsPt_Kt"), jet.pt(), nSub_Kt_results[2] / nSub_Kt_results[1], weight);
+        registry.fill(HIST("hNSubRatio21VsPt_CA"), jet.pt(), nSub_CA_results[2] / nSub_CA_results[1], weight);
+        registry.fill(HIST("hNSubRatio21VsPt_CASD"), jet.pt(), nSub_CASD_results[2] / nSub_CASD_results[1], weight);
+        registry.fill(HIST("hDeltaRVsPt_Kt"), jet.pt(), nSub_Kt_results[0], weight);
+        registry.fill(HIST("hDeltaRVsPt_CA"), jet.pt(), nSub_CA_results[0], weight);
+        registry.fill(HIST("hDeltaRVsPt_CASD"), jet.pt(), nSub_CASD_results[0], weight);
+      }
     }
   }
 
@@ -242,7 +243,7 @@ struct NSubjettinessTask {
       fillJetTable(jet, jetTable);
     }
   }
-  PROCESS_SWITCH(NSubjettinessTask, processJetsDataEWS, "Process function for inclusive jets with eventwise subtraction in data", true);
+  PROCESS_SWITCH(NSubjettinessTask, processJetsDataEWS, "Process function for inclusive jets with eventwise subtraction in data", false);
 
   void processJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>> const& jets, JetTracks const& tracks)
   {

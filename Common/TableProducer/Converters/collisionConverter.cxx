@@ -28,7 +28,7 @@ struct collisionConverter {
 
   void init(InitContext const&)
   {
-    const AxisSpec axisCYYdebug{(int)nbins, -1.0f, +1.0f, ""};
+    const AxisSpec axisCYYdebug{nbins, -1.0f, +1.0f, ""};
     histos.add("hCYY", "hCYY", kTH1F, {axisCYYdebug});
   }
 
@@ -41,7 +41,7 @@ struct collisionConverter {
       if (doNotSwap) {
         lYY = collision.covYY();
         lXZ = collision.covXZ();
-      };
+      }
       if (debug)
         histos.fill(HIST("hCYY"), lYY);
       if (lYY < negtolerance) {
