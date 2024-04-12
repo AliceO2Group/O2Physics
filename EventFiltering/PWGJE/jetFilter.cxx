@@ -134,7 +134,6 @@ struct jetFilter {
                 {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"},
                  {40, -1.0, 1.0, "#eta"}});
 
-
     AxisSpec jetRadiiAxis = {cfgJetRadii, "AKT jet resolution parameters"};
     const AxisSpec axisTrackPt{200, 0., +200., "#it{p}_{T,track} (GeV/#it{c})"};
     const AxisSpec axisJetPt{1020, -20., +1000., "#it{p}_{T,jet} (GeV/#it{c})"};

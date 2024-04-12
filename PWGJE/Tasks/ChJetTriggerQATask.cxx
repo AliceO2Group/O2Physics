@@ -145,10 +145,10 @@ struct ChJetTriggerQATask {
       return;
     }
 
-    bool bLowPtJet  = (bLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow));
-    bool bHighPtJet = (bHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)); 
-    bool bLowPtTrack = (bTrackLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::trackLowPt)); 
-    bool bHighPtTrack = (bTrackHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::trackHighPt)); 
+    bool bLowPtJet = (bLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow));
+    bool bHighPtJet = (bHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh));
+    bool bLowPtTrack = (bTrackLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::trackLowPt));
+    bool bHighPtTrack = (bTrackHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::trackHighPt));
     bool bMinimumBias = ((!bLowPtTrigger) && (!bHighPtTrigger) && (!bTrackLowPtTrigger) && (!bTrackHighPtTrigger));
 
     if (bLowPtJet || bHighPtJet || bLowPtTrack || bHighPtTrack || bMinimumBias) {
