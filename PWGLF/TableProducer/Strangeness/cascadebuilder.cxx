@@ -308,10 +308,10 @@ struct cascadeBuilder {
     std::array<float, 21> kfV0Cov;
     std::array<float, 21> kfV0DauPosCov;
     std::array<float, 21> kfV0DauNegCov;
-    float mlXiMinusScore; 
-    float mlXiPlusScore; 
-    float mlOmegaMinusScore; 
-    float mlOmegaPlusScore; 
+    float mlXiMinusScore;
+    float mlXiPlusScore;
+    float mlOmegaMinusScore;
+    float mlOmegaPlusScore;
   } cascadecandidate;
 
   o2::track::TrackParCov lBachelorTrack;
@@ -694,13 +694,12 @@ struct cascadeBuilder {
     }
 
     // machine learning initialization if requested
-    if (mlConfigurations.calculateXiMinusScores || 
-        mlConfigurations.calculateXiPlusScores || 
-        mlConfigurations.calculateOmegaMinusScores || 
-        mlConfigurations.calculateOmegaPlusScores)
-    {
+    if (mlConfigurations.calculateXiMinusScores ||
+        mlConfigurations.calculateXiPlusScores ||
+        mlConfigurations.calculateOmegaMinusScores ||
+        mlConfigurations.calculateOmegaPlusScores) {
       int64_t timeStampML = bc.timestamp();
-      if(mlConfigurations.timestampCCDB.value!=-1)
+      if (mlConfigurations.timestampCCDB.value != -1)
         timeStampML = mlConfigurations.timestampCCDB.value;
       LoadMachines(timeStampML);
     }
@@ -751,24 +750,25 @@ struct cascadeBuilder {
   }
 
   // function to load models for ML-based classifiers
-  void LoadMachines(int64_t timeStampML){ 
-    if(mlConfigurations.loadModelsFromCCDB){
+  void LoadMachines(int64_t timeStampML)
+  {
+    if (mlConfigurations.loadModelsFromCCDB) {
       ccdbApi.init(ccdbConfigurations.ccdburl);
       LOG(info) << "Fetching cascade models for timestamp: " << timeStampML;
 
       if (mlConfigurations.calculateXiMinusScores) {
         bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathXiMinus.value);
-        if (retrieveSuccess){
-          mlModelXiMinus.initModel(mlConfigurations.localModelPathXiMinus.value, mlConfigurations.enableOptimizations.value); 
+        if (retrieveSuccess) {
+          mlModelXiMinus.initModel(mlConfigurations.localModelPathXiMinus.value, mlConfigurations.enableOptimizations.value);
         } else {
           LOG(fatal) << "Error encountered while fetching/loading the XiMinus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }
-      
+
       if (mlConfigurations.calculateXiPlusScores) {
         bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathXiPlus.value);
-        if (retrieveSuccess){
-          mlModelXiPlus.initModel(mlConfigurations.localModelPathXiPlus.value, mlConfigurations.enableOptimizations.value); 
+        if (retrieveSuccess) {
+          mlModelXiPlus.initModel(mlConfigurations.localModelPathXiPlus.value, mlConfigurations.enableOptimizations.value);
         } else {
           LOG(fatal) << "Error encountered while fetching/loading the XiPlus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
@@ -776,26 +776,30 @@ struct cascadeBuilder {
 
       if (mlConfigurations.calculateOmegaMinusScores) {
         bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathOmegaMinus.value);
-        if (retrieveSuccess){
-          mlModelOmegaMinus.initModel(mlConfigurations.localModelPathOmegaMinus.value, mlConfigurations.enableOptimizations.value); 
+        if (retrieveSuccess) {
+          mlModelOmegaMinus.initModel(mlConfigurations.localModelPathOmegaMinus.value, mlConfigurations.enableOptimizations.value);
         } else {
           LOG(fatal) << "Error encountered while fetching/loading the OmegaMinus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }
-      
+
       if (mlConfigurations.calculateOmegaPlusScores) {
         bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathOmegaPlus.value);
-        if (retrieveSuccess){
-          mlModelOmegaPlus.initModel(mlConfigurations.localModelPathOmegaPlus.value, mlConfigurations.enableOptimizations.value); 
+        if (retrieveSuccess) {
+          mlModelOmegaPlus.initModel(mlConfigurations.localModelPathOmegaPlus.value, mlConfigurations.enableOptimizations.value);
         } else {
           LOG(fatal) << "Error encountered while fetching/loading the OmegaPlus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
       }
     } else {
-      if (mlConfigurations.calculateXiMinusScores) mlModelXiMinus.initModel(mlConfigurations.localModelPathXiMinus.value, mlConfigurations.enableOptimizations.value);
-      if (mlConfigurations.calculateXiPlusScores) mlModelXiPlus.initModel(mlConfigurations.localModelPathXiPlus.value, mlConfigurations.enableOptimizations.value);
-      if (mlConfigurations.calculateOmegaMinusScores) mlModelOmegaMinus.initModel(mlConfigurations.localModelPathOmegaMinus.value, mlConfigurations.enableOptimizations.value);
-      if (mlConfigurations.calculateOmegaPlusScores) mlModelOmegaPlus.initModel(mlConfigurations.localModelPathOmegaPlus.value, mlConfigurations.enableOptimizations.value); 
+      if (mlConfigurations.calculateXiMinusScores)
+        mlModelXiMinus.initModel(mlConfigurations.localModelPathXiMinus.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateXiPlusScores)
+        mlModelXiPlus.initModel(mlConfigurations.localModelPathXiPlus.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateOmegaMinusScores)
+        mlModelOmegaMinus.initModel(mlConfigurations.localModelPathOmegaMinus.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateOmegaPlusScores)
+        mlModelOmegaPlus.initModel(mlConfigurations.localModelPathOmegaPlus.value, mlConfigurations.enableOptimizations.value);
     }
     LOG(info) << "Cascade ML Models loaded.";
   }
@@ -1166,51 +1170,50 @@ struct cascadeBuilder {
       registry.fill(HIST("h2dTopoVarCascRAP"), lPt, TMath::ACos(cascadecandidate.cosPA) * cascadecandidate.cascradius);
       registry.fill(HIST("h2dTopoVarCascRadius"), lPt, cascadecandidate.cascradius);
     }
- 
+
     // calculate machine learning scores, compare against thresholds
     cascadecandidate.mlXiMinusScore = -1.0f;
     cascadecandidate.mlXiPlusScore = -1.0f;
     cascadecandidate.mlOmegaMinusScore = -1.0f;
     cascadecandidate.mlOmegaPlusScore = -1.0f;
 
-    if (mlConfigurations.calculateXiMinusScores || 
-          mlConfigurations.calculateXiPlusScores || 
-          mlConfigurations.calculateOmegaMinusScores || 
-          mlConfigurations.calculateOmegaPlusScores)
-    { 
+    if (mlConfigurations.calculateXiMinusScores ||
+        mlConfigurations.calculateXiPlusScores ||
+        mlConfigurations.calculateOmegaMinusScores ||
+        mlConfigurations.calculateOmegaPlusScores) {
       // machine learning is on, go for calculation of thresholds
       // FIXME THIS NEEDS ADJUSTING
-      std::vector<float> inputFeatures{0.0f, 0.0f, 
-                                      0.0f, 0.0f};
+      std::vector<float> inputFeatures{0.0f, 0.0f,
+                                       0.0f, 0.0f};
 
       // calculate scores
-      if(mlConfigurations.calculateXiMinusScores){
+      if (mlConfigurations.calculateXiMinusScores) {
         float* xiMinusProbability = mlModelXiMinus.evalModel(inputFeatures);
         cascadecandidate.mlXiMinusScore = xiMinusProbability[1];
       }
-      if(mlConfigurations.calculateXiPlusScores){
+      if (mlConfigurations.calculateXiPlusScores) {
         float* xiPlusProbability = mlModelXiPlus.evalModel(inputFeatures);
         cascadecandidate.mlXiPlusScore = xiPlusProbability[1];
       }
-      if(mlConfigurations.calculateOmegaMinusScores){
+      if (mlConfigurations.calculateOmegaMinusScores) {
         float* omegaMinusProbability = mlModelOmegaMinus.evalModel(inputFeatures);
         cascadecandidate.mlOmegaMinusScore = omegaMinusProbability[1];
       }
-      if(mlConfigurations.calculateOmegaPlusScores){
+      if (mlConfigurations.calculateOmegaPlusScores) {
         float* omegaPlusProbability = mlModelOmegaPlus.evalModel(inputFeatures);
         cascadecandidate.mlOmegaPlusScore = omegaPlusProbability[1];
       }
 
-      // Skip anything that doesn't fulfull any of the desired conditions 
-      if( cascadecandidate.mlXiMinusScore < mlConfigurations.thresholdXiMinus.value && 
+      // Skip anything that doesn't fulfull any of the desired conditions
+      if (cascadecandidate.mlXiMinusScore < mlConfigurations.thresholdXiMinus.value &&
           cascadecandidate.mlXiPlusScore < mlConfigurations.thresholdXiPlus.value &&
-          cascadecandidate.mlOmegaMinusScore < mlConfigurations.thresholdOmegaMinus.value && 
-          cascadecandidate.mlOmegaPlusScore < mlConfigurations.thresholdOmegaPlus.value){
-            return false; // skipped as uninteresting in any hypothesis considered
-          }
+          cascadecandidate.mlOmegaMinusScore < mlConfigurations.thresholdOmegaMinus.value &&
+          cascadecandidate.mlOmegaPlusScore < mlConfigurations.thresholdOmegaPlus.value) {
+        return false; // skipped as uninteresting in any hypothesis considered
+      }
     }
 
-    // Final outcome is YES if I got here! 
+    // Final outcome is YES if I got here!
     return true;
   }
 

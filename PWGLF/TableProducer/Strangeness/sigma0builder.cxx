@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// This is a task that employs the standard V0 tables and attempts to combine 
-// two V0s into a Sigma0 -> Lambda + gamma candidate. 
+// This is a task that employs the standard V0 tables and attempts to combine
+// two V0s into a Sigma0 -> Lambda + gamma candidate.
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -49,15 +49,15 @@ using std::array;
 using std::cout;
 using std::endl;
 
-struct sigma0builder{
-  Produces<aod::V0SigmaCandidates> v0Sigmas; // save sigma0 candidates for analysis
+struct sigma0builder {
+  Produces<aod::V0SigmaCandidates> v0Sigmas;     // save sigma0 candidates for analysis
   Produces<aod::V0SigmaMCCandidates> v0MCSigmas; // save sigma0 candidates for analysis
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> Gamma_MLThreshold{"Gamma_MLThreshold", 0.1, "Decision Threshold value to select gammas of sigma0 candidates"};
   Configurable<float> Lambda_MLThreshold{"Lambda_MLThreshold", 0.1, "Decision Threshold value to select lambdas of sigma0 candidates"};
-  // Axis	
+  // Axis
   // base properties
   ConfigurableAxis vertexZ{"vertexZ", {30, -15.0f, 15.0f}, ""};
   // Invariant Mass
@@ -75,21 +75,21 @@ struct sigma0builder{
     float mass;
     float pT;
   } sigmaCandidate;
-  
+
   // Process sigma candidate and store properties in object
   template <typename TV0Object, typename TCollision>
   bool processSigmaCandidate(TCollision const& collision, TV0Object const& lambda, TV0Object const& gamma)
-  {    
+  {
     // Gamma selection:
-    if( gamma.gammaBDTScore() <= Gamma_MLThreshold) 
+    if (gamma.gammaBDTScore() <= Gamma_MLThreshold)
       return false;
 
     // Lambda selection:
-    if( lambda.lambdaBDTScore() <= Lambda_MLThreshold) 
+    if (lambda.lambdaBDTScore() <= Lambda_MLThreshold)
       return false;
-      
+
     std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
-    std::array<float, 3> pVecLambda{lambda.px(),lambda.py(), lambda.pz()};
+    std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
     auto arrMom = std::array{pVecPhotons, pVecLambda};
     sigmaCandidate.mass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
     sigmaCandidate.pT = RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()});
@@ -100,15 +100,18 @@ struct sigma0builder{
   {
     histos.fill(HIST("hEventVertexZMC"), coll.posZ());
 
-    for (auto& gamma: v0s) { // selecting photons from Sigma0
+    for (auto& gamma : v0s) { // selecting photons from Sigma0
 
-      if ((gamma.pdgCode()!=22) || (gamma.pdgCodeMother()!=3212)) continue;
-      for (auto& lambda: v0s){ // selecting lambdas from Sigma0
-        if ((lambda.pdgCode()!=3122) || (lambda.pdgCodeMother()!=3212)) continue;
+      if ((gamma.pdgCode() != 22) || (gamma.pdgCodeMother() != 3212))
+        continue;
+      for (auto& lambda : v0s) { // selecting lambdas from Sigma0
+        if ((lambda.pdgCode() != 3122) || (lambda.pdgCodeMother() != 3212))
+          continue;
 
-        //if (gamma.motherMCPartId()!=lambda.motherMCPartId()) continue; 
-        if(!processSigmaCandidate(coll, lambda,gamma)) continue;  
-        bool fIsSigma = (gamma.motherMCPartId()==lambda.motherMCPartId());
+        // if (gamma.motherMCPartId()!=lambda.motherMCPartId()) continue;
+        if (!processSigmaCandidate(coll, lambda, gamma))
+          continue;
+        bool fIsSigma = (gamma.motherMCPartId() == lambda.motherMCPartId());
 
         // Filling TTree for ML analysis
         v0MCSigmas(fIsSigma);
@@ -116,32 +119,32 @@ struct sigma0builder{
     }
   }
 
-    void processRealData(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0LambdaMLScores, aod::V0GammaMLScores> const& v0s)
+  void processRealData(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0LambdaMLScores, aod::V0GammaMLScores> const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
-    for (auto& gamma: v0s) { // selecting photons from Sigma0
-      for (auto& lambda: v0s){ // selecting lambdas from Sigma0
-        if(!processSigmaCandidate(coll, lambda,gamma))
-          continue; 
-    
+    for (auto& gamma : v0s) {    // selecting photons from Sigma0
+      for (auto& lambda : v0s) { // selecting lambdas from Sigma0
+        if (!processSigmaCandidate(coll, lambda, gamma))
+          continue;
+
         // Sigma related
         float fSigmapT = sigmaCandidate.pT;
-        float fSigmaMass = sigmaCandidate.mass; 
-      
+        float fSigmaMass = sigmaCandidate.mass;
+
         // Daughters related
         /// Photon
         float fPhotonPt = gamma.pt();
         float fPhotonMass = gamma.mGamma();
         float fPhotonQt = gamma.qtarm();
         float fPhotonAlpha = gamma.alpha();
-        float fPhotonRadius = gamma.v0radius(); 
+        float fPhotonRadius = gamma.v0radius();
         float fPhotonCosPA = gamma.v0cosPA();
         float fPhotonDCADau = gamma.dcaV0daughters();
         float fPhotonDCANegPV = gamma.dcanegtopv();
         float fPhotonDCAPosPV = gamma.dcapostopv();
-        float fPhotonZconv = gamma.z(); 
-      
+        float fPhotonZconv = gamma.z();
+
         // Lambda
         float fLambdaPt = lambda.pt();
         float fLambdaMass = lambda.mLambda();
@@ -154,12 +157,11 @@ struct sigma0builder{
         float fLambdaDCAPosPV = lambda.dcapostopv();
 
         // Filling TTree for ML analysis
-        v0Sigmas(fSigmapT, fSigmaMass, fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha, 
-        fPhotonRadius, fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV, 
-        fPhotonZconv, fLambdaPt, fLambdaMass, fLambdaQt, fLambdaAlpha, fLambdaRadius, 
-        fLambdaCosPA, fLambdaDCADau, fLambdaDCANegPV, fLambdaDCAPosPV, 
-        gamma.gammaBDTScore(), lambda.lambdaBDTScore());
-
+        v0Sigmas(fSigmapT, fSigmaMass, fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha,
+                 fPhotonRadius, fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV,
+                 fPhotonZconv, fLambdaPt, fLambdaMass, fLambdaQt, fLambdaAlpha, fLambdaRadius,
+                 fLambdaCosPA, fLambdaDCADau, fLambdaDCANegPV, fLambdaDCAPosPV,
+                 gamma.gammaBDTScore(), lambda.lambdaBDTScore());
       }
     }
   }
@@ -170,5 +172,4 @@ struct sigma0builder{
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigma0builder>(cfgc)};
-  
 }

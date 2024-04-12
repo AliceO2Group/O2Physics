@@ -21,9 +21,8 @@
 using namespace o2;
 using namespace o2::framework;
 
-
 // Creating output TTree for sigma analysis
-namespace o2::aod 
+namespace o2::aod
 {
 
 // for real data
@@ -58,43 +57,43 @@ DECLARE_SOA_COLUMN(LambdaProbability, lambdaProbability, float);
 
 } // namespace v0SigmaCandidate
 
-DECLARE_SOA_TABLE(V0SigmaCandidates, "AOD", "V0SIGMAS", 
-				v0SigmaCandidate::SigmapT,
-				v0SigmaCandidate::SigmaMass,
-				// v0SigmaCandidate::SigmaDCAz,
-				// v0SigmaCandidate::SigmaDCAxy,
-				// v0SigmaCandidate::SigmaDCADau,
-				v0SigmaCandidate::PhotonPt,
-				v0SigmaCandidate::PhotonMass,
-				v0SigmaCandidate::PhotonQt,
-				v0SigmaCandidate::PhotonAlpha,
-				v0SigmaCandidate::PhotonRadius,
-				v0SigmaCandidate::PhotonCosPA,
-				v0SigmaCandidate::PhotonDCADau,
-				v0SigmaCandidate::PhotonDCANegPV,
-				v0SigmaCandidate::PhotonDCAPosPV,
-				v0SigmaCandidate::PhotonZconv,
-				v0SigmaCandidate::LambdaPt,
-				v0SigmaCandidate::LambdaMass,
-				v0SigmaCandidate::LambdaQt,
-				v0SigmaCandidate::LambdaAlpha,
-				v0SigmaCandidate::LambdaRadius,
-				v0SigmaCandidate::LambdaCosPA,
-				v0SigmaCandidate::LambdaDCADau,
-				v0SigmaCandidate::LambdaDCANegPV,
-				v0SigmaCandidate::LambdaDCAPosPV,
-				v0SigmaCandidate::GammaProbability,
-				v0SigmaCandidate::LambdaProbability);
+DECLARE_SOA_TABLE(V0SigmaCandidates, "AOD", "V0SIGMAS",
+                  v0SigmaCandidate::SigmapT,
+                  v0SigmaCandidate::SigmaMass,
+                  // v0SigmaCandidate::SigmaDCAz,
+                  // v0SigmaCandidate::SigmaDCAxy,
+                  // v0SigmaCandidate::SigmaDCADau,
+                  v0SigmaCandidate::PhotonPt,
+                  v0SigmaCandidate::PhotonMass,
+                  v0SigmaCandidate::PhotonQt,
+                  v0SigmaCandidate::PhotonAlpha,
+                  v0SigmaCandidate::PhotonRadius,
+                  v0SigmaCandidate::PhotonCosPA,
+                  v0SigmaCandidate::PhotonDCADau,
+                  v0SigmaCandidate::PhotonDCANegPV,
+                  v0SigmaCandidate::PhotonDCAPosPV,
+                  v0SigmaCandidate::PhotonZconv,
+                  v0SigmaCandidate::LambdaPt,
+                  v0SigmaCandidate::LambdaMass,
+                  v0SigmaCandidate::LambdaQt,
+                  v0SigmaCandidate::LambdaAlpha,
+                  v0SigmaCandidate::LambdaRadius,
+                  v0SigmaCandidate::LambdaCosPA,
+                  v0SigmaCandidate::LambdaDCADau,
+                  v0SigmaCandidate::LambdaDCANegPV,
+                  v0SigmaCandidate::LambdaDCAPosPV,
+                  v0SigmaCandidate::GammaProbability,
+                  v0SigmaCandidate::LambdaProbability);
 
 // for MC data
-namespace v0SigmaMCCandidate 
+namespace v0SigmaMCCandidate
 {
 DECLARE_SOA_COLUMN(IsSigma, isSigma, bool);
 
 } // namespace v0SigmaMCCandidate
 
 DECLARE_SOA_TABLE(V0SigmaMCCandidates, "AOD", "V0MCSIGMAS",
-				v0SigmaMCCandidate::IsSigma);
+                  v0SigmaMCCandidate::IsSigma);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSIGMATABLES_H_

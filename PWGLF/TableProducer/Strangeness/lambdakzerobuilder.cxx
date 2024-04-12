@@ -117,11 +117,11 @@ struct lambdakzeroBuilder {
   Produces<aod::V0fCTrackXs> v0fctrackXs;
   Produces<aod::V0fCCovs> v0fccovs;
 
-  // produces calls for machine-learning selections 
-  Produces<aod::V0GammaMLScores> gammaMLSelections;            // gamma scores
-  Produces<aod::V0LambdaMLScores> lambdaMLSelections;          // lambda scores
-  Produces<aod::V0AntiLambdaMLScores> antiLambdaMLSelections;  // AntiLambda scores
-  Produces<aod::V0K0ShortMLScores> k0ShortMLSelections;        // K0Short scores
+  // produces calls for machine-learning selections
+  Produces<aod::V0GammaMLScores> gammaMLSelections;           // gamma scores
+  Produces<aod::V0LambdaMLScores> lambdaMLSelections;         // lambda scores
+  Produces<aod::V0AntiLambdaMLScores> antiLambdaMLSelections; // AntiLambda scores
+  Produces<aod::V0K0ShortMLScores> k0ShortMLSelections;       // K0Short scores
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -234,7 +234,7 @@ struct lambdakzeroBuilder {
     Configurable<bool> d_doTrackQA{"qaConfigurations.d_doTrackQA", false, "do track QA"};
     Configurable<bool> d_QA_checkMC{"qaConfigurations.d_QA_checkMC", true, "check MC truth in QA"};
     Configurable<bool> d_QA_checkdEdx{"qaConfigurations.d_QA_checkdEdx", false, "check dEdx in QA"};
-  } qaConfigurations; 
+  } qaConfigurations;
 
   // for topo var QA
   struct : ConfigurableGroup {
@@ -665,13 +665,12 @@ struct lambdakzeroBuilder {
     }
 
     // machine learning initialization if requested
-    if (mlConfigurations.calculateK0ShortScores || 
-        mlConfigurations.calculateLambdaScores || 
-        mlConfigurations.calculateAntiLambdaScores || 
-        mlConfigurations.calculateGammaScores)
-    {
+    if (mlConfigurations.calculateK0ShortScores ||
+        mlConfigurations.calculateLambdaScores ||
+        mlConfigurations.calculateAntiLambdaScores ||
+        mlConfigurations.calculateGammaScores) {
       int64_t timeStampML = bc.timestamp();
-      if(mlConfigurations.timestampCCDB.value!=-1)
+      if (mlConfigurations.timestampCCDB.value != -1)
         timeStampML = mlConfigurations.timestampCCDB.value;
       LoadMachines(timeStampML);
     }
@@ -722,43 +721,56 @@ struct lambdakzeroBuilder {
   }
 
   // function to load models for ML-based classifiers
-  void LoadMachines(int64_t timeStampML){ 
-    if(mlConfigurations.loadModelsFromCCDB){
+  void LoadMachines(int64_t timeStampML)
+  {
+    if (mlConfigurations.loadModelsFromCCDB) {
       ccdbApi.init(ccdbConfigurations.ccdburl);
       LOG(info) << "Fetching models for timestamp: " << timeStampML;
 
       if (mlConfigurations.calculateLambdaScores) {
         bool retrieveSuccessLambda = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathLambda.value);
-        if (retrieveSuccessLambda) mlModelLambda.initModel(mlConfigurations.localModelPathLambda.value, mlConfigurations.enableOptimizations.value);
-        else{
-        LOG(fatal) << "Error encountered while fetching/loading the Lambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        if (retrieveSuccessLambda)
+          mlModelLambda.initModel(mlConfigurations.localModelPathLambda.value, mlConfigurations.enableOptimizations.value);
+        else {
+          LOG(fatal) << "Error encountered while fetching/loading the Lambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
-      
+      }
+
       if (mlConfigurations.calculateAntiLambdaScores) {
         bool retrieveSuccessAntiLambda = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathAntiLambda.value);
-        if (retrieveSuccessAntiLambda) mlModelAntiLambda.initModel(mlConfigurations.localModelPathAntiLambda.value, mlConfigurations.enableOptimizations.value);
-        else{
-        LOG(fatal) << "Error encountered while fetching/loading the AntiLambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        if (retrieveSuccessAntiLambda)
+          mlModelAntiLambda.initModel(mlConfigurations.localModelPathAntiLambda.value, mlConfigurations.enableOptimizations.value);
+        else {
+          LOG(fatal) << "Error encountered while fetching/loading the AntiLambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
+      }
 
       if (mlConfigurations.calculateGammaScores) {
         bool retrieveSuccessGamma = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathGamma.value);
-        if (retrieveSuccessGamma) mlModelGamma.initModel(mlConfigurations.localModelPathGamma.value, mlConfigurations.enableOptimizations.value);
-        else{
-          LOG(fatal) << "Error encountered while fetching/loading the Gamma model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        if (retrieveSuccessGamma)
+          mlModelGamma.initModel(mlConfigurations.localModelPathGamma.value, mlConfigurations.enableOptimizations.value);
+        else {
+          LOG(fatal) << "Error encountered while fetching/loading the Gamma model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
-      
+      }
+
       if (mlConfigurations.calculateK0ShortScores) {
         bool retrieveSuccessKZeroShort = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathK0Short.value);
-        if (retrieveSuccessKZeroShort) mlModelK0Short.initModel(mlConfigurations.localModelPathK0Short.value, mlConfigurations.enableOptimizations.value);
-        else{
-          LOG(fatal) << "Error encountered while fetching/loading the K0Short model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        if (retrieveSuccessKZeroShort)
+          mlModelK0Short.initModel(mlConfigurations.localModelPathK0Short.value, mlConfigurations.enableOptimizations.value);
+        else {
+          LOG(fatal) << "Error encountered while fetching/loading the K0Short model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
+        }
       }
     } else {
-      if (mlConfigurations.calculateLambdaScores) mlModelLambda.initModel(mlConfigurations.localModelPathLambda.value, mlConfigurations.enableOptimizations.value);
-      if (mlConfigurations.calculateAntiLambdaScores) mlModelAntiLambda.initModel(mlConfigurations.localModelPathAntiLambda.value, mlConfigurations.enableOptimizations.value);
-      if (mlConfigurations.calculateGammaScores) mlModelGamma.initModel(mlConfigurations.localModelPathGamma.value, mlConfigurations.enableOptimizations.value);
-      if (mlConfigurations.calculateK0ShortScores) mlModelK0Short.initModel(mlConfigurations.localModelPathK0Short.value, mlConfigurations.enableOptimizations.value); 
+      if (mlConfigurations.calculateLambdaScores)
+        mlModelLambda.initModel(mlConfigurations.localModelPathLambda.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateAntiLambdaScores)
+        mlModelAntiLambda.initModel(mlConfigurations.localModelPathAntiLambda.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateGammaScores)
+        mlModelGamma.initModel(mlConfigurations.localModelPathGamma.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateK0ShortScores)
+        mlModelK0Short.initModel(mlConfigurations.localModelPathK0Short.value, mlConfigurations.enableOptimizations.value);
     }
     LOG(info) << "ML Models loaded.";
   }
@@ -1096,35 +1108,34 @@ struct lambdakzeroBuilder {
       // evaluate machine-learning scores
       float gammaScore = -1.0f, lambdaScore = -1.0f, antiLambdaScore = -1.0f, k0ShortScore = -1.0f;
 
-      if (mlConfigurations.calculateK0ShortScores || 
-            mlConfigurations.calculateLambdaScores || 
-            mlConfigurations.calculateAntiLambdaScores || 
-            mlConfigurations.calculateGammaScores)
-      { 
+      if (mlConfigurations.calculateK0ShortScores ||
+          mlConfigurations.calculateLambdaScores ||
+          mlConfigurations.calculateAntiLambdaScores ||
+          mlConfigurations.calculateGammaScores) {
         // machine learning is on, go for calculation of thresholds
         // FIXME THIS NEEDS ADJUSTING
-        std::vector<float> inputFeatures{pt, 0.0f, 
-                                        0.0f, v0candidate.V0radius, 
-                                        v0candidate.cosPA, v0candidate.dcaV0dau, 
-                                        v0candidate.posDCAxy, v0candidate.negDCAxy};
+        std::vector<float> inputFeatures{pt, 0.0f,
+                                         0.0f, v0candidate.V0radius,
+                                         v0candidate.cosPA, v0candidate.dcaV0dau,
+                                         v0candidate.posDCAxy, v0candidate.negDCAxy};
 
         // calculate scores
-        if(mlConfigurations.calculateLambdaScores){
+        if (mlConfigurations.calculateLambdaScores) {
           float* lambdaProbability = mlModelLambda.evalModel(inputFeatures);
           lambdaScore = lambdaProbability[1];
         }
-        if(mlConfigurations.calculateGammaScores){
+        if (mlConfigurations.calculateGammaScores) {
           float* gammaProbability = mlModelGamma.evalModel(inputFeatures);
           gammaScore = gammaProbability[1];
         }
 
-        // Skip anything that doesn't fulfull any of the desired conditions 
-        if( gammaScore < mlConfigurations.thresholdGamma.value && 
+        // Skip anything that doesn't fulfull any of the desired conditions
+        if (gammaScore < mlConfigurations.thresholdGamma.value &&
             lambdaScore < mlConfigurations.thresholdLambda.value &&
-            antiLambdaScore < mlConfigurations.thresholdAntiLambda.value && 
-            k0ShortScore < mlConfigurations.thresholdK0Short.value){
-              continue; // skipped as uninteresting in any hypothesis considered
-            }
+            antiLambdaScore < mlConfigurations.thresholdAntiLambda.value &&
+            k0ShortScore < mlConfigurations.thresholdK0Short.value) {
+          continue; // skipped as uninteresting in any hypothesis considered
+        }
       }
 
       // V0 logic reminder
@@ -1132,13 +1143,12 @@ struct lambdakzeroBuilder {
       if (V0.v0Type() > 0) {
         if (V0.v0Type() > 1 && !storePhotonCandidates)
           continue;
-        
-        if (mlConfigurations.calculateK0ShortScores || 
-            mlConfigurations.calculateLambdaScores || 
-            mlConfigurations.calculateAntiLambdaScores || 
-            mlConfigurations.calculateGammaScores)
-        { 
-          // at this stage, the candidate is interesting -> populate table 
+
+        if (mlConfigurations.calculateK0ShortScores ||
+            mlConfigurations.calculateLambdaScores ||
+            mlConfigurations.calculateAntiLambdaScores ||
+            mlConfigurations.calculateGammaScores) {
+          // at this stage, the candidate is interesting -> populate table
           gammaMLSelections(gammaScore);
           lambdaMLSelections(lambdaScore);
           antiLambdaMLSelections(antiLambdaScore);
