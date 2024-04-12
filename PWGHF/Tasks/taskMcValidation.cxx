@@ -36,14 +36,18 @@ using namespace o2::framework::expressions;
 
 namespace
 {
-static const int nCharmHadrons = 6;
-static const std::array<int, nCharmHadrons> PDGArrayParticle = {o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kD0,
-                                                                o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus};
-static const std::array<unsigned int, nCharmHadrons> nDaughters = {3, 3, 2, 3, 3, 3};
-static const std::array<std::array<int, 3>, nCharmHadrons> arrPDGFinal = {{{kPiPlus, kPiPlus, -kKPlus}, {kPiPlus, kPiPlus, -kKPlus}, {-kKPlus, kPiPlus, 0},
-                                                                           {kPiPlus, kKPlus, -kKPlus}, {kProton, -kKPlus, kPiPlus}, {kProton, -kKPlus, kPiPlus}}};
-static const std::array<std::string, nCharmHadrons> labels = {"D^{+}", "D*^{+}", "D^{0}", "D_{s}^{+}", "#Lambda_{c}^{+}", "#Xi_{c}^{+}"};
-static const std::array<std::string, nCharmHadrons> particleNames = {"Dplus", "Dstar", "D0", "Ds", "Lc2pKpi", "Xic2pKpi"};
+static const int nChannels = 6;
+static const std::array<int, nChannels> PDGArrayParticle = {o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kD0,
+                                                            o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus};
+static const std::array<unsigned int, nChannels> nDaughters = {3, 3, 2, 3, 3, 3};
+// keep coherent indexing with PDGArrayParticle
+// FIXME: look for a better solution
+static const std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{}, {}, {+kPiPlus, -kKPlus}, {}, {}, {}}};
+static const std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {},
+                                                                            {+kKPlus, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}}};
+static const std::array<std::string, nChannels> labels = {"D^{+} #rightarrow K#pi#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{0} #rightarrow K#pi",
+                                                          "D_{s}^{+} #rightarrow KK#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Xi_{c}^{+} #rightarrow pK#pi"};
+static const std::array<std::string, nChannels> particleNames = {"DplusToKPiPi", "DstarToDzeroPi", "DzeroToKPi", "DsToKKpi", "LcToPKPi", "XiCplusToPKPi"};
 static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 } // namespace
 
@@ -72,7 +76,7 @@ struct HfTaskMcValidationGen {
   AxisSpec axisResiduals{100, -0.01, 0.01};
   AxisSpec axisPt{100, 0., 50.};
   AxisSpec axisY{100, -5., 5.};
-  AxisSpec axisSpecies{nCharmHadrons, -0.5, nCharmHadrons - 0.5};
+  AxisSpec axisSpecies{nChannels, -0.5, nChannels - 0.5};
   AxisSpec axisDecLen{100, 0., 10000.};
 
   HistogramRegistry registry{
@@ -110,7 +114,7 @@ struct HfTaskMcValidationGen {
 
   void init(InitContext&)
   {
-    for (auto iBin = 1; iBin <= nCharmHadrons; ++iBin) {
+    for (auto iBin = 1; iBin <= nChannels; ++iBin) {
       registry.get<TH2>(HIST("promptCharmHadrons/hPromptPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       registry.get<TH2>(HIST("promptCharmHadrons/hPromptYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       registry.get<TH2>(HIST("promptCharmHadrons/hPromptDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
@@ -154,7 +158,7 @@ struct HfTaskMcValidationGen {
     int cBarPerCollision = 0;
     int bPerCollision = 0;
     int bBarPerCollision = 0;
-    std::array<int, nCharmHadrons> counterPrompt{0}, counterNonPrompt{0};
+    std::array<int, nChannels> counterPrompt{0}, counterNonPrompt{0};
 
     for (const auto& particle : mcParticles) {
       if (!particle.has_mothers()) {
@@ -190,11 +194,17 @@ struct HfTaskMcValidationGen {
           continue;
         }
 
-        // Check that the number of daughters match what we expect
         std::vector<int> listDaughters{};
-        RecoDecay::getDaughters(particle, &listDaughters, arrPDGFinal[iD], -1);
-        if (listDaughters.size() != nDaughters[iD]) {
-          continue;
+
+        // Check that the decay channel is correct and retrieve the daughters
+        if (nDaughters[iD] == 2) {
+          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, particlePdgCode, arrPDGFinal2Prong[iD], true, nullptr, 1, &listDaughters)) {
+            continue;
+          }
+        } else if (nDaughters[iD] == 3) {
+          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, particlePdgCode, arrPDGFinal3Prong[iD], true, nullptr, 2, &listDaughters)) {
+            continue;
+          }
         }
 
         // Check momentum conservation
@@ -289,9 +299,9 @@ struct HfTaskMcValidationRec {
 
   Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
 
-  std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nCharmHadrons> histPtDau, histEtaDau, histImpactParameterDau;
-  std::array<std::array<std::shared_ptr<TH1>, 2>, nCharmHadrons> histPtReco;
+  std::array<std::shared_ptr<TH1>, nChannels> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nChannels> histPtDau, histEtaDau, histImpactParameterDau;
+  std::array<std::array<std::shared_ptr<TH1>, 2>, nChannels> histPtReco;
   std::array<std::shared_ptr<THnSparse>, 4> histOriginTracks;
   std::shared_ptr<TH2> histAmbiguousTracks, histTracks;
   std::shared_ptr<TH1> histContributors;
@@ -366,7 +376,7 @@ struct HfTaskMcValidationRec {
     histAmbiguousTracks->GetXaxis()->SetBinLabel(2, "no quark");
     histAmbiguousTracks->GetXaxis()->SetBinLabel(3, "charm");
     histAmbiguousTracks->GetXaxis()->SetBinLabel(4, "beauty");
-    for (auto iHad = 0; iHad < nCharmHadrons; ++iHad) {
+    for (auto iHad = 0; iHad < nChannels; ++iHad) {
       histDeltaPt[iHad] = registry.add<TH1>(Form("%s/histDeltaPt", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
       histDeltaPx[iHad] = registry.add<TH1>(Form("%s/histDeltaPx", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
       histDeltaPy[iHad] = registry.add<TH1>(Form("%s/histDeltaPy", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
