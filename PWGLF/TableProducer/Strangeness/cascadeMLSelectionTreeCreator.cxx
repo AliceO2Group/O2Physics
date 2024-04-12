@@ -75,6 +75,9 @@ struct cascadeMLSelectionTreeCreator{
   Configurable<bool> getOmegaMinus{"getOmegaMinus", false, "If True, apply cuts to select OmegaMinus signal and bkg candidates"};
   Configurable<bool> getOmegaPlus{"getOmegaPlus", false, "If True, apply cuts to select OmegaPlus signal and bkg candidates"};
 
+  Configurable<float> xiMassWindow{"xiMassWindow", 0.060, "Xi Mass Window around mass peak to consider (+/-, in GeV/c^2)"};
+  Configurable<float> omegaMassWindow{"omegaMassWindow", 0.060, "Omega Mass Window around mass peak to consider (+/-, in GeV/c^2)"};
+
   // Master switch for selecting candidates
   struct : ConfigurableGroup {
     Configurable<float> Lambdav0cospa{"Lambdav0cospa", 0.90, "min V0 CosPA"};
@@ -229,7 +232,16 @@ struct cascadeMLSelectionTreeCreator{
     }
 
     // Mass window selections
-
+    cascadeCandidate.massWindows = 0;
+    if(std::abs(cascadeCandidate.mXi-1.322) < xiMassWindow) {
+      cascadeCandidate.massWindows = cascadeCandidate.massWindows | 1 << 0 ; 
+    }
+    if(std::abs(cascadeCandidate.mOmega-1.6725) < omegaMassWindow) {
+      cascadeCandidate.massWindows = cascadeCandidate.massWindows | 1 << 1 ; 
+    }
+    if(cascadeCandidate.massWindows == 0){
+      return; // skip
+    }
 
     // populate
     cascadeMLCandidates(
