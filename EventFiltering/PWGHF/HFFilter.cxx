@@ -952,9 +952,9 @@ struct HfFilter { // Main struct for HF triggers
                   }
                 }
               } // end SigmaC++ candidate
-            } // end loop over tracks (soft pi)
-          } // end candidate Lc->pKpi
-        } // end loop over tracks
+            }   // end loop over tracks (soft pi)
+          }     // end candidate Lc->pKpi
+        }       // end loop over tracks
 
         // 3-prong with V0 (Ds gamma, D+ K0S, D+ Lambda)
         auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
@@ -1158,7 +1158,7 @@ struct HfFilter { // Main struct for HF triggers
               } // end loop over tracks (soft pi)
 
             } /// end selected K0s
-          } /// end of SigmaC0K0s trigger
+          }   /// end of SigmaC0K0s trigger
 
         } // end gamma selection
 
