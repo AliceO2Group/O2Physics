@@ -23,7 +23,6 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/AnalysisTask.h"
@@ -65,11 +64,11 @@ using std::endl;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
-struct cascadeMLSelectionTreeCreator{
+struct cascadeMLSelectionTreeCreator {
   Produces<aod::CascMLCandidates> cascadeMLCandidates;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // selection switches: please, use just one at a time! 
+  // selection switches: please, use just one at a time!
   Configurable<bool> getXiMinus{"getXiMinus", false, "If True, apply cuts to select XiMinus signal and bkg candidates"};
   Configurable<bool> getXiPlus{"getXiPlus", false, "If True, apply cuts to select XiPlus signal and bkg candidates"};
   Configurable<bool> getOmegaMinus{"getOmegaMinus", false, "If True, apply cuts to select OmegaMinus signal and bkg candidates"};
@@ -101,7 +100,7 @@ struct cascadeMLSelectionTreeCreator{
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {centralityAxis});
   }
 
-    // Helper struct to pass v0 information
+  // Helper struct to pass v0 information
   struct {
     uint8_t massWindows;
     int charge;
@@ -117,7 +116,7 @@ struct cascadeMLSelectionTreeCreator{
     float posTPCRows;
     float negTPCRows;
     float bachTPCRows;
-    
+
     // PID properties
     float posTPCSigmaPi;
     float negTPCSigmaPi;
@@ -159,13 +158,13 @@ struct cascadeMLSelectionTreeCreator{
     bool isXiMinus;
     bool isXiPlus;
     bool isOmegaMinus;
-    bool isOmegaPlus; 
+    bool isOmegaPlus;
   } cascadeCandidate;
-  
+
   // Process candidate and store properties in object
   template <typename TCollision, typename TCascObject>
   void processCandidate(TCollision const& coll, TCascObject const& cand)
-  {    
+  {
     auto posTrackExtra = cand.template posTrackExtra_as<dauTracks>();
     auto negTrackExtra = cand.template negTrackExtra_as<dauTracks>();
     auto bachTrackExtra = cand.template bachTrackExtra_as<dauTracks>();
@@ -211,7 +210,7 @@ struct cascadeMLSelectionTreeCreator{
     cascadeCandidate.negEta = cand.negativeeta();
     cascadeCandidate.bachEta = cand.bacheloreta();
 
-    // Topological 
+    // Topological
     cascadeCandidate.v0radius = cand.v0radius();
     cascadeCandidate.cascradius = cand.cascradius();
     cascadeCandidate.dcapostopv = cand.dcapostopv();
@@ -229,7 +228,7 @@ struct cascadeMLSelectionTreeCreator{
     cascadeCandidate.isOmegaMinus = false;
     cascadeCandidate.isOmegaPlus = false;
 
-    if constexpr ( requires {cand.pdgCode();} ) {
+    if constexpr (requires { cand.pdgCode(); }) {
       cascadeCandidate.isXiMinus = (cand.pdgCode() == 3312);
       cascadeCandidate.isXiPlus = (cand.pdgCode() == -3312);
       cascadeCandidate.isOmegaMinus = (cand.pdgCode() == 3334);
@@ -237,38 +236,38 @@ struct cascadeMLSelectionTreeCreator{
     }
 
     // base topological selections
-    if( cascadeCandidate.v0CosPA < v0setting_cospa )
-      return; 
-    if( cascadeCandidate.dcaV0Daughters > v0setting_dcav0dau )
-      return; 
-    if( cascadeCandidate.dcapostopv < v0setting_dcapostopv )
-      return; 
-    if( cascadeCandidate.dcapostopv < v0setting_dcanegtopv )
-      return; 
-    if( cascadeCandidate.dcabachtopv < cascadesetting_dcabachtopv )
-      return; 
-    if( cascadeCandidate.v0radius < v0setting_radius )
-      return; 
-    if( cascadeCandidate.cascCosPA < cascadesetting_cospa )
-      return; 
-    if( cascadeCandidate.dcaCascDaughters > cascadesetting_dcacascdau )
-      return; 
-    if( cascadeCandidate.cascradius < cascadesetting_cascradius )
-      return; 
-    if( std::abs(cascadeCandidate.mLambdaDaughter-1.116) > cascadesetting_v0masswindow )
-      return; 
-    if( cascadeCandidate.dcav0topv < cascadesetting_mindcav0topv )
-      return; 
+    if (cascadeCandidate.v0CosPA < v0setting_cospa)
+      return;
+    if (cascadeCandidate.dcaV0Daughters > v0setting_dcav0dau)
+      return;
+    if (cascadeCandidate.dcapostopv < v0setting_dcapostopv)
+      return;
+    if (cascadeCandidate.dcapostopv < v0setting_dcanegtopv)
+      return;
+    if (cascadeCandidate.dcabachtopv < cascadesetting_dcabachtopv)
+      return;
+    if (cascadeCandidate.v0radius < v0setting_radius)
+      return;
+    if (cascadeCandidate.cascCosPA < cascadesetting_cospa)
+      return;
+    if (cascadeCandidate.dcaCascDaughters > cascadesetting_dcacascdau)
+      return;
+    if (cascadeCandidate.cascradius < cascadesetting_cascradius)
+      return;
+    if (std::abs(cascadeCandidate.mLambdaDaughter - 1.116) > cascadesetting_v0masswindow)
+      return;
+    if (cascadeCandidate.dcav0topv < cascadesetting_mindcav0topv)
+      return;
 
     // Mass window selections
     cascadeCandidate.massWindows = 0;
-    if(std::abs(cascadeCandidate.mXi-1.322) < xiMassWindow) {
-      cascadeCandidate.massWindows = cascadeCandidate.massWindows | 1 << 0 ; 
+    if (std::abs(cascadeCandidate.mXi - 1.322) < xiMassWindow) {
+      cascadeCandidate.massWindows = cascadeCandidate.massWindows | 1 << 0;
     }
-    if(std::abs(cascadeCandidate.mOmega-1.6725) < omegaMassWindow) {
-      cascadeCandidate.massWindows = cascadeCandidate.massWindows | 1 << 1 ; 
+    if (std::abs(cascadeCandidate.mOmega - 1.6725) < omegaMassWindow) {
+      cascadeCandidate.massWindows = cascadeCandidate.massWindows | 1 << 1;
     }
-    if(cascadeCandidate.massWindows == 0){
+    if (cascadeCandidate.massWindows == 0) {
       return; // skip
     }
 
@@ -316,7 +315,7 @@ struct cascadeMLSelectionTreeCreator{
       cascadeCandidate.negEta,
       cascadeCandidate.bachEta,
 
-      // Topological 
+      // Topological
       cascadeCandidate.v0radius,
       cascadeCandidate.cascradius,
       cascadeCandidate.dcapostopv,
@@ -332,31 +331,29 @@ struct cascadeMLSelectionTreeCreator{
       cascadeCandidate.isXiMinus,
       cascadeCandidate.isXiPlus,
       cascadeCandidate.isOmegaMinus,
-      cascadeCandidate.isOmegaPlus
-    );
+      cascadeCandidate.isOmegaPlus);
   }
 
   void processRealData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascTOFNSigmas> const& cascades, dauTracks const&)
   {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-    for (auto& casc: cascades){ // looping over lambdas 
+    for (auto& casc : cascades) { // looping over lambdas
       processCandidate(coll, casc);
     }
   }
   void processSimData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascMCDatas, aod::CascTOFNSigmas> const& cascades, dauTracks const&)
   {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-    for (auto& casc: cascades){ // looping over lambdas 
+    for (auto& casc : cascades) { // looping over lambdas
       processCandidate(coll, casc);
     }
   }
 
-  PROCESS_SWITCH(cascadeMLSelectionTreeCreator, processRealData, "Produce Run 3 cascade tables (real data)", false);  
+  PROCESS_SWITCH(cascadeMLSelectionTreeCreator, processRealData, "Produce Run 3 cascade tables (real data)", false);
   PROCESS_SWITCH(cascadeMLSelectionTreeCreator, processSimData, "Produce Run 3 cascade tables (simulation)", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<cascadeMLSelectionTreeCreator>(cfgc)};
-  
 }

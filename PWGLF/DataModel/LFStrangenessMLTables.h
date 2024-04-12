@@ -21,9 +21,8 @@
 using namespace o2;
 using namespace o2::framework;
 
-
 // Creating output TTree for ML analysis
-namespace o2::aod 
+namespace o2::aod
 {
 namespace v0mlcandidates
 {
@@ -73,67 +72,66 @@ DECLARE_SOA_COLUMN(IsKZeroShort, isKZeroShort, bool);
 } // namespace v0mlcandidates
 
 DECLARE_SOA_TABLE(V0MLCandidates, "AOD", "V0MLCANDIDATES",
-				v0mlcandidates::PosITSCls,
-				v0mlcandidates::NegITSCls,
-				v0mlcandidates::PosITSClSize,
-				v0mlcandidates::NegITSClSize,
-				v0mlcandidates::PosTPCRows,
-				v0mlcandidates::NegTPCRows, 
-				v0mlcandidates::PosTPCSigmaPi,
-				v0mlcandidates::NegTPCSigmaPi,
-				v0mlcandidates::PosTPCSigmaPr,
-				v0mlcandidates::NegTPCSigmaPr,
-				v0mlcandidates::PosTPCSigmaEl,
-				v0mlcandidates::NegTPCSigmaEl,
-				v0mlcandidates::TOFSigmaLaPr, 
-				v0mlcandidates::TOFSigmaLaPi, 
-				v0mlcandidates::TOFSigmaALaPi,
-				v0mlcandidates::TOFSigmaALaPr, 
-				v0mlcandidates::TOFSigmaK0PiPlus,
-				v0mlcandidates::TOFSigmaK0PiMinus, 
-				v0mlcandidates::LambdaMass, 
-				v0mlcandidates::AntiLambdaMass, 
-				v0mlcandidates::GammaMass, 
-				v0mlcandidates::KZeroShortMass, 
-				v0mlcandidates::PT, 
-				v0mlcandidates::Qt, 
-				v0mlcandidates::Alpha,
-				v0mlcandidates::PosEta, 
-				v0mlcandidates::NegEta, 
-				v0mlcandidates::V0Eta, 
-				v0mlcandidates::Z, 
-				v0mlcandidates::V0radius,
-				v0mlcandidates::PA, 
-				v0mlcandidates::DCApostopv, 
-				v0mlcandidates::DCAnegtopv, 
-				v0mlcandidates::DCAV0daughters, 
-				v0mlcandidates::DCAv0topv, 
-				v0mlcandidates::PsiPair, 
-				v0mlcandidates::V0type, 
-                                v0mlcandidates::Centrality, 
-                                v0mlcandidates::SelHypothesis,
-				v0mlcandidates::IsLambda, 
-				v0mlcandidates::IsAntiLambda, 
-				v0mlcandidates::IsGamma, 
-				v0mlcandidates::IsKZeroShort);
-
+                  v0mlcandidates::PosITSCls,
+                  v0mlcandidates::NegITSCls,
+                  v0mlcandidates::PosITSClSize,
+                  v0mlcandidates::NegITSClSize,
+                  v0mlcandidates::PosTPCRows,
+                  v0mlcandidates::NegTPCRows,
+                  v0mlcandidates::PosTPCSigmaPi,
+                  v0mlcandidates::NegTPCSigmaPi,
+                  v0mlcandidates::PosTPCSigmaPr,
+                  v0mlcandidates::NegTPCSigmaPr,
+                  v0mlcandidates::PosTPCSigmaEl,
+                  v0mlcandidates::NegTPCSigmaEl,
+                  v0mlcandidates::TOFSigmaLaPr,
+                  v0mlcandidates::TOFSigmaLaPi,
+                  v0mlcandidates::TOFSigmaALaPi,
+                  v0mlcandidates::TOFSigmaALaPr,
+                  v0mlcandidates::TOFSigmaK0PiPlus,
+                  v0mlcandidates::TOFSigmaK0PiMinus,
+                  v0mlcandidates::LambdaMass,
+                  v0mlcandidates::AntiLambdaMass,
+                  v0mlcandidates::GammaMass,
+                  v0mlcandidates::KZeroShortMass,
+                  v0mlcandidates::PT,
+                  v0mlcandidates::Qt,
+                  v0mlcandidates::Alpha,
+                  v0mlcandidates::PosEta,
+                  v0mlcandidates::NegEta,
+                  v0mlcandidates::V0Eta,
+                  v0mlcandidates::Z,
+                  v0mlcandidates::V0radius,
+                  v0mlcandidates::PA,
+                  v0mlcandidates::DCApostopv,
+                  v0mlcandidates::DCAnegtopv,
+                  v0mlcandidates::DCAV0daughters,
+                  v0mlcandidates::DCAv0topv,
+                  v0mlcandidates::PsiPair,
+                  v0mlcandidates::V0type,
+                  v0mlcandidates::Centrality,
+                  v0mlcandidates::SelHypothesis,
+                  v0mlcandidates::IsLambda,
+                  v0mlcandidates::IsAntiLambda,
+                  v0mlcandidates::IsGamma,
+                  v0mlcandidates::IsKZeroShort);
 
 namespace V0MLSelection
 {
 DECLARE_SOA_COLUMN(GammaBDTScore, gammaBDTScore, float);
 DECLARE_SOA_COLUMN(LambdaBDTScore, lambdaBDTScore, float);
-DECLARE_SOA_COLUMN(AntiLambdaBDTScore, antiLambdaBDTScore, float); 
+DECLARE_SOA_COLUMN(AntiLambdaBDTScore, antiLambdaBDTScore, float);
 DECLARE_SOA_COLUMN(K0ShortBDTScore, k0ShortBDTScore, float);
 } // namespace V0MLSelection
 
 DECLARE_SOA_TABLE(V0GammaMLScores, "AOD", "V0GaMLScores",
-				  V0MLSelection::GammaBDTScore);
+                  V0MLSelection::GammaBDTScore);
 DECLARE_SOA_TABLE(V0LambdaMLScores, "AOD", "V0LaMLScores",
-				  V0MLSelection::LambdaBDTScore);
+                  V0MLSelection::LambdaBDTScore);
 DECLARE_SOA_TABLE(V0AntiLambdaMLScores, "AOD", "V0ALaMLScores",
-				  V0MLSelection::AntiLambdaBDTScore);
+                  V0MLSelection::AntiLambdaBDTScore);
 DECLARE_SOA_TABLE(V0K0ShortMLScores, "AOD", "V0K0MLScores",
-				  V0MLSelection::K0ShortBDTScore);
+                  V0MLSelection::K0ShortBDTScore);
 
 // Cascade candidates
 namespace cascmlcandidates
@@ -191,53 +189,53 @@ DECLARE_SOA_COLUMN(IsOmegaPlus, isOmegaPlus, bool);
 } // namespace cascmlcandidates
 
 DECLARE_SOA_TABLE(CascMLCandidates, "AOD", "CAMLCANDIDATES",
-        cascmlcandidates::MassWindows,
-        cascmlcandidates::Charge,
-        cascmlcandidates::Centrality,
-        cascmlcandidates::PosITSCls,
-        cascmlcandidates::NegITSCls,
-        cascmlcandidates::BachITSCls,
-        cascmlcandidates::PosITSClSize,
-        cascmlcandidates::NegITSClSize,
-        cascmlcandidates::BachITSClSize,
-        cascmlcandidates::PosTPCRows,
-        cascmlcandidates::NegTPCRows,
-        cascmlcandidates::BachTPCRows,
-        cascmlcandidates::PosTPCSigmaPi,
-        cascmlcandidates::NegTPCSigmaPi,
-        cascmlcandidates::PosTPCSigmaPr,
-        cascmlcandidates::NegTPCSigmaPr,
-        cascmlcandidates::BachTPCSigmaPi,
-        cascmlcandidates::BachTPCSigmaKa,
-        cascmlcandidates::TOFNSigmaXiLaPi,
-        cascmlcandidates::TOFNSigmaXiLaPr,
-        cascmlcandidates::TOFNSigmaXiPi,
-        cascmlcandidates::TOFNSigmaOmLaPi,
-        cascmlcandidates::TOFNSigmaOmLaPr,
-        cascmlcandidates::TOFNSigmaOmKa,
-        cascmlcandidates::MXi,
-        cascmlcandidates::MOmega,
-        cascmlcandidates::YXi,
-        cascmlcandidates::YOmega,
-        cascmlcandidates::MLambda,
-        cascmlcandidates::Pt,
-        cascmlcandidates::PosEta,
-        cascmlcandidates::NegEta,
-        cascmlcandidates::BachEta,
-        cascmlcandidates::V0radius,
-        cascmlcandidates::CascRadius,
-        cascmlcandidates::DCApostopv,
-        cascmlcandidates::DCAnegtopv,
-        cascmlcandidates::DCAbachtopv,
-        cascmlcandidates::DCAV0daughters,
-        cascmlcandidates::DCACascDaughters,
-        cascmlcandidates::DCAv0topv,
-        cascmlcandidates::V0PA,
-        cascmlcandidates::CascPA,
-        cascmlcandidates::IsXiMinus,
-        cascmlcandidates::IsXiPlus,
-        cascmlcandidates::IsOmegaMinus,
-        cascmlcandidates::IsOmegaPlus);
+                  cascmlcandidates::MassWindows,
+                  cascmlcandidates::Charge,
+                  cascmlcandidates::Centrality,
+                  cascmlcandidates::PosITSCls,
+                  cascmlcandidates::NegITSCls,
+                  cascmlcandidates::BachITSCls,
+                  cascmlcandidates::PosITSClSize,
+                  cascmlcandidates::NegITSClSize,
+                  cascmlcandidates::BachITSClSize,
+                  cascmlcandidates::PosTPCRows,
+                  cascmlcandidates::NegTPCRows,
+                  cascmlcandidates::BachTPCRows,
+                  cascmlcandidates::PosTPCSigmaPi,
+                  cascmlcandidates::NegTPCSigmaPi,
+                  cascmlcandidates::PosTPCSigmaPr,
+                  cascmlcandidates::NegTPCSigmaPr,
+                  cascmlcandidates::BachTPCSigmaPi,
+                  cascmlcandidates::BachTPCSigmaKa,
+                  cascmlcandidates::TOFNSigmaXiLaPi,
+                  cascmlcandidates::TOFNSigmaXiLaPr,
+                  cascmlcandidates::TOFNSigmaXiPi,
+                  cascmlcandidates::TOFNSigmaOmLaPi,
+                  cascmlcandidates::TOFNSigmaOmLaPr,
+                  cascmlcandidates::TOFNSigmaOmKa,
+                  cascmlcandidates::MXi,
+                  cascmlcandidates::MOmega,
+                  cascmlcandidates::YXi,
+                  cascmlcandidates::YOmega,
+                  cascmlcandidates::MLambda,
+                  cascmlcandidates::Pt,
+                  cascmlcandidates::PosEta,
+                  cascmlcandidates::NegEta,
+                  cascmlcandidates::BachEta,
+                  cascmlcandidates::V0radius,
+                  cascmlcandidates::CascRadius,
+                  cascmlcandidates::DCApostopv,
+                  cascmlcandidates::DCAnegtopv,
+                  cascmlcandidates::DCAbachtopv,
+                  cascmlcandidates::DCAV0daughters,
+                  cascmlcandidates::DCACascDaughters,
+                  cascmlcandidates::DCAv0topv,
+                  cascmlcandidates::V0PA,
+                  cascmlcandidates::CascPA,
+                  cascmlcandidates::IsXiMinus,
+                  cascmlcandidates::IsXiPlus,
+                  cascmlcandidates::IsOmegaMinus,
+                  cascmlcandidates::IsOmegaPlus);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSMLTABLES_H_

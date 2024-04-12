@@ -62,22 +62,22 @@ using std::array;
 using std::cout;
 using std::endl;
 
-
 // For original data loops
 using V0OriginalDatas = soa::Join<aod::V0Indices, aod::V0Cores>;
 
 // For derived data analysis
 using V0DerivedDatas = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs>;
 
-struct lambdakzeromlselection{
-  o2::ml::OnnxModel lambda_bdt;;
+struct lambdakzeromlselection {
+  o2::ml::OnnxModel lambda_bdt;
+  ;
   o2::ml::OnnxModel antilambda_bdt;
   o2::ml::OnnxModel gamma_bdt;
   o2::ml::OnnxModel kzeroshort_bdt;
 
   std::map<std::string, std::string> metadata;
 
-  Produces<aod::V0GammaMLScores> gammaMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
+  Produces<aod::V0GammaMLScores> gammaMLSelections;   // optionally aggregate information from ML output for posterior analysis (derived data)
   Produces<aod::V0LambdaMLScores> lambdaMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -101,8 +101,8 @@ struct lambdakzeromlselection{
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
-  
-  // Axis	
+
+  // Axis
   // base properties
   ConfigurableAxis vertexZ{"vertexZ", {30, -15.0f, 15.0f}, ""};
 
@@ -113,7 +113,7 @@ struct lambdakzeromlselection{
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
 
     ccdb->setURL(ccdbUrl.value);
-    // Retrieve the model from CCDB 
+    // Retrieve the model from CCDB
     if (loadModelsFromCCDB) {
       ccdbApi.init(ccdbUrl);
 
@@ -122,54 +122,65 @@ struct lambdakzeromlselection{
 
       if (PredictLambda) {
         bool retrieveSuccessLambda = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathLambda.value);
-        if (retrieveSuccessLambda) lambda_bdt.initModel(BDTLocalPathLambda.value, enableOptimizations.value);
-        else{
-        LOG(fatal) << "Error encountered while fetching/loading the Lambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        if (retrieveSuccessLambda)
+          lambda_bdt.initModel(BDTLocalPathLambda.value, enableOptimizations.value);
+        else {
+          LOG(fatal) << "Error encountered while fetching/loading the Lambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
-      
+      }
+
       if (PredictAntiLambda) {
         bool retrieveSuccessAntiLambda = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathAntiLambda.value);
-        if (retrieveSuccessAntiLambda) antilambda_bdt.initModel(BDTLocalPathAntiLambda.value, enableOptimizations.value);
-        else{
-        LOG(fatal) << "Error encountered while fetching/loading the AntiLambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        if (retrieveSuccessAntiLambda)
+          antilambda_bdt.initModel(BDTLocalPathAntiLambda.value, enableOptimizations.value);
+        else {
+          LOG(fatal) << "Error encountered while fetching/loading the AntiLambda model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
+      }
 
       if (PredictGamma) {
         bool retrieveSuccessGamma = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathGamma.value);
-        if (retrieveSuccessGamma) gamma_bdt.initModel(BDTLocalPathGamma.value, enableOptimizations.value);
-        else{
-          LOG(fatal) << "Error encountered while fetching/loading the Gamma model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        if (retrieveSuccessGamma)
+          gamma_bdt.initModel(BDTLocalPathGamma.value, enableOptimizations.value);
+        else {
+          LOG(fatal) << "Error encountered while fetching/loading the Gamma model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
         }
-      
+      }
+
       if (PredictKZeroShort) {
         bool retrieveSuccessKZeroShort = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathKZeroShort.value);
-        if (retrieveSuccessKZeroShort) kzeroshort_bdt.initModel(BDTLocalPathKZeroShort.value, enableOptimizations.value);
-        else{
-          LOG(fatal) << "Error encountered while fetching/loading the KZeroShort model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";}
+        if (retrieveSuccessKZeroShort)
+          kzeroshort_bdt.initModel(BDTLocalPathKZeroShort.value, enableOptimizations.value);
+        else {
+          LOG(fatal) << "Error encountered while fetching/loading the KZeroShort model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
+        }
       }
-    } 
-    else {
-      if (PredictLambda) lambda_bdt.initModel(BDTLocalPathLambda.value, enableOptimizations.value);
-      if (PredictAntiLambda) antilambda_bdt.initModel(BDTLocalPathAntiLambda.value, enableOptimizations.value);
-      if (PredictGamma) gamma_bdt.initModel(BDTLocalPathGamma.value, enableOptimizations.value);
-      if (PredictKZeroShort) kzeroshort_bdt.initModel(BDTLocalPathKZeroShort.value, enableOptimizations.value); 
+    } else {
+      if (PredictLambda)
+        lambda_bdt.initModel(BDTLocalPathLambda.value, enableOptimizations.value);
+      if (PredictAntiLambda)
+        antilambda_bdt.initModel(BDTLocalPathAntiLambda.value, enableOptimizations.value);
+      if (PredictGamma)
+        gamma_bdt.initModel(BDTLocalPathGamma.value, enableOptimizations.value);
+      if (PredictKZeroShort)
+        kzeroshort_bdt.initModel(BDTLocalPathKZeroShort.value, enableOptimizations.value);
     }
   }
 
   // Process candidate and store properties in object
   template <typename TV0Object>
   void processCandidate(TV0Object const& cand)
-  {    
-    std::vector<float> inputFeatures{cand.pt(), static_cast<float>(cand.qtarm()), 
-                                     cand.alpha(), cand.v0radius(), 
-                                     cand.v0cosPA(), cand.dcaV0daughters(), 
+  {
+    std::vector<float> inputFeatures{cand.pt(), static_cast<float>(cand.qtarm()),
+                                     cand.alpha(), cand.v0radius(),
+                                     cand.v0cosPA(), cand.dcaV0daughters(),
                                      cand.dcapostopv(), cand.dcanegtopv()};
 
     // calculate classifier
     float* LambdaProbability = lambda_bdt.evalModel(inputFeatures);
     float* GammaProbability = gamma_bdt.evalModel(inputFeatures);
-    //float* AntiLambdaProbability = antilambda_bdt.evalModel(inputFeatures); // WIP
-    //float* KZeroShortProbability = kzeroshort_bdt.evalModel(inputFeatures); // WIP
+    // float* AntiLambdaProbability = antilambda_bdt.evalModel(inputFeatures); // WIP
+    // float* KZeroShortProbability = kzeroshort_bdt.evalModel(inputFeatures); // WIP
 
     gammaMLSelections(GammaProbability[1]);
     lambdaMLSelections(LambdaProbability[1]);
@@ -178,14 +189,14 @@ struct lambdakzeromlselection{
   void processDerivedData(aod::StraCollision const& coll, V0DerivedDatas const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
-    for (auto& v0: v0s){ // looping over lambdas 
+    for (auto& v0 : v0s) { // looping over lambdas
       processCandidate(v0);
     }
   }
   void processStandardData(aod::Collision const& coll, V0OriginalDatas const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
-    for (auto& v0: v0s){ // looping over lambdas 
+    for (auto& v0 : v0s) { // looping over lambdas
       processCandidate(v0);
     }
   }
