@@ -28,7 +28,7 @@ struct ReducerPostprocess {
   {
     for (auto& col : cols) {
       auto mccol = col.rmccollision_as<MCFull>();
-      features(mccol.weight(), mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C(), mccol.impactParameter(), mccol.processId());
+      features(mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), mccol.processId(), mccol.impactParameter(), col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C());
     }
   }
 
@@ -40,7 +40,7 @@ struct ReducerPostprocess {
   {
     for (auto& col : cols) {
       auto mccol = col.rmccollision_as<MCLite>();
-      features(mccol.weight(), mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C(), -1.f, -1);
+      features(mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), -1, -1.f, col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C());
     }
   }
 

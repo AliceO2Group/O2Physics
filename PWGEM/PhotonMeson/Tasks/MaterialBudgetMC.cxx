@@ -258,13 +258,14 @@ struct MaterialBudgetMC {
           auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
           auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
           int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
-
-          bool is_photon_physical_primary = false;
-          if (photonid > 0) {
-            auto mcphoton = mcparticles.iteratorAt(photonid);
-            is_photon_physical_primary = mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator();
+          if (photonid < 0) {
+            continue;
           }
-          if (!is_photon_physical_primary) {
+          auto mcphoton = mcparticles.iteratorAt(photonid);
+          if (!IsConversionPointInAcceptance(mcphoton, maxRgen, maxY, margin_z_mc, mcparticles)) {
+            continue;
+          }
+          if (!(mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator())) {
             continue;
           }
 
@@ -332,13 +333,20 @@ struct MaterialBudgetMC {
                 if (photonid1 < 0) {
                   continue;
                 }
-                auto g1mc = mcparticles.iteratorAt(photonid1);
-
                 int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);
                 if (photonid2 < 0) {
                   continue;
                 }
+
+                auto g1mc = mcparticles.iteratorAt(photonid1);
                 auto g2mc = mcparticles.iteratorAt(photonid2);
+
+                if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY, margin_z_mc, mcparticles)) {
+                  continue;
+                }
+                if (!IsConversionPointInAcceptance(g2mc, maxRgen, maxY, margin_z_mc, mcparticles)) {
+                  continue;
+                }
 
                 int pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
                 if (pi0id < 0) {
