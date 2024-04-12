@@ -198,11 +198,11 @@ struct HfTaskMcValidationGen {
 
         // Check that the decay channel is correct and retrieve the daughters
         if (nDaughters[iD] == 2) {
-          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, particlePdgCode, arrPDGFinal2Prong[iD], true, nullptr, 1, &listDaughters)) {
+          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal2Prong[iD], true, nullptr, 1, &listDaughters)) {
             continue;
           }
         } else if (nDaughters[iD] == 3) {
-          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, particlePdgCode, arrPDGFinal3Prong[iD], true, nullptr, 2, &listDaughters)) {
+          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal3Prong[iD], true, nullptr, 2, &listDaughters)) {
             continue;
           }
         }
