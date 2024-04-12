@@ -615,8 +615,8 @@ class RecoDecay
       // Printf("getDaughters: Error: No list!");
       return;
     }
-    if constexpr(checkProcess) {
-      if (stage !=0 && particle.getProcess() != TMCProcess::kPDecay && particle.getProcess() != TMCProcess::kPPrimary) { // decay products of HF hadrons are labeled as kPPrimary
+    if constexpr (checkProcess) {
+      if (stage != 0 && particle.getProcess() != TMCProcess::kPDecay && particle.getProcess() != TMCProcess::kPPrimary) { // decay products of HF hadrons are labeled as kPPrimary
         return;
       }
     }
