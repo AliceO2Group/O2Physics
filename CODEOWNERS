@@ -27,7 +27,11 @@
 /EventFiltering/PWGCF @alibuild @lauraser @mpuccio @strogolo
 /EventFiltering/PWGMM @alibuild @aortizve @mpuccio @strogolo
 /EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @strogolo
-/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGCF               @alibuild @saganatt @victor-gonzalez @zchochul
+/PWGCF/Core          @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGCF/DataModel     @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGCF/TableProducer @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
 /PWGDQ @alibuild @iarsene @dsekihat @feisenhu @lucamicheletti93
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
