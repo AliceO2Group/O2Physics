@@ -125,7 +125,7 @@ static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", 
 static const std::array<std::string, kNBeautyParticles> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib"};
 static const std::array<int, kNCharmParticles> pdgCodesCharm{421, 411, 431, 4122, 4232};
 static const std::array<std::string, 2> eventTitles = {"all", "rejected"};
-static const std::array<std::string, kNtriggersHF> hfTriggerNames{filtering::HfHighPt2P::columnLabel(), filtering::HfHighPt3P::columnLabel(), filtering::HfBeauty3P::columnLabel(), filtering::HfBeauty4P::columnLabel(), o2::aod::filtering::HfFemto2P::columnLabel(), filtering::HfFemto3P::columnLabel(), filtering::HfDoubleCharm2P::columnLabel(), filtering::HfDoubleCharm3P::columnLabel(), filtering::HfDoubleCharmMix::columnLabel(), filtering::HfV0Charm2P::columnLabel(), filtering::HfV0Charm3P::columnLabel(), filtering::HfCharmBarToXiBach::columnLabel()};
+static const std::array<std::string, kNtriggersHF> hfTriggerNames{filtering::HfHighPt2P::columnLabel(), filtering::HfHighPt3P::columnLabel(), filtering::HfBeauty3P::columnLabel(), filtering::HfBeauty4P::columnLabel(), filtering::HfFemto2P::columnLabel(), filtering::HfFemto3P::columnLabel(), filtering::HfDoubleCharm2P::columnLabel(), filtering::HfDoubleCharm3P::columnLabel(), filtering::HfDoubleCharmMix::columnLabel(), filtering::HfV0Charm2P::columnLabel(), filtering::HfV0Charm3P::columnLabel(), filtering::HfCharmBarToXiBach::columnLabel()};
 static const std::array<std::string, kNV0> v0Labels{"#gamma", "K_{S}^{0}", "#Lambda", "#bar{#Lambda}"};
 static const std::array<std::string, kNV0> v0Names{"Photon", "K0S", "Lambda", "AntiLambda"};
 
