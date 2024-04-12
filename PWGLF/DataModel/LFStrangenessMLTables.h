@@ -29,6 +29,8 @@ namespace v0mlcandidates
 {
 DECLARE_SOA_COLUMN(PosITSCls, posITSCls, int);
 DECLARE_SOA_COLUMN(NegITSCls, negITSCls, int);
+DECLARE_SOA_COLUMN(PosITSClSize, posITSClSize, int);
+DECLARE_SOA_COLUMN(NegITSClSize, negITSClSize, int);
 DECLARE_SOA_COLUMN(PosTPCRows, posTPCRows, float);
 DECLARE_SOA_COLUMN(NegTPCRows, negTPCRows, float);
 DECLARE_SOA_COLUMN(PosTPCSigmaPi, posTPCSigmaPi, float);
@@ -71,6 +73,8 @@ DECLARE_SOA_COLUMN(IsKZeroShort, isKZeroShort, bool);
 DECLARE_SOA_TABLE(V0MLCandidates, "AOD", "V0MLCANDIDATES",
 				v0mlcandidates::PosITSCls,
 				v0mlcandidates::NegITSCls,
+				v0mlcandidates::PosITSClSize,
+				v0mlcandidates::NegITSClSize,
 				v0mlcandidates::PosTPCRows,
 				v0mlcandidates::NegTPCRows, 
 				v0mlcandidates::PosTPCSigmaPi,

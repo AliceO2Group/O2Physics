@@ -125,6 +125,8 @@ struct lambdakzeroMLSelectionTreeCreator{
   struct {
   int posITSCls;
   int negITSCls;
+  int posITSClSize;
+  int negITSClSize;
   float posTPCRows;
   float negTPCRows;
   float posTPCSigmaPi;
@@ -174,6 +176,8 @@ struct lambdakzeroMLSelectionTreeCreator{
     // Track quality
     Candidate.posITSCls = posTrackExtra.itsNCls();
     Candidate.negITSCls = negTrackExtra.itsNCls();
+    Candidate.posITSClSize = posTrackExtra.itsClusterSizes();
+    Candidate.negITSClSize = negTrackExtra.itsClusterSizes();
     Candidate.posTPCRows = posTrackExtra.tpcCrossedRows();
     Candidate.negTPCRows = negTrackExtra.tpcCrossedRows();
 
@@ -298,7 +302,7 @@ struct lambdakzeroMLSelectionTreeCreator{
       }
 
       // Filling TTree for ML analysis
-      v0MLCandidates(Candidate.posITSCls, Candidate.negITSCls, Candidate.posTPCRows, Candidate.negTPCRows, 
+      v0MLCandidates(Candidate.posITSCls, Candidate.negITSCls, Candidate.posITSClSize, Candidate.negITSClSize, Candidate.posTPCRows, Candidate.negTPCRows, 
       Candidate.posTPCSigmaPi, Candidate.negTPCSigmaPi, Candidate.posTPCSigmaPr, Candidate.negTPCSigmaPr, 
       Candidate.posTPCSigmaEl, Candidate.negTPCSigmaEl, Candidate.TOFSigmaLaPr, Candidate.TOFSigmaLaPi, 
       Candidate.TOFSigmaALaPi, Candidate.TOFSigmaALaPr, Candidate.TOFSigmaK0PiPlus, Candidate.TOFSigmaK0PiMinus, 
