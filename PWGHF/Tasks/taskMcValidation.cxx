@@ -166,8 +166,14 @@ struct HfTaskMcValidationGen {
       }
 
       int particlePdgCode = particle.pdgCode();
-      auto mother = particle.mothers_as<aod::McParticles>().front();
-      if (particlePdgCode != mother.pdgCode()) {
+      bool isDiffFromMothers = true;
+      for (const auto& mother : particle.mothers_as<aod::McParticles>()) {
+        if (particlePdgCode == mother.pdgCode()) {
+          isDiffFromMothers = false;
+          break;
+        }
+      }
+      if (isDiffFromMothers) {
         switch (particlePdgCode) {
           case kCharm:
             cPerCollision++;
