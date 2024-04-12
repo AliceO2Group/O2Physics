@@ -43,8 +43,7 @@ static const std::array<unsigned int, nChannels> nDaughters = {3, 3, 2, 3, 3, 3}
 // keep coherent indexing with PDGArrayParticle
 // FIXME: look for a better solution
 static const std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{}, {}, {+kPiPlus, -kKPlus}, {}, {}, {}}};
-static const std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {},
-                                                                            {+kKPlus, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}}};
+static const std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {}, {+kKPlus, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}}};
 static const std::array<std::string, nChannels> labels = {"D^{+} #rightarrow K#pi#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{0} #rightarrow K#pi",
                                                           "D_{s}^{+} #rightarrow KK#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Xi_{c}^{+} #rightarrow pK#pi"};
 static const std::array<std::string, nChannels> particleNames = {"DplusToKPiPi", "DstarToDzeroPi", "DzeroToKPi", "DsToKKpi", "LcToPKPi", "XiCplusToPKPi"};
@@ -54,7 +53,7 @@ static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 /// Generated Level Validation
 ///
 /// - Number of HF quarks produced per collision
-/// - Number of candidates per collision D±      → π± K∓ π±        
+/// - Number of candidates per collision D±      → π± K∓ π±
 ///                                      D*±     → π± K∓ π±,
 ///                                      D0(bar) → π± K∓,
 ///                                      Ds±     → K± K∓ π±,
@@ -287,7 +286,7 @@ struct HfTaskMcValidationGen {
 
 /// Reconstruction Level Validation
 ///
-/// D±      → π± K∓ π±        
+/// D±      → π± K∓ π±
 /// D*±     → π± K∓ π±,
 /// D0(bar) → π± K∓,
 /// Ds±     → K± K∓ π±,
