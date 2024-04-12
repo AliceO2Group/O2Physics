@@ -64,11 +64,11 @@ struct derivedCascadeAnalysis {
   Configurable<bool> isMC{"isMC", false, "MC data are processed"};
   Configurable<bool> doBefSelCheck{"doBefSelCheck", false, "Fill mass histograms of all candidates before selections"};
   Configurable<bool> doPtDepCutStudy{"doPtDepCutStudy", false, "Fill histogram with a cutting paramer"};
-  Configurable<bool> doGoodPVFT0EventCut{"doGoodPVFT0EventCut",true, "check for the PV position diffrence when estimated from tracks and FT0"};
-  Configurable<bool> doITSTPCvertexEventCut{"doITSTPCvertexEventCut",true, "checks the presence of at least one ITS-TPC track"};
-  Configurable<bool> doSameBunchPileUpEventCut{"doSameBunchPileUpEventCut",true,"removes events  associated with the same \"found-by-T0\" bunch crossing"};
-  Configurable<bool> doVertexTOFmatch{"doVertexTOFmatch",false,"Checks wherher at least one of vertex contributors is matched to TOF"};
-  Configurable<bool> doVertexTRDmatch{"doVertexTRDmatch",false,"Checks wherher at least one of vertex contributors is matched to TRD"};
+  Configurable<bool> doGoodPVFT0EventCut{"doGoodPVFT0EventCut", true, "check for the PV position diffrence when estimated from tracks and FT0"};
+  Configurable<bool> doITSTPCvertexEventCut{"doITSTPCvertexEventCut", true, "checks the presence of at least one ITS-TPC track"};
+  Configurable<bool> doSameBunchPileUpEventCut{"doSameBunchPileUpEventCut", true, "removes events  associated with the same \"found-by-T0\" bunch crossing"};
+  Configurable<bool> doVertexTOFmatch{"doVertexTOFmatch", false, "Checks wherher at least one of vertex contributors is matched to TOF"};
+  Configurable<bool> doVertexTRDmatch{"doVertexTRDmatch", false, "Checks wherher at least one of vertex contributors is matched to TRD"};
 
   Configurable<int> centMin{"centMin", 0, "Minimal accepted centrality"};
   Configurable<int> centMax{"centMax", 100, "Maximal accepted centrality"};
@@ -159,11 +159,15 @@ struct derivedCascadeAnalysis {
     histos.add("hNsigmaPionNegBach", "hNsigmaPionNegBach", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
     histos.add("hNsigmaKaon", "hNsigmaKaon", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
 
-    if(doNTOFSigmaProtonCut)histos.add("hNsigmaTOFProton", "",HistType::kTH3D, {{70, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    if(doNTOFSigmaV0PionCut)histos.add("hNsigmaTOFV0Pion", "",HistType::kTH3D, {{70, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    if(doNTOFSigmaBachelorCut){
-      if(isXi)histos.add("hNsigmaTOFBachelorPion", "",HistType::kTH3D, {{70, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-      else histos.add("hNsigmaTOFBachelorKaon", "",HistType::kTH3D, {{70, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    if (doNTOFSigmaProtonCut)
+      histos.add("hNsigmaTOFProton", "", HistType::kTH3D, {{70, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    if (doNTOFSigmaV0PionCut)
+      histos.add("hNsigmaTOFV0Pion", "", HistType::kTH3D, {{70, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    if (doNTOFSigmaBachelorCut) {
+      if (isXi)
+        histos.add("hNsigmaTOFBachelorPion", "", HistType::kTH3D, {{70, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+      else
+        histos.add("hNsigmaTOFBachelorKaon", "", HistType::kTH3D, {{70, -7, 7}, {100, 0, 10}, {100, 0, 100}});
     }
 
     TString CutLabel[22] = {"All", "MassWin", "y", "DCACascDau", "DCAV0Dau", "rCasc", "rCascMax", "rV0", "rV0Max", "LambdaMass", "Bach-baryon", "V0CosPA", "CompDecayMass", "DCADauToPV", "EtaDau", "CascCosPA", "DCAV0ToPV", "nSigmaTPCV0Dau", "NTPCrows", "OOBRej", "nSigmaTPCbachelor", "ctau"};
@@ -367,7 +371,7 @@ struct derivedCascadeAnalysis {
     }
     histos.fill(HIST("hEventSelection"), 7.5 /* At least one of vertex contributors is matched to TOF*/);
 
-    if (doVertexTRDmatch && !coll.selection_bit(o2::aod::evsel:: kIsVertexTRDmatched)) {
+    if (doVertexTRDmatch && !coll.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
       return false;
     }
     histos.fill(HIST("hEventSelection"), 8.5 /* At least one of vertex contributors is matched to TRD*/);
@@ -406,8 +410,10 @@ struct derivedCascadeAnalysis {
     if (doDCACascadeDauCut) {
       if (doPtDepDCAcascDauCut) {
         float ptDepCut = dcaCacsDauPar0;
-        if(casc.pt()>1&&casc.pt()<4) ptDepCut = dcaCacsDauPar1;
-        else if(casc.pt()>4) ptDepCut = dcaCacsDauPar2;
+        if (casc.pt() > 1 && casc.pt() < 4)
+          ptDepCut = dcaCacsDauPar1;
+        else if (casc.pt() > 4)
+          ptDepCut = dcaCacsDauPar2;
         histos.fill(HIST("hCutValue"), 4, ptDepCut);
         if (casc.dcacascdaughters() > ptDepCut)
           return false;
@@ -623,26 +629,26 @@ struct derivedCascadeAnalysis {
       cut = ctau;
       histos.fill(HIST("hCutValue"), 22, cut);
 
-      if(posExtra.hasTOF()){
-        if(doNTOFSigmaProtonCut && casc.sign() < 0){
+      if (posExtra.hasTOF()) {
+        if (doNTOFSigmaProtonCut && casc.sign() < 0) {
           histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), TMath::Sqrt(TMath::Power(casc.pxpos(), 2) + TMath::Power(casc.pypos(), 2) + TMath::Power(casc.pzpos(), 2)), coll.centFT0C());
           if (TMath::Abs(casc.tofNSigmaXiLaPr()) > nsigmatofPr)
             continue;
         }
-        if(doNTOFSigmaV0PionCut && casc.sign() > 0){
+        if (doNTOFSigmaV0PionCut && casc.sign() > 0) {
           histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), TMath::Sqrt(TMath::Power(casc.pxpos(), 2) + TMath::Power(casc.pypos(), 2) + TMath::Power(casc.pzpos(), 2)), coll.centFT0C());
           if (TMath::Abs(casc.tofNSigmaXiLaPi()) > nsigmatofPion)
             continue;
         }
       }
 
-      if(negExtra.hasTOF()){
-        if(doNTOFSigmaProtonCut && casc.sign() > 0){
+      if (negExtra.hasTOF()) {
+        if (doNTOFSigmaProtonCut && casc.sign() > 0) {
           histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), TMath::Sqrt(TMath::Power(casc.pxneg(), 2) + TMath::Power(casc.pyneg(), 2) + TMath::Power(casc.pzneg(), 2)), coll.centFT0C());
           if (TMath::Abs(casc.tofNSigmaXiLaPr()) > nsigmatofPr)
             continue;
         }
-        if(doNTOFSigmaV0PionCut && casc.sign() < 0){
+        if (doNTOFSigmaV0PionCut && casc.sign() < 0) {
           histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), TMath::Sqrt(TMath::Power(casc.pxneg(), 2) + TMath::Power(casc.pyneg(), 2) + TMath::Power(casc.pzneg(), 2)), coll.centFT0C());
           if (TMath::Abs(casc.tofNSigmaXiLaPi()) > nsigmatofPion)
             continue;
@@ -651,7 +657,7 @@ struct derivedCascadeAnalysis {
 
       if (isXi) {
         if (casc.sign() < 0)
-            histos.fill(HIST("hNsigmaPionNegBach"), bachExtra.tpcNSigmaPi(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
+          histos.fill(HIST("hNsigmaPionNegBach"), bachExtra.tpcNSigmaPi(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
         else
           histos.fill(HIST("hNsigmaPionPosBach"), bachExtra.tpcNSigmaPi(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
         if (doNTPCSigmaCut) {
@@ -661,9 +667,9 @@ struct derivedCascadeAnalysis {
         } else
           ++counter;
 
-        if(bachExtra.hasTOF() && doNTOFSigmaBachelorCut){
+        if (bachExtra.hasTOF() && doNTOFSigmaBachelorCut) {
           histos.fill(HIST("hNsigmaTOFBachelorPion"), casc.tofNSigmaXiPi(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
-          if(TMath::Abs(casc.tofNSigmaXiPi()) > nsigmatofBachPion)
+          if (TMath::Abs(casc.tofNSigmaXiPi()) > nsigmatofBachPion)
             continue;
         }
 
@@ -684,9 +690,9 @@ struct derivedCascadeAnalysis {
         } else
           ++counter;
 
-        if(bachExtra.hasTOF() && doNTOFSigmaBachelorCut){
+        if (bachExtra.hasTOF() && doNTOFSigmaBachelorCut) {
           histos.fill(HIST("hNsigmaTOFBachelorKaon"), casc.tofNSigmaOmKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
-          if(TMath::Abs(casc.tofNSigmaOmKa()) > nsigmatofBachKaon)
+          if (TMath::Abs(casc.tofNSigmaOmKa()) > nsigmatofBachKaon)
             continue;
         }
 
@@ -845,26 +851,26 @@ struct derivedCascadeAnalysis {
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       float ctau = -10;
 
-      if(posExtra.hasTOF()){
-        if(doNTOFSigmaProtonCut && casc.sign() < 0){
+      if (posExtra.hasTOF()) {
+        if (doNTOFSigmaProtonCut && casc.sign() < 0) {
           histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), TMath::Sqrt(TMath::Power(casc.pxpos(), 2) + TMath::Power(casc.pypos(), 2) + TMath::Power(casc.pzpos(), 2)), coll.centFT0C());
           if (TMath::Abs(casc.tofNSigmaXiLaPr()) > nsigmatofPr)
             continue;
         }
-        if(doNTOFSigmaV0PionCut && casc.sign() > 0){
+        if (doNTOFSigmaV0PionCut && casc.sign() > 0) {
           histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), TMath::Sqrt(TMath::Power(casc.pxpos(), 2) + TMath::Power(casc.pypos(), 2) + TMath::Power(casc.pzpos(), 2)), coll.centFT0C());
           if (TMath::Abs(casc.tofNSigmaXiLaPi()) > nsigmatofPion)
             continue;
         }
       }
 
-      if(negExtra.hasTOF()){
-        if(doNTOFSigmaProtonCut && casc.sign() > 0){
+      if (negExtra.hasTOF()) {
+        if (doNTOFSigmaProtonCut && casc.sign() > 0) {
           histos.fill(HIST("hNsigmaTOFProton"), casc.tofNSigmaXiLaPr(), TMath::Sqrt(TMath::Power(casc.pxneg(), 2) + TMath::Power(casc.pyneg(), 2) + TMath::Power(casc.pzneg(), 2)), coll.centFT0C());
           if (TMath::Abs(casc.tofNSigmaXiLaPr()) > nsigmatofPr)
             continue;
         }
-        if(doNTOFSigmaV0PionCut && casc.sign() < 0){
+        if (doNTOFSigmaV0PionCut && casc.sign() < 0) {
           histos.fill(HIST("hNsigmaTOFV0Pion"), casc.tofNSigmaXiLaPi(), TMath::Sqrt(TMath::Power(casc.pxneg(), 2) + TMath::Power(casc.pyneg(), 2) + TMath::Power(casc.pzneg(), 2)), coll.centFT0C());
           if (TMath::Abs(casc.tofNSigmaXiLaPi()) > nsigmatofPion)
             continue;
@@ -883,9 +889,9 @@ struct derivedCascadeAnalysis {
         } else
           ++counter;
 
-        if(bachExtra.hasTOF() && doNTOFSigmaBachelorCut){
+        if (bachExtra.hasTOF() && doNTOFSigmaBachelorCut) {
           histos.fill(HIST("hNsigmaTOFBachelorPion"), casc.tofNSigmaXiPi(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
-          if(TMath::Abs(casc.tofNSigmaXiPi()) > nsigmatofBachPion)
+          if (TMath::Abs(casc.tofNSigmaXiPi()) > nsigmatofBachPion)
             continue;
         }
 
@@ -908,9 +914,9 @@ struct derivedCascadeAnalysis {
         } else
           ++counter;
 
-        if(bachExtra.hasTOF() && doNTOFSigmaBachelorCut){
+        if (bachExtra.hasTOF() && doNTOFSigmaBachelorCut) {
           histos.fill(HIST("hNsigmaTOFBachelorKaon"), casc.tofNSigmaOmKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
-          if(TMath::Abs(casc.tofNSigmaOmKa()) > nsigmatofBachKaon)
+          if (TMath::Abs(casc.tofNSigmaOmKa()) > nsigmatofBachKaon)
             continue;
         }
 
