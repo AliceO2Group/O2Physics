@@ -20,6 +20,11 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <Math/Vector4D.h>
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -38,18 +43,12 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CCDB/BasicCCDBManager.h"
-
 #include <TFile.h>
 #include <TH2F.h>
 #include <TProfile.h>
 #include <TLorentzVector.h>
-#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-
 #include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
 
