@@ -69,7 +69,7 @@ struct Pi0EtaToGammaGammaMC {
   Configurable<float> maxY_track{"maxY_track", 0.9, "maximum rapidity for generated particles"};                 // for PCM and dielectron
   Configurable<float> minPhi_track{"minPhi_track", 0, "minimum azimuthal angle for generated particles"};        // for PCM and dielectron
   Configurable<float> maxPhi_track{"maxPhi_track", 2 * M_PI, "maximum azimuthal angle for generated particles"}; // for PCM and dielectron
-  Configurable<float> maxRgen{"maxRgen", 100.f, "maximum radius for generated particles"};
+  Configurable<float> maxRgen{"maxRgen", 90.f, "maximum radius for generated particles"};
   Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
 
   Configurable<float> maxY_phos{"maxY_phos", 0.9, "maximum rapidity for generated particles"};                     // for EMC
