@@ -36,29 +36,34 @@ using namespace o2::framework::expressions;
 
 namespace
 {
-static const int nChannels = 6;
-static const std::array<int, nChannels> PDGArrayParticle = {o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kD0,
-                                                            o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus};
-static const std::array<unsigned int, nChannels> nDaughters = {3, 3, 2, 3, 3, 3};
+enum DecayChannels { DzeroToKPi = 0,
+                     DstarToDzeroPi,
+                     DplusToPiKPi,
+                     DplusToPhiPiToKKPi, // resonant channel with Phi, Dplus -> PhiPi -> KKPi
+                     DsToPhiPiToKKPi,    // resonant channel with Phi, Ds -> PhiPi -> KKPi
+                     LcToPKPi,
+                     LcToPiK0s,
+                     XicToPKPi,
+                     nChannels }; // always keep nChannels at the end
+
+static const std::array<int, nChannels> PDGArrayParticle = {o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDPlus,
+                                                            o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus};
+static const std::array<unsigned int, nChannels> nDaughters = {2, 3, 3, 3, 3, 3, 3, 3};
+static const std::array<int, nChannels> maxDepthForSearch = {1, 2, 2, 2, 2, 2, 3, 2};
 // keep coherent indexing with PDGArrayParticle
 // FIXME: look for a better solution
-static const std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{}, {}, {+kPiPlus, -kKPlus}, {}, {}, {}}};
-static const std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {}, {+kKPlus, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}}};
-static const std::array<std::string, nChannels> labels = {"D^{+} #rightarrow K#pi#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{0} #rightarrow K#pi",
-                                                          "D_{s}^{+} #rightarrow KK#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Xi_{c}^{+} #rightarrow pK#pi"};
-static const std::array<std::string, nChannels> particleNames = {"DplusToKPiPi", "DstarToDzeroPi", "DzeroToKPi", "DsToKKpi", "LcToPKPi", "XiCplusToPKPi"};
+static const std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{+kPiPlus, -kKPlus}, {}, {}, {}, {}, {}, {}, {}}};
+static const std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kPiPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}}};
+static const std::array<std::string, nChannels> labels = {"D^{0} #rightarrow K#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{+} #rightarrow K#pi#pi", "D^{+} #rightarrow KK#pi",
+                                                          "D_{s}^{+} #rightarrow KK#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s}", "#Xi_{c}^{+} #rightarrow pK#pi"};
+static const std::array<std::string, nChannels> particleNames = {"DzeroToKPi", "DstarToDzeroPi", "DplusToPiKPi", "DplusToKKpi", "DsToKKpi", "LcToPKPi", "LcToPiK0s", "XiCplusToPKPi"};
 static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 } // namespace
 
 /// Generated Level Validation
 ///
 /// - Number of HF quarks produced per collision
-/// - Number of candidates per collision D±      → π± K∓ π±
-///                                      D*±     → π± K∓ π±,
-///                                      D0(bar) → π± K∓,
-///                                      Ds±     → K± K∓ π±,
-///                                      Λc±     → p(bar) K∓ π±
-///                                      Ξc±     → p(bar) K∓ π±
+/// - Number of candidates per collision
 /// - Momentum Conservation for these particles
 
 struct HfTaskMcValidationGen {
@@ -75,7 +80,7 @@ struct HfTaskMcValidationGen {
   AxisSpec axisResiduals{100, -0.01, 0.01};
   AxisSpec axisPt{100, 0., 50.};
   AxisSpec axisY{100, -5., 5.};
-  AxisSpec axisSpecies{nChannels, -0.5, nChannels - 0.5};
+  AxisSpec axisSpecies{nChannels, -0.5, static_cast<float>(nChannels) - 0.5};
   AxisSpec axisDecLen{100, 0., 10000.};
 
   HistogramRegistry registry{
@@ -92,18 +97,22 @@ struct HfTaskMcValidationGen {
      {"quarks/hCountBbar", "Event counter - Number of anti-beauty quarks; Events Per Collision; entries", {HistType::kTH1F, {axisNquarks}}},
      {"quarks/hPtVsYCharmQuark", "Y vs. Pt - charm quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
      {"quarks/hPtVsYBeautyQuark", "Y vs. Pt - beauty quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
-     {"promptCharmHadrons/hCountPromptDzero", "Event counter - Prompt D0; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptDplus", "Event counter - Prompt DPlus; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptDs", "Event counter - Prompt Ds; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptDstar", "Event counter - Prompt Dstar; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptLambdaC", "Event counter - Prompt LambdaC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptXiC", "Event counter - Prompt XiC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptDzero", "Event counter - Non-prompt D0; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptDplus", "Event counter - Non-prompt DPlus; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptDs", "Event counter - Non-prompt Ds; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptDstar", "Event counter - Non-prompt Dstar; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptLambdaC", "Event counter - Non-prompt LambdaC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptXiC", "Event counter - Non-prompt XiC; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptDzeroToKPi", "Event counter - Prompt D0 to KPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptDstarToD0Pi", "Event counter - Prompt Dstar to D0Pi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptDplusToKPiPi", "Event counter - Prompt DPlus to KPiPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptDplusToKKPi", "Event counter - Prompt DPlus to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptDsToKKpi", "Event counter - Prompt Ds to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptLambdaCToPKPi", "Event counter - Prompt LambdaC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptLambdaCToPK0s", "Event counter - Prompt LambdaC to PK0s; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmHadrons/hCountPromptXiCToPKPi", "Event counter - Prompt XiC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptDzeroToKPi", "Event counter - Non-prompt D0 to KPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptDstarToD0Pi", "Event counter - Non-prompt Dstar to D0Pi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptDplusToKPiPi", "Event counter - Non-prompt DPlus to KPiPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptDplusToKKPi", "Event counter - Non-prompt DPlus to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptDsToKKpi", "Event counter - Non-prompt Ds to KKP; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptLambdaCToPKPi", "Event counter - Non-prompt LambdaC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptLambdaCToPK0s", "Event counter - Non-prompt LambdaC to PK0s; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmHadrons/hCountNonPromptXiCToPKPi", "Event counter - Non-prompt XiC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
      {"promptCharmHadrons/hPromptPtDistr", "Pt distribution vs prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisSpecies, axisPt}}},
      {"promptCharmHadrons/hPromptYDistr", "Y distribution vs prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
      {"promptCharmHadrons/hPromptDecLenDistr", "Decay length distribution vs prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}},
@@ -203,11 +212,26 @@ struct HfTaskMcValidationGen {
 
         // Check that the decay channel is correct and retrieve the daughters
         if (nDaughters[iD] == 2) {
-          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal2Prong[iD], true, nullptr, 1, &listDaughters)) {
+          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal2Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
             continue;
           }
         } else if (nDaughters[iD] == 3) {
-          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal3Prong[iD], true, nullptr, 2, &listDaughters)) {
+          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal3Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
+            continue;
+          }
+          if (iD == DstarToDzeroPi &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+o2::constants::physics::Pdg::kD0, +kPiPlus}, true)) {
+            continue;
+          }
+          if ((iD == DplusToPhiPiToKKPi || iD == DsToPhiPiToKKPi) &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+o2::constants::physics::Pdg::kPhi, +kPiPlus}) &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, -PDGArrayParticle[iD], std::array{+o2::constants::physics::Pdg::kPhi, -kPiPlus})) {
+            continue;
+          }
+          // TODO: check if particles are recovered after isMatchedMCGen update to skip daughters from material
+          if (iD == LcToPiK0s &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+kK0Short, +kProton}, false, nullptr, 2) &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, -PDGArrayParticle[iD], std::array{+kK0Short, -kProton}, false, nullptr, 2)) {
             continue;
           }
         }
@@ -269,29 +293,27 @@ struct HfTaskMcValidationGen {
     registry.fill(HIST("quarks/hCountB"), bPerCollision);
     registry.fill(HIST("quarks/hCountCbar"), cBarPerCollision);
     registry.fill(HIST("quarks/hCountBbar"), bBarPerCollision);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptDplus"), counterPrompt[0]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptDstar"), counterPrompt[1]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptDzero"), counterPrompt[2]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptDs"), counterPrompt[3]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptLambdaC"), counterPrompt[4]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptXiC"), counterPrompt[5]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDplus"), counterNonPrompt[0]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDstar"), counterNonPrompt[1]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDzero"), counterNonPrompt[2]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDs"), counterNonPrompt[3]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptLambdaC"), counterNonPrompt[4]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptXiC"), counterNonPrompt[5]);
-  }
+    registry.fill(HIST("promptCharmHadrons/hCountPromptDzeroToKPi"), counterPrompt[DzeroToKPi]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptDstarToD0Pi"), counterPrompt[DstarToDzeroPi]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptDplusToKPiPi"), counterPrompt[DplusToPiKPi]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptDplusToKKPi"), counterPrompt[DplusToPhiPiToKKPi]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptDsToKKpi"), counterPrompt[DsToPhiPiToKKPi]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptLambdaCToPKPi"), counterPrompt[LcToPKPi]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptLambdaCToPK0s"), counterPrompt[LcToPiK0s]);
+    registry.fill(HIST("promptCharmHadrons/hCountPromptXiCToPKPi"), counterPrompt[XicToPKPi]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDzeroToKPi"), counterNonPrompt[DzeroToKPi]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDstarToD0Pi"), counterNonPrompt[DstarToDzeroPi]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDplusToKPiPi"), counterNonPrompt[DplusToPiKPi]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDplusToKKPi"), counterNonPrompt[DplusToPhiPiToKKPi]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDsToKKpi"), counterNonPrompt[DsToPhiPiToKKPi]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptLambdaCToPKPi"), counterNonPrompt[LcToPKPi]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptLambdaCToPK0s"), counterNonPrompt[LcToPiK0s]);
+    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptXiCToPKPi"), counterNonPrompt[XicToPKPi]);
+  };
 };
 
 /// Reconstruction Level Validation
 ///
-/// D±      → π± K∓ π±
-/// D*±     → π± K∓ π±,
-/// D0(bar) → π± K∓,
-/// Ds±     → K± K∓ π±,
-/// Λc±     → p(bar) K∓ π±
-/// Ξc±     → p(bar) K∓ π±
 ///   - Gen-Rec Level Momentum Difference per component;
 ///   - Gen-Rec Level Difference for secondary-vertex coordinates and decay length;
 struct HfTaskMcValidationRec {
@@ -559,7 +581,7 @@ struct HfTaskMcValidationRec {
       }
       int whichHad = -1;
       if (isD0Sel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::D0ToPiK)) {
-        whichHad = 2;
+        whichHad = DzeroToKPi;
       }
       int whichOrigin = -1;
       if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
@@ -615,23 +637,29 @@ struct HfTaskMcValidationRec {
       }
 
       // determine which kind of candidate it is
-      bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+      bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DplusToPiKPi);
       bool isDStarSel = false; // FIXME: add proper check when D* will be added in HF vertexing
-      bool isDsSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::DsToKKPi);
-      bool isLcSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
-      bool isXicSel = TESTBIT(cand3Prong.hfflag(), o2::aod::hf_cand_3prong::DecayType::XicToPKPi);
-      if (!isDPlusSel && !isDStarSel && !isDsSel && !isLcSel && !isXicSel) {
+      bool isDsSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DsToKKPi);
+      bool isLcSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::LcToPKPi);
+      bool isLcToPK0sSel = false; // FIXME: add in case of integration with cascades
+      bool isXicSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::XicToPKPi);
+      if (!isDPlusSel && !isDStarSel && !isDsSel && !isLcSel && !isLcToPK0sSel && !isXicSel) {
         continue;
       }
       int whichHad = -1;
       if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DplusToPiKPi)) {
-        whichHad = 0;
+        whichHad = DplusToPiKPi;
       } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DsToKKPi)) {
-        whichHad = 3;
+        if (TESTBIT(std::abs(cand3Prong.flagMcDecayChanRec()), hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi)) {
+          whichHad = DsToPhiPiToKKPi;
+        }
+        if (TESTBIT(std::abs(cand3Prong.flagMcDecayChanRec()), hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi)) {
+          whichHad = DplusToPhiPiToKKPi;
+        }
       } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::LcToPKPi)) {
-        whichHad = 4;
+        whichHad = LcToPKPi;
       } else if (isXicSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::XicToPKPi)) {
-        whichHad = 5;
+        whichHad = XicToPKPi;
       }
       int whichOrigin = -1;
       if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
