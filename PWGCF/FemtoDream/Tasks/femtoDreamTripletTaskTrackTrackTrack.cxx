@@ -124,7 +124,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   void init(InitContext& context)
   {
 
-    eventHisto.init(&qaRegistry);
+    eventHisto.init(&qaRegistry, false);
     trackHistoSelectedParts.init(&qaRegistry, ConfBinmultTempFit, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
     trackHistoALLSelectedParts.init(&qaRegistry, ConfBinmultTempFit, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
 
@@ -184,11 +184,11 @@ struct femtoDreamTripletTaskTrackTrackTrack {
     }
   }
 
-  template <typename CollisionType>
+  template <bool isMC, typename CollisionType>
   void fillCollision(CollisionType col)
   {
     ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
-    eventHisto.fillQA(col);
+    eventHisto.fillQA<isMC>(col);
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -245,7 +245,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   void processSameEvent(o2::aod::FDCollision& col,
                         o2::aod::FDParticles& parts)
   {
-    fillCollision(col);
+    fillCollision<false>(col);
     auto thegroupSelectedParts = SelectedParts->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     for (auto& part : thegroupSelectedParts) {
       trackHistoALLSelectedParts.fillQA<false, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
@@ -263,7 +263,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   /// \param parts subscribe to the femtoDreamParticleTable
   void processSameEventMasked(MaskedCollision& col, o2::aod::FDParticles& parts)
   {
-    fillCollision(col);
+    fillCollision<false>(col);
     auto thegroupSelectedParts = SelectedParts->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     for (auto& part : thegroupSelectedParts) {
       trackHistoALLSelectedParts.fillQA<false, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
@@ -283,7 +283,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
                           soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                           o2::aod::FDMCParticles&)
   {
-    fillCollision(col);
+    fillCollision<false>(col);
     auto thegroupSelectedParts = SelectedPartsMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     for (auto& part : thegroupSelectedParts) {
       trackHistoALLSelectedParts.fillQA<true, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
@@ -303,7 +303,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
                                 soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                                 o2::aod::FDMCParticles&)
   {
-    fillCollision(col);
+    fillCollision<false>(col);
     auto thegroupSelectedParts = SelectedPartsMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     for (auto& part : thegroupSelectedParts) {
       trackHistoALLSelectedParts.fillQA<true, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
