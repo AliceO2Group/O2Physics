@@ -51,6 +51,9 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   Configurable<bool> ConfMixIfTVOPairPresent{"ConfMixIfTVOPairPresent", false, "Use for mixing only events which have a TV0 pair (at least one track and one V0)"};
   Configurable<bool> ConfMixIfTOrVOPartsPresent{"ConfMixIfTOrVOPartsPresent", false, "Use for mixing only events which have at least one particle of interest"};
 
+  // which CPR to use, old is with a possible bug and new is fixed
+  Configurable<bool> ConfUseOLD_possiblyWrong_CPR{"ConfUseOLD_possiblyWrong_CPR", true, "Use for old CPR, which possibly has a bug. This is implemented only for debugging reasons to compare old and new code on hyperloop datasets."};
+
   /// Track selection
   Configurable<int> ConfPDGCodePart{"ConfPDGCodePart", 2212, "Particle PDG code"};
   Configurable<o2::aod::femtodreamparticle::cutContainerType> ConfCutPart{"ConfCutPart", 5542474, "Track - Selection bit from cutCulator"};
@@ -151,8 +154,10 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   FemtoDreamContainerThreeBody<femtoDreamContainerThreeBody::EventType::mixed, femtoDreamContainerThreeBody::Observable::Q3> mixedEventCont;
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleanerTrackTrack;
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> pairCleanerTrackV0;
-  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionTrackTrack;
-  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> pairCloseRejectionTrackV0;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionTrackTrackSE;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> pairCloseRejectionTrackV0SE;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionTrackTrackME;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kV0> pairCloseRejectionTrackV0ME;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -189,8 +194,10 @@ struct femtoDreamTripletTaskTrackTrackV0 {
     pairCleanerTrackTrack.init(&qaRegistry);
     pairCleanerTrackV0.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejectionTrackTrack.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
-      pairCloseRejectionTrackV0.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejectionTrackTrackSE.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value, 1, ConfUseOLD_possiblyWrong_CPR);
+      pairCloseRejectionTrackV0SE.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value, 1, ConfUseOLD_possiblyWrong_CPR);
+      pairCloseRejectionTrackTrackME.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value, 2, ConfUseOLD_possiblyWrong_CPR);
+      pairCloseRejectionTrackV0ME.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value, 2, ConfUseOLD_possiblyWrong_CPR);
     }
 
     // get masses
@@ -298,13 +305,13 @@ struct femtoDreamTripletTaskTrackTrackV0 {
 
         // Close pair rejection
         if (ConfIsCPR.value) {
-          if (pairCloseRejectionTrackTrack.isClosePair(T1, T2, parts, magFieldTesla)) {
+          if (pairCloseRejectionTrackTrackSE.isClosePair(T1, T2, parts, magFieldTesla)) {
             continue;
           }
-          if (pairCloseRejectionTrackV0.isClosePair(T1, V0, parts, magFieldTesla)) {
+          if (pairCloseRejectionTrackV0SE.isClosePair(T1, V0, parts, magFieldTesla)) {
             continue;
           }
-          if (pairCloseRejectionTrackV0.isClosePair(T2, V0, parts, magFieldTesla)) {
+          if (pairCloseRejectionTrackV0SE.isClosePair(T2, V0, parts, magFieldTesla)) {
             continue;
           }
         }
@@ -485,13 +492,13 @@ struct femtoDreamTripletTaskTrackTrackV0 {
 
       // Close pair rejection
       if (ConfIsCPR.value) {
-        if (pairCloseRejectionTrackTrack.isClosePair(T1, T2, parts, magFieldTesla)) {
+        if (pairCloseRejectionTrackTrackME.isClosePair(T1, T2, parts, magFieldTesla)) {
           continue;
         }
-        if (pairCloseRejectionTrackV0.isClosePair(T1, V0, parts, magFieldTesla)) {
+        if (pairCloseRejectionTrackV0ME.isClosePair(T1, V0, parts, magFieldTesla)) {
           continue;
         }
-        if (pairCloseRejectionTrackV0.isClosePair(T2, V0, parts, magFieldTesla)) {
+        if (pairCloseRejectionTrackV0ME.isClosePair(T2, V0, parts, magFieldTesla)) {
           continue;
         }
       }
