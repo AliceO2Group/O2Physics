@@ -63,6 +63,8 @@ struct Diff_pT_fluct_PID {
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> Subsample;
   TRandom3* fRndm = new TRandom3(0);
 
+  Configurable<int> nPtBins_qa{"nBinsPt_qa", 280, "N bins in pT histo qualitative analysis"};
+
   Configurable<int> nPtBins{"nBinsPt", 14, "N bins in pT histo"};
   Configurable<int> nEtaBins{"nEtaBins", 100, ""};
 
@@ -114,11 +116,7 @@ struct Diff_pT_fluct_PID {
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
 
-  // Filter trackDCA = nabs(aod::track::dcaXY) < 0.2f;
-
   // This is an example of a convenient declaration of "using"
-  // using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
-  // using myFilteredTracks = soa::Filtered<myCompleteTracks>;
   using MyAllTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA,
                                 aod::pidTOFFullPi, aod::pidTPCFullPi, aod::pidTOFFullPr, aod::pidTPCFullPr,
                                 aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFFullEl, aod::pidTPCFullEl,
@@ -133,6 +131,7 @@ struct Diff_pT_fluct_PID {
     const AxisSpec axisEta{nEtaBins, -1., +1., "#eta"};
     const AxisSpec axisY{nEtaBins, -1., +1., "Rapidity"};
     const AxisSpec axisPt{nPtBins, 0.2, 3., "p_{T} (GeV/c)"};
+    const AxisSpec axisPt_qa{nPtBins_qa, 0.2, 3., "p_{T} (GeV/c)"};
     const AxisSpec axisP{nPtBins, 0.2, 3., "p (GeV/c)"};
     const AxisSpec axisCent{100, 0., 100, ""};
     const AxisSpec axis1Bin{1, 0., 1, ""};
@@ -148,17 +147,17 @@ struct Diff_pT_fluct_PID {
     const AxisSpec axisTPCNsigma{500, -5., 5., "n #sigma_{TPC}"};
     const AxisSpec axisTOFNsigma{500, -5., 5., "n #sigma_{TOF}"};
     const AxisSpec axisTPCTOFNsigma{800, -8., 8., "n #sigma_{TOF+TPC}"};
-    const AxisSpec axisTPCSignal{180, 20., 200., "#frac{dE}{dx}"};
-    const AxisSpec axisTOFSignal{100, 0.2, 1.2, "TOF #beta"};
+    const AxisSpec axisTPCSignal{720, 20., 200., "#frac{dE}{dx}"};
+    const AxisSpec axisTOFSignal{400, 0.2, 1.2, "TOF #beta"};
     const AxisSpec axisChi2{50, 0., 50., "Chi2"};
     const AxisSpec axisCrossedTPC{500, 0, 500, "Crossed TPC"};
 
-    HistogramConfigSpec TOFnSigmaHist({HistType::kTH2D, {axisPt, axisTOFNsigma}});
-    HistogramConfigSpec TOFSignalHist({HistType::kTH2D, {axisPt, axisTOFSignal}});
-    HistogramConfigSpec TPCnSigmaHist({HistType::kTH2D, {axisPt, axisTPCNsigma}});
-    HistogramConfigSpec TPCSignalHist({HistType::kTH2D, {axisPt, axisTPCSignal}});
+    HistogramConfigSpec TOFnSigmaHist({HistType::kTH2D, {axisPt_qa, axisTOFNsigma}});
+    HistogramConfigSpec TOFSignalHist({HistType::kTH2D, {axisPt_qa, axisTOFSignal}});
+    HistogramConfigSpec TPCnSigmaHist({HistType::kTH2D, {axisPt_qa, axisTPCNsigma}});
+    HistogramConfigSpec TPCSignalHist({HistType::kTH2D, {axisPt_qa, axisTPCSignal}});
     HistogramConfigSpec TPCTOFHist({HistType::kTH2D, {axisTPCNsigma, axisTOFNsigma}});
-    HistogramConfigSpec TPCTOFnSigmaHist({HistType::kTH2D, {axisPt, axisTPCTOFNsigma}});
+    HistogramConfigSpec TPCTOFnSigmaHist({HistType::kTH2D, {axisPt_qa, axisTPCTOFNsigma}});
 
     histos.add("fA_hadron", "", kTProfile2D, {axisCent, axisPt});
     histos.add("fA_pion", "", kTProfile2D, {axisCent, axisPt});
@@ -197,11 +196,11 @@ struct Diff_pT_fluct_PID {
 
     histos.addClone("QA/before/", "QA/after/");
 
-    histos.add("QA/Pion/h_Pt", "p_{T} (TPC & TPC+TOF)", kTH1D, {axisPt});
+    histos.add("QA/Pion/h_Pt", "p_{T} (TPC & TPC+TOF)", kTH1D, {axisPt_qa});
     histos.add("QA/Pion/h_rap", "y (TPC & TPC+TOF)", kTH1D, {axisY});
-    histos.add("QA/Pion/h2_Pt_rap", "p_{T} vs y", kTH2D, {{axisY}, {axisPt}});
-    histos.add("QA/Pion/h2_DcaZ", "DCA_{z}", kTH2D, {{axisPt}, {axisDCAz}});
-    histos.add("QA/Pion/h2_DcaXY", "DCA_{xy}", kTH2D, {{axisPt}, {axisDCAxy}});
+    histos.add("QA/Pion/h2_Pt_rap", "p_{T} vs y", kTH2D, {{axisY}, {axisPt_qa}});
+    histos.add("QA/Pion/h2_DcaZ", "DCA_{z}", kTH2D, {{axisPt_qa}, {axisDCAz}});
+    histos.add("QA/Pion/h2_DcaXY", "DCA_{xy}", kTH2D, {{axisPt_qa}, {axisDCAxy}});
 
     histos.add("QA/Pion/before/h2_TPCNsigma", "n #sigma_{TPC}", TPCnSigmaHist);
     histos.add("QA/Pion/before/h2_TOFNsigma", "n #sigma_{TOF}", TOFnSigmaHist);
@@ -213,9 +212,9 @@ struct Diff_pT_fluct_PID {
     histos.add("QA/Pion/h2_TpcTofNsigma", "n #sigma_{TPC} vs n #sigma_{TOF}", TPCTOFHist);
     histos.add("QA/Pion/h2_TpcTofNsigma1", "n #sigma_{TPC+TOF}", TPCTOFnSigmaHist);
 
-    histos.add("QA/Pion/h2_TPCSignal", "TPC Signal Pions", TPCSignalHist);
-    histos.add("QA/Pion/h2_TOFSignal", "TOF Signal Pions", TOFSignalHist);
-    histos.add("QA/Pion/h2_ExpTPCSignal", "Expected TPC Signal Pions", TPCSignalHist);
+    histos.add("QA/Pion/h2_TPCSignal", "TPC Signal vs pT", TPCSignalHist);
+    histos.add("QA/Pion/h2_TOFSignal", "TOF Signal vs pT", TOFSignalHist);
+    histos.add("QA/Pion/h2_ExpTPCSignal", "Expected TPC Signal vs pT", TPCSignalHist);
 
     histos.addClone("QA/Pion/", "QA/Kaon/");
     histos.addClone("QA/Pion/", "QA/Proton/");
@@ -250,21 +249,6 @@ struct Diff_pT_fluct_PID {
       Subsample[i][17] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("Subsample_%d/fD_pion", i), "", {HistType::kTProfile2D, {axisCent, axis1Bin}}));
       Subsample[i][18] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("Subsample_%d/fD_kaon", i), "", {HistType::kTProfile2D, {axisCent, axis1Bin}}));
       Subsample[i][19] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("Subsample_%d/fD_proton", i), "", {HistType::kTProfile2D, {axisCent, axis1Bin}}));
-    }
-
-    // Event selection - Alex
-    if (cfgUse22sEventCut) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
-      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
-      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
-      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
     }
   }
 
@@ -335,16 +319,35 @@ struct Diff_pT_fluct_PID {
   bool selPions(T const& track)
   {
     const float combNSigmaPi = std::sqrt(pow(track.tpcNSigmaPi(), 2.0) + pow(track.tofNSigmaPi(), 2.0));
+    const float combNSigmaKa = std::sqrt(pow(track.tpcNSigmaKa(), 2.0) + pow(track.tofNSigmaKa(), 2.0));
+    const float combNSigmaPr = std::sqrt(pow(track.tpcNSigmaPr(), 2.0) + pow(track.tofNSigmaPr(), 2.0));
 
     if (track.pt() <= cfgCutPtUpperTPC) {
+      Int_t flag = 0;
       if (track.hasTPC() && std::abs(track.tpcNSigmaPi()) < cfgnSigmaCut_TPC_pi)
+        flag += 1;
+      if (track.hasTPC() && std::abs(track.tpcNSigmaKa()) < cfgnSigmaCut_TPC_pi)
+        flag += 1;
+      if (track.hasTPC() && std::abs(track.tpcNSigmaPr()) < cfgnSigmaCut_TPC_pi)
+        flag += 1;
+      if (flag > 1)
+        return false;
+      else if (flag == 1 && std::abs(track.tpcNSigmaPi()) < cfgnSigmaCut_TPC_pi)
         return true;
+
     } else if (track.pt() > cfgCutPtUpperTPC) {
+      Int_t flag = 0;
       if (track.hasTOF() && track.hasTPC() && combNSigmaPi < cfgnSigmaCut_TOF_pi)
+        flag += 1;
+      if (track.hasTOF() && track.hasTPC() && combNSigmaKa < cfgnSigmaCut_TOF_pi)
+        flag += 1;
+      if (track.hasTOF() && track.hasTPC() && combNSigmaPr < cfgnSigmaCut_TOF_pi)
+        flag += 1;
+      if (flag > 1)
+        return false;
+      else if (flag == 1 && combNSigmaPi < cfgnSigmaCut_TOF_pi)
         return true;
     }
-    // if (abs(track.rapidity(massPi)) < rapCut)
-    //   return true;
 
     return false;
   }
@@ -352,18 +355,36 @@ struct Diff_pT_fluct_PID {
   template <typename T>
   bool selKaons(T const& track)
   {
+    const float combNSigmaPi = std::sqrt(pow(track.tpcNSigmaPi(), 2.0) + pow(track.tofNSigmaPi(), 2.0));
     const float combNSigmaKa = std::sqrt(pow(track.tpcNSigmaKa(), 2.0) + pow(track.tofNSigmaKa(), 2.0));
+    const float combNSigmaPr = std::sqrt(pow(track.tpcNSigmaPr(), 2.0) + pow(track.tofNSigmaPr(), 2.0));
 
     if (track.pt() <= cfgCutPtUpperTPC) {
+      Int_t flag = 0;
+      if (track.hasTPC() && std::abs(track.tpcNSigmaPi()) < cfgnSigmaCut_TPC_ka)
+        flag += 1;
       if (track.hasTPC() && std::abs(track.tpcNSigmaKa()) < cfgnSigmaCut_TPC_ka)
+        flag += 1;
+      if (track.hasTPC() && std::abs(track.tpcNSigmaPr()) < cfgnSigmaCut_TPC_ka)
+        flag += 1;
+      if (flag > 1)
+        return false;
+      else if (flag == 1 && std::abs(track.tpcNSigmaKa()) < cfgnSigmaCut_TPC_ka)
         return true;
+
     } else if (track.pt() > cfgCutPtUpperTPC) {
+      Int_t flag = 0;
+      if (track.hasTOF() && track.hasTPC() && combNSigmaPi < cfgnSigmaCut_TOF_ka)
+        flag += 1;
       if (track.hasTOF() && track.hasTPC() && combNSigmaKa < cfgnSigmaCut_TOF_ka)
+        flag += 1;
+      if (track.hasTOF() && track.hasTPC() && combNSigmaPr < cfgnSigmaCut_TOF_ka)
+        flag += 1;
+      if (flag > 1)
+        return false;
+      else if (flag == 1 && combNSigmaKa < cfgnSigmaCut_TOF_ka)
         return true;
     }
-
-    // if (abs(track.rapidity(massKa)) < 0.5)
-    //   return true;
 
     return false;
   }
@@ -371,68 +392,49 @@ struct Diff_pT_fluct_PID {
   template <typename T>
   bool selProtons(T const& track)
   {
+    const float combNSigmaPi = std::sqrt(pow(track.tpcNSigmaPi(), 2.0) + pow(track.tofNSigmaPi(), 2.0));
+    const float combNSigmaKa = std::sqrt(pow(track.tpcNSigmaKa(), 2.0) + pow(track.tofNSigmaKa(), 2.0));
     const float combNSigmaPr = std::sqrt(pow(track.tpcNSigmaPr(), 2.0) + pow(track.tofNSigmaPr(), 2.0));
 
     // if (abs(track.rapidity(massPr)) < 0.5)
     //   return true;
     if (track.pt() <= cfgCutPtUpperTPC && track.pt() > 0.4) {
+      Int_t flag = 0;
+      if (track.hasTPC() && std::abs(track.tpcNSigmaPi()) < cfgnSigmaCut_TPC_pr)
+        flag += 1;
+      if (track.hasTPC() && std::abs(track.tpcNSigmaKa()) < cfgnSigmaCut_TPC_pr)
+        flag += 1;
       if (track.hasTPC() && std::abs(track.tpcNSigmaPr()) < cfgnSigmaCut_TPC_pr)
+        flag += 1;
+      if (flag > 1)
+        return false;
+      else if (flag == 1 && std::abs(track.tpcNSigmaPr()) < cfgnSigmaCut_TPC_pr)
         return true;
+
     } else if (track.pt() > cfgCutPtUpperTPC) {
+      Int_t flag = 0;
+      if (track.hasTOF() && track.hasTPC() && combNSigmaPi < cfgnSigmaCut_TOF_pr)
+        flag += 1;
+      if (track.hasTOF() && track.hasTPC() && combNSigmaKa < cfgnSigmaCut_TOF_pr)
+        flag += 1;
       if (track.hasTOF() && track.hasTPC() && combNSigmaPr < cfgnSigmaCut_TOF_pr)
+        flag += 1;
+      if (flag > 1)
+        return false;
+      else if (flag == 1 && combNSigmaPr < cfgnSigmaCut_TOF_pr)
         return true;
     }
 
     return false;
   }
 
-  template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
-  {
-    if (collision.alias_bit(kTVXinTRD)) {
-      // TRD triggered
-      return 0;
-    }
-    float vtxz = -999;
-    if (collision.numContrib() > 1) {
-      vtxz = collision.posZ();
-      float zRes = TMath::Sqrt(collision.covZZ());
-      if (zRes > 0.25 && collision.numContrib() < 20)
-        vtxz = -999;
-    }
-    auto multNTracksPV = collision.multNTracksPV();
-
-    if ((vtxz > posZCut) || (vtxz < -1.0 * posZCut))
-      return 0;
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-      return 0;
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-      return 0;
-    if (multTrk < fMultCutLow->Eval(centrality))
-      return 0;
-    if (multTrk > fMultCutHigh->Eval(centrality))
-      return 0;
-    if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
-      return 0;
-
-    return 1;
-  }
-
   void process(MyRun3Collisions::iterator const& col, MyAllTracks const& tracks)
-  // void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& tracks)
-  // void process(aod::Collision const& collision, myFilteredTracks const& tracks, aod::McParticles const&)
   {
-    double N_FT0M = 0, Cent_FT0M = 0;
-    int NTPC = 0;
+    double Cent_FT0M = 0;
 
     if (selRun3Col(col)) {
 
-      N_FT0M = col.multFT0M();
       Cent_FT0M = col.centFT0M();
-      NTPC = col.multNTracksHasTPC();
-
-      // if (cfgUse22sEventCut && !eventSelected(col, tracks.size(), Cent_FT0M))
-      //   return;
 
       Double_t pT_bin[14] = {0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9};
 
@@ -445,32 +447,32 @@ struct Diff_pT_fluct_PID {
       Double_t pT_sum_etaGreaterEtamin = 0;
       Double_t N_sum_etaGreaterEtamin = 0;
 
-      Double_t pt_Ch, pt_Pi, pt_Ka, pt_Pr;
+      Double_t pt_Ch = 0, pt_Pi = 0, pt_Ka = 0, pt_Pr = 0;
 
-      Double_t fA_hadron[14];
-      Double_t fA_pion[14];
-      Double_t fA_kaon[14];
-      Double_t fA_proton[14];
+      Double_t fA_hadron[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      Double_t fA_pion[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      Double_t fA_kaon[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      Double_t fA_proton[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-      Double_t fB1_hadron;
-      Double_t fB1_pion;
-      Double_t fB1_kaon;
-      Double_t fB1_proton;
+      Double_t fB1_hadron = 0;
+      Double_t fB1_pion = 0;
+      Double_t fB1_kaon = 0;
+      Double_t fB1_proton = 0;
 
-      Double_t fB2_hadron;
-      Double_t fB2_pion;
-      Double_t fB2_kaon;
-      Double_t fB2_proton;
+      Double_t fB2_hadron = 0;
+      Double_t fB2_pion = 0;
+      Double_t fB2_kaon = 0;
+      Double_t fB2_proton = 0;
 
-      Double_t fC_hadron[14];
-      Double_t fC_pion[14];
-      Double_t fC_kaon[14];
-      Double_t fC_proton[14];
+      Double_t fC_hadron[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      Double_t fC_pion[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      Double_t fC_kaon[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      Double_t fC_proton[14] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-      Double_t fD_hadron;
-      Double_t fD_pion;
-      Double_t fD_kaon;
-      Double_t fD_proton;
+      Double_t fD_hadron = 0;
+      Double_t fD_pion = 0;
+      Double_t fD_kaon = 0;
+      Double_t fD_proton = 0;
 
       // normal creation of a histogram
       TH1D* fPt_profile = new TH1D("fPt_profile", "fPt_profile", 14, 0.2, 3);
