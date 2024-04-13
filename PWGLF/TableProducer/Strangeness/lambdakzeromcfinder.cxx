@@ -222,8 +222,8 @@ struct lambdakzeromcfinder {
                 trackIndexPositive[nPosReco] = track.globalIndex(); // assign only if TPC present
                 nPosReco++;
               }
-            }   // end track list loop
-          }     // end positive pdg check
+            } // end track list loop
+          }   // end positive pdg check
           if (daughter.pdgCode() == negativePdg) {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
             bool tpcOnlyFound = false;
@@ -239,8 +239,8 @@ struct lambdakzeromcfinder {
                 trackIndexNegative[nNegReco] = track.globalIndex(); // assign only if TPC present
                 nNegReco++;
               }
-            }   // end track list loop
-          }     // end negative pdg check
+            } // end track list loop
+          }   // end negative pdg check
         }
       }
     }

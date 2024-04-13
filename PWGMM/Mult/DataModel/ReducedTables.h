@@ -33,6 +33,7 @@ DECLARE_SOA_TABLE(StoredRBCs, "AOD1", "RBC",
 namespace rcol
 {
 DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
+DECLARE_SOA_COLUMN(MapEtaPhi, mapetaphi, std::vector<int>);
 }
 
 #define Ccols o2::soa::Index<>,            \
@@ -49,7 +50,8 @@ DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
               mult::MultZNC,               \
               mult::MultNTracksPV,         \
               mult::MultNTracksPVeta1,     \
-              mult::MultNTracksPVetaHalf
+              mult::MultNTracksPVetaHalf,  \
+              rcol::MapEtaPhi
 
 #define CCcols cent::CentFV0A, \
                cent::CentFT0M, \
@@ -244,17 +246,16 @@ DECLARE_SOA_COLUMN(ProcessId, id, int);
 
 DECLARE_SOA_TABLE(RFeatMins, "AOD", "RFEATMIN",
                   soa::Index<>,
-                  rmccol::Weight,
                   features::GeneratedCentralMultiplicity,
                   features::ReconstructedCentralMultiplicity,
+                  features::ProcessId,
+                  features::ImpactParameter,
                   features::ReconstructedVertexX,
                   features::ReconstructedVertexY,
                   features::ReconstructedVertexZ,
                   features::TimeRes,
                   features::ReconstructedForwardMultiplicityA,
-                  features::ReconstructedForwardMultiplicityC,
-                  features::ImpactParameter,
-                  features::ProcessId);
+                  features::ReconstructedForwardMultiplicityC);
 
 } // namespace o2::aod
 namespace o2::soa

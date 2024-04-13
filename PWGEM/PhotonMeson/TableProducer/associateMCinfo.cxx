@@ -433,13 +433,15 @@ struct AssociateMCInfo {
         }
       }
 
-      // TODO: Check that the daughter slice in the skimmed table works as expected
-      //       Note that not all daughters from the original table are preserved in the skimmed MC stack
+      // Note that not all daughters from the original table are preserved in the skimmed MC stack
       std::vector<int> daughters;
       if (mctrack.has_daughters()) {
+        // LOGF(info, "daughter range in original MC stack pdg = %d | %d - %d , n dau = %d", mctrack.pdgCode(), mctrack.daughtersIds()[0], mctrack.daughtersIds()[1], mctrack.daughtersIds()[1] -mctrack.daughtersIds()[0] +1);
         for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
           // TODO: remove this check as soon as issues with MC production are fixed
           if (d < mcTracks.size()) { // protect against bad daughter indices
+            // auto dau_tmp = mcTracks.iteratorAt(d);
+            // LOGF(info, "daughter pdg = %d", dau_tmp.pdgCode());
             if (fNewLabels.find(d) != fNewLabels.end()) {
               daughters.push_back(fNewLabels.find(d)->second);
             }
@@ -449,14 +451,9 @@ struct AssociateMCInfo {
           }
         }
       }
-      int daughterRange[2] = {-1, -1};
-      if (daughters.size() > 0) {
-        daughterRange[0] = daughters[0];
-        daughterRange[1] = daughters[daughters.size() - 1];
-      }
 
       emmcparticles(fEventIdx.find(oldLabel)->second, mctrack.pdgCode(), mctrack.flags(),
-                    mothers, daughterRange,
+                    mothers, daughters,
                     mctrack.px(), mctrack.py(), mctrack.pz(), mctrack.e(),
                     mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt());
     } // end loop over labels
