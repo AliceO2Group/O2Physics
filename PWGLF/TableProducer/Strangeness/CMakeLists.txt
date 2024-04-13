@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(cascadebuilder
     SOURCES cascadebuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cascadefinder
@@ -56,7 +56,7 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
 
 o2physics_add_dpl_workflow(lambdakzerobuilder
     SOURCES lambdakzerobuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdakzerofinder
@@ -102,4 +102,25 @@ o2physics_add_dpl_workflow(strangederivedbuilder
 o2physics_add_dpl_workflow(v0qaanalysis
     SOURCES v0qaanalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+# ML selection
+o2physics_add_dpl_workflow(lambdakzeromlselectiontreecreator
+    SOURCES lambdakzeroMLSelectionTreeCreator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascademlselectiontreecreator
+    SOURCES cascadeMLSelectionTreeCreator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdakzeromlselection
+    SOURCES lambdakzeromlselection.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sigma0builder
+    SOURCES sigma0builder.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
     COMPONENT_NAME Analysis)
