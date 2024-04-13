@@ -221,7 +221,7 @@ class FemtoDreamDetaDphiStar
         histdetadpiRadii[iHist][i]->Fill(part1.eta() - part2.eta(), dphi);
       }
     }
-    return dPhiAvg / float(meaningfulEntries);
+    return dPhiAvg / static_cast<float>(meaningfulEntries);
   }
 };
 
