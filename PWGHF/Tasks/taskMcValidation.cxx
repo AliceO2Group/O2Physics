@@ -377,6 +377,43 @@ struct HfTaskMcValidationRec {
     return stdev;
   }
 
+  /// Fill MC histograms with decay properties at reconstruction level
+  /// \param candidate is candidate
+  /// \param mother is mother particle
+  /// \param whichHad int indicating charm-hadron and decay channel, see enum DecayChannels
+  /// \param whichOrigin int indicating origin: prompt or non-prompt
+  template <typename T, typename U>
+  void fillHisto(const T& candidate, const U& mother, int whichHad, int whichOrigin)
+  {
+    histDeltaPt[whichHad]->Fill(candidate.pt() - mother.pt());
+    histDeltaPx[whichHad]->Fill(candidate.px() - mother.px());
+    histDeltaPy[whichHad]->Fill(candidate.py() - mother.py());
+    histDeltaPz[whichHad]->Fill(candidate.pz() - mother.pz());
+    // Compare Secondary vertex and decay length with MC
+    auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
+    double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+    double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
+    auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
+
+    histDeltaSecondaryVertexX[whichHad]->Fill(candidate.xSecondaryVertex() - vertexDau[0]);
+    histDeltaSecondaryVertexY[whichHad]->Fill(candidate.ySecondaryVertex() - vertexDau[1]);
+    histDeltaSecondaryVertexZ[whichHad]->Fill(candidate.zSecondaryVertex() - vertexDau[2]);
+    histDeltaDecayLength[whichHad]->Fill(candidate.decayLength() - decayLength);
+    std::array<double, 3> momDau0 = {candidate.pxProng0(),
+                                     candidate.pyProng0(),
+                                     candidate.pzProng0()};
+    std::array<double, 3> momDau1 = {candidate.pxProng1(),
+                                     candidate.pyProng1(),
+                                     candidate.pzProng1()};
+    histPtReco[whichHad][whichOrigin]->Fill(candidate.pt());
+    histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::pt(momDau0));
+    histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::eta(momDau0));
+    histImpactParameterDau[whichHad][whichOrigin][0]->Fill(candidate.impactParameter0());
+    histPtDau[whichHad][whichOrigin][1]->Fill(RecoDecay::pt(momDau1));
+    histEtaDau[whichHad][whichOrigin][1]->Fill(RecoDecay::eta(momDau1));
+    histImpactParameterDau[whichHad][whichOrigin][1]->Fill(candidate.impactParameter1());
+  }
+
   void init(InitContext&)
   {
     histOriginTracks[0] = registry.add<THnSparse>("trackToCollChecks/histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});           // tracks not associated to any collision
@@ -583,46 +620,20 @@ struct HfTaskMcValidationRec {
       if (isD0Sel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::D0ToPiK)) {
         whichHad = DzeroToKPi;
       }
-      int whichOrigin = -1;
+      int whichOrigin;
       if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
         whichOrigin = 0;
       } else {
         whichOrigin = 1;
       }
 
-      if (whichHad >= 0 && whichOrigin >= 0) {
+      if (whichHad >= 0) {
         int indexParticle = 0;
         if (cand2Prong.prong0_as<TracksWithSel>().has_mcParticle()) {
           indexParticle = RecoDecay::getMother(mcParticles, cand2Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = mcParticles.rawIteratorAt(indexParticle);
-        histDeltaPt[whichHad]->Fill(cand2Prong.pt() - mother.pt());
-        histDeltaPx[whichHad]->Fill(cand2Prong.px() - mother.px());
-        histDeltaPy[whichHad]->Fill(cand2Prong.py() - mother.py());
-        histDeltaPz[whichHad]->Fill(cand2Prong.pz() - mother.pz());
-        // Compare Secondary vertex and decay length with MC
-        auto daughter0 = mother.daughters_as<aod::McParticles>().begin();
-        double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-        double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
-        auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
-
-        histDeltaSecondaryVertexX[whichHad]->Fill(cand2Prong.xSecondaryVertex() - vertexDau[0]);
-        histDeltaSecondaryVertexY[whichHad]->Fill(cand2Prong.ySecondaryVertex() - vertexDau[1]);
-        histDeltaSecondaryVertexZ[whichHad]->Fill(cand2Prong.zSecondaryVertex() - vertexDau[2]);
-        histDeltaDecayLength[whichHad]->Fill(cand2Prong.decayLength() - decayLength);
-        std::array<double, 3> momDau0 = {cand2Prong.pxProng0(),
-                                         cand2Prong.pyProng0(),
-                                         cand2Prong.pzProng0()};
-        std::array<double, 3> momDau1 = {cand2Prong.pxProng1(),
-                                         cand2Prong.pyProng1(),
-                                         cand2Prong.pzProng1()};
-        histPtReco[whichHad][whichOrigin]->Fill(cand2Prong.pt());
-        histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::pt(momDau0));
-        histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::eta(momDau0));
-        histImpactParameterDau[whichHad][whichOrigin][0]->Fill(cand2Prong.impactParameter0());
-        histPtDau[whichHad][whichOrigin][1]->Fill(RecoDecay::pt(momDau1));
-        histEtaDau[whichHad][whichOrigin][1]->Fill(RecoDecay::eta(momDau1));
-        histImpactParameterDau[whichHad][whichOrigin][1]->Fill(cand2Prong.impactParameter1());
+        fillHisto(cand2Prong, mother, whichHad, whichOrigin);
       }
     } // end loop on 2-prong candidates
 
@@ -661,7 +672,7 @@ struct HfTaskMcValidationRec {
       } else if (isXicSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::XicToPKPi)) {
         whichHad = XicToPKPi;
       }
-      int whichOrigin = -1;
+      int whichOrigin;
       if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
         whichOrigin = 0;
       } else {
@@ -674,36 +685,10 @@ struct HfTaskMcValidationRec {
           indexParticle = RecoDecay::getMother(mcParticles, cand3Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         auto mother = mcParticles.rawIteratorAt(indexParticle);
-        histDeltaPt[whichHad]->Fill(cand3Prong.pt() - mother.pt());
-        histDeltaPx[whichHad]->Fill(cand3Prong.px() - mother.px());
-        histDeltaPy[whichHad]->Fill(cand3Prong.py() - mother.py());
-        histDeltaPz[whichHad]->Fill(cand3Prong.pz() - mother.pz());
-        // Compare Secondary vertex and decay length with MC
-        auto daughter0 = mother.daughters_as<aod::McParticles>().begin();
-        double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-        double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
-        auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
-
-        histDeltaSecondaryVertexX[whichHad]->Fill(cand3Prong.xSecondaryVertex() - vertexDau[0]);
-        histDeltaSecondaryVertexY[whichHad]->Fill(cand3Prong.ySecondaryVertex() - vertexDau[1]);
-        histDeltaSecondaryVertexZ[whichHad]->Fill(cand3Prong.zSecondaryVertex() - vertexDau[2]);
-        histDeltaDecayLength[whichHad]->Fill(cand3Prong.decayLength() - decayLength);
-        std::array<double, 3> momDau0 = {cand3Prong.pxProng0(),
-                                         cand3Prong.pyProng0(),
-                                         cand3Prong.pzProng0()};
-        std::array<double, 3> momDau1 = {cand3Prong.pxProng1(),
-                                         cand3Prong.pyProng1(),
-                                         cand3Prong.pzProng1()};
+        fillHisto(cand3Prong, mother, whichHad, whichOrigin);
         std::array<double, 3> momDau2 = {cand3Prong.pxProng2(),
                                          cand3Prong.pyProng2(),
                                          cand3Prong.pzProng2()};
-        histPtReco[whichHad][whichOrigin]->Fill(cand3Prong.pt());
-        histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::pt(momDau0));
-        histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::eta(momDau0));
-        histImpactParameterDau[whichHad][whichOrigin][0]->Fill(cand3Prong.impactParameter0());
-        histPtDau[whichHad][whichOrigin][1]->Fill(RecoDecay::pt(momDau1));
-        histEtaDau[whichHad][whichOrigin][1]->Fill(RecoDecay::eta(momDau1));
-        histImpactParameterDau[whichHad][whichOrigin][1]->Fill(cand3Prong.impactParameter1());
         histPtDau[whichHad][whichOrigin][2]->Fill(RecoDecay::pt(momDau2));
         histEtaDau[whichHad][whichOrigin][2]->Fill(RecoDecay::eta(momDau2));
         histImpactParameterDau[whichHad][whichOrigin][2]->Fill(cand3Prong.impactParameter2());
