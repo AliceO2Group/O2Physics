@@ -110,7 +110,7 @@ std::vector<float> getNSubjettiness(T const& jet, U const& tracks, V const& clus
     result.push_back(-1.0 * (n + 1));
   }
 
-  for (auto n = 1; n < nMax + 1; n++) {
+  for (auto n = 1; n <= nMax; n++) {
     if (pseudoJet.constituents().size() < n) { // Tau_N needs at least N tracks
       return result;
     }

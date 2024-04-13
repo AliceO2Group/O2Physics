@@ -42,9 +42,10 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
     reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "No Same Bunch Pileup");
     reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "Is Vertex ITSTPC");
     reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(6, "Is Good Zvtx FT0vsPV");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(7, "sel8");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(8, "|Z_{vtx}| < 10 cm");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(9, "accepted");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(7, "FT0AND");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(8, "sel8");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(9, "|Z_{vtx}| < 10 cm");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(10, "accepted");
 
     list->Add(new TH1F("hZvtx", "vertex z; Z_{vtx} (cm)", 100, -50, +50));
     list->Add(new TH1F("hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", 6001, -0.5, 6000.5));
@@ -403,12 +404,12 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
   }
 
   const int nmgg = 401;
-  float mgg[nmgg] = {};
+  double mgg[nmgg] = {};
   for (int i = 0; i < nmgg; i++) {
     mgg[i] = 0.002 * i;
   }
   const int npTgg = 71;
-  float pTgg[npTgg] = {};
+  double pTgg[npTgg] = {};
   for (int i = 0; i < 50; i++) {
     pTgg[i] = 0.1 * (i - 0) + 0.0; // from 0 to 5 GeV/c, every 0.1 GeV/c
   }
@@ -527,12 +528,12 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
   }
 
   const int nmgg04 = 201;
-  float mgg04[nmgg04] = {};
+  double mgg04[nmgg04] = {};
   for (int i = 0; i < nmgg04; i++) {
     mgg04[i] = 0.002 * i;
   }
   const int npTgg10 = 61;
-  float pTgg10[npTgg10] = {};
+  double pTgg10[npTgg10] = {};
   for (int i = 0; i < 50; i++) {
     pTgg10[i] = 0.1 * (i - 0) + 0.0; // from 0 to 5 GeV/c, every 0.1 GeV/c
   }

@@ -33,6 +33,7 @@ DECLARE_SOA_TABLE(StoredRBCs, "AOD1", "RBC",
 namespace rcol
 {
 DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
+DECLARE_SOA_COLUMN(MapEtaPhi, mapetaphi, std::vector<int>);
 }
 
 #define Ccols o2::soa::Index<>,            \
@@ -49,7 +50,8 @@ DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
               mult::MultZNC,               \
               mult::MultNTracksPV,         \
               mult::MultNTracksPVeta1,     \
-              mult::MultNTracksPVetaHalf
+              mult::MultNTracksPVetaHalf,  \
+              rcol::MapEtaPhi
 
 #define CCcols cent::CentFV0A, \
                cent::CentFT0M, \
