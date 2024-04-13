@@ -51,6 +51,9 @@ struct femtoDreamTripletTaskTrackTrackTrack {
 
   /// Particle selection part
 
+  // which CPR to use, old is with a possible bug and new is fixed
+  Configurable<bool> ConfUseOLD_possiblyWrong_CPR{"ConfUseOLD_possiblyWrong_CPR", true, "Use for old CPR, which possibly has a bug. This is implemented only for debugging reasons to compare old and new code on hyperloop datasets."};
+
   /// Table for both particles
   Configurable<float> ConfTracksInMixedEvent{"ConfTracksInMixedEvent", 1, "Number of tracks of interest, contained in the mixed event sample: 1 - only events with at least one track of interest are used in mixing; ...; 3 - only events with at least three track of interest are used in mixing. Max value is 3"};
   Configurable<float> ConfMaxpT{"ConfMaxpT", 4.05f, "Maximum transverse momentum of the particles"};
@@ -107,7 +110,8 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   FemtoDreamContainerThreeBody<femtoDreamContainerThreeBody::EventType::same, femtoDreamContainerThreeBody::Observable::Q3> sameEventCont;
   FemtoDreamContainerThreeBody<femtoDreamContainerThreeBody::EventType::mixed, femtoDreamContainerThreeBody::Observable::Q3> mixedEventCont;
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleaner;
-  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejection;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionSE;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionME;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -134,7 +138,8 @@ struct femtoDreamTripletTaskTrackTrackTrack {
     mixedEventCont.setPDGCodes(ConfPDGCodePart, ConfPDGCodePart, ConfPDGCodePart);
     pairCleaner.init(&qaRegistry); // SERKSNYTE : later check if init should be updated to have 3 separate histos
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejectionSE.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value, 1, ConfUseOLD_possiblyWrong_CPR);
+      pairCloseRejectionME.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value, 2, ConfUseOLD_possiblyWrong_CPR);
     }
 
     // get masses
@@ -199,13 +204,13 @@ struct femtoDreamTripletTaskTrackTrackTrack {
     /// Now build the combinations
     for (auto& [p1, p2, p3] : combinations(CombinationsStrictlyUpperIndexPolicy(groupSelectedParts, groupSelectedParts, groupSelectedParts))) {
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+        if (pairCloseRejectionSE.isClosePair(p1, p2, parts, magFieldTesla)) {
           continue;
         }
-        if (pairCloseRejection.isClosePair(p2, p3, parts, magFieldTesla)) {
+        if (pairCloseRejectionSE.isClosePair(p2, p3, parts, magFieldTesla)) {
           continue;
         }
-        if (pairCloseRejection.isClosePair(p1, p3, parts, magFieldTesla)) {
+        if (pairCloseRejectionSE.isClosePair(p1, p3, parts, magFieldTesla)) {
           continue;
         }
       }
@@ -318,14 +323,14 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   {
     for (auto& [p1, p2, p3] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo, groupPartsThree))) {
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+        if (pairCloseRejectionME.isClosePair(p1, p2, parts, magFieldTesla)) {
           continue;
         }
-        if (pairCloseRejection.isClosePair(p2, p3, parts, magFieldTesla)) {
+        if (pairCloseRejectionME.isClosePair(p2, p3, parts, magFieldTesla)) {
           continue;
         }
 
-        if (pairCloseRejection.isClosePair(p1, p3, parts, magFieldTesla)) {
+        if (pairCloseRejectionME.isClosePair(p1, p3, parts, magFieldTesla)) {
           continue;
         }
       }
