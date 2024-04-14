@@ -245,7 +245,7 @@ struct lambdakzeroMLSelectionTreeCreator {
     // 13: Consistent with Lambda, Gamma, and K0Short, 14: Consistent with Anti-Lambda, Gamma, and K0Short
     // 15: Consistent with Lambda, Anti-Lambda, Gamma, and K0Short
 
-    if( (Candidate.SelHypothesis & saveCandidateMask) != saveCandidateMask) 
+    if ((Candidate.SelHypothesis & saveCandidateMask) != saveCandidateMask)
       return;
 
     // MC flags
