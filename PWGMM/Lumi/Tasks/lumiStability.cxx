@@ -65,7 +65,8 @@ struct lumiStabilityTask {
 
   bool checkAnyCoincidence(const std::vector<int>& channels)
   {
-    std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {4, 7}};
+    std::constexpr std::array<std::pair<int, int>, 4> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
+    //std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
     for (const auto& pair : channelPairs) {
       if (std::find(channels.begin(), channels.end(), pair.first) != channels.end() &&
           std::find(channels.begin(), channels.end(), pair.second) != channels.end()) {
@@ -79,7 +80,7 @@ struct lumiStabilityTask {
   {
     for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
-      if (bc.timestamp() == false) {
+      if (bc.timestamp() == 0) {
         continue;
       }
 

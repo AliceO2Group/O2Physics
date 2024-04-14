@@ -34,9 +34,10 @@ struct upcPhotonuclearAnalysis {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Declare configurables
+  // Declare configurables on events/collisions
   Configurable<float> cutMyPosZMin{"cutMyPosZMin", -20., {"My collision cut"}};
   Configurable<float> cutMyPosZMax{"cutMyPosZMax", 20., {"My collision cut"}};
+  // Declare configurables on tracks
   Configurable<float> cutMyptMin{"cutMyptMin", 0.15, {"My Track cut"}};
   Configurable<float> cutMyptMax{"cutMyptMax", 10., {"My Track cut"}};
   Configurable<float> cutMyetaMin{"cutMyetaMin", -1.0, {"My Track cut"}};
@@ -76,7 +77,7 @@ struct upcPhotonuclearAnalysis {
     histos.add("Events/SGsideA/hTimeZNC", "Time in side C distribution; Time in side C; counts", kTH1F, {axisZNTime});
     histos.add("Events/SGsideA/hTimeRelationSides", "Time in side A vs time in side C; Time in side A; Time in side C", kTH2F, {axisZNTime, axisZNTime});
 
-    // histos to selection gap in side A
+    // histos to selection gap in side C
     histos.add("Tracks/SGsideC/hTrackPt", "#it{p_{T}} distribution; #it{p_{T}}; counts", kTH1F, {axisPt});
     histos.add("Tracks/SGsideC/hTrackPhi", "#it{#phi} distribution; #it{#phi}; counts", kTH1F, {axisPhi});
     histos.add("Tracks/SGsideC/hTrackEta", "#it{#eta} distribution; #it{#eta}; counts", kTH1F, {axisEta});
@@ -91,7 +92,7 @@ struct upcPhotonuclearAnalysis {
     histos.add("Events/SGsideC/hTimeZNC", "Time in side C distribution; Time in side C; counts", kTH1F, {axisZNTime});
     histos.add("Events/SGsideC/hTimeRelationSides", "Time in side A vs time in side C; Time in side A; Time in side C", kTH2F, {axisZNTime, axisZNTime});
 
-    // histos to selection gap in side A
+    // histos to selection gap in both sides
     histos.add("Tracks/SGsideBoth/hTrackPt", "#it{p_{T}} distribution; #it{p_{T}}; counts", kTH1F, {axisPt});
     histos.add("Tracks/SGsideBoth/hTrackPhi", "#it{#phi} distribution; #it{#phi}; counts", kTH1F, {axisPhi});
     histos.add("Tracks/SGsideBoth/hTrackEta", "#it{#eta} distribution; #it{#eta}; counts", kTH1F, {axisEta});
@@ -105,6 +106,14 @@ struct upcPhotonuclearAnalysis {
     histos.add("Events/SGsideBoth/hTimeZNA", "Time in side A distribution; Time in side A; counts", kTH1F, {axisZNTime});
     histos.add("Events/SGsideBoth/hTimeZNC", "Time in side C distribution; Time in side C; counts", kTH1F, {axisZNTime});
     histos.add("Events/SGsideBoth/hTimeRelationSides", "Time in side A vs time in side C; Time in side A; Time in side C", kTH2F, {axisZNTime, axisZNTime});
+  }
+
+  template <typename C>
+  bool isCollisionCut(C const& collision){
+    if ( collision.posZ() < || < collision.posZ() ) {
+      return false;
+    }
+    if ( )
   }
 
   template <typename T>
