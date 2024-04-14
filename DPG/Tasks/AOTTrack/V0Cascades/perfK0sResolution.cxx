@@ -434,15 +434,14 @@ struct perfK0sResolution {
     o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovNeg, 2.f, matCorr, &mDcaInfoCovNeg);
   }
 
-  bool daughtersHaveMCParticles = false;
-  bool daughtersCorrRec = false;
-
   void processMC(soa::Filtered<SelectedCollisions>::iterator const& collision,
                  soa::Filtered<soa::Join<aod::V0Datas, aod::V0Covs, aod::V0DauCovs, aod::McV0Labels>> const& fullV0s,
                  PIDTracksIUMC const&,
                  aod::McParticles const& mcParticles,
                  aod::BCsWithTimestamps const& bcs)
   {
+    bool daughtersHaveMCParticles = false;
+    bool daughtersCorrRec = false;
     rK0sResolution.fill(HIST("h1_stats"), 0.5);
     for (auto& v0 : fullV0s) {
       rK0sResolution.fill(HIST("h1_stats"), 1.5);
