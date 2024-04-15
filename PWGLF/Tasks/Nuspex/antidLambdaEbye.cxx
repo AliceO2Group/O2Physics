@@ -123,22 +123,23 @@ float alphaAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB
 }
 float etaFromMom(std::array<float, 3> const& momA, std::array<float, 3> const& momB)
 {
-  if(std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
-     (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
-     (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
-     (1.f * momA[2] + 1.f * momB[2]) < static_cast<float>(1e-7)) {
-    if((1.f * momA[2] + 1.f * momB[2]) < 0.f)
+  if (std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
+                (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
+                (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
+        (1.f * momA[2] + 1.f * momB[2]) <
+      static_cast<float>(1e-7)) {
+    if ((1.f * momA[2] + 1.f * momB[2]) < 0.f)
       return -100.f;
     return 100.f;
   }
   return 0.5f * std::log((std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
-        (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
-        (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) +
-        (1.f * momA[2] + 1.f * momB[2])) /
-        (std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
-        (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
-        (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
-        (1.f * momA[2] + 1.f * momB[2])));
+                                    (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
+                                    (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) +
+                          (1.f * momA[2] + 1.f * momB[2])) /
+                         (std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
+                                    (1.f * momA[1] + 1.f * momB[1]) * (1.f * momA[1] + 1.f * momB[1]) +
+                                    (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
+                          (1.f * momA[2] + 1.f * momB[2])));
 }
 } // namespace
 
@@ -378,7 +379,7 @@ struct antidLambdaEbye {
     }
   }
 
-  template<class Bc>
+  template <class Bc>
   void initCCDB(Bc const& bc)
   {
     auto timestamp = bc.timestamp();
@@ -697,7 +698,8 @@ struct antidLambdaEbye {
       double expSigmaNeg{expBetheNeg * cfgBetheBlochParams->get("resolution")};
       auto nSigmaTPCNeg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
 
-      if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc);
+      if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc)
+        ;
 
       float dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
       if (dcaV0dau > v0setting_dcav0dau) {
