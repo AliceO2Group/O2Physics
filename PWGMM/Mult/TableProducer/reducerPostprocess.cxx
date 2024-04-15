@@ -26,9 +26,18 @@ struct ReducerPostprocess {
   void processFull(MCFull const&,
                    soa::Join<aod::RCollisions, aod::RMCColLabels> const& cols)
   {
+    std::vector<int> spatialMap;
+    bool first = true;
     for (auto& col : cols) {
       auto mccol = col.rmccollision_as<MCFull>();
-      features(mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), mccol.processId(), mccol.impactParameter(), col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C());
+      if (first) {
+        spatialMap.resize(col.mapetaphi().size());
+        first = false;
+      }
+      for (auto i = 0U; i < col.mapetaphi().size(); ++i) {
+        spatialMap[i] = col.mapetaphi()[i];
+      }
+      features(mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), mccol.processId(), mccol.impactParameter(), col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C(), spatialMap);
     }
   }
 
@@ -38,9 +47,18 @@ struct ReducerPostprocess {
   void processLite(MCLite const&,
                    soa::Join<aod::RCollisions, aod::RMCColLabels> const& cols)
   {
+    std::vector<int> spatialMap;
+    bool first = true;
     for (auto& col : cols) {
       auto mccol = col.rmccollision_as<MCLite>();
-      features(mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), -1, -1.f, col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C());
+      if (first) {
+        spatialMap.resize(col.mapetaphi().size());
+        first = false;
+      }
+      for (auto i = 0U; i < col.mapetaphi().size(); ++i) {
+        spatialMap[i] = col.mapetaphi()[i];
+      }
+      features(mccol.multMCNParticlesEta10(), col.multNTracksPVeta1(), -1, -1.f, col.posX(), col.posY(), col.posZ(), col.collisionTimeRes(), col.multFT0A(), col.multFT0C(), spatialMap);
     }
   }
 
