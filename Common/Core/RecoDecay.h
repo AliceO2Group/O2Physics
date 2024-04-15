@@ -22,7 +22,6 @@
 #include <cmath>     // std::abs, std::sqrt
 #include <utility>   // std::move
 #include <vector>    // std::vector
-#include <iostream>
 
 #include "CommonConstants/MathConstants.h"
 #include "TMCProcess.h" // for VMC Particle Production Process
