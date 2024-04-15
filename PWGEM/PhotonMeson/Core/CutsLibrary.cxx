@@ -465,7 +465,7 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
     cut->SetMaxDcaZ(1.0);
 
     // for PID
-    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly_lowB);
+    cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
     cut->SetTOFbetaRange(true, 0.0, 0.95);
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetTPCNsigmaPiRange(0, 0);
@@ -540,14 +540,14 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
   if (nameStr.find("mee") != std::string::npos) { // for electron
     if (nameStr.find("tpchadrejortofreq_lowB") != std::string::npos) {
       // for PID
-      cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq_lowB);
+      cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
       cut->SetTOFbetaRange(true, 0.0, 0.95);
       cut->SetTPCNsigmaElRange(-2, +3);
-      cut->SetTOFNsigmaElRange(-3, +3);
       cut->SetTPCNsigmaMuRange(-2, +2);
       cut->SetTPCNsigmaPiRange(-3, +3);
       cut->SetTPCNsigmaKaRange(-3, +3);
       cut->SetTPCNsigmaPrRange(-3, +3);
+      cut->SetTOFNsigmaElRange(-3, +3);
       cut->SetMuonExclusionTPC(true);
       return cut;
     } else if (nameStr.find("tpchadrejortofreq") != std::string::npos) {
@@ -562,7 +562,7 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
       return cut;
     } else if (nameStr.find("tpconly_lowB") != std::string::npos) {
       // for PID
-      cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly_lowB);
+      cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
       cut->SetTOFbetaRange(true, 0.0, 0.95);
       cut->SetTPCNsigmaElRange(-2, +3);
       cut->SetTPCNsigmaPiRange(-3, +3);
