@@ -509,8 +509,8 @@ struct perfK0sResolution {
       }
 
       // QA of seleted V0s
-      rK0sDauResolution.fill(HIST("h2_PosRelPtRes"), v0.positivept(), RecoDecay::sqrtSumOfSquares(v0.covMatPosDau()[9], v0.covMatPosDau()[14]), v0.positivept());
-      rK0sDauResolution.fill(HIST("h2_NegRelPtRes"), v0.negativept(), RecoDecay::sqrtSumOfSquares(v0.covMatNegDau()[9], v0.covMatNegDau()[14]), v0.positivept());
+      rK0sDauResolution.fill(HIST("h2_PosRelPtRes"), v0.positivept(), RecoDecay::sqrtSumOfSquares(v0.covMatPosDau()[9], v0.covMatPosDau()[14]) / v0.positivept());
+      rK0sDauResolution.fill(HIST("h2_NegRelPtRes"), v0.negativept(), RecoDecay::sqrtSumOfSquares(v0.covMatNegDau()[9], v0.covMatNegDau()[14]) / v0.negativept());
       rK0sResolution.fill(HIST("h2_masspT"), mass, v0.pt());
       rK0sResolution.fill(HIST("h2_masseta"), mass, v0.eta());
       rK0sResolution.fill(HIST("h2_massphi"), mass, v0.phi());
