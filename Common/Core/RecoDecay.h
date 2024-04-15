@@ -26,7 +26,6 @@
 #include "TMCProcess.h" // for VMC Particle Production Process
 #include "CommonConstants/MathConstants.h"
 
-
 /// Base class for calculating properties of reconstructed decays
 ///
 /// Provides static helper functions for:
