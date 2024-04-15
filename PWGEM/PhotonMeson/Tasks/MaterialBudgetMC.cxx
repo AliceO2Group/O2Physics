@@ -262,10 +262,10 @@ struct MaterialBudgetMC {
             continue;
           }
           auto mcphoton = mcparticles.iteratorAt(photonid);
-          if (!IsConversionPointInAcceptance(mcphoton, maxRgen, maxY, margin_z_mc, mcparticles)) {
+          if (!(mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator())) {
             continue;
           }
-          if (!(mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator())) {
+          if (!IsConversionPointInAcceptance(mcphoton, maxRgen, maxY, margin_z_mc, mcparticles)) {
             continue;
           }
 

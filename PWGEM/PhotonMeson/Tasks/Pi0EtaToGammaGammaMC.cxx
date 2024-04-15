@@ -69,7 +69,7 @@ struct Pi0EtaToGammaGammaMC {
   Configurable<float> maxY_track{"maxY_track", 0.9, "maximum rapidity for generated particles"};                 // for PCM and dielectron
   Configurable<float> minPhi_track{"minPhi_track", 0, "minimum azimuthal angle for generated particles"};        // for PCM and dielectron
   Configurable<float> maxPhi_track{"maxPhi_track", 2 * M_PI, "maximum azimuthal angle for generated particles"}; // for PCM and dielectron
-  Configurable<float> maxRgen{"maxRgen", 100.f, "maximum radius for generated particles"};
+  Configurable<float> maxRgen{"maxRgen", 90.f, "maximum radius for generated particles"};
   Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
 
   Configurable<float> maxY_phos{"maxY_phos", 0.9, "maximum rapidity for generated particles"};                     // for EMC
@@ -466,22 +466,12 @@ struct Pi0EtaToGammaGammaMC {
               auto g1mc = mcparticles.iteratorAt(photonid1);
               auto g2mc = mcparticles.iteratorAt(photonid2);
 
-              if constexpr (pairtype == PairType::kPCMPCM) {
-                if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_track, margin_z_mc, mcparticles)) {
-                  continue;
-                }
-                if (!IsConversionPointInAcceptance(g2mc, maxRgen, maxY_track, margin_z_mc, mcparticles)) {
-                  continue;
-                }
-              }
-
               pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
               etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
 
               if (pi0id < 0 && etaid < 0) {
                 continue;
               }
-
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -492,12 +482,25 @@ struct Pi0EtaToGammaGammaMC {
               if (pi0id > 0) {
                 auto pi0mc = mcparticles.iteratorAt(pi0id);
                 if (pi0mc.isPhysicalPrimary() || pi0mc.producedByGenerator()) {
+                  if constexpr (pairtype == PairType::kPCMPCM) {
+                    if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_track, margin_z_mc, mcparticles) || !IsConversionPointInAcceptance(g2mc, maxRgen, maxY_track, margin_z_mc, mcparticles)) {
+                      continue;
+                    }
+                  }
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v12.Pt());
                 } else if (IsFromWD(pi0mc.emmcevent(), pi0mc, mcparticles)) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v12.Pt());
                 }
               } else if (etaid > 0) {
-                reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Eta_Primary"))->Fill(v12.M(), v12.Pt());
+                auto etamc = mcparticles.iteratorAt(etaid);
+                if (etamc.isPhysicalPrimary() || etamc.producedByGenerator()) {
+                  if constexpr (pairtype == PairType::kPCMPCM) {
+                    if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_track, margin_z_mc, mcparticles) || !IsConversionPointInAcceptance(g2mc, maxRgen, maxY_track, margin_z_mc, mcparticles)) {
+                      continue;
+                    }
+                  }
+                  reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Eta_Primary"))->Fill(v12.M(), v12.Pt());
+                }
               }
             } // end of combination
           }   // end of paircutloop
@@ -514,6 +517,9 @@ struct Pi0EtaToGammaGammaMC {
                 if (!paircut.IsSelected(g1, g2)) {
                   continue;
                 }
+
+                int photonid1 = -1;
+                int photonid2 = -1;
 
                 if constexpr (pairtype == PairType::kPCMPHOS || pairtype == PairType::kPCMEMC) {
                   auto pos = g1.template posTrack_as<MyMCV0Legs>();
@@ -542,20 +548,14 @@ struct Pi0EtaToGammaGammaMC {
                   auto ele2mc = ele2.template emmcparticle_as<aod::EMMCParticles>();
                   // LOGF(info,"pos1mc.globalIndex() = %d , ele1mc.globalIndex() = %d , pos2mc.globalIndex() = %d , ele2mc.globalIndex() = %d", pos1mc.globalIndex(), ele1mc.globalIndex(), pos2mc.globalIndex(), ele2mc.globalIndex());
 
-                  int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles); // real photon
+                  photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles); // real photon
                   if (photonid1 < 0) {
                     continue;
                   }
                   auto g1mc = mcparticles.iteratorAt(photonid1);
 
-                  if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == kPCMDalitzMuMu) {
-                    if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_track, margin_z_mc, mcparticles)) {
-                      continue;
-                    }
-                  }
-
-                  if (cut2.IsPhotonConversionSelected()) {                                                 // v0photon + photon conversion on ITSib stored in dielectron table. pi0 -> gamma gamma
-                    int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles); // photon conversion stored in dielectron table
+                  if (cut2.IsPhotonConversionSelected()) {                                             // v0photon + photon conversion on ITSib stored in dielectron table. pi0 -> gamma gamma
+                    photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles); // photon conversion stored in dielectron table
                     if (photonid2 < 0) {
                       continue;
                     }
@@ -581,7 +581,7 @@ struct Pi0EtaToGammaGammaMC {
                   auto ele2mc = ele2.template emmcparticle_as<aod::EMMCParticles>();
                   // LOGF(info,"pos1mc.globalIndex() = %d , ele1mc.globalIndex() = %d , pos2mc.globalIndex() = %d , ele2mc.globalIndex() = %d", pos1mc.globalIndex(), ele1mc.globalIndex(), pos2mc.globalIndex(), ele2mc.globalIndex());
 
-                  int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles); // real photon
+                  photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles); // real photon
                   if (photonid1 < 0) {
                     continue;
                   }
@@ -606,12 +606,27 @@ struct Pi0EtaToGammaGammaMC {
                 if (pi0id > 0) {
                   auto pi0mc = mcparticles.iteratorAt(pi0id);
                   if (pi0mc.isPhysicalPrimary() || pi0mc.producedByGenerator()) {
+                    if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == kPCMDalitzMuMu) {
+                      auto g1mc = mcparticles.iteratorAt(photonid1);
+                      if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_track, margin_z_mc, mcparticles)) {
+                        continue;
+                      }
+                    }
                     reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v12.Pt());
                   } else if (IsFromWD(pi0mc.emmcevent(), pi0mc, mcparticles)) {
                     reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v12.Pt());
                   }
                 } else if (etaid > 0) {
-                  reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Eta_Primary"))->Fill(v12.M(), v12.Pt());
+                  auto etamc = mcparticles.iteratorAt(etaid);
+                  if (etamc.isPhysicalPrimary() || etamc.producedByGenerator()) {
+                    if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == kPCMDalitzMuMu) {
+                      auto g1mc = mcparticles.iteratorAt(photonid1);
+                      if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_track, margin_z_mc, mcparticles)) {
+                        continue;
+                      }
+                    }
+                    reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Eta_Primary"))->Fill(v12.M(), v12.Pt());
+                  }
                 }
 
               } // end of combination
@@ -656,25 +671,6 @@ struct Pi0EtaToGammaGammaMC {
       }
 
       auto mccollision = collision.emmcevent();
-      reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
-      reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hCollisionCounter"))->Fill(1.0); // all
-      if (!collision.sel8()) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hCollisionCounter"))->Fill(2.0); // FT0VX i.e. FT0and
-
-      if (collision.numContrib() < 0.5) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hCollisionCounter"))->Fill(3.0); // Ncontrib > 0
-
-      if (abs(collision.posZ()) > 10.0) {
-        continue;
-      }
-
-      reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
-      reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
-
       auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
       for (auto& mctrack : mctracks_coll) {
         if (abs(mctrack.y()) > maxY_track) {

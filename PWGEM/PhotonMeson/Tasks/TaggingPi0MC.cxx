@@ -64,7 +64,7 @@ struct TaggingPi0MC {
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<float> maxRgen{"maxRgen", 100.f, "maximum radius for generated particles"};
+  Configurable<float> maxRgen{"maxRgen", 90.f, "maximum radius for generated particles"};
   Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
 
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc", "Comma separated list of V0 photon cuts"};
@@ -363,9 +363,6 @@ struct TaggingPi0MC {
             continue;
           }
           auto mcphoton1 = mcparticles.iteratorAt(photonid1);
-          if (!IsConversionPointInAcceptance(mcphoton1, maxRgen, maxY, margin_z_mc, mcparticles)) {
-            continue;
-          }
 
           int pi0id1 = IsXFromY(mcphoton1, mcparticles, 22, 111);
           if (pi0id1 < 0) { // photon from pi0 decay
@@ -378,6 +375,9 @@ struct TaggingPi0MC {
           //     mcphoton1.isPhysicalPrimary(), mcphoton1.producedByGenerator(), mcpi01.isPhysicalPrimary(), mcpi01.producedByGenerator());
 
           if (mcpi01.isPhysicalPrimary() || mcpi01.producedByGenerator()) {
+            if (!IsConversionPointInAcceptance(mcphoton1, maxRgen, maxY, margin_z_mc, mcparticles)) {
+              continue;
+            }
             reinterpret_cast<TH1F*>(list_pcm->FindObject(cut1.GetName())->FindObject("hPt_v0photon_Pi0_Primary"))->Fill(g1.pt());
           } else if (IsFromWD(mcpi01.emmcevent(), mcpi01, mcparticles)) {
             reinterpret_cast<TH1F*>(list_pcm->FindObject(cut1.GetName())->FindObject("hPt_v0photon_Pi0_FromWD"))->Fill(g1.pt());
@@ -422,9 +422,6 @@ struct TaggingPi0MC {
               }
 
               auto g1mc = mcparticles.iteratorAt(photonid1);
-              if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY, margin_z_mc, mcparticles)) {
-                continue;
-              }
 
               int pi0id = -1;
               if constexpr (pairtype == PairType::kPCMDalitzEE) {
@@ -454,6 +451,9 @@ struct TaggingPi0MC {
               if (pi0id > 0) {
                 auto mcpi0 = mcparticles.iteratorAt(pi0id);
                 if (mcpi0.isPhysicalPrimary() || mcpi0.producedByGenerator()) {
+                  if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY, margin_z_mc, mcparticles)) {
+                    continue;
+                  }
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v1.Pt());
                 } else if (IsFromWD(mcpi0.emmcevent(), mcpi0, mcparticles)) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v1.Pt());
