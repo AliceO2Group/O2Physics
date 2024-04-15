@@ -54,9 +54,8 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {10, 0, 0.05}, ""};
   ConfigurableAxis thnConfigAxisDecLengthXY{"thnConfigAxisDecLengthXY", {10, 0, 0.05}, ""};
   ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {20, 0.8, 1}, ""};
-  ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisMcOrigin{"thnConfigAxisMcOrigin", {3, -0.5, 2.5}, "0: none; 1: prompt; 2: non-prompt"};
   //
   Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
@@ -206,7 +205,7 @@ struct HfTaskXic {
       const AxisSpec thnAxisBdtScoreXicBkg{thnConfigAxisBdtScoreBkg, "BDT bkg score (Xic)"};
       const AxisSpec thnAxisBdtScoreXicPrompt{thnConfigAxisBdtScoreSignal, "BDT prompt score (Xic)"};
       const AxisSpec thnAxisBdtScoreXicNonPrompt{thnConfigAxisBdtScoreSignal, "BDT non-prompt score (Xic)"};
-      const AxisSpec thnAxisMcOrigin{thnConfigAxisMcOrigin, "MC origin"};
+      const AxisSpec thnAxisMcOrigin{3,-0.5,2.5, "MC origin"};
 
       if (doprocessDataWithMl || doprocessMcWithMl) { // with ML
         registry.add("hnXicVarsWithBdt", "THn for Xic candidates with BDT scores", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisBdtScoreXicBkg, thnAxisBdtScoreXicPrompt, thnAxisBdtScoreXicNonPrompt, thnAxisMcOrigin});
@@ -446,7 +445,7 @@ struct HfTaskXic {
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
               registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec());
             } else {
-              registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.ptProng0(), candidate.ptProng1(), candidate.ptProng2(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), candidate.originMcRec());
+              registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), candidate.originMcRec());
             }
           }
           if ((candidate.isSelXicToPiKP() >= selectionFlagXic) && pdgCodeProng0 == kPiPlus) {
@@ -460,7 +459,7 @@ struct HfTaskXic {
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
               registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec());
             } else {
-              registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.ptProng0(), candidate.ptProng1(), candidate.ptProng2(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), candidate.originMcRec());
+              registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), candidate.originMcRec());
             }
           }
         } // enable THn
