@@ -16,6 +16,9 @@
 #include "Framework/ASoA.h"
 #include "MathUtils/Utils.h"
 #include "Framework/DataTypes.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Expressions.h"
@@ -76,6 +79,7 @@ enum ParticleType {
   kV0Child,         //! Child track of a V0
   kCascade,         //! Cascade
   kCascadeBachelor, //! Bachelor track of a cascade
+  kCharmHadron, //! Bachelor track of a cascade
   kNParticleTypes   //! Number of particle types
 };
 
@@ -85,8 +89,8 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
+static constexpr std::string_view TempFitVarName[kNParticleTypes-1] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -159,6 +163,106 @@ DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
 } // namespace femtodreamparticle
 
+namespace fdhf
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_COLUMN(TrackId, trackId, int);
+DECLARE_SOA_COLUMN(Charge, charge, int);
+DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);
+DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);
+DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);
+DECLARE_SOA_COLUMN(Prong0Pt, prong0Pt, float);
+DECLARE_SOA_COLUMN(Prong1Pt, prong1Pt, float);
+DECLARE_SOA_COLUMN(Prong2Pt, prong2Pt, float);
+DECLARE_SOA_COLUMN(Prong0Eta, prong0Eta, float);
+DECLARE_SOA_COLUMN(Prong1Eta, prong1Eta, float);
+DECLARE_SOA_COLUMN(Prong2Eta, prong2Eta, float);
+DECLARE_SOA_COLUMN(Prong0Phi, prong0Phi, float);
+DECLARE_SOA_COLUMN(Prong1Phi, prong1Phi, float);
+DECLARE_SOA_COLUMN(Prong2Phi, prong2Phi, float);
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
+DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);
+DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);
+DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);
+DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(P, p, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(Y, y, float);
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
+DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
+DECLARE_SOA_COLUMN(PtAssoc, ptAssoc, float);
+DECLARE_SOA_COLUMN(Correlation, correlation, float);
+DECLARE_SOA_COLUMN(KT, kT, float);
+DECLARE_SOA_COLUMN(MT, mT, float);
+DECLARE_SOA_COLUMN(Mult, mult, int);
+DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);
+DECLARE_SOA_COLUMN(PartPairSign, partPairSign, int8_t);
+DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);
+}
+
+DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND",
+                  o2::soa::Index<>,
+                  femtodreamparticle::FDCollisionId,
+                  fdhf::Charge,
+                  fdhf::Prong0Id,
+                  fdhf::Prong1Id,
+                  fdhf::Prong2Id,
+                  fdhf::Prong0Pt,
+                  fdhf::Prong1Pt,
+                  fdhf::Prong2Pt,
+                  fdhf::Prong0Eta,
+                  fdhf::Prong1Eta,
+                  fdhf::Prong2Eta,
+                  fdhf::Prong0Phi,
+                  fdhf::Prong1Phi,
+                  fdhf::Prong2Phi,
+                  fdhf::CandidateSelFlag,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD,
+                  fdhf::M,
+                  fdhf::Pt,
+                  fdhf::P,
+                  fdhf::Eta,
+                  fdhf::Phi,
+                  fdhf::Y);
+
+DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF",
+                  fdhf::M,
+                  fdhf::Pt,
+                  fdhf::PtAssoc,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD,
+                  fdhf::Correlation,
+                  fdhf::KT,
+                  fdhf::MT,
+                  fdhf::Mult,
+                  fdhf::MultPercentile,
+                  fdhf::PartPairSign,
+                  fdhf::ProcessType);
+
+DECLARE_SOA_TABLE(FDHfCandMC, "AOD", "FDHFCANDMC",
+                  o2::soa::Index<>,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcRec);
+                  
+DECLARE_SOA_TABLE(FDHfCandMCGen, "AOD", "FDHFCANDMCGEN",
+                  femtodreamparticle::FDCollisionId,
+                  fdhf::Pt,
+                  fdhf::Eta,
+                  fdhf::Phi,
+                  fdhf::Y,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcGen);
+DECLARE_SOA_TABLE(FDParticlesIndex, "AOD", "FDPARTICLEINDEX",
+                  o2::soa::Index<>,
+                  fdhf::TrackId);
+                             
 DECLARE_SOA_TABLE(FDParticles, "AOD", "FDPARTICLE",
                   o2::soa::Index<>,
                   femtodreamparticle::FDCollisionId,
@@ -191,15 +295,15 @@ DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   track::DcaXY,
                   track::DcaZ,
                   track::TPCSignal,
-                  femtodreamparticle::TPCNSigmaEl,
                   femtodreamparticle::TPCNSigmaPi,
                   femtodreamparticle::TPCNSigmaKa,
                   femtodreamparticle::TPCNSigmaPr,
-                  femtodreamparticle::TPCNSigmaDe,
-                  femtodreamparticle::TOFNSigmaEl,
                   femtodreamparticle::TOFNSigmaPi,
                   femtodreamparticle::TOFNSigmaKa,
                   femtodreamparticle::TOFNSigmaPr,
+                  femtodreamparticle::TPCNSigmaEl,
+                  femtodreamparticle::TPCNSigmaDe,
+                  femtodreamparticle::TOFNSigmaEl,
                   femtodreamparticle::TOFNSigmaDe,
                   femtodreamparticle::DaughDCA,
                   femtodreamparticle::TransRadius,

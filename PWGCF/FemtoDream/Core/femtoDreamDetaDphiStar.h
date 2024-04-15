@@ -49,11 +49,12 @@ class FemtoDreamDetaDphiStar
     runOldVersion = oldversion;
     mHistogramRegistry = registry;
     mHistogramRegistryQA = registryQA;
+    std::string dirName;
 
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
-      std::string dirName = static_cast<std::string>(dirNames[0]);
-      histdetadpi[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-      histdetadpi[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      dirName = static_cast<std::string>(dirNames[0]);
+      histdetadpi[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      histdetadpi[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][0])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
       if (plotForEveryRadii) {
         for (int i = 0; i < 9; i++) {
           histdetadpiRadii[0][i] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
@@ -72,10 +73,23 @@ class FemtoDreamDetaDphiStar
         }
       }
     }
+        if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
+      std::string dirName;
+      for (int i = 0; i < 3; i++) {
+        dirName = static_cast<std::string>(dirNames[2]);
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        if (plotForEveryRadii) {
+          for (int j = 0; j < 9; j++) {
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+          }
+        }
+      }
+    }
   }
   ///  Check if pair is close or not
-  template <typename Part, typename Parts>
-  bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield)
+  template <typename Part1, typename Part2, typename Parts>
+  bool isClosePair(Part1 const& part1, Part2 const& part2, Parts const& particles, float lmagfield)
   {
     magfield = lmagfield;
 
@@ -118,6 +132,45 @@ class FemtoDreamDetaDphiStar
         }
       }
       return pass;
+    }  else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
+      // check if provided particles are in agreement with the class instantiation
+      if (part2.candidateSelFlag() < 1) {
+        LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide Charm Hadron candidates.";
+        return false;
+      }
+
+      bool pass = false;
+
+for (int i = 0; i < 3; ++i) {
+    double deta, dphiAvg;
+
+    switch (i) {
+        case 0:
+            deta = part1.eta() - part2.prong0Eta();
+            dphiAvg = AveragePhiStar<true>(part1, part2, 0);
+            histdetadpi[0][0]->Fill(deta, dphiAvg);
+            break;
+        case 1:
+            deta = part1.eta() - part2.prong1Eta();
+            dphiAvg = AveragePhiStar<true>(part1, part2, 1);
+            histdetadpi[1][0]->Fill(deta, dphiAvg);
+            break;
+        case 2:
+            deta = part1.eta() - part2.prong2Eta();
+            dphiAvg = AveragePhiStar<true>(part1, part2, 2);
+            histdetadpi[2][0]->Fill(deta, dphiAvg);
+            break;
+    }
+
+    if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+        pass = true;
+    } else {
+        histdetadpi[i][1]->Fill(deta, dphiAvg);
+    }
+}
+
+return pass;
+
     } else {
       LOG(fatal) << "FemtoDreamPairCleaner: Combination of objects not defined - quitting!";
       return false;
@@ -127,18 +180,24 @@ class FemtoDreamDetaDphiStar
  private:
   HistogramRegistry* mHistogramRegistry = nullptr;   ///< For main output
   HistogramRegistry* mHistogramRegistryQA = nullptr; ///< For QA output
-  static constexpr std::string_view dirNames[2] = {"kTrack_kTrack/", "kTrack_kV0/"};
+  static constexpr std::string_view dirNames[3] = {"kTrack_kTrack/", "kTrack_kV0/", "kTrack_kCharmHadron/"};
 
   static constexpr std::string_view histNameSEorME[3] = {"_SEandME", "_SE", "_ME"};
 
-  static constexpr std::string_view histNames[2][2] = {{"detadphidetadphi0Before_0", "detadphidetadphi0Before_1"},
-                                                       {"detadphidetadphi0After_0", "detadphidetadphi0After_1"}};
-  static constexpr std::string_view histNamesRadii[2][9] = {{"detadphidetadphi0Before_0_0", "detadphidetadphi0Before_0_1", "detadphidetadphi0Before_0_2",
-                                                             "detadphidetadphi0Before_0_3", "detadphidetadphi0Before_0_4", "detadphidetadphi0Before_0_5",
-                                                             "detadphidetadphi0Before_0_6", "detadphidetadphi0Before_0_7", "detadphidetadphi0Before_0_8"},
-                                                            {"detadphidetadphi0Before_1_0", "detadphidetadphi0Before_1_1", "detadphidetadphi0Before_1_2",
-                                                             "detadphidetadphi0Before_1_3", "detadphidetadphi0Before_1_4", "detadphidetadphi0Before_1_5",
-                                                             "detadphidetadphi0Before_1_6", "detadphidetadphi0Before_1_7", "detadphidetadphi0Before_1_8"}};
+  static constexpr std::string_view histNames[2][3] = {{"detadphidetadphi0Before_0", "detadphidetadphi0Before_1", "detadphidetadphi0Before_2"},
+    {"detadphidetadphi0After_0", "detadphidetadphi0After_1", "detadphidetadphi0After_2"}};
+
+  static constexpr std::string_view histNamesRadii[3][9] = {
+    {"detadphidetadphi0Before_0_0", "detadphidetadphi0Before_0_1", "detadphidetadphi0Before_0_2",
+     "detadphidetadphi0Before_0_3", "detadphidetadphi0Before_0_4", "detadphidetadphi0Before_0_5",
+     "detadphidetadphi0Before_0_6", "detadphidetadphi0Before_0_7", "detadphidetadphi0Before_0_8"},
+    {"detadphidetadphi0Before_1_0", "detadphidetadphi0Before_1_1", "detadphidetadphi0Before_1_2",
+     "detadphidetadphi0Before_1_3", "detadphidetadphi0Before_1_4", "detadphidetadphi0Before_1_5",
+     "detadphidetadphi0Before_1_6", "detadphidetadphi0Before_1_7", "detadphidetadphi0Before_1_8"},
+    {"detadphidetadphi0Before_2_0", "detadphidetadphi0Before_2_1", "detadphidetadphi0Before_2_2",
+     "detadphidetadphi0Before_2_3", "detadphidetadphi0Before_2_4", "detadphidetadphi0Before_2_5",
+     "detadphidetadphi0Before_2_6", "detadphidetadphi0Before_2_7", "detadphidetadphi0Before_2_8"}
+};
 
   static constexpr o2::aod::femtodreamparticle::ParticleType mPartOneType = partOne; ///< Type of particle 1
   static constexpr o2::aod::femtodreamparticle::ParticleType mPartTwoType = partTwo; ///< Type of particle 2
@@ -157,8 +216,8 @@ class FemtoDreamDetaDphiStar
   // possiboility to run old code is turned on so a proper comparison of both code versions can be done
   bool runOldVersion = true;
 
-  std::array<std::array<std::shared_ptr<TH2>, 2>, 2> histdetadpi{};
-  std::array<std::array<std::shared_ptr<TH2>, 9>, 2> histdetadpiRadii{};
+  std::array<std::array<std::shared_ptr<TH2>, 2>, 3> histdetadpi{};
+  std::array<std::array<std::shared_ptr<TH2>, 9>, 3> histdetadpiRadii{};
 
   ///  Calculate phi at all required radii stored in tmpRadiiTPC
   /// Magnetic field to be provided in Tesla
@@ -196,14 +255,53 @@ class FemtoDreamDetaDphiStar
     }
   }
 
+template <typename T>
+void PhiAtRadiiTPCForHF(const T& part, std::vector<float>& tmpVec, int prong)
+{
+    int charge = 0;
+    float pt = -999.;
+    float phi0 = -999.;
+    switch(prong) {
+        case 0:
+            pt = part.prong0Pt();
+            phi0 = part.prong0Phi();
+            charge = (part.charge() == 1) ? 1 : -1;
+            break;
+        case 1:
+            pt = part.prong1Pt();
+            phi0 = part.prong1Phi();
+            charge = (part.charge() == 1) ? -1 : 1;
+            break;
+        case 2:
+            pt = part.prong2Pt();
+            phi0 = part.prong2Phi();
+            charge = (part.charge() == 1) ? 1 : -1;
+            break;
+        default:
+            // Handle invalid prong value
+            break;
+    }
+
+    // Calculate a common factor outside the loop to improve efficiency
+    float commonFactor = std::asin(0.3 * charge * 0.1 * magfield * 0.01 / (2. * pt));
+    for (size_t i = 0; i < 9; i++) {
+        tmpVec.push_back(phi0 - commonFactor * tmpRadiiTPC[i]);
+    }
+}
+
+
   ///  Calculate average phi
-  template <typename T1, typename T2>
+  template <bool isHF = false, typename T1, typename T2>
   float AveragePhiStar(const T1& part1, const T2& part2, int iHist)
   {
     std::vector<float> tmpVec1;
     std::vector<float> tmpVec2;
     PhiAtRadiiTPC(part1, tmpVec1);
-    PhiAtRadiiTPC(part2, tmpVec2);
+    if constexpr (isHF){
+    PhiAtRadiiTPCForHF(part2, tmpVec2, iHist);  
+    } else {
+      PhiAtRadiiTPC(part2, tmpVec2);
+    }
     int num = tmpVec1.size();
     int meaningfulEntries = num;
     float dPhiAvg = 0;
