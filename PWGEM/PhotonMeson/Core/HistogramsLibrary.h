@@ -73,6 +73,9 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj, const fl
     if (obj.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("Is Good Zvtx FT0vsPV", 1.f);
     }
+    if (obj.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("FT0AND", 1.f);
+    }
     if (obj.sel8()) {
       reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("sel8", 1.f);
     }

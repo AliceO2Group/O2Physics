@@ -182,7 +182,7 @@ struct HfFilter { // Main struct for HF triggers
       if (iBin < 2)
         hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
       else
-        hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, Form("o2::aod::filtering::%s::columnLabel()", hfTriggerNames[iBin - 2].data()));
+        hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, hfTriggerNames[iBin - 2].data());
     }
 
     if (activateQA) {

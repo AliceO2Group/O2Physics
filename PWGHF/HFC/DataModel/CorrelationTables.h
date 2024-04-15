@@ -123,26 +123,38 @@ DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                  //! DeltaEta bet
 DECLARE_SOA_COLUMN(PtD, ptD, float);                            //! Transverse momentum of Ds
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                  //! Transverse momentum of Hadron
 DECLARE_SOA_COLUMN(MD, mD, float);                              //! Invariant mass of Ds
+DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);              //! ML background score for Ds selection
+DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);        //! ML prompt score for Ds selection
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                      //! Pool Bin for the MixedEvent
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                   //! Used in MC-Rec, Ds Signal
 DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                   //! Used in MC-Rec, Ds Prompt or Non-Prompt
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //! Used in MC-Rec, primary associated particles
 } // namespace hf_correlation_ds_hadron
 
-DECLARE_SOA_TABLE(DsHadronPair, "AOD", "DSHPAIR", //! Ds-Hadrons pairs Informations
+DECLARE_SOA_TABLE(DsHadronPair, "AOD", "DSHPAIR", //! Ds-Hadrons pairs Information
                   aod::hf_correlation_ds_hadron::DeltaPhi,
                   aod::hf_correlation_ds_hadron::DeltaEta,
                   aod::hf_correlation_ds_hadron::PtD,
                   aod::hf_correlation_ds_hadron::PtHadron,
                   aod::hf_correlation_ds_hadron::PoolBin);
 
-DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs Reconstructed Informations
+DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs Reconstructed Information
                   aod::hf_correlation_ds_hadron::MD,
                   aod::hf_correlation_ds_hadron::IsSignal);
 
-DECLARE_SOA_TABLE(DsHadronGenInfo, "AOD", "DSHGENINFO", //! Ds-Hadrons pairs Generated Informations
+DECLARE_SOA_TABLE(DsHadronGenInfo, "AOD", "DSHGENINFO", //! Ds-Hadrons pairs Generated Information
                   aod::hf_correlation_ds_hadron::IsPrompt,
                   aod::hf_correlation_ds_hadron::IsPhysicalPrimary);
+
+DECLARE_SOA_TABLE(DsHadronMlInfo, "AOD", "DSHMLINFO", //! Ds-Hadrons pairs Machine Learning Information
+                  aod::hf_correlation_ds_hadron::MlScorePrompt,
+                  aod::hf_correlation_ds_hadron::MlScoreBkg);
+
+DECLARE_SOA_TABLE(DsCandRecoInfo, "AOD", "DSCANDRECOINFO", //! Ds candidates Reconstructed Information
+                  aod::hf_correlation_ds_hadron::MD,
+                  aod::hf_correlation_ds_hadron::PtD,
+                  aod::hf_correlation_ds_hadron::MlScorePrompt,
+                  aod::hf_correlation_ds_hadron::MlScoreBkg);
 
 // definition of columns and tables for Dplus properties
 namespace hf_dplus_meson
