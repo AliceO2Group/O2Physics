@@ -143,8 +143,8 @@ struct perfK0sResolution {
       rK0sDauResolution.add("h2_genPyNegPyRes", "h2_genPyNegPyRes", {HistType::kTH2F, {pTResAxis, pTAxis}});
       rK0sDauResolution.add("h2_genPzNegPzRes", "h2_genPzNegPzRes", {HistType::kTH2F, {pTResAxis, pTAxis}});
 
-      rK0sDauResolution.add("h2_GenPtPosPulls", "h2_GenPtPosPulls", {HistType::kTH2F, {invpTResNormAxis, invpTAxis}});
-      rK0sDauResolution.add("h2_GenPtNegPulls", "h2_GenPtNegPulls", {HistType::kTH2F, {invpTResNormAxis, invpTAxis}});
+      rK0sDauResolution.add("h2_genPtPosPulls", "h2_GenPtPosPulls", {HistType::kTH2F, {invpTResNormAxis, invpTAxis}});
+      rK0sDauResolution.add("h2_genPtNegPulls", "h2_GenPtNegPulls", {HistType::kTH2F, {invpTResNormAxis, invpTAxis}});
 
       rK0sDauResolution.add("h2_PosRelPtRes", "h2_PosRelPtRes", {HistType::kTH2F, {pTAxis, relpTResAxis}});
       rK0sDauResolution.add("h2_NegRelPtRes", "h2_NegRelPtRes", {HistType::kTH2F, {pTAxis, relpTResAxis}});
@@ -528,8 +528,8 @@ struct perfK0sResolution {
         rK0sDauResolution.fill(HIST("h2_massPosPtRes"), mass, v0.positivept() - posTrack.mcParticle().pt());
         rK0sDauResolution.fill(HIST("h2_massNegPtRes"), mass, v0.negativept() - negTrack.mcParticle().pt());
 
-        rK0sDauResolution.fill(HIST("h2_GenPtPosPulls"), (1. / v0.positivept() - 1. / posTrack.mcParticle().pt()) / (RecoDecay::sqrtSumOfSquares(v0.covMatPosDau()[9], v0.covMatPosDau()[14]) / RecoDecay::sq(v0.positivept())), 1. / posTrack.mcParticle().pt());
-        rK0sDauResolution.fill(HIST("h2_GenPtNegPulls"), (1. / v0.negativept() - 1. / negTrack.mcParticle().pt()) / (RecoDecay::sqrtSumOfSquares(v0.covMatNegDau()[9], v0.covMatNegDau()[14]) / RecoDecay::sq(v0.negativept())), 1. / negTrack.mcParticle().pt());
+        rK0sDauResolution.fill(HIST("h2_genPtPosPulls"), (1. / v0.positivept() - 1. / posTrack.mcParticle().pt()) / (RecoDecay::sqrtSumOfSquares(v0.covMatPosDau()[9], v0.covMatPosDau()[14]) / RecoDecay::sq(v0.positivept())), 1. / posTrack.mcParticle().pt());
+        rK0sDauResolution.fill(HIST("h2_genPtNegPulls"), (1. / v0.negativept() - 1. / negTrack.mcParticle().pt()) / (RecoDecay::sqrtSumOfSquares(v0.covMatNegDau()[9], v0.covMatNegDau()[14]) / RecoDecay::sq(v0.negativept())), 1. / negTrack.mcParticle().pt());
 
         if (useMultidimHisto) {
           rK0sResolution.fill(HIST("thn_mass"), mass, v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta(),
