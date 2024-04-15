@@ -23,8 +23,9 @@
 #include <utility>   // std::move
 #include <vector>    // std::vector
 
-#include "CommonConstants/MathConstants.h"
 #include "TMCProcess.h" // for VMC Particle Production Process
+#include "CommonConstants/MathConstants.h"
+
 
 /// Base class for calculating properties of reconstructed decays
 ///
@@ -596,6 +597,7 @@ class RecoDecay
   }
 
   /// Gets the complete list of indices of final-state daughters of an MC particle.
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particle  MC particle
   /// \param list  vector where the indices of final-state daughters will be added
   /// \param arrPDGFinal  array of PDG codes of particles to be considered final if found
@@ -615,6 +617,7 @@ class RecoDecay
       return;
     }
     if constexpr (checkProcess) {
+      // If the particle is neither the original particle nor coming from a decay, we do nothing and exit.
       if (stage != 0 && particle.getProcess() != TMCProcess::kPDecay && particle.getProcess() != TMCProcess::kPPrimary) { // decay products of HF hadrons are labeled as kPPrimary
         return;
       }
@@ -674,6 +677,7 @@ class RecoDecay
   /// \param acceptAntiParticles  switch to accept the antiparticle version of the expected decay
   /// \param sign  antiparticle indicator of the found mother w.r.t. PDGMother; 1 if particle, -1 if antiparticle, 0 if mother not found
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
   template <bool acceptFlavourOscillation = false, bool checkProcess = false, std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
@@ -793,6 +797,7 @@ class RecoDecay
   /// \param PDGParticle  expected particle PDG code
   /// \param acceptAntiParticles  switch to accept the antiparticle
   /// \param sign  antiparticle indicator of the candidate w.r.t. PDGParticle; 1 if particle, -1 if antiparticle, 0 if not matched
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \return true if PDG code of the particle is correct, false otherwise
   template <bool acceptFlavourOscillation = false, bool checkProcess = false, typename T, typename U>
   static int isMatchedMCGen(const T& particlesMC,
@@ -814,6 +819,7 @@ class RecoDecay
   /// \param sign  antiparticle indicator of the candidate w.r.t. PDGParticle; 1 if particle, -1 if antiparticle, 0 if not matched
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
   /// \param listIndexDaughters  vector of indices of found daughter
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \return true if PDG codes of the particle and its daughters are correct, false otherwise
   template <bool acceptFlavourOscillation = false, bool checkProcess = false, std::size_t N, typename T, typename U>
   static bool isMatchedMCGen(const T& particlesMC,
