@@ -605,7 +605,7 @@ struct AnalysisEventMixing {
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
-  template <int TPairType, typename TTracks1, typename TTracks2>
+  template <uint32_t TEventFillMap, int TPairType, typename TTracks1, typename TTracks2>
   void runMixedPairing(TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
 
@@ -640,11 +640,11 @@ struct AnalysisEventMixing {
 
         constexpr bool eventHasQvector = (VarManager::ObjTypes::ReducedEventQvector > 0);
         if constexpr (eventHasQvector) {
-          VarManager::FillPairVn<TPairType>(track1, track2);
+          VarManager::FillPairVn<TEventFillMap, TPairType>(track1, track2);
         }
         constexpr bool eventHasQvectorCentr = (VarManager::ObjTypes::CollisionQvect > 0);
         if constexpr (eventHasQvectorCentr) {
-          VarManager::FillPairVn<TPairType>(track1, track2);
+          VarManager::FillPairVn<TEventFillMap, TPairType>(track1, track2);
         }
 
         for (unsigned int icut = 0; icut < ncuts; icut++) {
@@ -681,7 +681,7 @@ struct AnalysisEventMixing {
       tracks2.bindExternalIndices(&events);
 
       VarManager::FillTwoMixEvents<TEventFillMap>(event1, event2, tracks1, tracks2);
-      runMixedPairing<TPairType>(tracks1, tracks2);
+      runMixedPairing<TEventFillMap, TPairType>(tracks1, tracks2);
     } // end event loop
   }
 
@@ -701,7 +701,7 @@ struct AnalysisEventMixing {
       auto muons2 = muons.sliceBy(perEventsSelectedM, event2.globalIndex());
       muons2.bindExternalIndices(&events);
 
-      runMixedPairing<pairTypeEMu>(tracks1, muons2);
+      runMixedPairing<TEventFillMap, pairTypeEMu>(tracks1, muons2);
     } // end event loop
   }
 
@@ -1050,10 +1050,10 @@ struct AnalysisSameEventPairing {
           VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA);
         }
         if constexpr (eventHasQvector) {
-          VarManager::FillPairVn<TPairType>(t1, t2);
+          VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
         }
         if constexpr (eventHasQvectorCentr) {
-          VarManager::FillPairVn<TPairType>(t1, t2);
+          VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
         }
       }
 

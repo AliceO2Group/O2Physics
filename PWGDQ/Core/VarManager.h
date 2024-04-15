@@ -812,7 +812,7 @@ class VarManager : public TObject
   static void FillQVectorFromGFW(C const& collision, A const& compA11, A const& compB11, A const& compC11, A const& compA21, A const& compB21, A const& compC21, A const& compA31, A const& compB31, A const& compC31, A const& compA41, A const& compB41, A const& compC41, A const& compA23, A const& compA42, float S10A = 1.0, float S10B = 1.0, float S10C = 1.0, float S11A = 1.0, float S11B = 1.0, float S11C = 1.0, float S12A = 1.0, float S13A = 1.0, float S14A = 1.0, float S21A = 1.0, float S22A = 1.0, float S31A = 1.0, float S41A = 1.0, float* values = nullptr);
   template <typename C>
   static void FillQVectorFromCentralFW(C const& collision, float* values = nullptr);
-  template <int pairType, typename T1, typename T2>
+  template <uint32_t fillMap, int pairType, typename T1, typename T2>
   static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int candidateType, typename T1, typename T2, typename T3>
   static void FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T3 const& hadron2, float* values = nullptr);
@@ -3081,7 +3081,7 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kR2EP_FV0ATPCNEG] = std::cos(2 * getDeltaPsiInRange(epFV0a, epBNegs, 2));
 }
 
-template <int pairType, typename T1, typename T2>
+template <uint32_t fillMap, int pairType, typename T1, typename T2>
 void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 {
 
@@ -3144,14 +3144,16 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   }
 
   //  kV4, kC4POI, kC4REF etc.
-  complex<double> Q21(values[kQ2X0A], values[kQ2Y0A]);
-  complex<double> Q42(values[kQ42XA], values[kQ42YA]);
-  complex<double> Q23(values[kQ23XA], values[kQ23YA]);
-  complex<double> P2(std::cos(2 * v12.Phi()), std::sin(2 * v12.Phi()));
-  values[kM01POI] = values[kMultDimuons] * values[kS11A];
-  values[kM0111POI] = values[kMultDimuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
-  values[kCORR2POI] = (P2 * conj(Q21)).real() / values[kM01POI];
-  values[kCORR4POI] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POI];
+  if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
+    complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
+    complex<double> Q42(values[kQ42XA], values[kQ42YA]);
+    complex<double> Q23(values[kQ23XA], values[kQ23YA]);
+    complex<double> P2(std::cos(2 * v12.Phi()), std::sin(2 * v12.Phi()));
+    values[kM01POI] = values[kMultDimuons] * values[kS11A];
+    values[kM0111POI] = values[kMultDimuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
+    values[kCORR2POI] = (P2 * conj(Q21)).real() / values[kM01POI];
+    values[kCORR4POI] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POI];
+  }
 }
 
 template <typename T1, typename T2>
