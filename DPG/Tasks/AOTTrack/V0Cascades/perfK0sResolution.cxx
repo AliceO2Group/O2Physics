@@ -457,10 +457,10 @@ struct perfK0sResolution {
                  aod::McParticles const& mcParticles,
                  aod::BCsWithTimestamps const& bcs)
   {
-    bool daughtersHaveMCParticles = false;
-    bool daughtersCorrRec = false;
     rK0sResolution.fill(HIST("h1_stats"), 0.5);
     for (auto& v0 : fullV0s) {
+      bool daughtersHaveMCParticles = false;
+      bool daughtersCorrRec = false;
       rK0sResolution.fill(HIST("h1_stats"), 1.5);
       const auto& posTrack = v0.posTrack_as<PIDTracksIUMC>();
       const auto& negTrack = v0.negTrack_as<PIDTracksIUMC>();
