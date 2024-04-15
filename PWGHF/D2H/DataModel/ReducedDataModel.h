@@ -399,7 +399,9 @@ DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);           //! Pt of D daughter in
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);           //! Pt of V0 daughter in GeV/c
 DECLARE_SOA_COLUMN(InvMassProng0, invMassProng0, float); //! Invariant Mass of D daughter in GeV/c
 DECLARE_SOA_COLUMN(InvMassProng1, invMassProng1, float); //! Invariant Mass of V0 daughter in GeV/c
-
+DECLARE_SOA_COLUMN(MlScoreBkgProng0, mlScoreBkgProng0, float);             //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(MlScorePromptProng0, mlScorePromptProng0, float);       //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(MlScoreNonpromptProng0, mlScoreNonpromptProng0, float); //! Nonprompt ML score of the D daughter
 } // namespace hf_reso_cand_reduced
 
 DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate information for resonances reduced workflow
@@ -439,6 +441,12 @@ DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Reso
                   hf_reso_cand_reduced::Cpa,
                   hf_reso_cand_reduced::Dca,
                   hf_reso_cand_reduced::Radius);
+
+DECLARE_SOA_TABLE(HfCharmResoMLs, "AOD", "HFCHARMRESOML", //! Table with ML scores for the D daughter
+                  hf_reso_cand_reduced::MlScoreBkgProng0,
+                  hf_reso_cand_reduced::MlScorePromptProng0,
+                  hf_reso_cand_reduced::MlScoreNonpromptProng0,
+                  o2::soa::Marker<1>);
 } // namespace aod
 
 namespace soa
