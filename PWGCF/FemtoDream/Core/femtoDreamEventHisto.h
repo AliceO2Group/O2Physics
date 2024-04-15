@@ -41,7 +41,7 @@ class FemtoDreamEventHisto
     mHistogramRegistry->add("Event/hMultNTrVsMultPercentile", "; Multiplicity (MultNtr); Multiplicity Percentile (FT0M)", kTH2F, {{200, 0, 200}, {110, 0, 110}});
     mHistogramRegistry->add("Event/hMultPercentileVsZvtx", "; Multiplicity Percentile (FT0M); vtx_{z} (cm)", kTH2F, {{110, 0, 110}, {300, -12.5, 12.5}});
 
-    if (isMC){
+    if (isMC) {
       mHistogramRegistry->add("Event_MC/hMultPercentileVsGenMult08", "; Multiplicity Percentile (FT0M); generated MC multiplicity (#eta<0.8)", kTH2F, {{200, 0, 200}, {110, 0, 110}});
     }
   }
@@ -60,8 +60,8 @@ class FemtoDreamEventHisto
       mHistogramRegistry->fill(HIST("Event/hMultNTrVsMultPercentile"), col.multNtr(), col.multV0M());
       mHistogramRegistry->fill(HIST("Event/hMultPercentileVsZvtx"), col.multV0M(), col.posZ());
 
-      if constexpr(isMC){
-        if (col.has_fdMCCollision()){
+      if constexpr (isMC) {
+        if (col.has_fdMCCollision()) {
           mHistogramRegistry->fill(HIST("Event_MC/hMultPercentileVsGenMult08"), col.fdMCCollision().multMCgenPartEta08(), col.multV0M());
         }
       }

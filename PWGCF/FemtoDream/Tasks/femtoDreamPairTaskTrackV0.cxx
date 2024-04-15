@@ -71,8 +71,8 @@ struct femtoDreamPairTaskTrackV0 {
 
   using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, FDDownSample>>;
   using FilteredMaskedCollision = FilteredMaskedCollisions::iterator;
-  using FilteredMaskedMCCollisions = soa::Filtered<soa::Join<FDCollisions, aod::FDMCCollLabels, FDColMasks, FDDownSample>>; 
-  using FilteredMaskedMCCollision = FilteredMaskedMCCollisions::iterator; 
+  using FilteredMaskedMCCollisions = soa::Filtered<soa::Join<FDCollisions, aod::FDMCCollLabels, FDColMasks, FDDownSample>>;
+  using FilteredMaskedMCCollision = FilteredMaskedMCCollisions::iterator;
 
   femtodreamcollision::BitMaskType BitMask = -1;
 

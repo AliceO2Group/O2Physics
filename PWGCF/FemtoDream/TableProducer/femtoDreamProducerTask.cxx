@@ -357,11 +357,11 @@ struct femtoDreamProducerTask {
       }
     }
   }
-  
+
   template <typename CollisionType>
   void fillMCCollision(CollisionType const& col)
   {
-    if (col.has_mcCollision()){
+    if (col.has_mcCollision()) {
       auto genMCcol = col.template mcCollision_as<aod::FemtoFullMCgenCollisions>();
       outputMCCollision(genMCcol.multMCNParticlesEta08());
       outputCollsMCLabels(outputMCCollision.lastIndex());
@@ -408,7 +408,7 @@ struct femtoDreamProducerTask {
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
     if constexpr (isMC) {
       fillMCCollision(col);
-    } 
+    }
 
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
