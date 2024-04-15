@@ -134,8 +134,8 @@ struct strangeness_tutorial {
       hglue.add("h1glueInvMassDS", "h1glueInvMassDS", kTH1F, {glueballMassAxis});
       hglue.add("h1glueInvMassME", "h1glueInvMassME", kTH1F, {glueballMassAxis});
     }
-    hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTH3F, {multiplicityAxis, ptAxis, glueballMassAxis});
-    hglue.add("h3glueInvMassME", "h3glueInvMassME", kTH3F, {multiplicityAxis, ptAxis, glueballMassAxis});
+    hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis}, true);
+    hglue.add("h3glueInvMassME", "h3glueInvMassME", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis}, true);
 
     // K0s topological/PID cuts
     if (QAv0) {

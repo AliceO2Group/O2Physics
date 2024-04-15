@@ -291,7 +291,7 @@ class FemtoUniverseDetaDphiStar
         auto indexOfDaughter = part2.index() - 2 + i;
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
-        auto dphiAvg = CalculateDphiStar(part1, *daughter);
+        auto dphiAvg = AveragePhiStar(part1, *daughter, i); // CalculateDphiStar(part1, *daughter);
         dphiAvg = TVector2::Phi_mpi_pi(dphiAvg);
         if (ChosenEventType == femtoUniverseContainer::EventType::same) {
           histdetadpisame[i][0]->Fill(deta, dphiAvg);

@@ -574,6 +574,13 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
       cut->SetTPCNsigmaElRange(-2, +3);
       cut->SetTPCNsigmaPiRange(-1e+10, +3);
       return cut;
+    } else if (nameStr.find("tpcelonly") != std::string::npos) {
+      // for PID
+      cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
+      cut->SetTOFbetaRange(true, 0.0, 0.95);
+      cut->SetTPCNsigmaElRange(-2, +3);
+      cut->SetTPCNsigmaPiRange(0, 0);
+      return cut;
     } else { // not match electron cut
       LOGF(info, Form("Did not find electron ID cut %s", cutName));
       return cut;

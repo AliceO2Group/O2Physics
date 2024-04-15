@@ -255,7 +255,8 @@ DECLARE_SOA_TABLE(RFeatMins, "AOD", "RFEATMIN",
                   features::ReconstructedVertexZ,
                   features::TimeRes,
                   features::ReconstructedForwardMultiplicityA,
-                  features::ReconstructedForwardMultiplicityC);
+                  features::ReconstructedForwardMultiplicityC,
+                  rcol::MapEtaPhi);
 
 } // namespace o2::aod
 namespace o2::soa
