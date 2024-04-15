@@ -58,6 +58,9 @@ enum class InputFeaturesDplusToPiKPi : uint8_t {
   impactParameterXY0,
   impactParameterXY1,
   impactParameterXY2,
+  impactParameterZ0,
+  impactParameterZ1,
+  impactParameterZ2,
   decayLength,
   decayLengthXY,
   decayLengthNormalised,
@@ -115,6 +118,9 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, impactParameterXY2, impactParameter2);
+        CHECK_AND_FILL_VEC_DPLUS(impactParameterZ0);
+        CHECK_AND_FILL_VEC_DPLUS(impactParameterZ1);
+        CHECK_AND_FILL_VEC_DPLUS(impactParameterZ2);
         CHECK_AND_FILL_VEC_DPLUS(decayLength);
         CHECK_AND_FILL_VEC_DPLUS(decayLengthXY);
         CHECK_AND_FILL_VEC_DPLUS(decayLengthNormalised);
@@ -161,6 +167,9 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DPLUS(impactParameterXY0),
       FILL_MAP_DPLUS(impactParameterXY1),
       FILL_MAP_DPLUS(impactParameterXY2),
+      FILL_MAP_DPLUS(impactParameterZ0),
+      FILL_MAP_DPLUS(impactParameterZ1),
+      FILL_MAP_DPLUS(impactParameterZ2),
       FILL_MAP_DPLUS(decayLength),
       FILL_MAP_DPLUS(decayLengthXY),
       FILL_MAP_DPLUS(decayLengthNormalised),

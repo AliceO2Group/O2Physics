@@ -40,8 +40,6 @@ DECLARE_SOA_COLUMN(NeeLSmm, neelsmm, int);
 DECLARE_SOA_COLUMN(NmumuULS, nmumuuls, int);
 DECLARE_SOA_COLUMN(NmumuLSpp, nmumulspp, int);
 DECLARE_SOA_COLUMN(NmumuLSmm, nmumulsmm, int);
-DECLARE_SOA_COLUMN(IsPHOSCPVReadout, isPHOSCPVreadout, bool);
-DECLARE_SOA_COLUMN(IsEMCReadout, isEMCreadout, bool);
 DECLARE_SOA_COLUMN(NcollsPerBC, ncollsPerBC, int);
 DECLARE_SOA_COLUMN(Bz, bz, float);                       //! kG
 DECLARE_SOA_COLUMN(Q2xTPCPosEta, q2xtpcposeta, float);   //! Qx for 2nd harmonics in TPC positive eta region
@@ -70,8 +68,7 @@ DECLARE_SOA_COLUMN(Q3xFV0A, q3xfv0a, float);             //! Qx for 3rd harmonic
 DECLARE_SOA_COLUMN(Q3yFV0A, q3yfv0a, float);             //! Qy for 3rd harmonics in FV0A (i.e. positive eta)
 } // namespace emevent
 DECLARE_SOA_TABLE(EMEvents, "AOD", "EMEVENT", //!   Main event information table
-                  o2::soa::Index<>, emevent::CollisionId, bc::GlobalBC, bc::RunNumber, evsel::Sel8, evsel::Alias, evsel::Selection,
-                  emevent::IsPHOSCPVReadout, emevent::IsEMCReadout, emevent::NcollsPerBC,
+                  o2::soa::Index<>, emevent::CollisionId, bc::GlobalBC, bc::RunNumber, evsel::Sel8, evsel::Alias, evsel::Selection, emevent::NcollsPerBC,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes);
 using EMEvent = EMEvents::iterator;
@@ -144,7 +141,7 @@ namespace emmcparticle
 {
 DECLARE_SOA_INDEX_COLUMN(EMMCEvent, emmcevent);
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);     //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
-DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters); //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Daughters, daughters); //! Daughter tracks (possibly empty) array. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
@@ -163,7 +160,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
 DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
                        o2::soa::Index<>, emmcparticle::EMMCEventId,
                        mcparticle::PdgCode, mcparticle::Flags,
-                       emmcparticle::MothersIds, emmcparticle::DaughtersIdSlice,
+                       emmcparticle::MothersIds, emmcparticle::DaughtersIds,
                        mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
                        mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
 
@@ -212,6 +209,30 @@ DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
 DECLARE_SOA_TABLE(EMPrimaryMuonMCLabels, "AOD", "EMPRMMUMCLABEL", //!
                   emprimarymuonmclabel::EMMCParticleId, emprimarymuonmclabel::McMask);
 using EMPrimaryMuonMCLabel = EMPrimaryMuonMCLabels::iterator;
+
+// *  EMC cluster mc label tables:
+// 1. EMCALMCClusters in EMCalClusters.h: Vectors of global mc particle ids and energy fractions of the cluster
+// 2. EMCClusterMCLabels: Vector of global mc particle ids
+// 3. EMEMCClusterMCLabels: EM MC particle ID of largest contributor to cluster
+namespace emcclustermclabel
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
+} // namespace emcclustermclabel
+
+// NOTE: MC labels. This table has one vector of global mc particle ids for each reconstructed emc cluster (joinable with emccluster table)
+DECLARE_SOA_TABLE(EMCClusterMCLabels, "AOD", "EMCClsMCLABEL", //!
+                  emcclustermclabel::EMMCParticleIds);
+using EMCClusterMCLabel = EMCClusterMCLabels::iterator;
+
+namespace ememcclustermclabel
+{
+DECLARE_SOA_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
+} // namespace ememcclustermclabel
+
+// NOTE: MC labels. This table has one entry for each reconstructed emc cluster (joinable with emccluster table)
+DECLARE_SOA_TABLE(EMEMCClusterMCLabels, "AOD", "EMEMCClsMCLABEL", //!
+                  ememcclustermclabel::EMMCParticleId);
+using EMEMCClusterMCLabel = EMEMCClusterMCLabels::iterator;
 
 namespace v0leg
 {

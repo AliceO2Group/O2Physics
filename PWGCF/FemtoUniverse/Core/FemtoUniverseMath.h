@@ -13,7 +13,7 @@
 /// \brief Definition of the FemtoUniverseMath Container for math calculations of quantities related to pairs
 /// \author Valentina Mantovani Sarti, TU München, valentina.mantovani-sarti@tum.de
 /// \author Laura Serksnyte, TU München, laura.serksnyte@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEMATH_H_

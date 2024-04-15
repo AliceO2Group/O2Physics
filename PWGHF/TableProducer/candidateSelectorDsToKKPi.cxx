@@ -39,12 +39,16 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
-  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC"};
-  //  TOF PID
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
+  Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
+  // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
-  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
+  // AND logic for TOF+TPC PID (as in Run2)
+  Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Use AND logic for TPC and TOF PID"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_ds_to_k_k_pi::cuts[0], hf_cuts_ds_to_k_k_pi::nBinsPt, hf_cuts_ds_to_k_k_pi::nCutVars, hf_cuts_ds_to_k_k_pi::labelsPt, hf_cuts_ds_to_k_k_pi::labelsCutVar}, "Ds candidate selection per pT bin"};
@@ -76,7 +80,7 @@ struct HfCandidateSelectorDsToKKPi {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
-  using TracksSel = soa::Join<aod::TracksWDca, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
+  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   HistogramRegistry registry{"registry"};
 
@@ -84,8 +88,10 @@ struct HfCandidateSelectorDsToKKPi {
   {
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
     selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
     selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     selectorKaon = selectorPion;
 
     if (activateQA) {
@@ -309,11 +315,25 @@ struct HfCandidateSelectorDsToKKPi {
       }
 
       // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
-      int pidTrackPos1Kaon = selectorKaon.statusTpcOrTof(trackPos1);
-      int pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
-      int pidTrackPos2Kaon = selectorKaon.statusTpcOrTof(trackPos2);
-      int pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+      int pidTrackPos1Pion = -1;
+      int pidTrackPos1Kaon = -1;
+      int pidTrackPos2Pion = -1;
+      int pidTrackPos2Kaon = -1;
+      int pidTrackNegKaon = -1;
+
+      if (usePidTpcAndTof) {
+        pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
+        pidTrackPos1Kaon = selectorKaon.statusTpcAndTof(trackPos1);
+        pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
+        pidTrackPos2Kaon = selectorKaon.statusTpcAndTof(trackPos2);
+        pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+      } else {
+        pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+        pidTrackPos1Kaon = selectorKaon.statusTpcOrTof(trackPos1);
+        pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+        pidTrackPos2Kaon = selectorKaon.statusTpcOrTof(trackPos2);
+        pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+      }
 
       bool pidDsToKKPi = !(pidTrackPos1Kaon == TrackSelectorPID::Rejected ||
                            pidTrackNegKaon == TrackSelectorPID::Rejected ||

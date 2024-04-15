@@ -12,6 +12,8 @@
 #ifndef PWGUD_CORE_DGSELECTOR_H_
 #define PWGUD_CORE_DGSELECTOR_H_
 
+#include <vector>
+
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "Framework/Logger.h"
@@ -153,6 +155,33 @@ class DGSelector
     // invariant mass
     if (ivm.M() < diffCuts.minIVM() || ivm.M() > diffCuts.maxIVM()) {
       return 12;
+    }
+
+    // good collision selection according to event-selection task
+    /* if (!goodCollision(collision, diffCuts)){
+      return 13;
+    }*/
+    // good collision selection per-partes
+    std::vector<int> sels = diffCuts.collisionSel();
+    // timeframe border
+    if (sels[0] && !udhelpers::cutNoTimeFrameBorder(collision)) {
+      return 13;
+    }
+    // same bunch pileup
+    if (sels[1] && !udhelpers::cutNoSameBunchPileup(collision)) {
+      return 14;
+    }
+    // ITS ROF border
+    if (sels[2] && !udhelpers::cutNoITSROFrameBorder(collision)) {
+      return 15;
+    }
+    // z-vtx from PV and FT0 agrees
+    if (sels[3] && !udhelpers::cutIsGoodZvtxFT0vsPV(collision)) {
+      return 16;
+    }
+    // is ITS-TPC track
+    if (sels[4] && !udhelpers::cutIsVertexITSTPC(collision)) {
+      return 17;
     }
 
     // if we arrive here then the event is good!
