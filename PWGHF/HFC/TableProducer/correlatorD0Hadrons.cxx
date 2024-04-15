@@ -184,8 +184,8 @@ struct HfCorrelatorD0Hadrons {
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<float> ptSoftPionMax{"ptSoftPionMax", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification"};
-  Configurable<int> findLeadingParticleSwitch{"FindLeadingParticleSwitch", 0, "Find Leading Particle Switch"};
-  Configurable<int> correlationD0LeadingParticle{"CorrelationD0LeadingParticle", 0, "Correlation D0 Leading Particle witch"};
+  Configurable<bool> correlateD0WithLeadingParticle{"correlateD0WithLeadingParticle", false, "Switch for correlation of D0 mesons with leading particle only"};
+
   HfHelper hfHelper;
 
   int leadingIndex = 0;
@@ -268,8 +268,8 @@ struct HfCorrelatorD0Hadrons {
     registry.add("hLeadingParticalD0", "deltaPhi deltaEta leadingPt D0Pt poolbin", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {100, -2., 2.}, {180, 0., 18.}, {180, 0., 18.}, {10, 0, 10}}});
   }
   // Find Leading Particle
-  int findLeadingParticle(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
-                          aod::TracksWDca const& tracks)
+  template <typename TTracks>
+  int findLeadingParticle(TTracks const& tracks)
   {
     auto leadingParticle = tracks.begin();
     for (auto const& track : tracks) {
@@ -294,8 +294,8 @@ struct HfCorrelatorD0Hadrons {
       return;
     }
     // find leading particle
-    if (findLeadingParticleSwitch) {
-      leadingIndex = findLeadingParticle(collision, tracks);
+    if (correlateD0WithLeadingParticle) {
+      leadingIndex = findLeadingParticle(tracks);
     }
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
@@ -361,11 +361,11 @@ struct HfCorrelatorD0Hadrons {
       registry.fill(HIST("hSelectionStatus"), candidate1.isSelD0bar() + (candidate1.isSelD0() * 2));
       registry.fill(HIST("hD0Bin"), poolBin);
       //====================correlation D0 leading particle===============================
-      if (correlationD0LeadingParticle) {
+      if (correlateD0WithLeadingParticle) {
         for (auto const& track : tracks) {
-          if (track.globalIndex() == leadingIndex) {
-            registry.fill(HIST("hLeadingParticalD0"), getDeltaPhi(track.phi(), candidate1.phi()), track.eta() - candidate1.eta(), track.pt(), candidate1.pt(), poolBin);
-          }
+          if (track.globalIndex() != leadingIndex)
+            continue;
+          registry.fill(HIST("hLeadingParticalD0"), getDeltaPhi(track.phi(), candidate1.phi()), track.eta() - candidate1.eta(), track.pt(), candidate1.pt(), poolBin);
         }
       }
       // ============ D-h correlation dedicated section ==================================
