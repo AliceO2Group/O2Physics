@@ -1208,7 +1208,7 @@ struct nuclei_in_jets {
       // Loop over particles inside UE
       for (int i = 0; i < nParticlesUE; i++) {
 
-        const auto& ue_track = tracks.iteratorAt(ue_particle_ID[i]);
+        const auto& ue_track = mcParticles_per_coll.iteratorAt(ue_particle_ID[i]);
         registryMC.fill(HIST("antiproton_eta_pt_ue"), ue_track.pt(),
                         ue_track.eta());
       }
