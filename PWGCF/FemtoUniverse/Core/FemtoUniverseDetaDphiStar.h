@@ -378,13 +378,12 @@ class FemtoUniverseDetaDphiStar
     // End: Get the charge from cutcontainer using masks
     float pt = part.pt();
     for (size_t i = 0; i < 9; i++) {
-      auto arg = 0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt);
-      // for very low pT particles, this value goes outside of range -1 to 1 at
-      // at large tpc radius; asin fails
+      double arg = 0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt);
       if (abs(arg) < 1.0) {
         tmpVec.push_back(phi0 - std::asin(arg));
-        }
+      }
     }
+  }
 
   ///  Calculate average phi
   template <typename T1, typename T2>
@@ -435,10 +434,12 @@ class FemtoUniverseDetaDphiStar
     // double deltaphiconstAF = 0.15;
     double afsi0b = deltaphiconstFD * magfield * charge1 * ChosenRadii / part1.pt();
     double afsi1b = deltaphiconstFD * magfield * charge2 * ChosenRadii / part2.pt();
+    double dphis = 0.0;
 
-    if ((abs(afsi0b) < 1.0) && (abs(afsi1b) < 1.0)) {
-        double dphis = part2.phi() - part1.phi() + TMath::ASin(afsi1b) - TMath::ASin(afsi0b);
+    if (abs(afsi0b) < 1.0 && abs(afsi0b) < 1.0) {
+      dphis = part2.phi() - part1.phi() + TMath::ASin(afsi1b) - TMath::ASin(afsi0b);
     }
+    return dphis;
   }
 };
 
