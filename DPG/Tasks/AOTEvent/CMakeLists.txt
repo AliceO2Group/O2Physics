@@ -13,3 +13,13 @@ o2physics_add_dpl_workflow(event-selection-qa
                            SOURCES eventSelectionQa.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lumi-qa
+                           SOURCES lumiQa.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(mshape-qa
+                           SOURCES mshapeQa.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsBase O2::TPCCalibration
+                           COMPONENT_NAME Analysis)

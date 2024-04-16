@@ -43,7 +43,7 @@ struct skimmerDalitzEE {
   Preslice<MyTracks> perCol = o2::aod::emprimaryelectron::emeventId;
 
   SliceCache cache_cefp;
-  Preslice<aod::EMPrimaryElectrons> perCol_cefp = o2::aod::emprimaryelectron::collisionId;
+  PresliceUnsorted<aod::EMPrimaryElectrons> perCol_cefp = o2::aod::emprimaryelectron::collisionId;
 
   Produces<aod::DalitzEEs> dalitzees;
   Produces<o2::aod::DalitzEEEMEventIds> dalitz_ee_eventid;
@@ -143,9 +143,9 @@ struct skimmerDalitzEE {
         float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
         float opangle = getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
 
-        if (!std::isfinite(phiv)) {
-          LOGF(info, "t1.px() = %f, t1.py() = %f, t1.pz() = %f, t2.px() = %f, t2.py() = %f, t2.pz() = %f", t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
-        }
+        // if (!std::isfinite(phiv)) {
+        //   LOGF(info, "t1.px() = %f, t1.py() = %f, t1.pz() = %f, t2.px() = %f, t2.py() = %f, t2.pz() = %f", t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
+        // }
 
         if constexpr (isCEFP) {
           dalitzees(collision.globalIndex(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), v12.Rapidity(), phiv, opangle, static_cast<int>(pairtype));
@@ -220,8 +220,8 @@ struct skimmerDalitzEE {
   void processCEFP(soa::Join<aod::Collisions, aod::EMEventsBz> const& collisions, aod::EMPrimaryElectrons const& tracks)
   {
     for (auto& collision : collisions) {
-      auto posTracks_per_coll = posTracks_cefp->sliceByCached(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);
-      auto negTracks_per_coll = negTracks_cefp->sliceByCached(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);
+      auto posTracks_per_coll = posTracks_cefp->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);
+      auto negTracks_per_coll = negTracks_cefp->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);
 
       int npair_uls = 0, npair_lspp = 0, npair_lsmm = 0;
       npair_uls = fillPairTable<EM_EEPairType::kULS, true>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
@@ -233,6 +233,19 @@ struct skimmerDalitzEE {
     } // end of collision loop
   }
   PROCESS_SWITCH(skimmerDalitzEE, processCEFP, "Process dalitz ee for CEFP", false); // for central event filter processing
+
+  void processOnlyNee(soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent> const& collisions)
+  {
+    for (auto& collision : collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        event_nee(0, 0, 0);
+        continue;
+      }
+      event_nee(0, 0, 0);
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(skimmerDalitzEE, processOnlyNee, "Process only nee", false); // for central event filter processing
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

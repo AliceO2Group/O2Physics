@@ -308,7 +308,7 @@ struct HfDataCreatorCharmHadPiReduced {
 
     if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
       // B0 → D- π+ → (π- K+ π-) π+
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+      auto indexRec = RecoDecay::getMatchedMCRec<true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // D- → π- K+ π-
         // Printf("Checking D- → π- K+ π-");
@@ -326,13 +326,12 @@ struct HfDataCreatorCharmHadPiReduced {
           motherPt = particleMother.pt();
         }
       }
-      rowHfDPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, debug, motherPt);
 
       // additional checks for correlated backgrounds
       if (checkDecayTypeMc) {
         // B0 → Ds- π+ → (K- K+ π-) π+
         if (!flag) {
-          indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+          indexRec = RecoDecay::getMatchedMCRec<true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
           if (indexRec > -1) {
             // Ds- → K- K+ π-
             indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
@@ -396,6 +395,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         rowHfDPiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2, pdgCodeProng3);
       }
+      rowHfDPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, debug, motherPt);
     } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) {
       // B+ → D0(bar) π+ → (K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
@@ -529,6 +529,7 @@ struct HfDataCreatorCharmHadPiReduced {
         df3.getTrack(1).getPxPyPzGlo(pVec1);
         df3.getTrack(2).getPxPyPzGlo(pVec2);
         pVecCharm = RecoDecay::pVec(pVec0, pVec1, pVec2);
+        trackParCovCharmHad = df3.createParentTrackParCov();
         trackParCovCharmHad.setAbsCharge(charmHadDauTracks[1].sign());   // to be sure
       } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
         if (df2.process(trackParCov0, trackParCov1) == 0) {
@@ -678,11 +679,11 @@ struct HfDataCreatorCharmHadPiReduced {
       int8_t flag{0};
       if constexpr (decayChannel == DecayChannel::B0ToDminusPi) {
         // B0 → D- π+
-        if (RecoDecay::isMatchedMCGen(particlesMc, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true)) {
           // Match D- -> π- K+ π-
           auto candCMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking D- -> π- K+ π-");
-          if (RecoDecay::isMatchedMCGen(particlesMc, candCMC, -static_cast<int>(Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
+          if (RecoDecay::isMatchedMCGen(particlesMc, candCMC, -static_cast<int>(Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
             flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
           }
         }
