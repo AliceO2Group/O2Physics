@@ -157,14 +157,15 @@ struct jflucAnalysisTask {
     delete pcf;
   }
 
-  O2_DEFINE_CONFIGURABLE(etamin, double, 0.4, "Minimal eta for tracks");
-  O2_DEFINE_CONFIGURABLE(etamax, double, 0.8, "Maximal eta for tracks");
-  O2_DEFINE_CONFIGURABLE(ptmin, double, 0.2, "Minimal pt for tracks");
-  O2_DEFINE_CONFIGURABLE(ptmax, double, 0.5, "Maximal pt for tracks");
+  O2_DEFINE_CONFIGURABLE(etamin, float, 0.4, "Minimal eta for tracks");
+  O2_DEFINE_CONFIGURABLE(etamax, float, 0.8, "Maximal eta for tracks");
+  O2_DEFINE_CONFIGURABLE(ptmin, float, 0.2, "Minimal pt for tracks");
+  O2_DEFINE_CONFIGURABLE(ptmax, float, 0.5, "Maximal pt for tracks");
 
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
 
-  Filter trackFilter = (aod::track::pt > ptmin) && (aod::track::pt < ptmax); // eta cuts done by jfluc
+  Filter jtrackFilter = (aod::jtrack::pt > ptmin) && (aod::jtrack::pt < ptmax);    // eta cuts done by jfluc
+  Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax); // eta cuts done by jfluc
 
   OutputObj<TDirectory> output{"jflucO2"};
 
