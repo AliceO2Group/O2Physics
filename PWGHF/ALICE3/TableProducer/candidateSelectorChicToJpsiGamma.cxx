@@ -137,7 +137,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   /// \param nSigmaCut is the nsigma threshold to test against
   /// \return true if track satisfies TPC pion hypothesis for given Nsigma cut
   template <typename T>
-  bool selectionPIDTPC(const T&  /*track*/, int nSigmaCut)
+  bool selectionPIDTPC(const T& /*track*/, int nSigmaCut)
   {
     if (nSigmaCut > 999.) {
       return true;
@@ -151,7 +151,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   // \param nSigmaCut is the nSigma threshold to test against
   // \return true if track satisfies TOF pion hypothesis for given NSigma cut
   template <typename T>
-  bool selectionPIDTOF(const T&  /*track*/, double nSigmaCut)
+  bool selectionPIDTOF(const T& /*track*/, double nSigmaCut)
   {
     if (nSigmaCut > 999.) {
       return true;
