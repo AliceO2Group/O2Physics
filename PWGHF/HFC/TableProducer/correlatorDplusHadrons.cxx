@@ -176,8 +176,8 @@ struct HfCorrelatorDplusHadrons {
 
   // Event Mixing for the Data Mode
   using SelCollisionsWithDplus = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;
-  using TracksWithData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>; // track Selection applied
-  using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, o2::aod::McTrackLabels>>;  // track Selection applied
+  using TracksWithData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;                       // track Selection applied
+  using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, o2::aod::McTrackLabels>>; // track Selection applied
   using CandidatesDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   // Event Mixing for the MCRec Mode
   using CandidatesDplusMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>>;
@@ -306,8 +306,8 @@ struct HfCorrelatorDplusHadrons {
         // if the candidate is a Dplus, search for Hadrons and evaluate correlations
         for (const auto& track : tracks) {
           if (!track.isGlobalTrackWoDCA()) {
-          continue;
-        }
+            continue;
+          }
           if (std::abs(track.eta()) > etaTrackMax) {
             continue;
           }
@@ -408,9 +408,9 @@ struct HfCorrelatorDplusHadrons {
         // if the candidate is selected as Dplus, search for Hadron and evaluate correlations
         flagDplusSignal = candidate1.flagMcMatchRec() == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
         for (const auto& track : tracks) {
-           if (!track.isGlobalTrackWoDCA()) {
-          continue;
-        }
+          if (!track.isGlobalTrackWoDCA()) {
+            continue;
+          }
           if (std::abs(track.eta()) > etaTrackMax) {
             continue;
           }
