@@ -411,7 +411,7 @@ struct highmasslambda {
         }
         firstprimarytrack = firstprimarytrack + 1;
         Proton = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPr);
-        Kshort = ROOT::Math::PxPyPzMVector(v0.pt(), v0.eta(), v0.phi(), massK0s);
+        Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), massK0s);
         Lambdac = Proton + Kshort;
         if (TMath::Abs(Lambdac.Rapidity()) > confRapidity) {
           continue;
@@ -482,7 +482,7 @@ struct highmasslambda {
         }
 
         Proton = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPr);
-        Kshort = ROOT::Math::PxPyPzMVector(v0.pt(), v0.eta(), v0.phi(), massK0s);
+        Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), massK0s);
         Lambdac = Proton + Kshort;
         if (TMath::Abs(Lambdac.Rapidity()) > confRapidity) {
           continue;
