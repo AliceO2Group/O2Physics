@@ -13,6 +13,7 @@
 /// \brief FemtoUniverseDetaDphiStar - Checks particles for the close pair rejection.
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
+/// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
@@ -377,7 +378,10 @@ class FemtoUniverseDetaDphiStar
     // End: Get the charge from cutcontainer using masks
     float pt = part.pt();
     for (size_t i = 0; i < 9; i++) {
-      tmpVec.push_back(phi0 - std::asin(0.3 * charge * 0.1 * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt)));
+      double arg = 0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt);
+      if (abs(arg) < 1.0) {
+        tmpVec.push_back(phi0 - std::asin(arg));
+      }
     }
   }
 
@@ -426,12 +430,15 @@ class FemtoUniverseDetaDphiStar
     float charge1 = GetCharge(part1);
     float charge2 = GetCharge(part2);
 
-    double deltaphiconstFD = 0.3 * 0.1 * 0.01 / 2;
+    double deltaphiconstFD = 0.3 / 2;
     // double deltaphiconstAF = 0.15;
     double afsi0b = deltaphiconstFD * magfield * charge1 * ChosenRadii / part1.pt();
     double afsi1b = deltaphiconstFD * magfield * charge2 * ChosenRadii / part2.pt();
+    double dphis = 0.0;
 
-    double dphis = part2.phi() - part1.phi() + TMath::ASin(afsi1b) - TMath::ASin(afsi0b);
+    if (abs(afsi0b) < 1.0 && abs(afsi0b) < 1.0) {
+      dphis = part2.phi() - part1.phi() + TMath::ASin(afsi1b) - TMath::ASin(afsi0b);
+    }
     return dphis;
   }
 };
