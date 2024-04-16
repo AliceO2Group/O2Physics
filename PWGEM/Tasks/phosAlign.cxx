@@ -149,7 +149,7 @@ struct phosAlign {
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                aod::CaloClusters& clusters,
                tracks& tracks,
-               aod::BCsWithTimestamps const& bcs)
+               aod::BCsWithTimestamps const&)
   {
 
     // Set the magnetic field from ccdb.
@@ -347,7 +347,7 @@ struct phosAlign {
     return (module - 1) * kCpvX * kCpvZ + ix * kCpvZ + iz; // modules: 1,2,3,4
   }
 
-  bool impactOnPHOS(o2::track::TrackParametrization<float>& trackPar, float trackEta, float trackPhi, float zvtx, int16_t& module, float& trackX, float& trackZ)
+  bool impactOnPHOS(o2::track::TrackParametrization<float>& trackPar, float trackEta, float trackPhi, float /*zvtx*/, int16_t& module, float& trackX, float& trackZ)
   {
     // eta,phi was calculated at EMCAL radius.
     // Extrapolate to PHOS assuming zeroB and current vertex

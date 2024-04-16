@@ -128,7 +128,7 @@ struct CreateEMEvent {
   }
   PROCESS_SWITCH(CreateEMEvent, processEventMC_Cent, "process event info", false);
 
-  void processDummy(aod::Collisions const& collisions) {}
+  void processDummy(aod::Collisions const&) {}
   PROCESS_SWITCH(CreateEMEvent, processDummy, "processDummy", true);
 };
 struct AssociatePhotonToEMEvent {

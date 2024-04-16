@@ -120,7 +120,7 @@ struct skimmerPrimaryElectron {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -642,7 +642,7 @@ struct prefilterPrimaryElectron {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -796,7 +796,7 @@ struct prefilterPrimaryElectron {
   Partition<aod::EMPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > 0;
   Partition<aod::EMPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < 0;
 
-  void processPrefilter_TTCA(aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, aod::EMPrimaryElectrons const& primaryelectrons, aod::TrackAssoc const& trackIndices)
+  void processPrefilter_TTCA(aod::Collisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const&, aod::EMPrimaryElectrons const& primaryelectrons, aod::TrackAssoc const& trackIndices)
   {
     for (auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -870,7 +870,7 @@ struct prefilterPrimaryElectron {
   }
   PROCESS_SWITCH(prefilterPrimaryElectron, processPrefilter_TTCA, "process prefilter with TTCA", false);
 
-  void processPrefilter_SA(aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs, MyFilteredTracks const& tracks, aod::EMPrimaryElectrons const& primaryelectrons)
+  void processPrefilter_SA(aod::Collisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const&, aod::EMPrimaryElectrons const& primaryelectrons)
   {
     for (auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
