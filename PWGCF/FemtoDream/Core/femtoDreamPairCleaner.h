@@ -86,9 +86,7 @@ class FemtoDreamPairCleaner
         return true;
       }
       return false;
-    }
-
-    else {
+    } else {
       LOG(fatal) << "FemtoDreamPairCleaner: Combination of objects not defined - quitting!";
       return false;
     }
