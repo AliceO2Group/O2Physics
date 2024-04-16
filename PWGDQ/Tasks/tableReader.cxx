@@ -455,7 +455,7 @@ struct AnalysisPrefilterSelection {
   std::map<int, bool> fPrefiltermap;
   AnalysisCompositeCut* fPairCut;
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext&)
   {
     fPairCut = new AnalysisCompositeCut(true);
     TString pairCutStr = fConfigPrefilterPairCut.value;
@@ -1332,7 +1332,7 @@ struct AnalysisFwdTrackPid {
 
   Configurable<float> fConfigMaxDCA{"cfgMaxDCA", 0.5f, "Manually set maximum DCA of the track"};
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext&)
   {
   }
 
