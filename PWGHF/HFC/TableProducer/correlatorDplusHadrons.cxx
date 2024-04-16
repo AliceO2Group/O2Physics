@@ -176,7 +176,7 @@ struct HfCorrelatorDplusHadrons {
 
   // Event Mixing for the Data Mode
   using SelCollisionsWithDplus = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;
-  using TracksWithDca = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;                       // track Selection applied
+  using TracksWithDca = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>; // track Selection applied
   using CandidatesDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   // Event Mixing for the MCRec Mode
   using CandidatesDplusMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>>;
