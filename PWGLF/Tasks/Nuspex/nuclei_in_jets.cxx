@@ -1130,23 +1130,6 @@ struct nuclei_in_jets {
       // Multiplicity inside Jet + UE
       int nParticlesJetUE = static_cast<int>(jet_particle_ID.size());
 
-      float Rmax(0);
-      int nParticlesJetAndUE(0);
-      for (int i = 0; i < nParticlesJetUE; i++) {
-
-        const auto& jet_track =
-          mcParticles_per_coll.iteratorAt(jet_particle_ID[i]);
-        TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
-
-        float deltaEta = p_i.Eta() - p_leading.Eta();
-        float deltaPhi = GetDeltaPhi(p_i.Phi(), p_leading.Phi());
-        float R = TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
-        if (R < Rmax_jet_ue)
-          nParticlesJetAndUE++;
-        if (R > Rmax)
-          Rmax = R;
-      }
-
       // Event Counter: Skip Events with jet not fully inside acceptance
       float eta_jet_axis = p_leading.Eta();
       if ((TMath::Abs(eta_jet_axis) + Rmax_jet_ue) > max_eta)
@@ -1201,6 +1184,12 @@ struct nuclei_in_jets {
       for (int i = 0; i < nParticlesJetUE; i++) {
 
         const auto& jet_track = mcParticles_per_coll.iteratorAt(particle_ID[i]);
+
+        float deltaEta = jet_track.eta() - p_leading.Eta();
+        float deltaPhi = GetDeltaPhi(jet_track.phi(), p_leading.Phi());
+        float R = TMath::Sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
+        if (R > Rmax_jet_ue)
+          continue;
 
         registryMC.fill(HIST("antiproton_eta_pt_jet"), jet_track.pt(),
                         jet_track.eta());
