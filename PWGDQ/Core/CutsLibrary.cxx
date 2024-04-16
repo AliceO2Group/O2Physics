@@ -1956,6 +1956,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     }
   }
 
+  if (!nameStr.compare("testCut_chic")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine5"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigma"));
+    return cut;
+  }
+
+
   if (!nameStr.compare("lmee_GlobalTrackRun3")) {
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
@@ -2667,6 +2675,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("eventStandardNoINT7")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardtest")) {
+    cut->AddCut(VarManager::kVtxZ, -30.0, 30.0);
     return cut;
   }
 
