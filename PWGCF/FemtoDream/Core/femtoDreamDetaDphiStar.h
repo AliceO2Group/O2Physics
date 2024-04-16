@@ -73,7 +73,7 @@ class FemtoDreamDetaDphiStar
         }
       }
     }
-        if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
+    if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
       std::string dirName;
       for (int i = 0; i < 3; i++) {
         dirName = static_cast<std::string>(dirNames[2]);
@@ -132,7 +132,7 @@ class FemtoDreamDetaDphiStar
         }
       }
       return pass;
-    }  else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
+    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
       // check if provided particles are in agreement with the class instantiation
       if (part2.candidateSelFlag() < 1) {
         LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide Charm Hadron candidates.";
@@ -141,35 +141,35 @@ class FemtoDreamDetaDphiStar
 
       bool pass = false;
 
-for (int i = 0; i < 3; ++i) {
-    double deta, dphiAvg;
+      for (int i = 0; i < 3; ++i) {
+        double deta, dphiAvg;
 
-    switch (i) {
-        case 0:
+        switch (i) {
+          case 0:
             deta = part1.eta() - part2.prong0Eta();
             dphiAvg = AveragePhiStar<true>(part1, part2, 0);
             histdetadpi[0][0]->Fill(deta, dphiAvg);
             break;
-        case 1:
+          case 1:
             deta = part1.eta() - part2.prong1Eta();
             dphiAvg = AveragePhiStar<true>(part1, part2, 1);
             histdetadpi[1][0]->Fill(deta, dphiAvg);
             break;
-        case 2:
+          case 2:
             deta = part1.eta() - part2.prong2Eta();
             dphiAvg = AveragePhiStar<true>(part1, part2, 2);
             histdetadpi[2][0]->Fill(deta, dphiAvg);
             break;
-    }
+        }
 
-    if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-        pass = true;
-    } else {
-        histdetadpi[i][1]->Fill(deta, dphiAvg);
-    }
-}
+        if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          pass = true;
+        } else {
+          histdetadpi[i][1]->Fill(deta, dphiAvg);
+        }
+      }
 
-return pass;
+      return pass;
 
     } else {
       LOG(fatal) << "FemtoDreamPairCleaner: Combination of objects not defined - quitting!";
@@ -185,7 +185,7 @@ return pass;
   static constexpr std::string_view histNameSEorME[3] = {"_SEandME", "_SE", "_ME"};
 
   static constexpr std::string_view histNames[2][3] = {{"detadphidetadphi0Before_0", "detadphidetadphi0Before_1", "detadphidetadphi0Before_2"},
-    {"detadphidetadphi0After_0", "detadphidetadphi0After_1", "detadphidetadphi0After_2"}};
+                                                       {"detadphidetadphi0After_0", "detadphidetadphi0After_1", "detadphidetadphi0After_2"}};
 
   static constexpr std::string_view histNamesRadii[3][9] = {
     {"detadphidetadphi0Before_0_0", "detadphidetadphi0Before_0_1", "detadphidetadphi0Before_0_2",
@@ -196,8 +196,7 @@ return pass;
      "detadphidetadphi0Before_1_6", "detadphidetadphi0Before_1_7", "detadphidetadphi0Before_1_8"},
     {"detadphidetadphi0Before_2_0", "detadphidetadphi0Before_2_1", "detadphidetadphi0Before_2_2",
      "detadphidetadphi0Before_2_3", "detadphidetadphi0Before_2_4", "detadphidetadphi0Before_2_5",
-     "detadphidetadphi0Before_2_6", "detadphidetadphi0Before_2_7", "detadphidetadphi0Before_2_8"}
-};
+     "detadphidetadphi0Before_2_6", "detadphidetadphi0Before_2_7", "detadphidetadphi0Before_2_8"}};
 
   static constexpr o2::aod::femtodreamparticle::ParticleType mPartOneType = partOne; ///< Type of particle 1
   static constexpr o2::aod::femtodreamparticle::ParticleType mPartTwoType = partTwo; ///< Type of particle 2
@@ -255,40 +254,39 @@ return pass;
     }
   }
 
-template <typename T>
-void PhiAtRadiiTPCForHF(const T& part, std::vector<float>& tmpVec, int prong)
-{
+  template <typename T>
+  void PhiAtRadiiTPCForHF(const T& part, std::vector<float>& tmpVec, int prong)
+  {
     int charge = 0;
     float pt = -999.;
     float phi0 = -999.;
-    switch(prong) {
-        case 0:
-            pt = part.prong0Pt();
-            phi0 = part.prong0Phi();
-            charge = (part.charge() == 1) ? 1 : -1;
-            break;
-        case 1:
-            pt = part.prong1Pt();
-            phi0 = part.prong1Phi();
-            charge = (part.charge() == 1) ? -1 : 1;
-            break;
-        case 2:
-            pt = part.prong2Pt();
-            phi0 = part.prong2Phi();
-            charge = (part.charge() == 1) ? 1 : -1;
-            break;
-        default:
-            // Handle invalid prong value
-            break;
+    switch (prong) {
+      case 0:
+        pt = part.prong0Pt();
+        phi0 = part.prong0Phi();
+        charge = (part.charge() == 1) ? 1 : -1;
+        break;
+      case 1:
+        pt = part.prong1Pt();
+        phi0 = part.prong1Phi();
+        charge = (part.charge() == 1) ? -1 : 1;
+        break;
+      case 2:
+        pt = part.prong2Pt();
+        phi0 = part.prong2Phi();
+        charge = (part.charge() == 1) ? 1 : -1;
+        break;
+      default:
+        // Handle invalid prong value
+        break;
     }
 
     // Calculate a common factor outside the loop to improve efficiency
     float commonFactor = std::asin(0.3 * charge * 0.1 * magfield * 0.01 / (2. * pt));
     for (size_t i = 0; i < 9; i++) {
-        tmpVec.push_back(phi0 - commonFactor * tmpRadiiTPC[i]);
+      tmpVec.push_back(phi0 - commonFactor * tmpRadiiTPC[i]);
     }
-}
-
+  }
 
   ///  Calculate average phi
   template <bool isHF = false, typename T1, typename T2>
@@ -297,8 +295,8 @@ void PhiAtRadiiTPCForHF(const T& part, std::vector<float>& tmpVec, int prong)
     std::vector<float> tmpVec1;
     std::vector<float> tmpVec2;
     PhiAtRadiiTPC(part1, tmpVec1);
-    if constexpr (isHF){
-    PhiAtRadiiTPCForHF(part2, tmpVec2, iHist);  
+    if constexpr (isHF) {
+      PhiAtRadiiTPCForHF(part2, tmpVec2, iHist);
     } else {
       PhiAtRadiiTPC(part2, tmpVec2);
     }

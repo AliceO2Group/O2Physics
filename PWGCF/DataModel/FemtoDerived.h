@@ -79,7 +79,7 @@ enum ParticleType {
   kV0Child,         //! Child track of a V0
   kCascade,         //! Cascade
   kCascadeBachelor, //! Bachelor track of a cascade
-  kCharmHadron, //! Bachelor track of a cascade
+  kCharmHadron,     //! Bachelor track of a cascade
   kNParticleTypes   //! Number of particle types
 };
 
@@ -90,7 +90,7 @@ enum MomentumType {
 };
 
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes-1] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
+static constexpr std::string_view TempFitVarName[kNParticleTypes - 1] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -202,7 +202,7 @@ DECLARE_SOA_COLUMN(Mult, mult, int);
 DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);
 DECLARE_SOA_COLUMN(PartPairSign, partPairSign, int8_t);
 DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);
-}
+} // namespace fdhf
 
 DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND",
                   o2::soa::Index<>,
@@ -250,7 +250,7 @@ DECLARE_SOA_TABLE(FDHfCandMC, "AOD", "FDHFCANDMC",
                   o2::soa::Index<>,
                   fdhf::FlagMc,
                   fdhf::OriginMcRec);
-                  
+
 DECLARE_SOA_TABLE(FDHfCandMCGen, "AOD", "FDHFCANDMCGEN",
                   femtodreamparticle::FDCollisionId,
                   fdhf::Pt,
@@ -262,7 +262,7 @@ DECLARE_SOA_TABLE(FDHfCandMCGen, "AOD", "FDHFCANDMCGEN",
 DECLARE_SOA_TABLE(FDParticlesIndex, "AOD", "FDPARTICLEINDEX",
                   o2::soa::Index<>,
                   fdhf::TrackId);
-                             
+
 DECLARE_SOA_TABLE(FDParticles, "AOD", "FDPARTICLE",
                   o2::soa::Index<>,
                   femtodreamparticle::FDCollisionId,
