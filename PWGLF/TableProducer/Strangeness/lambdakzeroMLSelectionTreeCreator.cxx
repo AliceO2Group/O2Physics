@@ -109,7 +109,7 @@ struct lambdakzeroMLSelectionTreeCreator {
   ConfigurableAxis centralityAxis{"centralityAxis", {100, 0.0f, 100.0f}, ""};
 
   // Save certain candidates only
-  Configurable<uint8_t> saveCandidateMask{"saveCandidateMask", 15, "Mask to decide saving candidates"};
+  Configurable<int> saveCandidateMask{"saveCandidateMask", 15, "Mask to decide saving candidates"};
 
   void init(InitContext const&)
   {
