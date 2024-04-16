@@ -233,6 +233,19 @@ struct skimmerDalitzEE {
     } // end of collision loop
   }
   PROCESS_SWITCH(skimmerDalitzEE, processCEFP, "Process dalitz ee for CEFP", false); // for central event filter processing
+
+  void processOnlyNee(soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent> const& collisions)
+  {
+    for (auto& collision : collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        event_nee(0, 0, 0);
+        continue;
+      }
+      event_nee(0, 0, 0);
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(skimmerDalitzEE, processOnlyNee, "Process only nee", false); // for central event filter processing
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

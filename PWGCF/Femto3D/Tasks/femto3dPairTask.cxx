@@ -254,7 +254,8 @@ struct FemtoCorrelations {
           SEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar()); // close pair rejection and fillig the SE histo
 
           if (_fill3dCF) {
-            TVector3 qLCMS = Pair->GetQLCMS();
+            std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
+            TVector3 qLCMS = std::pow(-1, (mt() % 2)) * Pair->GetQLCMS(); // introducing randomness to the pair order ([first, second]); important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
             SEhistos_3D[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z());
           }
         }
@@ -301,14 +302,16 @@ struct FemtoCorrelations {
             mThistos[multBin][kTbin]->Fill(Pair->GetMt()); // test
 
             if (_fill3dCF) {
-              TVector3 qLCMS = Pair->GetQLCMS();
+              std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
+              TVector3 qLCMS = std::pow(-1, (mt() % 2)) * Pair->GetQLCMS(); // introducing randomness to the pair order ([first, second]); important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
               SEhistos_3D[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z());
             }
           } else {
             MEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar());
 
             if (_fill3dCF) {
-              TVector3 qLCMS = Pair->GetQLCMS();
+              std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
+              TVector3 qLCMS = std::pow(-1, (mt() % 2)) * Pair->GetQLCMS(); // introducing randomness to the pair order ([first, second]); important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
               MEhistos_3D[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z());
               qLCMSvskStar[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z(), Pair->GetKstar());
             }
@@ -412,11 +415,6 @@ struct FemtoCorrelations {
           int centBin = std::floor((i->first).second);
           MultHistos[centBin]->Fill(col1->mult());
 
-          if (_fill3dCF) { // shuffling is important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
-            std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
-            std::shuffle(selectedtracks_1[col1->index()].begin(), selectedtracks_1[col1->index()].end(), gen);
-          }
-
           mixTracks(selectedtracks_1[col1->index()], centBin); // mixing SE identical
 
           for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
@@ -448,11 +446,6 @@ struct FemtoCorrelations {
 
           int centBin = std::floor((i->first).second);
           MultHistos[centBin]->Fill(col1->mult());
-
-          if (_fill3dCF) {
-            std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
-            std::shuffle(selectedtracks_1[col1->index()].begin(), selectedtracks_1[col1->index()].end(), gen);
-          }
 
           mixTracks<0>(selectedtracks_1[col1->index()], selectedtracks_2[col1->index()], centBin); // mixing SE non-identical, in <> brackets: 0 -- SE; 1 -- ME
 

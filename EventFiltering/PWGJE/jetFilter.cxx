@@ -44,15 +44,17 @@ using namespace o2::framework::expressions;
 struct jetFilter {
   enum { kJetChLowPt = 0,
          kJetChHighPt = 1,
-         kTrackPt = 2,
-         kTriggerObjects = 3
+         kTrackLowPt = 2,
+         kTrackHighPt = 3,
+         kTriggerObjects = 4
   };
 
   enum { kBinAllEvents = 0,
          kBinJetChLowPt = 1,
          kBinJetChHighPt = 2,
-         kBinTrackPt = 3,
-         kBins = 4
+         kBinTrackLowPt = 3,
+         kBinTrackHighPt = 4,
+         kBins = 5
   };
 
   Produces<aod::JetFilters> tags;
@@ -62,7 +64,8 @@ struct jetFilter {
 
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "min track pT in filter"};
-  Configurable<float> trackPtTriggerThreshold{"trackPtThreshold", 25.0, "pT threshold for track trigger"};
+  Configurable<float> trackLowPtTriggerThreshold{"trackLowPtThreshold", 10.0, "low pT track trigger threshold"};
+  Configurable<float> trackHighPtTriggerThreshold{"trackHighPtThreshold", 25.0, "high pT track trigger threshold"};
   Configurable<float> jetPtLowThreshold{"jetPtLowThreshold", 30.0, "threshold for low pT jet trigger"};
   Configurable<float> jetPtHighThreshold{"jetPtHighThreshold", 50.0, "threshold for high pT jet trigger"};
 
@@ -107,7 +110,11 @@ struct jetFilter {
                 {{150, 0., +150., "charged jet #it{p}_{T} (GeV/#it{c})"},
                  {60, 0, TMath::TwoPi(), "#varphi"}});
 
-    spectra.add("ptphiTrackSelected_trackpttrigger", "#it{p}_{T} of selected high pT tracks vs #varphi", HistType::kTH2F,
+    spectra.add("ptphiTrackSelected_lowtrackpttrigger", "#it{p}_{T} of selected low pT tracks vs #varphi", HistType::kTH2F,
+                {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"},
+                 {60, 0, TMath::TwoPi(), "#varphi"}});
+
+    spectra.add("ptphiTrackSelected_hightrackpttrigger", "#it{p}_{T} of selected high pT tracks vs #varphi", HistType::kTH2F,
                 {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"},
                  {60, 0, TMath::TwoPi(), "#varphi"}});
 
@@ -119,7 +126,11 @@ struct jetFilter {
                 {{150, 0., +150., "charged jet #it{p}_{T} (GeV/#it{c})"},
                  {40, -1.0, 1.0, "#eta"}});
 
-    spectra.add("ptetaTrackSelected_trackpttrigger", "#it{p}_{T} of selected high pT tracks vs #eta", HistType::kTH2F,
+    spectra.add("ptetaTrackSelected_lowtrackpttrigger", "#it{p}_{T} of selected low pT tracks vs #eta", HistType::kTH2F,
+                {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"},
+                 {40, -1.0, 1.0, "#eta"}});
+
+    spectra.add("ptetaTrackSelected_hightrackpttrigger", "#it{p}_{T} of selected high pT tracks vs #eta", HistType::kTH2F,
                 {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"},
                  {40, -1.0, 1.0, "#eta"}});
 
@@ -134,11 +145,17 @@ struct jetFilter {
       jetRFidVolume.push_back(cfgEtaTPC - jetRadiiAxis.binEdges[ir]);
       jetIntR.push_back(TMath::Nint(100 * jetRadiiAxis.binEdges[ir]));
     }
+    spectra.add("hLeadingTrackPt", "Leading track pT in |#eta| < 0.9;",
+                {HistType::kTH1F, {axisTrackPt}});
+
     spectra.add("hEtaVsPtTracksInclusive", "#eta of tracks |#eta| < 0.9;",
                 {HistType::kTH2F, {axisTrackPt, axisEta}});
 
     spectra.add("hPhiVsPtTracksInclusive", "#varphi of tracks |#eta| < 0.9;",
                 {HistType::kTH2F, {axisTrackPt, axisPhi}});
+
+    spectra.add("hLeadingAKTJetR06Pt", "#it{p}_{T} of AKT R=0.6 charged jets in |#eta| < 0.9;",
+                {HistType::kTH1F, {axisJetPt}});
 
     spectra.add("hPtAKTJetsInclusive", "#it{p}_{T} of AKT charged jets in |#eta| < 0.9 - #it{R};",
                 {HistType::kTH2F, {jetRadiiAxis, axisJetPt}});
@@ -157,8 +174,9 @@ struct jetFilter {
 
     hProcessedEvents->GetXaxis()->SetBinLabel(kBinAllEvents + 1, "Processed events");
     hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChLowPt + 1, o2::aod::filtering::JetChLowPt::columnLabel());
-    hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChHighPt + 1, o2::aod::filtering::JetChLowPt::columnLabel());
-    hProcessedEvents->GetXaxis()->SetBinLabel(kBinTrackPt + 1, o2::aod::filtering::TrackHighPt::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChHighPt + 1, o2::aod::filtering::JetChHighPt::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(kBinTrackLowPt + 1, o2::aod::filtering::TrackLowPt::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(kBinTrackHighPt + 1, o2::aod::filtering::TrackHighPt::columnLabel());
   }
 
   template <bool withRho, typename T, typename U, typename D>
@@ -168,7 +186,7 @@ struct jetFilter {
     // collision process loop
     bool keepEvent[kTriggerObjects]{false};
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackPt]);
+      tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackLowPt], keepEvent[kTrackHighPt]);
       return;
     }
 
@@ -204,6 +222,7 @@ struct jetFilter {
     for (const auto& jet : jets) { // jets are ordered by pT
       if (jet.r() != triggerJetR)
         continue;
+      spectra.fill(HIST("hLeadingAKTJetR06Pt"), jet.pt());
 
       if (jet.pt() >= jetPtLowThreshold) {
         spectra.fill(HIST("ptphiJetChSelected_lowptjettrigger"), jet.pt(), jet.phi()); // charged jet pT vs phi
@@ -234,20 +253,29 @@ struct jetFilter {
         leadingTrackEta = track.eta();
       }
     }
-    if (leadingTrackPt > trackPtTriggerThreshold) {
-      keepEvent[kTrackPt] = true;
-      spectra.fill(HIST("ptphiTrackSelected_trackpttrigger"), leadingTrackPt, leadingTrackPhi);
-      spectra.fill(HIST("ptetaTrackSelected_trackpttrigger"), leadingTrackPt, leadingTrackEta);
+    spectra.fill(HIST("hLeadingTrackPt"), leadingTrackPt);
+
+    if (leadingTrackPt > trackLowPtTriggerThreshold) {
+      keepEvent[kTrackLowPt] = true;
+      spectra.fill(HIST("ptphiTrackSelected_lowtrackpttrigger"), leadingTrackPt, leadingTrackPhi);
+      spectra.fill(HIST("ptetaTrackSelected_lowtrackpttrigger"), leadingTrackPt, leadingTrackEta);
+    }
+    if (leadingTrackPt > trackHighPtTriggerThreshold) {
+      keepEvent[kTrackHighPt] = true;
+      spectra.fill(HIST("ptphiTrackSelected_hightrackpttrigger"), leadingTrackPt, leadingTrackPhi);
+      spectra.fill(HIST("ptetaTrackSelected_hightrackpttrigger"), leadingTrackPt, leadingTrackEta);
     }
 
     if (keepEvent[kJetChLowPt])
       hProcessedEvents->Fill(static_cast<float>(kBinJetChLowPt) + 0.1f);
     if (keepEvent[kJetChHighPt])
       hProcessedEvents->Fill(static_cast<float>(kBinJetChHighPt) + 0.1f);
-    if (keepEvent[kTrackPt])
-      hProcessedEvents->Fill(static_cast<float>(kBinTrackPt) + 0.1f);
+    if (keepEvent[kTrackLowPt])
+      hProcessedEvents->Fill(static_cast<float>(kBinTrackLowPt) + 0.1f);
+    if (keepEvent[kTrackHighPt])
+      hProcessedEvents->Fill(static_cast<float>(kBinTrackHighPt) + 0.1f);
 
-    tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackPt]);
+    tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackLowPt], keepEvent[kTrackHighPt]);
   }
 
   void processWithoutRho(soa::Join<JetCollisions, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<JetTracks> const& tracks)

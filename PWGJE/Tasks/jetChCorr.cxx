@@ -350,7 +350,7 @@ struct JetChCorr {
     nn = 0;
     ch_mult = jet.tracksIds().size();
     for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
-      if (iord[nn] != 0 || iord[nn] != 1)
+      if (iord[nn] > 1)
         continue;
 
       if (iord[nn] == 0) {
