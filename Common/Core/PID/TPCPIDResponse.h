@@ -77,6 +77,9 @@ class Response
   /// Gets the number of sigmas with respect the expected value
   template <typename CollisionType, typename TrackType>
   float GetNumberOfSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const;
+  // Number of sigmas with respect to expected for MC, defining a tune-on-data signal value
+  template <typename CollisionType, typename TrackType>
+  float GetNumberOfSigmaMCTuned(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const;
   /// Gets the deviation to the expected signal
   template <typename TrackType>
   float GetSignalDelta(const TrackType& trk, const o2::track::PID::ID id) const;
@@ -152,6 +155,21 @@ inline float Response::GetNumberOfSigma(const CollisionType& collision, const Tr
     return -999.f;
   }
   return ((trk.tpcSignal() - GetExpectedSignal(trk, id)) / GetExpectedSigma(collision, trk, id));
+}
+
+template <typename CollisionType, typename TrackType>
+inline float Response::GetNumberOfSigmaMCTuned(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const
+{
+  if (GetExpectedSigma(collision, trk, id) < 0.) {
+    return -999.f;
+  }
+  if (GetExpectedSignal(trk, id) < 0.) {
+    return -999.f;
+  }
+  if (!trk.hasTPC()) {
+    return -999.f;
+  }
+  return ((mcTunedTPCSignal - GetExpectedSignal(trk, id)) / GetExpectedSigma(collision, trk, id));
 }
 
 /// Gets the deviation between the actual signal and the expected signal
