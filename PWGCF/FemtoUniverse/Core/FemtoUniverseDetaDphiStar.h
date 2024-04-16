@@ -1,6 +1,6 @@
 // Copyright 2019-2022 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -10,9 +10,10 @@
 // or submit itself to any jurisdiction.
 
 /// \file FemtoUniverseDetaDphiStar.h
-/// \brief FemtoUniverseDetaDphiStar - Checks particles for the close pair
-/// rejection. \author Laura Serksnyte, TU MÃ¼nchen, laura.serksnyte@tum.de
+/// \brief FemtoUniverseDetaDphiStar - Checks particles for the close pair rejection.
+/// \author Laura Serksnyte, TU MÃ¼nchen, laura.serksnyte@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
+/// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
