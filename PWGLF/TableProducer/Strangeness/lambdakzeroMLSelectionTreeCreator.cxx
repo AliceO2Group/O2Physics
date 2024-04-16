@@ -246,7 +246,7 @@ struct lambdakzeroMLSelectionTreeCreator {
 
     histos.fill(HIST("hCandSelection"), Candidate.SelHypothesis);
 
-    if (Candidate.SelHypothesis==0)
+    if (Candidate.SelHypothesis == 0)
       return;
 
     // MC flags
