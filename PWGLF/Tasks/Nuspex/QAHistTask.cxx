@@ -618,6 +618,11 @@ struct QAHistTask {
       MC_recon_reg.fill(HIST("histTPCpDist"), track.tpcInnerParam(), pdgbin);
       MC_recon_reg.fill(HIST("histpTCorralation_2"), track.p(), track.tpcInnerParam(), pdgbin);
 
+      if (particle.pdgCode() == 211)
+        MC_recon_reg.fill(HIST("histpTCorralation_pion"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
+      if (particle.pdgCode() == -211)
+        MC_recon_reg.fill(HIST("histpTCorralation_apion"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
+
       if (track.hasTOF()) {
         Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
