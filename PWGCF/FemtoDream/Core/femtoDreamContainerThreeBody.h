@@ -143,7 +143,7 @@ class FemtoDreamContainerThreeBody
   /// \param part3 Particle three
   /// \param mult Multiplicity of the event
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void setTriplet_base(const float femtoObs, T const& part1, T const& part2, T const& part3, const int mult)
+  void setTriplet_base(const float femtoObs, T const& /*part1*/, T const& /*part2*/, T const& /*part3*/, const int mult)
   {
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relTripletDist"), femtoObs);
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relTripletQ3Mult"), femtoObs, mult);

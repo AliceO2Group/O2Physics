@@ -88,7 +88,7 @@ struct jflucWeightsLoader {
   }
 
   Produces<aod::JWeights> output;
-  void init(InitContext const& ic)
+  void init(InitContext const&)
   {
     //
     if (!doprocessLoadWeights)
@@ -169,7 +169,7 @@ struct jflucAnalysisTask {
 
   OutputObj<TDirectory> output{"jflucO2"};
 
-  void init(InitContext const& ic)
+  void init(InitContext const&)
   {
     pcf = new JFFlucAnalysis("jflucAnalysis");
     pcf->SetNumBins(AxisSpec(axisMultiplicity).getNbins());

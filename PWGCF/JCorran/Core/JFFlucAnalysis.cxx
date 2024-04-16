@@ -52,7 +52,7 @@ JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const char* name) : fVertex(0),
+JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
                                                    fCent(0),
                                                    fCBin(0),
                                                    fHMG(0),
@@ -352,7 +352,7 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t* popt)
+void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 {
   for (UInt_t ih = 2; ih < kNH; ih++) {
     fh_cos_n_phi[ih][fCBin]->Fill(QvectorQC[ih][1].Re() / QvectorQC[0][1].Re());
@@ -550,6 +550,6 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
 }
 
 //________________________________________________________________________
-void JFFlucAnalysis::Terminate(Option_t* popt)
+void JFFlucAnalysis::Terminate(Option_t* /*popt*/)
 {
 }
