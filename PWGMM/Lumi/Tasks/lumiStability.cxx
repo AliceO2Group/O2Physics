@@ -16,6 +16,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/ASoAHelpers.h"
 #include "DataFormatsFDD/Digit.h"
@@ -23,7 +24,10 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::aod::evsel;
+
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 int nBCsPerOrbit = 3564;
 
@@ -33,39 +37,41 @@ struct lumiStabilityTask {
 
   void init(InitContext const&)
   {
-    const AxisSpec axisFDDTriggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
-    const AxisSpec axisFT0Triggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
-    const AxisSpec axisFV0Triggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
+    const AxisSpec axisTriggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
 
     // histo about triggers
-    histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcVertexTriggerCoincidence", "vertex trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcSCentralTrigger", "scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcSCentralTriggerCoincidence", "scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcVSCTrigger", "vertex and scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcVSCTriggerCoincidence", "vertex and scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcCentralTrigger", "central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcCentralTriggerCoincidence", "central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcVCTrigger", "vertex and central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcVCTriggerCoincidence", "vertex and central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
+    histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVertexTriggerCoincidence", "vertex trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcSCentralTrigger", "scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcSCentralTriggerCoincidence", "scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVSCTrigger", "vertex and scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVSCTriggerCoincidence", "vertex and scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcCentralTrigger", "central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcCentralTriggerCoincidence", "central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVCTrigger", "vertex and central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVCTriggerCoincidence", "vertex and central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
 
-    histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
-    histos.add("FT0/bcSCentralTrigger", "Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
-    histos.add("FT0/bcVSCTrigger", "vertex and Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
-    histos.add("FT0/bcCentralTrigger", "central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
-    histos.add("FT0/bcVCTrigger", "vertex and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
-    histos.add("FT0/bcSCentralCentralTrigger", "Scentral and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
+    histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcSCentralTrigger", "Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcVSCTrigger", "vertex and Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcCentralTrigger", "central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcVCTrigger", "vertex and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcSCentralCentralTrigger", "Scentral and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
 
-    histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisFV0Triggger});
-    histos.add("FV0/bcInTrigger", "In trigger per BC (FV0);BC in V0; counts", kTH1F, {axisFV0Triggger});
-    histos.add("FV0/bcSCenTrigger", "SCen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisFV0Triggger});
-    histos.add("FV0/bcCenTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisFV0Triggger});
-    histos.add("FV0/bcSCenCenTrigger", "SCen and Cen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisFV0Triggger});
+    histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
+    histos.add("FV0/bcInTrigger", "In trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
+    histos.add("FV0/bcSCenTrigger", "SCen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
+    histos.add("FV0/bcCenTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
+    histos.add("FV0/bcSCenCenTrigger", "SCen and Cen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
   }
 
   bool checkAnyCoincidence(const std::vector<int>& channels)
   {
-    std::constexpr std::array<std::pair<int, int>, 4> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
+    constexpr std::pair<int, int> pair0 = {0, 4};
+    constexpr std::pair<int, int> pair1 = {1, 5};
+    constexpr std::pair<int, int> pair2 = {2, 6};
+    constexpr std::pair<int, int> pair3 = {3, 7};
+    constexpr std::array<std::pair<int, int>, 4> channelPairs = {pair0, pair1, pair2, pair3};
     //std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
     for (const auto& pair : channelPairs) {
       if (std::find(channels.begin(), channels.end(), pair.first) != channels.end() &&
@@ -76,16 +82,37 @@ struct lumiStabilityTask {
     return false;
   }
 
-  void processFDDFT0(aod::FT0s const& ft0s, aod::FDDs const& fdds, aod::BCsWithTimestamps const&)
+  void processFDDFT0(aod::FT0s const& ft0s, aod::FDDs const& fdds, BCsRun3 const& bcs)
   {
     for (auto const& fdd : fdds) {
-      auto bc = fdd.bc_as<BCsWithTimestamps>();
+      auto bc = fdd.bc_as<BCsRun3>();
       if (bc.timestamp() == 0) {
         continue;
       }
 
       Long64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
+
+      int deltaIndex = 0;  // backward move counts
+      int deltaBC = 0; // current difference wrt globalBC
+      int maxDeltaBC = 5; // maximum difference
+      bool pastActivityFDD = false;
+      while (deltaBC < maxDeltaBC) {
+        if (bc.globalIndex() - deltaIndex < 0) {
+          break;
+        }
+        deltaIndex++;
+        const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
+        deltaBC = globalBC = bc_past.globalBC();
+        if(deltaBC < maxDeltaBC) {
+          pastActivityFDD |= bc_past.has_fdd();
+        }
+      }
+
+      if (pastActivityFDD == false) {
+        continue;
+        std::cout << "BC skipped!" << std::endl;
+      }
 
       std::bitset<8> fddTriggers = fdd.triggerMask();
       bool vertex = fddTriggers[o2::fdd::Triggers::bitVertex];
@@ -145,7 +172,7 @@ struct lumiStabilityTask {
     }   // loop over FDD events
 
     for (auto const& ft0 : ft0s) {
-      auto bc = ft0.bc_as<BCsWithTimestamps>();
+      auto bc = ft0.bc_as<BCsRun3>();
       if (bc.timestamp() == false) {
         continue;
       }
