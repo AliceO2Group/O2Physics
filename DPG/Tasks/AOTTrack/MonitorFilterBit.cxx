@@ -228,7 +228,7 @@ struct CheckFilterBit {
   }
   PROCESS_SWITCH(CheckFilterBit, processData, "process data", true);
 
-  void processDataCombineTracks(o2::aod::Collision const& collision, Tracksextension const& tracks)
+  void processDataCombineTracks(o2::aod::Collision const& collision, Tracksextension const&)
   {
     auto positiveITSonlyTracksThisColl = positiveITSonlyTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negativeITSonlyTracksThisColl = negativeITSonlyTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -239,7 +239,7 @@ struct CheckFilterBit {
   }
   PROCESS_SWITCH(CheckFilterBit, processDataCombineTracks, "process data combined tracks", false);
 
-  void processMCCombineTracks(soa::Join<aod::Collisions, o2::aod::McCollisionLabels>::iterator const& collision, TracksextensionMC const& tracks, aod::McParticles const& mcParticles)
+  void processMCCombineTracks(soa::Join<aod::Collisions, o2::aod::McCollisionLabels>::iterator const& collision, TracksextensionMC const&, aod::McParticles const&)
   {
 
     if (std::abs(collision.posZ()) > 10.) {
@@ -402,7 +402,7 @@ struct CheckFilterBit {
     return strangeness;
   }
 
-  void processRecoMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, TracksextensionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processRecoMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, TracksextensionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const&)
   { // this will loop over data (PV) collisions
 
     histos.fill(HIST("EventProp/histDatacollZ"), collision.posZ());
