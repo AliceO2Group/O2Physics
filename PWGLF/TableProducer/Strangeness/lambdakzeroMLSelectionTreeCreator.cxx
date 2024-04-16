@@ -109,9 +109,6 @@ struct lambdakzeroMLSelectionTreeCreator {
   ConfigurableAxis centralityAxis{"centralityAxis", {100, 0.0f, 100.0f}, ""};
   ConfigurableAxis candSelectionAxis{"candSelectionAxis", {16, 0.0f, 16.0f}, ""};
 
-  // Save certain candidates only
-  Configurable<int> saveCandidateMask{"saveCandidateMask", 15, "Mask to decide saving candidates"};
-
   void init(InitContext const&)
   {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {centralityAxis});
@@ -249,7 +246,7 @@ struct lambdakzeroMLSelectionTreeCreator {
 
     histos.fill(HIST("hCandSelection"), Candidate.SelHypothesis);
 
-    if ((Candidate.SelHypothesis & saveCandidateMask) != saveCandidateMask)
+    if (Candidate.SelHypothesis==0)
       return;
 
     // MC flags

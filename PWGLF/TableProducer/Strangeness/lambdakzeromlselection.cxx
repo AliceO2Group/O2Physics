@@ -187,14 +187,14 @@ struct lambdakzeromlselection {
   void processDerivedData(aod::StraCollision const& coll, V0DerivedDatas const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
-    for (auto& v0 : v0s) { 
+    for (auto& v0 : v0s){
       processCandidate(v0);
     }
   }
   void processStandardData(aod::Collision const& coll, V0OriginalDatas const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
-    for (auto& v0 : v0s) { 
+    for (auto& v0 : v0s){ 
       processCandidate(v0);
     }
   }
