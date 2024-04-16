@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoDreamPairTaskTrackTrack.cxx
+/// \file femtoDreamPairTaskTrackHF.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
-/// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Ravindra SIngh, GSI, ravindra.singh@cern.ch
 
 #include <Framework/Expressions.h>
 #include <sys/stat.h>
