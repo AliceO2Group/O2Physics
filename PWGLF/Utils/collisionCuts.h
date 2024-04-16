@@ -48,6 +48,9 @@ class CollisonCuts
     mCheckOffline = checkOffline;
     mCheckIsRun3 = checkRun3;
     mApplyTFBorderCut = false;
+    mApplyITSTPCmatching = false;
+    mApplyZvertexTimedifference = false;
+    mApplyPileupRejection = false;
     mApplyNoITSROBorderCut = false;
   }
 
@@ -82,6 +85,15 @@ class CollisonCuts
   /// Set the time frame border cut
   void setApplyTFBorderCut(bool applyTFBorderCut) { mApplyTFBorderCut = applyTFBorderCut; }
 
+  /// Set the ITS-TPC matching cut
+  void setApplyITSTPCmatching(bool applyITSTPCmatching) { mApplyITSTPCmatching = applyITSTPCmatching; }
+
+  /// Set the Z-vertex time difference cut
+  void setApplyZvertexTimedifference(bool applyZvertexTimedifference) { mApplyZvertexTimedifference = applyZvertexTimedifference; }
+
+  /// Set the Pileup rejection
+  void setApplyPileupRejection(bool applyPileupRejection) { mApplyPileupRejection = applyPileupRejection; }
+
   /// Set the NoITSRO frame border cut
   void setApplyNoITSROBorderCut(bool applyNoITSROBorderCut) { mApplyNoITSROBorderCut = applyNoITSROBorderCut; }
 
@@ -103,6 +115,18 @@ class CollisonCuts
       }
       if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) && mApplyTFBorderCut) {
         LOGF(debug, "Time frame border cut failed");
+        return false;
+      }
+      if (!col.selection_bit(o2::aod::evsel::kIsVertexITSTPC) && mApplyITSTPCmatching) {
+        LOGF(debug, "ITS-TPC matching cut failed");
+        return false;
+      }
+      if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && mApplyZvertexTimedifference) {
+        LOGF(debug, "Z-vertex time difference cut failed");
+        return false;
+      }
+      if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && mApplyPileupRejection) {
+        LOGF(debug, "Pileup rejection failed");
         return false;
       }
       if (!col.selection_bit(aod::evsel::kNoITSROFrameBorder) && mApplyNoITSROBorderCut) {
@@ -166,6 +190,9 @@ class CollisonCuts
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   bool mInitialTriggerScan = false;                ///< Check trigger when the event is first selected
   bool mApplyTFBorderCut = false;                  ///< Apply time frame border cut
+  bool mApplyITSTPCmatching = false;               ///< selects collisions with at least one ITS-TPC track
+  bool mApplyZvertexTimedifference = false;        ///< removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference.
+  bool mApplyPileupRejection = false;              ///< Pileup rejection
   bool mApplyNoITSROBorderCut = false;             ///< Apply NoITSRO frame border cut
   int mTrigger = kINT7;                            ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
