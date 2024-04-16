@@ -45,6 +45,8 @@ using BitMaskType = uint32_t; //! Definition of the data type for the collision 
 DECLARE_SOA_COLUMN(BitMaskTrackOne, bitmaskTrackOne, BitMaskType);     //! Bit for track one
 DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);     //! Bit for track two
 DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit for track three
+
+DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
@@ -60,6 +62,9 @@ DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
                   femtodreamcollision::BitMaskTrackOne,
                   femtodreamcollision::BitMaskTrackTwo,
                   femtodreamcollision::BitMaskTrackThree);
+
+DECLARE_SOA_TABLE(FDDownSample, "AOD", "FDDOWNSAMPLE",
+                  femtodreamcollision::Downsample);
 
 /// FemtoDreamTrack
 namespace femtodreamparticle
@@ -215,8 +220,10 @@ enum ParticleOriginMCTruth {
   kMaterial,                   //! Particle from a material
   kNotPrimary,                 //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
   kFake,                       //! particle, that has NOT the PDG code of the current analysed particle
+  kWrongCollision,             //! particle, that was associated wrongly to the collision
   kSecondaryDaughterLambda,    //! Daughter from a Lambda decay
   kSecondaryDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kElse,                       //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
   kNOriginMCTruthTypes
 };
 
@@ -265,6 +272,12 @@ DECLARE_SOA_INDEX_COLUMN(FDMCParticle, fdMCParticle); //! MC particle for femtod
 } // namespace mcfdlabel
 DECLARE_SOA_TABLE(FDMCLabels, "AOD", "FDMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
                   mcfdlabel::FDMCParticleId);
+namespace mcfdextlabel
+{
+DECLARE_SOA_INDEX_COLUMN(FDExtMCParticle, fdExtMCParticle); //! MC particle for femtodreamparticle
+} // namespace mcfdextlabel
+DECLARE_SOA_TABLE(FDExtMCLabels, "AOD", "FDExtMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
+                  mcfdextlabel::FDExtMCParticleId);
 
 /// Hash
 namespace hash

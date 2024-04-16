@@ -20,6 +20,7 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -28,9 +29,12 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::hf_evsel;
+using namespace o2::aod::hf_collision_centrality;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 
@@ -38,6 +42,13 @@ using namespace o2::framework;
 struct HfCandidateCreatorCascade {
   Produces<aod::HfCandCascBase> rowCandidateBase;
 
+  // centrality
+  Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
+  Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
+  // event selection
+  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "apply the sel8 event selection"};
+  Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "max. PV posZ (cm)"};
+  Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "apply TF border cut"};
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -56,6 +67,7 @@ struct HfCandidateCreatorCascade {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -68,33 +80,49 @@ struct HfCandidateCreatorCascade {
   double mass2K0sP{0.};
   double bz = 0.;
 
-  OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
+  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
+    std::array<bool, 3> processes = {doprocessNoCent, doprocessCentFT0C, doprocessCentFT0M};
+    if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
+      LOGP(fatal, "One and only one process function must be enabled at a time.");
+    }
+
+    std::array<bool, 3> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M};
+    const int nProcessesCollisions = std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0);
+    if (nProcessesCollisions > 1) {
+      LOGP(fatal, "At most one process function for collision monitoring can be enabled at a time.");
+    }
+    if (nProcessesCollisions == 1) {
+      if (doprocessNoCent && !doprocessCollisions) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisions\"?");
+      }
+      if (doprocessCentFT0C && !doprocessCollisionsCentFT0C) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0C\"?");
+      }
+      if (doprocessCentFT0M && !doprocessCollisionsCentFT0M) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0M\"?");
+      }
+    }
+
+    // histograms
+    registry.add("hMass2", "2-prong candidates;inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 2.05, 2.55}}});
+    registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
+    registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    hCollisions = registry.add<TH1>("hCollisions", "HF event counter;;entries", {HistType::kTH1D, {axisEvents}});
+    hPosZBeforeEvSel = registry.add<TH1>("hPosZBeforeEvSel", "all events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
+    hPosZAfterEvSel = registry.add<TH1>("hPosZAfterEvSel", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
+    hPosXAfterEvSel = registry.add<TH1>("hPosXAfterEvSel", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hPosYAfterEvSel = registry.add<TH1>("hPosYAfterEvSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hNumPvContributorsAfterSel = registry.add<TH1>("hNumPvContributorsAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{500, -0.5, 499.5}}});
+
     massP = MassProton;
     massK0s = MassK0Short;
     massPi = MassPiPlus;
     massLc = MassLambdaCPlus;
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    runNumber = 0;
-  }
 
-  void process(aod::Collisions const&,
-               aod::HfCascades const& rowsTrackIndexCasc,
-               aod::V0sLinked const&,
-               aod::V0Datas const&,
-               aod::V0fCDatas const&,
-               aod::TracksWCov const&,
-               aod::BCsWithTimestamps const&)
-  {
-    // 2-prong vertex fitter
-    o2::vertexing::DCAFitterN<2> df;
     // df.setBz(bz);
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
@@ -104,8 +132,37 @@ struct HfCandidateCreatorCascade {
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
 
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    runNumber = 0;
+
+    /// collision monitoring
+    setLabelHistoEvSel(hCollisions);
+  }
+
+  template <o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
+  void runCreatorCascade(Coll const&,
+                         aod::HfCascades const& rowsTrackIndexCasc,
+                         aod::V0sLinked const&,
+                         aod::V0Datas const&,
+                         aod::V0fCDatas const&,
+                         aod::TracksWCov const&,
+                         aod::BCsWithTimestamps const&)
+  {
     // loop over pairs of track indices
     for (const auto& casc : rowsTrackIndexCasc) {
+
+      /// reject candidates in collisions not satisfying the event selections
+      auto collision = casc.template collision_as<Coll>();
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the candidate
+        continue;
+      }
+
       const auto& bach = casc.prong0_as<aod::TracksWCov>();
       LOGF(debug, "V0 %d in HF cascade %d.", casc.v0Id(), casc.globalIndex());
       if (!casc.has_v0()) {
@@ -181,12 +238,10 @@ struct HfCandidateCreatorCascade {
         continue; // this was inadequately linked, should not happen
       }
 
-      auto collision = casc.collision();
-
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
         bz = o2::base::Propagator::Instance()->getNominalBz();
@@ -212,7 +267,7 @@ struct HfCandidateCreatorCascade {
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
-      hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
+      registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
       // do I have to call "df.propagateTracksToVertex();"?
       auto trackParVarV0 = df.getTrack(0);
       auto trackParVarBach = df.getTrack(1);
@@ -227,7 +282,7 @@ struct HfCandidateCreatorCascade {
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
-      hCovPVXX->Fill(covMatrixPV[0]);
+      registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
       o2::dataformats::DCA impactParameterV0;
       o2::dataformats::DCA impactParameterBach;
       trackParVarV0.propagateToDCA(primaryVertex, bz, &impactParameterV0); // we do this wrt the primary vtx
@@ -264,10 +319,108 @@ struct HfCandidateCreatorCascade {
       if (fillHistograms) {
         // calculate invariant masses
         mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{massP, massK0s});
-        hMass2->Fill(mass2K0sP);
+        registry.fill(HIST("hMass2"), mass2K0sP);
       }
     }
+
+    return;
   }
+
+  /// @brief process function w/o centrality selections
+  void processNoCent(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                     aod::HfCascades const& rowsTrackIndexCasc,
+                     aod::V0sLinked const& v0sLinked,
+                     aod::V0Datas const& v0Data,
+                     aod::V0fCDatas const& v0fCDatas,
+                     aod::TracksWCov const& tracks,
+                     aod::BCsWithTimestamps const& bcs)
+  {
+    runCreatorCascade<CentralityEstimator::None>(collisions, rowsTrackIndexCasc, v0sLinked, v0Data, v0fCDatas, tracks, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCascade, processNoCent, " Run candidate creator w/o centrality selections", true);
+
+  /// @brief process function w/ centrality selection on FT0C
+  void processCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+                       aod::HfCascades const& rowsTrackIndexCasc,
+                       aod::V0sLinked const& v0sLinked,
+                       aod::V0Datas const& v0Data,
+                       aod::V0fCDatas const& v0fCDatas,
+                       aod::TracksWCov const& tracks,
+                       aod::BCsWithTimestamps const& bcs)
+  {
+    runCreatorCascade<CentralityEstimator::FT0C>(collisions, rowsTrackIndexCasc, v0sLinked, v0Data, v0fCDatas, tracks, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCascade, processCentFT0C, " Run candidate creator w/ centrality selection on FT0C", false);
+
+  /// @brief process function w/ centrality selection on FT0M
+  void processCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+                       aod::HfCascades const& rowsTrackIndexCasc,
+                       aod::V0sLinked const& v0sLinked,
+                       aod::V0Datas const& v0Data,
+                       aod::V0fCDatas const& v0fCDatas,
+                       aod::TracksWCov const& tracks,
+                       aod::BCsWithTimestamps const& bcs)
+  {
+    runCreatorCascade<CentralityEstimator::FT0M>(collisions, rowsTrackIndexCasc, v0sLinked, v0Data, v0fCDatas, tracks, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCascade, processCentFT0M, " Run candidate creator w/ centrality selection on FT0M", false);
+
+  ///////////////////////////////////////////////////////////
+  ///                                                     ///
+  ///   Process functions only for collision monitoring   ///
+  ///                                                     ///
+  ///////////////////////////////////////////////////////////
+
+  /// @brief process function to monitor collisions - no centrality
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions)
+  {
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+
+      /// monitor the satisfied event selections
+      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+
+    } /// end loop over collisions
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCascade, processCollisions, "Collision monitoring - no centrality", true);
+
+  /// @brief process function to monitor collisions - FT0C centrality
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions)
+  {
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+
+      /// monitor the satisfied event selections
+      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+
+    } /// end loop over collisions
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCascade, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
+
+  /// @brief process function to monitor collisions - FT0M centrality
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions)
+  {
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+
+      /// monitor the satisfied event selections
+      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+
+    } /// end loop over collisions
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCascade, processCollisionsCentFT0M, "Collision monitoring - FT0M centrality", false);
 };
 
 /// Performs MC matching.

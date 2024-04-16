@@ -26,7 +26,7 @@
 #include <memory>
 
 #include "FT0Base/Geometry.h"
-// #include "FV0Base/Geometry.h"
+#include "FV0Base/Geometry.h"
 
 #include "TMath.h"
 #include "TVector3.h"
@@ -52,14 +52,10 @@ double EventPlaneHelper::GetPhiFV0(int chno)
     offsetY = mOffsetFV0rightY;
   }
 
-  // const auto fv0Det = o2::fv0::Geometry::instance(o2::fv0::Geometry::eFull);
+  auto fv0geom = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
+  auto chPos = fv0geom->getReadoutCenter(chno);
 
-  // TODO: Get position of the readout center with getReadoutCenter(chno) in a Point3Dsimple
-  // and extract the x and y positions.
-
-  float x = 0.;
-  float y = 0.;
-  return TMath::ATan2(y + offsetY, x + offsetX);
+  return TMath::ATan2(chPos.y + offsetY, chPos.x + offsetX);
 }
 
 double EventPlaneHelper::GetPhiFT0(int chno)
@@ -204,11 +200,7 @@ float EventPlaneHelper::GetEventPlane(const float qx, const float qy, int nmode)
   return (1. / nmode) * (TMath::ATan2(qy, qx));
 }
 
-float EventPlaneHelper::GetResolution(const float RefA, const float RefB, const float sig, int nmode)
+float EventPlaneHelper::GetResolution(const float RefA, const float RefB, int nmode)
 {
-  if (std::abs(std::cos((RefA - RefB) * nmode)) > 1e-8) {
-    return std::sqrt(std::cos((sig - RefA) * nmode) * std::cos((sig - RefB) * nmode) / std::cos((RefA - RefB) * nmode));
-  } else {
-    return -1;
-  }
+  return std::cos((RefA - RefB) * nmode);
 }

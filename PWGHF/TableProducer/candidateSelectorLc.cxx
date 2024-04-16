@@ -33,13 +33,6 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 
-/// Struct to extend TracksPid tables
-struct HfCandidateSelectorLcExpressions {
-  Spawns<aod::TracksPidPrExt> rowTracksPidFullPr;
-  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
-  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
-};
-
 /// Struct for applying Lc selection cuts
 struct HfCandidateSelectorLc {
   Produces<aod::HfSelLc> hfSelLcCandidate;
@@ -93,7 +86,7 @@ struct HfCandidateSelectorLc {
   TrackSelectorPr selectorProton;
 
   using TracksSel = soa::Join<aod::TracksWExtra,
-                              aod::TracksPidPiExt, aod::TracksPidKaExt, aod::TracksPidPrExt,
+                              aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr,
                               aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
   HistogramRegistry registry{"registry"};
@@ -365,17 +358,12 @@ struct HfCandidateSelectorLc {
         continue;
       }
 
-      if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && topolLcToPKPi) {
-        statusLcToPKPi = 1; // identified as LcToPKPi
-      }
-      if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && topolLcToPiKP) {
-        statusLcToPiKP = 1; // identified as LcToPiKP
-      }
-
+      bool isSelectedMlLcToPKPi = true;
+      bool isSelectedMlLcToPiKP = true;
       if (applyMl) {
         // ML selections
-        bool isSelectedMlLcToPKPi = false;
-        bool isSelectedMlLcToPiKP = false;
+        isSelectedMlLcToPKPi = false;
+        isSelectedMlLcToPiKP = false;
 
         if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && topolLcToPKPi) {
           std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
@@ -398,6 +386,13 @@ struct HfCandidateSelectorLc {
         }
       }
 
+      if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && isSelectedMlLcToPKPi && topolLcToPKPi) {
+        statusLcToPKPi = 1; // identified as LcToPKPi
+      }
+      if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && isSelectedMlLcToPiKP && topolLcToPiKP) {
+        statusLcToPiKP = 1; // identified as LcToPiKP
+      }
+
       hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
     }
   }
@@ -405,7 +400,5 @@ struct HfCandidateSelectorLc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorLcExpressions>(cfgc),
-    adaptAnalysisTask<HfCandidateSelectorLc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorLc>(cfgc)};
 }

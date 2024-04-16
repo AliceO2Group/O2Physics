@@ -15,6 +15,7 @@
 /// \author Rutuparna Rath <rutuparna.rath@cern.ch> and Giovanni Malfattore <giovanni.malfattore@cern.ch>
 ///
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 
@@ -31,6 +32,8 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(CentFV0M, centFV0M, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_DYNAMIC_COLUMN(Selection_Bit, selection_bit, //! Dummy
+                           [](o2::aod::evsel::EventSelectionFlags v) -> bool { return true; });
 } // namespace fullEvent
 DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
                   o2::soa::Index<>,
@@ -41,7 +44,8 @@ DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
                   fullEvent::CentFV0M,
                   fullEvent::CentFT0M,
                   fullEvent::IsEventReject,
-                  fullEvent::RunNumber);
+                  fullEvent::RunNumber,
+                  fullEvent::Selection_Bit<>);
 using LfNuclEvent = LfNuclEvents::iterator;
 
 namespace full
@@ -50,7 +54,7 @@ DECLARE_SOA_INDEX_COLUMN(LfNuclEvent, lfNuclEvent);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * cosh(eta); });
 DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Sign, sign, short);
+DECLARE_SOA_COLUMN(Sign, sign, int16_t);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,
@@ -96,6 +100,10 @@ DECLARE_SOA_COLUMN(Beta, beta, float);
 DECLARE_SOA_COLUMN(ITSNCls, itsNCls, int16_t);
 DECLARE_SOA_COLUMN(TPCChi2Ncl, tpcChi2NCl, float);
 DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
+DECLARE_SOA_COLUMN(TpcPassed, tpcPassed, bool);
+DECLARE_SOA_COLUMN(ItsPassed, itsPassed, bool);
+DECLARE_SOA_COLUMN(FakeHitsFlag, fakeHitsFlag, bool);
+
 // For MC
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
@@ -232,9 +240,12 @@ DECLARE_SOA_TABLE(LfCandNucleusMC, "AOD", "LFNUCLMC",
                   full::IsPhysicalPrimary,
                   full::ProducedByGenerator,
                   full::GetProcess,
+                  full::ItsPassed,
+                  full::TpcPassed,
                   mcparticle::Px,
                   mcparticle::Py,
-                  mcparticle::Pz);
+                  mcparticle::Pz,
+                  full::FakeHitsFlag);
 
 using LfCandNucleusFull = soa::Join<LfCandNucleus, LfCandNucleusExtra>;
 

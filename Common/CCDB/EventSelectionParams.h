@@ -54,6 +54,12 @@ enum EventSelectionFlags {
   kIsTriggerTVX,       // FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level
   kIsINT1,             // SPDGFO >= 1 || V0A || V0C
   kNoITSROFrameBorder, // bunch crossing is far from ITS RO Frame border
+  kNoTimeFrameBorder,  // bunch crossing is far from Time Frame borders
+  kNoSameBunchPileup,  // reject collisions in case of pileup with another collision in the same foundBC
+  kIsGoodZvtxFT0vsPV,  // small difference between z-vertex from PV and from FT0
+  kIsVertexITSTPC,     // at least one ITS-TPC track (reject vertices built from ITS-only tracks)
+  kIsVertexTOFmatched, // at least one of vertex contributors is matched to TOF
+  kIsVertexTRDmatched, // at least one of vertex contributors is matched to TRD
   kNsel                // counter
 };
 
@@ -134,7 +140,14 @@ class EventSelectionParams
   float fV0CasymA = -25.f;
   float fV0CasymB = 0.15f;
 
-  ClassDefNV(EventSelectionParams, 4)
+  int fTimeFrameOrbitShift = 0;          // shift of first orbit in TF wrt (SOR-OrbitReset)%TFDuration (in orbits)
+  int fTimeFrameStartBorderMargin = 300; // number of bcs to cut in the beginning of TF
+  int fTimeFrameEndBorderMargin = 4000;  // number of bcs to cut at the end of TF
+
+  int fITSROFrameStartBorderMargin = 10; // number of bcs to cut in the beginning of ITS readout frame
+  int fITSROFrameEndBorderMargin = 20;   // number of bcs to cut in the end of ITS readout frame
+
+  ClassDefNV(EventSelectionParams, 5)
 };
 
 #endif // COMMON_CCDB_EVENTSELECTIONPARAMS_H_

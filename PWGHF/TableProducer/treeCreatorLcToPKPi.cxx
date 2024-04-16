@@ -21,10 +21,12 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -84,10 +86,11 @@ DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_COLUMN(MultZeqFT0A, multZeqFT0A, float);
-DECLARE_SOA_COLUMN(MultZeqFT0C, multZeqFT0C, float);
-DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
-DECLARE_SOA_COLUMN(MultZeqFV0A, multZeqFV0A, float);
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
+DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);
 DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float);
 } // namespace full
 
@@ -227,10 +230,11 @@ DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
                   collision::PosZ,
                   full::IsEventReject,
                   full::RunNumber,
-                  full::MultZeqFT0A,
-                  full::MultZeqFT0C,
-                  full::MultFT0M,
-                  full::MultZeqFV0A,
+                  full::CentFT0A,
+                  full::CentFT0C,
+                  full::CentFT0M,
+                  full::CentFV0A,
+                  full::CentFDDM,
                   full::MultZeqNTracksPV);
 
 DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
@@ -262,13 +266,14 @@ struct HfTreeCreatorLcToPKPi {
 
   HfHelper hfHelper;
 
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPiExt, aod::TracksPidKaExt, aod::TracksPidPrExt>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
+  using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
 
   void init(InitContext const&)
   {
   }
 
-  void processMc(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::Mults, aod::MultZeqs> const& collisions,
+  void processMc(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
                  aod::McCollisions const& mcCollisions,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
@@ -287,10 +292,11 @@ struct HfTreeCreatorLcToPKPi {
         collision.posZ(),
         0,
         collision.bc().runNumber(),
-        collision.multZeqFT0A(),
-        collision.multZeqFT0C(),
-        collision.multFT0M(),
-        collision.multZeqFV0A(),
+        collision.centFT0A(),
+        collision.centFT0C(),
+        collision.centFT0M(),
+        collision.centFV0A(),
+        collision.centFDDM(),
         collision.multZeqNTracksPV());
     }
 
@@ -316,7 +322,7 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
+        if (FunctionSelection >= 1 && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
               candidate.posX(),
@@ -474,7 +480,7 @@ struct HfTreeCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMc, "Process MC tree writer", true);
 
-  void processData(soa::Join<aod::Collisions, aod::Mults, aod::MultZeqs> const& collisions,
+  void processData(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
                    soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
                    TracksWPid const& tracks, aod::BCs const&)
   {
@@ -491,10 +497,11 @@ struct HfTreeCreatorLcToPKPi {
         collision.posZ(),
         0,
         collision.bc().runNumber(),
-        collision.multZeqFT0A(),
-        collision.multZeqFT0C(),
-        collision.multFT0M(),
-        collision.multZeqFV0A(),
+        collision.centFT0A(),
+        collision.centFT0C(),
+        collision.centFT0M(),
+        collision.centFV0A(),
+        collision.centFDDM(),
         collision.multZeqNTracksPV());
     }
 
@@ -519,7 +526,7 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax) {
+        if (FunctionSelection >= 1 && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
               candidate.posX(),

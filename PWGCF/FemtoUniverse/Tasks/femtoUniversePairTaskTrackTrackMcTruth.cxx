@@ -12,7 +12,7 @@
 /// \file femtoUniversePairTaskTrackTrackMcTruth.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Malgorzata Janik, WUT, majanik@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include <vector>
 #include <random>
@@ -103,8 +103,6 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
   Configurable<int> ConfPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};
   Configurable<int> ConfEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};
 

@@ -39,7 +39,6 @@ float meanMultV0A = 0.f;
 struct multFilter {
   enum { kHighTrackMult = 0,
          kHighFv0Mult,
-         kHighFv0Flat,
          kHighFt0Mult,
          kHighFt0Flat,
          kHighFt0cFv0Mult,

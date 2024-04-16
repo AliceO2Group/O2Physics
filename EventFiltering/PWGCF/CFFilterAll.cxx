@@ -139,6 +139,8 @@ static const float MomCorLimits[2][nMomCorCuts] =
 static const float PIDForTrackingTable[2][nTracks]{
   {-1, 0.75},
   {-1, 1.2}};
+static const float ITSCutsTable[1][nTracks] = {
+  {1, 1}};
 
 static const float triggerSwitches[1][nAllTriggers]{
   {1, 1, 1, 1, 1, 1}};
@@ -192,6 +194,10 @@ struct CFFilter {
   Configurable<bool> ConfEvtOfflineCheck{
     "ConfEvtOfflineCheck",
     false,
+    "Evt sel: check for offline selection"};
+  Configurable<bool> ConfEvtTimeFrameBorderCheck{
+    "ConfEvtTimeFrameBorderCheck",
+    true,
     "Evt sel: check for offline selection"};
   Configurable<bool> ConfAutocorRejection{
     "ConfAutocorRejection",
@@ -298,13 +304,13 @@ struct CFFilter {
     "ConfTrkTPCsClsMax",
     160,
     "Maximum number of shared TPC clusters"};
-  Configurable<float> ConfTrkITSnclsMin{
+  Configurable<LabeledArray<float>> ConfTrkITSnclsMin{
     "ConfTrkITSnclsMin",
-    0,
+    {CFTrigger::ITSCutsTable[0], 1, CFTrigger::nTracks, std::vector<std::string>{"Cut"}, CFTrigger::SpeciesName},
     "Minimum number of ITS clusters"};
-  Configurable<float> ConfTrkITSnclsIbMin{
-    "ConfTrkITSnclsIbMin",
-    0,
+  Configurable<LabeledArray<float>> ConfTrkITSnclsIBMin{
+    "ConfTrkITSnclsIBMin",
+    {CFTrigger::ITSCutsTable[0], 1, CFTrigger::nTracks, std::vector<std::string>{"Cut"}, CFTrigger::SpeciesName},
     "Minimum number of ITS clusters in the inner barrel"};
   Configurable<float> ConfTrkDCAxyMax{
     "ConfTrkDCAxyMax",
@@ -822,6 +828,11 @@ struct CFFilter {
     if (ConfEvtOfflineCheck && !col.sel8()) {
       return false;
     }
+    // if event is close to the timeframe border, return false
+    if (ConfEvtTimeFrameBorderCheck && !col.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+
     return true;
   }
 
@@ -898,10 +909,10 @@ struct CFFilter {
     if (tpcNClsS > ConfTrkTPCsClsMax) {
       return false;
     }
-    if (itsNCls < ConfTrkITSnclsMin) {
+    if (itsNCls < ConfTrkITSnclsMin->get(static_cast<uint>(0), partSpecies)) {
       return false;
     }
-    if (itsNClsIB < ConfTrkITSnclsIbMin) {
+    if (itsNClsIB < ConfTrkITSnclsIBMin->get(static_cast<uint>(0), partSpecies)) {
       return false;
     }
     if (std::abs(dcaXY) > ConfTrkDCAxyMax) {
@@ -1276,6 +1287,7 @@ struct CFFilter {
     if (!ConfIsRun3) {
       LOG(fatal) << "Run 2 processing is not implemented!";
     }
+
     if (ConfUseManualPIDproton || ConfUseManualPIDdeuteron || ConfUseAvgFromCCDB) {
       currentRunNumber = col.bc_as<aod::BCsWithTimestamps>().runNumber();
       if (currentRunNumber != lastRunNumber) {
@@ -2000,6 +2012,7 @@ struct CFFilter {
       registry.fill(HIST("ld/fMultiplicity"), col.multNTracksPV());
       registry.fill(HIST("ld/fZvtx"), col.posZ());
     }
+
     tags(keepEvent3N[CFTrigger::kPPP],
          keepEvent3N[CFTrigger::kPPL],
          keepEvent3N[CFTrigger::kPLL],

@@ -43,6 +43,7 @@ using namespace o2::framework::expressions;
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 using TracksComplete = soa::Join<aod::Tracks, aod::TracksExtra>;
+using V0DatasWithoutTrackX = soa::Join<aod::V0Indices, aod::V0Cores>;
 
 struct correlateStrangeness {
   // for efficiency corrections if requested
@@ -155,7 +156,7 @@ struct correlateStrangeness {
       if (!mixing)
         histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt(), mult);
       for (auto& assocCandidate : assocs) {
-        auto assoc = assocCandidate.v0Data();
+        auto assoc = assocCandidate.v0Core_as<V0DatasWithoutTrackX>();
 
         //---] removing autocorrelations [---
         auto postrack = assoc.posTrack_as<TracksComplete>();
@@ -638,7 +639,7 @@ struct correlateStrangeness {
 
   void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
                             aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
-                            aod::V0Datas const&, aod::V0sLinked const&, TracksComplete const&)
+                            V0DatasWithoutTrackX const&, aod::V0sLinked const&, TracksComplete const&)
   {
     // ________________________________________________
     // Perform basic event selection
@@ -664,7 +665,7 @@ struct correlateStrangeness {
     hEfficiencyV0[2] = hEfficiencyAntiLambda;
 
     for (auto const& v0 : associatedV0s) {
-      auto v0Data = v0.v0Data();
+      auto v0Data = v0.v0Core_as<V0DatasWithoutTrackX>();
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
         if (v0.compatible(index) && (!doMCassociation || v0.mcTrue(index)) && bitcheck(doCorrelation, index)) {
@@ -694,7 +695,7 @@ struct correlateStrangeness {
 
   void processSameEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
                                  aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
-                                 aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
+                                 V0DatasWithoutTrackX const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
   {
     // ________________________________________________
     // Perform basic event selection
@@ -783,7 +784,7 @@ struct correlateStrangeness {
   }
   void processMixedEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                              aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
-                             aod::V0Datas const&, aod::V0sLinked const&, TracksComplete const&)
+                             V0DatasWithoutTrackX const&, aod::V0sLinked const&, TracksComplete const&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       // ________________________________________________
@@ -816,7 +817,7 @@ struct correlateStrangeness {
   }
   void processMixedEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                   aod::AssocV0s const& associatedV0s, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
-                                  aod::V0Datas const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
+                                  V0DatasWithoutTrackX const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       // ________________________________________________

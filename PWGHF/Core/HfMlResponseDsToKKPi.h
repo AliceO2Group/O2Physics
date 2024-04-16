@@ -82,16 +82,26 @@ enum class InputFeaturesDsToKKPi : uint8_t {
   ptProng0,
   ptProng1,
   ptProng2,
+  impactParameterXY,
   impactParameterXY0,
   impactParameterXY1,
   impactParameterXY2,
+  impactParameterZ0,
+  impactParameterZ1,
+  impactParameterZ2,
+  nSigTpcPi0,
+  nSigTpcPi1,
+  nSigTpcPi2,
+  nSigTpcKa0,
+  nSigTpcKa1,
+  nSigTpcKa2,
   nSigTpcTofPi0,
   nSigTpcTofPi1,
   nSigTpcTofPi2,
   nSigTpcTofKa0,
   nSigTpcTofKa1,
   nSigTpcTofKa2,
-  cos3PiK,
+  absCos3PiK,
   deltaMassPhi
 };
 
@@ -132,9 +142,20 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DS(ptProng0);
         CHECK_AND_FILL_VEC_DS(ptProng1);
         CHECK_AND_FILL_VEC_DS(ptProng2);
+        CHECK_AND_FILL_VEC_DS(impactParameterXY);
         CHECK_AND_FILL_VEC_DS_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_DS_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_DS_FULL(candidate, impactParameterXY2, impactParameter2);
+        CHECK_AND_FILL_VEC_DS(impactParameterZ0);
+        CHECK_AND_FILL_VEC_DS(impactParameterZ1);
+        CHECK_AND_FILL_VEC_DS(impactParameterZ2);
+        // TPC PID variables
+        CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcPi0, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcPi1, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcPi2, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcKa0, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcKa1, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcKa2, tpcNSigmaKa);
         // Combined PID variables
         CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcTofPi0, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcTofPi1, tpcTofNSigmaPi);
@@ -144,7 +165,7 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcTofKa2, tpcTofNSigmaKa);
 
         // Ds specific variables
-        CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(candidate, cos3PiK, cos3PiKDsToKKPi, cos3PiKDsToPiKK);
+        CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(candidate, absCos3PiK, absCos3PiKDsToKKPi, absCos3PiKDsToPiKK);
         CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(candidate, deltaMassPhi, deltaMassPhiDsToKKPi, deltaMassPhiDsToPiKK);
       }
     }
@@ -168,9 +189,17 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DS(ptProng0),
       FILL_MAP_DS(ptProng1),
       FILL_MAP_DS(ptProng2),
+      FILL_MAP_DS(impactParameterXY),
       FILL_MAP_DS(impactParameterXY0),
       FILL_MAP_DS(impactParameterXY1),
       FILL_MAP_DS(impactParameterXY2),
+      // TPC PID variables
+      FILL_MAP_DS(nSigTpcPi0),
+      FILL_MAP_DS(nSigTpcPi1),
+      FILL_MAP_DS(nSigTpcPi2),
+      FILL_MAP_DS(nSigTpcKa0),
+      FILL_MAP_DS(nSigTpcKa1),
+      FILL_MAP_DS(nSigTpcKa2),
       // Combined PID variables
       FILL_MAP_DS(nSigTpcTofPi0),
       FILL_MAP_DS(nSigTpcTofPi1),
@@ -180,7 +209,7 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DS(nSigTpcTofKa2),
 
       // Ds specific variables
-      FILL_MAP_DS(cos3PiK),
+      FILL_MAP_DS(absCos3PiK),
       FILL_MAP_DS(deltaMassPhi)};
   }
 };
