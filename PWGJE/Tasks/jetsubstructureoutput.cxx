@@ -127,7 +127,7 @@ struct JetSubstructureOutputTask {
   }
 
   template <typename T, typename U, typename V>
-  void analyseMatched(T const& jets, U const& jetsTag, std::map<int32_t, int32_t>& jetMapping, std::map<int32_t, int32_t>& jetTagMapping, V& matchingOutputTable, float jetPtMin)
+  void analyseMatched(T const& jets, U const& /*jetsTag*/, std::map<int32_t, int32_t>& jetMapping, std::map<int32_t, int32_t>& jetTagMapping, V& matchingOutputTable, float jetPtMin)
   {
     std::vector<int> candMatching;
     for (const auto& jet : jets) {
@@ -168,7 +168,7 @@ struct JetSubstructureOutputTask {
     }
   }
 
-  void processClearMaps(JetCollisions const& collisions)
+  void processClearMaps(JetCollisions const&)
   {
     jetMappingData.clear();
     jetMappingDataSub.clear();

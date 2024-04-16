@@ -76,13 +76,13 @@ struct JetMatchingQA {
   {
   }
 
-  void processDummy(JetMcCollisions const& mcCollisions)
+  void processDummy(JetMcCollisions const&)
   {
   }
   PROCESS_SWITCH(JetMatchingQA, processDummy, "Dummy process", true);
 
-  void processMCD(JetCollision const& collision, JetParticles const& mcParticles, JetTracksMCD const& tracks,
-                  BaseJetCollection const& djets, TagJetCollection const& pjets)
+  void processMCD(JetCollision const&, JetParticles const&, JetTracksMCD const&,
+                  BaseJetCollection const& djets, TagJetCollection const&)
   {
     for (const auto& djet : djets) {
       if (djet.has_matchedJetCand() || djet.has_matchedJetGeo()) {
@@ -176,8 +176,8 @@ struct JetMatchingQA {
   }
   PROCESS_SWITCH(JetMatchingQA, processMCD, "QA on detector-level jets", true);
 
-  void processMCP(JetMcCollision const& collision,
-                  TagJetCollection const& pjets, BaseJetCollection const& djets)
+  void processMCP(JetMcCollision const&,
+                  TagJetCollection const& pjets, BaseJetCollection const&)
   {
     for (const auto& pjet : pjets) {
       if (pjet.has_matchedJetCand() || pjet.has_matchedJetGeo()) {

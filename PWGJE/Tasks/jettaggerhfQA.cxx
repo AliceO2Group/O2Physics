@@ -277,7 +277,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V, typename W>
-  void fillHistogramIPsData(T const& collision, U const& jets, V const& jtracks, W const& tracks)
+  void fillHistogramIPsData(T const& collision, U const& jets, V const& /*jtracks*/, W const& /*tracks*/)
   {
     for (auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -353,7 +353,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U, typename V, typename W>
-  void fillHistogramIPsMCD(T const& collision, U const& mcdjets, V const& jtracks, W const& tracks)
+  void fillHistogramIPsMCD(T const& collision, U const& mcdjets, V const& /*jtracks*/, W const& /*tracks*/)
   {
     for (auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -494,7 +494,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U>
-  void fillHistogramJPData(T const& collision, U const& jets)
+  void fillHistogramJPData(T const&, U const& jets)
   {
     for (auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -512,7 +512,7 @@ struct JetTaggerHFQA {
   }
 
   template <typename T, typename U>
-  void fillHistogramJPMCD(T const& collision, U const& mcdjets)
+  void fillHistogramJPMCD(T const&, U const& mcdjets)
   {
     for (auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -614,12 +614,12 @@ struct JetTaggerHFQA {
     registry.fill(HIST("h_3prong_nprongs"), numOfSV);
   }
 
-  void processDummy(aod::Collision const& collision, aod::Tracks const& tracks)
+  void processDummy(aod::Collision const&, aod::Tracks const&)
   {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processDummy, "Dummy process", true);
 
-  void processTracksDca(JetTagTracksData& jtracks, OriTracksData const& tracks)
+  void processTracksDca(JetTagTracksData& jtracks, OriTracksData const&)
   {
     for (auto const& jtrack : jtracks) {
       if (!jetderiveddatautilities::selectTrack(jtrack, trackSelection)) {
@@ -659,13 +659,13 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCD, "Fill impact parameter impormation for mcd jets", false);
 
-  void processJPData(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableData const& jets, JetTagTracksData const& jtracks)
+  void processJPData(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableData const& jets, JetTagTracksData const&)
   {
     fillHistogramJPData(jcollision, jets);
   }
   PROCESS_SWITCH(JetTaggerHFQA, processJPData, "Fill jet probability imformation for data jets", false);
 
-  void processJPMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, JetTagTracksMCD const& jtracks)
+  void processJPMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, JetTagTracksMCD const&)
   {
     fillHistogramJPMCD(jcollision, mcdjets);
   }
