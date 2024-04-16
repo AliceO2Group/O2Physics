@@ -261,7 +261,7 @@ struct HfTaskDplus {
   // Run analysis for the reconstructed Dplus candidates from data
   /// \param candidates are reconstructed candidates
   template <bool fillMl, typename T1>
-  void runDataAnalysis(const T1& candidates)
+  void runDataAnalysis(const T1& /*candidates*/)
   {
     if constexpr (!fillMl) {
       for (const auto& candidate : selectedDPlusCandidates) {
@@ -284,7 +284,7 @@ struct HfTaskDplus {
   /// \param candidates are reconstructed candidates
   /// \param mcParticles are particles with MC information
   template <bool fillMl, typename T1, typename T2>
-  void runMCAnalysis(const T1& recoCandidates, const T2& mcParticles)
+  void runMCAnalysis(const T1& /*recoCandidates*/, const T2& mcParticles)
   {
     // MC rec. w/o Ml
     if constexpr (!fillMl) {

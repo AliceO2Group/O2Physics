@@ -177,11 +177,11 @@ struct HfCandidateCreatorDstar {
   /// @param tracks track table with Cov object
   /// @param bcWithTimeStamps Bunch Crossing with timestamps
   template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandsDstar>
-  void runCreatorDstar(Coll const& collisions,
+  void runCreatorDstar(Coll const&,
                        CandsDstar const& rowsTrackIndexDstar,
-                       aod::Hf2Prongs const& rowsTrackIndexD0,
-                       aod::TracksWCov const& tracks,
-                       aod::BCsWithTimestamps const& bcWithTimeStamps)
+                       aod::Hf2Prongs const&,
+                       aod::TracksWCov const&,
+                       aod::BCsWithTimestamps const&)
   {
     // LOG(info) << "runCreatorDstar function called";
     // LOG(info) << "candidate loop starts";

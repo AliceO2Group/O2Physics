@@ -167,10 +167,10 @@ struct HfCandidateCreator3Prong {
   }
 
   template <bool doPvRefit = false, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand>
-  void runCreator3Prong(Coll const& collisions,
+  void runCreator3Prong(Coll const&,
                         Cand const& rowsTrackIndexProng3,
-                        aod::TracksWCovExtra const& tracks,
-                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+                        aod::TracksWCovExtra const&,
+                        aod::BCsWithTimestamps const&)
   {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {

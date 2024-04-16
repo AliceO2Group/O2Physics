@@ -713,7 +713,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \param dcaXYdcaZ is an array containing the dcaXY and dcaZ of trackToRemove with respect to the refitted PV
   template <typename TTrack>
   void performPvRefitTrack(aod::Collision const& collision,
-                           aod::BCsWithTimestamps const& bcWithTimeStamps,
+                           aod::BCsWithTimestamps const&,
                            std::vector<int64_t> vecPvContributorGlobId,
                            std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov,
                            TTrack const& trackToRemove,
@@ -898,7 +898,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \return true if the track is compatible with a proton hypothesis
   template <int pidStrategy, typename TTracks, typename GroupedTrackIndices, typename GroupedPvContributors>
   void runTagSelTracks(aod::Collision const& collision,
-                       TTracks const& tracks,
+                       TTracks const&,
                        GroupedTrackIndices const& trackIndicesCollision,
                        GroupedPvContributors const& pvContrCollision,
                        aod::BCsWithTimestamps const& bcWithTimeStamps,
@@ -1297,7 +1297,7 @@ struct HfTrackIndexSkimCreator {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const& context)
+  void init(InitContext const&)
   {
     if (!doprocess2And3ProngsWithPvRefit && !doprocess2And3ProngsNoPvRefit) {
       return;
@@ -1906,7 +1906,7 @@ struct HfTrackIndexSkimCreator {
   /// \param pvCoord is a vector where to store X, Y and Z values of refitted PV
   /// \param pvCovMatrix is a vector where to store the covariance matrix values of refitted PV
   void performPvRefitCandProngs(SelectedCollisions::iterator const& collision,
-                                aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                aod::BCsWithTimestamps const&,
                                 std::vector<int64_t> vecPvContributorGlobId,
                                 std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov,
                                 std::vector<int64_t> vecCandPvContributorGlobId,
@@ -2036,7 +2036,7 @@ struct HfTrackIndexSkimCreator {
   template <bool doPvRefit = false, typename TTracks>
   void run2And3Prongs(SelectedCollisions const& collisions,
                       aod::BCsWithTimestamps const& bcWithTimeStamps,
-                      FilteredTrackAssocSel const& trackIndices,
+                      FilteredTrackAssocSel const&,
                       TTracks const& tracks)
   {
 
@@ -3059,7 +3059,7 @@ struct HfTrackIndexSkimCreatorCascades {
   // histograms
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const& context)
+  void init(InitContext const&)
   {
     if (!doprocessCascades) {
       return;
@@ -3106,7 +3106,7 @@ struct HfTrackIndexSkimCreatorCascades {
   void processCascades(SelectedCollisions const& collisions,
                        aod::V0Datas const& v0s,
                        FilteredTrackAssocSel const& trackIndices,
-                       aod::TracksWCovDcaExtra const& tracks,
+                       aod::TracksWCovDcaExtra const&,
                        aod::BCsWithTimestamps const&)
   {
     // set the magnetic field from CCDB
@@ -3474,7 +3474,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   void processLfCascades(SelectedCollisions const& collisions,
                          CascFull const& cascades,
                          SelectedHfTrackAssoc const& trackIndices,
-                         aod::TracksWCovDca const& tracks,
+                         aod::TracksWCovDca const&,
                          aod::BCsWithTimestamps const&,
                          V0Full const&)
   {

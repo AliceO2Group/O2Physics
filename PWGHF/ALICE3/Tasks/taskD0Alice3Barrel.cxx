@@ -63,7 +63,7 @@ struct HfTaskD0Alice3Barrel {
   // void process(soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles, aod::TracksWMc const& tracks)
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Barrel, aod::HfCand2ProngMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   {
     // float centrality = collision.centV0M();
     for (const auto& candidate : candidates) {
