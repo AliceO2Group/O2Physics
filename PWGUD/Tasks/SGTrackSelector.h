@@ -80,4 +80,4 @@ int trackpid(const T& track, bool use_tof)
   return pid;
 }
 
-#endif;// PWGUD_TASKS_SGTRACKSELECTOR_H_
+#endif; // PWGUD_TASKS_SGTRACKSELECTOR_H_
