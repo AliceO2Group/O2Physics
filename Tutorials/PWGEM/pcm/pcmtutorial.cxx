@@ -95,7 +95,7 @@ struct PCMTutorial {
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   Preslice<aod::V0PhotonsKF> perCollision = aod::v0photonkf::collisionId;
 
-  void process(MyCollisions const& collisions, aod::BCsWithTimestamps const&, aod::V0PhotonsKF const& v0s, MyTracks const& tracks)
+  void process(MyCollisions const& collisions, aod::BCsWithTimestamps const&, aod::V0PhotonsKF const& v0s, MyTracks const& /*tracks*/)
   {
     // loop over collisions
     for (auto& collision : collisions) {
