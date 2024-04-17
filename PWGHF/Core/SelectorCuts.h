@@ -96,7 +96,7 @@ static const std::vector<std::string> labelsPt{};
 static const std::vector<std::string> labelsCutBdt = {"BDTbkg", "BDTprompt", "BDTnonprompt"};
 
 // ONNX file names
-static const std::string onnxFileNameSpecies[5][1] = {{"ModelHandler_onnx_D0ToKPi.onnx"}, {"ModelHandler_onnx_DplusToPiKPi.onnx"}, {"ModelHandler_onnx_LcToPKPi.onnx"}, {"ModelHandler_onnx_DsToKKPi.onnx"}, {""}};
+static const std::string onnxFileNameSpecies[5][1] = {{"ModelHandler_onnx_D0ToKPi.onnx"}, {"ModelHandler_onnx_DplusToPiKPi.onnx"}, {"ModelHandler_onnx_LcToPKPi.onnx"}, {"ModelHandler_onnx_DsToKKPi.onnx"}, {""}}; // NOLINT: runtime/string
 
 // row labels for ONNX file names
 static const std::vector<std::string> labelsSpecies = {"D0", "Dplus", "Lc", "Ds", "Xic"};
