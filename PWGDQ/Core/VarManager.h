@@ -2036,8 +2036,6 @@ void VarManager::FillPhoton(T const& track, float* values)
   }
 }
 
-
-
 template <typename U, typename T>
 void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
 {
@@ -2350,9 +2348,6 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
   }
 }
 
-
-
-
 template <int pairType, typename T1, typename T2>
 void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
 {
@@ -2430,7 +2425,6 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
   values[kRap] = -v12.Rapidity();
 }
 
-
 template <typename T1, typename T2, typename T3>
 void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values, PairCandidateType pairType)
 {
@@ -2467,8 +2461,6 @@ void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* v
     values[kPt2] = t2.pt();
   }
 }
-
-
 
 template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
 void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2, bool propToSV, float* values)
@@ -3379,8 +3371,6 @@ void VarManager::FillDileptonPhoton(T1 const& dilepton, T2 const& photon, float*
     values[kRap] = v12.Rapidity();
   }
 }
-
-
 
 template <typename T>
 void VarManager::FillHadron(T const& hadron, float* values, float hadronMass)
