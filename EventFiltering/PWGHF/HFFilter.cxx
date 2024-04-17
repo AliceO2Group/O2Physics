@@ -1029,7 +1029,6 @@ struct HfFilter { // Main struct for HF triggers
           }
         }
 
-
         // D+ with K0S or Lambda and SigmaC0 with K0S
         auto v0sThisCollision = v0s.sliceBy(v0sPerCollision, thisCollId);
         bool isGoodDPlus = (isSignalTagged[kDplus - 1]) && is3ProngInMass[kDplus - 1];
@@ -1098,7 +1097,7 @@ struct HfFilter { // Main struct for HF triggers
                 }
               }
             } // end D+ with V0
- 
+
             // we pair SigmaC0 with V0
             if (!keepEvent[kSigmaC0K0] && (isGoodLcToPKPi || isGoodLcToPiKP) && TESTBIT(selV0, kK0S)) {
               // look for SigmaC0 candidates
