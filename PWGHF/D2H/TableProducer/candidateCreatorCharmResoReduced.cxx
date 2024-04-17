@@ -233,7 +233,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
   void processDs2StarToDplusK0s(aod::HfRedCollisions::iterator const& collision,
                                 aod::HfRed3PrNoTrks const& candsD,
-                                aod::HfRedVzeros const& candsV0)
+                                aod::HfRedVzeros const&)
   {
     runCandidateCreation<DecayChannel::Ds2StarToDplusK0s>(collision, candsD, candidatesK0s);
   }
@@ -241,7 +241,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
   void processDs1ToDstarK0s(aod::HfRedCollisions::iterator const& collision,
                             aod::HfRed3PrNoTrks const& candsD,
-                            aod::HfRedVzeros const& candsV0)
+                            aod::HfRedVzeros const&)
   {
     runCandidateCreation<DecayChannel::Ds1ToDstarK0s>(collision, candsD, candidatesK0s);
   }
@@ -249,7 +249,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
   void processXcToDplusLambda(aod::HfRedCollisions::iterator const& collision,
                               aod::HfRed3PrNoTrks const& candsD,
-                              aod::HfRedVzeros const& candsV0)
+                              aod::HfRedVzeros const&)
   {
     runCandidateCreation<DecayChannel::XcToDplusLambda>(collision, candsD, candidatesLambda);
   }

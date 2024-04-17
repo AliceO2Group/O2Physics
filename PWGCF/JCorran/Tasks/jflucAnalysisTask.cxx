@@ -184,7 +184,8 @@ struct jflucAnalysisTask {
   {
     pcf->Init();
     pcf->FillQA(tracks);
-    pcf->CalculateQvectorsQC(tracks);
+    qvecs.Calculate(tracks, etamin, etamax);
+    pcf->SetJQVectors(&qvecs);
     const auto& edges = AxisSpec(axisMultiplicity).binEdges;
     for (UInt_t i = 0, n = AxisSpec(axisMultiplicity).getNbins(); i < n; ++i)
       if (collision.multiplicity() < edges[i + 1]) {
@@ -221,6 +222,7 @@ struct jflucAnalysisTask {
   }
   PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedCorrected, "Process CF derived data with corrections", false);
 
+  JFFlucAnalysis::JQVectorsT qvecs;
   JFFlucAnalysis* pcf;
 };
 

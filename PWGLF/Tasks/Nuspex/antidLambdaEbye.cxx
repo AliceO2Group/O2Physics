@@ -44,7 +44,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::pidTPCDe, aod::pidTPCPr, aod::pidTPCPi, aod::TOFSignal, aod::TOFEvTime>;
+using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TOFSignal, aod::TOFEvTime>;
 using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 
 namespace
@@ -167,7 +167,7 @@ struct antidLambdaEbye {
   int nSubsamples;
 
   float d_bz;
-  o2::base::MatLayerCylSet* lut = nullptr;
+  // o2::base::MatLayerCylSet* lut = nullptr;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 2, 6, particleNamesBB, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
@@ -205,6 +205,7 @@ struct antidLambdaEbye {
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
+  Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
 
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "fill histograms only for true signal candidates (MC)"};
 
@@ -276,23 +277,10 @@ struct antidLambdaEbye {
   Preslice<TracksFull> perCollisionTracksFull = o2::aod::track::collisionId;
   Preslice<aod::McParticles> perCollisionMcParts = o2::aod::mcparticle::mcCollisionId;
 
-  template <class RecV0>
-  bool selectLambda(RecV0 const& v0) // TODO: apply ML
-  {
-    if (std::abs(v0.eta()) > etaMax ||
-        v0.v0cosPA() < v0setting_cospa ||
-        v0.v0radius() < v0setting_radius) {
-      return false;
-    }
-    if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < vetoMassK0Short)
-      return false;
-    return true;
-  }
-
   template <class T>
   bool selectV0Daughter(T const& track)
   {
-    if (std::abs(track.eta()) > etaMax) {
+    if (std::abs(track.eta()) > etaMaxV0dau) {
       return false;
     }
     if (track.itsNCls() < v0trackNclusItsCut ||
@@ -403,8 +391,9 @@ struct antidLambdaEbye {
     // Fetch magnetic field from ccdb for current collision
     d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
+    fitter.setBz(d_bz);
 
-    o2::base::Propagator::Instance()->setMatLUT(lut);
+    // o2::base::Propagator::Instance()->setMatLUT(lut);
   }
 
   void init(o2::framework::InitContext&)
@@ -416,7 +405,7 @@ struct antidLambdaEbye {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+    // lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
 
     fitter.setPropagateToPCA(true);
     fitter.setMaxR(200.);

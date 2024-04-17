@@ -231,7 +231,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
 
   template <typename T, typename U>
-  void fillTablesParticle(const T& particle, U mass)
+  void fillTablesParticle(const T& particle, U /*mass*/)
   {
     if (fillParticleBase) {
       rowParticleBase(
