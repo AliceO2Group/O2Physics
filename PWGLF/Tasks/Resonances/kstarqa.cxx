@@ -498,7 +498,7 @@ struct kstarqa {
 
   PROCESS_SWITCH(kstarqa, processSE, "Process Same event", true);
 
-  void processME(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processME(EventCandidates const& /*collisions*/, TrackCandidates const& /*tracks*/)
 
   {
 
@@ -578,7 +578,7 @@ struct kstarqa {
 
   PROCESS_SWITCH(kstarqa, processME, "Process Mixed event", true);
 
-  void processGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  void processGen(aod::McCollision const& /*mcCollision*/, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     // histos.fill(HIST("hMC"), 0.5);
     // if (std::abs(mcCollision.posZ()) < cutzvertex) {
@@ -656,7 +656,7 @@ struct kstarqa {
   }
   PROCESS_SWITCH(kstarqa, processGen, "Process Generated", false);
 
-  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
 
