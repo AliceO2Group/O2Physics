@@ -124,7 +124,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
                Hf2ProngsWithMl const& cand2Prongs,
                Hf3ProngsWithMl const& cand3Prongs,
                aod::TrackAssoc const& trackIndices,
-               BigTracksPID const&  /*tracks*/)
+               BigTracksPID const& /*tracks*/)
   {
     for (const auto& collision : collisions) {
       if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f || (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && applyTimeFrameBorderCut))) { // safety margin for Zvtx

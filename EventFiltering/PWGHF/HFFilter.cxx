@@ -279,7 +279,7 @@ struct HfFilter { // Main struct for HF triggers
                Hf2ProngsWithMl const& cand2Prongs,
                Hf3ProngsWithMl const& cand3Prongs,
                aod::TrackAssoc const& trackIndices,
-               BigTracksPID const&  /*tracks*/)
+               BigTracksPID const& /*tracks*/)
   {
     for (const auto& collision : collisions) {
 

@@ -1022,7 +1022,7 @@ inline int8_t HfFilterHelper::isSelectedXicInMassRange(const T& pTrackSameCharge
 /// \param hArmPod is the pointer to an array of QA histo AP plot before selection
 /// \return an integer passes all cuts
 template <typename V0, typename Coll, typename T, typename H2>
-inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>& dauTracks, const Coll&  /*collision*/, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
+inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>& dauTracks, const Coll& /*collision*/, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
 {
   int8_t isSelected{BIT(kPhoton) | BIT(kK0S) | BIT(kLambda) | BIT(kAntiLambda)};
 

@@ -402,7 +402,7 @@ struct strangenessFilter {
     strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8]);
   }
 
-  void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks&  /*dtracks*/)
+  void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& /*dtracks*/)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] tracked V0, [10] tracked 3Body
@@ -657,8 +657,8 @@ struct strangenessFilter {
   ////////// Strangeness Filter - Run 3 MC /////////////
   //////////////////////////////////////////////////////
 
-  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks&  /*dtracks*/,
-                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const&  /*cascades*/, aod::AssignedTrackedV0s const&  /*trackedV0s*/, aod::AssignedTracked3Bodys const&  /*tracked3Bodys*/, aod::V0s const&, aod::BCsWithTimestamps const&)
+  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& /*dtracks*/,
+                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const&, aod::BCsWithTimestamps const&)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] tracked V0, [10] tracked 3Body
