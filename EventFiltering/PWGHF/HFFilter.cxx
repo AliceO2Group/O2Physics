@@ -337,8 +337,8 @@ struct HfFilter { // Main struct for HF triggers
         auto trackParNeg = getTrackPar(trackNeg);
         o2::gpu::gpustd::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
-        std::array<float, 3> pVecPos{trackPos.px(), trackPos.py(), trackPos.pz()};
-        std::array<float, 3> pVecNeg{trackNeg.px(), trackNeg.py(), trackNeg.pz()};
+        std::array<float, 3> pVecPos{trackPos.pVector()};
+        std::array<float, 3> pVecNeg{trackNeg.pVector()};
         if (trackPos.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParPos, 2.f, noMatCorr, &dcaPos);
           getPxPyPz(trackParPos, pVecPos);
@@ -406,7 +406,7 @@ struct HfFilter { // Main struct for HF triggers
 
           auto trackParThird = getTrackPar(track);
           o2::gpu::gpustd::array<float, 2> dcaThird{track.dcaXY(), track.dcaZ()};
-          std::array<float, 3> pVecThird = {track.px(), track.py(), track.pz()};
+          std::array<float, 3> pVecThird = {track.pVector()};
           if (track.collisionId() != thisCollId) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParThird, 2.f, noMatCorr, &dcaThird);
             getPxPyPz(trackParThird, pVecThird);
@@ -448,7 +448,7 @@ struct HfFilter { // Main struct for HF triggers
                     }
                     auto trackParFourth = getTrackPar(trackB);
                     o2::gpu::gpustd::array<float, 2> dcaFourth{trackB.dcaXY(), trackB.dcaZ()};
-                    std::array<float, 3> pVecFourth = {trackB.px(), trackB.py(), trackB.pz()};
+                    std::array<float, 3> pVecFourth = {trackB.pVector()};
                     if (trackB.collisionId() != thisCollId) {
                       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFourth, 2.f, noMatCorr, &dcaFourth);
                       getPxPyPz(trackParFourth, pVecFourth);
@@ -560,7 +560,7 @@ struct HfFilter { // Main struct for HF triggers
 
                   auto trackParBachelor = getTrackPar(trackBachelor);
                   o2::gpu::gpustd::array<float, 2> dcaBachelor{trackBachelor.dcaXY(), trackBachelor.dcaZ()};
-                  std::array<float, 3> pVecBachelor = {trackBachelor.px(), trackBachelor.py(), trackBachelor.pz()};
+                  std::array<float, 3> pVecBachelor = {trackBachelor.pVector()};
                   if (trackBachelor.collisionId() != thisCollId) {
                     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelor, 2.f, noMatCorr, &dcaBachelor);
                     getPxPyPz(trackParBachelor, pVecBachelor);
@@ -676,9 +676,9 @@ struct HfFilter { // Main struct for HF triggers
         o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
-        std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
-        std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
-        std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
+        std::array<float, 3> pVecFirst = trackFirst.pVector();
+        std::array<float, 3> pVecSecond = trackSecond.pVector();
+        std::array<float, 3> pVecThird = trackThird.pVector();
         if (trackFirst.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFirst, 2.f, noMatCorr, &dcaFirst);
           getPxPyPz(trackParFirst, pVecFirst);
@@ -801,7 +801,7 @@ struct HfFilter { // Main struct for HF triggers
 
           auto trackParFourth = getTrackPar(track);
           o2::gpu::gpustd::array<float, 2> dcaFourth{track.dcaXY(), track.dcaZ()};
-          std::array<float, 3> pVecFourth = {track.px(), track.py(), track.pz()};
+          std::array<float, 3> pVecFourth = track.pVector();
           if (track.collisionId() != thisCollId) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFourth, 2.f, noMatCorr, &dcaFourth);
             getPxPyPz(trackParFourth, pVecFourth);
@@ -884,7 +884,7 @@ struct HfFilter { // Main struct for HF triggers
               // select soft pion candidates
               auto trackParSoftPi = getTrackPar(trackSoftPi);
               o2::gpu::gpustd::array<float, 2> dcaSoftPi{trackSoftPi.dcaXY(), trackSoftPi.dcaZ()};
-              std::array<float, 3> pVecSoftPi = {trackSoftPi.px(), trackSoftPi.py(), trackSoftPi.pz()};
+              std::array<float, 3> pVecSoftPi = trackSoftPi.pVector();
               if (trackSoftPi.collisionId() != thisCollId) {
                 // This is a track reassociated to this PV by the track-to-collision-associator
                 // Let's propagate this track to it, and calculate dcaXY, dcaZ
@@ -1093,7 +1093,7 @@ struct HfFilter { // Main struct for HF triggers
                 // select soft pion candidates
                 auto trackParSoftPi = getTrackPar(trackSoftPi);
                 o2::gpu::gpustd::array<float, 2> dcaSoftPi{trackSoftPi.dcaXY(), trackSoftPi.dcaZ()};
-                std::array<float, 3> pVecSoftPi = {trackSoftPi.px(), trackSoftPi.py(), trackSoftPi.pz()};
+                std::array<float, 3> pVecSoftPi = trackSoftPi.pVector();
                 if (trackSoftPi.collisionId() != thisCollId) {
                   // This is a track reassociated to this PV by the track-to-collision-associator
                   // Let's propagate this track to it, and calculate dcaXY, dcaZ
@@ -1112,8 +1112,8 @@ struct HfFilter { // Main struct for HF triggers
                     /// and keep it only if it is in the correct mass range
 
                     float massSigmaCPKPi{-999.}, massSigmaCPiKP{-999.}, deltaMassXicResoPKPi{-999.}, deltaMassXicResoPiKP{-999.};
-                    std::array<float, 3> pVecPiPosK0s = {posTrack.px(), posTrack.py(), posTrack.pz()};
-                    std::array<float, 3> pVecPiNegK0s = {negTrack.px(), negTrack.py(), negTrack.pz()};
+                    std::array<float, 3> pVecPiPosK0s = posTrack.pVector();
+                    std::array<float, 3> pVecPiNegK0s = negTrack.pVector();
                     float ptSigmaCKaon = RecoDecay::pt(pVecSigmaC, pVecPiPosK0s, pVecPiNegK0s);
                     if (ptSigmaCKaon > cutsPtDeltaMassCharmReso->get(2u, 10u)) {
                       if (TESTBIT(whichSigmaC, 0)) {
@@ -1201,7 +1201,7 @@ struct HfFilter { // Main struct for HF triggers
             getPxPyPz(trackParCasc, pVecCascade);
 
             auto trackParBachelor = getTrackPar(track);
-            std::array<float, 3> pVecBachelor = {track.px(), track.py(), track.pz()};
+            std::array<float, 3> pVecBachelor = track.pVector();
             if (track.collisionId() != thisCollId) {
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelor, 2.f, noMatCorr, &dcaInfo);
               getPxPyPz(trackParBachelor, pVecBachelor);

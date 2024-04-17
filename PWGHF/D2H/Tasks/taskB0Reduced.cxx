@@ -339,7 +339,7 @@ struct HfTaskB0Reduced {
     auto invMassD = candD.invMass();
     std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
     std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
-    std::array<float, 3> momD{candD.px(), candD.py(), candD.pz()};
+    std::array<float, 3> momD{candD.pVector()};
     auto cospD = RecoDecay::cpa(posPv, posSvD, momD);
     auto cospXyD = RecoDecay::cpaXY(posPv, posSvD, momD);
     auto decLenD = RecoDecay::distance(posPv, posSvD);
