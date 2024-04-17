@@ -52,6 +52,8 @@ DECLARE_SOA_COLUMN(HfDoubleCharmMix, hasHfDoubleCharmMix, bool);     //! at leas
 DECLARE_SOA_COLUMN(HfV0Charm2P, hasHfV0Charm2P, bool);               //! V0 with 2-prong charm hadron
 DECLARE_SOA_COLUMN(HfV0Charm3P, hasHfV0Charm3P, bool);               //! V0 with 3-prong charm hadron
 DECLARE_SOA_COLUMN(HfCharmBarToXiBach, hasHfCharmBarToXiBach, bool); //! Charm baryon to Xi + bachelor
+DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);               //! SigmaC(2455)++K- and SigmaC(2520)++K- + c.c.
+DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);               //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
 
 // CF two body triggers
 DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair

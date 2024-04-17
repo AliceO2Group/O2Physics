@@ -286,7 +286,7 @@ struct HfFilter { // Main struct for HF triggers
       bool keepEvent[kNtriggersHF]{false};
       if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f || (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && applyTimeFrameBorderCut))) { // safety margin for Zvtx
 
-        tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach]);
+        tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0]);
         continue;
       }
 
@@ -852,8 +852,7 @@ struct HfFilter { // Main struct for HF triggers
           } // end femto selection
 
           // SigmaC++ K- trigger
-          // Let's flag it together with SigmaC0K0s (i.e. in kV0Charm3P) even if there is no V0
-          if (!keepEvent[kV0Charm3P] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0 && helper.isSelectedKaonFromXicResoToSigmaC<true>(track)) {
+          if (!keepEvent[kSigmaCPPK] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0 && helper.isSelectedKaonFromXicResoToSigmaC<true>(track)) {
             // we need a candidate Lc->pKpi and a candidate soft kaon
 
             // look for SigmaC++ candidates
@@ -891,7 +890,7 @@ struct HfFilter { // Main struct for HF triggers
                 o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaSoftPi);
                 getPxPyPz(trackParSoftPi, pVecSoftPi);
               }
-              int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackSoftPi, trackParSoftPi, dcaSoftPi, kV0Charm3P);
+              int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackSoftPi, trackParSoftPi, dcaSoftPi, kSigmaCPPK);
               if (TESTBIT(isSoftPionSelected, kSoftPionForSigmaC) /*&& (TESTBIT(is3Prong[2], 0) || TESTBIT(is3Prong[2], 1))*/) {
 
                 // check the mass of the SigmaC++ candidate
@@ -926,8 +925,7 @@ struct HfFilter { // Main struct for HF triggers
                     bool isPiKPOk = (cutsPtDeltaMassCharmReso->get(0u, 10u) < deltaMassXicResoPiKP && deltaMassXicResoPiKP < cutsPtDeltaMassCharmReso->get(1u, 10u));
                     if (isPKPiOk || isPiKPOk) {
                       /// This is a good SigmaC++K- event
-                      /// Let's flag it together with SigmaC0K0s
-                      keepEvent[kV0Charm3P] = true;
+                      keepEvent[kSigmaCPPK] = true;
 
                       /// QA plot
                       if (activateQA) {
@@ -1063,7 +1061,7 @@ struct HfFilter { // Main struct for HF triggers
           }
 
           /// SigmaC0K0s trigger
-          if (!keepEvent[kV0Charm3P] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0) {
+          if (!keepEvent[kSigmaC0K0] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0) {
             auto posTrack = v0.posTrack_as<BigTracksPID>();
             auto negTrack = v0.negTrack_as<BigTracksPID>();
             auto selV0 = helper.isSelectedV0(v0, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod);
@@ -1100,7 +1098,7 @@ struct HfFilter { // Main struct for HF triggers
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaSoftPi);
                   getPxPyPz(trackParSoftPi, pVecSoftPi);
                 }
-                int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackSoftPi, trackParSoftPi, dcaSoftPi, kV0Charm3P);
+                int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackSoftPi, trackParSoftPi, dcaSoftPi, kSigmaC0K0);
                 if (TESTBIT(isSoftPionSelected, kSoftPionForSigmaC) /*&& (TESTBIT(is3Prong[2], 0) || TESTBIT(is3Prong[2], 1))*/) {
 
                   // check the mass of the SigmaC0 candidate
@@ -1129,7 +1127,7 @@ struct HfFilter { // Main struct for HF triggers
                       bool isPiKPOk = (cutsPtDeltaMassCharmReso->get(0u, 10u) < deltaMassXicResoPiKP && deltaMassXicResoPiKP < cutsPtDeltaMassCharmReso->get(1u, 10u));
                       if (isPKPiOk || isPiKPOk) {
                         /// This is a good SigmaC0K0s event
-                        keepEvent[kV0Charm3P] = true;
+                        keepEvent[kSigmaC0K0] = true;
 
                         /// QA plot
                         if (activateQA) {
@@ -1256,7 +1254,7 @@ struct HfFilter { // Main struct for HF triggers
         keepEvent[kDoubleCharmMix] = true;
       }
 
-      tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach]);
+      tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0]);
 
       if (!std::accumulate(keepEvent, keepEvent + kNtriggersHF, 0)) {
         hProcessedEvents->Fill(1);
