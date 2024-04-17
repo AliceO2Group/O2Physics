@@ -685,7 +685,6 @@ struct antidLambdaEbye {
         continue;
       }
 
-
       float dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
       if (dcaV0dau > v0setting_dcav0dau) {
         continue;
@@ -703,7 +702,6 @@ struct antidLambdaEbye {
       if (cosPA < v0setting_cospa) {
         continue;
       }
-
 
       if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCutQA) { // for QA histograms
         continue;
