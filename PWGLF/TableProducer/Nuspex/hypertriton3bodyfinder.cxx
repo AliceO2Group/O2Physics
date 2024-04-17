@@ -121,7 +121,7 @@ struct trackprefilter {
   Produces<aod::V0GoodTracks> v0GoodTracks;
 
   // Fix: Add PID and pt cuts to tracks
-  void processDefault(aod::Collision const& collision,
+  void processDefault(aod::Collision const& /*collision*/,
                       FullTracksExtIU const& tracks)
   {
     for (auto& t0 : tracks) {
@@ -155,7 +155,7 @@ struct trackprefilter {
   // process function for MC d3body check
   // void processCheck(aod::Collision const& collision, aod::Decay3Bodys const& decay3bodys,
   void processCheck(aod::Decay3Bodys const& decay3bodys,
-                    MCLabeledTracksIU const& tracks, aod::McParticles const& particlesMC)
+                    MCLabeledTracksIU const& /*tracks*/, aod::McParticles const& /*particlesMC*/)
   {
     for (auto& d3body : decay3bodys) {
       registry.fill(HIST("h3bodyCounter"), 0.5);
@@ -368,7 +368,7 @@ struct hypertriton3bodyFinder {
   o2::vertexing::DCAFitterN<2> fitter;
   o2::vertexing::DCAFitterN<3> fitter3body;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     resetHistos();
     mRunNumber = 0;
@@ -483,7 +483,7 @@ struct hypertriton3bodyFinder {
   //------------------------------------------------------------------
   // Check the info of good tracks
   template <class TTrackClass, typename TGoodTrackTable>
-  void CheckGoodTracks(TGoodTrackTable const& dGoodtracks, aod::McParticles const& particlesMC)
+  void CheckGoodTracks(TGoodTrackTable const& dGoodtracks, aod::McParticles const& /*particlesMC*/)
   {
     for (auto& goodtrackid : dGoodtracks) {
       auto goodtrack = goodtrackid.template goodTrack_as<TTrackClass>();
@@ -805,7 +805,7 @@ struct hypertriton3bodyFinder {
   //------------------------------------------------------------------
   // MC virtual lambda check
   template <class TTrackClass, typename TCollisionTable, typename TV0DataTable>
-  void VirtualLambdaCheck(TCollisionTable const& dCollision, TV0DataTable const& fullV0s, int bin)
+  void VirtualLambdaCheck(TCollisionTable const& /*dCollision*/, TV0DataTable const& fullV0s, int bin)
   {
     for (auto& v0 : fullV0s) {
       statisticsRegistry.virtLambdastats[bin]++;
@@ -940,13 +940,13 @@ struct hypertriton3bodyLabelBuilder {
 
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
 
-  void processDoNotBuildLabels(aod::Collisions::iterator const& collision)
+  void processDoNotBuildLabels(aod::Collisions::iterator const&)
   {
     // dummy process function - should not be required in the future
   }
   PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const& /*particlesMC*/)
   {
     std::vector<int> lIndices;
     lIndices.reserve(vtx3bodydatas.size());
@@ -1065,13 +1065,13 @@ struct hypertriton3bodyComparewithDecay3body {
     }
   };
 
-  void processDoNotCompare(aod::Collisions::iterator const& collision)
+  void processDoNotCompare(aod::Collisions::iterator const&)
   {
     // dummy process function - should not be required in the future
   }
   PROCESS_SWITCH(hypertriton3bodyComparewithDecay3body, processDoNotCompare, "Do not do comparison", true);
 
-  void processDoComparison(aod::Decay3Bodys const& decay3bodytable, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const& particlesMC)
+  void processDoComparison(aod::Decay3Bodys const& decay3bodytable, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const& /*particlesMC*/)
   {
     std::vector<Indexdaughters> set_pair;
     for (auto d3body : decay3bodytable) {
