@@ -166,7 +166,7 @@ struct ZDCAnalysis {
 
   void processZdcBcAss(
     BCsRun3 const& bcs,
-    aod::Zdcs const& zdcs)
+    aod::Zdcs const& /*zdcs*/)
   {
     for (const auto& bc : bcs) {
       if (bc.has_zdc()) {
@@ -189,8 +189,8 @@ struct ZDCAnalysis {
 
   void processZdcCollAss(
     ColEvSels const& cols,
-    BCsRun3 const& bcs,
-    aod::Zdcs const& zdcs)
+    BCsRun3 const& /*bcs*/,
+    aod::Zdcs const& /*zdcs*/)
   {
     // collision-based event selection
     for (auto& collision : cols) {
@@ -244,11 +244,11 @@ struct ZDCAnalysis {
 
   void processZdcCorrela(
     soa::Join<aod::Collisions, aod::EvSels>::iterator const& coll,
-    BCsRun3 const& bcs,
-    aod::Zdcs const& zdcs,
-    aod::FV0As const& fv0as,
-    aod::FT0s const& ft0s,
-    aod::FDDs const& fdds)
+    BCsRun3 const& /*bcs*/,
+    aod::Zdcs const& /*zdcs*/,
+    aod::FV0As const& /*fv0as*/,
+    aod::FT0s const& /*ft0s*/,
+    aod::FDDs const& /*fdds*/)
   {
     const auto& foundBC = coll.foundBC_as<BCsRun3>();
 
