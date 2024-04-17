@@ -129,7 +129,7 @@ struct SGSpectraAnalyzer {
   using UDCollisionFull = UDCollisionsFull::iterator;
 
   template <typename T>
-  int trackselector(const T& track, bool  /*use_tof*/)
+  int trackselector(const T& track, bool /*use_tof*/)
   {
     TLorentzVector a;
     a.SetXYZM(track.px(), track.py(), track.pz(), mpion);
