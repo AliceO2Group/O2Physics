@@ -75,7 +75,7 @@ class Output
  public:
   virtual ~Output() = default;
 
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, bool  /*produceTrue*/ = false, bool  /*eventMixing*/ = false, bool  /*produceLikesign*/ = false, HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, bool /*produceTrue*/ = false, bool /*eventMixing*/ = false, bool /*produceLikesign*/ = false, HistogramRegistry* registry = nullptr)
   {
     mHistogramRegistry = registry;
     if (mHistogramRegistry == nullptr)
@@ -120,15 +120,15 @@ class Output
     mHistogramRegistry->get<THnSparse>(h)->Fill(mFillPoint);
   }
 
-  virtual void fill(EventType  /*t*/, double*  /*point*/)
+  virtual void fill(EventType /*t*/, double* /*point*/)
   {
     LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(EventType t, double* point)' !!! Please implement it first.");
   };
-  virtual void fill(TrackType  /*t*/, double*  /*point*/)
+  virtual void fill(TrackType /*t*/, double* /*point*/)
   {
     LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(TrackType t, double* point)' !!! Please implement it first.");
   };
-  virtual void fill(PairType  /*t*/, double*  /*point*/)
+  virtual void fill(PairType /*t*/, double* /*point*/)
   {
     LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(PairType t, double* point)' !!! Please implement it first.");
   };

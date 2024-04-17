@@ -600,7 +600,7 @@ struct strangederivedbuilder {
 
   using interlinkedCascades = soa::Join<aod::Cascades, aod::CascDataLink, aod::KFCascDataLink, aod::TraCascDataLink>;
 
-  void processCascadeInterlinkTracked(interlinkedCascades const&  /*masterCascades*/, aod::CascIndices const& Cascades, aod::TraCascIndices const& TraCascades)
+  void processCascadeInterlinkTracked(interlinkedCascades const& /*masterCascades*/, aod::CascIndices const& Cascades, aod::TraCascIndices const& TraCascades)
   {
     // Standard to tracked
     for (auto const& c : Cascades) {
@@ -622,7 +622,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCascadeInterlinkKF(interlinkedCascades const&  /*masterCascades*/, aod::CascIndices const& Cascades, aod::KFCascIndices const& KFCascades)
+  void processCascadeInterlinkKF(interlinkedCascades const& /*masterCascades*/, aod::CascIndices const& Cascades, aod::KFCascIndices const& KFCascades)
   {
     // Standard to KF
     for (auto const& c : Cascades) {
@@ -658,7 +658,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processReconstructedSimulation(aod::McCollision const&  /*mcCollision*/, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>> const& collisions, aod::McParticles const& mcParticles)
+  void processReconstructedSimulation(aod::McCollision const& /*mcCollision*/, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>> const& collisions, aod::McParticles const& mcParticles)
   {
     // this process function also checks if a given collision was reconstructed and checks explicitly for splitting, etc
     // identify best-of collision

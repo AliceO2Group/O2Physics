@@ -157,7 +157,7 @@ struct strangeness_tutorial {
 
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate,
-                   float  /*multiplicity*/)
+                   float /*multiplicity*/)
   {
     if (QAv0) {
       rKzeroShort.fill(HIST("hMassK0Shortbefore"), candidate.mK0Short(), candidate.pt());
@@ -221,7 +221,7 @@ struct strangeness_tutorial {
 
   template <typename T, typename V0s>
   bool isSelectedV0Daughter(T const& track, float charge,
-                            double nsigmaV0Daughter, V0s const&  /*candidate*/)
+                            double nsigmaV0Daughter, V0s const& /*candidate*/)
   {
     if (QAPID) {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
@@ -290,7 +290,7 @@ struct strangeness_tutorial {
   //                  soa::Filtered<aod::V0Datas> const& V0s,
   //                  DaughterTracks const&)
 
-  void processSE(EventCandidates::iterator const& collision, TrackCandidates const&  /*tracks*/, aod::V0Datas const& V0s)
+  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
   {
     const double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass();
     if (!collision.sel8()) {
@@ -389,7 +389,7 @@ struct strangeness_tutorial {
   SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributor> pair1{binningOnPositions1, cfgNmixedEvents, -1, &cache}; // for PbPb
   SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeCentralityM> pair2{binningOnPositions2, cfgNmixedEvents, -1, &cache};       // for pp
 
-  void processME(EventCandidates const&  /*collisions*/, TrackCandidates const&  /*tracks*/, V0TrackCandidate const&  /*v0s*/)
+  void processME(EventCandidates const& /*collisions*/, TrackCandidates const& /*tracks*/, V0TrackCandidate const& /*v0s*/)
   {
     const double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass();
     if (cfgMultFOTM) {

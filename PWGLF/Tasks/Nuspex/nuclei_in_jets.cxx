@@ -891,7 +891,7 @@ struct nuclei_in_jets {
     }
   }
 
-  void processRec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const&  /*mcCollisions*/, const aod::McParticles&  /*mcParticles*/)
+  void processRec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const& /*mcCollisions*/, const aod::McParticles& /*mcParticles*/)
   {
 
     for (const auto& collision : collisions) {

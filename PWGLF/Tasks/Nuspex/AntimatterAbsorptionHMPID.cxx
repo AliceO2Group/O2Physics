@@ -285,7 +285,7 @@ struct AntimatterAbsorptionHMPID {
 
   // Process Data
   void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& event,
-                   FullTracks const&  /*tracks*/,
+                   FullTracks const& /*tracks*/,
                    o2::aod::HMPIDs const& hmpids)
   {
     // Event Selection

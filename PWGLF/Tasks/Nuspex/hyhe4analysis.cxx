@@ -111,7 +111,7 @@ struct hyhefouranalysis {
     histos.add("hMassVsPtAntiHyHe4", "hMassVsPtAntiHyHe4", kTH2F, {axisPt, axisMassHyHe4});
   }
 
-  void process(aod::Collision const&  /*collision*/, aod::HyHe4Datas const& hyhe4candidates, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void process(aod::Collision const& /*collision*/, aod::HyHe4Datas const& hyhe4candidates, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
     histos.fill(HIST("hNEvents"), 0.5);
     histos.fill(HIST("hNCandidates"), hyhe4candidates.size());

@@ -886,7 +886,7 @@ struct antidLambdaEbye {
     }
   }
 
-  void fillMcGen(aod::McParticles const& mcParticles, aod::McTrackLabels const&  /*mcLab*/, std::vector<std::pair<bool, float>> const& goodCollisions)
+  void fillMcGen(aod::McParticles const& mcParticles, aod::McTrackLabels const& /*mcLab*/, std::vector<std::pair<bool, float>> const& goodCollisions)
   {
     for (uint64_t iC{0}; iC < goodCollisions.size(); ++iC) {
       if (goodCollisions[iC].first == false) {
