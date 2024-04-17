@@ -308,26 +308,26 @@ struct SGSpectraAnalyzer {
             }
           }
         }
-        }
       }
-      if (goodtracks > 1) {
-        float W_gPb = TMath::Sqrt(2 * 2680 * sum.M() * TMath::Exp(sum.Rapidity()));
-        if (sum.M() < .2)
-          std::cout << goodtracks << "\t" << sum.M() << "\t" << sum.Pt() << std::endl;
-        if (gapSide < 2) {
-          registry.get<TH2>(HIST("E_mult_SG"))->Fill(goodtracks, W_gPb);
-          registry.get<TH2>(HIST("E_M_SG"))->Fill(sum.M(), W_gPb);
-          registry.get<TH2>(HIST("E_Y_SG"))->Fill(sum.Rapidity(), W_gPb);
-          registry.get<TH1>(HIST("all_tracks_SG"))->Fill(alltracks);
-          registry.get<TH1>(HIST("good_tracks_SG"))->Fill(goodtracks);
-        } else {
-          registry.get<TH2>(HIST("E_mult_DG"))->Fill(goodtracks, W_gPb);
-          registry.get<TH2>(HIST("E_M_DG"))->Fill(sum.M(), W_gPb);
-          registry.get<TH2>(HIST("E_Y_DG"))->Fill(sum.Rapidity(), W_gPb);
-          registry.get<TH1>(HIST("all_tracks_DG"))->Fill(alltracks);
-          registry.get<TH1>(HIST("good_tracks_DG"))->Fill(goodtracks);
-        }
+    }
+    if (goodtracks > 1) {
+      float W_gPb = TMath::Sqrt(2 * 2680 * sum.M() * TMath::Exp(sum.Rapidity()));
+      if (sum.M() < .2)
+        std::cout << goodtracks << "\t" << sum.M() << "\t" << sum.Pt() << std::endl;
+      if (gapSide < 2) {
+        registry.get<TH2>(HIST("E_mult_SG"))->Fill(goodtracks, W_gPb);
+        registry.get<TH2>(HIST("E_M_SG"))->Fill(sum.M(), W_gPb);
+        registry.get<TH2>(HIST("E_Y_SG"))->Fill(sum.Rapidity(), W_gPb);
+        registry.get<TH1>(HIST("all_tracks_SG"))->Fill(alltracks);
+        registry.get<TH1>(HIST("good_tracks_SG"))->Fill(goodtracks);
+      } else {
+        registry.get<TH2>(HIST("E_mult_DG"))->Fill(goodtracks, W_gPb);
+        registry.get<TH2>(HIST("E_M_DG"))->Fill(sum.M(), W_gPb);
+        registry.get<TH2>(HIST("E_Y_DG"))->Fill(sum.Rapidity(), W_gPb);
+        registry.get<TH1>(HIST("all_tracks_DG"))->Fill(alltracks);
+        registry.get<TH1>(HIST("good_tracks_DG"))->Fill(goodtracks);
       }
+    }
   }
 
   void fillHistograms(const std::string& particleType, float pt, float eta, int gapSide)
