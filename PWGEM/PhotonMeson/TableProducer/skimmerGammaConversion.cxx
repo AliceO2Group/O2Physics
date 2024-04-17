@@ -27,6 +27,7 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
