@@ -1253,7 +1253,7 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
   }
   fhPA[sp]->Fill(track.p());
   fhPtA[sp]->Fill(track.pt());
-  fhdEdxA[sp]->Fill(track.TPCsignal(),track.p());
+  fhdEdxA[sp]->Fill(track.tpcSignal(),track.p());
   if (track.sign() > 0) {
     fhPtPosA[sp]->Fill(track.pt());
   } else {
