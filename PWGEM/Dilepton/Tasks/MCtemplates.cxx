@@ -130,7 +130,7 @@ struct AnalysisEventSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, typename TEvent, typename TEventsMC>
-  void runEventSelection(TEvent const& event, TEventsMC const& mcEvents)
+  void runEventSelection(TEvent const& event, TEventsMC const&)
   {
     // Reset the values array
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -249,7 +249,7 @@ struct AnalysisTrackSelection {
   }
 
   template <uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TTracks, typename TTracksMC>
-  void runTrackSelection(TTracks const& tracks, TTracksMC const& tracksMC)
+  void runTrackSelection(TTracks const& tracks, TTracksMC const&)
   {
     uint32_t filterMap = 0;
     trackSel.reserve(tracks.size());
@@ -581,7 +581,7 @@ struct AnalysisSameEventPairing {
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
                                soa::Filtered<MyBarrelTracksSelected> const& tracks,
-                               ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                               ReducedMCEvents const&, ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
@@ -596,7 +596,7 @@ struct AnalysisSameEventPairing {
 
   void processDecayToEEVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
                                         soa::Filtered<MyBarrelTracksSelectedWithCov> const& tracks,
-                                        ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                                        ReducedMCEvents const&, ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
@@ -611,7 +611,7 @@ struct AnalysisSameEventPairing {
 
   void processDecayToEEAOD(soa::Filtered<MyEventsSelectedAOD>::iterator const& event,
                            soa::Filtered<MyBarrelTracksSelectedAOD> const& tracks,
-                           aod::McCollisions const& eventsMC, aod::McParticles const& tracksMC)
+                           aod::McCollisions const&, aod::McParticles const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);

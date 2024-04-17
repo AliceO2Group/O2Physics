@@ -337,7 +337,7 @@ struct SinglePhoton {
 
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
-  void processPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
+  void processPCM(MyCollisions const&, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
     FillPhoton<EMDetType::kPCM>(grouped_collisions, v0photons, perCollision, fPCMCuts, legs, nullptr);
   }
@@ -352,7 +352,7 @@ struct SinglePhoton {
   //    FillPhoton<EMDetType::kEMC>(grouped_collisions, emcclusters, perCollision_emc, fEMCCuts, nullptr, emcmatchedtracks);
   //  }
 
-  void processDummy(MyCollisions::iterator const& collision) {}
+  void processDummy(MyCollisions::iterator const&) {}
 
   PROCESS_SWITCH(SinglePhoton, processPCM, "single photon with PCM", false);
   // PROCESS_SWITCH(SinglePhoton, processPHOS, "single photon with PHOS", false);

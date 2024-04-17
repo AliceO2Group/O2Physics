@@ -142,7 +142,7 @@ struct DalitzEEQC {
 
   std::vector<uint64_t> used_trackIds;
 
-  void processQC(MyCollisions const& collisions, MyDalitzEEs const& dileptons, MyTracks const& tracks)
+  void processQC(MyCollisions const&, MyDalitzEEs const&, MyTracks const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
@@ -372,7 +372,7 @@ struct DalitzEEQC {
   }
   PROCESS_SWITCH(DalitzEEQC, processEventMixing, "run Dalitz EE QC event mixing", true);
 
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DalitzEEQC, processDummy, "Dummy function", false);
 };
 
