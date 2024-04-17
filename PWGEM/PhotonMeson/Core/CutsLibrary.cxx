@@ -667,10 +667,10 @@ EMCPhotonCut* o2::aod::pwgem::photon::emccuts::GetCut(const char* cutName)
     cut->SetM02Range(0.0f, 1000.f);
     cut->SetTimeRange(-500.f, 500.f);
 
-    cut->SetTrackMatchingEta([](float pT) {
+    cut->SetTrackMatchingEta([](float /*pT*/) {
       return -1.f;
     });
-    cut->SetTrackMatchingPhi([](float pT) {
+    cut->SetTrackMatchingPhi([](float /*pT*/) {
       return -1.f;
     });
     cut->SetMinEoverP(0.f);

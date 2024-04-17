@@ -172,9 +172,9 @@ struct phosCalibration {
 
   /// \brief Process PHOS data
   void process(BCsWithBcSels const& bcs,
-               SelCollisions const& collisions,
+               SelCollisions const&,
                o2::aod::Calos const& cells,
-               o2::aod::CaloTriggers const& ctrs,
+               o2::aod::CaloTriggers const&,
                aod::CaloClusters const& clusters)
   {
     // Fill cell histograms

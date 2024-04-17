@@ -124,7 +124,7 @@ struct DalitzMuMuQCMC {
     LOGF(info, "Number of Dalitz cuts = %d", fDalitzMuMuCuts.size());
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     DefineCuts();
     addhistograms(); // please call this after DefineCuts();
@@ -155,7 +155,7 @@ struct DalitzMuMuQCMC {
 
   std::vector<uint64_t> used_trackIds;
 
-  void processQCMC(MyCollisions const& collisions, MyDalitzMuMus const& dileptons, MyMCTracks const& tracks, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
+  void processQCMC(MyCollisions const&, MyDalitzMuMus const&, MyMCTracks const&, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
@@ -243,7 +243,7 @@ struct DalitzMuMuQCMC {
   Partition<aod::EMMCParticles> posTracks = o2::aod::mcparticle::pdgCode == -13; // mu+
   Partition<aod::EMMCParticles> negTracks = o2::aod::mcparticle::pdgCode == +13; // mu-
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
-  void processGen(MyCollisions const& collisions, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
+  void processGen(MyCollisions const&, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -304,7 +304,7 @@ struct DalitzMuMuQCMC {
   }
   PROCESS_SWITCH(DalitzMuMuQCMC, processGen, "run genrated info", true);
 
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DalitzMuMuQCMC, processDummy, "Dummy function", false);
 };
 
