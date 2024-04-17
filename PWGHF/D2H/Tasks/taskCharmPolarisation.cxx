@@ -160,7 +160,7 @@ struct TaskPolarisationCharmHadrons {
     const AxisSpec thnAxisCosThetaStarBeam{configThnAxisCosThetaStarBeam, "cos(#vartheta_{beam})"};
     const AxisSpec thnAxisMlBkg{configThnAxisMlBkg, "ML bkg"};
     const AxisSpec thnAxisMlNonPrompt{configThnAxisMlNonPrompt, "ML non-prompt"};
-    const AxisSpec thnAxisIsRotatedCandidate{{2, -0.5f, 1.5f}, "0: standard candidate, 1: rotated candidate"};
+    const AxisSpec thnAxisIsRotatedCandidate{2, -0.5f, 1.5f, "rotated bkg"};
 
     if (doprocessDstarWithMl || doprocessDstarMcWithMl) {
       /// analysis for D*+ meson with ML, w/o rot. background axis
