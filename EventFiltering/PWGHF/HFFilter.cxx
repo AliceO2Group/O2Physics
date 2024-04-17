@@ -83,8 +83,9 @@ struct HfFilter { // Main struct for HF triggers
 
   // double charm
   Configurable<LabeledArray<int>> enableDoubleCharmChannels{"enableDoubleCharmChannels", {activeDoubleCharmChannels[0], 1, 3, labelsEmpty, labelsColumnsDoubleCharmChannels}, "Flags to enable/disable double charm channels"};
+  Configurable<bool> keepOnlyDplusForDouble3Prongs{"keepOnlyDplusForDouble3Prongs", false, "Flag to enable/disable to keep only D+ in double charm 3-prongs trigger"};
 
-  // parameters for V0 + charm triggers
+  // parameters for resonance triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
   Configurable<LabeledArray<float>> cutsPtDeltaMassCharmReso{"cutsPtDeltaMassCharmReso", {cutsCharmReso[0], 3, 11, labelsRowsDeltaMassCharmReso, labelsColumnsDeltaMassCharmReso}, "pt (GeV/c) and invariant-mass delta (GeV/c2) for charm hadron resonances"};
   Configurable<bool> keepAlsoWrongDmesLambdaPairs{"keepAlsoWrongDmesLambdaPairs", true, "flat go keep also wrong sign D+Lambda pairs"};
@@ -746,7 +747,7 @@ struct HfFilter { // Main struct for HF triggers
           continue;
         }
 
-        if (std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) {
+        if ((!keepOnlyDplusForDouble3Prongs && std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) || (keepOnlyDplusForDouble3Prongs && isCharmTagged[kDplus - 1])) {
           indicesDau3Prong.push_back(std::vector<int64_t>{trackFirst.globalIndex(), trackSecond.globalIndex(), trackThird.globalIndex()});
         } // end multiple 3-prong selection
 
