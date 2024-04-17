@@ -435,13 +435,13 @@ struct femtoUniversePairTaskTrackD0 {
     // loop over D0/D0bar candidates (ONLY)
     for (auto const& cand1 : groupPartsOnlyD0D0bar) {
       // Check if the first candidate is D0 meson
-      if (cand1.mLambda() > 0.0f && cand1.mAntiLambda() < 0.0f) {
+      if (cand1.mLambda() < 0.0f && cand1.mAntiLambda() > 0.0f) {
         continue;
       }
 
       for (auto const& cand2 : groupPartsOnlyD0D0bar) {
         // Check if the second candidate is D0bar meson
-        if (cand2.mLambda() < 0.0f && cand2.mAntiLambda() > 0.0f) {
+        if (cand2.mLambda() > 0.0f && cand2.mAntiLambda() < 0.0f) {
           continue;
         }
         deltaPhi = getDeltaPhi(cand1.phi(), cand2.phi());
