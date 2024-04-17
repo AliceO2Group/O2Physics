@@ -787,7 +787,7 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      if (std::abs(hfCand.eta()) < ConfD0Selection.ConfD0D0barCandEtaCut) {
+      if (std::abs(hfCand.eta()) > ConfD0Selection.ConfD0D0barCandEtaCut) {
         continue;
       }
 
@@ -819,7 +819,7 @@ struct femtoUniverseProducerTask {
       }
 
       if (ConfD0Selection.ConfStoreD0D0barWithinTheMassRange) {
-        if ((invMassD0 > ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0 < ConfD0Selection.ConfStoreD0D0barInvMassUpLimit) || (invMassD0bar > ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0bar < ConfD0Selection.ConfStoreD0D0barInvMassUpLimit))
+        if ((invMassD0 < ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0 > ConfD0Selection.ConfStoreD0D0barInvMassUpLimit) || (invMassD0bar < ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0bar > ConfD0Selection.ConfStoreD0D0barInvMassUpLimit))
           continue;
       }
 
