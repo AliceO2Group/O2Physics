@@ -424,9 +424,9 @@ struct HfDataCreatorCharmHadPiReduced {
   void runDataCreation(aod::Collision const& collision,
                        CCharmCands const& candsC,
                        aod::TrackAssoc const& trackIndices,
-                       TTracks const& tracks,
+                       TTracks const&,
                        PParticles const& particlesMc,
-                       aod::BCsWithTimestamps const& bcs)
+                       aod::BCsWithTimestamps const&)
   {
     // helpers for ReducedTables filling
     int indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;

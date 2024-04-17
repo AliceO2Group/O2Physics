@@ -339,14 +339,14 @@ struct HfCandidateCreatorToXiPiMc {
 
   void init(InitContext const&) {}
 
-  void processDoNoMc(aod::Collisions::iterator const& collision)
+  void processDoNoMc(aod::Collisions::iterator const&)
   {
     // dummy process function - should not be required in the future
   }
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processDoNoMc, "Do not run MC process function", true);
 
   void processMc(aod::HfCandToXiPi const& candidates,
-                 aod::TracksWMc const& tracks,
+                 aod::TracksWMc const&,
                  aod::McParticles const& mcParticles,
                  aod::McCollisionLabels const&)
   {

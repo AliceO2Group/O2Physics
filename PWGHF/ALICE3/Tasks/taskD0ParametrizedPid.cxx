@@ -60,7 +60,7 @@ struct HfTaskD0ParametrizedPid {
 
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates,
                McParticlesHf const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   // void process(const o2::aod::Collision& collision, soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles, aod::TracksWMc const& tracks)
   {
     // float ncontributor = collision.numContrib();

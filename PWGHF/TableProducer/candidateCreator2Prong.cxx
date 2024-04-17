@@ -174,10 +174,10 @@ struct HfCandidateCreator2Prong {
   }
 
   template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks>
-  void runCreator2ProngWithDCAFitterN(Coll const& collisions,
+  void runCreator2ProngWithDCAFitterN(Coll const&,
                                       CandType const& rowsTrackIndexProng2,
-                                      TTracks const& tracks,
-                                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+                                      TTracks const&,
+                                      aod::BCsWithTimestamps const&)
   {
     // loop over pairs of track indices
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
@@ -306,10 +306,10 @@ struct HfCandidateCreator2Prong {
   }
 
   template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks>
-  void runCreator2ProngWithKFParticle(Coll const& collisions,
+  void runCreator2ProngWithKFParticle(Coll const&,
                                       CandType const& rowsTrackIndexProng2,
-                                      TTracks const& tracks,
-                                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+                                      TTracks const&,
+                                      aod::BCsWithTimestamps const&)
   {
 
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {

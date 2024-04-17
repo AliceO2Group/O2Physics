@@ -117,7 +117,7 @@ struct HfCorrelatorDsHadronsSelCollision {
   PROCESS_SWITCH(HfCorrelatorDsHadronsSelCollision, processDsSelCollisionsMcRec, "Process Ds Collision Selection MCRec", false);
 
   /// Code to select collisions with at least one Ds meson - for MC gen-level analysis
-  void processDsSelCollisionsMcGen(aod::McCollision const& mcCollision,
+  void processDsSelCollisionsMcGen(aod::McCollision const&,
                                    CandDsMcGen const& mcParticles)
   {
     bool isDsFound = false;
@@ -697,7 +697,7 @@ struct HfCorrelatorDsHadrons {
   void processMcGen(SelCollisionsWithDsMc::iterator const& mcCollision,
                     CandDsMcGen const& mcParticles)
   {
-    auto getTracksSize = [&mcParticles](SelCollisionsWithDsMc::iterator const& mcCollision) {
+    auto getTracksSize = [&mcParticles](SelCollisionsWithDsMc::iterator const&) {
       int nTracks = 0;
       for (const auto& track : mcParticles) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {

@@ -224,7 +224,7 @@ struct HfTreeCreatorBplusToD0Pi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      auto fillTable = [&](int CandFlag,
+      auto fillTable = [&](int /*CandFlag*/,
                            // int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,

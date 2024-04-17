@@ -330,7 +330,7 @@ struct HfTaskB0Reduced {
   /// \param candidatesD is the table with D- candidates
   template <bool doMc, bool withDecayTypeCheck, bool withDmesMl, bool withB0Ml, typename Cand>
   void fillCand(Cand const& candidate,
-                aod::HfRed3Prongs const& candidatesD)
+                aod::HfRed3Prongs const&)
   {
     auto ptCandB0 = candidate.pt();
     auto invMassB0 = hfHelper.invMassB0ToDPi(candidate);

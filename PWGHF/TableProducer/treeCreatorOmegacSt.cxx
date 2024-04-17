@@ -278,7 +278,7 @@ struct HfTreeCreatorOmegacSt {
   // processData: loop over reconstructed objects, no MC information
   // processGen: loop over reconstructed objects, use MC information (mutually exclusive? combine?)
 
-  void processMc(aod::McCollision const& mcCollision,
+  void processMc(aod::McCollision const&,
                  aod::McParticles const& mcParticles)
   {
     for (const auto& mcParticle : mcParticles) {
@@ -298,9 +298,9 @@ struct HfTreeCreatorOmegacSt {
   void processData(Collisions const& collisions,
                    aod::AssignedTrackedCascades const& trackedCascades,
                    aod::TrackAssoc const& trackIndices,
-                   aod::Cascades const& cascades,
-                   aod::V0s const& v0s,
-                   TracksExt const& tracks,
+                   aod::Cascades const&,
+                   aod::V0s const&,
+                   TracksExt const&,
                    aod::BCsWithTimestamps const&)
   {
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
@@ -527,12 +527,12 @@ struct HfTreeCreatorOmegacSt {
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processData, "Process data", true);
 
   void processMcGen(aod::Collision const& collision,
-                    aod::McCollisions const& mcCollisions,
+                    aod::McCollisions const&,
                     aod::AssignedTrackedCascades const& trackedCascades,
-                    aod::Cascades const& cascades,
-                    aod::V0s const& v0s,
+                    aod::Cascades const&,
+                    aod::V0s const&,
                     TracksExtMc const& tracks,
-                    aod::McParticles const& mcParticles,
+                    aod::McParticles const&,
                     aod::BCsWithTimestamps const&)
   {
     const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
