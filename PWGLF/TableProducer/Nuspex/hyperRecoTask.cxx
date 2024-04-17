@@ -420,7 +420,7 @@ struct hyperRecoTask {
     }
   }
 
-  void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const& particlesMC)
+  void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const&)
   {
     for (auto& hypCand : hyperCandidates) {
       auto mcLabPos = trackLabels.rawIteratorAt(hypCand.posTrackID);

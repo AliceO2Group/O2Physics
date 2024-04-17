@@ -1609,7 +1609,7 @@ struct LFNucleiBATask {
   template <bool IsMC, bool IsFilteredData, typename CollisionType, typename TracksType, typename ParticleType>
   void fillHistograms(const CollisionType& event,
                       const TracksType& tracks,
-                      const ParticleType& particles)
+                      const ParticleType&  /*particles*/)
   {
     // Event histos fill
     histos.fill(HIST("event/eventSelection"), 0);

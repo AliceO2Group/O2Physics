@@ -166,7 +166,7 @@ struct sigmaanalysis {
 
   // Process sigma candidate and store properties in object
   template <typename TV0Object, typename TCollision>
-  bool processSigmaCandidate(TCollision const& collision, TV0Object const& lambda, TV0Object const& gamma)
+  bool processSigmaCandidate(TCollision const&, TV0Object const& lambda, TV0Object const& gamma)
   {
     // FIXME: this should be at the single particle level, preferably partitions
     if (!allowTPConly && (lambda.v0Type() > 1 || gamma.v0Type() > 1))
