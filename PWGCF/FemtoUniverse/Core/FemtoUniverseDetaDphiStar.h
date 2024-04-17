@@ -381,6 +381,8 @@ class FemtoUniverseDetaDphiStar
       double arg = 0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt);
       if (abs(arg) < 1.0) {
         tmpVec.push_back(phi0 - std::asin(arg));
+      } else {
+        tmpVec.push_back(999.0);
       }
     }
   }
@@ -395,15 +397,22 @@ class FemtoUniverseDetaDphiStar
     PhiAtRadiiTPC(part2, tmpVec2);
     int num = tmpVec1.size();
     float dPhiAvg = 0;
+    float dphi = 0;
+    int entries = 0;
     for (int i = 0; i < num; i++) {
-      float dphi = tmpVec1.at(i) - tmpVec2.at(i);
+      if (tmpVec1.at(i) != 999 && tmpVec2.at(i) != 999) {
+        dphi = tmpVec1.at(i) - tmpVec2.at(i);
+        entries++;
+      } else {
+        dphi = 0;
+      }
       dphi = TVector2::Phi_mpi_pi(dphi);
       dPhiAvg += dphi;
       if (plotForEveryRadii) {
         histdetadpiRadii[iHist][i]->Fill(part1.eta() - part2.eta(), dphi);
       }
     }
-    return dPhiAvg / num;
+    return dPhiAvg / static_cast<float>(entries);
   }
 
   // Get particle charge from mask
