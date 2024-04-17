@@ -144,7 +144,7 @@ struct JetFinderHFTask {
 
   // function that generalically processes Data and reco level events
   template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
-  void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O&  /*originalTracks*/, float minJetPt, float maxJetPt)
+  void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O& /*originalTracks*/, float minJetPt, float maxJetPt)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;

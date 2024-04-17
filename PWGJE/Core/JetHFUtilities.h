@@ -355,7 +355,7 @@ auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candid
 }
 
 template <typename T>
-int getCandidatePDG(T const&  /*candidate*/)
+int getCandidatePDG(T const& /*candidate*/)
 {
 
   if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
@@ -389,7 +389,7 @@ int getTablePDG()
 }
 
 template <typename T>
-float getCandidatePDGMass(T const&  /*candidate*/)
+float getCandidatePDGMass(T const& /*candidate*/)
 {
 
   if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
