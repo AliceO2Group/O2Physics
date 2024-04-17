@@ -127,11 +127,11 @@ class VarManager : public TObject
     kDecayToEE = 0, // e.g. J/psi        -> e+ e-
     kDecayToMuMu,   // e.g. J/psi        -> mu+ mu-
     kDecayToPiPi,
-    kElectronMuon,   // e.g. Electron - muon correlations
-    kBcToThreeMuons, // e.g. Bc           -> mu+ mu- mu+
-    kBtoJpsiEEK,     // e.g. B+           -> e+ e- K+
-    kXtoJpsiPiPi,    // e.g. X(3872)      -> J/psi pi+ pi-
-    kChictoJpsiEE,   // e.g. Chi_c1      -> J/psi e+ e-
+    kElectronMuon,              // e.g. Electron - muon correlations
+    kBcToThreeMuons,            // e.g. Bc           -> mu+ mu- mu+
+    kBtoJpsiEEK,                // e.g. B+           -> e+ e- K+
+    kXtoJpsiPiPi,               // e.g. X(3872)      -> J/psi pi+ pi-
+    kChictoJpsiEE,              // e.g. Chi_c1      -> J/psi e+ e-
     kTripleCandidateToEEPhoton, // e.g. chi_c   -> e+ e- photon or pi0 -> e+ e- photon
     kNMaxCandidateTypes
   };
