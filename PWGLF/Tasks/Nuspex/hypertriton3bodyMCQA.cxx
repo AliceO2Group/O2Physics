@@ -254,9 +254,11 @@ struct hypertriton3bodyTrackMcinfo {
 
     std::vector<int> protons, pions, deuterons;                     // index for daughter tracks
     std::unordered_set<int64_t> set_proton, set_pion, set_deuteron; // check duplicated daughters
-    int itrack = 0;
+    int itrack = -1;
 
     for (auto& track : tracks) {
+
+      ++itrack;
       registry.fill(HIST("hParticleCount"), 0.5);
       registry.fill(HIST("hTrackITSNcls"), track.itsNCls());
       registry.fill(HIST("hTPCNCls"), track.tpcNClsFound());
@@ -271,10 +273,14 @@ struct hypertriton3bodyTrackMcinfo {
           registry.fill(HIST("hTestCounter"), i + 3.5);
         }
       }
+
       if (!track.has_mcParticle()) {
         continue;
       }
       registry.fill(HIST("hTestCounter"), 1.5);
+      auto mcparticle = track.mcParticle_as<aod::McParticles>();
+      registry.fill(HIST("hTPCBB"), track.p() * track.sign(), track.tpcSignal());
+
       if (track.hasTOF() && track.hasTPC()) {
         registry.fill(HIST("hTestCounter"), 2.5);
         if (!(track.mcMask() & 1 << 15)) {
@@ -288,8 +294,6 @@ struct hypertriton3bodyTrackMcinfo {
         }
       }
       registry.fill(HIST("hParticleCount"), 1.5);
-      auto mcparticle = track.mcParticle_as<aod::McParticles>();
-      registry.fill(HIST("hTPCBB"), track.p() * track.sign(), track.tpcSignal());
 
       // if (TMath::Abs(mcparticle.y()) > 0.9) {continue;}
       registry.fill(HIST("hParticleCount"), 2.5);
@@ -495,7 +499,6 @@ struct hypertriton3bodyTrackMcinfo {
           }
         }
       }
-      ++itrack;
     }
 
     std::vector<Indexdaughters> set_pair;
@@ -665,12 +668,12 @@ struct hypertriton3bodyMcParticleCount {
         registry.fill(HIST("hMcRecoInvMass"), RecoDecay::m(array{array{dauProtonMom[0], dauProtonMom[1], dauProtonMom[2]}, array{dauPionMom[0], dauPionMom[1], dauPionMom[2]}, array{dauDeuteronMom[0], dauDeuteronMom[1], dauDeuteronMom[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron}));
         registry.fill(HIST("h3dMCDecayedHypertriton"), mcparticle.y(), mcparticle.pt(), MClifetime);
 
-        int daughterPionCount = 0;
-        for (auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
-          if (std::abs(mcparticleDaughter.pdgCode()) == 211) {
-            daughterPionCount++;
-          }
-        }
+        // int daughterPionCount = 0;
+        // for (auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
+        //   if (std::abs(mcparticleDaughter.pdgCode()) == 211) {
+        //     daughterPionCount++;
+        //   }
+        // }
 
         // Count for hypertriton N_gen
         if (TMath::Abs(mcparticle.y()) < 1) {

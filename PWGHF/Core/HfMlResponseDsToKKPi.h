@@ -86,6 +86,9 @@ enum class InputFeaturesDsToKKPi : uint8_t {
   impactParameterXY0,
   impactParameterXY1,
   impactParameterXY2,
+  impactParameterZ0,
+  impactParameterZ1,
+  impactParameterZ2,
   nSigTpcPi0,
   nSigTpcPi1,
   nSigTpcPi2,
@@ -143,6 +146,9 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DS_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_DS_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_DS_FULL(candidate, impactParameterXY2, impactParameter2);
+        CHECK_AND_FILL_VEC_DS(impactParameterZ0);
+        CHECK_AND_FILL_VEC_DS(impactParameterZ1);
+        CHECK_AND_FILL_VEC_DS(impactParameterZ2);
         // TPC PID variables
         CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcPi0, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcPi1, tpcNSigmaPi);

@@ -105,6 +105,8 @@ struct UpcCandProducer {
     const AxisSpec axisTrgCounters{10, 0.5, 10.5, ""};
     histRegistry.add("hCountersTrg", "", kTH1F, {axisTrgCounters});
     histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(1, "TCE");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(2, "ZNA");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(3, "ZNC");
 
     const AxisSpec axisBcDist{201, 0.5, 200.5, ""};
     histRegistry.add("hDistToITSTPC", "", kTH1F, {axisBcDist});
@@ -279,7 +281,7 @@ struct UpcCandProducer {
         continue;
       int32_t mcEventID = mcPart.mcCollisionId();
       const auto& mcEvent = mcCollisions.iteratorAt(mcEventID);
-      bool isSignal = mcEvent.generatorsID() == fSignalGenID;
+      bool isSignal = mcEvent.getSourceId() == fSignalGenID;
       if (!isSignal) {
         continue;
       }
@@ -291,6 +293,8 @@ struct UpcCandProducer {
       }
     }
 
+    std::vector<int32_t> newMotherIDs{};
+
     // storing MC particles
     for (const auto& item : fNewPartIDs) {
       int32_t mcPartID = item.first;
@@ -298,22 +302,22 @@ struct UpcCandProducer {
       int32_t mcEventID = mcPart.mcCollisionId();
       int32_t newEventID = newEventIDs[mcEventID];
       // collecting new mother IDs
-      const auto& motherIDs = mcPart.mothersIds();
-      std::vector<int32_t> newMotherIDs;
-      newMotherIDs.reserve(motherIDs.size());
-      for (auto motherID : motherIDs) {
-        if (motherID >= nMCParticles) {
-          continue;
-        }
-        auto it = fNewPartIDs.find(motherID);
-        if (it != fNewPartIDs.end()) {
-          newMotherIDs.push_back(it->second);
+      if (mcPart.has_mothers()) {
+        const auto& motherIDs = mcPart.mothersIds();
+        for (auto motherID : motherIDs) {
+          if (motherID >= nMCParticles) {
+            continue;
+          }
+          auto it = fNewPartIDs.find(motherID);
+          if (it != fNewPartIDs.end()) {
+            newMotherIDs.push_back(it->second);
+          }
         }
       }
       // collecting new daughter IDs
-      const auto& daughterIDs = mcPart.daughtersIds();
       int32_t newDaughterIDs[2] = {-1, -1};
-      if (daughterIDs.size() > 0) {
+      if (mcPart.has_daughters()) {
+        const auto& daughterIDs = mcPart.daughtersIds();
         int32_t firstDaughter = daughterIDs.front();
         int32_t lastDaughter = daughterIDs.back();
         if (firstDaughter >= nMCParticles || lastDaughter >= nMCParticles) {
@@ -328,6 +332,7 @@ struct UpcCandProducer {
       }
       udMCParticles(newEventID, mcPart.pdgCode(), mcPart.getHepMCStatusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
                     mcPart.weight(), mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
+      newMotherIDs.clear();
     }
 
     // storing MC events
@@ -755,6 +760,10 @@ struct UpcCandProducer {
     for (const auto& zdc : zdcs) {
       if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
         continue;
+      if (!(std::abs(zdc.timeZNA()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNA", 1);
+      if (!(std::abs(zdc.timeZNC()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNC", 1);
       auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
     }
@@ -1231,6 +1240,10 @@ struct UpcCandProducer {
     for (const auto& zdc : zdcs) {
       if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
         continue;
+      if (!(std::abs(zdc.timeZNA()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNA", 1);
+      if (!(std::abs(zdc.timeZNC()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNC", 1);
       auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
     }
@@ -1482,6 +1495,7 @@ struct UpcCandProducer {
                         bcs, collisions,
                         ft0s, fdds, fv0as, zdcs,
                         &mcFwdTrackLabels);
+    fNewPartIDs.clear();
   }
 
   PROCESS_SWITCH(UpcCandProducer, processSemiFwd, "Produce candidates in semiforward/forward region", false);

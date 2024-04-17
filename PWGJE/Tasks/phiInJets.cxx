@@ -209,7 +209,7 @@ struct phiInJets {
     if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
 
-    if (std::abs(track.tpcNClsFindable()) < cfgnFindableTPCClusters)
+    if (track.tpcNClsFindable() < cfgnFindableTPCClusters)
       return false;
 
     if (std::abs(track.tpcNClsCrossedRows()) < cfgnTPCCrossedRows)

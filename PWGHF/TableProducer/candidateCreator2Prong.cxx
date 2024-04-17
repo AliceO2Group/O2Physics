@@ -174,10 +174,10 @@ struct HfCandidateCreator2Prong {
   }
 
   template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks>
-  void runCreator2ProngWithDCAFitterN(Coll const& collisions,
+  void runCreator2ProngWithDCAFitterN(Coll const&,
                                       CandType const& rowsTrackIndexProng2,
-                                      TTracks const& tracks,
-                                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+                                      TTracks const&,
+                                      aod::BCsWithTimestamps const&)
   {
     // loop over pairs of track indices
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
@@ -288,6 +288,8 @@ struct HfCandidateCreator2Prong {
                        pvec1[0], pvec1[1], pvec1[2],
                        impactParameter0.getY(), impactParameter1.getY(),
                        std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
+                       impactParameter0.getZ(), impactParameter1.getZ(),
+                       std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()),
                        rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
                        rowTrackIndexProng2.hfflag());
 
@@ -304,10 +306,10 @@ struct HfCandidateCreator2Prong {
   }
 
   template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks>
-  void runCreator2ProngWithKFParticle(Coll const& collisions,
+  void runCreator2ProngWithKFParticle(Coll const&,
                                       CandType const& rowsTrackIndexProng2,
-                                      TTracks const& tracks,
-                                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+                                      TTracks const&,
+                                      aod::BCsWithTimestamps const&)
   {
 
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
@@ -431,6 +433,8 @@ struct HfCandidateCreator2Prong {
                        kfNegKaon.GetPx(), kfNegKaon.GetPy(), kfNegKaon.GetPz(),
                        impactParameter0XY, impactParameter1XY,
                        errImpactParameter0XY, errImpactParameter1XY,
+                       0.f, 0.f,
+                       0.f, 0.f,
                        rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
                        rowTrackIndexProng2.hfflag());
       rowCandidateKF(topolChi2PerNdfD0,

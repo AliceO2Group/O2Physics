@@ -141,7 +141,7 @@ struct lfmatchingqa {
   void init(o2::framework::InitContext&)
   {
     histos.add<TH1>("zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
-    histos.add<TH2>("tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});TPC signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tpcAxisFine});
+    histos.add<TH2>("tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});TPC signal (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxisFine});
 
     // use a THnSparse for all the information
     auto thnPi = histos.add("thnPi", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c}); #it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c}); DCA_{xy} (cm); <ITS Cluster size> x cos(#lambda); TPC signal (a.u.); n#sigma_{TPC} (pi); PID hypothesis; MC PDG code; MC Gen P (GeV/c)",

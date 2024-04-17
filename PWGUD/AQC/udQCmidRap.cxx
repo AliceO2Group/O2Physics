@@ -152,7 +152,7 @@ struct UDQCmid {
     // bool goodetas = true;
     // bool goodpts = true;
     bool ispipiCand = false;
-    auto netCharge = 0;
+    // auto netCharge = 0;
     auto lvtmp = TLorentzVector();
     auto ivm = TLorentzVector();
     if (isDGcandidate) {
@@ -183,7 +183,7 @@ struct UDQCmid {
          if (track.eta() <= diffCuts.minEta() || track.eta() >= diffCuts.maxEta()) {
            goodetas = false;
          }*/
-        netCharge += track.sign();
+        // netCharge += track.sign();
         ivm += lvtmp;
       }
 

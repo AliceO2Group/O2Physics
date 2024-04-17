@@ -220,7 +220,7 @@ struct AnalysisEventQa {
     std::map<uint64_t, int> fMCEventLabels;
 
     int fMCCounters = 0;
-    int fEvCounters = 0;
+    // int fEvCounters = 0;
 
     // First loop
 
@@ -230,7 +230,7 @@ struct AnalysisEventQa {
       eventFilter = uint32_t(event.isEventSelected());
       if (!eventFilter)
         continue;
-      fEvCounters++;
+      // fEvCounters++;
       registry.fill(HIST("RecEvent"), 0.5);
 
       Int_t midrap = 0;

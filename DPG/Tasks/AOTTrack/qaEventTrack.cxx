@@ -77,6 +77,11 @@ struct qaEventTrack {
   Configurable<float> minPhi{"minPhi", -1.f, "Minimum phi of accepted tracks"};
   Configurable<float> maxPhi{"maxPhi", 10.f, "Maximum phi of accepted tracks"};
 
+  // option to check PID for tracking before filling resolution histogras
+  Configurable<bool> checkPIDforTracking{"checkPIDforTracking", false, "check for PID in tracking"};
+  Configurable<int> PartIdentifier{"PartIdentifier", 2, "Particle identifier for selected particle; 0: electron, 1: muon, 2: pion, 3: kaon, 4: proton, 5: deuteron, 6: triton, 7: helium3, 8: alpha"};
+  Configurable<bool> doExtraPIDqa{"doExtraPIDqa", false, "do extra QA for tracks with wrong PID in tracking"};
+
   // options to check the track variables only for PV contributors
   Configurable<bool> checkOnlyPVContributor{"checkOnlyPVContributor", false, "check the track variables only for primary vertex contributors"};
 
@@ -257,6 +262,9 @@ struct qaEventTrack {
       histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmc", "", kTH2D, {axisPullInvPt, axisInvPt});
       histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmcEtaPlus", "", kTH2D, {axisPullInvPt, axisInvPt});
       histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmcEtaMinus", "", kTH2D, {axisPullInvPt, axisInvPt});
+      histos.add<TH2>("Tracks/Kine/pullInvPtVsPtmc", "", kTH2D, {axisPullInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/pullInvPtVsPtmcEtaPlus", "", kTH2D, {axisPullInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/pullInvPtVsPtmcEtaMinus", "", kTH2D, {axisPullInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoInvPtVsPt", "", kTH2D, {axisDeltaInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoInvPtVsPtEtaPlus", "", kTH2D, {axisDeltaInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoInvPtVsPtEtaMinus", "", kTH2D, {axisDeltaInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
@@ -266,6 +274,22 @@ struct qaEventTrack {
       histos.add<TH2>("Tracks/Kine/ptVsptmc", "", kTH2D, {axisPt, axisPt})->GetXaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
       histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
+
+      histos.add<TH2>("Tracks/Kine/resoPtVsptmcWrongPIDinTrk", "", kTH2D, {axisDeltaPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoPtVsptmcEtaPlusWrongPIDinTrk", "", kTH2D, {axisDeltaPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoPtVsptmcEtaMinusWrongPIDinTrk", "", kTH2D, {axisDeltaPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmcWrongPIDinTrk", "", kTH2D, {axisPullInvPt, axisInvPt});
+      histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmcEtaPlusWrongPIDinTrk", "", kTH2D, {axisPullInvPt, axisInvPt});
+      histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmcEtaMinusWrongPIDinTrk", "", kTH2D, {axisPullInvPt, axisInvPt});
+      histos.add<TH2>("Tracks/Kine/pullInvPtVsPtmcWrongPIDinTrk", "", kTH2D, {axisPullInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/pullInvPtVsPtmcEtaPlusWrongPIDinTrk", "", kTH2D, {axisPullInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/pullInvPtVsPtmcEtaMinusWrongPIDinTrk", "", kTH2D, {axisPullInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoInvPtVsPtWrongPIDinTrk", "", kTH2D, {axisDeltaInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoInvPtVsPtEtaPlusWrongPIDinTrk", "", kTH2D, {axisDeltaInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoInvPtVsPtEtaMinusWrongPIDinTrk", "", kTH2D, {axisDeltaInvPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoInvPtWrongPIDinTrk", "", kTH2D, {axisDeltaInvPt, axisInvPt});
+      histos.add<TH2>("Tracks/Kine/resoInvPtEtaPlusWrongPIDinTrk", "", kTH2D, {axisDeltaInvPt, axisInvPt});
+      histos.add<TH2>("Tracks/Kine/resoInvPtEtaMinusWrongPIDinTrk", "", kTH2D, {axisDeltaInvPt, axisInvPt});
     }
     histos.add("Tracks/Kine/relativeResoPt", "relative #it{p}_{T} resolution; #it{p}_{T}; #sigma(#it{p}_{T})/#it{p}_{T}", kTH2D, {{axisPt, {100, 0., 0.3}}});
     histos.add("Tracks/Kine/relativeResoPtEtaPlus", "relative #it{p}_{T} resolution positive #eta; #it{p}_{T}; #sigma(#it{p}_{T})/#it{p}_{T} (#eta>0)", kTH2D, {{axisPt, {100, 0., 0.3}}});
@@ -1524,12 +1548,47 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
 
     if constexpr (IS_MC) {
       if (track.has_mcParticle()) {
-        // resolution plots
         auto particle = track.mcParticle();
+        // resolution plots
+        if (doExtraPIDqa && track.pidForTracking() != std::abs(PartIdentifier)) {
+          // full eta range
+          histos.fill(HIST("Tracks/Kine/resoPtVsptmcWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt());
+          histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
+          histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
+          if (particle.pt() > 0.f) {
+            histos.fill(HIST("Tracks/Kine/resoInvPtWrongPIDinTrk"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
+          }
+          histos.fill(HIST("Tracks/Kine/resoInvPtVsPtWrongPIDinTrk"), track.signed1Pt() - 1.f / particle.pt(), particle.pt());
+          // split eta range
+          if (eta > 0) { // positive eta
+            histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaPlusWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt());
+            histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcEtaPlusWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
+            histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcEtaPlusWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
+            if (particle.pt() > 0.f) {
+              histos.fill(HIST("Tracks/Kine/resoInvPtEtaPlusWrongPIDinTrk"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
+            }
+            histos.fill(HIST("Tracks/Kine/resoInvPtVsPtEtaPlusWrongPIDinTrk"), track.signed1Pt() - 1.f / particle.pt(), particle.pt());
+          } else {                                                                                                         // negative eta
+            histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaMinusWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt()); //
+            histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcEtaMinusWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
+            histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcEtaMinusWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
+            if (particle.pt() > 0.f) {
+              histos.fill(HIST("Tracks/Kine/resoInvPtEtaMinusWrongPIDinTrk"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
+            }
+            histos.fill(HIST("Tracks/Kine/resoInvPtVsPtEtaMinusWrongPIDinTrk"), track.signed1Pt() - 1.f / particle.pt(), particle.pt());
+          }
+        }
+
+        // optionally check for PID in tracking
+        if (checkPIDforTracking && track.pidForTracking() != std::abs(PartIdentifier)) {
+          continue;
+        }
+
         // full eta range
         histos.fill(HIST("Tracks/Kine/resoPt"), track.pt() - particle.pt(), track.pt());
         histos.fill(HIST("Tracks/Kine/resoPtVsptmc"), track.pt() - particle.pt(), particle.pt());
         histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmc"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
+        histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmc"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
         if (particle.pt() > 0.f) {
           histos.fill(HIST("Tracks/Kine/resoInvPt"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
         }
@@ -1538,18 +1597,20 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
         histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
         histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
         // split eta range
-        if (eta > 0) {                                                                                     // positive eta
-          histos.fill(HIST("Tracks/Kine/resoPtEtaPlus"), track.pt() - particle.pt(), track.pt());          //
-          histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaPlus"), track.pt() - particle.pt(), particle.pt()); //
+        if (eta > 0) { // positive eta
+          histos.fill(HIST("Tracks/Kine/resoPtEtaPlus"), track.pt() - particle.pt(), track.pt());
+          histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaPlus"), track.pt() - particle.pt(), particle.pt());
           histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcEtaPlus"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
+          histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcEtaPlus"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
           if (particle.pt() > 0.f) {
             histos.fill(HIST("Tracks/Kine/resoInvPtEtaPlus"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
           }
           histos.fill(HIST("Tracks/Kine/resoInvPtVsPtEtaPlus"), track.signed1Pt() - 1.f / particle.pt(), particle.pt());
         } else { // negative eta
           histos.fill(HIST("Tracks/Kine/resoPtEtaMinus"), track.pt() - particle.pt(), track.pt());
-          histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaMinus"), track.pt() - particle.pt(), particle.pt()); //
+          histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaMinus"), track.pt() - particle.pt(), particle.pt());
           histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcEtaMinus"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
+          histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcEtaMinus"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
           if (particle.pt() > 0.f) {
             histos.fill(HIST("Tracks/Kine/resoInvPtEtaMinus"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
           }

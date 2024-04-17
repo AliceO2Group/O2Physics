@@ -167,10 +167,10 @@ struct HfCandidateCreator3Prong {
   }
 
   template <bool doPvRefit = false, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand>
-  void runCreator3Prong(Coll const& collisions,
+  void runCreator3Prong(Coll const&,
                         Cand const& rowsTrackIndexProng3,
-                        aod::TracksWCovExtra const& tracks,
-                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+                        aod::TracksWCovExtra const&,
+                        aod::BCsWithTimestamps const&)
   {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
@@ -294,6 +294,8 @@ struct HfCandidateCreator3Prong {
                        pvec2[0], pvec2[1], pvec2[2],
                        impactParameter0.getY(), impactParameter1.getY(), impactParameter2.getY(),
                        std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()), std::sqrt(impactParameter2.getSigmaY2()),
+                       impactParameter0.getZ(), impactParameter1.getZ(), impactParameter2.getZ(),
+                       std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()), std::sqrt(impactParameter2.getSigmaZ2()),
                        rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), nProngsContributorsPV,
                        rowTrackIndexProng3.hfflag());
 

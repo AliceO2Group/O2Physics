@@ -23,16 +23,17 @@ namespace o2::aod
                bc::RunNumber
 
 // Reduced BCs as a root index
-DECLARE_SOA_TABLE(RBCs, "AOD", "RBCS",
+DECLARE_SOA_TABLE(RBCs, "AOD", "RBC",
                   BCcols,
                   soa::Marker<1>);
-DECLARE_SOA_TABLE(StoredRBCs, "AOD1", "RBCS",
+DECLARE_SOA_TABLE(StoredRBCs, "AOD1", "RBC",
                   BCcols,
                   soa::Marker<2>);
 
 namespace rcol
 {
 DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
+DECLARE_SOA_COLUMN(MapEtaPhi, mapetaphi, std::vector<int>);
 }
 
 #define Ccols o2::soa::Index<>,            \
@@ -49,7 +50,8 @@ DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
               mult::MultZNC,               \
               mult::MultNTracksPV,         \
               mult::MultNTracksPVeta1,     \
-              mult::MultNTracksPVetaHalf
+              mult::MultNTracksPVetaHalf,  \
+              rcol::MapEtaPhi
 
 #define CCcols cent::CentFV0A, \
                cent::CentFT0M, \
@@ -222,6 +224,36 @@ DECLARE_SOA_TABLE(RMCColLabels, "AOD", "RMCCOLLABEL",
                   rlabels::RMCCollisionId, soa::Marker<1>)
 DECLARE_SOA_TABLE(StoredRMCColLabels, "AOD1", "RMCCOLLABEL",
                   rlabels::RMCCollisionId, soa::Marker<2>)
+
+namespace features
+{
+DECLARE_SOA_COLUMN(GeneratedCentralMultiplicity, t, int);
+DECLARE_SOA_COLUMN(ReconstructedCentralMultiplicity, m, int);
+DECLARE_SOA_COLUMN(GeneratedVertexX, vtX, float);
+DECLARE_SOA_COLUMN(GeneratedVertexY, vtY, float);
+DECLARE_SOA_COLUMN(GeneratedVertexZ, vtZ, float);
+DECLARE_SOA_COLUMN(ReconstructedVertexX, vmX, float);
+DECLARE_SOA_COLUMN(ReconstructedVertexY, vmY, float);
+DECLARE_SOA_COLUMN(ReconstructedVertexZ, vmZ, float);
+DECLARE_SOA_COLUMN(TimeRes, tres, float);
+DECLARE_SOA_COLUMN(GeneratedForwardMultiplicityA, tfA, int);
+DECLARE_SOA_COLUMN(GeneratedForwardMultiplicityC, tfC, int);
+DECLARE_SOA_COLUMN(ReconstructedForwardMultiplicityA, mfA, float);
+DECLARE_SOA_COLUMN(ReconstructedForwardMultiplicityC, mfC, float);
+} // namespace features
+
+DECLARE_SOA_TABLE(RFeatMins, "AOD", "RFEATMIN",
+                  soa::Index<>,
+                  features::GeneratedCentralMultiplicity,
+                  features::ReconstructedCentralMultiplicity,
+                  features::ReconstructedVertexX,
+                  features::ReconstructedVertexY,
+                  features::ReconstructedVertexZ,
+                  features::TimeRes,
+                  features::ReconstructedForwardMultiplicityA,
+                  features::ReconstructedForwardMultiplicityC,
+                  rcol::MapEtaPhi);
+
 } // namespace o2::aod
 namespace o2::soa
 {

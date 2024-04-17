@@ -64,6 +64,7 @@
 #include "MCHTracking/TrackExtrap.h"
 #include "MCHTracking/TrackParam.h"
 #include "MCHTracking/TrackFitter.h"
+#include "MCHBase/TrackerParam.h"
 #include "ReconstructionDataFormats/TrackMCHMID.h"
 #include "MCHAlign/Aligner.h"
 #include "DetectorsCommonDataFormats/AlignParam.h"
@@ -94,11 +95,9 @@ struct mchAlignRecordTask {
 
   mch::TrackFitter trackFitter;
   mch::Aligner mAlign{};
+  double mImproveCutChi2{};
   Double_t weightRecord{1.0};
 
-  double Reso_X = 0.0;
-  double Reso_Y = 0.0;
-  double ImproveCut = 6.0;
   int fCurrentRun;
 
   map<int, math_utils::Transform3D> transformOld;
@@ -108,13 +107,10 @@ struct mchAlignRecordTask {
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<string> fConfigCollType{"collision-type", "pp", "Resolution specification for trackfitter"};
   Configurable<string> fFixChamber{"fix-chamber", "", "Fixing chamber"};
   Configurable<bool> fDoNewGeo{"do-realign", false, "Transform to a given new geometry"};
   Configurable<bool> fDoEvaluation{"do-evaluation", false, "Enable storage of residuals"};
   Configurable<string> fConfigNewGeoFile{"new-geo", "o2sim_geometry-aligned.root", "New geometry for transformation"};
-  Configurable<string> fOutputRecFileName{"outfile-data", "recDataFile.root", "Name of output data record file"};
-  Configurable<string> fOutputConsFileName{"outfile-constraint", "recConsFile.root", "Name of output constraint record file"};
 
   void init(InitContext& ic)
   {
@@ -124,27 +120,20 @@ struct mchAlignRecordTask {
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
 
-    // Congiguration of resolution for track fitter
-    if (fConfigCollType.value == "pp") {
-      Reso_X = 0.4;
-      Reso_Y = 0.4;
-      ImproveCut = 6.0;
-      LOG(info) << "Using pp parameter set for TrackFitter";
-    } else {
-      Reso_X = 0.2;
-      Reso_Y = 0.2;
-      ImproveCut = 4.0;
-      LOG(info) << "Using PbPb parameter set for TrackFitter";
-    }
-    trackFitter.setChamberResolution(Reso_X, Reso_Y);
-    trackFitter.useChamberResolution();
-
     // Configuration for alignment object
     mAlign.SetDoEvaluation(fDoEvaluation.value);
     mAlign.SetAllowedVariation(0, 2.0);
     mAlign.SetAllowedVariation(1, 0.3);
     mAlign.SetAllowedVariation(2, 0.002);
     mAlign.SetAllowedVariation(3, 2.0);
+
+    // Configuration for track fitter
+    const auto& trackerParam = o2::mch::TrackerParam::Instance();
+    trackFitter.setBendingVertexDispersion(trackerParam.bendingVertexDispersion);
+    trackFitter.setChamberResolution(trackerParam.chamberResolutionX, trackerParam.chamberResolutionY);
+    trackFitter.smoothTracks(true);
+    trackFitter.useChamberResolution();
+    mImproveCutChi2 = 2. * trackerParam.sigmaCutForImprovement * trackerParam.sigmaCutForImprovement;
 
     // Configuration for chamber fixing
     auto chambers = fFixChamber.value;
@@ -157,7 +146,7 @@ struct mchAlignRecordTask {
     }
 
     // Init for output saving
-    mAlign.init(fOutputRecFileName.value, fOutputConsFileName.value);
+    mAlign.init();
 
     ic.services().get<CallbackService>().set<CallbackService::Id::Stop>([this]() {
       LOG(info) << "Saving records into ROOT file";
@@ -195,9 +184,8 @@ struct mchAlignRecordTask {
   }
 
   //_________________________________________________________________________________________________
-  bool RemoveTrack(mch::Track& track, double ImproveCut)
+  bool RemoveTrack(mch::Track& track)
   {
-    double maxChi2Cluster = 2 * ImproveCut * ImproveCut;
     bool removeTrack = false;
 
     try {
@@ -229,7 +217,7 @@ struct mchAlignRecordTask {
         }
       }
 
-      if (worstLocalChi2 < maxChi2Cluster)
+      if (worstLocalChi2 < mImproveCutChi2)
         break;
 
       if (!itWorstParam->isRemovable()) {
@@ -311,6 +299,11 @@ struct mchAlignRecordTask {
       int clIndex = -1;
       mch::Track convertedTrack;
 
+      // Use only MCH-MID matched tracks
+      if (static_cast<int>(track.trackType()) != 3) {
+        continue;
+      }
+
       // Loop over attached clusters
       for (auto const& cluster : clusters) {
 
@@ -350,7 +343,7 @@ struct mchAlignRecordTask {
 
       if (convertedTrack.getNClusters() > 9) {
         // Erase removable track
-        if (!RemoveTrack(convertedTrack, ImproveCut)) {
+        if (!RemoveTrack(convertedTrack)) {
           mAlign.ProcessTrack(convertedTrack, transformation, true, weightRecord);
         }
       }

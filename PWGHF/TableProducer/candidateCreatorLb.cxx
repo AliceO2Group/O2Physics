@@ -102,7 +102,7 @@ struct HfCandidateCreatorLb {
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
   }
 
-  void process(aod::Collision const& collision,
+  void process(aod::Collision const&,
                soa::Filtered<soa::Join<
                  aod::HfCand3Prong,
                  aod::HfSelLc>> const& lcCands,
@@ -236,7 +236,7 @@ struct HfCandidateCreatorLbMc {
 
   void process(aod::HfCandLb const& candidates,
                aod::HfCand3Prong const&,
-               aod::TracksWMc const& tracks,
+               aod::TracksWMc const&,
                aod::McParticles const& mcParticles)
   {
     int indexRec = -1;

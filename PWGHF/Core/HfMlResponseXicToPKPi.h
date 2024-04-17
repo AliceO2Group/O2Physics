@@ -57,6 +57,9 @@ enum class InputFeaturesXicToPKPi : uint8_t {
   impactParameterXY0,
   impactParameterXY1,
   impactParameterXY2,
+  impactParameterZ0,
+  impactParameterZ1,
+  impactParameterZ2,
   decayLength,
   decayLengthXY,
   decayLengthXYNormalised,
@@ -122,6 +125,9 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterXY2, impactParameter2);
+        CHECK_AND_FILL_VEC_XIC(impactParameterZ0);
+        CHECK_AND_FILL_VEC_XIC(impactParameterZ1);
+        CHECK_AND_FILL_VEC_XIC(impactParameterZ2);
         CHECK_AND_FILL_VEC_XIC(decayLength);
         CHECK_AND_FILL_VEC_XIC(decayLengthXY);
         CHECK_AND_FILL_VEC_XIC(decayLengthXYNormalised);
@@ -175,6 +181,9 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC(impactParameterXY0),
       FILL_MAP_XIC(impactParameterXY1),
       FILL_MAP_XIC(impactParameterXY2),
+      FILL_MAP_XIC(impactParameterZ0),
+      FILL_MAP_XIC(impactParameterZ1),
+      FILL_MAP_XIC(impactParameterZ2),
       FILL_MAP_XIC(decayLength),
       FILL_MAP_XIC(decayLengthXY),
       FILL_MAP_XIC(decayLengthXYNormalised),

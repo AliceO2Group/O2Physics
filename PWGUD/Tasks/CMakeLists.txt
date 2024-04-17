@@ -88,3 +88,16 @@ o2physics_add_dpl_workflow(polarisation-rho
                            SOURCES PolarisationRho.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
+
+
+o2physics_add_dpl_workflow(upc-jpsi-corr
+                           SOURCES upcJpsiCentralBarrelCorr.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+
+o2physics_add_dpl_workflow(exclusive-phi
+                           SOURCES ExclusivePhi.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+

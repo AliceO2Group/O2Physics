@@ -106,7 +106,7 @@ struct HfDataCreatorCharmResoReduced {
   bool isHfCandResoConfigFilled = false;
 
   using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
-  using CandDstarFiltered = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstar, aod::HfSelDstarToD0Pi>>;
+  using CandDstarFiltered = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
   using BigTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
   Filter filterSelectDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus);
@@ -160,7 +160,7 @@ struct HfDataCreatorCharmResoReduced {
   /// \param dDaughtersIDs are the IDs of the D meson daughter tracks
   /// \return a bitmap with mass hypotesis if passes all cuts
   template <typename V0, typename Coll, typename Tr>
-  inline uint8_t getSelectionMapV0(const V0& v0, const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
+  inline uint8_t getSelectionMapV0(const V0& v0, const Coll& /*collision*/, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
   {
     uint8_t selMap{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
     // reject VOs that share daughters with D
@@ -210,8 +210,8 @@ struct HfDataCreatorCharmResoReduced {
   void runDataCreation(aod::Collision const& collision,
                        CCands const& candsD,
                        aod::V0Datas const& V0s,
-                       BigTracksPID const& tracks,
-                       aod::BCsWithTimestamps const& bcs)
+                       BigTracksPID const&,
+                       aod::BCsWithTimestamps const&)
   {
     // helpers for ReducedTables filling
     int indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
@@ -368,7 +368,7 @@ struct HfDataCreatorCharmResoReduced {
 
   void processDplusV0(aod::Collisions const& collisions,
                       CandsDplusFiltered const& candsDplus,
-                      aod::TrackAssoc const& trackIndices,
+                      aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
                       BigTracksPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
@@ -387,7 +387,7 @@ struct HfDataCreatorCharmResoReduced {
 
   void processDstarV0(aod::Collisions const& collisions,
                       CandDstarFiltered const& candsDstar,
-                      aod::TrackAssoc const& trackIndices,
+                      aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
                       BigTracksPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)

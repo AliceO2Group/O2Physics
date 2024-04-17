@@ -203,7 +203,7 @@ struct DalitzMuMuQCMC {
           }
           if (mother_id > 0) {
             auto mcmother = mcparticles.iteratorAt(mother_id);
-            if (IsPhysicalPrimary(mcmother.emmcevent(), mcmother, mcparticles)) {
+            if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
               dca_pos_3d = pos.dca3DinSigma();
               dca_ele_3d = ele.dca3DinSigma();
               dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
@@ -293,7 +293,7 @@ struct DalitzMuMuQCMC {
           continue;
         }
         auto mcmother = mcparticles.iteratorAt(mother_id);
-        if (IsPhysicalPrimary(mcmother.emmcevent(), mcmother, mcparticles)) {
+        if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
           ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
           ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;

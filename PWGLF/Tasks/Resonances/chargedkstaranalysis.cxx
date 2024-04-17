@@ -728,7 +728,7 @@ struct chargedkstaranalysis {
       rGenParticles.fill(HIST("hMC"), 6.5);
       auto daughts = false;
       auto daughtp = false;
-      int count = 0;
+      // int count = 0;
       for (auto kCurrentDaughter : kDaughters) {
         // LOG(info) << "Daughters PDG:\t" << count<<" "<<kCurrentDaughter.pdgCode();
         if (kCurrentDaughter.pdgCode() == 311) {
@@ -741,7 +741,7 @@ struct chargedkstaranalysis {
           if (kCurrentDaughter.isPhysicalPrimary() == 1)
             daughtp = true;
         }
-        count += 1;
+        // count += 1;
       }
       rGenParticles.fill(HIST("hMC"), 7.5);
       if (daughtp && daughts) {

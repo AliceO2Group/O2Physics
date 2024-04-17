@@ -100,6 +100,30 @@ static constexpr std::string_view hdcaxyphi[NpCharge] = {"dcaxyphi/pos/el", "dca
                                                          "dcaxyphi/neg/ka", "dcaxyphi/neg/pr", "dcaxyphi/neg/de",
                                                          "dcaxyphi/neg/tr", "dcaxyphi/neg/he", "dcaxyphi/neg/al"};
 // MC
+static constexpr std::string_view hpt_mism_its_prm[NpCharge] = {"MC/el/pos/prm/pt/mismITS", "MC/mu/pos/prm/pt/mismITS", "MC/pi/pos/prm/pt/mismITS",
+                                                                "MC/ka/pos/prm/pt/mismITS", "MC/pr/pos/prm/pt/mismITS", "MC/de/pos/prm/pt/mismITS",
+                                                                "MC/tr/pos/prm/pt/mismITS", "MC/he/pos/prm/pt/mismITS", "MC/al/pos/prm/pt/mismITS",
+                                                                "MC/el/neg/prm/pt/mismITS", "MC/mu/neg/prm/pt/mismITS", "MC/pi/neg/prm/pt/mismITS",
+                                                                "MC/ka/neg/prm/pt/mismITS", "MC/pr/neg/prm/pt/mismITS", "MC/de/neg/prm/pt/mismITS",
+                                                                "MC/tr/neg/prm/pt/mismITS", "MC/he/neg/prm/pt/mismITS", "MC/al/neg/prm/pt/mismITS"};
+static constexpr std::string_view hpt_mism_tpc_prm[NpCharge] = {"MC/el/pos/prm/pt/mismTPC", "MC/mu/pos/prm/pt/mismTPC", "MC/pi/pos/prm/pt/mismTPC",
+                                                                "MC/ka/pos/prm/pt/mismTPC", "MC/pr/pos/prm/pt/mismTPC", "MC/de/pos/prm/pt/mismTPC",
+                                                                "MC/tr/pos/prm/pt/mismTPC", "MC/he/pos/prm/pt/mismTPC", "MC/al/pos/prm/pt/mismTPC",
+                                                                "MC/el/neg/prm/pt/mismTPC", "MC/mu/neg/prm/pt/mismTPC", "MC/pi/neg/prm/pt/mismTPC",
+                                                                "MC/ka/neg/prm/pt/mismTPC", "MC/pr/neg/prm/pt/mismTPC", "MC/de/neg/prm/pt/mismTPC",
+                                                                "MC/tr/neg/prm/pt/mismTPC", "MC/he/neg/prm/pt/mismTPC", "MC/al/neg/prm/pt/mismTPC"};
+static constexpr std::string_view hpt_mism_trd_prm[NpCharge] = {"MC/el/pos/prm/pt/mismTRD", "MC/mu/pos/prm/pt/mismTRD", "MC/pi/pos/prm/pt/mismTRD",
+                                                                "MC/ka/pos/prm/pt/mismTRD", "MC/pr/pos/prm/pt/mismTRD", "MC/de/pos/prm/pt/mismTRD",
+                                                                "MC/tr/pos/prm/pt/mismTRD", "MC/he/pos/prm/pt/mismTRD", "MC/al/pos/prm/pt/mismTRD",
+                                                                "MC/el/neg/prm/pt/mismTRD", "MC/mu/neg/prm/pt/mismTRD", "MC/pi/neg/prm/pt/mismTRD",
+                                                                "MC/ka/neg/prm/pt/mismTRD", "MC/pr/neg/prm/pt/mismTRD", "MC/de/neg/prm/pt/mismTRD",
+                                                                "MC/tr/neg/prm/pt/mismTRD", "MC/he/neg/prm/pt/mismTRD", "MC/al/neg/prm/pt/mismTRD"};
+static constexpr std::string_view hpt_mism_tof_prm[NpCharge] = {"MC/el/pos/prm/pt/mismTOF", "MC/mu/pos/prm/pt/mismTOF", "MC/pi/pos/prm/pt/mismTOF",
+                                                                "MC/ka/pos/prm/pt/mismTOF", "MC/pr/pos/prm/pt/mismTOF", "MC/de/pos/prm/pt/mismTOF",
+                                                                "MC/tr/pos/prm/pt/mismTOF", "MC/he/pos/prm/pt/mismTOF", "MC/al/pos/prm/pt/mismTOF",
+                                                                "MC/el/neg/prm/pt/mismTOF", "MC/mu/neg/prm/pt/mismTOF", "MC/pi/neg/prm/pt/mismTOF",
+                                                                "MC/ka/neg/prm/pt/mismTOF", "MC/pr/neg/prm/pt/mismTOF", "MC/de/neg/prm/pt/mismTOF",
+                                                                "MC/tr/neg/prm/pt/mismTOF", "MC/he/neg/prm/pt/mismTOF", "MC/al/neg/prm/pt/mismTOF"};
 static constexpr std::string_view hpt_num_prm[NpCharge] = {"MC/el/pos/prm/pt/num", "MC/mu/pos/prm/pt/num", "MC/pi/pos/prm/pt/num",
                                                            "MC/ka/pos/prm/pt/num", "MC/pr/pos/prm/pt/num", "MC/de/pos/prm/pt/num",
                                                            "MC/tr/pos/prm/pt/num", "MC/he/pos/prm/pt/num", "MC/al/pos/prm/pt/num",

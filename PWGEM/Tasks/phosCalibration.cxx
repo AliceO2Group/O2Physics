@@ -296,7 +296,6 @@ struct phosCalibration {
           tcorr -= calibParams->getLGTimeCalib(c.cellNumber());
         }
       }
-
       if (!mSkipL1phase) {
         int shift = (mL1 >> (ddl * 2)) & 3; // extract 2 bits corresponding to this ddl
         shift = bc % 4 - shift;

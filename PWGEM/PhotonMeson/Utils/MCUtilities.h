@@ -22,74 +22,22 @@
 //_______________________________________________________________________
 namespace o2::aod::pwgem::mcutil
 {
-template <typename TCollision, typename TTrack, typename TMCs>
-bool IsPhysicalPrimary(TCollision const& mccollision, TTrack const& mctrack, TMCs const& mcTracks)
+template <typename TTrack>
+bool IsPhysicalPrimary(TTrack const& mctrack)
 {
   // This is to check mctrack is ALICE physical primary.
-  // https://inspirehep.net/files/4c26ef5fb432df99bdc1ff847653502f
-
-  if (mctrack.isPhysicalPrimary()) { // this is the first priority. In fact, this does not happen to neutral mesons in ALICE.
+  if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
     return true;
-  }
-
-  if (!mctrack.producedByGenerator()) {
+  } else {
     return false;
   }
-  float r3D = sqrt(pow(mctrack.vx() - mccollision.posX(), 2) + pow(mctrack.vy() - mccollision.posY(), 2) + pow(mctrack.vz() - mccollision.posZ(), 2)); // cm
-  if (r3D > 1.0) {
-    return false;
-  }
-
-  // exclude weak decay. K0S and Lambda are the 2 most relevant strange particles decaying into neutral mesons.
-  if (mctrack.has_mothers()) {
-    // auto mp = mctrack.template mothers_first_as<TMCs>();
-    int motherid = mctrack.mothersIds()[0]; // first mother index
-    while (motherid > -1) {
-      if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
-        auto mp = mcTracks.iteratorAt(motherid);
-        int pdg_mother = mp.pdgCode();
-        // LOGF(info, "mctrack.globalIndex() = %d, mp.globalIndex() = %d , pdg_mother = %d", mctrack.globalIndex(), mp.globalIndex(), pdg_mother);
-        if (abs(pdg_mother) == 310 || abs(pdg_mother) == 130 || abs(pdg_mother) == 3122) {
-          return false;
-        }
-        if (mp.has_mothers()) {
-          motherid = mp.mothersIds()[0]; // first mother index
-          auto mp_tmp = mcTracks.iteratorAt(motherid);
-          int pdg_mother_tmp = mp_tmp.pdgCode();
-          if (pdg_mother_tmp == pdg_mother) { // strange protection. mother of 111 is 111. observed in LHC23k6d on 25.January.2024
-            return false;
-          }
-        } else {
-          motherid = -999;
-        }
-      } else {
-        motherid = -999;
-      }
-    }
-
-    // for (auto& m : mctrack.mothersIds()) {
-    //   if (m < mcTracks.size()) { // protect against bad mother indices
-    //     auto mp = mcTracks.iteratorAt(m);
-    //     int pdg_mother = mp.pdgCode();
-    //     if (abs(pdg_mother) == 310 || abs(pdg_mother) == 3122 || abs(pdg_mother) == 3212) {
-    //       return false;
-    //     }
-    //   }
-    // }
-  }
-  return true;
 }
 //_______________________________________________________________________
 template <typename TCollision, typename T, typename TMCs>
 bool IsFromWD(TCollision const& mccollision, T const& mctrack, TMCs const& mcTracks)
 {
   // is this particle from weak decay?
-
-  if (mctrack.isPhysicalPrimary()) { // this is the first priority.
-    return false;
-  }
-
-  if (mctrack.producedByGenerator()) {
+  if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
     return false;
   }
 
@@ -135,6 +83,22 @@ int IsXFromY(T const& mctrack, TMCs const& mcTracks, const int pdgX, const int p
     return -1;
   }
   return -1;
+}
+//_______________________________________________________________________
+// Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return this mothers daughter
+// E.g. Find the gamma that was created in a pi0 or eta decay
+template <typename T, typename TMCs, typename TTargetPDGs>
+int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs const& motherpdgs, const int Depth = 50)
+{
+  if (!mcparticle.has_mothers() || Depth < 1)
+    return -1;
+
+  int motherid = mcparticle.mothersIds()[0];
+  auto mother = mcparticles.iteratorAt(motherid);
+  if (std::find(motherpdgs.begin(), motherpdgs.end(), mother.pdgCode()) != motherpdgs.end())
+    return mcparticle.globalIndex(); // The mother has the required pdg code, so return its daughters global mc particle code.
+  else
+    return FindMotherInChain(mother, mcparticles, motherpdgs, Depth - 1);
 }
 //_______________________________________________________________________
 template <typename T, typename TMCs>
@@ -263,23 +227,30 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
     return false; // mother rapidity is out of acceptance
   }
   auto daughtersIds = mcparticle.daughtersIds(); // always size = 2. first and last index. one should run loop from the first index to the last index.
-  if (daughtersIds[0] < 0 || daughtersIds[1] < 0) {
-    return false;
-  }
 
-  if (daughtersIds[1] - daughtersIds[0] + 1 != static_cast<int>(target_pdgs.size())) {
+  // if (daughtersIds.size() != static_cast<int>(target_pdgs.size())) {
+  if (daughtersIds.size() != target_pdgs.size()) {
     return false;
   }
   std::vector<int> pdgs;
   pdgs.reserve(target_pdgs.size());
-  for (int idau = daughtersIds[0]; idau <= daughtersIds[1]; idau++) {
-    auto daughter = mcparticles.iteratorAt(idau);
+  for (auto& daughterId : daughtersIds) {
+    if (daughterId < 0) {
+      pdgs.clear();
+      pdgs.shrink_to_fit();
+      return false;
+    }
+    auto daughter = mcparticles.iteratorAt(daughterId);
     pdgs.emplace_back(daughter.pdgCode());
 
     if (daughter.eta() < ymin || ymax < daughter.eta()) {
+      pdgs.clear();
+      pdgs.shrink_to_fit();
       return false;
     }
     if (daughter.phi() < phimin || phimax < daughter.phi()) {
+      pdgs.clear();
+      pdgs.shrink_to_fit();
       return false;
     }
   } // end of daughter loop
@@ -293,6 +264,42 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
   }
   return true;
 }
+//_______________________________________________________________________
+template <typename TMCPhoton, typename TMCParticles>
+bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_gen, const float max_eta_gen, const float margin_z_mc, TMCParticles const& mcparticles)
+{
+  if (abs(mcphoton.pdgCode()) != 22) {
+    return false;
+  }
+
+  auto daughtersIds = mcphoton.daughtersIds();
+  if (daughtersIds.size() != 2) {
+    return false;
+  }
+
+  for (auto& daughterId : daughtersIds) {
+    if (daughterId < 0) {
+      return false;
+    }
+    auto daughter = mcparticles.iteratorAt(daughterId);
+    if (abs(daughter.pdgCode()) != 11) {
+      return false;
+    }
+
+    if (daughter.producedByGenerator()) {
+      return false;
+    }
+
+    float rxy_gen_e = sqrt(pow(daughter.vx(), 2) + pow(daughter.vy(), 2));
+    // LOGF(info, "daughterId = %d , pdg = %d , vx = %f , vy = %f , vz = %f, rxy = %f", daughterId, daughter.pdgCode(), daughter.vx(), daughter.vy(), daughter.vz(), rxy_gen_e);
+    if (rxy_gen_e > max_r_gen || rxy_gen_e < abs(daughter.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen))) - margin_z_mc) {
+      return false;
+    }
+  } // end of daughter loop
+
+  return true;
+}
+//_______________________________________________________________________
 } // namespace o2::aod::pwgem::mcutil
 //_______________________________________________________________________
 //_______________________________________________________________________

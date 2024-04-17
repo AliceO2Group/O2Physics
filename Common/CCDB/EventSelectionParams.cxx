@@ -49,7 +49,12 @@ const char* selectionLabels[kNsel] = {
   "kIsTriggerTVX",
   "kIsINT1",
   "kNoITSROFrameBorder",
-  "kNoTimeFrameBorder"};
+  "kNoTimeFrameBorder",
+  "kNoSameBunchPileup",
+  "kIsGoodZvtxFT0vsPV",
+  "kIsVertexITSTPC",
+  "kIsVertexTOFmatched",
+  "kIsVertexTRDmatched"};
 } // namespace o2::aod::evsel
 
 using namespace o2::aod::evsel;

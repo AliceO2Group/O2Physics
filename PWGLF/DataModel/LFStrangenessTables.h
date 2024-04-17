@@ -12,6 +12,7 @@
 #define PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
 
 #include <cmath>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -88,7 +89,7 @@ namespace dautrack
 {
 //______________________________________________________
 // Daughter track declarations for derived data analysis
-DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);          //! detector map for reference
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);          //! detector map for reference (see DetectorMapEnum)
 DECLARE_SOA_COLUMN(ITSClusterSizes, itsClusterSizes, uint32_t); //! ITS cluster sizes per layer
 DECLARE_SOA_COLUMN(TPCClusters, tpcClusters, uint8_t);          //! N TPC clusters
 DECLARE_SOA_COLUMN(TPCCrossedRows, tpcCrossedRows, uint8_t);    //! N TPC clusters
@@ -198,6 +199,15 @@ DECLARE_SOA_COLUMN(ZPosAtDCA, zPosAtDCA, float); //! decay position Z
 DECLARE_SOA_COLUMN(XNegAtDCA, xNegAtDCA, float); //! decay position X
 DECLARE_SOA_COLUMN(YNegAtDCA, yNegAtDCA, float); //! decay position Y
 DECLARE_SOA_COLUMN(ZNegAtDCA, zNegAtDCA, float); //! decay position Z
+DECLARE_SOA_COLUMN(XPosAtIU, xPosAtIU, float);   //! decay position X
+DECLARE_SOA_COLUMN(YPosAtIU, yPosAtIU, float);   //! decay position Y
+DECLARE_SOA_COLUMN(ZPosAtIU, zPosAtIU, float);   //! decay position Z
+DECLARE_SOA_COLUMN(XNegAtIU, xNegAtIU, float);   //! decay position X
+DECLARE_SOA_COLUMN(YNegAtIU, yNegAtIU, float);   //! decay position Y
+DECLARE_SOA_COLUMN(ZNegAtIU, zNegAtIU, float);   //! decay position Z
+
+// ivanov scaling
+DECLARE_SOA_COLUMN(IvanovMap, ivanovMap, int); //! coded downscale bits
 
 // Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 daughters
@@ -214,6 +224,8 @@ DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance mat
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(CovMatPosDau, covMatPosDau, float[21]);    //! covariance matrix elements positive daughter track
 DECLARE_SOA_COLUMN(CovMatNegDau, covMatNegDau, float[21]);    //! covariance matrix elements negative daughter track
+DECLARE_SOA_COLUMN(CovMatPosDauIU, covMatPosDauIU, float[21]); //! covariance matrix elements positive daughter track
+DECLARE_SOA_COLUMN(CovMatNegDauIU, covMatNegDauIU, float[21]); //! covariance matrix elements negative daughter track
 
 // Saved from KF particle fit for specic table
 DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
@@ -399,9 +411,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(PositivePhi, positivephi, //! positive daughter phi
                            [](float PxPos, float PyPos) -> float { return RecoDecay::phi(PxPos, PyPos); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsStandardV0, isStandardV0, //! is standard V0
-                           [](uint8_t V0Type) -> bool { return V0Type & (1 << 0); });
-DECLARE_SOA_DYNAMIC_COLUMN(IsPhotonTPConly, isPhotonTPConly, //! is photon V0
+                           [](uint8_t V0Type) -> bool { return V0Type == 1; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsPhotonTPConly, isPhotonTPConly, //! is tpc-only photon V0
                            [](uint8_t V0Type) -> bool { return V0Type & (1 << 1); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsCollinear, isCollinear, //! is collinear V0
+                           [](uint8_t V0Type) -> bool { return V0Type & (1 << 2); });
 } // namespace v0data
 
 DECLARE_SOA_TABLE(V0Indices, "AOD", "V0INDEX", //! index table when using AO2Ds
@@ -466,12 +480,20 @@ DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, StoredV0Cores, "V0COREEXT",            
 DECLARE_SOA_TABLE(V0TraPosAtDCAs, "AOD", "V0TRAPOSATDCAs", //! positions of tracks at their DCA for debug
                   v0data::XPosAtDCA, v0data::YPosAtDCA, v0data::ZPosAtDCA,
                   v0data::XNegAtDCA, v0data::YNegAtDCA, v0data::ZNegAtDCA);
+DECLARE_SOA_TABLE(V0TraPosAtIUs, "AOD", "V0TRAPOSATIUs", //! positions of tracks at their IU for debug
+                  v0data::XPosAtIU, v0data::YPosAtIU, v0data::ZPosAtIU,
+                  v0data::XNegAtIU, v0data::YNegAtIU, v0data::ZNegAtIU);
+
+DECLARE_SOA_TABLE(V0Ivanovs, "AOD", "V0Ivanovs", //! bitmaps for Marian
+                  v0data::IvanovMap);
 
 DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //! V0 covariance matrices
                        v0data::PositionCovMat, v0data::MomentumCovMat, o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE_FULL(V0DauCovs, "V0DauCovs", "AOD", "V0DAUCOVS", //! V0 covariance matrices of the dauther tracks
                        v0data::CovMatPosDau, v0data::CovMatNegDau, o2::soa::Marker<1>);
+DECLARE_SOA_TABLE_FULL(V0DauCovIUs, "V0DauCovIUs", "AOD", "V0DAUCOVIUS", //! V0 covariance matrices of the dauther tracks
+                       v0data::CovMatPosDauIU, v0data::CovMatNegDauIU, o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(V0fCIndices, "AOD", "V0FCINDEX", //! index table when using AO2Ds
                   o2::soa::Index<>, v0data::PosTrackId, v0data::NegTrackId, v0data::CollisionId, v0data::V0Id, o2::soa::Marker<2>);

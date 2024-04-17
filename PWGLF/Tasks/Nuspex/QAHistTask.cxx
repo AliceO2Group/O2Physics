@@ -186,6 +186,8 @@ struct QAHistTask {
     QA_species_neg.add("histTrackLength", Form("Track length (%s)", species.c_str()), HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
     QA_species_neg.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
 
+    // +++++++++++++++++++++ MC ++++++++++++++++++++++++++
+
     // MC truth
     MC_truth_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_truth_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
@@ -200,7 +202,9 @@ struct QAHistTask {
     MC_recon_reg.add("histDCA", "DCA xy", HistType::kTH3F, {ptAxis, {250, -0.5, 0.5, "dca"}, PDGBINNING});
     MC_recon_reg.add("histDCAz", "DCA z", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
     MC_recon_reg.add("histTpcSignalData", "Specific energy loss", HistType::kTH3F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}, PDGBINNING});
+    MC_recon_reg.add("histTpcSignalData_all_species", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     MC_recon_reg.add("histTofSignalData", "TOF signal", HistType::kTH3F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}, PDGBINNING});
+    MC_recon_reg.add("histTofSignalData_all_species", "TOF signal", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     MC_recon_reg.add("histTOFm2", "TOF m^2 vs Pt", HistType::kTH3F, {ptAxis, {400, 0.0, 10.0, "m^2"}, PDGBINNING});
     MC_recon_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt", HistType::kTH3F, {ptAxis, {80, 0.0, 160.0, "nCluster"}, PDGBINNING});
     MC_recon_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt", HistType::kTH3F, {ptAxis, {10, 0.0, 10.0, "ITS nCls"}, PDGBINNING});
@@ -587,7 +591,8 @@ struct QAHistTask {
       MC_recon_reg.fill(HIST("histPt"), track.pt(), pdgbin);
       MC_recon_reg.fill(HIST("histDCA"), track.pt(), track.dcaXY(), pdgbin);
       MC_recon_reg.fill(HIST("histDCAz"), track.pt(), track.dcaZ(), pdgbin);
-      MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal(), pdgbin);
+      MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal(), pdgbin);
+      MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * track.sign(), track.tpcSignal());
       MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows(), pdgbin);
       MC_recon_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls(), pdgbin);
       MC_recon_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel(), pdgbin);
@@ -613,11 +618,17 @@ struct QAHistTask {
       MC_recon_reg.fill(HIST("histTPCpDist"), track.tpcInnerParam(), pdgbin);
       MC_recon_reg.fill(HIST("histpTCorralation_2"), track.p(), track.tpcInnerParam(), pdgbin);
 
+      if (particle.pdgCode() == 211)
+        MC_recon_reg.fill(HIST("histpTCorralation_pion"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
+      if (particle.pdgCode() == -211)
+        MC_recon_reg.fill(HIST("histpTCorralation_apion"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
+
       if (track.hasTOF()) {
         Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
         MC_recon_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2, pdgbin);
-        MC_recon_reg.fill(HIST("histTofSignalData"), track.pt(), track.beta(), pdgbin);
+        MC_recon_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta(), pdgbin);
+        MC_recon_reg.fill(HIST("histTofSignalData_all_species"), track.pt() * track.sign(), track.beta());
       }
 
       MC_recon_diff_reg.fill(HIST("histEtaDiff"), particle.eta() - track.eta(), pdgbin);

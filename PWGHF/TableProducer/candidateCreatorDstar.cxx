@@ -177,11 +177,11 @@ struct HfCandidateCreatorDstar {
   /// @param tracks track table with Cov object
   /// @param bcWithTimeStamps Bunch Crossing with timestamps
   template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandsDstar>
-  void runCreatorDstar(Coll const& collisions,
+  void runCreatorDstar(Coll const&,
                        CandsDstar const& rowsTrackIndexDstar,
-                       aod::Hf2Prongs const& rowsTrackIndexD0,
-                       aod::TracksWCov const& tracks,
-                       aod::BCsWithTimestamps const& bcWithTimeStamps)
+                       aod::Hf2Prongs const&,
+                       aod::TracksWCov const&,
+                       aod::BCsWithTimestamps const&)
   {
     // LOG(info) << "runCreatorDstar function called";
     // LOG(info) << "candidate loop starts";
@@ -324,7 +324,8 @@ struct HfCandidateCreatorDstar {
                        signSoftPi,
                        impactParameterPi.getY(), std::sqrt(impactParameterPi.getSigmaY2()),
                        pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
-                       pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]);
+                       pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2],
+                       prongD0.prong0Id(), prongD0.prong1Id());
       // Fill candidate Table for D0
       rowCandD0Base(collision.globalIndex(),
                     primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),

@@ -50,7 +50,7 @@ struct QAHistograms {
   Configurable<int16_t> _tpcNClsFound{"minTpcNClsFound", 0, "minimum allowed number of TPC clasters"};
   Configurable<float> _tpcChi2NCl{"tpcChi2NCl", 100.0, "upper limit for chi2 value of a fit over TPC clasters"};
   Configurable<float> _tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0, "lower limit of TPC CrossedRows/FindableCls value"};
-  Configurable<int> _tpcNClsShared{"maxTpcNClsShared", 0, "maximum allowed number of TPC shared clasters"};
+  Configurable<float> _tpcFractionSharedCls{"maxTpcFractionSharedCls", 0.4, "maximum fraction of TPC shared clasters"};
   Configurable<int> _itsNCls{"minItsNCls", 0, "minimum allowed number of ITS clasters for a track"};
   Configurable<float> _itsChi2NCl{"itsChi2NCl", 100.0, "upper limit for chi2 value of a fit over ITS clasters for a track"};
   Configurable<int> _particlePDG{"particlePDG", 2212, "PDG code of a particle to perform PID for (only pion, kaon, proton and deurton are supported now)"};
@@ -102,7 +102,7 @@ struct QAHistograms {
     registry.add("dcaz_to_pt", "dcaz_to_pt", kTH2F, {{100, 0., 5., "pt"}, {200, -1., 1., "dcaz"}});
     registry.add("TPCClusters", "TPCClusters", kTH1F, {{163, -0.5, 162.5, "NTPCClust"}});
     registry.add("TPCCrossedRowsOverFindableCls", "TPCCrossedRowsOverFindableCls", kTH1F, {{100, 0.0, 10.0, "NcrossedRowsOverFindable"}});
-    registry.add("TPCNClsShared", "TPCNClsShared", kTH1F, {{160, -0.5, 159.5, "TPCNshared"}});
+    registry.add("TPCFractionSharedCls", "TPCFractionSharedCls", kTH1F, {{100, 0.0, 1.0, "TPCsharedFraction"}});
     registry.add("ITSClusters", "ITSClusters", kTH1F, {{10, -0.5, 9.5, "NITSClust"}});
     registry.add("ITSchi2", "ITSchi2", kTH1F, {{100, 0.0, 40., "ITSchi2"}});
     registry.add("TPCchi2", "TPCchi2", kTH1F, {{100, 0.0, 6., "TPCchi2"}});
@@ -146,7 +146,7 @@ struct QAHistograms {
     for (auto& track : tracks) {
       if (abs(track.template singleCollSel_as<ColsType>().posZ()) > _vertexZ)
         continue;
-      if ((track.tpcNClsShared()) > _tpcNClsShared || (track.itsNCls()) < _itsNCls)
+      if ((track.tpcFractionSharedCls()) > _tpcFractionSharedCls || (track.itsNCls()) < _itsNCls)
         continue;
 
       if constexpr (FillExtra) {
@@ -169,7 +169,7 @@ struct QAHistograms {
         registry.fill(HIST("dcaz_to_pt"), track.pt(), track.dcaZ());
         registry.fill(HIST("TPCClusters"), track.tpcNClsFound());
         registry.fill(HIST("TPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-        registry.fill(HIST("TPCNClsShared"), track.tpcNClsShared());
+        registry.fill(HIST("TPCFractionSharedCls"), track.tpcFractionSharedCls());
         registry.fill(HIST("ITSClusters"), track.itsNCls());
         registry.fill(HIST("ITSchi2"), track.itsChi2NCl());
         registry.fill(HIST("TPCchi2"), track.tpcChi2NCl());

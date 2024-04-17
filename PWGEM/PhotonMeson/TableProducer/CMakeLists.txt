@@ -29,8 +29,8 @@ o2physics_add_dpl_workflow(create-pcm
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(create-emreduced-event
-                    SOURCES createEMReducedEvent.cxx
+o2physics_add_dpl_workflow(create-emevent
+                    SOURCES createEMEvent.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

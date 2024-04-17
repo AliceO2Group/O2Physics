@@ -56,6 +56,7 @@ DECLARE_SOA_COLUMN(NTPCclusHe, nTPCclusHe, uint8_t);                // Number of
 DECLARE_SOA_COLUMN(NTPCclusPi, nTPCclusPi, uint8_t);                // Number of TPC clusters of the Pi daughter
 DECLARE_SOA_COLUMN(TPCsignalHe, tpcSignalHe, uint16_t);             // TPC signal of the He daughter
 DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);             // TPC signal of the Pi daughter
+DECLARE_SOA_COLUMN(Tracked, tracked, bool);                         // bool: true for tracked candidates
 DECLARE_SOA_COLUMN(Flags, flags, uint8_t);                          // Flags for PID in tracking (bits [0, 3] for negative daughter, [4,7] for positive daughter)
 DECLARE_SOA_COLUMN(TPCmomHe, tpcMomHe, float);                      // TPC momentum of the He daughter
 DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);                      // TPC momentum of the Pi daughter
@@ -89,7 +90,7 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
                   hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi,
                   hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi,
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
-                  hyperrec::Flags);
+                  hyperrec::Flags, hyperrec::Tracked);
 
 DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   o2::soa::Index<>,
@@ -107,7 +108,7 @@ DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi,
                   hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi,
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
-                  hyperrec::Flags);
+                  hyperrec::Flags, hyperrec::Tracked);
 
 DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   o2::soa::Index<>,
@@ -122,7 +123,7 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi,
                   hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi,
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
-                  hyperrec::Flags,
+                  hyperrec::Flags, hyperrec::Tracked,
                   hyperrec::GenPt,
                   hyperrec::GenPhi,
                   hyperrec::GenEta,

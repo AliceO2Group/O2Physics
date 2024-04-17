@@ -211,7 +211,7 @@ struct DalitzEEQCMC {
           }
           if (mother_id > 0) {
             auto mcmother = mcparticles.iteratorAt(mother_id);
-            if (IsPhysicalPrimary(mcmother.emmcevent(), mcmother, mcparticles)) {
+            if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
               dca_pos_3d = pos.dca3DinSigma();
               dca_ele_3d = ele.dca3DinSigma();
               dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
@@ -252,7 +252,7 @@ struct DalitzEEQCMC {
             } // end of LF
           } else if (photonid > 0) {
             auto mcphoton = mcparticles.iteratorAt(photonid);
-            if (IsPhysicalPrimary(mcphoton.emmcevent(), mcphoton, mcparticles) && IsEleFromPC(elemc, mcparticles) && IsEleFromPC(posmc, mcparticles)) {
+            if ((mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) && IsEleFromPC(elemc, mcparticles) && IsEleFromPC(posmc, mcparticles)) {
               reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_Photon"))->Fill(uls_pair.phiv(), uls_pair.mass());
               reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsOPA_Photon"))->Fill(uls_pair.opangle(), uls_pair.mass());
             }
@@ -325,7 +325,7 @@ struct DalitzEEQCMC {
           continue;
         }
         auto mcmother = mcparticles.iteratorAt(mother_id);
-        if (IsPhysicalPrimary(mcmother.emmcevent(), mcmother, mcparticles)) {
+        if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
           ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
           ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;

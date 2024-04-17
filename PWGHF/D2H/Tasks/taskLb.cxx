@@ -186,7 +186,7 @@ struct HfTaskLbMc {
 
   void process(soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi, aod::HfCandLbMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandLbMcGen> const& mcParticles,
-               aod::TracksWMc const& tracks,
+               aod::TracksWMc const&,
                aod::HfCand3Prong const&)
   {
     // MC rec

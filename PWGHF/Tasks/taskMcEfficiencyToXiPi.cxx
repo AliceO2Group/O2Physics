@@ -73,7 +73,7 @@ struct HfTaskMcEfficiencyToXiPi {
 
   void init(InitContext&)
   {
-    auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, RecoDecay::OriginType::None - 0.5, RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
+    auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
     hCandidates->GetAxis(1)->SetTitle("#it{m}_{inv} (GeV/#it{c}^{2})");
     hCandidates->GetAxis(2)->SetTitle("Collision matched");
@@ -155,7 +155,7 @@ struct HfTaskMcEfficiencyToXiPi {
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
   // genParticles -> join aod::McParticles and candidateCreator McGen tables
   template <typename T1, typename T2>
-  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisionLabels const& colls, int pdgCode)
+  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisionLabels const&, int pdgCode)
   {
     // fill hCandidates histogram
     candidateRecLoop(candidates, pdgCode);

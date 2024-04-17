@@ -80,7 +80,7 @@ struct HfTaskMcEfficiency {
       LOGP(fatal, "Data and MC process functions cannot run simultaneously!");
     }
 
-    auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, axisPdg, axisCPA, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, RecoDecay::OriginType::None - 0.5, RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
+    auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, axisPdg, axisCPA, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
     hCandidates->GetAxis(1)->SetTitle("#it{m}_{inv} (GeV/#it{c}^{2})");
     hCandidates->GetAxis(2)->SetTitle("PDG code");
@@ -369,7 +369,7 @@ struct HfTaskMcEfficiency {
   }
 
   template <typename C>
-  void candidate2ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const& colls, std::vector<int> pdgCodes)
+  void candidate2ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const&, std::vector<int> pdgCodes)
   {
     candidate2ProngLoop<true>(candidates, tracks, mcParticles, pdgCodes);
 
@@ -482,7 +482,7 @@ struct HfTaskMcEfficiency {
   /// 3-prong analyses
 
   template <bool hasDplus, bool hasDs, bool hasLc, typename C>
-  void candidate3ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const& colls, std::vector<int> pdgCodes)
+  void candidate3ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const&, std::vector<int> pdgCodes)
   {
     candidate3ProngLoop<true, hasDplus, hasDs, hasLc>(candidates, tracks, mcParticles, pdgCodes);
 

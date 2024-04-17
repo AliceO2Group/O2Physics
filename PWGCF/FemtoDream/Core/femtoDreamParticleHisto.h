@@ -582,11 +582,11 @@ class FemtoDreamParticleHisto
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry;                                                     ///< For QA output
-  static constexpr o2::aod::femtodreamparticle::ParticleType mParticleType = particleType;   ///< Type of the particle under analysis
-  static constexpr int mFolderSuffixType = suffixType;                                       ///< Counter for the folder suffix specified below
-  static constexpr std::string_view mFolderSuffix[5] = {"", "_one", "_two", "_pos", "_neg"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
-  int mPDG = 0;                                                                              ///< PDG code of the selected particle
+  HistogramRegistry* mHistogramRegistry;                                                                                                             ///< For QA output
+  static constexpr o2::aod::femtodreamparticle::ParticleType mParticleType = particleType;                                                           ///< Type of the particle under analysis
+  static constexpr int mFolderSuffixType = suffixType;                                                                                               ///< Counter for the folder suffix specified below
+  static constexpr std::string_view mFolderSuffix[8] = {"", "_one", "_two", "_pos", "_neg", "_allSelected", "_allSelected_pos", "_allSelected_neg"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
+  int mPDG = 0;                                                                                                                                      ///< PDG code of the selected particle
 };
 } // namespace o2::analysis::femtoDream
 

@@ -165,7 +165,7 @@ struct LumiFDDFT0 {
     mRunNumber = 0;
   }
 
-  void processFull(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::BCsWithTimestamps const&,
+  void processFull(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::FDDs const& /*fdds*/, aod::FT0s const& /*ft0s*/, aod::BCsWithTimestamps const&,
                    o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov,
                                  o2::aod::TracksExtra> const& unfiltered_tracks)
   {
@@ -176,15 +176,15 @@ struct LumiFDDFT0 {
     std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
 
     int nContrib = 0;
-    int nNonContrib = 0;
+    // int nNonContrib = 0;
 
     for (const auto& unfiltered_track : unfiltered_tracks) {
       if (!unfiltered_track.hasITS()) {
-        nNonContrib++;
+        // nNonContrib++;
         continue;
       }
       if (unfiltered_track.pt() < 0.8 || unfiltered_track.itsNCls() < 5) {
-        nNonContrib++;
+        // nNonContrib++;
         continue;
       }
       vec_globID_contr.push_back(unfiltered_track.globalIndex());
@@ -223,9 +223,9 @@ struct LumiFDDFT0 {
     double refitX = -999.;
     double refitY = -999.;
     double refitZ = -999.;
-    double refitXX = -999.;
-    double refitYY = -999.;
-    double refitXY = -999.;
+    // double refitXX = -999.;
+    // double refitYY = -999.;
+    // double refitXY = -999.;
 
     double timeaFDD = -999.;
     double timecFDD = -999.;
@@ -245,9 +245,9 @@ struct LumiFDDFT0 {
       refitX = Pvtx_refitted.getX();
       refitY = Pvtx_refitted.getY();
       refitZ = Pvtx_refitted.getZ();
-      refitXX = Pvtx_refitted.getSigmaX2();
-      refitYY = Pvtx_refitted.getSigmaY2();
-      refitXY = Pvtx_refitted.getSigmaXY();
+      // refitXX = Pvtx_refitted.getSigmaX2();
+      // refitYY = Pvtx_refitted.getSigmaY2();
+      // refitXY = Pvtx_refitted.getSigmaXY();
 
       // now get information for FDD
       if (collision.has_foundFDD()) {

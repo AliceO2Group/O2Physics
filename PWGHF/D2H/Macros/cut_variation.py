@@ -189,7 +189,7 @@ class CutVarMinimiser:
             m_corr_yields_old = np.copy(self.m_corr_yields)
 
         # chi2
-        self.chi_2 = np.float(np.transpose(self.m_res) * self.m_weights * self.m_res)
+        self.chi_2 = float(np.transpose(self.m_res) * self.m_weights * self.m_res)
 
         # fraction
         for i_set, (effp, effnp) in enumerate(zip(self.eff_prompt, self.eff_nonprompt)):
@@ -269,9 +269,9 @@ class CutVarMinimiser:
 
         Parameters
         -----------------------------------------------------
-        - effacc_p: str
+        - effacc_p: float
             eff x acc for prompt signal
-        - effacc_np: str
+        - effacc_np: float
             eff x acc for non-prompt signal
 
         Returns
@@ -301,9 +301,9 @@ class CutVarMinimiser:
 
         Parameters
         -----------------------------------------------------
-        - effacc_p: str
+        - effacc_p: float
             eff x acc for prompt signal
-        - effacc_np: str
+        - effacc_np: float
             eff x acc for non-prompt signal
 
         Returns

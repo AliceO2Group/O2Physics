@@ -155,7 +155,7 @@ struct HfTaskChicMc {
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HfSelChicToJpsiGamma, aod::HfCandChicMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   {
     // MC rec.
     int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
