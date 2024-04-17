@@ -44,7 +44,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TOFSignal, aod::TOFEvTime>;
+using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime>;
 using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 
 namespace
@@ -542,6 +542,7 @@ struct antidLambdaEbye {
     auto rnd = static_cast<float>(gen32()) / static_cast<float>(gen32.max());
     auto subsample = static_cast<int>(rnd * nSubsamples);
 
+    gpu::gpustd::array<float, 2> dcaInfo;
     for (const auto& track : tracks) {
       if (!selectTrack(track)) {
         continue;
@@ -551,7 +552,9 @@ struct antidLambdaEbye {
         continue;
       }
 
-      if (std::hypot(track.dcaXY(), track.dcaZ()) > trackDcaCut) {
+      auto trackParCov = getTrackParCov(track);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      if (std::hypot(dcaInfo[0], dcaInfo[1]) > trackDcaCut) {
         continue;
       }
 
@@ -633,12 +636,6 @@ struct antidLambdaEbye {
         }
       }
 
-      auto posDcaToPv = std::hypot(posTrack.dcaXY(), posTrack.dcaZ());
-      auto negDcaToPv = std::hypot(negTrack.dcaXY(), negTrack.dcaZ());
-      if (std::abs(posDcaToPv) < v0setting_dcapostopv || std::abs(negDcaToPv) < v0setting_dcanegtopv) {
-        continue;
-      }
-
       auto posTrackCov = getTrackParCov(posTrack);
       auto negTrackCov = getTrackParCov(negTrack);
 
@@ -685,7 +682,6 @@ struct antidLambdaEbye {
         continue;
       }
 
-
       float dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
       if (dcaV0dau > v0setting_dcav0dau) {
         continue;
@@ -704,6 +700,17 @@ struct antidLambdaEbye {
         continue;
       }
 
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      auto posDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
+      if (posDcaToPv > v0setting_dcapostopv) {
+        continue;
+      }
+
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      auto negDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
+      if (negDcaToPv > v0setting_dcanegtopv) {
+        continue;
+      }
 
       if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCutQA) { // for QA histograms
         continue;
