@@ -56,7 +56,7 @@ void DefineHistograms(THashList* list, const char* histClass, const char* subGro
 THashList* AddHistClass(THashList* list, const char* histClass);
 
 template <EMHistType htype1, typename T1>
-void FillHistClass(THashList* list, const char* subGroup, T1 const& obj1/*, const float weight = 1.f*/)
+void FillHistClass(THashList* list, const char* subGroup, T1 const& obj1 /*, const float weight = 1.f*/)
 {
   if constexpr (htype1 == EMHistType::kEvent || htype1 == EMHistType::kEvent_Cent || htype1 == EMHistType::kEvent_Cent_Qvec) {
     reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("all", 1.f);
