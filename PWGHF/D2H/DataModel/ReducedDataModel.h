@@ -129,7 +129,8 @@ DECLARE_SOA_TABLE(HfRedTrackBases, "AOD", "HFREDTRACKBASE", //! Table with track
                   HFTRACKPAR_COLUMNS,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
-                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>);
+                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
+                  aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>);
 
 DECLARE_SOA_TABLE(HfRedTracksCov, "AOD", "HFREDTRACKCOV", //! Table with track covariance information for reduced workflow
                   soa::Index<>,
@@ -172,7 +173,8 @@ DECLARE_SOA_TABLE(HfRed2Prongs, "AOD", "HFRED2PRONG", //! Table with 2prong cand
                   hf_charm_cand_reduced::InvMassD0, hf_charm_cand_reduced::InvMassD0Bar,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
-                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>);
+                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
+                  aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>);
 
 DECLARE_SOA_TABLE(HfRed2ProngsCov, "AOD", "HFRED2PRONGSCOV", //! Table with 2prong candidate covariance for reduced workflow
                   o2::soa::Index<>,
@@ -198,7 +200,8 @@ DECLARE_SOA_TABLE(HfRed3Prongs, "AOD", "HFRED3PRONG", //! Table with 3prong cand
                   hf_charm_cand_reduced::InvMass,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
-                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>);
+                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
+                  aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>);
 
 DECLARE_SOA_TABLE(HfRed3ProngsCov, "AOD", "HFRED3PRONGSCOV", //! Table with 3prong candidate covariance for reduced workflow
                   o2::soa::Index<>,
