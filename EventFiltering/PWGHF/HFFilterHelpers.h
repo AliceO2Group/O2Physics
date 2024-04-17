@@ -1208,7 +1208,6 @@ inline bool HfFilterHelper::isSelectedPhoton(const Photon& photon, const std::ar
   return true;
 }
 
-
 /// Basic selection of cascade candidates
 /// \param casc is the cascade candidate
 /// \param dauTracks is a 3-element array with bachelor, positive and negative V0 daughter tracks
