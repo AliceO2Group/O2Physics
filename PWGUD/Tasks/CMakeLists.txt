@@ -15,7 +15,12 @@ o2physics_add_dpl_workflow(upc
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(sg-spectra
-                           SOURCES SGSpectraAnalyzer.cxx
+	                   SOURCES SGSpectraAnalyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-fourpi
+                           SOURCES SG_FourPi_Analyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
@@ -25,7 +30,7 @@ o2physics_add_dpl_workflow(sg-d0
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(sg-fit
-                           SOURCES SG_FIT_Analyzer.cxx
+	                   SOURCES SG_FIT_Analyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
@@ -69,7 +74,6 @@ o2physics_add_dpl_workflow(upc-mft
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
                            COMPONENT_NAME Analysis)
 
-
 o2physics_add_dpl_workflow(upc-veto
                            SOURCES upcVetoAnalysis.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
@@ -88,16 +92,3 @@ o2physics_add_dpl_workflow(polarisation-rho
                            SOURCES PolarisationRho.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
-
-
-o2physics_add_dpl_workflow(upc-jpsi-corr
-                           SOURCES upcJpsiCentralBarrelCorr.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
-                           COMPONENT_NAME Analysis)
-
-
-o2physics_add_dpl_workflow(exclusive-phi
-                           SOURCES ExclusivePhi.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
-                           COMPONENT_NAME Analysis)
-
