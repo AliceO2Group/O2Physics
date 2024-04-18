@@ -237,9 +237,9 @@ struct HfDataCreatorCharmHadPiReduced {
     registry.add(Form("hCpa%s", histMassTitle0.data()), Form("%s candidates;%s cosine of pointing angle;entries", charmHadTitle0.data(), charmHadTitle0.data()), {HistType::kTH1F, {{110, -1.1, 1.1}}});
 
     /// candidate monitoring
-    hCandidatesD00 = registry.add<TH1>("hCandidatesD00", "D candidate counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesD0 = registry.add<TH1>("hCandidatesD0", "D candidate counter", {HistType::kTH1D, {axisCands}});
     hCandidatesDPlus = registry.add<TH1>("hCandidatesDPlus", "B candidate counter", {HistType::kTH1D, {axisCands}});
-    setLabelHistoCands(hCandidatesD00);
+    setLabelHistoCands(hCandidatesD0);
     setLabelHistoCands(hCandidatesDPlus);
   }
 
