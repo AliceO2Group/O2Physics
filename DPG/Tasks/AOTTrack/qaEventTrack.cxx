@@ -997,7 +997,7 @@ struct qaEventTrack {
   using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
   void processMC(CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, soa::Join<aod::FullTracks, aod::McTrackLabels> const& tracksUnfiltered,
                  aod::AmbiguousTracks const& ambitracks,
-                 aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+                 aod::McParticles const&, aod::McCollisions const&)
   {
     /// work with all filtered tracks
     fillRecoHistogramsAllTracks<true, true>(tracks, ambitracks);
@@ -1084,7 +1084,7 @@ struct qaEventTrack {
 
   /// process for run 2 converted MC
   void processRun2ConvertedMC(CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, soa::Join<aod::FullTracks, aod::McTrackLabels> const& tracksUnfiltered,
-                              aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+                              aod::McParticles const&, aod::McCollisions const&)
   {
     /// work with collision grouping
     for (auto const& collision : collisions) {

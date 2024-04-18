@@ -415,7 +415,7 @@ struct tofPidQa {
   }
 
   template <bool fillHistograms, typename CollisionType, typename TrackType>
-  bool isTrackSelected(const CollisionType& collision, const TrackType& track)
+  bool isTrackSelected(const CollisionType&, const TrackType& track)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 1.f);
