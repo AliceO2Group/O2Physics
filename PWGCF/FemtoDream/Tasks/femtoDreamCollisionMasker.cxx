@@ -343,7 +343,7 @@ struct femoDreamCollisionMasker {
   // This function ALWAYS checks Track P; if howManyTracksToSetInMask is set to more than 1, it also checks how many
   // tracks there are which pass Track P selection and accordingly sets the bits in the mask for Tracks P+1 or both P+1 and P+2
   template <typename T>
-  void MaskForTrack_ThreeBody(T& BitSet, CollisionMasks::Parts P, FDCollision const& col, FDParticles const& parts, int howManyTracksToSetInMask)
+  void MaskForTrack_ThreeBody(T& BitSet, CollisionMasks::Parts P, FDCollision const& /*col*/, FDParticles const& parts, int howManyTracksToSetInMask)
   {
     if (howManyTracksToSetInMask == 2) {
       if (P == 2) {
@@ -439,7 +439,7 @@ struct femoDreamCollisionMasker {
   // This function ALWAYS checks V0 P; if howManyVoaToSetInMask is set to more than 1, it also checks how many
   // V0s there are which pass V0 P selection and accordingly sets the bits in the mask for V0s P+1 or both P+1 and P+2
   template <typename T>
-  void MaskForV0_ThreeBody(T& BitSet, CollisionMasks::Parts P, FDCollision const& col, FDParticles const& parts, int howManyV0sToSetInMask)
+  void MaskForV0_ThreeBody(T& BitSet, CollisionMasks::Parts P, FDCollision const& /*col*/, FDParticles const& parts, int howManyV0sToSetInMask)
   {
     if (howManyV0sToSetInMask == 2) {
       if (P == 2) {

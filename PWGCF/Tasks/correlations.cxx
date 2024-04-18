@@ -216,7 +216,7 @@ struct CorrelationTask {
   }
 
   template <typename TCollision, typename TTracks>
-  void fillQA(const TCollision& collision, float multiplicity, const TTracks& tracks)
+  void fillQA(const TCollision& /*collision*/, float multiplicity, const TTracks& tracks)
   {
     for (auto& track1 : tracks) {
       registry.fill(HIST("yields"), multiplicity, track1.pt(), track1.eta());
