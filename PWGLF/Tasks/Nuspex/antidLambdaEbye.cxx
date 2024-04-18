@@ -195,6 +195,7 @@ struct antidLambdaEbye {
   ConfigurableAxis momResAxis{"momResAxis", {1.e2, -1.f, 1.f}, "momentum resolution binning"};
   ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
   ConfigurableAxis tofAxis{"tofAxis", {1.e3, 0.f, 1.f}, "tof signal axis binning"};
+  ConfigurableAxis tpcClsAxis{"tpcClsAxis", {160, 0, 160}, "tpc n clusters binning"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -477,6 +478,17 @@ struct antidLambdaEbye {
     histos.add<TH1>("QA/dcaV0daugh", ";dcaV0daugh;Entries", HistType::kTH1F, {dcaV0daughAxis});
     histos.add<TH1>("QA/dcaPosPv", ";dcaPosPv;Entries", HistType::kTH1F, {dcaDaughPvAxis});
     histos.add<TH1>("QA/dcaNegPv", ";dcaNegPv;Entries", HistType::kTH1F, {dcaDaughPvAxis});
+    histos.add<TH1>("QA/cosPaBeforeCut", ";cosPa;Entries", HistType::kTH1F, {cosPaAxis});
+    histos.add<TH1>("QA/radiusBeforeCut", ";radius;Entries", HistType::kTH1F, {radiusAxis});
+    histos.add<TH1>("QA/dcaV0daughBeforeCut", ";dcaV0daugh;Entries", HistType::kTH1F, {dcaV0daughAxis});
+
+    // d QA
+    histos.add<TH2>("QA/dcaPv", ";#it{p}_{T} (GeV/#it{c});dcaPv;Entries", HistType::kTH2F, {momAxis, dcaDaughPvAxis});
+    histos.add<TH1>("QA/nClsTPC", ";tpcCls;Entries", HistType::kTH1F, {tpcClsAxis});
+    histos.add<TH1>("QA/nCrossedRowsTPC", ";nCrossedRowsTPC;Entries", HistType::kTH1F, {tpcClsAxis});
+    histos.add<TH2>("QA/dcaPvBefore", ";#it{p}_{T} (GeV/#it{c});dcaPv;Entries", HistType::kTH2F, {momAxis, dcaDaughPvAxis});
+    histos.add<TH1>("QA/nClsTPCBeforeCut", ";tpcCls;Entries", HistType::kTH1F, {tpcClsAxis});
+    histos.add<TH1>("QA/nCrossedRowsTPCBeforeCut", ";nCrossedRowsTPC;Entries", HistType::kTH1F, {tpcClsAxis});
 
     // antid and antip QA
     histos.add<TH2>("QA/tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
@@ -544,6 +556,10 @@ struct antidLambdaEbye {
 
     gpu::gpustd::array<float, 2> dcaInfo;
     for (const auto& track : tracks) {
+
+      histos.fill(HIST("QA/nClsTPCBeforeCut"), track.tpcNClsFound());
+      histos.fill(HIST("QA/nCrossedRowsTPCBeforeCut"), track.tpcNClsCrossedRows());
+
       if (!selectTrack(track)) {
         continue;
       }
@@ -554,21 +570,28 @@ struct antidLambdaEbye {
 
       auto trackParCov = getTrackParCov(track);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
-      if (std::hypot(dcaInfo[0], dcaInfo[1]) > trackDcaCut) {
+      auto dca = std::hypot(dcaInfo[0], dcaInfo[1]);
+      auto trackPt = trackParCov.getPt();
+      auto trackEta = trackParCov.getEta();
+      histos.fill(HIST("QA/dcaPvBefore"), trackPt, dca);
+      if (dca > trackDcaCut) {
         continue;
       }
+      histos.fill(HIST("QA/dcaPv"), trackPt, dca);
 
+      histos.fill(HIST("QA/nClsTPC"), track.tpcNClsFound());
+      histos.fill(HIST("QA/nCrossedRowsTPC"), track.tpcNClsCrossedRows());
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
       histos.fill(HIST("QA/tpcSignal_glo"), track.p(), track.tpcSignal());
 
       for (int iP{0}; iP < kNpart; ++iP) {
-        if (track.pt() < ptMin[iP] || track.pt() > ptMax[iP]) {
+        if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
           continue;
         }
 
         if (doprocessRun3 || doprocessMcRun3) {
           float cosL = 1 / std::sqrt(1.f + track.tgl() * track.tgl());
-          if (iP && getITSClSize(track) * cosL < antidItsClsSizeCut && track.pt() < antidPtItsClsSizeCut) {
+          if (iP && getITSClSize(track) * cosL < antidItsClsSizeCut && trackPt < antidPtItsClsSizeCut) {
             continue;
           }
         }
@@ -582,10 +605,10 @@ struct antidLambdaEbye {
         float mass{track.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f)};
         bool hasTof = track.hasTOF() && track.tofChi2() < 3;
 
-        if (track.pt() <= ptTof[iP] || (track.pt() > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMaxQA)) { // for QA histograms
-          tpcNsigmaGlo[iP]->Fill(centrality, track.pt(), nSigmaTPC);
+        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMaxQA)) { // for QA histograms
+          tpcNsigmaGlo[iP]->Fill(centrality, trackPt, nSigmaTPC);
           if (nSigmaTPC > nSigmaTpcCutLow[iP] && nSigmaTPC < nSigmaTpcCutUp[iP]) {
-            tofMass[iP]->Fill(centrality, track.pt(), mass);
+            tofMass[iP]->Fill(centrality, trackPt, mass);
           }
         }
 
@@ -594,7 +617,7 @@ struct antidLambdaEbye {
         }
 
         tpcNsigma[iP]->Fill(track.tpcInnerParam(), nSigmaTPC);
-        if (track.pt() > ptTof[iP] && hasTof) {
+        if (trackPt > ptTof[iP] && hasTof) {
           tofSignal_glo[iP]->Fill(track.p(), beta);
           tofSignal[iP]->Fill(track.tpcInnerParam(), beta);
         }
@@ -603,15 +626,15 @@ struct antidLambdaEbye {
         if (track.tpcInnerParam() < tpcInnerParamMax[iP]) {
           continue;
         }
-        if (track.pt() > ptTof[iP] && !hasTof) {
+        if (trackPt > ptTof[iP] && !hasTof) {
           continue;
         }
 
-        if (track.pt() <= ptTof[iP] || (track.pt() > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMax[iP])) {
-          tempTracks[iP]->Fill(std::abs(track.eta()), track.pt());
+        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMax[iP])) {
+          tempTracks[iP]->Fill(std::abs(trackEta), trackPt);
           CandidateTrack candTrack;
-          candTrack.pt = track.pt();
-          candTrack.eta = track.eta();
+          candTrack.pt = trackPt;
+          candTrack.eta = trackEta;
           candTrack.globalIndex = track.globalIndex();
           candidateTracks[iP].push_back(candTrack);
         }
@@ -683,6 +706,7 @@ struct antidLambdaEbye {
       }
 
       float dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
+      histos.fill(HIST("QA/dcaV0daughBeforeCut"), dcaV0dau);
       if (dcaV0dau > v0setting_dcav0dau) {
         continue;
       }
@@ -691,11 +715,13 @@ struct antidLambdaEbye {
       const auto& vtx = fitter.getPCACandidate();
 
       float radiusV0 = std::hypot(vtx[0], vtx[1]);
+      histos.fill(HIST("QA/radiusBeforeCut"), radiusV0);
       if (radiusV0 < v0setting_radius || radiusV0 > v0radiusMax) {
         continue;
       }
 
       double cosPA = RecoDecay::cpa(primVtx, vtx, momV0);
+      histos.fill(HIST("QA/cosPaBeforeCut"), cosPA);
       if (cosPA < v0setting_cospa) {
         continue;
       }
