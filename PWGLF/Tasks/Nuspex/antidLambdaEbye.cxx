@@ -530,7 +530,6 @@ struct antidLambdaEbye {
   template <class C, class T>
   int fillRecoEvent(C const& collision, T const& tracksAll, aod::V0s const& V0s, float const& centrality)
   {
-    o2::pid::tof::Beta<class T::iterator> responseBeta;
     auto tracks = tracksAll.sliceBy(perCollisionTracksFull, collision.globalIndex());
     candidateTracks[0].clear();
     candidateTracks[1].clear();
@@ -578,7 +577,7 @@ struct antidLambdaEbye {
         double expSigma{expBethe * cfgBetheBlochParams->get(iP, "resolution")};
         auto nSigmaTPC = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
 
-        float beta{track.hasTOF() ? responseBeta.GetBeta(track) : -999.f};
+        float beta{track.hasTOF() ? track.length() / (track.tofSignal() - track.tofEvTime()) * o2::pid::tof::kCSPEDDInv : -999.f};
         beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta));
         float mass{track.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f)};
         bool hasTof = track.hasTOF() && track.tofChi2() < 3;
