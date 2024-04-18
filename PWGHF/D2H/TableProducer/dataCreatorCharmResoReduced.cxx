@@ -69,17 +69,16 @@ enum DType : uint8_t {
 
 /// Creation of D-V0 pairs
 struct HfDataCreatorCharmResoReduced {
-  
+
   // Produces AOD tables to store track information
   Produces<aod::HfRedCollisions> hfReducedCollision; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfOrigColCounts> hfCollisionCounter; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
-  //V0 and D candidates reduced tables
+  // V0 and D candidates reduced tables
   Produces<aod::HfRedVzeros> hfCandV0;   // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfRed3PrNoTrks> hfCandD; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
-  //ML optional Tables
-  Produces<aod::HfRed3ProngsMl> hfCandDMl;  // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  // ML optional Tables
+  Produces<aod::HfRed3ProngsMl> hfCandDMl; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
 
-  
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -256,7 +255,7 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
         dtype = candD.signSoftPi() * DType::Dstar;
-        if constexpr(withMl){
+        if constexpr (withMl) {
           std::copy(candD.mlProbDstarToD0Pi().begin(), candD.mlProbDstarToD0Pi().end(), bdtScores.begin());
         }
       } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
@@ -271,7 +270,7 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
         dtype = static_cast<int8_t>(prong0.sign() * DType::Dplus);
-        if constexpr(withMl){
+        if constexpr (withMl) {
           std::copy(candD.mlProbDplusToPiKPi().begin(), candD.mlProbDplusToPiKPi().end(), bdtScores.begin());
         }
       } // else if
@@ -356,8 +355,8 @@ struct HfDataCreatorCharmResoReduced {
                 pVecD[0], pVecD[1], pVecD[2],
                 dtype);
         if constexpr (withMl) {
-            hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2]);
-          }
+          hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2]);
+        }
         fillHfReducedCollision = true;
         switch (DecayChannel) {
           case DecayChannel::DstarV0:
@@ -404,11 +403,11 @@ struct HfDataCreatorCharmResoReduced {
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
 
   void processDplusV0WithMl(aod::Collisions const& collisions,
-                      CandsDplusFilteredWithMl const& candsDplus,
-                      aod::TrackAssoc const& trackIndices,
-                      aod::V0Datas const& V0s,
-                      BigTracksPID const& tracks,
-                      aod::BCsWithTimestamps const& bcs)
+                            CandsDplusFilteredWithMl const& candsDplus,
+                            aod::TrackAssoc const& trackIndices,
+                            aod::V0Datas const& V0s,
+                            BigTracksPID const& tracks,
+                            aod::BCsWithTimestamps const& bcs)
   {
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize());
@@ -442,11 +441,11 @@ struct HfDataCreatorCharmResoReduced {
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
 
   void processDstarV0WithMl(aod::Collisions const& collisions,
-                      CandDstarFilteredWithMl const& candsDstar,
-                      aod::TrackAssoc const& trackIndices,
-                      aod::V0Datas const& V0s,
-                      BigTracksPID const& tracks,
-                      aod::BCsWithTimestamps const& bcs)
+                            CandDstarFilteredWithMl const& candsDstar,
+                            aod::TrackAssoc const& trackIndices,
+                            aod::V0Datas const& V0s,
+                            BigTracksPID const& tracks,
+                            aod::BCsWithTimestamps const& bcs)
   {
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize());
