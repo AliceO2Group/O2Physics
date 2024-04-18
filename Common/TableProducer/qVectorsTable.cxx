@@ -23,7 +23,6 @@
 #include <string>
 #include <vector>
 #include <TComplex.h>
-#include <TMath.h>
 
 // o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
@@ -111,25 +110,13 @@ struct qVectorsTable {
   // Enable access to the CCDB for the offset and correction constants and save them
   // in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  std::vector<o2::detectors::AlignParam>* offsetFT0;
-  std::vector<o2::detectors::AlignParam>* offsetFV0;
-
-  std::vector<int> TrkBPosLabel;
-  std::vector<int> TrkBNegLabel;
-  std::vector<float> qvecRe;
-  std::vector<float> qvecIm;
-  std::vector<float> qvecAmp;
-  std::vector<std::vector<float>> cfgCorr;
-
-  std::vector<float> FT0RelGainConst;
-  std::vector<float> FV0RelGainConst;
 
   // Variables for other classes.
   EventPlaneHelper helperEP;
 
   HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  bool IsFirstRun = true;
+  int runNumber{-1};
 
   void init(InitContext const&)
   {
@@ -142,7 +129,7 @@ struct qVectorsTable {
 
     AxisSpec axisPt = {40, 0.0, 4.0};
     AxisSpec axisEta = {32, -0.8, 0.8};
-    AxisSpec axisPhi = {32, 0, 2.0 * TMath::Pi()};
+    AxisSpec axisPhi = {32, 0, constants::math::TwoPI};
     AxisSpec axixCent = {20, 0, 100};
 
     AxisSpec axisFITamp{cfgaxisFITamp, "FIT amp"};
@@ -155,12 +142,12 @@ struct qVectorsTable {
     histosQA.add("FV0AmpCor", "", {HistType::kTH2F, {axisFITamp, axisChID}});
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc, std::vector<std::vector<float>>& cfgCorr, std::vector<float>& FT0RelGainConst, std::vector<float>& FV0RelGainConst)
   {
     auto timestamp = bc.timestamp();
 
-    offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp);
-    offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", timestamp);
+    auto offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp);
+    auto offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", timestamp);
 
     if (offsetFT0 != nullptr) {
       helperEP.SetOffsetFT0A((*offsetFT0)[0].getX(), (*offsetFT0)[0].getY());
@@ -345,10 +332,22 @@ struct qVectorsTable {
 
   void process(MyCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks)
   {
+
+    std::vector<int> TrkBPosLabel{};
+    std::vector<int> TrkBNegLabel{};
+    std::vector<float> qvecRe{};
+    std::vector<float> qvecIm{};
+    std::vector<float> qvecAmp{};
+
+    std::vector<std::vector<float>> cfgCorr{};
+    std::vector<float> FT0RelGainConst{};
+    std::vector<float> FV0RelGainConst{};
+
     auto bc = coll.bc_as<aod::BCsWithTimestamps>();
-    if (IsFirstRun) {
-      initCCDB(bc);
-      IsFirstRun = false;
+    int currentRun = bc.runNumber();
+    if (runNumber != currentRun) {
+      initCCDB(bc, cfgCorr, FT0RelGainConst, FV0RelGainConst);
+      runNumber = currentRun;
     }
 
     // Get the centrality value for all subscribed estimators and takes the one
@@ -486,9 +485,6 @@ struct qVectorsTable {
     int nTrkBPos = 0;
     int nTrkBNeg = 0;
 
-    TrkBPosLabel.clear();
-    TrkBNegLabel.clear();
-
     for (auto& trk : tracks) {
       if (!SelTrack(trk))
         continue;
@@ -496,13 +492,13 @@ struct qVectorsTable {
       if (abs(trk.eta()) < 0.1 || abs(trk.eta()) > 0.8)
         continue;
       if (trk.eta() > 0) {
-        qVectBPos[0] += trk.pt() * TMath::Cos(trk.phi() * cfgnMod);
-        qVectBPos[1] += trk.pt() * TMath::Sin(trk.phi() * cfgnMod);
+        qVectBPos[0] += trk.pt() * std::cos(trk.phi() * cfgnMod);
+        qVectBPos[1] += trk.pt() * std::sin(trk.phi() * cfgnMod);
         TrkBPosLabel.push_back(trk.globalIndex());
         nTrkBPos++;
       } else if (trk.eta() < 0) {
-        qVectBNeg[0] += trk.pt() * TMath::Cos(trk.phi() * cfgnMod);
-        qVectBNeg[1] += trk.pt() * TMath::Sin(trk.phi() * cfgnMod);
+        qVectBNeg[0] += trk.pt() * std::cos(trk.phi() * cfgnMod);
+        qVectBNeg[1] += trk.pt() * std::sin(trk.phi() * cfgnMod);
         TrkBNegLabel.push_back(trk.globalIndex());
         nTrkBNeg++;
       }
@@ -522,10 +518,6 @@ struct qVectorsTable {
       qVectBNeg[0] = 999.;
       qVectBNeg[1] = 999.;
     }
-
-    qvecRe.clear();
-    qvecIm.clear();
-    qvecAmp.clear();
 
     int cBin = helperEP.GetCentBin(cent);
 
