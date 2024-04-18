@@ -22,10 +22,10 @@ namespace o2::hf_trkcandsel
 {
 // secondary vertex fitting monitoring
 enum SVFitting {
-    BeforeFit = 0,
-    FitOk,
-    Fail,
-    NCases
+  BeforeFit = 0,
+  FitOk,
+  Fail,
+  NCases
 };
 
 o2::framework::AxisSpec axisCands = {SVFitting::NCases, -0.5f, static_cast<float>(SVFitting::NCases) - 0.5f, ""};
