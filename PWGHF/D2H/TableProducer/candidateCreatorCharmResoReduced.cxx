@@ -61,6 +61,8 @@ auto vecBins = std::vector<double>{binsPt, binsPt + nBins + 1};
 struct HfCandidateCreatorCharmResoReduced {
   // Produces: Tables with resonance info
   Produces<aod::HfCandCharmReso> rowCandidateReso;
+  // Optional D daughter ML scores table
+  Produces<aod::HfCharmResoMLs> mlScores;
 
   // Configurables
   Configurable<double> invMassWindowD{"invMassWindowD", 0.5, "invariant-mass window for D candidates (GeV/c2)"};
@@ -70,6 +72,8 @@ struct HfCandidateCreatorCharmResoReduced {
   // Hist Axis
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{vecBins}, "pT bin limits"};
 
+  using reducedDWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
+  
   // Partition of V0 candidates based on v0Type
   Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_cand_reduced::v0Type == (uint8_t)1 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)3 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)5;
   Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_cand_reduced::v0Type == (uint8_t)2 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)4;
