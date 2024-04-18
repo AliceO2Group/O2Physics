@@ -254,6 +254,10 @@ struct femoDreamCollisionMasker {
             FilterPtMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("ConfMinpT")) == 0) {
             FilterPtMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfMaxDCAxy")) == 0) {
+            FilterTempFitVarMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfMinDCAxy")) == 0) {
+            FilterTempFitVarMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           }
         }
       } else if (device.name.find("femto-dream-triplet-task-track-track-v0") != std::string::npos) {
@@ -272,6 +276,10 @@ struct femoDreamCollisionMasker {
             FilterPtMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("ConfMinpT")) == 0) {
             FilterPtMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfMaxDCAxy")) == 0) {
+            FilterTempFitVarMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfMinDCAxy")) == 0) {
+            FilterTempFitVarMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("ConfCutV0")) == 0) {
             V0CutBits.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
           } else if (option.name.compare(std::string("Conf_ChildPos_CutV0")) == 0) {
@@ -362,7 +370,8 @@ struct femoDreamCollisionMasker {
           continue;
         }
         // check filter cuts
-        if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index)) {
+        if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index) ||
+            track.tempFitVar() > FilterTempFitVarMax.at(P).at(index) || track.tempFitVar() < FilterTempFitVarMin.at(P).at(index)) {
           // if they are not passed, skip the particle
           continue;
         }
