@@ -42,6 +42,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetDerivedDataProducerTask {
+  Produces<aod::CollisionCounts> collisionCountsTable;
   Produces<aod::JDummys> jDummysTable;
   Produces<aod::JBCs> jBCsTable;
   Produces<aod::JBCPIs> jBCParentIndexTable;
@@ -71,6 +72,14 @@ struct JetDerivedDataProducerTask {
   {
   }
 
+  void processCollisionCounts(aod::Collisions const&)
+  {
+    std::vector<int> readCounts = {0};
+    std::vector<int> writtenCounts = {0};
+    collisionCountsTable(readCounts, writtenCounts);
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionCounts, "produces collision counting table", false);
+
   void processBunchCrossings(soa::Join<aod::BCs, aod::Timestamps>::iterator const& bc)
   {
     jBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp());
@@ -93,6 +102,14 @@ struct JetDerivedDataProducerTask {
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsWithoutCentralityAndMultiplicity, "produces derived collision tables without centrality or multiplicity", false);
+
+  void processCollisionsRun2(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentRun2V0Ms>::iterator const& collision)
+  {
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centRun2V0M(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw()); // note change multFT0C to multFT0M when problems with multFT0A are fixed
+    jCollisionsParentIndexTable(collision.globalIndex());
+    jCollisionsBunchCrossingIndexTable(collision.bcId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsRun2, "produces derived collision tables for Run 2 data", false);
 
   void processMcCollisionLabels(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision)
   {
