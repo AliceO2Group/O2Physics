@@ -38,20 +38,22 @@ int findBin(T1 const& binsPt, T2 value)
 }
 
 /// Single-track cut on DCAxy
-/// \param trackPt is the prong pT
+/// \param binsPt pT bins
+/// \param cuts cut configuration
+/// \param pt is the prong pT
 /// \param dcaXY is the prong dcaXY
 /// \return true if track passes all cuts
 template <typename T1, typename T2>
-bool isSelectedTrackDcaXY(T1 const& binsPtTrack, T2 const& cutsSingleTrack, const float& trackPt, const float& dcaXY)
+bool isSelectedTrackDcaXY(T1 const& binsPt, T2 const& cuts, const float pt, const float dcaXY)
 {
-  auto pTBinTrack = findBin(binsPtTrack, trackPt);
-  if (pTBinTrack == -1) {
+  auto binPt = findBin(binsPt, pt);
+  if (binPt == -1) {
     return false;
   }
-  if (std::abs(dcaXY) < cutsSingleTrack->get(pTBinTrack, "min_dcaxytoprimary")) {
+  if (std::abs(dcaXY) < cuts->get(binPt, "min_dcaxytoprimary")) {
     return false; // minimum DCAxy
   }
-  if (std::abs(dcaXY) > cutsSingleTrack->get(pTBinTrack, "max_dcaxytoprimary")) {
+  if (std::abs(dcaXY) > cuts->get(binPt, "max_dcaxytoprimary")) {
     return false; // maximum DCAxy
   }
   return true;

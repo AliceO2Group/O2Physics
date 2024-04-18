@@ -176,12 +176,9 @@ struct HfCandidateSelectorDplusToPiKPi {
   template <typename T1>
   bool isSelectedCandidateDcaXY(const T1& candidate)
   {
-    if (isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0()) &&
-        isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1()) &&
-        isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2())) {
-      return true;
-    }
-    return false;
+    return (isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0()) &&
+            isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1()) &&
+            isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2()));
   }
 
   /// Apply PID selection
