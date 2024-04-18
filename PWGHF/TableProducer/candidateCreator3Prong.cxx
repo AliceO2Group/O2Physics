@@ -217,8 +217,7 @@ struct HfCandidateCreator3Prong {
         if (df.process(trackParVar0, trackParVar1, trackParVar2) == 0) {
           continue;
         }
-      }
-      catch(const std::runtime_error& error) {
+      } catch (const std::runtime_error& error) {
         LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
         hCandidates->Fill(SVFitting::Fail);
         continue;
