@@ -107,6 +107,10 @@ struct qVectorsTable {
   Produces<aod::QvectorBPoss> qVectorBPos;
   Produces<aod::QvectorBNegs> qVectorBNeg;
 
+  std::vector<std::vector<float>> cfgCorr{};
+  std::vector<float> FT0RelGainConst{};
+  std::vector<float> FV0RelGainConst{};
+
   // Enable access to the CCDB for the offset and correction constants and save them
   // in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -142,8 +146,15 @@ struct qVectorsTable {
     histosQA.add("FV0AmpCor", "", {HistType::kTH2F, {axisFITamp, axisChID}});
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc, std::vector<std::vector<float>>& cfgCorr, std::vector<float>& FT0RelGainConst, std::vector<float>& FV0RelGainConst)
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
+    cfgCorr.clear();
+    FT0RelGainConst.clear();
+    FV0RelGainConst.clear();
+    cfgCorr = {};
+    FT0RelGainConst = {};
+    FV0RelGainConst = {};
+
     auto timestamp = bc.timestamp();
 
     auto offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp);
@@ -339,14 +350,10 @@ struct qVectorsTable {
     std::vector<float> qvecIm{};
     std::vector<float> qvecAmp{};
 
-    std::vector<std::vector<float>> cfgCorr{};
-    std::vector<float> FT0RelGainConst{};
-    std::vector<float> FV0RelGainConst{};
-
     auto bc = coll.bc_as<aod::BCsWithTimestamps>();
     int currentRun = bc.runNumber();
     if (runNumber != currentRun) {
-      initCCDB(bc, cfgCorr, FT0RelGainConst, FV0RelGainConst);
+      initCCDB(bc);
       runNumber = currentRun;
     }
 
