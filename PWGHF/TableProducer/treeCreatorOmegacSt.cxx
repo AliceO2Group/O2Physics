@@ -547,6 +547,8 @@ struct HfTreeCreatorOmegacSt {
                                   decayLengthCasc,
                                   decayLengthCascXY);
                     }
+                  } else {
+                    continue;
                   }
                 } catch (const std::runtime_error& error) {
                   LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Casc-Pi cannot work, skipping the candidate.";
@@ -672,13 +674,13 @@ struct HfTreeCreatorOmegacSt {
                         }
                       }
                     }
+                    hCandidatesCascPi->Fill(SVFitting::FitOk);
                   }
                 } catch (const std::runtime_error& error) {
                   LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Casc-Pi cannot work, skipping the candidate.";
                   hCandidatesCascPi->Fill(SVFitting::Fail);
                   continue;
                 }
-                hCandidatesCascPi->Fill(SVFitting::FitOk);
 
                 // MC-based mass
                 momenta[0] = {mother.px(), mother.py(), mother.pz()};
