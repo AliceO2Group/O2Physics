@@ -148,31 +148,33 @@ struct upcPhotonuclearAnalysis {
   }
 
   template <typename C>
-  bool isGlobalCollisionCut(C const& collision){
-    if ( collision.posZ() < cutMyPosZMin || cutMyPosZMax < collision.posZ() ) {
+  bool isGlobalCollisionCut(C const& collision)
+  {
+    if (collision.posZ() < cutMyPosZMin || cutMyPosZMax < collision.posZ()) {
       return false;
     }
-    if ( (std::abs(collision.timeZNA()) < cutMyTimeZNA && std::abs(collision.timeZNC()) < cutMyTimeZNC) == false ) {
+    if ((std::abs(collision.timeZNA()) < cutMyTimeZNA && std::abs(collision.timeZNC()) < cutMyTimeZNC) == false) {
       return false;
     }
     return true;
   }
 
   template <typename CSG>
-  bool isCollisionCutSG(CSG const& collision, int SideGap) {
+  bool isCollisionCutSG(CSG const& collision, int SideGap)
+  {
     switch (SideGap) {
-      case 0: // Gap in A side
-        if ( (collision.energyCommonZNA() < cutAGapMyEnergyZNA && collision.energyCommonZNC() > cutAGapMyEnergyZNC) == false ) { // 0n - A side && Xn - C Side
+      case 0:                                                                                                                  // Gap in A side
+        if ((collision.energyCommonZNA() < cutAGapMyEnergyZNA && collision.energyCommonZNC() > cutAGapMyEnergyZNC) == false) { // 0n - A side && Xn - C Side
           return false;
         }
         break;
-      case 1: // Gap in C side
-        if ( (collision.energyCommonZNA() > cutCGapMyEnergyZNA && collision.energyCommonZNC() < cutCGapMyEnergyZNC) == false ) { // Xn - A side && 0n - C Side
+      case 1:                                                                                                                  // Gap in C side
+        if ((collision.energyCommonZNA() > cutCGapMyEnergyZNA && collision.energyCommonZNC() < cutCGapMyEnergyZNC) == false) { // Xn - A side && 0n - C Side
           return false;
         }
         break;
-      case 2: // Gap in Both Sides
-        if ( (collision.energyCommonZNA() < cutBothGapMyEnergyZNA && collision.energyCommonZNC() < cutBothGapMyEnergyZNC) == false ) { // 0n - A side && 0n - C Side
+      case 2:                                                                                                                        // Gap in Both Sides
+        if ((collision.energyCommonZNA() < cutBothGapMyEnergyZNA && collision.energyCommonZNC() < cutBothGapMyEnergyZNC) == false) { // 0n - A side && 0n - C Side
           return false;
         }
         break;
@@ -264,15 +266,15 @@ struct upcPhotonuclearAnalysis {
             histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phi(track.px(), track.py()));
             histos.fill(HIST("Tracks/SGsideA/hTrackEta"), eta(track.px(), track.py(), track.pz()));
             histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()), track.tpcSignal());
-            //histos.fill(HIST("Tracks/SGsideA/hTrackRapidity"), track.rapidity());
+            // histos.fill(HIST("Tracks/SGsideA/hTrackRapidity"), track.rapidity());
 
-             histos.fill(HIST("Tracks/SGsideA/hTrackITSNCls"), track.itsNCls());
-             histos.fill(HIST("Tracks/SGsideA/hTrackITSChi2NCls"), track.itsChi2NCl());
-             histos.fill(HIST("Tracks/SGsideA/hTrackTPCNCls"), (static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) );
-             histos.fill(HIST("Tracks/SGsideA/hTrackTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
-             histos.fill(HIST("Tracks/SGsideA/hTrackTPCNClsFindable"), track.tpcNClsFindable());
-             histos.fill(HIST("Tracks/SGsideA/hTrackTPCChi2NCls"), track.tpcChi2NCl());
-             histos.fill(HIST("Tracks/SGsideA/hTrackITSNClsTPCCls"), track.tpcNClsFindable(), track.itsNCls());
+            histos.fill(HIST("Tracks/SGsideA/hTrackITSNCls"), track.itsNCls());
+            histos.fill(HIST("Tracks/SGsideA/hTrackITSChi2NCls"), track.itsChi2NCl());
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCNCls"), (static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())));
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCNClsFindable"), track.tpcNClsFindable());
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCChi2NCls"), track.tpcChi2NCl());
+            histos.fill(HIST("Tracks/SGsideA/hTrackITSNClsTPCCls"), track.tpcNClsFindable(), track.itsNCls());
           }
         }
         histos.fill(HIST("Events/SGsideA/hNch"), nTracksCharged);
@@ -301,10 +303,9 @@ struct upcPhotonuclearAnalysis {
             histos.fill(HIST("Tracks/SGsideC/hTrackPt"), track.pt());
             histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phi(track.px(), track.py()));
             histos.fill(HIST("Tracks/SGsideC/hTrackEta"), eta(track.px(), track.py(), track.pz()));
-            //histos.fill(HIST("Tracks/SGsideC/hTrackRapidity"), track.rapidity());
+            // histos.fill(HIST("Tracks/SGsideC/hTrackRapidity"), track.rapidity());
             histos.fill(HIST("Tracks/SGsideC/hTrackITSNClsTPCCls"), track.tpcNClsFindable(), track.itsNCls());
             histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()), track.tpcSignal());
-
           }
         }
         histos.fill(HIST("Events/SGsideC/hNch"), nTracksCharged);
@@ -333,10 +334,9 @@ struct upcPhotonuclearAnalysis {
             histos.fill(HIST("Tracks/SGsideBoth/hTrackPt"), track.pt());
             histos.fill(HIST("Tracks/SGsideBoth/hTrackPhi"), phi(track.px(), track.py()));
             histos.fill(HIST("Tracks/SGsideBoth/hTrackEta"), eta(track.px(), track.py(), track.pz()));
-            //histos.fill(HIST("Tracks/SGsideBoth/hTrackRapidity"), track.rapidity());
+            // histos.fill(HIST("Tracks/SGsideBoth/hTrackRapidity"), track.rapidity());
             histos.fill(HIST("Tracks/SGsideBoth/hTrackITSNClsTPCCls"), track.tpcNClsFindable(), track.itsNCls());
             histos.fill(HIST("Tracks/SGsideBoth/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()), track.tpcSignal());
-
           }
         }
         histos.fill(HIST("Events/SGsideBoth/hNch"), nTracksCharged);

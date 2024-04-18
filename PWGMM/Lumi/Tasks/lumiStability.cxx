@@ -72,7 +72,7 @@ struct lumiStabilityTask {
     constexpr std::pair<int, int> pair2 = {2, 6};
     constexpr std::pair<int, int> pair3 = {3, 7};
     constexpr std::array<std::pair<int, int>, 4> channelPairs = {pair0, pair1, pair2, pair3};
-    //std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
+    // std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
     for (const auto& pair : channelPairs) {
       if (std::find(channels.begin(), channels.end(), pair.first) != channels.end() &&
           std::find(channels.begin(), channels.end(), pair.second) != channels.end()) {
@@ -93,8 +93,8 @@ struct lumiStabilityTask {
       Long64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
 
-      int deltaIndex = 0;  // backward move counts
-      int deltaBC = 0; // current difference wrt globalBC
+      int deltaIndex = 0; // backward move counts
+      int deltaBC = 0;    // current difference wrt globalBC
       int maxDeltaBC = 5; // maximum difference
       bool pastActivityFDD = false;
       while (deltaBC < maxDeltaBC) {
@@ -104,7 +104,7 @@ struct lumiStabilityTask {
         deltaIndex++;
         const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
         deltaBC = globalBC = bc_past.globalBC();
-        if(deltaBC < maxDeltaBC) {
+        if (deltaBC < maxDeltaBC) {
           pastActivityFDD |= bc_past.has_fdd();
         }
       }

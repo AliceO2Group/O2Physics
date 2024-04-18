@@ -34,7 +34,7 @@ namespace rcol
 {
 DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
 DECLARE_SOA_COLUMN(MapEtaPhi, mapetaphi, std::vector<int>);
-}
+} // namespace rcol
 
 #define Ccols o2::soa::Index<>,            \
               rcol::RBCId,                 \
