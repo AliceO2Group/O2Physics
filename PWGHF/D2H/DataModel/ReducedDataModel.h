@@ -417,7 +417,8 @@ DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate 
                   hf_reso_cand_reduced::Cpa,
                   hf_reso_cand_reduced::Dca,
                   hf_reso_cand_reduced::Radius,
-                  hf_reso_cand_reduced::V0Type);
+                  hf_reso_cand_reduced::V0Type,
+                  mcparticle::PVector<hf_reso_cand_reduced::Px, hf_reso_cand_reduced::Py, hf_reso_cand_reduced::Pz>);
 
 DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong candidate information for resonances reduced workflow
                   o2::soa::Index<>,
@@ -428,7 +429,8 @@ DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong
                   hf_reso_cand_reduced::Px,
                   hf_reso_cand_reduced::Py,
                   hf_reso_cand_reduced::Pz,
-                  hf_reso_cand_reduced::DType);
+                  hf_reso_cand_reduced::DType,
+                  mcparticle::PVector<hf_reso_cand_reduced::Px, hf_reso_cand_reduced::Py, hf_reso_cand_reduced::Pz>);
 
 DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Resonance candidate information for resonances reduced workflow
                   o2::soa::Index<>,
