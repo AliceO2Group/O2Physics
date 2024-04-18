@@ -49,15 +49,28 @@ struct HfTaskDplus {
 
   HfHelper hfHelper;
 
-  using CandDplusData = soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>;
-  using CandDplusDataWithMl = soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>;
-  using CandDplusMcReco = soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>;
-  using CandDplusMcRecoWithMl = soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec, aod::HfMlDplusToPiKPi>;
+  using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
+  using CandDplusDataWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using CandDplusMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>>;
+  using CandDplusMcRecoWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec, aod::HfMlDplusToPiKPi>>;
+  using McParticles = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
+  Filter filterDplusFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0);
+
+  //data
   Partition<CandDplusData> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Partition<CandDplusDataWithMl> selectedDPlusCandidatesWithMl = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<CandDplusMcReco> recoFlagDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<CandDplusMcRecoWithMl> recoFlagDPlusCandidatesWithMl = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  
+  //Matched MC
+  Partition<CandDplusMcReco> recoDPlusCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<CandDplusMcRecoWithMl> recoDPlusCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  
+  //MC Bkg
+  Partition<CandDplusMcReco> recoBkgCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<CandDplusMcRecoWithMl> recoBkgCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+
+  //Generated particles
+
 
   HistogramRegistry registry{
     "registry",
@@ -75,7 +88,7 @@ struct HfTaskDplus {
   {
     std::array<bool, 4> doprocess{doprocessData, doprocessDataWithMl, doprocessMc, doprocessMcWithMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
-      LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
+      LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
     auto vbins = (std::vector<double>)binsPt;
     AxisSpec ptbins = {vbins, "#it{p}_{T} (GeV/#it{c})"};
@@ -134,62 +147,51 @@ struct HfTaskDplus {
   template <typename T1>
   void fillHisto(const T1& candidate)
   {
-    // not possible in Filter since expressions do not support binary operators
-    if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
-      return;
-    }
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax) {
-        return;
-      }
-      float pt = candidate.pt();
-      registry.fill(HIST("hMass"), hfHelper.invMassDplusToPiKPi(candidate), pt);
-      registry.fill(HIST("hPt"), pt);
-      registry.fill(HIST("hEta"), candidate.eta(), pt);
-      registry.fill(HIST("hCt"), hfHelper.ctDplus(candidate), pt);
-      registry.fill(HIST("hDecayLength"), candidate.decayLength(), pt);
-      registry.fill(HIST("hDecayLengthXY"), candidate.decayLengthXY(), pt);
-      registry.fill(HIST("hNormalisedDecayLengthXY"), candidate.decayLengthXYNormalised(), pt);
-      registry.fill(HIST("hCPA"), candidate.cpa(), pt);
-      registry.fill(HIST("hCPAxy"), candidate.cpaXY(), pt);
-      registry.fill(HIST("hImpactParameterXY"), candidate.impactParameterXY(), pt);
-      registry.fill(HIST("hMaxNormalisedDeltaIP"), candidate.maxNormalisedDeltaIP(), pt);
-      registry.fill(HIST("hImpactParameterProngSqSum"), candidate.impactParameterProngSqSum(), pt);
-      registry.fill(HIST("hDecayLengthError"), candidate.errorDecayLength(), pt);
-      registry.fill(HIST("hDecayLengthXYError"), candidate.errorDecayLengthXY(), pt);
-      registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter0(), pt);
-      registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter1(), pt);
-      registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter2(), pt);
-      registry.fill(HIST("hPtProng0"), candidate.ptProng0());
-      registry.fill(HIST("hPtProng1"), candidate.ptProng1());
-      registry.fill(HIST("hPtProng2"), candidate.ptProng2());
-      registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), pt);
-      registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), pt);
-      registry.fill(HIST("hd0Prong2"), candidate.impactParameter2(), pt);
+    float pt = candidate.pt();
+    registry.fill(HIST("hMass"), hfHelper.invMassDplusToPiKPi(candidate), pt);
+    registry.fill(HIST("hPt"), pt);
+    registry.fill(HIST("hEta"), candidate.eta(), pt);
+    registry.fill(HIST("hCt"), hfHelper.ctDplus(candidate), pt);
+    registry.fill(HIST("hDecayLength"), candidate.decayLength(), pt);
+    registry.fill(HIST("hDecayLengthXY"), candidate.decayLengthXY(), pt);
+    registry.fill(HIST("hNormalisedDecayLengthXY"), candidate.decayLengthXYNormalised(), pt);
+    registry.fill(HIST("hCPA"), candidate.cpa(), pt);
+    registry.fill(HIST("hCPAxy"), candidate.cpaXY(), pt);
+    registry.fill(HIST("hImpactParameterXY"), candidate.impactParameterXY(), pt);
+    registry.fill(HIST("hMaxNormalisedDeltaIP"), candidate.maxNormalisedDeltaIP(), pt);
+    registry.fill(HIST("hImpactParameterProngSqSum"), candidate.impactParameterProngSqSum(), pt);
+    registry.fill(HIST("hDecayLengthError"), candidate.errorDecayLength(), pt);
+    registry.fill(HIST("hDecayLengthXYError"), candidate.errorDecayLengthXY(), pt);
+    registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter0(), pt);
+    registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter1(), pt);
+    registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter2(), pt);
+    registry.fill(HIST("hPtProng0"), candidate.ptProng0());
+    registry.fill(HIST("hPtProng1"), candidate.ptProng1());
+    registry.fill(HIST("hPtProng2"), candidate.ptProng2());
+    registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), pt);
+    registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), pt);
+    registry.fill(HIST("hd0Prong2"), candidate.impactParameter2(), pt);
   }
 
-  // Fill THnSparses for the reconstructed Dplus candidates ML analysis for the reconstructed Dplus candidates
+  // Fill THnSparses for the ML analysis
   /// \param candidate is a particle candidate
-  template <bool isMc, typename T1>
-  void fillSparseML(const T1& candidate)
+  template <bool isMc, bool isMatched, typename T1>
+  void fillSparseML (const T1& candidate)
   {
-    if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) || (yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
-      return;
-    }
     std::vector<float> outputMl = {-999., -999., -999.};
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
       outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
     }
-    if constexpr (isMc) {
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+    if constexpr(isMc){
+      if constexpr(isMatched){
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hSparseMassPrompt"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
-        }
-        if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+        } else if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hSparseMassFD"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
-        }
-      } else {
+        } 
+      }else{
         registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
-      }
+      }  
     } else {
       registry.fill(HIST("hSparseMass"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
     }
@@ -197,22 +199,10 @@ struct HfTaskDplus {
 
   // Fill histograms of quantities for the reconstructed Dplus candidates with MC matching
   /// \param candidate is candidate
-  /// \param mcParticles are particles with MC information
-  template <typename T1, typename T2>
-  void fillHistoMCRec(const T1& candidate, const T2& mcParticles)
-  {
-    // not possible in Filter since expressions do not support binary operators
-    if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
-      return;
-    }
-    if (yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax) {
-      return;
-    }
-    if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
-      // Get the corresponding MC particle.
-      auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), o2::constants::physics::Pdg::kDPlus, true);
-      auto particleMother = mcParticles.rawIteratorAt(indexMother);
-      registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
+  template <bool isMatched, typename T1>
+  void fillHistoMCRec(const T1& candidate)
+  {   
+    if constexpr (isMatched){
       auto ptRec = candidate.pt();
       auto yRec = hfHelper.yDplus(candidate);
       registry.fill(HIST("hPtVsYRecSig_RecoSkim"), ptRec, yRec);
@@ -259,8 +249,8 @@ struct HfTaskDplus {
 
   // Fill histograms of quantities for generated Dplus particles
   /// \param particle is a particle with MC information
-  template <typename T3>
-  void fillHistoMCGen(const T3& particle)
+  template <typename T2>
+  void fillHistoMCGen(const T2& particle)
   {
     auto ptGen = particle.pt();
     auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
@@ -351,51 +341,27 @@ struct HfTaskDplus {
   // process functions
   void processData(CandDplusData const& candidates)
   {
-    for (const auto& candidate : selectedDPlusCandidates) {
-      fillHisto(candidate);
-    }
+    runDataAnalysis<false>(candidates);
   }
   PROCESS_SWITCH(HfTaskDplus, processData, "Process data w/o ML", true);
 
   void processDataWithMl(CandDplusDataWithMl const& candidates)
   {
-    for (const auto& candidate : selectedDPlusCandidatesWithMl) {
-      fillHisto(candidate);
-      fillSparseML<false>(candidate);
-    }
+    runDataAnalysis<true>(candidates);
   }
   PROCESS_SWITCH(HfTaskDplus, processDataWithMl, "Process data with ML", false);
 
   void processMc(CandDplusMcReco const& candidates,
-                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
-                 aod::TracksWMc const& tracks)
+                 McParticles const& mcParticles)
   {
-    // MC rec.
-    for (const auto& candidate : recoFlagDPlusCandidates) {
-      fillHisto(candidate);
-      fillHistoMCRec(candidate, mcParticles);
-    }
-    // MC gen.
-    for (const auto& particle : mcParticles) {
-      fillHistoMCGen(particle);
-    }
+    runMCAnalysis<false>(candidates, mcParticles);
   }
   PROCESS_SWITCH(HfTaskDplus, processMc, "Process MC w/o ML", false);
 
   void processMcWithMl(CandDplusMcRecoWithMl const& candidates,
-                       soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
-                       aod::TracksWMc const& tracks)
+                 McParticles const& mcParticles)
   {
-    // MC rec.
-    for (const auto& candidate : recoFlagDPlusCandidatesWithMl) {
-      fillHisto(candidate);
-      fillHistoMCRec(candidate, mcParticles);
-      fillSparseML<true>(candidate);
-    }
-    // MC gen.
-    for (const auto& particle : mcParticles) {
-      fillHistoMCGen(particle);
-    }
+   runMCAnalysis<true>(candidates, mcParticles);
   }
   PROCESS_SWITCH(HfTaskDplus, processMcWithMl, "Process MC with ML", false);
 };
