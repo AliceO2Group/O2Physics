@@ -44,24 +44,20 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TOFSignal, aod::TOFEvTime>;
+using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime>;
 using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 
 namespace
 {
 constexpr int kNpart = 2;
 constexpr double betheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
-constexpr double estimatorsCorrelationCoef[1][2]{{-0.669108, 1.04489}};
-constexpr double estimatorsSigmaPars[1][4]{{0.933321, 0.0416976, -0.000936344, 8.92179e-06}};
-constexpr double deltaEstimatorNsigma[1][2]{{5.5, 5.}};
+constexpr double estimatorsCorrelationCoef[2]{-0.669108, 1.04489};
+constexpr double estimatorsSigmaPars[4]{0.933321, 0.0416976, -0.000936344, 8.92179e-06};
+constexpr double deltaEstimatorNsigma[2]{5.5, 5.};
 constexpr double partMass[kNpart]{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron};
 constexpr double partPdg[kNpart]{2212, o2::constants::physics::kDeuteron};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNamesBB{"p", "d"};
-static const std::vector<std::string> estimatorsCorrelationCoefParNames{"p0", "p1"};
-static const std::vector<std::string> estimatorsSigmaParNames{"p0", "p1", "p2", "p3"};
-static const std::vector<std::string> deltaEstimatorNsigmaParNames{"low", "high"};
-static const std::vector<std::string> datasetNames{"LHC18qr"};
 std::array<std::shared_ptr<TH2>, kNpart> tempTracks;
 std::shared_ptr<TH2> tempAntiLambda;
 std::shared_ptr<TH2> tempLambda;
@@ -165,15 +161,12 @@ struct antidLambdaEbye {
   o2::vertexing::DCAFitterN<2> fitter;
 
   int nSubsamples;
-
+  int mRunNumber;
   float d_bz;
   // o2::base::MatLayerCylSet* lut = nullptr;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 2, 6, particleNamesBB, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
-  Configurable<LabeledArray<double>> cfgEstimatorsCorrelationCoef{"cfgEstimatorsCorrelationCoef", {estimatorsCorrelationCoef[0], 1, 2, datasetNames, estimatorsCorrelationCoefParNames}, "estimators correlation parameters"};
-  Configurable<LabeledArray<double>> cfgEstimatorsSigmaPars{"cfgEstimatorsSigmaPars", {estimatorsSigmaPars[0], 1, 4, datasetNames, estimatorsSigmaParNames}, "estimators sigma parameters"};
-  Configurable<LabeledArray<double>> cfgDeltaEstimatorNsigma{"cfgDeltaEstimatorNsigma", {deltaEstimatorNsigma[0], 1, 2, datasetNames, deltaEstimatorNsigmaParNames}, "estimators nsigma cut"};
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis subsampleAxis{"subsampleAxis", {30, 0, 30}, "binning of the subsample axis"};
@@ -235,6 +228,7 @@ struct antidLambdaEbye {
   Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 10, "Maximum number of shared TPC clusters for V0 daughter"};
   Configurable<bool> v0requireITSrefit{"v0requireITSrefit", false, "require ITS refit for V0 daughter"};
   Configurable<float> vetoMassK0Short{"vetoMassK0Short", -999.f, "veto for V0 compatible with K0s mass"};
+  Configurable<float> v0radiusMax{"v0radiusMax", -999.f, "maximum V0 radius eccepted"};
 
   Configurable<float> antidNsigmaTpcCutLow{"antidNsigmaTpcCutLow", 4.f, "TPC PID cut low"};
   Configurable<float> antidNsigmaTpcCutUp{"antidNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
@@ -370,6 +364,10 @@ struct antidLambdaEbye {
   template <class Bc>
   void initCCDB(Bc const& bc)
   {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
     auto timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
@@ -391,6 +389,7 @@ struct antidLambdaEbye {
     // Fetch magnetic field from ccdb for current collision
     d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
+    mRunNumber = bc.runNumber();
     fitter.setBz(d_bz);
 
     // o2::base::Propagator::Instance()->setMatLUT(lut);
@@ -399,6 +398,7 @@ struct antidLambdaEbye {
   void init(o2::framework::InitContext&)
   {
 
+    mRunNumber = 0;
     d_bz = 0;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -542,6 +542,7 @@ struct antidLambdaEbye {
     auto rnd = static_cast<float>(gen32()) / static_cast<float>(gen32.max());
     auto subsample = static_cast<int>(rnd * nSubsamples);
 
+    gpu::gpustd::array<float, 2> dcaInfo;
     for (const auto& track : tracks) {
       if (!selectTrack(track)) {
         continue;
@@ -551,7 +552,9 @@ struct antidLambdaEbye {
         continue;
       }
 
-      if (std::hypot(track.dcaXY(), track.dcaZ()) > trackDcaCut) {
+      auto trackParCov = getTrackParCov(track);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      if (std::hypot(dcaInfo[0], dcaInfo[1]) > trackDcaCut) {
         continue;
       }
 
@@ -679,17 +682,6 @@ struct antidLambdaEbye {
         continue;
       }
 
-      // pid selections
-      double expBethePos{tpc::BetheBlochAleph(static_cast<double>(posTrack.tpcInnerParam() / massPos), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
-      double expSigmaPos{expBethePos * cfgBetheBlochParams->get("resolution")};
-      auto nSigmaTPCPos = static_cast<float>((posTrack.tpcSignal() - expBethePos) / expSigmaPos);
-      double expBetheNeg{tpc::BetheBlochAleph(static_cast<double>(negTrack.tpcInnerParam() / massNeg), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
-      double expSigmaNeg{expBetheNeg * cfgBetheBlochParams->get("resolution")};
-      auto nSigmaTPCNeg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
-
-      if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc)
-        ;
-
       float dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
       if (dcaV0dau > v0setting_dcav0dau) {
         continue;
@@ -697,25 +689,26 @@ struct antidLambdaEbye {
 
       std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
       const auto& vtx = fitter.getPCACandidate();
+
+      float radiusV0 = std::hypot(vtx[0], vtx[1]);
+      if (radiusV0 < v0setting_radius || radiusV0 > v0radiusMax) {
+        continue;
+      }
+
       double cosPA = RecoDecay::cpa(primVtx, vtx, momV0);
       if (cosPA < v0setting_cospa) {
         continue;
       }
 
-      float radiusV0 = std::hypot(vtx[0], vtx[1]);
-      if (radiusV0 < v0setting_radius) {
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      auto posDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
+      if (posDcaToPv > v0setting_dcapostopv) {
         continue;
       }
 
-      gpu::gpustd::array<float, 2> dcaInfo;
-
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
-      auto posDcaToPv = dcaInfo[0];
-
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
-      auto negDcaToPv = dcaInfo[0];
-
-      if (std::abs(posDcaToPv) < v0setting_dcapostopv || std::abs(negDcaToPv) < v0setting_dcanegtopv) {
+      auto negDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
+      if (negDcaToPv > v0setting_dcanegtopv) {
         continue;
       }
 
@@ -1022,9 +1015,9 @@ struct antidLambdaEbye {
       auto centralityCl0 = collision.centRun2CL0();
       if (kUseEstimatorsCorrelationCut) {
         const auto& x = centralityCl0;
-        const double center = cfgEstimatorsCorrelationCoef->get("p0") + cfgEstimatorsCorrelationCoef->get("p1") * x;
-        const double sigma = cfgEstimatorsSigmaPars->get("p0") + cfgEstimatorsSigmaPars->get("p1") * x + cfgEstimatorsSigmaPars->get("p2") * std::pow(x, 2) + cfgEstimatorsSigmaPars->get("p3") * std::pow(x, 3);
-        if (centrality < center - cfgDeltaEstimatorNsigma->get("low") * sigma || centrality > center + cfgDeltaEstimatorNsigma->get("high") * sigma) {
+        const double center = estimatorsCorrelationCoef[0] + estimatorsCorrelationCoef[1] * x;
+        const double sigma = estimatorsSigmaPars[0] + estimatorsSigmaPars[1] * x + estimatorsSigmaPars[2] * std::pow(x, 2) + estimatorsSigmaPars[3] * std::pow(x, 3);
+        if (centrality < center - deltaEstimatorNsigma[0] * sigma || centrality > center + deltaEstimatorNsigma[1] * sigma) {
           continue;
         }
       }
