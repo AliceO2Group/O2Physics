@@ -97,7 +97,7 @@ struct JetSubstructureHFOutputTask {
   }
 
   template <typename T, typename U, typename V, typename M>
-  void fillTables(T const& jet, U const& cand, int32_t collisionIndex, int32_t candidateIndex, V& jetOutputTable, M& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMap)
+  void fillTables(T const& jet, U const& /*cand*/, int32_t collisionIndex, int32_t candidateIndex, V& jetOutputTable, M& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMap)
   {
     std::vector<float> energyMotherVec;
     std::vector<float> ptLeadingVec;
@@ -117,7 +117,7 @@ struct JetSubstructureHFOutputTask {
   }
 
   template <bool isMCP, typename T, typename U, typename V, typename M, typename N, typename O>
-  void analyseCharged(T const& collision, U const& jets, V const& candidates, M& collisionOutputTable, N& jetOutputTable, O& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMap, std::map<int32_t, int32_t>& candidateMap, float jetPtMin)
+  void analyseCharged(T const& collision, U const& jets, V const& /*candidates*/, M& collisionOutputTable, N& jetOutputTable, O& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMap, std::map<int32_t, int32_t>& candidateMap, float jetPtMin)
   {
 
     int nJetInCollision = 0;
@@ -198,7 +198,7 @@ struct JetSubstructureHFOutputTask {
   }
 
   template <typename T, typename U, typename V>
-  void analyseMatched(T const& jets, U const& jetsTag, std::map<int32_t, int32_t>& jetMapping, std::map<int32_t, int32_t>& jetTagMapping, V& matchingOutputTable, float jetPtMin)
+  void analyseMatched(T const& jets, U const& /*jetsTag*/, std::map<int32_t, int32_t>& jetMapping, std::map<int32_t, int32_t>& jetTagMapping, V& matchingOutputTable, float jetPtMin)
   {
     for (const auto& jet : jets) {
       if (jet.pt() < jetPtMin) {
@@ -287,7 +287,7 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processCountCollisions, "process function that counts read in collisions", false);
 
-  void processOutputCandidatesData(JetCollision const& collision,
+  void processOutputCandidatesData(JetCollision const&,
                                    JetTableData const& jets,
                                    CandidateCollisionTable const& canidateCollisions,
                                    CandidateTable const& candidates)
@@ -296,7 +296,7 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesData, "hf candidate and collision output data", false);
 
-  void processOutputCandidatesDataSub(JetCollision const& collision,
+  void processOutputCandidatesDataSub(JetCollision const&,
                                       JetTableDataSub const& jets,
                                       CandidateCollisionTable const& canidateCollisions,
                                       CandidateTable const& candidates)
@@ -305,7 +305,7 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesDataSub, "hf candidate and collision output data eventwise constituent subtracted", false);
 
-  void processOutputCandidatesMCD(JetCollision const& collision,
+  void processOutputCandidatesMCD(JetCollision const&,
                                   JetTableMCD const& jets,
                                   CandidateCollisionTable const& canidateCollisions,
                                   CandidateTableMCD const& candidates)
@@ -315,7 +315,7 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesMCD, "hf candidate and collision output MCD", false);
 
-  void processOutputCandidatesMCP(JetMcCollision const& mcCollision,
+  void processOutputCandidatesMCP(JetMcCollision const&,
                                   JetTableMCP const& jets,
                                   CandidateTableMCP const& candidates)
   {
