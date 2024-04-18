@@ -74,7 +74,7 @@ struct HfCandidateCreatorCharmResoReduced {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{vecBins}, "pT bin limits"};
 
   using reducedDWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
-  
+
   // Partition of V0 candidates based on v0Type
   Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_cand_reduced::v0Type == (uint8_t)1 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)3 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)5;
   Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_cand_reduced::v0Type == (uint8_t)2 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)4;
@@ -95,7 +95,7 @@ struct HfCandidateCreatorCharmResoReduced {
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
-     // histograms
+    // histograms
     const AxisSpec axisPt{(std::vector<double>)vecBins, "#it{p}_{T} (GeV/#it{c})"};
     registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 2.4, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassDs2Star", "Ds^{*}2 candidates; m_Ds^{*}2 (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.4, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -119,7 +119,7 @@ struct HfCandidateCreatorCharmResoReduced {
     massDplus = o2::constants::physics::MassDPlus;
     massDstar = o2::constants::physics::MassDStar;
   }
-  /// Basic selection of D candidates 
+  /// Basic selection of D candidates
   /// \param candD is the reduced D meson candidate
   /// \return true if selections are passed
   template <DecayChannel channel, typename DRedTable>
@@ -138,7 +138,7 @@ struct HfCandidateCreatorCharmResoReduced {
     return true;
   }
 
-  /// Basic selection of V0 candidates 
+  /// Basic selection of V0 candidates
   /// \param candV0 is the reduced V0 candidate
   /// \param candD is the reduced D meson candidate
   /// \return true if selections are passed
@@ -155,7 +155,8 @@ struct HfCandidateCreatorCharmResoReduced {
     } else if (channel == DecayChannel::XcToDplusLambda || channel == DecayChannel::LambdaDminus) {
       massV0 = massLambda;
       int wsFact{1};
-      if (channel == DecayChannel::LambdaDminus) wsFact = -1;
+      if (channel == DecayChannel::LambdaDminus)
+        wsFact = -1;
       uint8_t targetV0Type{0};
       if (wsFact * candD.dType() > 0) {
         invMassV0 = candV0.invMassLambda();
@@ -253,8 +254,8 @@ struct HfCandidateCreatorCharmResoReduced {
                          candV0.cpa(),
                          candV0.dca(),
                          candV0.radius());
-        if constexpr(fillMl) {
-          mlScores(candD.mlScoreBkgMassHypo0(),candD.mlScorePromptMassHypo0(),candD.mlScoreNonpromptMassHypo0());
+        if constexpr (fillMl) {
+          mlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
         }
       }
     }
@@ -267,10 +268,10 @@ struct HfCandidateCreatorCharmResoReduced {
     runCandidateCreation<false, DecayChannel::Ds2StarToDplusK0s>(collision, candsD, candidatesK0s);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs2StarToDplusK0s, "Process Ds2* candidates without ML info", true);
-  
+
   void processDs2StarToDplusK0sWithMl(aod::HfRedCollisions::iterator const& collision,
-                                soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
-                                aod::HfRedVzeros const&)
+                                      soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
+                                      aod::HfRedVzeros const&)
   {
     runCandidateCreation<true, DecayChannel::Ds2StarToDplusK0s>(collision, candsD, candidatesK0s);
   }
@@ -283,10 +284,10 @@ struct HfCandidateCreatorCharmResoReduced {
     runCandidateCreation<false, DecayChannel::Ds1ToDstarK0s>(collision, candsD, candidatesK0s);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs1ToDstarK0s, "Process Ds1 candidates without Ml info", false);
- 
+
   void processDs1ToDstarK0sWithMl(aod::HfRedCollisions::iterator const& collision,
-                            soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
-                            aod::HfRedVzeros const&)
+                                  soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
+                                  aod::HfRedVzeros const&)
   {
     runCandidateCreation<true, DecayChannel::Ds1ToDstarK0s>(collision, candsD, candidatesK0s);
   }
@@ -299,27 +300,26 @@ struct HfCandidateCreatorCharmResoReduced {
     runCandidateCreation<false, DecayChannel::XcToDplusLambda>(collision, candsD, candidatesLambda);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processXcToDplusLambda, "Process Xc candidates without Ml info", false);
-  
+
   void processXcToDplusLambdaWithMl(aod::HfRedCollisions::iterator const& collision,
-                              soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
-                              aod::HfRedVzeros const&)
+                                    soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
+                                    aod::HfRedVzeros const&)
   {
     runCandidateCreation<true, DecayChannel::XcToDplusLambda>(collision, candsD, candidatesLambda);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processXcToDplusLambdaWithMl, "Process Xc candidates with Ml info", false);
 
-
   void processLambdaDminus(aod::HfRedCollisions::iterator const& collision,
-                              aod::HfRed3PrNoTrks const& candsD,
-                              aod::HfRedVzeros const&)
+                           aod::HfRed3PrNoTrks const& candsD,
+                           aod::HfRedVzeros const&)
   {
     runCandidateCreation<false, DecayChannel::LambdaDminus>(collision, candsD, candidatesLambda);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processLambdaDminus, "Process LambdaDminus candidates without Ml info", false);
-  
+
   void processLambdaDminusWithMl(aod::HfRedCollisions::iterator const& collision,
-                              soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
-                              aod::HfRedVzeros const&)
+                                 soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
+                                 aod::HfRedVzeros const&)
   {
     runCandidateCreation<true, DecayChannel::LambdaDminus>(collision, candsD, candidatesLambda);
   }
