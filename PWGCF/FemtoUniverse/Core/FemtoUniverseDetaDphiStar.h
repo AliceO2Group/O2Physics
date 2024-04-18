@@ -13,6 +13,7 @@
 /// \brief FemtoUniverseDetaDphiStar - Checks particles for the close pair rejection.
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
+/// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
@@ -255,7 +256,7 @@ class FemtoUniverseDetaDphiStar
         auto indexOfDaughter = part2.index() - 2 + i;
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
-        auto dphiAvg = CalculateDphiStar(part1, *daughter);
+        auto dphiAvg = AveragePhiStar(part1, *daughter, i); // auto dphiAvg = CalculateDphiStar(part1, *daughter);
         dphiAvg = TVector2::Phi_mpi_pi(dphiAvg);
         if (ChosenEventType == femtoUniverseContainer::EventType::same) {
           histdetadpisame[i][0]->Fill(deta, dphiAvg);
@@ -291,7 +292,7 @@ class FemtoUniverseDetaDphiStar
         auto indexOfDaughter = part2.index() - 2 + i;
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
-        auto dphiAvg = CalculateDphiStar(part1, *daughter);
+        auto dphiAvg = AveragePhiStar(part1, *daughter, i); // CalculateDphiStar(part1, *daughter);
         dphiAvg = TVector2::Phi_mpi_pi(dphiAvg);
         if (ChosenEventType == femtoUniverseContainer::EventType::same) {
           histdetadpisame[i][0]->Fill(deta, dphiAvg);
@@ -377,7 +378,12 @@ class FemtoUniverseDetaDphiStar
     // End: Get the charge from cutcontainer using masks
     float pt = part.pt();
     for (size_t i = 0; i < 9; i++) {
-      tmpVec.push_back(phi0 - std::asin(0.3 * charge * 0.1 * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt)));
+      double arg = 0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt);
+      if (abs(arg) < 1.0) {
+        tmpVec.push_back(phi0 - std::asin(arg));
+      } else {
+        tmpVec.push_back(999.0);
+      }
     }
   }
 
@@ -391,15 +397,22 @@ class FemtoUniverseDetaDphiStar
     PhiAtRadiiTPC(part2, tmpVec2);
     int num = tmpVec1.size();
     float dPhiAvg = 0;
+    float dphi = 0;
+    int entries = 0;
     for (int i = 0; i < num; i++) {
-      float dphi = tmpVec1.at(i) - tmpVec2.at(i);
+      if (tmpVec1.at(i) != 999 && tmpVec2.at(i) != 999) {
+        dphi = tmpVec1.at(i) - tmpVec2.at(i);
+        entries++;
+      } else {
+        dphi = 0;
+      }
       dphi = TVector2::Phi_mpi_pi(dphi);
       dPhiAvg += dphi;
       if (plotForEveryRadii) {
         histdetadpiRadii[iHist][i]->Fill(part1.eta() - part2.eta(), dphi);
       }
     }
-    return dPhiAvg / num;
+    return dPhiAvg / static_cast<float>(entries);
   }
 
   // Get particle charge from mask
@@ -426,12 +439,15 @@ class FemtoUniverseDetaDphiStar
     float charge1 = GetCharge(part1);
     float charge2 = GetCharge(part2);
 
-    double deltaphiconstFD = 0.3 * 0.1 * 0.01 / 2;
+    double deltaphiconstFD = 0.3 / 2;
     // double deltaphiconstAF = 0.15;
     double afsi0b = deltaphiconstFD * magfield * charge1 * ChosenRadii / part1.pt();
     double afsi1b = deltaphiconstFD * magfield * charge2 * ChosenRadii / part2.pt();
+    double dphis = 0.0;
 
-    double dphis = part2.phi() - part1.phi() + TMath::ASin(afsi1b) - TMath::ASin(afsi0b);
+    if (abs(afsi0b) < 1.0 && abs(afsi0b) < 1.0) {
+      dphis = part2.phi() - part1.phi() + TMath::ASin(afsi1b) - TMath::ASin(afsi0b);
+    }
     return dphis;
   }
 };

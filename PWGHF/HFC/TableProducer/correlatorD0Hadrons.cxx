@@ -94,7 +94,7 @@ struct HfCorrelatorD0HadronsSelection {
   Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0candidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   void processD0SelectionData(aod::Collision const& collision,
-                              soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+                              soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
     bool isD0Found = 0;
     if (selectedD0Candidates.size() > 0) {
@@ -119,7 +119,7 @@ struct HfCorrelatorD0HadronsSelection {
   PROCESS_SWITCH(HfCorrelatorD0HadronsSelection, processD0SelectionData, "Process D0 Selection Data", false);
 
   void processD0SelectionMcRec(aod::Collision const& collision,
-                               soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
+                               soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&)
   {
     bool isD0Found = 0;
     if (selectedD0candidatesMc.size() > 0) {
@@ -142,7 +142,7 @@ struct HfCorrelatorD0HadronsSelection {
   }
   PROCESS_SWITCH(HfCorrelatorD0HadronsSelection, processD0SelectionMcRec, "Process D0 Selection MCRec", true);
 
-  void processD0SelectionMcGen(aod::McCollision const& mcCollision,
+  void processD0SelectionMcGen(aod::McCollision const&,
                                aod::McParticles const& mcParticles)
   {
     bool isD0Found = 0;
@@ -269,7 +269,7 @@ struct HfCorrelatorD0Hadrons {
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
                    aod::TracksWDca const& tracks,
-                   soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+                   soa::Join<aod::HfCand2Prong, aod::HfSelD0> const&)
   {
     // protection against empty tables to be sliced
     if (selectedD0Candidates.size() == 0) {
@@ -400,7 +400,7 @@ struct HfCorrelatorD0Hadrons {
 
   void processMcRec(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
                     aod::TracksWDca const& tracks,
-                    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates)
+                    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&)
   {
     // protection against empty tables to be sliced
     if (selectedD0candidatesMc.size() == 0) {
@@ -618,7 +618,7 @@ struct HfCorrelatorD0Hadrons {
 
         registry.fill(HIST("hTrackCounterGen"), 3); // fill after soft pion removal
 
-        auto getTracksSize = [&mcParticles](aod::McCollision const& collision) {
+        auto getTracksSize = [&mcParticles](aod::McCollision const& /*collision*/) {
           int nTracks = 0;
           for (const auto& track : mcParticles) {
             if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {

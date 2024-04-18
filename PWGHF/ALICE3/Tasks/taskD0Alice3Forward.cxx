@@ -43,7 +43,7 @@ struct HfTaskD0Alice3Forward {
 
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0Alice3Forward, aod::HfCand2ProngMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   {
     for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {

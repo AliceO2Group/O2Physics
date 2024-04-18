@@ -107,10 +107,12 @@ struct lambdakzeroMLSelectionTreeCreator {
 
   // Axis:
   ConfigurableAxis centralityAxis{"centralityAxis", {100, 0.0f, 100.0f}, ""};
+  ConfigurableAxis candSelectionAxis{"candSelectionAxis", {16, 0.0f, 16.0f}, ""};
 
   void init(InitContext const&)
   {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {centralityAxis});
+    histos.add("hCandSelection", "hCandSelection", kTH1F, {candSelectionAxis});
   }
 
   // Helper struct to pass v0 information
@@ -241,6 +243,11 @@ struct lambdakzeroMLSelectionTreeCreator {
     // 11: Consistent with Lambda, Anti-Lambda, and K0Short, 12: Consistent with Gamma and K0Short
     // 13: Consistent with Lambda, Gamma, and K0Short, 14: Consistent with Anti-Lambda, Gamma, and K0Short
     // 15: Consistent with Lambda, Anti-Lambda, Gamma, and K0Short
+
+    histos.fill(HIST("hCandSelection"), Candidate.SelHypothesis);
+
+    if (Candidate.SelHypothesis == 0)
+      return;
 
     // MC flags
     Candidate.isLambda = false;

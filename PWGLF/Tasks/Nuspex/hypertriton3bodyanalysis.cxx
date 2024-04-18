@@ -80,7 +80,7 @@ struct hypertriton3bodyQa {
     registry.add("hMassHypertriton", "hMassHypertriton", {HistType::kTH1F, {massAxis}});
     registry.add("hMassAntiHypertriton", "hMassAntiHypertriton", {HistType::kTH1F, {massAxis}});
   }
-  void process(aod::Collision const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& tracks)
+  void process(aod::Collision const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& /*tracks*/)
   {
     for (auto& vtx : vtx3bodydatas) {
       auto track0 = vtx.track0_as<FullTracksExtIU>();
@@ -465,7 +465,7 @@ struct hypertriton3bodyAnalysis {
 
   //------------------------------------------------------------------
   // process real data analysis
-  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& tracks)
+  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& /*tracks*/)
   {
     registry.fill(HIST("hEventCounter"), 0.5);
     if (event_sel8_selection && !collision.sel8()) {
@@ -492,7 +492,7 @@ struct hypertriton3bodyAnalysis {
 
   //------------------------------------------------------------------
   // process mc analysis
-  void processMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& tracks)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& /*tracks*/)
   {
     GetGeneratedH3LInfo(particlesMC);
 
@@ -606,13 +606,13 @@ struct hypertriton3bodyLabelCheck {
     }
   };
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const&)
   {
     // dummy function
   }
   PROCESS_SWITCH(hypertriton3bodyLabelCheck, process, "Donot check MC label tables", true);
 
-  void processCheckLabel(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels>::iterator const& collision, aod::Decay3Bodys const& decay3bodys, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledTracksIU const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions)
+  void processCheckLabel(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels>::iterator const& collision, aod::Decay3Bodys const& decay3bodys, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledTracksIU const& /*tracks*/, aod::McParticles const& /*particlesMC*/, aod::McCollisions const& /*mcCollisions*/)
   {
     // check the decay3body table
     std::vector<Indexdaughters> set_pair;

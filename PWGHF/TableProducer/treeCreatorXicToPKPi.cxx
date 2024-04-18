@@ -389,7 +389,7 @@ struct HfTreeCreatorXicToPKPi {
   }
 
   void processData(aod::Collisions const& collisions,
-                   CandXicData const& candidates,
+                   CandXicData const&,
                    TracksWPid const&)
   {
     // Filling event properties
@@ -429,7 +429,7 @@ struct HfTreeCreatorXicToPKPi {
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
-                 CandXicMcReco const& candidates,
+                 CandXicMcReco const&,
                  CandXicMcGen const& mcParticles,
                  TracksWPid const&)
   {

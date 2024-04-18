@@ -304,7 +304,7 @@ struct HfTaskD0 {
   template <int reconstructionType, bool applyMl, typename CandType>
   void processMc(CandType const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
-                 aod::TracksWMc const& tracks)
+                 aod::TracksWMc const&)
   {
     // MC rec.
     for (const auto& candidate : candidates) {

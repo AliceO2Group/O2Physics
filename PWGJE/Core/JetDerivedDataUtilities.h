@@ -90,7 +90,8 @@ enum JTrigSelCh {
   noChargedTigger = 0,
   chargedLow = 1,
   chargedHigh = 2,
-  trackPt = 3
+  trackLowPt = 3,
+  trackHighPt = 4
 };
 
 template <typename T>
@@ -110,9 +111,13 @@ int initialiseChargedTriggerSelection(std::string triggerSelection)
   if (triggerSelection == "chargedHigh") {
     return JTrigSelCh::chargedHigh;
   }
-  if (triggerSelection == "trackPt") {
-    return JTrigSelCh::trackPt;
+  if (triggerSelection == "trackLowPt") {
+    return JTrigSelCh::trackLowPt;
   }
+  if (triggerSelection == "trackHighPt") {
+    return JTrigSelCh::trackHighPt;
+  }
+
   return -1;
 }
 
@@ -127,9 +132,13 @@ uint8_t setChargedTriggerSelectionBit(T const& collision)
   if (collision.hasJetChHighPt()) {
     SETBIT(bit, JTrigSelCh::chargedHigh);
   }
-  if (collision.hasTrackHighPt()) {
-    SETBIT(bit, JTrigSelCh::trackPt);
+  if (collision.hasTrackLowPt()) {
+    SETBIT(bit, JTrigSelCh::trackLowPt);
   }
+  if (collision.hasTrackHighPt()) {
+    SETBIT(bit, JTrigSelCh::trackHighPt);
+  }
+
   return bit;
 }
 

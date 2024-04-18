@@ -463,7 +463,7 @@ struct AnalysisTrackSelection {
       auto track = tracks.rawIteratorAt(trackIdx);
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       VarManager::FillTrack<TTrackFillMap>(track);
-      VarManager::fgValues[VarManager::kBarrelNAssocsInBunch] = float(evIndices.size());
+      VarManager::fgValues[VarManager::kBarrelNAssocsInBunch] = static_cast<float>(evIndices.size());
       fHistMan->FillHistClass("TrackBarrel_AmbiguityInBunch", VarManager::fgValues);
     } // end loop over in-bunch ambiguous tracks
 
@@ -474,7 +474,7 @@ struct AnalysisTrackSelection {
       auto track = tracks.rawIteratorAt(trackIdx);
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       VarManager::FillTrack<TTrackFillMap>(track);
-      VarManager::fgValues[VarManager::kBarrelNAssocsOutOfBunch] = float(evIndices.size());
+      VarManager::fgValues[VarManager::kBarrelNAssocsOutOfBunch] = static_cast<float>(evIndices.size());
       fHistMan->FillHistClass("TrackBarrel_AmbiguityOutOfBunch", VarManager::fgValues);
     } // end loop over out-of-bunch ambiguous tracks
 
@@ -1237,9 +1237,9 @@ struct AnalysisSameEventPairing {
                             t1.isAmbiguous(), t2.isAmbiguous(),
                             VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3],
                             VarManager::fgValues[VarManager::kR2EP], VarManager::fgValues[VarManager::kR2SP], VarManager::fgValues[VarManager::kCentFT0C],
-                            VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR2POI],
-                            VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kC4REF], VarManager::fgValues[VarManager::kC4POI], VarManager::fgValues[VarManager::kV4], VarManager::fgValues[VarManager::kVertexingPz],
-                            VarManager::fgValues[VarManager::kVertexingSV]);
+                            VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi],
+                            VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI], VarManager::fgValues[VarManager::kMultDimuons],
+                            VarManager::fgValues[VarManager::kVertexingPz], VarManager::fgValues[VarManager::kVertexingSV]);
             }
           }
         }

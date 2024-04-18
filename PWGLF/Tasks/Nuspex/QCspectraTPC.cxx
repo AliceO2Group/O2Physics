@@ -294,9 +294,9 @@ struct QCspectraTPC {
   void processMCRec(soa::Join<aod::Tracks, aod::TracksExtra,
                               aod::TracksDCA, aod::McTrackLabels,
                               aod::TrackSelection> const& tracks,
-                    aod::McParticles const& mcParticles,
-                    aod::McCollisions const& mcCollisions,
-                    CollisionCandidateMC const& collisions)
+                    aod::McParticles const& /*mcParticles*/,
+                    aod::McCollisions const& /*mcCollisions*/,
+                    CollisionCandidateMC const& /*collisions*/)
   {
 
     for (auto& track : tracks) {

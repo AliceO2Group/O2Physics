@@ -57,25 +57,25 @@ enum class PairType {
 enum class PairAxisType {
   im,
   pt,
-  mu1,
+  mu,
   ns1,
   ns2,
   y,
-  zv1,
-  mu2,
-  zv2,
+  vz,
+  mum,
+  vzm,
   unknown
 };
 namespace PariAxis
 {
-std::vector<std::string> names{"im", "pt", "mu1", "ns1", "ns2", "y", "zv1", "mu2", "zv2"};
+std::vector<std::string> names{"im", "pt", "mu", "ns1", "ns2", "y", "vz", "mum", "vzm"};
 }
 class Output
 {
  public:
   virtual ~Output() = default;
 
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, bool produceTrue = false, bool eventMixing = false, bool produceLikesign = false, HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, bool /*produceTrue*/ = false, bool /*eventMixing*/ = false, bool /*produceLikesign*/ = false, HistogramRegistry* registry = nullptr)
   {
     mHistogramRegistry = registry;
     if (mHistogramRegistry == nullptr)
@@ -120,15 +120,15 @@ class Output
     mHistogramRegistry->get<THnSparse>(h)->Fill(mFillPoint);
   }
 
-  virtual void fill(EventType t, double* point)
+  virtual void fill(EventType /*t*/, double* /*point*/)
   {
     LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(EventType t, double* point)' !!! Please implement it first.");
   };
-  virtual void fill(TrackType t, double* point)
+  virtual void fill(TrackType /*t*/, double* /*point*/)
   {
     LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(TrackType t, double* point)' !!! Please implement it first.");
   };
-  virtual void fill(PairType t, double* point)
+  virtual void fill(PairType /*t*/, double* /*point*/)
   {
     LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(PairType t, double* point)' !!! Please implement it first.");
   };
@@ -180,7 +180,7 @@ class OutputSparse : public Output
   virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, bool produceTrue = false, bool eventMixing = false, bool produceLikesign = false, HistogramRegistry* registry = nullptr)
   {
     Output::init(sparseAxes, allAxes, produceTrue, eventMixing, produceLikesign, registry);
-    mHistogramRegistry->add("hVz", "; vtx_{z} (cm); Entries", kTH1F, {{40, -20., 20.}});
+    mHistogramRegistry->add("hVz", "; V_{z} (cm); Entries", kTH1F, {{40, -20., 20.}});
 
     mHistogramRegistry->add("unlikepm", "Unlike pm", *mPairHisto);
     mHistogramRegistry->add("unlikemp", "Unlike mp", *mPairHisto);

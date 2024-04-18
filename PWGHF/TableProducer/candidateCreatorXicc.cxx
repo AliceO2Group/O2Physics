@@ -100,7 +100,7 @@ struct HfCandidateCreatorXicc {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
   }
 
-  void process(aod::Collision const& collision,
+  void process(aod::Collision const&,
                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& xicCands,
                aod::TracksWCov const& tracks)
   {
@@ -213,7 +213,7 @@ struct HfCandidateCreatorXiccMc {
 
   void process(aod::HfCandXicc const& candidates,
                aod::HfCand3Prong const&,
-               aod::TracksWMc const& tracks,
+               aod::TracksWMc const&,
                aod::McParticles const& mcParticles)
   {
     int indexRec = -1;
