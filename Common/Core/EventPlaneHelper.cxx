@@ -81,7 +81,7 @@ void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, int nmod, TCom
   double phi = -999.;
 
   switch (det) {
-    case 0:                          // FT0. Note: the channel number for FT0-C should
+    case 0:                           // FT0. Note: the channel number for FT0-C should
       phi = GetPhiFT0(chno, ft0geom); // already be given in the right range.
       break;
     case 1: // FV0.
