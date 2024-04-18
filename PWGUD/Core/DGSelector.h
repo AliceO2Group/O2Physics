@@ -12,6 +12,8 @@
 #ifndef PWGUD_CORE_DGSELECTOR_H_
 #define PWGUD_CORE_DGSELECTOR_H_
 
+#include <vector>
+
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "Framework/Logger.h"
@@ -36,7 +38,7 @@ class DGSelector
     return 1;
   }
 
-  // Function to check if collisions passes DG filter
+  // Function to check if collision passes DG filter
   template <typename CC, typename BCs, typename TCs, typename FWs>
   int IsSelected(DGCutparHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
   {
@@ -50,43 +52,18 @@ class DGSelector
     //  1 TSC
     //  2 TCE
     //  3 TOR
-    int vetoToApply = -1;
-    if (diffCuts.withTVX()) {
-      vetoToApply = 0;
-    } else if (diffCuts.withTSC()) {
-      vetoToApply = 1;
-    } else if (diffCuts.withTCE()) {
-      vetoToApply = 2;
-    } else if (diffCuts.withTOR()) {
-      vetoToApply = 3;
-    }
-    if (vetoToApply >= 0) {
-      for (auto const& bc : bcRange) {
-        switch (vetoToApply) {
-          case 0:
-            if (udhelpers::TVX(bc)) {
-              return 1;
-            }
-            break;
-          case 1:
-            if (udhelpers::TSC(bc)) {
-              return 1;
-            }
-            break;
-          case 2:
-            if (udhelpers::TCE(bc)) {
-              return 1;
-            }
-            break;
-          case 3:
-            if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
-              return 1;
-            }
-            break;
-          default:
-            LOGF(info, "Invalid veto trigger value: %d", vetoToApply);
-            break;
-        }
+    for (auto const& bc : bcRange) {
+      /* for debuging
+      auto isVetoed = udhelpers::FITveto(bc, diffCuts);
+      auto isClean = udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
+      LOGF(info, "<IsSelected> isVetoed: %d isClean: %d", isVetoed, isClean);
+      if (isVetoed) {
+        return 1;
+      }
+      */
+
+      if (udhelpers::FITveto(bc, diffCuts)) {
+        return 1;
       }
     }
 
@@ -180,6 +157,33 @@ class DGSelector
       return 12;
     }
 
+    // good collision selection according to event-selection task
+    /* if (!goodCollision(collision, diffCuts)){
+      return 13;
+    }*/
+    // good collision selection per-partes
+    std::vector<int> sels = diffCuts.collisionSel();
+    // timeframe border
+    if (sels[0] && !udhelpers::cutNoTimeFrameBorder(collision)) {
+      return 13;
+    }
+    // same bunch pileup
+    if (sels[1] && !udhelpers::cutNoSameBunchPileup(collision)) {
+      return 14;
+    }
+    // ITS ROF border
+    if (sels[2] && !udhelpers::cutNoITSROFrameBorder(collision)) {
+      return 15;
+    }
+    // z-vtx from PV and FT0 agrees
+    if (sels[3] && !udhelpers::cutIsGoodZvtxFT0vsPV(collision)) {
+      return 16;
+    }
+    // is ITS-TPC track
+    if (sels[4] && !udhelpers::cutIsVertexITSTPC(collision)) {
+      return 17;
+    }
+
     // if we arrive here then the event is good!
     return 0;
   };
@@ -188,10 +192,15 @@ class DGSelector
   template <typename BCs, typename TCs, typename FWs>
   int IsSelected(DGCutparHolder diffCuts, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
   {
-    // check that there are no FIT signals in bcRange
+    // return if FIT veto is found in any of the compatible BCs
     // Double Gap (DG) condition
+    // 4 types of vetoes:
+    //  0 TVX
+    //  1 TSC
+    //  2 TCE
+    //  3 TOR
     for (auto const& bc : bcRange) {
-      if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
+      if (udhelpers::FITveto(bc, diffCuts)) {
         return 1;
       }
     }

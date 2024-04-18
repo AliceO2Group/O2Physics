@@ -44,8 +44,10 @@ struct skimmerPrimaryMuon {
   Produces<aod::EMPrimaryMuonsPrefilterBit> muon_pfb;
 
   // Configurables
+  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 10, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
+  Configurable<float> max_mean_itsob_cluster_size{"max_mean_itsob_cluster_size", 16.f, "max. <ITSob cluster size> x cos(lambda)"}; // this is to suppress random combination.
   Configurable<int> minitsncls{"minitsncls", 4, "min. number of ITS clusters"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
@@ -54,7 +56,7 @@ struct skimmerPrimaryMuon {
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0f, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
-  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1.0f, "max DCA 3D in sigma"};
+  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 2.0f, "max DCA 3D in sigma"};
   Configurable<float> minTPCNsigmaMu{"minTPCNsigmaMu", -4.0, "min. TPC n sigma for muon inclusion"};
   Configurable<float> maxTPCNsigmaMu{"maxTPCNsigmaMu", 4.0, "max. TPC n sigma for muon inclusion"};
   Configurable<float> maxPin{"maxPin", 1.0, "max pin for PID"};
@@ -88,10 +90,14 @@ struct skimmerPrimaryMuon {
       {"Track/hTOFNsigmaMu_after", "TOF n sigma #mu vs. p_{in};p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
       {"Track/hTPCNsigmaPi_after", "TPC n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
       {"Track/hTOFNsigmaPi_after", "TOF n sigma #pi vs. p_{in};p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 1.f}, {100, -5.f, +5.f}}}},
+      {"Track/hDCAxyz_before", "DCA xy vs. z to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -1.f, 1.f}, {200, -1.f, +1.f}}}},
+      {"Track/hDCAxyz_after", "DCA xy vs. z to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -1.f, 1.f}, {200, -1.f, +1.f}}}},
       {"Pair/hMmumuPtmumu", "ULS m_{#mu#mu} vs. p_{T,#mu#mu};m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c)", {HistType::kTH2F, {{100, 0.2f, 1.2f}, {120, 0.f, 1.2f}}}},
       // for MC primary muon
       {"MC/Primary/hPt_Gen", "generated pT;p_{T,#mu}^{gen} (GeV/c)", {HistType::kTH1F, {{100, 0.f, 1.f}}}},
       {"MC/Primary/hPt_Rec", "reconstructed pT;p_{T,#mu}^{rec} (GeV/c)", {HistType::kTH1F, {{100, 0.f, 1.f}}}},
+      {"MC/Primary/hP_Correlation", "p vs. pin correlation;p_{pv} (GeV/c);(p_{in} - p_{pv})/p_{pv}", {HistType::kTH2F, {{100, 0.f, 1.f}, {200, -1, +1}}}},
+      {"MC/Primary/hP_Correlation_Profile", "p vs. pin correlation;p_{pv} (GeV/c);(p_{in} - p_{pv})/p_{pv}", {HistType::kTProfile, {{100, 0.f, 1.f}}}},
       {"MC/Primary/hTPCdEdx_Pin", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 1.f}, {200, 0.f, 200.f}}}},
       {"MC/Primary/hTOFbeta_Pin", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 1.f}, {250, 0.6f, 1.1f}}}},
       {"MC/Primary/hNclsITS", "Ncls ITS;N_{cls}^{ITS}", {HistType::kTH1F, {{8, -0.5f, +7.5f}}}},
@@ -112,6 +118,8 @@ struct skimmerPrimaryMuon {
       // for MC seconday muon
       {"MC/Secondary/hPt_Gen", "generated pT;p_{T,#mu}^{gen} (GeV/c)", {HistType::kTH1F, {{100, 0.f, 1.f}}}},
       {"MC/Secondary/hPt_Rec", "reconstructed pT;p_{T,#mu}^{rec} (GeV/c)", {HistType::kTH1F, {{100, 0.f, 1.f}}}},
+      {"MC/Secondary/hP_Correlation", "p vs. pin correlation;p_{pv} (GeV/c);(p_{in} - p_{pv})/p_{pv}", {HistType::kTH2F, {{100, 0.f, 1.f}, {200, -1, +1}}}},
+      {"MC/Secondary/hP_Correlation_Profile", "p vs. pin correlation;p_{pv} (GeV/c);(p_{in} - p_{pv})/p_{pv}", {HistType::kTProfile, {{100, 0.f, 1.f}}}},
       {"MC/Secondary/hTPCdEdx_Pin", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 1.f}, {200, 0.f, 200.f}}}},
       {"MC/Secondary/hTOFbeta_Pin", "TOF beta vs. p_{in};p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 1.f}, {250, 0.6f, 1.1f}}}},
       {"MC/Secondary/hNclsITS", "Ncls ITS;N_{cls}^{ITS}", {HistType::kTH1F, {{8, -0.5f, +7.5f}}}},
@@ -158,6 +166,23 @@ struct skimmerPrimaryMuon {
       return false;
     }
 
+    uint32_t itsClusterSizes = track.itsClusterSizes();
+    int total_cluster_size = 0, nl = 0;
+    for (unsigned int layer = 3; layer < 7; layer++) {
+      int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+      if (cluster_size_per_layer > 0) {
+        nl++;
+      }
+      total_cluster_size += cluster_size_per_layer;
+    }
+    if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_itsob_cluster_size) {
+      return false;
+    }
+
+    if (track.tpcNClsFound() < min_ncluster_tpc) {
+      return false;
+    }
+
     if (track.tpcNClsCrossedRows() < mincrossedrows) {
       return false;
     }
@@ -165,6 +190,11 @@ struct skimmerPrimaryMuon {
     if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
       return false;
     }
+
+    // float rel_diff = (track.tpcInnerParam() - track.p())/track.p();
+    // if (rel_diff < -0.0156432+-0.00154524/pow(track.p(),2.29244) - 0.02 || -0.0156432+-0.00154524/pow(track.p(),2.29244) + 0.02 < rel_diff) {
+    //   return false;
+    // }
 
     float dca_3d = 999.f;
     float det = track.cYY() * track.cZZ() - track.cZY() * track.cZY();
@@ -219,6 +249,16 @@ struct skimmerPrimaryMuon {
       fRegistry.fill(HIST("Track/hTOFNsigmaPi_before"), track.tpcInnerParam(), track.tofNSigmaPi());
       fRegistry.fill(HIST("Track/hTPCNsigmaEl_before"), track.tpcInnerParam(), track.tpcNSigmaEl());
       fRegistry.fill(HIST("Track/hTOFNsigmaEl_before"), track.tpcInnerParam(), track.tofNSigmaEl());
+      fRegistry.fill(HIST("Track/hDCAxyz_before"), track.dcaXY(), track.dcaZ());
+
+      float dca_3d = 999.f;
+      float det = track.cYY() * track.cZZ() - track.cZY() * track.cZY();
+      if (det < 0) {
+        dca_3d = 999.f;
+      } else {
+        float chi2 = (track.dcaXY() * track.dcaXY() * track.cZZ() + track.dcaZ() * track.dcaZ() * track.cYY() - 2. * track.dcaXY() * track.dcaZ() * track.cZY()) / det;
+        dca_3d = std::sqrt(std::abs(chi2) / 2.);
+      }
 
       if constexpr (isMC) {
         auto mctrack = track.template mcParticle_as<aod::McParticles>();
@@ -228,6 +268,8 @@ struct skimmerPrimaryMuon {
             if (isMuon(track)) {
               fRegistry.fill(HIST("MC/Primary/hPt_Rec"), track.pt());
             }
+            fRegistry.fill(HIST("MC/Primary/hP_Correlation"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+            fRegistry.fill(HIST("MC/Primary/hP_Correlation_Profile"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             fRegistry.fill(HIST("MC/Primary/hTPCdEdx_Pin"), track.tpcInnerParam(), track.tpcSignal());
             fRegistry.fill(HIST("MC/Primary/hTOFbeta_Pin"), track.tpcInnerParam(), track.beta());
             fRegistry.fill(HIST("MC/Primary/hNclsITS"), track.itsNCls());
@@ -243,12 +285,14 @@ struct skimmerPrimaryMuon {
             fRegistry.fill(HIST("MC/Primary/hDCAxy_resolution"), sqrt(track.cYY()));
             fRegistry.fill(HIST("MC/Primary/hDCAz_resolution"), sqrt(track.cZZ()));
             fRegistry.fill(HIST("MC/Primary/hDCAxyz_sigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
-            fRegistry.fill(HIST("MC/Primary/hDCA3D_sigma"), sqrt(pow(track.dcaXY() / sqrt(track.cYY()), 2) + pow(track.dcaZ() / sqrt(track.cZZ()), 2)));
+            fRegistry.fill(HIST("MC/Primary/hDCA3D_sigma"), dca_3d);
             fRegistry.fill(HIST("MC/Primary/hProdVtx"), mctrack.vx(), mctrack.vy());
           } else {
             if (isMuon(track)) {
               fRegistry.fill(HIST("MC/Secondary/hPt_Rec"), track.pt());
             }
+            fRegistry.fill(HIST("MC/Secondary/hP_Correlation"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+            fRegistry.fill(HIST("MC/Secondary/hP_Correlation_Profile"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             fRegistry.fill(HIST("MC/Secondary/hTPCdEdx_Pin"), track.tpcInnerParam(), track.tpcSignal());
             fRegistry.fill(HIST("MC/Secondary/hTOFbeta_Pin"), track.tpcInnerParam(), track.beta());
             fRegistry.fill(HIST("MC/Secondary/hNclsITS"), track.itsNCls());
@@ -264,7 +308,7 @@ struct skimmerPrimaryMuon {
             fRegistry.fill(HIST("MC/Secondary/hDCAxy_resolution"), sqrt(track.cYY()));
             fRegistry.fill(HIST("MC/Secondary/hDCAz_resolution"), sqrt(track.cZZ()));
             fRegistry.fill(HIST("MC/Secondary/hDCAxyz_sigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
-            fRegistry.fill(HIST("MC/Secondary/hDCA3D_sigma"), sqrt(pow(track.dcaXY() / sqrt(track.cYY()), 2) + pow(track.dcaZ() / sqrt(track.cZZ()), 2)));
+            fRegistry.fill(HIST("MC/Secondary/hDCA3D_sigma"), dca_3d);
             fRegistry.fill(HIST("MC/Secondary/hProdVtx"), mctrack.vx(), mctrack.vy());
           }
         }
@@ -283,7 +327,7 @@ struct skimmerPrimaryMuon {
                      track.tpcChi2NCl(), track.tpcInnerParam(),
                      track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                      track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                     track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(), track.signed1Pt(), track.cYY(), track.cZZ(), track.cZY());
+                     track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(), track.tgl(), track.cYY(), track.cZZ(), track.cZY());
       fRegistry.fill(HIST("Track/hTPCdEdx_Pin_after"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTOFbeta_Pin_after"), track.tpcInnerParam(), track.beta());
       fRegistry.fill(HIST("Track/hTPCNsigmaMu_after"), track.tpcInnerParam(), track.tpcNSigmaMu());
@@ -292,13 +336,14 @@ struct skimmerPrimaryMuon {
       fRegistry.fill(HIST("Track/hTOFNsigmaPi_after"), track.tpcInnerParam(), track.tofNSigmaPi());
       fRegistry.fill(HIST("Track/hTPCNsigmaEl_after"), track.tpcInnerParam(), track.tpcNSigmaEl());
       fRegistry.fill(HIST("Track/hTOFNsigmaEl_after"), track.tpcInnerParam(), track.tofNSigmaEl());
+      fRegistry.fill(HIST("Track/hDCAxyz_after"), track.dcaXY(), track.dcaZ());
       stored_trackIds.emplace_back(track.globalIndex());
       muon_pfb(0);
     }
   }
 
   template <bool isMC, EM_EEPairType pairtype, typename TCollision, typename TTracks1, typename TTracks2>
-  void fillPairInfo(TCollision const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
+  void fillPairInfo(TCollision const& /*collision*/, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
     if constexpr (pairtype == EM_EEPairType::kULS) { // ULS
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
@@ -346,7 +391,7 @@ struct skimmerPrimaryMuon {
   // ============================ FUNCTION DEFINITIONS ====================================================
   std::vector<uint64_t> stored_trackIds;
 
-  Filter trackFilter = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max && o2::aod::track::tpcChi2NCl < maxchi2tpc && o2::aod::track::itsChi2NCl < maxchi2its;
+  Filter trackFilter = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max && o2::aod::track::tpcChi2NCl < maxchi2tpc && o2::aod::track::itsChi2NCl < maxchi2its && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   Filter pidFilter = minTPCNsigmaMu < o2::aod::pidtpc::tpcNSigmaMu && o2::aod::pidtpc::tpcNSigmaMu < maxTPCNsigmaMu && o2::aod::track::tpcInnerParam < maxPin;
 
   using MyFilteredTracks = soa::Filtered<MyTracks>;

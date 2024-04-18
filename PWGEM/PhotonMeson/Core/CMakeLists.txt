@@ -10,7 +10,8 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_library(PWGEMPhotonMesonCore
-               SOURCES  V0PhotonCut.cxx
+               SOURCES  EMEventCut.cxx
+                        V0PhotonCut.cxx
                         PHOSPhotonCut.cxx
                         DalitzEECut.cxx
                         EMCPhotonCut.cxx
@@ -20,7 +21,8 @@ o2physics_add_library(PWGEMPhotonMesonCore
                PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(PWGEMPhotonMesonCore
-              HEADERS   V0PhotonCut.h
+              HEADERS   EMEventCut.h
+                        V0PhotonCut.h
                         DalitzEECut.h
                         PHOSPhotonCut.h
                         EMCPhotonCut.h

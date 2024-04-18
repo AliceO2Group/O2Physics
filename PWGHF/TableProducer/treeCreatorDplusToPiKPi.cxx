@@ -62,6 +62,12 @@ DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);                              
 DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);                                 //! TPC Nsigma separation for prong2 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);                                 //! TOF Nsigma separation for prong2 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);                                 //! TOF Nsigma separation for prong2 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPi0, nSigTpcTofPi0, float);                           //! TPC and TOF combined Nsigma separation for prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofKa0, nSigTpcTofKa0, float);                           //! TPC and TOF combined Nsigma separation for prong0 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPi1, nSigTpcTofPi1, float);                           //! TPC and TOF combined Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float);                           //! TPC and TOF combined Nsigma separation for prong1 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPi2, float);                           //! TPC and TOF combined Nsigma separation for prong2 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofKa2, nSigTpcTofKa2, float);                           //! TPC and TOF combined Nsigma separation for prong2 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                               //! Decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                           //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);           //! Normalised decay length of candidate
@@ -91,14 +97,20 @@ DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
                   full::NSigTofKa0,
+                  full::NSigTpcTofPi0,
+                  full::NSigTpcTofKa0,
                   full::NSigTpcPi1,
                   full::NSigTpcKa1,
                   full::NSigTofPi1,
                   full::NSigTofKa1,
+                  full::NSigTpcTofPi1,
+                  full::NSigTpcTofKa1,
                   full::NSigTpcPi2,
                   full::NSigTpcKa2,
                   full::NSigTofPi2,
                   full::NSigTofKa2,
+                  full::NSigTpcTofPi2,
+                  full::NSigTpcTofKa2,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -156,14 +168,20 @@ DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
                   full::NSigTofKa0,
+                  full::NSigTpcTofPi0,
+                  full::NSigTpcTofKa0,
                   full::NSigTpcPi1,
                   full::NSigTpcKa1,
                   full::NSigTofPi1,
                   full::NSigTofKa1,
+                  full::NSigTpcTofPi1,
+                  full::NSigTpcTofKa1,
                   full::NSigTpcPi2,
                   full::NSigTpcKa2,
                   full::NSigTofPi2,
                   full::NSigTofKa2,
+                  full::NSigTpcTofPi2,
+                  full::NSigTpcTofKa2,
                   full::CandidateSelFlag,
                   full::M,
                   full::Pt,
@@ -217,7 +235,7 @@ struct HfTreeCreatorDplusToPiKPi {
 
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
@@ -273,14 +291,20 @@ struct HfTreeCreatorDplusToPiKPi {
         prong0.tpcNSigmaKa(),
         prong0.tofNSigmaPi(),
         prong0.tofNSigmaKa(),
+        prong0.tpcTofNSigmaPi(),
+        prong0.tpcTofNSigmaKa(),
         prong1.tpcNSigmaPi(),
         prong1.tpcNSigmaKa(),
         prong1.tofNSigmaPi(),
         prong1.tofNSigmaKa(),
+        prong1.tpcTofNSigmaPi(),
+        prong1.tpcTofNSigmaKa(),
         prong2.tpcNSigmaPi(),
         prong2.tpcNSigmaKa(),
         prong2.tofNSigmaPi(),
         prong2.tofNSigmaKa(),
+        prong2.tpcTofNSigmaPi(),
+        prong2.tpcTofNSigmaKa(),
         candidate.isSelDplusToPiKPi(),
         hfHelper.invMassDplusToPiKPi(candidate),
         candidate.pt(),
@@ -338,14 +362,20 @@ struct HfTreeCreatorDplusToPiKPi {
         prong0.tpcNSigmaKa(),
         prong0.tofNSigmaPi(),
         prong0.tofNSigmaKa(),
+        prong0.tpcTofNSigmaPi(),
+        prong0.tpcTofNSigmaKa(),
         prong1.tpcNSigmaPi(),
         prong1.tpcNSigmaKa(),
         prong1.tofNSigmaPi(),
         prong1.tofNSigmaKa(),
+        prong1.tpcTofNSigmaPi(),
+        prong1.tpcTofNSigmaKa(),
         prong2.tpcNSigmaPi(),
         prong2.tpcNSigmaKa(),
         prong2.tofNSigmaPi(),
         prong2.tofNSigmaKa(),
+        prong2.tpcTofNSigmaPi(),
+        prong2.tpcTofNSigmaKa(),
         candidate.isSelDplusToPiKPi(),
         hfHelper.invMassDplusToPiKPi(candidate),
         candidate.pt(),

@@ -43,12 +43,6 @@ struct eventWiseConstituentSubtractorTask {
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc->PKPi"};
-  Configurable<int> selectionFlagLcToPiPK{"selectionFlagLcToPiPK", 1, "Selection Flag for Lc->PiPK"};
-  Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
-
   Configurable<float> alpha{"alpha", 1.0, "exponent of transverse momentum in calculating the distance measure between pairs"};
   Configurable<float> rMax{"rMax", 0.24, "maximum distance of subtraction"};
   Configurable<float> eventEtaMax{"eventEtaMax", 0.9, "maximum pseudorapidity of event"};

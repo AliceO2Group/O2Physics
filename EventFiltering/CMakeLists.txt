@@ -67,6 +67,11 @@ o2physics_add_dpl_workflow(je-filter
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(je-hf-filter
+    SOURCES PWGJE/jetHFFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(fje-filter
     SOURCES PWGJE/fullJetFilter.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib Boost::system

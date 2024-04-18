@@ -26,12 +26,13 @@ namespace o2::aod
 {
 namespace emcalcollisionmatch
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision); //! collisionID used as index for matched collisions
-DECLARE_SOA_COLUMN(Ambiguous, ambiguous, bool); //! boolean stating whether the collision is ambiguous (in a BC with multiple collisions)
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);       //! collisionID used as index for matched collisions
+DECLARE_SOA_COLUMN(Ambiguous, ambiguous, bool);       //! boolean stating whether the collision is ambiguous (in a BC with multiple collisions)
+DECLARE_SOA_COLUMN(IsEMCReadout, isemcreadout, bool); //! boolean stating whether the EMCal was readout in that collision (based on whether the BC contains at least one cell)
 } // namespace emcalcollisionmatch
 
-DECLARE_SOA_TABLE(EMCALMatchedCollisions, "AOD", "EMCALMCS",                                           //!
-                  o2::soa::Index<>, emcalcollisionmatch::CollisionId, emcalcollisionmatch::Ambiguous); //
+DECLARE_SOA_TABLE(EMCALMatchedCollisions, "AOD", "EMCALMCS",                                                                              //!
+                  o2::soa::Index<>, emcalcollisionmatch::CollisionId, emcalcollisionmatch::Ambiguous, emcalcollisionmatch::IsEMCReadout); //
 
 using EMCALMatchedCollision = EMCALMatchedCollisions::iterator;
 

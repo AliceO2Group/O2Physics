@@ -68,7 +68,6 @@ void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const st
     LOG(info) << "Auto-enabling table: " + table;
     return;
   }
-  flag = false;
   LOG(info) << "Table disabled and not required: " + table;
 }
 
@@ -89,8 +88,13 @@ void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const st
       LOG(info) << "Auto-enabling table: " + table;
       return;
     }
-    LOG(info) << "Table disabled but required: " + table;
+    LOG(warn) << "Table disabled but required: " + table;
+  } else {
+    if (flag < 0) {
+      flag = 0;
+      LOG(info) << "Auto-disabling table: " + table;
+      return;
+    }
+    LOG(info) << "Table disabled and not required: " + table;
   }
-  flag = 0;
-  LOG(info) << "Table disabled and not required: " + table;
 }

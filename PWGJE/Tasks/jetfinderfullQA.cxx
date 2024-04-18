@@ -56,16 +56,18 @@ struct JetFinderFullQATask {
 
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
+  Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
+  Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
-  Configurable<float> clusterEtaMin{"clusterEtaMin", -0.7, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
-  Configurable<float> clusterEtaMax{"clusterEtaMax", 0.7, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
-  Configurable<float> clusterPhiMin{"clusterPhiMin", -999, "minimum cluster phi"};
-  Configurable<float> clusterPhiMax{"clusterPhiMax", 999, "maximum cluster phi"};
+  Configurable<float> clusterEtaMin{"clusterEtaMin", -0.71, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterEtaMax{"clusterEtaMax", 0.71, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterPhiMin{"clusterPhiMin", 1.39, "minimum cluster phi"};
+  Configurable<float> clusterPhiMax{"clusterPhiMax", 3.27, "maximum cluster phi"};
   Configurable<float> clusterEnergyMin{"clusterEnergyMin", 0.5, "minimum cluster energy in EMCAL (GeV)"};
-  Configurable<float> clusterTimeMin{"clusterTimeMin", -999., "minimum Cluster time (ns)"};
-  Configurable<float> clusterTimeMax{"clusterTimeMax", 999., "maximum Cluster time (ns)"};
+  Configurable<float> clusterTimeMin{"clusterTimeMin", -25., "minimum Cluster time (ns)"};
+  Configurable<float> clusterTimeMax{"clusterTimeMax", 25., "maximum Cluster time (ns)"};
   Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
 
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
@@ -187,9 +189,11 @@ struct JetFinderFullQATask {
 
     if (doprocessTracks || doprocessTracksWeighted) {
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+      registry.add("h_centrality_collisions", "centrality vs collisions; centrality, collisions", {HistType::kTH2F, {{1200, -10.0, 110.0}, {4, 0.0, 4.0}}});
       registry.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
       registry.add("h_track_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
+      registry.add("h_track_energy", "track energy;Energy GeV ;entries", {HistType::kTH1F, {{100, 0.0, 100.0}}});
       registry.add("h_cluster_pt", "cluster pT;#it{p}_{T,cluster} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("h_cluster_eta", "cluster #eta;#eta_{cluster};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
       registry.add("h_cluster_phi", "cluster #varphi;#varphi_{cluster};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
@@ -220,6 +224,31 @@ struct JetFinderFullQATask {
   aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
   Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta > clusterEtaMin && aod::jcluster::eta < clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
 
+  template <typename T, typename U>
+  bool isAcceptedJet(U const& jet)
+  {
+
+    if (jetAreaFractionMin > -98.0) {
+      if (jet.area() < jetAreaFractionMin * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
+        return false;
+      }
+    }
+    if (leadingConstituentPtMin > -98.0) {
+      bool isMinleadingConstituent = false;
+      for (auto& constituent : jet.template tracks_as<T>()) {
+        if (constituent.pt() >= leadingConstituentPtMin) {
+          isMinleadingConstituent = true;
+          break;
+        }
+      }
+      // could add clusters later if needed
+      if (!isMinleadingConstituent) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   template <typename T>
   void fillHistograms(T const& jet, float centrality, float weight = 1.0)
   {
@@ -234,21 +263,21 @@ struct JetFinderFullQATask {
       registry.fill(HIST("h_jet_pt"), jet.pt(), weight);
       registry.fill(HIST("h_jet_eta"), jet.eta(), weight);
       registry.fill(HIST("h_jet_phi"), jet.phi(), weight);
-      registry.fill(HIST("h_jet_ntracks"), jet.tracks().size(), weight);
-      registry.fill(HIST("h_jet_nclusters"), jet.clusters().size(), weight);
+      registry.fill(HIST("h_jet_ntracks"), jet.tracksIds().size(), weight);
+      registry.fill(HIST("h_jet_nclusters"), jet.clustersIds().size(), weight);
       registry.fill(HIST("h2_centrality_jet_pt"), centrality, jet.pt(), weight);
       registry.fill(HIST("h2_centrality_jet_eta"), centrality, jet.eta(), weight);
       registry.fill(HIST("h2_centrality_jet_phi"), centrality, jet.phi(), weight);
-      registry.fill(HIST("h2_centrality_jet_ntracks"), centrality, jet.tracks().size(), weight);
-      registry.fill(HIST("h2_centrality_jet_nclusters"), centrality, jet.clusters().size(), weight);
+      registry.fill(HIST("h2_centrality_jet_ntracks"), centrality, jet.tracksIds().size(), weight);
+      registry.fill(HIST("h2_centrality_jet_nclusters"), centrality, jet.clustersIds().size(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_jet_pt_centrality"), jet.r() / 100.0, jet.pt(), centrality, weight);
     registry.fill(HIST("h3_jet_r_jet_pt_jet_eta"), jet.r() / 100.0, jet.pt(), jet.eta(), weight);
     registry.fill(HIST("h3_jet_r_jet_pt_jet_phi"), jet.r() / 100.0, jet.pt(), jet.phi(), weight);
     registry.fill(HIST("h3_jet_r_jet_eta_jet_phi"), jet.r() / 100.0, jet.eta(), jet.phi(), weight);
-    registry.fill(HIST("h3_jet_r_jet_pt_jet_ntracks"), jet.r() / 100.0, jet.pt(), jet.tracks().size(), weight);
-    registry.fill(HIST("h3_jet_r_jet_pt_jet_nclusters"), jet.r() / 100.0, jet.pt(), jet.clusters().size(), weight);
+    registry.fill(HIST("h3_jet_r_jet_pt_jet_ntracks"), jet.r() / 100.0, jet.pt(), jet.tracksIds().size(), weight);
+    registry.fill(HIST("h3_jet_r_jet_pt_jet_nclusters"), jet.r() / 100.0, jet.pt(), jet.clustersIds().size(), weight);
     registry.fill(HIST("h3_jet_r_jet_pt_jet_area"), jet.r() / 100.0, jet.pt(), jet.area(), weight);
 
     for (auto& constituent : jet.template tracks_as<JetTracks>()) {
@@ -283,13 +312,13 @@ struct JetFinderFullQATask {
       registry.fill(HIST("h_jet_pt_part"), jet.pt(), weight);
       registry.fill(HIST("h_jet_eta_part"), jet.eta(), weight);
       registry.fill(HIST("h_jet_phi_part"), jet.phi(), weight);
-      registry.fill(HIST("h_jet_ntracks_part"), jet.tracks().size(), weight);
+      registry.fill(HIST("h_jet_ntracks_part"), jet.tracksIds().size(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_eta_part"), jet.r() / 100.0, jet.pt(), jet.eta(), weight);
     registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_phi_part"), jet.r() / 100.0, jet.pt(), jet.phi(), weight);
     registry.fill(HIST("h3_jet_r_part_jet_eta_part_jet_phi_part"), jet.r() / 100.0, jet.eta(), jet.phi(), weight);
-    registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_ntracks_part"), jet.r() / 100.0, jet.pt(), jet.tracks().size(), weight);
+    registry.fill(HIST("h3_jet_r_part_jet_pt_part_jet_ntracks_part"), jet.r() / 100.0, jet.pt(), jet.tracksIds().size(), weight);
 
     for (auto& constituent : jet.template tracks_as<JetParticles>()) {
       auto pdgParticle = pdgDatabase->GetParticle(constituent.pdgCode());
@@ -320,7 +349,7 @@ struct JetFinderFullQATask {
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_pt_base_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), jetBase.pt(), weight);
         registry.fill(HIST("h3_jet_r_jet_eta_tag_jet_eta_base_matchedgeo"), jetBase.r() / 100.0, jetTag.eta(), jetBase.eta(), weight);
         registry.fill(HIST("h3_jet_r_jet_phi_tag_jet_phi_base_matchedgeo"), jetBase.r() / 100.0, jetTag.phi(), jetBase.phi(), weight);
-        registry.fill(HIST("h3_jet_r_jet_ntracks_tag_jet_ntracks_base_matchedgeo"), jetBase.r() / 100.0, jetTag.tracks().size(), jetBase.tracks().size(), weight);
+        registry.fill(HIST("h3_jet_r_jet_ntracks_tag_jet_ntracks_base_matchedgeo"), jetBase.r() / 100.0, jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_pt_base_diff_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), (jetTag.pt() - jetBase.pt()) / jetTag.pt(), weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_eta_base_diff_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), (jetTag.eta() - jetBase.eta()) / jetTag.eta(), weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_phi_base_diff_matchedgeo"), jetBase.r() / 100.0, jetTag.pt(), (jetTag.phi() - jetBase.phi()) / jetTag.phi(), weight);
@@ -328,7 +357,7 @@ struct JetFinderFullQATask {
         if (jetBase.r() == round(selectedJetsRadius * 100.0f)) {
           registry.fill(HIST("h3_jet_pt_tag_jet_eta_tag_jet_eta_matchedgeo"), jetTag.pt(), jetTag.eta(), jetBase.eta(), weight);
           registry.fill(HIST("h3_jet_pt_tag_jet_phi_tag_jet_phi_matchedgeo"), jetTag.pt(), jetTag.phi(), jetBase.phi(), weight);
-          registry.fill(HIST("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_matchedgeo"), jetTag.pt(), jetTag.tracks().size(), jetBase.tracks().size(), weight);
+          registry.fill(HIST("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_matchedgeo"), jetTag.pt(), jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
         }
       }
     }
@@ -341,7 +370,7 @@ struct JetFinderFullQATask {
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_pt_base_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), jetBase.pt(), weight);
         registry.fill(HIST("h3_jet_r_jet_eta_tag_jet_eta_base_matchedpt"), jetBase.r() / 100.0, jetTag.eta(), jetBase.eta(), weight);
         registry.fill(HIST("h3_jet_r_jet_phi_tag_jet_phi_base_matchedpt"), jetBase.r() / 100.0, jetTag.phi(), jetBase.phi(), weight);
-        registry.fill(HIST("h3_jet_r_jet_ntracks_tag_jet_ntracks_base_matchedpt"), jetBase.r() / 100.0, jetTag.tracks().size(), jetBase.tracks().size(), weight);
+        registry.fill(HIST("h3_jet_r_jet_ntracks_tag_jet_ntracks_base_matchedpt"), jetBase.r() / 100.0, jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_pt_base_diff_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), (jetTag.pt() - jetBase.pt()) / jetTag.pt(), weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_eta_base_diff_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), (jetTag.eta() - jetBase.eta()) / jetTag.eta(), weight);
         registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_phi_base_diff_matchedpt"), jetBase.r() / 100.0, jetTag.pt(), (jetTag.phi() - jetBase.phi()) / jetTag.phi(), weight);
@@ -349,7 +378,7 @@ struct JetFinderFullQATask {
         if (jetBase.r() == round(selectedJetsRadius * 100.0f)) {
           registry.fill(HIST("h3_jet_pt_tag_jet_eta_tag_jet_eta_base_matchedpt"), jetTag.pt(), jetTag.eta(), jetBase.eta(), weight);
           registry.fill(HIST("h3_jet_pt_tag_jet_phi_tag_jet_phi_base_matchedpt"), jetTag.pt(), jetTag.phi(), jetBase.phi(), weight);
-          registry.fill(HIST("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedpt"), jetTag.pt(), jetTag.tracks().size(), jetBase.tracks().size(), weight);
+          registry.fill(HIST("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedpt"), jetTag.pt(), jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
         }
       }
     }
@@ -363,7 +392,7 @@ struct JetFinderFullQATask {
           registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_pt_base_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), jetBase.pt(), weight);
           registry.fill(HIST("h3_jet_r_jet_eta_tag_jet_eta_base_matchedgeopt"), jetBase.r() / 100.0, jetTag.eta(), jetBase.eta(), weight);
           registry.fill(HIST("h3_jet_r_jet_phi_tag_jet_phi_base_matchedgeopt"), jetBase.r() / 100.0, jetTag.phi(), jetBase.phi(), weight);
-          registry.fill(HIST("h3_jet_r_jet_ntracks_tag_jet_ntracks_base_matchedgeopt"), jetBase.r() / 100.0, jetTag.tracks().size(), jetBase.tracks().size(), weight);
+          registry.fill(HIST("h3_jet_r_jet_ntracks_tag_jet_ntracks_base_matchedgeopt"), jetBase.r() / 100.0, jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
           registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_pt_base_diff_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), (jetTag.pt() - jetBase.pt()) / jetTag.pt(), weight);
           registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_eta_base_diff_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), (jetTag.eta() - jetBase.eta()) / jetTag.eta(), weight);
           registry.fill(HIST("h3_jet_r_jet_pt_tag_jet_phi_base_diff_matchedgeopt"), jetBase.r() / 100.0, jetTag.pt(), (jetTag.phi() - jetBase.phi()) / jetTag.phi(), weight);
@@ -371,7 +400,7 @@ struct JetFinderFullQATask {
           if (jetBase.r() == round(selectedJetsRadius * 100.0f)) {
             registry.fill(HIST("h3_jet_pt_tag_jet_eta_tag_jet_eta_base_matchedpt"), jetTag.pt(), jetTag.eta(), jetBase.eta(), weight);
             registry.fill(HIST("h3_jet_pt_tag_jet_phi_tag_jet_phi_base_matchedpt"), jetTag.pt(), jetTag.phi(), jetBase.phi(), weight);
-            registry.fill(HIST("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedpt"), jetTag.pt(), jetTag.tracks().size(), jetBase.tracks().size(), weight);
+            registry.fill(HIST("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedpt"), jetTag.pt(), jetTag.tracksIds().size(), jetBase.tracksIds().size(), weight);
           }
         }
       }
@@ -388,6 +417,7 @@ struct JetFinderFullQATask {
       registry.fill(HIST("h_track_pt"), track.pt(), weight);
       registry.fill(HIST("h_track_eta"), track.eta(), weight);
       registry.fill(HIST("h_track_phi"), track.phi(), weight);
+      registry.fill(HIST("h_track_energy"), track.energy(), weight);
     }
     for (auto const& cluster : clusters) {
       double clusterpt = cluster.energy() / std::cosh(cluster.eta());
@@ -409,6 +439,9 @@ struct JetFinderFullQATask {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
+      if (!isAcceptedJet<JetTracks>(jet)) {
+        continue;
+      }
       fillHistograms(jet, collision.centrality());
     }
   }
@@ -418,6 +451,9 @@ struct JetFinderFullQATask {
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<JetTracks>(jet)) {
         continue;
       }
       fillHistograms(jet, collision.centrality());
@@ -431,6 +467,9 @@ struct JetFinderFullQATask {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
+      if (!isAcceptedJet<JetTracks>(jet)) {
+        continue;
+      }
       fillHistograms(jet, collision.centrality(), jet.eventWeight());
     }
   }
@@ -441,6 +480,9 @@ struct JetFinderFullQATask {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
     }
+    if (!isAcceptedJet<JetParticles>(jet)) {
+      return;
+    }
     fillMCPHistograms(jet);
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCP, "jet finder HF QA mcp", false);
@@ -448,6 +490,9 @@ struct JetFinderFullQATask {
   void processJetsMCPWeighted(typename JetTableMCPWeightedJoined::iterator const& jet, JetParticles const& particles)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+      return;
+    }
+    if (!isAcceptedJet<JetParticles>(jet)) {
       return;
     }
     fillMCPHistograms(jet, jet.eventWeight());
@@ -464,6 +509,9 @@ struct JetFinderFullQATask {
 
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<JetTracks>(mcdjet)) {
         continue;
       }
       fillMatchedHistograms<typename JetTableMCDMatchedJoined::iterator, JetTableMCPMatchedJoined>(mcdjet);
@@ -483,6 +531,9 @@ struct JetFinderFullQATask {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
+      if (!isAcceptedJet<JetTracks>(mcdjet)) {
+        continue;
+      }
       fillMatchedHistograms<typename JetTableMCDMatchedWeightedJoined::iterator, JetTableMCPMatchedWeightedJoined>(mcdjet, mcdjet.eventWeight());
     }
   }
@@ -500,10 +551,12 @@ struct JetFinderFullQATask {
                      soa::Filtered<JetClusters> const& clusters)
   {
     registry.fill(HIST("h_collisions"), 0.5);
+    registry.fill(HIST("h_centrality_collisions"), collision.centrality(), 0.5);
     if (!jetderiveddatautilities::eventEMCAL(collision)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
+    registry.fill(HIST("h_centrality_collisions"), collision.centrality(), 1.5);
     fillTrackHistograms(tracks, clusters);
   }
   PROCESS_SWITCH(JetFinderFullQATask, processTracks, "QA for charged tracks", false);

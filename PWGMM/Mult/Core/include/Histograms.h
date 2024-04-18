@@ -41,10 +41,17 @@ static constexpr std::string_view Efficiency = "Events/Efficiency";             
 static constexpr std::string_view EfficiencyMult = "Events/EfficiencyMult";       // simulated event selection efficiency vs generated multiplicity
 static constexpr std::string_view NotFoundZvtx = "Events/NotFoundEventZvtx";      // vtx Z distribution of events without reconstructed collisions
 static constexpr std::string_view Response = "Events/Response";                   // simulated multiplicity response (N tracks vs N particles)
-static constexpr std::string_view MultiResponse = "Events/MultiResponse";         // -- multi-estimator
 static constexpr std::string_view SplitMult = "Events/SplitMult";                 // split reconstructed events vs generated multiplicity
 static constexpr std::string_view EventChi2 = "Events/Control/Chi2";              // collisions chi2 distribution
 static constexpr std::string_view EventTimeRes = "Events/Control/TimeResolution"; // collisions time resolution distribution
+
+static constexpr std::string_view MCVertex = "MCEvents/Vertex";                     // MC vertex position
+static constexpr std::string_view RecoVertex = "Events/Vertex";                     // Reco vertex position
+static constexpr std::string_view MCCorrelates = "MCEvents/Properties/Correlates";  // Correlation of generated multiplicity and other event properties
+static constexpr std::string_view RecoCorrelates = "Events/Properties/Correlates";  // Correlation of reconstructed multiplicity and other event properties
+static constexpr std::string_view MCVertexResolution = "MCEvents/VertexResolution"; // Reco vs MC vertex Z
+static constexpr std::string_view MCEfficiency = "MCEvents/Efficiency";             // simulated event selection efficiency
+static constexpr std::string_view MCResponse = "MCEvents/Response";                 // simualted event response
 
 // particles and tracks
 static constexpr std::string_view EtaZvtx = "Tracks/EtaZvtx";                                 // eta vs vtx Z distribution of tracks
@@ -73,6 +80,16 @@ static constexpr std::string_view ReassignedDCAZPt = "Tracks/Control/ReassignedD
 static constexpr std::string_view ExtraDCAZPt = "Tracks/Control/ExtraDCAZPt";                 // -- of adopted orphan tracks
 static constexpr std::string_view ReassignedZvtxCorr = "Tracks/Control/ReassignedZvtxCorr";   // original vs reassigned vtx Z correlation for reassigned ambiguous tracks
 
+static constexpr std::string_view MCParticles = "Particles/Kinematics";             // Kinematic properties of MC particles
+static constexpr std::string_view RecoTracks = "Tracks/Kinematics";                 // Kinemtatic properties of Reco tracks
+static constexpr std::string_view ParticlesPt = "Particles/Primaries/Pt";           // Pt of primary MC particles
+static constexpr std::string_view ParticlesEta = "Particles/Primaries/Eta";         // Pseudorapidity of primary MC particles
+static constexpr std::string_view ParticlesY = "Particles/Primaries/Y";             // Rapidity of primary MC particles
+static constexpr std::string_view ParticlesEtaZvtx = "Particles/Primaries/EtaZvtx"; // Pseudorapidity of primary MC particles vs vertex Z
+static constexpr std::string_view ParticlesPtF = "Particles/Primaries/{}/Pt";       // Pt of primary MC particles
+static constexpr std::string_view ParticlesEtaF = "Particles/Primaries/{}/Eta";     // Pseudorapidity of primary MC particles
+static constexpr std::string_view ParticlesYF = "Particles/Primaries/{}/Y";         // Rapidity of primary MC particles
+
 // efficiencies
 static constexpr std::string_view PtGen = "Tracks/Control/PtGen";                                               // pt distribution of particles
 static constexpr std::string_view PtGenF = "Tracks/Control/{}/PtGen";                                           // -- format placeholder
@@ -89,6 +106,11 @@ static constexpr std::string_view PtEfficiencyIdxNoEtaCut = "Tracks/Control/PtEf
 static constexpr std::string_view PtEfficiencyFakes = "Tracks/Control/PtFakes";                                 // pt distribution of fake tracks
 static constexpr std::string_view PtEfficiencySecondariesIdx = "Tracks/Control/PtSecondariesI";                 // generator-level pt distribution of secondary particles
 static constexpr std::string_view PtEfficiencySecondariesIdxNoEtaCut = "Tracks/Control/PtSecondariesINoEtaCut"; // -- for the indexed efficiency
+
+static constexpr std::string_view MCParticlesEfficiencyN = "Particles/KinematicsEfficiencyN"; // Tracks in the phase space of original particles
+static constexpr std::string_view MCParticlesEfficiencyD = "Particles/KinematicsEfficiencyD"; // original particles
+static constexpr std::string_view MCPtResolution = "Particles/PtResolution";                  // reco pt vs gen pt
+static constexpr std::string_view MCEtaResolution = "Particles/EtaResolution";                // reco eta vs gen eta
 
 // misc.
 static constexpr std::string_view Mask = "Tracks/Control/Mask";           // reco status bitmask

@@ -198,7 +198,7 @@ struct HfTaskJpsiMc {
 
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelJpsi, aod::HfCand2ProngMcRec>> const& candidates,
                McParticlesHf const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   {
     // MC rec.
     int decayMode = modeJpsiToMuMu ? aod::hf_cand_2prong::DecayType::JpsiToMuMu : aod::hf_cand_2prong::DecayType::JpsiToEE;

@@ -90,19 +90,23 @@ struct tpcPidQa {
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxP{"maxP", 20, "Maximum momentum in range"};
   ConfigurableAxis etaBins{"etaBins", {100, -1.f, 1.f}, "Binning in eta"};
-  ConfigurableAxis phiBins{"phiBins", {100, 0, TMath::TwoPi()}, "Binning in eta"};
+  ConfigurableAxis phiBins{"phiBins", {100, 0, TMath::TwoPi()}, "Binning in phi"};
   ConfigurableAxis trackLengthBins{"trackLengthBins", {100, 0, 1000.f}, "Binning in track length plot"};
   ConfigurableAxis deltaBins{"deltaBins", {200, -1000.f, 1000.f}, "Binning in Delta (dEdx - expected dEdx)"};
   ConfigurableAxis expSigmaBins{"expSigmaBins", {200, 0.f, 200.f}, "Binning in expected Sigma"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {401, -10.025f, 10.025f}, "Binning in NSigma"};
   ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
+  // Axes for optional THnSparse
+  ConfigurableAxis binsPForSparse{"binsPForSparse", {200, 0.f, 20.f}, "Binning in momentum for optional THnSparse"};
+  ConfigurableAxis binsEtaForSparse{"binsEtaForSparse", {50, -1.f, 1.f}, "Binning in eta for optional THnSparse"};
+  ConfigurableAxis binsnSigmaForSparse{"binsnSigmaForSparse", {101, -7.575, 7.575}, "Binning in nsigma for optional THnSparse"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
   Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
   Configurable<int16_t> minTPCNcls{"minTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
-  ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Bining in number of cluster in TPC"};
+  ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Binning in number of clusters in TPC"};
   Configurable<bool> fillTHnSparses{"fillTHnSparses", false, "Flag to fill multidimensional histograms for nsigma vs pt, eta, Ncls"};
 
   template <o2::track::PID::ID id>
@@ -185,8 +189,10 @@ struct tpcPidQa {
 
     const AxisSpec etaAxis{etaBins, "#it{#eta}"};
     const AxisSpec tpcnclsAxis{tpcNclsBins, "TPC #cls"};
-
-    HistogramConfigSpec particleSparseHists{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis}};
+    const AxisSpec sparseMomentumAxis{binsPForSparse, "#it{p} (GeV/#it{c})"};
+    const AxisSpec sparseEtaAxis{binsEtaForSparse, "#eta"};
+    const AxisSpec sparseNSigmaAxis{binsnSigmaForSparse, "#n_{#sigma}^{TPC}"};
+    HistogramConfigSpec particleSparseHists{HistType::kTHnSparseF, {sparseMomentumAxis, sparseEtaAxis, sparseNSigmaAxis, tpcnclsAxis}};
     if (fillTHnSparses) {
       histos.add(hnsigma_p_eta_Ncl[id].data(), axisTitle, particleSparseHists);
     }
@@ -202,7 +208,7 @@ struct tpcPidQa {
     histos.add(hexpsigma_wTOF[id].data(), "With TOF", kTH2F, {pAxis, expSigmaAxis});
     histos.add(hnsigma_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {pAxis, nSigmaAxis});
 
-    HistogramConfigSpec particleSparseHists_wTOF{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis}};
+    HistogramConfigSpec particleSparseHists_wTOF{HistType::kTHnSparseF, {sparseMomentumAxis, sparseEtaAxis, sparseNSigmaAxis, tpcnclsAxis}};
     if (fillTHnSparses) {
       histos.add(hnsigma_p_eta_Ncl_wTOF[id].data(), Form("With TOF %s", axisTitle), particleSparseHists_wTOF);
     }

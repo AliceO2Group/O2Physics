@@ -129,11 +129,11 @@ struct HfTreeCreatorChicToJpsiGamma {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mcCollisions,
+               aod::McCollisions const&,
                soa::Join<aod::HfCandChic, aod::HfCandChicMcRec, aod::HfSelChicToJpsiGamma> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& particles,
-               aod::Tracks const& tracks,
-               aod::HfCand2Prong const& jpsiCands)
+               aod::Tracks const&,
+               aod::HfCand2Prong const&)
   {
 
     // Filling event properties
@@ -150,7 +150,7 @@ struct HfTreeCreatorChicToJpsiGamma {
     }
 
     // Filling candidate properties
-    int indexCand = 0;
+    // int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       std::array<float, 3> pvecChic = {candidate.px(), candidate.py(), candidate.pz()};
@@ -163,7 +163,7 @@ struct HfTreeCreatorChicToJpsiGamma {
       auto alpha = (pl1 - pl2) / (pl1 + pl2);
       auto qt = std::sqrt(pjpsi * pjpsi - pl1 * pl1);
 
-      indexCand++;
+      // indexCand++;
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,

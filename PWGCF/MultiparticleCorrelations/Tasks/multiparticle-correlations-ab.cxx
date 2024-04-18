@@ -14,29 +14,41 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/DataTypes.h"
 #include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+
 using namespace o2;
 using namespace o2::framework;
 
-using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms>; // TBI 20240120 add support for other centrality estimators, why aod::Cents doesn't work?
-
+// *) Run 3:
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
 using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator;
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
 using CollisionSim = aod::McCollision; // TBI 20240120 add support for centrality also for this case
-
 using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 using TrackRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>::iterator;
-
 using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
 using TrackRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>::iterator;
-
 using TracksSim = aod::McParticles;
 using TrackSim = aod::McParticles::iterator;
 
-// ROOT:
+// *) Converted Run 2:
+using EventSelection_Run2 = soa::Join<aod::EvSels, aod::Mults, aod::CentRun2V0Ms, aod::CentRun2SPDTrks>;
+using CollisionRec_Run2 = soa::Join<aod::Collisions, EventSelection_Run2>::iterator;
+using CollisionRecSim_Run2 = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection_Run2>::iterator;
+using TracksRecSim_Run2 = soa::Join<aod::Tracks, aod::McTrackLabels>;
+using TrackRecSim_Run2 = soa::Join<aod::Tracks, aod::McTrackLabels>::iterator;
+
+// *) Converted Run 1:
+//    TBI 20240205 Since centrality calibration is not available in converted Run 1 data, I cannot treat it for the time being in the same way as converted Run 2.
+//                 Once calibration is available, just use Run 2 above both for Run 2 and Run 1
+using EventSelection_Run1 = soa::Join<aod::EvSels, aod::Mults>; // TBI 20240205 no calibration for centrality in converted LHC10h and LHC11h, at the time of writing
+using CollisionRec_Run1 = soa::Join<aod::Collisions, EventSelection_Run1>::iterator;
+
+// *) ROOT:
 #include "TList.h"
 #include "TSystem.h"
 #include "TFile.h"
@@ -45,6 +57,7 @@ using TrackSim = aod::McParticles::iterator;
 #include "Riostream.h"
 #include "TRandom3.h"
 #include <TComplex.h>
+#include <TStopwatch.h>
 using namespace std;
 
 // *) Enums:
@@ -52,12 +65,6 @@ using namespace std;
 
 // *) Global constants:
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
-
-// *) These are intended flags for PROCESS_SWITCH, at the moment I have to pass to PROCESS_SWITCH(  ) only literals 'true' or 'false' as the last arguments.
-//    TBI 20231108 I could as well re-define them as data members, if it remains like that...
-bool gProcessRec = false;
-bool gProcessRecSim = false;
-bool gProcessSim = false;
 
 // *) Main task:
 struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
@@ -99,11 +106,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultBinning();
     DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
+    // *) Set what to process - only rec, both rec and sim, only sim:
+    // WhatToProcess(); // yes, this can be called here, after calling all Default* member functions above, because this has an effect only on Book* members functions, and the ones called afterward
+
     // *) Insanity checks:
     InsanityChecks();
-
-    // *) Set what to process - only rec, both rec and sim, only sim:
-    WhatToProcess(); // yes, this can be called here, after calling all Default* member functions above, because this has an effect only on Book* members functions
 
     // *) Book random generator:
     delete gRandom;
@@ -114,14 +121,17 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Book all remaining objects;
     BookAndNestAllLists();
+    BookResultsHistograms(); // yes, this one has to be booked first, because it defines the commong binning for other groups of histograms
     BookEventHistograms();
+    BookEventCutsHistograms();
     BookParticleHistograms();
+    BookParticleCutsHistograms();
     BookQvectorHistograms();
     BookCorrelationsHistograms();
     BookWeightsHistograms();
     BookNestedLoopsHistograms();
     BookTest0Histograms();
-    BookResultsHistograms();
+    BookTheRest(); // here I book everything that was not sorted (yet) in the specific functions above
 
     // *) Trick to avoid name clashes, part 2:
     TH1::AddDirectory(oldHistAddStatus);
@@ -135,52 +145,38 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // B) Process both reconstructed and corresponding MC truth simulated data;
   // C) Process only simulated data.
 
+  // For Run 2 converted data, I have the following implementations of process(...)
+  // D) Process only converted reconstructed Run 2 data;
+  // E) Process both converted reconstructed and corresponding MC truth simulated Run 2 data;
+  // F) Process only converted simulated Run 2 data.
+
+  // For Run 1 converted data, I have the following implementations of process(...)
+  // G) Process only converted reconstructed Run 1 data;
+  // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
+  // I) Process only converted simulated Run 1 data.
+
+  // For testing purposes I have processTest(...)
+  // J) Process data with minimum subscription to the tables.
+
   // -------------------------------------------
 
   // A) Process only reconstructed data:
   void processRec(CollisionRec const& collision, aod::BCs const&, TracksRec const& tracks)
   {
-
-    // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
-    if (!gProcessRec) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
-    }
-
-    // *) If I reached max number of events, ignore the remaining collisions:
-    if (!tc.fProcessRemainingEvents) {
-      return; // TBI 20231008 Temporarily implemented this way. But what I really need here is a graceful exit
-              // from subsequent processing (which will also dump the output file, etc.). When that's possible,
-              // move this to a member function Steer(...)
-    }
+    // Remark: Do not use here LOGF(fatal, ...) or LOGF(info, ...), because their stdout/stderr is suppressed. Use them in regular member functions instead.
 
     // *) Steer all analysis steps:
     Steer<eRec>(collision, tracks);
-
-  } // void processRec(...)
-
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", true);
+  }
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that I have default running version
 
   // -------------------------------------------
 
   // B) Process both reconstructed and corresponding MC truth simulated data:
   void processRecSim(CollisionRecSim const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
-
-    // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
-    if (!gProcessRecSim) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
-    }
-
-    // *) If I reached max number of events, ignore the remaining collisions:
-    if (!tc.fProcessRemainingEvents) {
-      return;
-    }
-
-    // *) Steer all analysis steps:
     Steer<eRecAndSim>(collision, tracks);
-
-  } // void processRecSim(...)
-
+  }
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
 
   // -------------------------------------------
@@ -188,24 +184,73 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // C) Process only simulated data:
   void processSim(CollisionSim const& collision, aod::BCs const&, TracksSim const& tracks)
   {
-    // ...
-
-    // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
-    if (!gProcessSim) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
-    }
-
-    // *) If I reached max number of events, ignore the remaining collisions:
-    if (!tc.fProcessRemainingEvents) {
-      return;
-    }
-
-    // *) Steer all analysis steps:
     Steer<eSim>(collision, tracks);
-
-  } // void processSim(...)
-
+  }
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim, "process only simulated data", false);
+
+  // -------------------------------------------
+
+  // D) Process only converted reconstructed Run 2 data:
+  void processRec_Run2(CollisionRec_Run2 const& collision, aod::BCs const&, aod::Tracks const& tracks)
+  {
+    Steer<eRec_Run2>(collision, tracks);
+  }
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec_Run2, "process only converted reconstructed Run 2 data", false);
+
+  // -------------------------------------------
+
+  // E) Process both converted reconstructed and corresponding MC truth simulated Run 2 data:
+  void processRecSim_Run2(CollisionRecSim_Run2 const& collision, aod::BCs const&, TracksRecSim_Run2 const& tracks, aod::McParticles const&, aod::McCollisions const&)
+  {
+    Steer<eRecAndSim_Run2>(collision, tracks);
+  }
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim_Run2, "process both converted reconstructed and simulated Run 2 data", false);
+
+  // -------------------------------------------
+
+  // F) Process only converted simulated Run 2 data:
+  void processSim_Run2(aod::Collision const& collision) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
+  {
+    // Steer<eSim_Run2>(collision, tracks);
+  }
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim_Run2, "process converted only simulated Run 2 data", false);
+
+  // -------------------------------------------
+
+  // G) Process only converted reconstructed Run 1 data:
+  void processRec_Run1(CollisionRec_Run1 const& collision, aod::BCs const&, aod::Tracks const& tracks)
+  {
+    Steer<eRec_Run1>(collision, tracks);
+  }
+
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec_Run1, "process only converted reconstructed Run 1 data", false);
+
+  // -------------------------------------------
+
+  // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
+  void processRecSim_Run1(aod::Collision const& collision) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
+  {
+    // Steer<eRecSim_Run1>(collision, tracks);
+  }
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim_Run1, "process both converted reconstructed and simulated Run 1 data", false);
+
+  // -------------------------------------------
+
+  // I) Process only converted simulated Run 1 data.
+  void processSim_Run1(aod::Collision const& collision) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
+  {
+    // Steer<eSim_Run1>(collision, tracks);
+  }
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim_Run1, "process only converted simulated Run 1 data", false);
+
+  // -------------------------------------------
+
+  // J) Process data with minimum subscription to the tables, for testing purposes:
+  void processTest(aod::Collision const& collision, aod::BCs const&, aod::Tracks const& tracks)
+  {
+    Steer<eTest>(collision, tracks);
+  }
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processTest, "test processing", false);
 
 }; // struct MultiparticleCorrelationsAB
 

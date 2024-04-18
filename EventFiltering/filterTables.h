@@ -35,6 +35,9 @@ DECLARE_SOA_COLUMN(SingleMuLow, hasSingleMuLow, bool);   //! single muon with lo
 DECLARE_SOA_COLUMN(SingleMuHigh, hasSingleMuHigh, bool); //! single muon with high pT trigger
 DECLARE_SOA_COLUMN(DiElectron, hasDiElectron, bool);     //! dielectron trigger
 DECLARE_SOA_COLUMN(DiMuon, hasDiMuon, bool);             //! dimuon trigger with low pT on muons
+// EM dielectrons
+DECLARE_SOA_COLUMN(LMeeIMR, hasLMeeIMR, bool); //! dielectron trigger for intermediate mass region
+DECLARE_SOA_COLUMN(LMeeHMR, hasLMeeHMR, bool); //! dielectron trigger for high mass region
 
 // heavy flavours
 DECLARE_SOA_COLUMN(HfHighPt2P, hasHfHighPt2P, bool);                 //! high-pT 2-prong charm hadron
@@ -63,6 +66,14 @@ DECLARE_SOA_COLUMN(LLL, hasLLL, bool); //! has L-L-L tripletD
 // jets
 DECLARE_SOA_COLUMN(JetChLowPt, hasJetChLowPt, bool);   //! low-pT charged jet
 DECLARE_SOA_COLUMN(JetChHighPt, hasJetChHighPt, bool); //! high-pT charged jet
+DECLARE_SOA_COLUMN(TrackLowPt, hasTrackLowPt, bool);   //! low-pT track
+DECLARE_SOA_COLUMN(TrackHighPt, hasTrackHighPt, bool); //! high-pT track
+
+// hf-jets
+DECLARE_SOA_COLUMN(JetD0ChLowPt, hasJetD0ChLowPt, bool);   //! low-pT charged D0 jet
+DECLARE_SOA_COLUMN(JetD0ChHighPt, hasJetD0ChHighPt, bool); //! high-pT charged D0 jet
+DECLARE_SOA_COLUMN(JetLcChLowPt, hasJetLcChLowPt, bool);   //! low-pT charged Lc jet
+DECLARE_SOA_COLUMN(JetLcChHighPt, hasJetLcChHighPt, bool); //! high-pT charged Lc jet
 
 // full jets
 DECLARE_SOA_COLUMN(EMCALReadout, hasEMCALinReadout, bool);               //! EMCAL readout
@@ -113,7 +124,7 @@ DECLARE_SOA_COLUMN(PCMHighPtPhoton, hasPCMHighPtPhoton, bool); //! PCM high pT p
 // DECLARE_SOA_COLUMN(PCMMatCalib, hasPCMMatCalib, bool);         //! PCM material budget calibration
 // DECLARE_SOA_COLUMN(PCMEtaDalitz, hasPCMEtaDalitz, bool);       //! PCM eta -> ee gamma
 // DECLARE_SOA_COLUMN(PCMEtaGG, hasPCMEtaGG, bool);               //! PCM eta -> ee gamma
-// DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool);               //! PCM and ee
+DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool); //! PCM and ee
 } // namespace filtering
 
 namespace decision
@@ -152,7 +163,7 @@ using DiffractionBCFilter = DiffractionBCFilters::iterator;
 
 // Dileptons & Quarkonia
 DECLARE_SOA_TABLE(DqFilters, "AOD", "DqFilters", //!
-                  filtering::SingleE, filtering::DiElectron, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiMuon);
+                  filtering::SingleE, filtering::LMeeIMR, filtering::LMeeHMR, filtering::DiElectron, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiMuon);
 using DqFilter = DqFilters::iterator;
 
 // heavy flavours
@@ -168,9 +179,19 @@ using CfFilter = CFFilters::iterator;
 // jets
 DECLARE_SOA_TABLE(JetFilters, "AOD", "JetFilters", //!
                   filtering::JetChLowPt,
-                  filtering::JetChHighPt);
+                  filtering::JetChHighPt,
+                  filtering::TrackLowPt,
+                  filtering::TrackHighPt);
 
 using JetFilter = JetFilters::iterator;
+
+DECLARE_SOA_TABLE(JetHFFilters, "AOD", "JetHFFilters", //!
+                  filtering::JetD0ChLowPt,
+                  filtering::JetD0ChHighPt,
+                  filtering::JetLcChLowPt,
+                  filtering::JetLcChHighPt);
+
+using JetHFFilter = JetHFFilters::iterator;
 
 DECLARE_SOA_TABLE(FullJetFilters, "AOD", "FullJetFilters", //!
                   filtering::EMCALReadout, filtering::JetFullHighPt, filtering::JetFullLowPt, filtering::JetNeutralHighPt, filtering::JetNeutralLowPt, filtering::GammaVeryHighPtEMCAL, filtering::GammaVeryHighPtDCAL, filtering::GammaHighPtEMCAL, filtering::GammaHighPtDCAL, filtering::GammaLowPtEMCAL, filtering::GammaLowPtDCAL, filtering::GammaVeryLowPtEMCAL, filtering::GammaVeryLowPtDCAL);
@@ -196,7 +217,7 @@ using MultFilter = MultFilters::iterator;
 
 // photons
 DECLARE_SOA_TABLE(PhotonFilters, "AOD", "PhotonFilters", //!
-                  filtering::PHOSPhoton, filtering::PHOSnbar, filtering::PCMHighPtPhoton);
+                  filtering::PHOSPhoton, filtering::PHOSnbar, filtering::PCMHighPtPhoton, filtering::PCMandEE);
 
 using PhotonFilter = PhotonFilters::iterator;
 
@@ -211,11 +232,11 @@ DECLARE_SOA_TABLE(BCRanges, "AOD", "BCRanges", //!
 using BCRange = BCRanges::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
-constexpr int NumberOfFilters{11};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-photon-filter", "o2-analysis-lf-f1proton-filter"};
-constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotonFilters, F1ProtonFilters> FiltersPack;
+constexpr int NumberOfFilters{12};
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-je-hf-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-photon-filter", "o2-analysis-lf-f1proton-filter"};
+constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, JetHFFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotonFilters, F1ProtonFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
 template <typename T, typename C>
@@ -227,25 +248,44 @@ void addColumnToMap(std::unordered_map<std::string, std::unordered_map<std::stri
 template <typename T, typename... C>
 void addColumnsToMap(o2::framework::pack<C...>, std::unordered_map<std::string, std::unordered_map<std::string, float>>& map)
 {
-  (addColumnToMap<T, C>(map), ...);
+  ([&]() {
+    if constexpr (soa::is_persistent_v<C>) {
+      addColumnToMap<T, C>(map);
+    }
+  }(),
+   ...);
 }
 
 template <typename... T>
 void FillFiltersMap(o2::framework::pack<T...>, std::unordered_map<std::string, std::unordered_map<std::string, float>>& map)
 {
-  (addColumnsToMap<T>(typename T::iterator::persistent_columns_t{}, map), ...);
+  (addColumnsToMap<T>(typename T::table_t::columns{}, map), ...);
 }
 
 template <typename... C>
 static std::vector<std::string> ColumnsNames(o2::framework::pack<C...>)
 {
-  return {C::columnLabel()...};
+  std::vector<std::string> result;
+  ([&]() {
+    if constexpr (soa::is_persistent_v<C>) {
+      result.push_back(C::columnLabel());
+    }
+  }(),
+   ...);
+  return result;
 }
 
-template <typename T>
-unsigned int NumberOfColumns()
+template <typename... C>
+unsigned int NumberOfColumns(o2::framework::pack<C...>)
 {
-  return o2::framework::pack_size(typename T::iterator::persistent_columns_t{});
+  unsigned int result = 0;
+  ([&]() {
+    if constexpr (soa::is_persistent_v<C>) {
+      ++result;
+    }
+  }(),
+   ...);
+  return result;
 }
 
 } // namespace o2::aod

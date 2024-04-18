@@ -190,7 +190,8 @@ DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
 DECLARE_SOA_TABLE(UDCollisionsSelsCent, "AOD", "UDCOLSELCNT",
                   udcollision::DBcTOR,
                   udcollision::DBcTSC,
-                  udcollision::DBcTVX);
+                  udcollision::DBcTVX,
+                  udcollision::DBcV0A);
 
 // forward-specific selections
 DECLARE_SOA_TABLE(UDCollisionsSelsFwd, "AOD", "UDCOLSELFWD",
@@ -265,7 +266,7 @@ DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::TPCInnerParam,
-                  track::ITSClusterMap,
+                  track::ITSClusterSizes,
                   track::TPCNClsFindable,
                   track::TPCNClsFindableMinusFound,
                   track::TPCNClsFindableMinusCrossedRows,
@@ -285,7 +286,8 @@ DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::HasTPC<udtrack::DetectorMap>,
                   track::HasTRD<udtrack::DetectorMap>,
                   track::HasTOF<udtrack::DetectorMap>,
-                  track::ITSNCls<track::ITSClusterMap>,
+                  track::v001::ITSNCls<track::ITSClusterSizes>,
+                  track::v001::ITSClusterMap<track::ITSClusterSizes>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>);
 
 DECLARE_SOA_TABLE(UDTracksDCA, "AOD", "UDTRACKDCA",
@@ -412,6 +414,11 @@ DECLARE_SOA_COLUMN(ChannelE, channelE, std::vector<uint8_t>); //! Channel IDs wh
 DECLARE_SOA_COLUMN(Amplitude, amplitude, std::vector<float>); //! Amplitudes of non-zero channels. The channel IDs are given in ChannelT (at the same index)
 DECLARE_SOA_COLUMN(Time, time, std::vector<float>);           //! Times of non-zero channels. The channel IDs are given in ChannelT (at the same index)
 DECLARE_SOA_COLUMN(ChannelT, channelT, std::vector<uint8_t>); //! Channel IDs which had non-zero amplitudes. There are at maximum 26 channels.
+
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
 } // namespace udzdc
 
 DECLARE_SOA_TABLE(UDZdcs, "AOD", "UDZDC", //! ZDC information
@@ -445,6 +452,16 @@ DECLARE_SOA_TABLE(UDZdcs, "AOD", "UDZDC", //! ZDC information
                   zdc::DyAmplitudeZPC<udzdc::ChannelT, udzdc::Amplitude>);
 
 using UDZdc = UDZdcs::iterator;
+
+// reduced ZDC table
+DECLARE_SOA_TABLE(UDZdcsReduced, "AOD", "UDZDCREDUCE",
+                  udzdc::UDCollisionId,
+                  udzdc::TimeZNA,
+                  udzdc::TimeZNC,
+                  udzdc::EnergyCommonZNA,
+                  udzdc::EnergyCommonZNC);
+
+using UDZdcReduced = UDZdcsReduced::iterator;
 
 } // namespace o2::aod
 

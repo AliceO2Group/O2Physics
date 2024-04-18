@@ -91,7 +91,7 @@ struct HfCandidateSelectorJpsi {
   using TracksSelAlice2 = soa::Join<aod::TracksWDca, aod::TracksPidEl>;
   using TracksSelAlice3 = soa::Join<aod::TracksWDca, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::HfTrackIndexALICE3PID>;
 
-  void init(InitContext const& initContext)
+  void init(InitContext const&)
   {
     selectorElectron.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
     selectorElectron.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);

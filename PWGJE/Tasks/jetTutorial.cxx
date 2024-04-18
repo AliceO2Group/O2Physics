@@ -188,7 +188,7 @@ struct JetTutorialTask {
     registry.fill(HIST("h_jet_pt"), jet.pt());
     registry.fill(HIST("h_jet_eta"), jet.eta());
     registry.fill(HIST("h_jet_phi"), jet.phi());
-    registry.fill(HIST("h_jet_ntracks"), jet.tracks().size());
+    registry.fill(HIST("h_jet_ntracks"), jet.tracksIds().size());
     double angularity = 0.0;
     for (auto& jetConstituent : jet.tracks_as<JetTracks>()) {
       angularity += jetConstituent.pt() * TMath::Sqrt(TMath::Power(jet.phi() - jetConstituent.phi(), 2.0) + TMath::Power(jet.eta() - jetConstituent.eta(), 2.0));
@@ -221,8 +221,8 @@ struct JetTutorialTask {
     registry.fill(HIST("h_full_jet_pt"), jet.pt());
     registry.fill(HIST("h_full_jet_eta"), jet.eta());
     registry.fill(HIST("h_full_jet_phi"), jet.phi());
-    registry.fill(HIST("h_full_jet_ntracks"), jet.tracks().size());
-    registry.fill(HIST("h_full_jet_nclusters"), jet.clusters().size());
+    registry.fill(HIST("h_full_jet_ntracks"), jet.tracksIds().size());
+    registry.fill(HIST("h_full_jet_nclusters"), jet.clustersIds().size());
     double angularity = 0.0;
     for (auto& jetTrack : jet.tracks_as<JetTracks>()) {
       angularity += jetTrack.pt() * TMath::Sqrt(TMath::Power(jet.phi() - jetTrack.phi(), 2.0) + TMath::Power(jet.eta() - jetTrack.eta(), 2.0));

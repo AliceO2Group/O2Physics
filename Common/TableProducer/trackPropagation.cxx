@@ -60,10 +60,9 @@ struct TrackPropagation {
   // for TrackTuner only (MC smearing)
   Configurable<bool> useTrackTuner{"useTrackTuner", false, "Apply Improver/DCA corrections to MC"};
   Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=1|updateCurvature=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|usePvRefitCorrections=0|oneOverPtCurrent=0|oneOverPtUpgr=0", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
-  OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 4, 0.5, 4.5), OutputObjHandlingPolicy::AnalysisObject};
 
   using TracksIUWithMc = soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU>;
-  using TracksIU = soa::Join<aod::StoredTracksIU, aod::TracksCovIU>;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -107,6 +106,10 @@ struct TrackPropagation {
       std::string outputStringParams = trackTunerObj.configParams(trackTunerParams);
       trackTunerObj.getDcaGraphs();
       trackTunedTracks->SetTitle(outputStringParams.c_str());
+      trackTunedTracks->GetXaxis()->SetBinLabel(1, "all tracks");
+      trackTunedTracks->GetXaxis()->SetBinLabel(2, "tracks tuned (no negative detXY)");
+      trackTunedTracks->GetXaxis()->SetBinLabel(3, "untouched tracks due to negative detXY");
+      trackTunedTracks->GetXaxis()->SetBinLabel(4, "original detXY<0");
     }
   }
 
@@ -180,6 +183,7 @@ struct TrackPropagation {
       if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
         if constexpr (isMc && fillCovMat) { /// track tuner ok only if cov. matrix is used
           if (useTrackTuner) {
+            trackTunedTracks->Fill(1); // all tracks
             // call track propagator
             // this function reads many many things
             //  - reads track params
@@ -188,9 +192,9 @@ struct TrackPropagation {
               // LOG(info) << " MC particle exists... ";
               // LOG(info) << "Inside trackPropagation: before calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY();
               auto mcParticle = track.mcParticle();
-              trackTunerObj.tuneTrackParams(mcParticle, mTrackParCov, matCorr, &mDcaInfoCov);
+              trackTunerObj.tuneTrackParams(mcParticle, mTrackParCov, matCorr, &mDcaInfoCov, trackTunedTracks);
               // LOG(info) << "Inside trackPropagation: after calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY();
-              trackTunedTracks->Fill(1);
+              // trackTunedTracks->Fill(1);
             }
           }
         }
@@ -259,9 +263,9 @@ struct TrackPropagation {
   }
   PROCESS_SWITCH(TrackPropagation, processCovarianceMc, "Process with covariance on MC", false);
 
-  void processCovariance(TracksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  void processCovariance(soa::Join<aod::StoredTracksIU, aod::TracksCovIU> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables</*TTrack*/ TracksIU, /*Particle*/ TracksIU, /*isMc = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
+    fillTrackTables</*TTrack*/ soa::Join<aod::StoredTracksIU, aod::TracksCovIU>, /*Particle*/ soa::Join<aod::StoredTracksIU, aod::TracksCovIU>, /*isMc = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processCovariance, "Process with covariance", false);
   // ------------------------

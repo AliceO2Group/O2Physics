@@ -63,6 +63,7 @@ struct HfCandidateCreatorChic {
   Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter (to rebuild Jpsi vertex)
   HfHelper hfHelper;
 
   double massJpsi{0.};
@@ -82,17 +83,7 @@ struct HfCandidateCreatorChic {
   void init(InitContext const&)
   {
     massJpsi = MassJPsi;
-  }
 
-  void process(aod::Collision const& collision,
-               soa::Filtered<soa::Join<
-                 aod::HfCand2Prong,
-                 aod::HfSelJpsi>> const& jpsiCands,
-               aod::TracksWCov const& tracks,
-               aod::ECALs const& ecals)
-  {
-    // 2-prong vertex fitter (to rebuild Jpsi vertex)
-    o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(bz);
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
@@ -101,7 +92,15 @@ struct HfCandidateCreatorChic {
     df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
+  }
 
+  void process(aod::Collision const& collision,
+               soa::Filtered<soa::Join<
+                 aod::HfCand2Prong,
+                 aod::HfSelJpsi>> const& jpsiCands,
+               aod::TracksWCov const&,
+               aod::ECALs const& ecals)
+  {
     // loop over Jpsi candidates
     for (const auto& jpsiCand : jpsiCands) {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
@@ -224,9 +223,9 @@ struct HfCandidateCreatorChicMc {
 
   void process(aod::HfCandChic const& candidates,
                aod::HfCand2Prong const&,
-               aod::TracksWMc const& tracks,
+               aod::TracksWMc const&,
                aod::McParticles const& mcParticles,
-               aod::ECALs const& ecals)
+               aod::ECALs const&)
   {
     int indexRec = -1;
     // int8_t sign = 0;

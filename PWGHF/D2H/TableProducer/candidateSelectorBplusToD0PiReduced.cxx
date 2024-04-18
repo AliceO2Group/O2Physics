@@ -66,7 +66,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
 
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
 
-  void init(InitContext const& initContext)
+  void init(InitContext const&)
   {
     if (usePid) {
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);

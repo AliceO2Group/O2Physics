@@ -12,7 +12,7 @@
 /// \file femtoUniverseCutCulator.cxx
 /// \brief Executable that encodes physical selection criteria in a bit-wise selection
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include <filesystem>
 #include <iostream>

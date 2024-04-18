@@ -150,7 +150,7 @@ struct HfTaskLcCentralityMc {
 
   void process(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   {
     // MC rec.
     for (const auto& candidate : candidates) {

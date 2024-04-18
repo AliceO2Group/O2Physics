@@ -35,7 +35,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using V0DatasAdditional = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
+using V0DatasAdditional = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using V0LegsWithMC = soa::Join<aod::V0Legs, aod::MCParticleIndex>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
@@ -515,7 +515,7 @@ struct GammaConversions {
                                   TV0 const& theV0)
   {
     TVector3 lConvPointTrue(theMcPhoton.conversionX(), theMcPhoton.conversionY(), theMcPhoton.conversionZ());
-    TVector3 lConvPointRecalc(theV0.recalculatedVtxX(), theV0.recalculatedVtxY(), theV0.recalculatedVtxZ());
+    TVector3 lConvPointRecalc(theV0.vx(), theV0.vy(), theV0.vz());
 
     fillTH2(theContainer, "hPtRes", theMcPhoton.pt(), theV0.pt() - theMcPhoton.pt());
     fillTH1(theContainer, "hEtaRes", theV0.eta() - theMcPhoton.eta());
@@ -523,7 +523,7 @@ struct GammaConversions {
     fillTH2(theContainer, "hConvPointXYResVsXY", lConvPointTrue.Perp(), theV0.v0radius() - lConvPointTrue.Perp());
     fillTH2(theContainer, "hConvPointXYResVsXY_recalc", lConvPointTrue.Perp(), lConvPointRecalc.Perp() - lConvPointTrue.Perp());
     fillTH2(theContainer, "hConvPointZResVsZ", theMcPhoton.conversionZ(), theV0.vz() - theMcPhoton.conversionZ());
-    fillTH2(theContainer, "hConvPointZResVsZ_recalc", theMcPhoton.conversionZ(), theV0.recalculatedVtxZ() - theMcPhoton.conversionZ());
+    fillTH2(theContainer, "hConvPointZResVsZ_recalc", theMcPhoton.conversionZ(), theV0.vz() - theMcPhoton.conversionZ());
   }
 
   template <typename TV0, typename TMCGAMMA>
@@ -608,10 +608,10 @@ struct GammaConversions {
     }
   }
 
-  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::emreducedeventId;
-  void processRec(aod::EMReducedEvents::iterator const& theCollision,
+  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::emeventId;
+  void processRec(aod::EMEvents::iterator const& theCollision,
                   V0DatasAdditional const& theV0s,
-                  aod::V0Legs const& theAllTracks)
+                  aod::V0Legs const&)
   {
     fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
             "hCollisionZ",
@@ -634,10 +634,10 @@ struct GammaConversions {
 
   Preslice<aod::McGammasTrue> gperV0 = aod::gammamctrue::v0photonkfId;
 
-  void processMc(aod::EMReducedEvents::iterator const& theCollision,
+  void processMc(aod::EMEvents::iterator const& theCollision,
                  V0DatasAdditional const& theV0s,
-                 V0LegsWithMC const& theAllTracks,
-                 aod::V0DaughterMcParticles const& TheAllTracksMC,
+                 V0LegsWithMC const&,
+                 aod::V0DaughterMcParticles const&,
                  aod::McGammasTrue const& theV0sTrue)
   {
     fillTH1(fMyRegistry.mCollision.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
@@ -740,8 +740,8 @@ struct GammaConversions {
     fillTH2(theContainer, "hinvestigationOfQtCut", theV0.qtarm(), theV0.pt());
     // fillTH2(theContainer, "hPsiPt", theV0.psipair(), theV0.pt()); //psipair is 0, because opening angle is 0. thus, psipair is not stored anymore.
     fillTH2(theContainer, "hPsiPt", 0.f, theV0.pt());
-    fillTH2(theContainer, "hRVsZ", theV0.recalculatedVtxR(), theV0.recalculatedVtxZ());
-    fillTH2(theContainer, "hXVsY", theV0.recalculatedVtxX(), theV0.recalculatedVtxY());
+    fillTH2(theContainer, "hRVsZ", theV0.v0radius(), theV0.vz());
+    fillTH2(theContainer, "hXVsY", theV0.vx(), theV0.vy());
 
     auto pos = theV0.template posTrack_as<TTrackTo>();
     auto ele = theV0.template negTrack_as<TTrackTo>();
@@ -753,8 +753,8 @@ struct GammaConversions {
   template <typename TV0>
   void fillV0Histograms_recalculated(mapStringHistPtr& theContainer, TV0 const& theV0)
   {
-    fillTH1(theContainer, "hConvPointR_recalc", theV0.recalculatedVtxR());
-    fillTH1(theContainer, "hConvPointZ_recalc", theV0.recalculatedVtxZ());
+    fillTH1(theContainer, "hConvPointR_recalc", theV0.v0radius());
+    fillTH1(theContainer, "hConvPointZ_recalc", theV0.vz());
     fillTH1(theContainer, "hKFParticleChi2DividedByNDF", theV0.chiSquareNDF());
   }
 
@@ -839,7 +839,7 @@ struct GammaConversions {
       return kFALSE;
     }
 
-    if (TMath::Abs(theV0.vz()) > fLineCutZ0 + theV0.recalculatedVtxR() * fLineCutZRSlope) { // as long as z recalculation is not fixed use this
+    if (TMath::Abs(theV0.vz()) > fLineCutZ0 + theV0.v0radius() * fLineCutZRSlope) { // as long as z recalculation is not fixed use this
       fillV0SelectionHisto(ePhotonCuts::kRZLine);
       return kFALSE;
     }

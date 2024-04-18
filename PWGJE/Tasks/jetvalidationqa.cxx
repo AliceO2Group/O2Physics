@@ -11,21 +11,6 @@
 ///
 /// \author Johanna Lömker <johanna.lomker@cern.ch>
 //  \since Dec 2022
-////////////////=============================================////////////////
-//                              TODO's:
-//============== 1)template in mcJetTrackCollisionQa to validate JetMatching !
-// loop over matched jets
-// make additional TH2F's for matched jets in pt, phi, eta (just what i did for the ones for tracks and collisions)
-//        i) with mcrec vs mcpart
-//        ii)with (mcrec-mcpart)/mcpart as function of mcpart
-//
-//============== 2) Add processes for:
-//                i) processRun3AOD, process ESD: Full (doesn't work yet) and Neutral Jets
-//                ii)processMcRun3, processMcRun2: Full (doesn't work yet) and Neutral Jets
-//
-//============== 3) prepare plotting macros for Run3 and MCrun2, MCrun3 !
-//
-////////////////=============================================////////////////
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

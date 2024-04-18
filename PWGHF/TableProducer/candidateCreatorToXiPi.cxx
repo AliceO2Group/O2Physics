@@ -73,10 +73,10 @@ struct HfCandidateCreatorToXiPi {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter to build the omegac/xic vertex
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-
   int runNumber;
 
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
@@ -89,9 +89,21 @@ struct HfCandidateCreatorToXiPi {
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hFitterStatus{TH1F("hFitterStatus", "Charm DCAFitter status;status;entries", 3, -0.5, 2.5)};                     // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
   OutputObj<TH1F> hCandidateCounter{TH1F("hCandidateCounter", "Candidate counter wrt derived data;status;entries", 4, -0.5, 3.5)}; // 0 --> candidates in derived data table, 1 --> candidates passing testbit selection, 2 --> candidates passing fitter step 3 --> candidates filled in new table
+  OutputObj<TH1F> hCascadesCounter{TH1F("hCascadesCounter", "Cascades counter wrt derived data;status;entries", 2, -0.5, 1.5)};    // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
 
   void init(InitContext const&)
   {
+    df.setPropagateToPCA(propagateToPCA);
+    df.setMaxR(maxR);
+    df.setMaxDZIni(maxDZIni);
+    df.setMaxDXYIni(maxDXYIni);
+    df.setMinParamChange(minParamChange);
+    df.setMinRelChi2Change(minRelChi2Change);
+    df.setMaxChi2(maxChi2);
+    df.setUseAbsDCA(useAbsDCA);
+    df.setWeightedFinalPCA(useWeightedFinalPCA);
+    df.setRefitWithMatCorr(refitWithMatCorr);
+
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -105,24 +117,11 @@ struct HfCandidateCreatorToXiPi {
                MyCascTable const&, CascadesLinked const&,
                MySkimIdx const& candidates)
   {
-
     double massPionFromPDG = MassPiPlus;    // pdg code 211
     double massLambdaFromPDG = MassLambda0; // pdg code 3122
     double massXiFromPDG = MassXiMinus;     // pdg code 3312
     double massOmegacFromPDG = MassOmegaC0; // pdg code 4332
     double massXicFromPDG = MassXiC0;       // pdg code 4132
-
-    // 2-prong vertex fitter to build the omegac/xic vertex
-    o2::vertexing::DCAFitterN<2> df;
-    df.setPropagateToPCA(propagateToPCA);
-    df.setMaxR(maxR);
-    df.setMaxDZIni(maxDZIni);
-    df.setMaxDXYIni(maxDXYIni);
-    df.setMinParamChange(minParamChange);
-    df.setMinRelChi2Change(minRelChi2Change);
-    df.setMaxChi2(maxChi2);
-    df.setUseAbsDCA(useAbsDCA);
-    df.setWeightedFinalPCA(useWeightedFinalPCA);
 
     for (const auto& cand : candidates) {
 
@@ -140,14 +139,16 @@ struct HfCandidateCreatorToXiPi {
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
       auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
-
       df.setBz(magneticField);
-      df.setRefitWithMatCorr(refitWithMatCorr);
 
       auto trackPion = cand.prong0_as<TracksWCovDca>();
       auto cascAodElement = cand.cascade_as<aod::CascadesLinked>();
+      hCascadesCounter->Fill(0);
       int v0index = cascAodElement.v0Id();
+      if (!cascAodElement.has_cascData())
+        continue;
       auto casc = cascAodElement.cascData_as<MyCascTable>();
+      hCascadesCounter->Fill(1);
       auto trackXiDauCharged = casc.bachelor_as<TracksWCovDca>(); // pion <- xi track
       auto trackV0Dau0 = casc.posTrack_as<TracksWCovDca>();       // V0 positive daughter track
       auto trackV0Dau1 = casc.negTrack_as<TracksWCovDca>();       // V0 negative daughter track
@@ -254,12 +255,12 @@ struct HfCandidateCreatorToXiPi {
       double mCharmBaryon = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromCharmBaryon}, arrMassCharmBaryon);
 
       // computing cosPA
-      double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
+      double cpaV0 = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
       double cpaCharmBaryon = RecoDecay::cpa(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-      double cpaCasc = RecoDecay::cpa(coordVtxCharmBaryon, vertexCasc, pVecCasc);
-      double cpaxyV0 = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
+      double cpaCasc = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      double cpaxyV0 = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
       double cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-      double cpaxyCasc = RecoDecay::cpaXY(coordVtxCharmBaryon, vertexCasc, pVecCasc);
+      double cpaxyCasc = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
 
       // computing decay length and ctau
       double decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);
@@ -338,26 +339,31 @@ struct HfCandidateCreatorToXiPiMc {
 
   void init(InitContext const&) {}
 
-  void processDoNoMc(aod::Collisions::iterator const& collision)
+  void processDoNoMc(aod::Collisions::iterator const&)
   {
     // dummy process function - should not be required in the future
   }
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processDoNoMc, "Do not run MC process function", true);
 
   void processMc(aod::HfCandToXiPi const& candidates,
-                 aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+                 aod::TracksWMc const&,
+                 aod::McParticles const& mcParticles,
+                 aod::McCollisionLabels const&)
   {
     float ptCharmBaryonGen = -999.;
+    float etaCharmBaryonGen = -999.;
     int indexRec = -1;
     int indexRecCharmBaryon = -1;
     int8_t sign = -9;
+    int8_t signCasc = -9;
+    int8_t signV0 = -9;
     int8_t flag = 0;
     int8_t origin = 0; // to be used for prompt/non prompt
     int8_t debug = 0;
     int8_t debugGenCharmBar = 0;
     int8_t debugGenXi = 0;
     int8_t debugGenLambda = 0;
+    bool collisionMatched = false;
 
     int pdgCodeOmegac0 = Pdg::kOmegaC0; // 4332
     int pdgCodeXic0 = Pdg::kXiC0;       // 4132
@@ -372,6 +378,8 @@ struct HfCandidateCreatorToXiPiMc {
       flag = 0;
       origin = RecoDecay::OriginType::None;
       debug = 0;
+      collisionMatched = false;
+
       auto arrayDaughters = std::array{candidate.piFromCharmBaryon_as<aod::TracksWMc>(), // pi <- charm baryon
                                        candidate.bachelor_as<aod::TracksWMc>(),          // pi <- cascade
                                        candidate.posTrack_as<aod::TracksWMc>(),          // p <- lambda
@@ -385,25 +393,26 @@ struct HfCandidateCreatorToXiPiMc {
       // Omegac matching
       if (matchOmegacMc) {
         // Omegac → pi pi pi p
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
           debug = 1;
         }
         if (indexRec > -1) {
           // Xi- → pi pi p
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &signCasc, 2);
           if (indexRec == -1) {
             debug = 2;
           }
           if (indexRec > -1) {
             // Lambda → p pi
-            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
+            indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &signV0, 1);
             if (indexRec == -1) {
               debug = 3;
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi);
+              collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
         }
@@ -417,25 +426,26 @@ struct HfCandidateCreatorToXiPiMc {
       // Xic matching
       if (matchXicMc) {
         // Xic → pi pi pi p
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeXic0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeXic0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
           debug = 1;
         }
         if (indexRec > -1) {
           // Xi- → pi pi p
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 2);
+          indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, pdgCodeXiMinus, std::array{pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &signCasc, 2);
           if (indexRec == -1) {
             debug = 2;
           }
           if (indexRec > -1) {
             // Lambda → p pi
-            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &sign, 1);
+            indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true, &signV0, 1);
             if (indexRec == -1) {
               debug = 3;
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
+              collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
         }
@@ -450,13 +460,14 @@ struct HfCandidateCreatorToXiPiMc {
       if (debug == 2 || debug == 3) {
         LOGF(info, "WARNING: Charm baryon decays in the expected final state but the condition on the intermediate states are not fulfilled");
       }
-      rowMCMatchRec(flag, debug, origin);
+      rowMCMatchRec(flag, debug, origin, collisionMatched);
 
     } // close loop over candidates
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
       ptCharmBaryonGen = -999.;
+      etaCharmBaryonGen = -999.;
       flag = 0;
       sign = -9;
       debugGenCharmBar = 0;
@@ -465,40 +476,27 @@ struct HfCandidateCreatorToXiPiMc {
       origin = RecoDecay::OriginType::None;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
           ptCharmBaryonGen = particle.pt();
-          // Xi -> Lambda pi
-          auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
-            debugGenXi = 1;
-            // Lambda -> p pi
-            auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
-              debugGenLambda = 1;
-              flag = sign * (1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi);
+          etaCharmBaryonGen = particle.eta();
+          for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
+            if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
+              continue;
             }
-          }
-        }
-        // Check whether the charm baryon is non-prompt (from a b quark)
-        if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
-        }
-      }
-      if (matchXicMc) {
-        //  Xic → Xi pi
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
-          debugGenCharmBar = 1;
-          ptCharmBaryonGen = particle.pt();
-          // Xi- -> Lambda pi
-          auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-          if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
-            debugGenXi = 1;
-            // Lambda -> p pi
-            auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
-              debugGenLambda = 1;
-              flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
+            // Xi -> Lambda pi
+            if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+              debugGenXi = 1;
+              for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
+                if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
+                  continue;
+                }
+                // Lambda -> p pi
+                if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                  debugGenLambda = 1;
+                  flag = sign * (1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi);
+                }
+              }
             }
           }
         }
@@ -508,7 +506,39 @@ struct HfCandidateCreatorToXiPiMc {
         }
       }
 
-      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBaryonGen, origin);
+      if (matchXicMc) {
+        //  Xic → Xi pi
+        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+          debugGenCharmBar = 1;
+          ptCharmBaryonGen = particle.pt();
+          etaCharmBaryonGen = particle.eta();
+          for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
+            if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
+              continue;
+            }
+            // Xi -> Lambda pi
+            if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+              debugGenXi = 1;
+              for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
+                if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
+                  continue;
+                }
+                // Lambda -> p pi
+                if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                  debugGenLambda = 1;
+                  flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
+                }
+              }
+            }
+          }
+        }
+        // Check whether the charm baryon is non-prompt (from a b quark)
+        if (flag != 0) {
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        }
+      }
+
+      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);

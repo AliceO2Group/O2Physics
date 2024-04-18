@@ -17,6 +17,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/StaticFor.h"
+#include "Common/DataModel/EventSelection.h"
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/DGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
@@ -45,16 +46,17 @@ struct DGFilterRun3 {
   // histogram stat/aftercuts with cut statistics
   // bin:
   //   1: All collisions
-  //   2: DG candidate
-  //   3: FIT veto
-  //   4: number of FwdTracks > 0
-  //   5: not all global tracks are PV tracks
-  //   6: not all PV tracks are global tracks
-  //   7: ITS only PV tracks
-  //   8: fraction of tracks with TOF hit too low
-  //   9: number of PV tracks out of range
-  //  10: PV tracks without good PID information
-  //  11: PV track pt out of range
+  //   2: not at TF boundary
+  //   3: DG candidate
+  //   4: FIT veto
+  //   5: number of FwdTracks > 0
+  //   6: not all global tracks are PV tracks
+  //   7: not all PV tracks are global tracks
+  //   8: ITS only PV tracks
+  //   9: fraction of tracks with TOF hit too low
+  //  10: number of PV tracks out of range
+  //  11: PV tracks without good PID information
+  //  12: PV track pt out of range
   //  13: PV track eta out of range
   //  14: net charge out of range
   //  15: IVM out of range
@@ -78,7 +80,7 @@ struct DGFilterRun3 {
 
     // create histograms
     // stat
-    registry.add("stat/aftercuts", "Cut efficiencies", {HistType::kTH1F, {{14, -0.5, 13.5}}});
+    registry.add("stat/aftercuts", "Cut efficiencies", {HistType::kTH1F, {{15, -0.5, 14.5}}});
 
     // FIT
     registry.add("FIT/cleanFIT", "Rejection by FIT veto versus tested BC range", {HistType::kTH2F, {{21, -0.5, 20.5}, {2, -0.5, 1.5}}});
@@ -145,6 +147,13 @@ struct DGFilterRun3 {
     bool ccs{false};
     registry.fill(HIST("stat/aftercuts"), 0.);
 
+    // reject events at TF boundaries
+    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      filterTable(ccs);
+      return;
+    }
+    registry.fill(HIST("stat/aftercuts"), 1.);
+
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
     LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.minNBCs(), bcRange.size());
@@ -153,7 +162,7 @@ struct DGFilterRun3 {
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // update after cut histogram
-    registry.fill(HIST("stat/aftercuts"), isDGEvent + 1);
+    registry.fill(HIST("stat/aftercuts"), isDGEvent + 2);
 
     // update filterTable
     ccs = (isDGEvent == 0);

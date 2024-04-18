@@ -149,6 +149,10 @@ struct Alice3SingleParticle {
     histos.add("particle/daughters/prodVx", "Daughters Prod. Vertex X " + tit, kTH1D, {axisProdx});
     histos.add("particle/daughters/prodVy", "Daughters Prod. Vertex Y " + tit, kTH1D, {axisPrody});
     histos.add("particle/daughters/prodVz", "Daughters Prod. Vertex Z " + tit, kTH1D, {axisProdz});
+    histos.add("particle/daughters/prodDistanceX", "Daughters Prod. distance " + tit, kTH1D, {axisProdx});
+    histos.add("particle/daughters/prodDistanceY", "Daughters Prod. distance " + tit, kTH1D, {axisPrody});
+    histos.add("particle/daughters/prodDistanceZ", "Daughters Prod. distance " + tit, kTH1D, {axisProdz});
+    histos.add("particle/daughters/prodDistanceVsPt", "Daughters Prod. distance " + tit, kTH2D, {axisPt, axisProdRadius});
     histos.add("particle/daughters/prodRadiusVsPt", "Daughters Prod. Vertex Radius " + tit, kTH2D, {axisPt, axisProdRadius});
     histos.add("particle/daughters/prodRadius3DVsPt", "Daughters Prod. Vertex Radius XYZ " + tit, kTH2D, {axisPt, axisProdRadius});
 
@@ -268,8 +272,12 @@ struct Alice3SingleParticle {
           histos.fill(HIST("particle/daughters/prodVx"), daughter.vx());
           histos.fill(HIST("particle/daughters/prodVy"), daughter.vy());
           histos.fill(HIST("particle/daughters/prodVz"), daughter.vz());
-          histos.fill(HIST("particle/daughters/prodRadiusVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()));
-          histos.fill(HIST("particle/daughters/prodRadius3DVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy() + mcParticle.vz() * mcParticle.vz()));
+          histos.fill(HIST("particle/daughters/prodDistanceX"), daughter.vx() - mcParticle.vx());
+          histos.fill(HIST("particle/daughters/prodDistanceY"), daughter.vy() - mcParticle.vy());
+          histos.fill(HIST("particle/daughters/prodDistanceZ"), daughter.vz() - mcParticle.vz());
+          histos.fill(HIST("particle/daughters/prodDistanceVsPt"), mcParticle.pt(), std::sqrt((daughter.vx() - mcParticle.vx()) * (daughter.vx() - mcParticle.vx()) + (daughter.vy() - mcParticle.vy()) * (daughter.vy() - mcParticle.vy()) + (daughter.vz() - mcParticle.vz()) * (daughter.vz() - mcParticle.vz())));
+          histos.fill(HIST("particle/daughters/prodRadiusVsPt"), mcParticle.pt(), std::sqrt(daughter.vx() * daughter.vx() + daughter.vy() * daughter.vy()));
+          histos.fill(HIST("particle/daughters/prodRadius3DVsPt"), mcParticle.pt(), std::sqrt(daughter.vx() * daughter.vx() + daughter.vy() * daughter.vy() + daughter.vz() * daughter.vz()));
         }
       }
       if (mcParticle.has_mothers()) {

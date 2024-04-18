@@ -13,6 +13,8 @@
 //         cascades computed with standard DCAFitter methods and the KFparticle
 //         package. It is meant for the purposes of larger-scale QA of KF reco.
 
+#include <cmath>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -27,7 +29,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -43,8 +44,10 @@ struct kfPerformanceStudy {
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.222f, 1.422f}, ""};
   ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.572f, 1.772f}, ""};
-  ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1.0f, 1.0f}, ""};
-  ConfigurableAxis axisPointingAngle{"axisPointingAngle", {200, 0.0f, 0.5f}, ""};
+  ConfigurableAxis axisDCAxy{"axisDCAxy", {500, -1.0f, 1.0f}, ""};
+  ConfigurableAxis axisPointingAngle{"axisPointingAngle", {800, 0.0f, 3.5f}, ""};
+  ConfigurableAxis axisVertex{"axisVertex", {1000, -3.0f, 3.0f}, ""};
+  ConfigurableAxis axisRadius{"axisRadius", {1000, 0.0f, 3.0f}, ""};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -62,6 +65,22 @@ struct kfPerformanceStudy {
     histos.add("hKFMassXiPlus", "hKFMassXiPlus", kTH2F, {axisPt, axisXiMass});
     histos.add("hKFMassOmegaMinus", "hKFMassOmegaMinus", kTH2F, {axisPt, axisOmegaMass});
     histos.add("hKFMassOmegaPlus", "hKFMassOmegaPlus", kTH2F, {axisPt, axisOmegaMass});
+
+    histos.add("hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
+    histos.add("hKFPointingAngle", "hKFPointingAngle", kTH1F, {axisPointingAngle});
+
+    histos.add("hVertexX", "hVertexX", kTH1F, {axisVertex});
+    histos.add("hKFVertexX", "hKFVertexX", kTH1F, {axisVertex});
+    histos.add("hVertexY", "hVertexY", kTH1F, {axisVertex});
+    histos.add("hKFVertexY", "hKFVertexY", kTH1F, {axisVertex});
+    histos.add("hVertexZ", "hVertexZ", kTH1F, {axisVertex});
+    histos.add("hKFVertexZ", "hKFVertexZ", kTH1F, {axisVertex});
+
+    histos.add("hDCAxy", "hDCAxy", kTH1F, {axisDCAxy});
+    histos.add("hKFDCAxy", "hKFDCAxy", kTH1F, {axisDCAxy});
+
+    histos.add("hCascRadius", "hCascRadius", kTH1F, {axisRadius});
+    histos.add("hKFCascRadius", "hKFCascRadius", kTH1F, {axisRadius});
 
     histos.add("h3dMassXiMinus", "h3dMassXiMinus", kTH3F, {axisPt, axisXiMass, axisXiMass});
     histos.add("h3dMassXiPlus", "h3dMassXiPlus", kTH3F, {axisPt, axisXiMass, axisXiMass});
@@ -85,6 +104,9 @@ struct kfPerformanceStudy {
       float massLambda = 0.0f, massLambdaKF = 0.0f;
       float dcaXY = 0.0f, dcaXYKF = 0.0f;
       float pointingAngle = -1.0f, pointingAngleKF = -1.0f;
+      float vertexX = 0.0f, vertexY = 0.0f, vertexZ = 0.0f;
+      float vertexXKF = 0.0f, vertexYKF = 0.0f, vertexZKF = 0.0f;
+      float cascRadius = 0.0f, cascRadiusKF = 0.0f;
       int charge = 0;
 
       // get charge from bachelor (unambiguous wrt to building)
@@ -107,6 +129,10 @@ struct kfPerformanceStudy {
         massOmega = cascdata.mOmega();
         dcaXY = cascdata.dcaXYCascToPV();
         pointingAngle = TMath::ACos(cascdata.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+        vertexX = cascdata.x();
+        vertexY = cascdata.y();
+        vertexZ = cascdata.z();
+        cascRadius = cascdata.cascradius();
       }
       if (cascade.has_kfCascData()) {
         // check aod::Cascades -> aod::KFCascData link
@@ -118,12 +144,33 @@ struct kfPerformanceStudy {
         massOmegaKF = cascdata.mOmega();
         dcaXYKF = cascdata.dcaXYCascToPV();
         pointingAngleKF = TMath::ACos(cascdata.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+        vertexXKF = cascdata.x();
+        vertexYKF = cascdata.y();
+        vertexZKF = cascdata.z();
+        cascRadiusKF = cascdata.cascradius();
       }
 
       histos.fill(HIST("hPtCorrelation"), pt, ptKF);
       histos.fill(HIST("h3dMassLambda"), pt, massLambda, massLambdaKF); // <- implicit pT choice, beware
       histos.fill(HIST("h3dDCAxy"), pt, dcaXY, dcaXYKF);                // <- implicit pT choice, beware
       histos.fill(HIST("h3dPointingAngle"), pt, pointingAngle, pointingAngleKF); // <- implicit pT choice, beware
+
+      histos.fill(HIST("hPointingAngle"), pointingAngle);
+      histos.fill(HIST("hKFPointingAngle"), pointingAngleKF);
+
+      histos.fill(HIST("hVertexX"), vertexX);
+      histos.fill(HIST("hKFVertexX"), vertexXKF);
+      histos.fill(HIST("hVertexY"), vertexY);
+      histos.fill(HIST("hKFVertexY"), vertexYKF);
+      histos.fill(HIST("hVertexZ"), vertexZ);
+      histos.fill(HIST("hKFVertexZ"), vertexZKF);
+
+      histos.fill(HIST("hCascRadius"), cascRadius);
+      histos.fill(HIST("hKFCascRadius"), cascRadiusKF);
+
+      histos.fill(HIST("hDCAxy"), dcaXY);
+      histos.fill(HIST("hKFDCAxy"), dcaXYKF);
+
       if (charge < 0) {
         histos.fill(HIST("hMassXiMinus"), pt, massXi);
         histos.fill(HIST("hMassOmegaMinus"), pt, massOmega);

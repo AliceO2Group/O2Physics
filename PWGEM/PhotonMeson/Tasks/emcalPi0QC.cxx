@@ -54,6 +54,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using collisionEvSelIt = o2::aod::Collision;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions>;
+using MyBCs = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 using selectedCluster = o2::soa::Filtered<o2::aod::EMCALCluster>;
 using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
 using selectedAmbiguousCluster = o2::soa::Filtered<o2::aod::EMCALAmbiguousCluster>;
@@ -130,6 +132,8 @@ struct Pi0QCTask {
   HistogramRegistry mHistManager{"NeutralMesonHistograms"};
   o2::emcal::Geometry* mGeometry = nullptr;
 
+  Filter emccellfilter = o2::aod::calo::caloType == 1;
+
   // configurable parameters
   // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
   Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
@@ -178,12 +182,14 @@ struct Pi0QCTask {
     const o2Axis bcAxis{3501, -0.5, 3500.5};
     const o2Axis energyAxis{makeClusterBinning(), "#it{E} (GeV)"};
 
-    mHistManager.add("events", "events;;#it{count}", o2HistType::kTH1F, {{4, 0.5, 4.5}});
+    mHistManager.add("events", "events;;#it{count}", o2HistType::kTH1F, {{6, 0.5, 6.5}});
     auto heventType = mHistManager.get<TH1>(HIST("events"));
     heventType->GetXaxis()->SetBinLabel(1, "All events");
-    heventType->GetXaxis()->SetBinLabel(2, "One collision in BC");
-    heventType->GetXaxis()->SetBinLabel(3, "Triggered");
-    heventType->GetXaxis()->SetBinLabel(4, "Selected");
+    heventType->GetXaxis()->SetBinLabel(2, "sel8 + readout");
+    heventType->GetXaxis()->SetBinLabel(3, "1+ Contributor");
+    heventType->GetXaxis()->SetBinLabel(4, "z<10cm");
+    heventType->GetXaxis()->SetBinLabel(5, "unique col");
+    heventType->GetXaxis()->SetBinLabel(6, "EMCAL cell>0");
     mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1F, {{200, -20, 20}});
@@ -239,38 +245,63 @@ struct Pi0QCTask {
     }
   }
 
+  PresliceUnsorted<selectedClusters> perCollision = o2::aod::emcalcluster::collisionId;
+
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions>::iterator const& collision, selectedClusters const& clusters)
+  void processCollision(MyBCs const&, MyCollisions const& collisions, selectedClusters const& clusters, o2::soa::Filtered<o2::aod::Calos> const& cells)
   {
-    mHistManager.fill(HIST("events"), 1); // Fill "All events" bin of event histogram
-    LOG(debug) << "processCollisions";
-
-    if (collision.ambiguous()) { // Skip ambiguous collisions (those that are in BCs including multiple collisions)
-      LOG(debug) << "Event not selected becaus there are multiple collisions in this BC, skipping";
-      return;
+    std::unordered_map<uint64_t, int> cellGlobalBCs;
+    // Build map of number of cells for corrected BCs using global BCs
+    // used later in the determination whether a BC has EMC cell content (for speed reason)
+    for (const auto& cell : cells) {
+      auto globalbcid = cell.bc_as<MyBCs>().globalBC();
+      auto found = cellGlobalBCs.find(globalbcid);
+      if (found != cellGlobalBCs.end()) {
+        found->second++;
+      } else {
+        cellGlobalBCs.insert(std::pair<uint64_t, int>(globalbcid, 1));
+      }
     }
-    mHistManager.fill(HIST("events"), 2); // Fill "One collision in BC" bin of event histogram
 
-    // do event selection if mDoEventSel is specified
-    // currently the event selection is hard coded to kTVXinEMC
-    // but other selections are possible that are defined in TriggerAliases.h
-    if (mDoEventSel && (!collision.alias_bit(kTVXinEMC))) {
-      LOG(debug) << "Event not selected becaus it is not kTVXinEMC, skipping";
-      return;
-    }
-    mHistManager.fill(HIST("events"), 3); // Fill "Triggered" bin of event histogram
-    mHistManager.fill(HIST("eventVertexZAll"), collision.posZ());
-    if (mVertexCut > 0 && std::abs(collision.posZ()) > mVertexCut) {
-      LOG(debug) << "Event not selected because of z-vertex cut z= " << collision.posZ() << " > " << mVertexCut << " cm, skipping";
-      return;
-    }
-    mHistManager.fill(HIST("events"), 4); // Fill "Selected" bin of event histogram
-    mHistManager.fill(HIST("eventVertexZSelected"), collision.posZ());
+    for (auto& collision : collisions) {
+      mHistManager.fill(HIST("events"), 1); // Fill "All events" bin of event histogram
 
-    ProcessClusters(clusters);
-    ProcessMesons();
+      if (mDoEventSel && (!collision.sel8() || !collision.alias_bit(kTVXinEMC))) { // Check sel8 and whether EMC was read out
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 2); // Fill sel8 + readout
+
+      if (mDoEventSel && collision.numContrib() < 0.5) { // Skip collisions without contributors
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 3); // Fill >1 vtx contr. bin of event histogram
+
+      mHistManager.fill(HIST("eventVertexZAll"), collision.posZ());
+      if (mVertexCut > 0 && std::abs(collision.posZ()) > mVertexCut) {
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 4); // Fill z-Vertex selected bin of event histogram
+      mHistManager.fill(HIST("eventVertexZSelected"), collision.posZ());
+
+      if (mDoEventSel && collision.ambiguous()) { // Skip ambiguous collisions (those that are in BCs including multiple collisions)
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 5); // Fill "One collision in BC" bin of event histogram
+
+      if (mDoEventSel) {
+        auto found = cellGlobalBCs.find(collision.foundBC_as<MyBCs>().globalBC());
+        if (found == cellGlobalBCs.end() || found->second == 0) { // Skip collisions without any readout EMCal cells
+          continue;
+        }
+      }
+      mHistManager.fill(HIST("events"), 6); // Fill at least one non0 cell in EMCal of event histogram (Selected)
+
+      auto clusters_per_coll = clusters.sliceBy(perCollision, collision.collisionId());
+      ProcessClusters(clusters_per_coll);
+      ProcessMesons();
+    }
   }
-  PROCESS_SWITCH(Pi0QCTask, processCollisions, "Process clusters from collision", false);
+  PROCESS_SWITCH(Pi0QCTask, processCollision, "Process clusters from collision", false);
 
   /// \brief Process EMCAL clusters that are not matched to a collision
   /// This is not needed for most users
@@ -547,7 +578,7 @@ struct Pi0QCTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTask"}, SetDefaultProcesses{{{"processCollisions", true}, {"processAmbiguous", false}}}),
-    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTaskAmbiguous"}, SetDefaultProcesses{{{"processCollisions", false}, {"processAmbiguous", true}}})};
+    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTask"}, SetDefaultProcesses{{{"processCollision", true}, {"processAmbiguous", false}}}),
+    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTaskAmbiguous"}, SetDefaultProcesses{{{"processCollision", false}, {"processAmbiguous", true}}})};
   return workflow;
 }

@@ -62,9 +62,15 @@ bool IsBehindTRD(int col)
 }
 
 // Returns a boolean on whether a given EMCal row is on the border of a given supermodule
-bool IsAtBorder(int row, bool smallmodule)
+bool IsAtRowBorder(int row, bool smallmodule)
 {
   return (row == 0 || (smallmodule && row == 7) || (!smallmodule && row == 23));
+}
+
+// Returns a boolean on whether a given EMCal col is on the border of a given supermodule
+bool IsAtColBorder(int col)
+{
+  return (col == 0 || col == 47 || col == 48 || col == 95);
 }
 
 // Return one of nine acceptance categories and set the second and third parameter to the global row and column
@@ -102,7 +108,7 @@ int GetAcceptanceCategory(int cellid, int& globalrow, int& globalcol, int& super
     supermodulecategory = 0;
     if (IsBehindTRD(col)) {
       return 1; // EMCalbehindTRD
-    } else if (IsAtBorder(row, false)) {
+    } else if (IsAtRowBorder(row, false)) {
       return 2; // EMCalBorder
     } else {
       return 3; // EMCalInside
@@ -111,7 +117,7 @@ int GetAcceptanceCategory(int cellid, int& globalrow, int& globalcol, int& super
     supermodulecategory = 1;
     if (IsBehindTRD(col)) {
       return 4; // DCalbehindTRD
-    } else if (IsAtBorder(row, false)) {
+    } else if (IsAtRowBorder(row, false)) {
       return 5; // DCalBorder
     } else {
       return 6; // DCalInside
@@ -120,7 +126,7 @@ int GetAcceptanceCategory(int cellid, int& globalrow, int& globalcol, int& super
     supermodulecategory = 2;
     if (IsBehindTRD(col)) {
       return 7; // OneThirdbehindTRD
-    } else if (IsAtBorder(row, true)) {
+    } else if (IsAtRowBorder(row, true)) {
       return 8; // OneThirdBorder
     } else {
       return 9; // OneThirdInside
@@ -197,7 +203,7 @@ struct Pi0EnergyScaleCalibTask {
   Configurable<float> mMinOpenAngleCut{"OpeningAngleCut", 0.0202, "apply min opening angle cut"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
   Configurable<bool> mRequireBothPhotonsFromAcceptance{"RequireBothPhotonsFromAcceptance", 0, "Require both photons to be from the same acceptance category"};
-  Configurable<int> mAcceptanceRestrictionType{"AcceptanceRestrictionType", 0, "0: No restriction, 1: Ignore behind TRD, 2: Only Behind TRD, 3: Only EMCal, 4: OnlyDCal"};
+  Configurable<int> mAcceptanceRestrictionType{"AcceptanceRestrictionType", 0, "0: No restriction, 1: Ignore behind TRD, 2: Only Behind TRD, 3: Only EMCal, 4: OnlyDCal, 5: Remove clusters on edges"};
 
   ConfigurableAxis pTBinning{"pTBinning", {200, 0.0f, 20.0f}, "Binning used along pT axis for inv mass histograms"};
   ConfigurableAxis invmassBinning{"invmassBinning", {200, 0.0f, 0.4f}, "Binning used for inv mass axis in inv mass - pT histograms"};
@@ -414,6 +420,11 @@ struct Pi0EnergyScaleCalibTask {
         break;
       case 4: // Only DCal
         if (supermodulecategory != 1) {
+          return true;
+        }
+        break;
+      case 5: // Remove clusters at SM edges
+        if (IsAtRowBorder(row, supermodulecategory == 2) || IsAtColBorder(col)) {
           return true;
         }
         break;
