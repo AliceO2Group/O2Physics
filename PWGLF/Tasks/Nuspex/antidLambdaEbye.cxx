@@ -45,6 +45,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime>;
+using TracksFullIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFSignal, aod::TOFEvTime>;
 using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 
 namespace
@@ -153,7 +154,6 @@ struct CandidateTrack {
 };
 
 struct antidLambdaEbye {
-  o2::pid::tof::Beta<TracksFull::iterator> responseBeta;
   std::mt19937 gen32;
   std::vector<CandidateV0> candidateV0s;
   std::array<std::vector<CandidateTrack>, 2> candidateTracks;
@@ -228,7 +228,7 @@ struct antidLambdaEbye {
   Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 10, "Maximum number of shared TPC clusters for V0 daughter"};
   Configurable<bool> v0requireITSrefit{"v0requireITSrefit", false, "require ITS refit for V0 daughter"};
   Configurable<float> vetoMassK0Short{"vetoMassK0Short", -999.f, "veto for V0 compatible with K0s mass"};
-  Configurable<float> v0radiusMax{"v0radiusMax", -999.f, "maximum V0 radius eccepted"};
+  Configurable<float> v0radiusMax{"v0radiusMax", 100.f, "maximum V0 radius eccepted"};
 
   Configurable<float> antidNsigmaTpcCutLow{"antidNsigmaTpcCutLow", 4.f, "TPC PID cut low"};
   Configurable<float> antidNsigmaTpcCutUp{"antidNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
@@ -527,9 +527,10 @@ struct antidLambdaEbye {
     tofMassMax = std::array<float, kNpart>{antipTofMassMax, antidTofMassMax};
   }
 
-  template <class C>
-  int fillRecoEvent(C const& collision, TracksFull const& tracksAll, aod::V0s const& V0s, float const& centrality)
+  template <class C, class T>
+  int fillRecoEvent(C const& collision, T const& tracksAll, aod::V0s const& V0s, float const& centrality)
   {
+    o2::pid::tof::Beta<class T::iterator> responseBeta;
     auto tracks = tracksAll.sliceBy(perCollisionTracksFull, collision.globalIndex());
     candidateTracks[0].clear();
     candidateTracks[1].clear();
@@ -702,13 +703,13 @@ struct antidLambdaEbye {
 
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto posDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-      if (posDcaToPv > v0setting_dcapostopv) {
+      if (posDcaToPv < v0setting_dcapostopv) {
         continue;
       }
 
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto negDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-      if (negDcaToPv > v0setting_dcanegtopv) {
+      if (negDcaToPv < v0setting_dcanegtopv) {
         continue;
       }
 
@@ -785,8 +786,8 @@ struct antidLambdaEbye {
     return 0;
   }
 
-  template <class C>
-  void fillMcEvent(C const& collision, TracksFull const& tracks, aod::V0s const& V0s, float const& centrality, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
+  template <class C, class T>
+  void fillMcEvent(C const& collision, T const& tracks, aod::V0s const& V0s, float const& centrality, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
   {
     int subsample = fillRecoEvent<C>(collision, tracks, V0s, centrality);
     if (candidateV0s.size() == 1 && candidateV0s[0].pt < -998.f && candidateV0s[0].eta < -998.f && candidateV0s[0].globalIndexPos == -999 && candidateV0s[0].globalIndexPos == -999) {
@@ -959,7 +960,7 @@ struct antidLambdaEbye {
     }
   }
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults> const& collisions, TracksFull const& tracks, aod::V0s const& V0s, aod::BCsWithTimestamps const&)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults> const& collisions, TracksFullIU const& tracks, aod::V0s const& V0s, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -1037,7 +1038,7 @@ struct antidLambdaEbye {
   }
   PROCESS_SWITCH(antidLambdaEbye, processRun2, "process (Run 2)", false);
 
-  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& mcCollisions, TracksFull const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
+  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& mcCollisions, TracksFullIU const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
     std::vector<std::pair<bool, float>> goodCollisions(mcCollisions.size(), std::make_pair(false, -999.));
     for (auto& collision : collisions) {
