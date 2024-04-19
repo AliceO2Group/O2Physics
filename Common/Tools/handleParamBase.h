@@ -126,8 +126,8 @@ void storeOnCCDB(const std::string& path,
 }
 
 void setupTimestamps(int64_t& timestamp,
-                     int64_t& start,
-                     int64_t& stop)
+                     int64_t&,
+                     int64_t&)
 {
   ccdbTimestamp = arguments["timestamp"].as<int64_t>();
   validityStart = arguments["start"].as<int64_t>();

@@ -52,27 +52,27 @@ JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const char* name) : fVertex(0),
-                                                   fCent(0),
-                                                   fCBin(0),
-                                                   fHMG(0),
-                                                   fBin_Subset(),
-                                                   fBin_h(),
-                                                   fBin_k(),
-                                                   fBin_hh(),
-                                                   fBin_kk(),
-                                                   fHistCentBin(),
-                                                   fh_cent(),
-                                                   fh_ImpactParameter(),
-                                                   fh_vertex(),
-                                                   fh_eta(),
-                                                   fh_phi(),
-                                                   fh_phieta(),
-                                                   fh_phietaz(),
-                                                   fh_ntracks(),
-                                                   fh_vn(),
-                                                   fh_vna(),
-                                                   fh_vn_vn()
+JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
+                                                       fCent(0),
+                                                       fCBin(0),
+                                                       fHMG(0),
+                                                       fBin_Subset(),
+                                                       fBin_h(),
+                                                       fBin_k(),
+                                                       fBin_hh(),
+                                                       fBin_kk(),
+                                                       fHistCentBin(),
+                                                       fh_cent(),
+                                                       fh_ImpactParameter(),
+                                                       fh_vertex(),
+                                                       fh_eta(),
+                                                       fh_phi(),
+                                                       fh_phieta(),
+                                                       fh_phietaz(),
+                                                       fh_ntracks(),
+                                                       fh_vn(),
+                                                       fh_vna(),
+                                                       fh_vn_vn()
 {
   // cout << "analysis task created " << endl;
 
@@ -352,7 +352,7 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t* popt)
+void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 {
   for (UInt_t ih = 2; ih < kNH; ih++) {
     fh_cos_n_phi[ih][fCBin]->Fill(pqvecs->QvectorQC[ih][1].Re() / pqvecs->QvectorQC[0][1].Re());
@@ -550,6 +550,6 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
 }
 
 //________________________________________________________________________
-void JFFlucAnalysis::Terminate(Option_t* popt)
+void JFFlucAnalysis::Terminate(Option_t* /*popt*/)
 {
 }

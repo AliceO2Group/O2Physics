@@ -173,7 +173,7 @@ struct MultiplicityTable {
                    aod::BCs const&,
                    aod::Zdcs const&,
                    aod::FV0As const&,
-                   aod::FV0Cs const& fv0cs,
+                   aod::FV0Cs const&,
                    aod::FT0s const&)
   {
     float multFV0A = 0.f;
@@ -553,7 +553,7 @@ struct MultiplicityTable {
   Filter mcParticleFilter = (aod::mcparticle::eta < 4.9f) && (aod::mcparticle::eta > -3.3f);
   using mcParticlesFiltered = soa::Filtered<aod::McParticles>;
 
-  void processMC(aod::McCollision const& mcCollision, mcParticlesFiltered const& mcParticles)
+  void processMC(aod::McCollision const&, mcParticlesFiltered const& mcParticles)
   {
     int multFT0A = 0;
     int multFT0C = 0;
@@ -590,7 +590,7 @@ struct MultiplicityTable {
     tableExtraMc(multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10);
   }
 
-  void processGlobalTrackingCounters(aod::Collision const& collisions,
+  void processGlobalTrackingCounters(aod::Collision const&,
                                      soa::Join<Run3Tracks, aod::TrackSelection,
                                                aod::TrackSelectionExtension> const& tracks)
   {

@@ -425,7 +425,7 @@ struct phianalysisrun3 {
   }
 
   PROCESS_SWITCH(phianalysisrun3, processGen, "Process Generated", false);
-  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     if (!collision.has_mcCollision()) {
       return;

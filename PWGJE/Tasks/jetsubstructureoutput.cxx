@@ -39,6 +39,7 @@ using namespace o2::framework::expressions;
 
 struct JetSubstructureOutputTask {
 
+  Produces<aod::StoredCollisionCounts> storedCollisionCountsTable;
   Produces<aod::CJetCOs> collisionOutputTableData;
   Produces<aod::CJetOs> jetOutputTableData;
   Produces<aod::CJetSSOs> jetSubstructureOutputTableData;
@@ -127,7 +128,7 @@ struct JetSubstructureOutputTask {
   }
 
   template <typename T, typename U, typename V>
-  void analyseMatched(T const& jets, U const& jetsTag, std::map<int32_t, int32_t>& jetMapping, std::map<int32_t, int32_t>& jetTagMapping, V& matchingOutputTable, float jetPtMin)
+  void analyseMatched(T const& jets, U const& /*jetsTag*/, std::map<int32_t, int32_t>& jetMapping, std::map<int32_t, int32_t>& jetTagMapping, V& matchingOutputTable, float jetPtMin)
   {
     std::vector<int> candMatching;
     for (const auto& jet : jets) {
@@ -168,7 +169,7 @@ struct JetSubstructureOutputTask {
     }
   }
 
-  void processClearMaps(JetCollisions const& collisions)
+  void processClearMaps(JetCollisions const&)
   {
     jetMappingData.clear();
     jetMappingDataSub.clear();
@@ -176,6 +177,34 @@ struct JetSubstructureOutputTask {
     jetMappingMCP.clear();
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processClearMaps, "process function that clears all the maps in each dataframe", true);
+
+  void processCountCollisions(JetCollisions const& collisions, aod::CollisionCounts const& collisionCounts)
+  {
+    int readCollisionCounter = 0;
+    int writtenCollisionCounter = -1;
+    readCollisionCounter = collisions.size();
+    std::vector<int> previousReadCounts = {0};
+    std::vector<int> previousWrittenCounts = {0};
+    int iPreviousDataFrame = 0;
+    for (const auto& collisionCount : collisionCounts) {
+      auto readCollisionCounterSpan = collisionCount.readCounts();
+      auto writtenCollisionCounterSpan = collisionCount.writtenCounts();
+      if (iPreviousDataFrame == 0) {
+        std::copy(readCollisionCounterSpan.begin(), readCollisionCounterSpan.end(), std::back_inserter(previousReadCounts));
+        std::copy(writtenCollisionCounterSpan.begin(), writtenCollisionCounterSpan.end(), std::back_inserter(previousWrittenCounts));
+      } else {
+        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
+          previousReadCounts[i] += readCollisionCounterSpan[i];
+          previousWrittenCounts[i] += writtenCollisionCounterSpan[i];
+        }
+      }
+      iPreviousDataFrame++;
+    }
+    previousReadCounts.push_back(readCollisionCounter);
+    previousWrittenCounts.push_back(writtenCollisionCounter);
+    storedCollisionCountsTable(previousReadCounts, previousWrittenCounts);
+  }
+  PROCESS_SWITCH(JetSubstructureOutputTask, processCountCollisions, "process function that counts read in collisions", false);
 
   void processOutputData(JetCollision const& collision,
                          soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::CJetSSs> const& jets)

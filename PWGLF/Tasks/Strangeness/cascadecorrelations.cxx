@@ -490,7 +490,7 @@ struct cascadeCorrelations {
     } // correlations
   }   // process same event
 
-  void processMixedEvent(myCollisions const& collisions, myCascades const& Cascades,
+  void processMixedEvent(myCollisions const& /*collisions*/, myCascades const& /*Cascades*/,
                          aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
     // mixed events

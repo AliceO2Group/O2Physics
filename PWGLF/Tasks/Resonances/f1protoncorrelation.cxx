@@ -103,7 +103,7 @@ struct f1protoncorrelation {
 
   TLorentzVector F1, Proton, F1ProtonPair, Pion, Kaon;
   // Process the data in same event
-  void process(aod::RedF1PEvents::iterator const& collision, aod::F1Tracks const& f1tracks, aod::ProtonTracks const& protontracks)
+  void process(aod::RedF1PEvents::iterator const& /*collision*/, aod::F1Tracks const& f1tracks, aod::ProtonTracks const& protontracks)
   {
     for (auto f1track : f1tracks) {
       F1.SetXYZM(f1track.f1Px(), f1track.f1Py(), f1track.f1Pz(), f1track.f1Mass());

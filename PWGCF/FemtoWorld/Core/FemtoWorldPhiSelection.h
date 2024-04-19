@@ -523,7 +523,7 @@ void FemtoWorldPhiSelection::fillPhiQAMass(C const& col, V const& MassPhi, T con
 
 /// the CosPA of Phi needs as argument the posXYZ of collisions vertex so we need to pass the collsion as well
 template <typename cutContainerType, typename C, typename T>
-std::array<cutContainerType, 5> FemtoWorldPhiSelection::getCutContainer(C const& col, T const& posTrack, T const& negTrack)
+std::array<cutContainerType, 5> FemtoWorldPhiSelection::getCutContainer(C const& /*col*/, T const& posTrack, T const& negTrack)
 {
   auto outputPosTrack = PosDaughTrack.getCutContainer<cutContainerType>(posTrack);
   auto outputNegTrack = NegDaughTrack.getCutContainer<cutContainerType>(negTrack);
@@ -614,7 +614,7 @@ std::array<cutContainerType, 5> FemtoWorldPhiSelection::getCutContainer(C const&
 }
 
 template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename C, typename V, typename T>
-void FemtoWorldPhiSelection::fillQA(C const& col, V const& v0, T const& posTrack, T const& negTrack)
+void FemtoWorldPhiSelection::fillQA(C const& /*col*/, V const& /*v0*/, T const& posTrack, T const& negTrack)
 {
   if (mHistogramRegistry) {
     TLorentzVector part1Vec;
