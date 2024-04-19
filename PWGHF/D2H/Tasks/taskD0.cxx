@@ -74,7 +74,7 @@ struct HfTaskD0 {
   Partition<D0CandidatesMlMc> selectedD0CandidatesMlMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
   Partition<D0CandidatesMlMcKF> selectedD0CandidatesMlMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
 
-  HistogramConfigSpec hTHnBdtScoreVsMassVsPtVsYVsOriginVsD0Type{HistType::kTHnSparseD, {{100, 0.f, 1.f}, {100, 0.f, 1.f}, {120, 1.5848, 2.1848}, {360, 0., 36.}, {100, -5., 5.}, {3, -0.5, 2.5}, {4, -0.5, 3.5}}};
+  HistogramConfigSpec hTHnBdtScoreVsMassVsPtVsYVsOriginVsD0Type{HistType::kTHnSparseD, {{50, 0.f, 1.f}, {50, 0.f, 1.f}, {120, 1.5848, 2.1848}, {360, 0., 36.}, {100, -5., 5.}, {3, -0.5, 2.5}, {4, -0.5, 3.5}}};
 
   HistogramRegistry registry{
     "registry",
