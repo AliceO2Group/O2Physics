@@ -268,8 +268,9 @@ struct antidLambdaEbye {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry tempHistos{"tempHistos", {}, OutputObjHandlingPolicy::TransientObject};
 
-  Preslice<aod::V0s> perCollisionV0 = o2::aod::v0::collisionId;
   Preslice<TracksFull> perCollisionTracksFull = o2::aod::track::collisionId;
+  Preslice<TracksFullIU> perCollisionTracksFullIU = o2::aod::track::collisionId;
+  Preslice<aod::V0s> perCollisionV0 = o2::aod::v0::collisionId;
   Preslice<aod::McParticles> perCollisionMcParts = o2::aod::mcparticle::mcCollisionId;
 
   template <class T>
@@ -542,7 +543,7 @@ struct antidLambdaEbye {
   template <class C, class T>
   int fillRecoEvent(C const& collision, T const& tracksAll, aod::V0s const& V0s, float const& centrality)
   {
-    auto tracks = tracksAll.sliceBy(perCollisionTracksFull, collision.globalIndex());
+    auto tracks = (doprocessRun3 || doprocessMcRun3) ? tracksAll.sliceBy(perCollisionTracksFullIU, collision.globalIndex()) : tracksAll.sliceBy(perCollisionTracksFull, collision.globalIndex());
     candidateTracks[0].clear();
     candidateTracks[1].clear();
     candidateV0s.clear();
@@ -643,8 +644,8 @@ struct antidLambdaEbye {
 
     std::vector<int64_t> trkId;
     for (const auto& v0 : V0s) {
-      auto posTrack = v0.posTrack_as<TracksFull>();
-      auto negTrack = v0.negTrack_as<TracksFull>();
+      auto posTrack = v0.posTrack_as<T>();
+      auto negTrack = v0.negTrack_as<T>();
 
       bool posSelect = selectV0Daughter(posTrack);
       bool negSelect = selectV0Daughter(negTrack);
@@ -814,7 +815,7 @@ struct antidLambdaEbye {
   template <class C, class T>
   void fillMcEvent(C const& collision, T const& tracks, aod::V0s const& V0s, float const& centrality, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
   {
-    int subsample = fillRecoEvent<C>(collision, tracks, V0s, centrality);
+    int subsample = fillRecoEvent<C, T>(collision, tracks, V0s, centrality);
     if (candidateV0s.size() == 1 && candidateV0s[0].pt < -998.f && candidateV0s[0].eta < -998.f && candidateV0s[0].globalIndexPos == -999 && candidateV0s[0].globalIndexPos == -999) {
       return;
     }
@@ -1003,6 +1004,12 @@ struct antidLambdaEbye {
       if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
 
+      if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+        continue;
+
+      if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
@@ -1071,6 +1078,18 @@ struct antidLambdaEbye {
       initCCDB(bc);
 
       if (!collision.sel8())
+        continue;
+
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+        continue;
+
+      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+        continue;
+
+      if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+        continue;
+
+      if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
         continue;
 
       if (std::abs(collision.posZ()) > zVtxMax)
