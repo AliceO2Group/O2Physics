@@ -61,6 +61,7 @@ struct TrackPropagation {
   Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
   // for TrackTuner only (MC smearing)
   Configurable<bool> useTrackTuner{"useTrackTuner", false, "Apply track tuner corrections to MC"};
+  Configurable<bool> fillTrackTunerTable{"fillTrackTunerTable", false, "flag to fill track tuner table"};
   Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackDCAs=1|updateTrackCovMat=1|updateCurvature=0|updateCurvatureIU=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|pathFileQoverPt=Users/h/hsharma/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=0|qOverPtData=0", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
   ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
   OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
@@ -110,16 +111,8 @@ struct TrackPropagation {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     // Histograms for track tuner
     AxisSpec axisBinsDCAxy = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
-    registry.add("hDCAxyVsPtRec", "hDCAxyVsPtRec", kTH2F, {
-                                                            axisBinsDCAxy,
-                                                            axisPtQA,
-                                                          });
+    registry.add("hDCAxyVsPtRec", "hDCAxyVsPtRec", kTH2F, {axisBinsDCAxy, axisPtQA});
     registry.add("hDCAxyVsPtMC", "hDCAxyVsPtMC", kTH2F, {axisBinsDCAxy, axisPtQA});
-    registry.add("hgetYVsPtRec", "hgetYVsPtRec", kTH2F, {
-                                                          axisBinsDCAxy,
-                                                          axisPtQA,
-                                                        });
-    registry.add("hgetYVsPtMC", "hgetYVsPtMC", kTH2F, {axisBinsDCAxy, axisPtQA});
 
     /// TrackTuner initialization
     if (useTrackTuner) {
@@ -201,7 +194,7 @@ struct TrackPropagation {
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       // std::array<float, 3> trackPxPyPz;
       // std::array<float, 3> trackPxPyPzTuned = {0.0, 0.0, 0.0};
-      double q2OverPtNew = mTrackParCov.getQ2Pt();
+      double q2OverPtNew = -9999.;
       // LOG(info) <<  " trackPropagation --> "  << q2OverPtNew;
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
@@ -237,15 +230,15 @@ struct TrackPropagation {
             isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz({mMeanVtx->getX(), mMeanVtx->getY(), mMeanVtx->getZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
           }
         }
-        trackType = aod::track::Track;
+        if (isPropagationOK) {
+          trackType = aod::track::Track;
+        }
 
         if constexpr (isMc && fillCovMat) { /// track tuner ok only if cov. matrix is used
           if (track.has_mcParticle() && isPropagationOK) {
             auto mcParticle1 = track.mcParticle();
             // && abs(mcParticle1.pdgCode())==211
             if (mcParticle1.isPhysicalPrimary() && abs(mcParticle1.pdgCode()) == 211) {
-              registry.fill(HIST("hgetYVsPtRec"), mTrackParCov.getY(), mTrackParCov.getPt());
-              registry.fill(HIST("hgetYVsPtMC"), mTrackParCov.getY(), mcParticle1.pt());
               registry.fill(HIST("hDCAxyVsPtRec"), mDcaInfoCov.getY(), mTrackParCov.getPt());
               registry.fill(HIST("hDCAxyVsPtMC"), mDcaInfoCov.getY(), mcParticle1.pt());
             }
@@ -253,7 +246,9 @@ struct TrackPropagation {
         }
       }
       // Filling modified Q/Pt values by track tuner in track tuner table
-      tunertable(q2OverPtNew);
+      if (useTrackTuner && fillTrackTunerTable) {
+        tunertable(q2OverPtNew);
+      }
       // LOG(info) <<  " trackPropagation (this value filled in tuner table)--> "  << q2OverPtNew;
       if constexpr (fillCovMat) {
         tracksParPropagated(track.collisionId(), trackType, mTrackParCov.getX(), mTrackParCov.getAlpha(), mTrackParCov.getY(), mTrackParCov.getZ(), mTrackParCov.getSnp(), mTrackParCov.getTgl(), mTrackParCov.getQ2Pt());

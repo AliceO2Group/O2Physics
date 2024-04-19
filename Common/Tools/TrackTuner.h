@@ -58,7 +58,7 @@ struct TrackTuner {
   ///////////////////////////////
   /// parameters to be configured
   bool debugInfo = false;
-  bool updateTrackDCAs = false; // To update the track DCAs; by default it is ON;
+  bool updateTrackDCAs = false; // To update the track DCAs;
   bool updateTrackCovMat = false;
   bool updateCurvature = false;
   bool updateCurvatureIU = false; // To update the track parameter Q/Pt in trackIU table, particularly used for V0 mass width dependence on Q/Pt
@@ -283,7 +283,7 @@ struct TrackTuner {
     // Configure usePvRefitCorrections
     setBoolFromString(usePvRefitCorrections, getValueString(UsePvRefitCorrections));
     outputString += ", usePvRefitCorrections=" + usePvRefitCorrections;
-    LOG(info) << "[TrackTuner]     usePvRefitCorrections = " << usePvRefitCorrections;
+    LOG(info) << "[TrackTuner]     usePvRefitCorrections = " << std::to_string(usePvRefitCorrections);
     // Configure qOverPtMC
     qOverPtMC = std::stof(getValueString(QOverPtMC));
     outputString += ", qOverPtMC=" + std::to_string(qOverPtMC);
@@ -292,6 +292,10 @@ struct TrackTuner {
     qOverPtData = std::stof(getValueString(QOverPtData));
     outputString += ", qOverPtData=" + std::to_string(qOverPtData);
     LOG(info) << "[TrackTuner]     qOverPtData = " << qOverPtData;
+
+    if ((updateCurvatureIU == 1) && (updateCurvature == 1)) {
+      LOG(fatal) << " [ updateCurvatureIU==kTRUE and updateCurvature==kTRUE ] -> Only one of them can be set to kTRUE at once! Please refer to the trackTuner documentation.";
+    }
 
     return outputString;
   }
@@ -410,7 +414,7 @@ struct TrackTuner {
     dcaZResMC = evalGraph(ptMC, grDcaZResVsPtPionMC.get());
     dcaZResData = evalGraph(ptMC, grDcaZResVsPtPionData.get());
 
-    // For Q/Pt corrections, files on CCDB will be used!
+    // For Q/Pt corrections, files on CCDB will be used if both qOverPtMC and qOverPtData are null
     if ((qOverPtMC == 0) && (qOverPtData == 0)) {
       qOverPtMC = evalGraph(ptMC, grOneOverPtPionMC.get());
       qOverPtData = evalGraph(ptMC, grOneOverPtPionData.get());
@@ -473,14 +477,17 @@ struct TrackTuner {
     }
 
     // propagate to DCA with respect to the Production point
-    if (!updateCurvatureIU) {
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(vtxMC, trackParCov, 2.f, matCorr, dcaInfoCov);
-    }
+    // if (!updateCurvatureIU) {
+    //   o2::base::Propagator::Instance()->propagateToDCABxByBz(vtxMC, trackParCov, 2.f, matCorr, dcaInfoCov);
+    // }
 
-    double trackParDcaXYoriginal = 0.0;
-    double trackParDcaZoriginal = 0.0;
+    double trackParDcaXYoriginal = trackParCov.getY();
+    double trackParDcaZoriginal = trackParCov.getZ();
 
     if (updateTrackDCAs) {
+
+      // propagate to DCA with respect to the Production point
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(vtxMC, trackParCov, 2.f, matCorr, dcaInfoCov);
       // double d0zo  =param  [1];
       double trackParDcaZRec = trackParCov.getZ();
       // double d0rpo =param  [0];
@@ -548,11 +555,7 @@ struct TrackTuner {
       trackParCov.setY(trackParDcaXYTuned);
       trackParDcaZoriginal = trackParCov.getZ();
       trackParCov.setZ(trackParDcaZTuned);
-    }
-
-    if ((updateCurvatureIU == 1) && (updateCurvature == 1)) {
-      LOG(fatal) << " [ updateCurvatureIU==kTRUE and updateCurvature==kTRUE ] -> Only one of them can be set to kTRUE at once! Please refer to the trackTuner documentation.";
-    }
+    } // ----> updateTrackDCAs block ends here
 
     if ((updateCurvature) && (!updateCurvatureIU)) { // Default position for this block
       // --------------------------------------
@@ -667,7 +670,7 @@ struct TrackTuner {
         sigma1Pt2 *= (qOverPtData / qOverPtMC);
         trackParCov.setCov(sigma1Pt2, 14);
       }
-    }
+    } // ---> updateTrackCovMat block ends here
 
     if (updatePulls) {
       double ratioDCAxyPulls = 1.0;
@@ -709,7 +712,7 @@ struct TrackTuner {
 
       sigma1PtZ *= ratioDCAzPulls;
       trackParCov.setCov(sigma1PtZ, 11);
-    }
+    } // ---> updatePulls block ends here
 
     /// sanity check for track covariance matrix element
     /// see https://github.com/AliceO2Group/AliceO2/blob/66de30958153cd7badf522150e8554f9fcf975ff/Common/DCAFitter/include/DCAFitter/DCAFitterN.h#L38-L54
@@ -749,7 +752,7 @@ struct TrackTuner {
     } else {
       hQA->Fill(2);
     }
-  }
+  } // tuneTrackParams() ends here
 
   // to be declared
   // ---------------
