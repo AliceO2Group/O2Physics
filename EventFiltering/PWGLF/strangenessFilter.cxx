@@ -694,7 +694,8 @@ struct strangenessFilter {
 
     Bool_t isHighMultEvent = 0;
     EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());
-    if (collision.multFT0M() > LowLimitFT0MMult ) isHighMultEvent = 1;
+    if (collision.multFT0M() > LowLimitFT0MMult)
+      isHighMultEvent = 1;
 
     // constants
     const float ctauxi = 4.91;     // from PDG
@@ -1069,7 +1070,8 @@ struct strangenessFilter {
     }
 
     // Omega in high multiplicity events
-    if (omegacounter > 0) EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmega"), collision.multFT0M());
+    if (omegacounter > 0)
+      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmega"), collision.multFT0M());
     if (omegacounter > 0 && isHighMultEvent) {
       keepEvent[9] = true;
     }
