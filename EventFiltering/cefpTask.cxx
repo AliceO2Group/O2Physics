@@ -429,7 +429,7 @@ struct centralEventFilterTask {
   using BC = BCs::iterator;
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
-  void process(CCs const& collisions, BCs const& bcs)
+  void process(CCs const&, BCs const&)
   {
   }
 
