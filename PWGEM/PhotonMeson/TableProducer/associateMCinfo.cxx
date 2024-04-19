@@ -116,6 +116,9 @@ struct AssociateMCInfo {
           continue;
         }
         int pdg = mctrack.pdgCode();
+        if (abs(pdg) > 1e+9) {
+          continue;
+        }
 
         // fill basic histograms
         if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && abs(mctrack.y()) < 0.5) {
@@ -163,6 +166,12 @@ struct AssociateMCInfo {
           && (abs(pdg) != 553)    // Upsilon(1S)
           && (abs(pdg) != 100553) // Upsilon(2S)
           && (abs(pdg) != 200553) // Upsilon(3S)
+
+          // heavy flavor hadrons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 3] != '4') // charmed mesons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 3] != '5') // beauty mesons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 4] != '4') // charmed baryons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 4] != '5') // beauty baryons
 
           // strange hadrons
           // && (abs(pdg) != 310)  // K0S
