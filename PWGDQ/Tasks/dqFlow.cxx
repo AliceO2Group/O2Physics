@@ -234,7 +234,7 @@ struct DQEventQvector {
   }
 
   // Fill the FlowContainer
-  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag)
+  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool /*fillflag*/)
   {
     // Calculate the correlations from the GFW
     double dnx, dny, valx;
