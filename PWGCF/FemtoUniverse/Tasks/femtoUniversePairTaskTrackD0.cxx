@@ -368,7 +368,7 @@ struct femtoUniversePairTaskTrackD0 {
     eventHisto.fillQA(col);
   }
 
-  void processD0mesons(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  void processD0mesons(o2::aod::FDCollision& col, FemtoFullParticles&)
   {
     auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsAllDmesons = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -425,7 +425,7 @@ struct femtoUniversePairTaskTrackD0 {
   PROCESS_SWITCH(femtoUniversePairTaskTrackD0, processD0mesons, "Enable processing D0 mesons", true);
 
   // D0-D0bar pair correlations (side-band methode)
-  void processSideBand(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  void processSideBand(o2::aod::FDCollision& col, FemtoFullParticles&)
   {
     auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 

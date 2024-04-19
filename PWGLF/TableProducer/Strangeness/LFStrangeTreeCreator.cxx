@@ -111,7 +111,7 @@ struct LFStrangeTreeCreator {
   std::vector<unsigned int> filledMothers;
 
   template <class Collision, class RecV0s, class T>
-  void fillRecoLambda(Collision const& collision, RecV0s const& v0s, T const& tracks)
+  void fillRecoLambda(Collision const& collision, RecV0s const& v0s, T const& /*tracks*/)
   {
     candidateV0s.clear();
 

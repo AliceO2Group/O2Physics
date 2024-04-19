@@ -23,6 +23,7 @@
 #include <utility>   // std::move
 #include <vector>    // std::vector
 
+#include "TMCProcess.h" // for VMC Particle Production Process
 #include "CommonConstants/MathConstants.h"
 
 /// Base class for calculating properties of reconstructed decays
@@ -595,6 +596,7 @@ class RecoDecay
   }
 
   /// Gets the complete list of indices of final-state daughters of an MC particle.
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particle  MC particle
   /// \param list  vector where the indices of final-state daughters will be added
   /// \param arrPDGFinal  array of PDG codes of particles to be considered final if found
@@ -602,7 +604,7 @@ class RecoDecay
   /// \param stage  decay tree level; If different from 0, the particle itself will be added in the list in case it has no daughters.
   /// \note Final state is defined as particles from arrPDGFinal plus final daughters of any other decay branch.
   /// \note Antiparticles of particles in arrPDGFinal are accepted as well.
-  template <std::size_t N, typename T>
+  template <bool checkProcess = false, std::size_t N, typename T>
   static void getDaughters(const T& particle,
                            std::vector<int>* list,
                            const std::array<int, N>& arrPDGFinal,
@@ -613,6 +615,13 @@ class RecoDecay
       // Printf("getDaughters: Error: No list!");
       return;
     }
+    if constexpr (checkProcess) {
+      // If the particle is neither the original particle nor coming from a decay, we do nothing and exit.
+      if (stage != 0 && particle.getProcess() != TMCProcess::kPDecay && particle.getProcess() != TMCProcess::kPPrimary) { // decay products of HF hadrons are labeled as kPPrimary
+        return;
+      }
+    }
+
     bool isFinal = false;                     // Flag to indicate the end of recursion
     if (depthMax > -1 && stage >= depthMax) { // Maximum depth has been reached (or exceeded).
       isFinal = true;
@@ -655,11 +664,12 @@ class RecoDecay
     // Call itself to get daughters of daughters recursively.
     stage++;
     for (auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
-      getDaughters(dau, list, arrPDGFinal, depthMax, stage);
+      getDaughters<checkProcess>(dau, list, arrPDGFinal, depthMax, stage);
     }
   }
 
   /// Checks whether the reconstructed decay candidate is the expected decay.
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param arrDaughters  array of candidate daughters
   /// \param PDGMother  expected mother PDG code
@@ -668,7 +678,7 @@ class RecoDecay
   /// \param sign  antiparticle indicator of the found mother w.r.t. PDGMother; 1 if particle, -1 if antiparticle, 0 if mother not found
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
-  template <bool acceptFlavourOscillation = false, std::size_t N, typename T, typename U>
+  template <bool acceptFlavourOscillation = false, bool checkProcess = false, std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
                              const std::array<U, N>& arrDaughters,
                              int PDGMother,
@@ -724,12 +734,14 @@ class RecoDecay
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
-          // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
-          return -1;
+        if constexpr (!checkProcess) {
+          if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
+            // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
+            return -1;
+          }
         }
         // Get the list of actual final daughters.
-        getDaughters(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+        getDaughters<checkProcess>(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
         // printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
         // for (auto i : arrAllDaughtersIndex) {
         //   printf(" %d", i);
@@ -779,13 +791,14 @@ class RecoDecay
   }
 
   /// Checks whether the MC particle is the expected one.
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param candidate  candidate MC particle
   /// \param PDGParticle  expected particle PDG code
   /// \param acceptAntiParticles  switch to accept the antiparticle
   /// \param sign  antiparticle indicator of the candidate w.r.t. PDGParticle; 1 if particle, -1 if antiparticle, 0 if not matched
   /// \return true if PDG code of the particle is correct, false otherwise
-  template <bool acceptFlavourOscillation = false, typename T, typename U>
+  template <bool acceptFlavourOscillation = false, bool checkProcess = false, typename T, typename U>
   static int isMatchedMCGen(const T& particlesMC,
                             const U& candidate,
                             int PDGParticle,
@@ -793,10 +806,11 @@ class RecoDecay
                             int8_t* sign = nullptr)
   {
     std::array<int, 0> arrPDGDaughters;
-    return isMatchedMCGen<acceptFlavourOscillation>(particlesMC, candidate, PDGParticle, std::move(arrPDGDaughters), acceptAntiParticles, sign);
+    return isMatchedMCGen<acceptFlavourOscillation, checkProcess>(particlesMC, candidate, PDGParticle, std::move(arrPDGDaughters), acceptAntiParticles, sign);
   }
 
   /// Check whether the MC particle is the expected one and whether it decayed via the expected decay channel.
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param candidate  candidate MC particle
   /// \param PDGParticle  expected particle PDG code
@@ -806,7 +820,7 @@ class RecoDecay
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
   /// \param listIndexDaughters  vector of indices of found daughter
   /// \return true if PDG codes of the particle and its daughters are correct, false otherwise
-  template <bool acceptFlavourOscillation = false, std::size_t N, typename T, typename U>
+  template <bool acceptFlavourOscillation = false, bool checkProcess = false, std::size_t N, typename T, typename U>
   static bool isMatchedMCGen(const T& particlesMC,
                              const U& candidate,
                              int PDGParticle,
@@ -843,12 +857,14 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > static_cast<int>(N)) {
-        // Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
-        return false;
+      if constexpr (!checkProcess) {
+        if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > static_cast<int>(N)) {
+          // Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
+          return false;
+        }
       }
       // Get the list of actual final daughters.
-      getDaughters(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+      getDaughters<checkProcess>(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
       // printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
       // for (auto i : arrAllDaughtersIndex) {
       //   printf(" %d", i);

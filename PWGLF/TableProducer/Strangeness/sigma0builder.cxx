@@ -78,7 +78,7 @@ struct sigma0builder {
 
   // Process sigma candidate and store properties in object
   template <typename TV0Object, typename TCollision>
-  bool processSigmaCandidate(TCollision const& collision, TV0Object const& lambda, TV0Object const& gamma)
+  bool processSigmaCandidate(TCollision const&, TV0Object const& lambda, TV0Object const& gamma)
   {
     // Gamma selection:
     if (gamma.gammaBDTScore() <= Gamma_MLThreshold)

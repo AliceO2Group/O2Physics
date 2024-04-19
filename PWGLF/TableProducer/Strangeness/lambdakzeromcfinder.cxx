@@ -102,7 +102,7 @@ struct lambdakzeromcfinder {
   std::vector<float> searchedV0PositiveMass;
   std::vector<float> searchedV0NegativeMass;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // initialize histograms
     const AxisSpec axisNTimesRecoed{static_cast<int>(10), -0.5f, +9.5f, ""};
@@ -258,7 +258,7 @@ struct lambdakzeromcfinder {
     return reconstructed;
   }
 
-  void processFromMcParticles(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, FullMcParticles const& allMcParticles)
+  void processFromMcParticles(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& /*tracks*/, FullMcParticles const& allMcParticles)
   {
     v0collisionId.clear();
     v0positiveIndex.clear();
@@ -313,7 +313,7 @@ struct lambdakzeromcfinder {
   Partition<LabeledTracks> posTracks = aod::track::signed1Pt > 0.0f;
   Partition<LabeledTracks> negTracks = aod::track::signed1Pt < 0.0f;
 
-  void processFromSingleProngs(aod::Collisions const& collisions, LabeledTracks const& tracks, soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, aod::McParticles const& allMcParticles)
+  void processFromSingleProngs(aod::Collisions const& /*collisions*/, LabeledTracks const& /*tracks*/, soa::Join<aod::McCollisions, aod::McCollsExtra> const& /*mcCollisions*/, aod::McParticles const& /*allMcParticles*/)
   {
     v0collisionId.clear();
     v0positiveIndex.clear();

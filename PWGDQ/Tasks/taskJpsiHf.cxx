@@ -72,7 +72,7 @@ struct taskJPsiHf {
   std::shared_ptr<TH1> hCollisions;
   HistogramRegistry registry{"registry"};
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext&)
   {
     hCollisions = registry.add<TH1>("hCollisions", ";;entries", HistType::kTH1F, {{2, -0.5, 1.5}});
     hCollisions->GetXaxis()->SetBinLabel(1, "all collisions");
@@ -82,7 +82,7 @@ struct taskJPsiHf {
   // Template function to run pair - hadron combinations
   // TODO: generalise to all charm-hadron species
   template <typename TEvent, typename TDqTrack, typename THfTrack>
-  void runDileptonDmeson(TEvent const& event, TDqTrack const& dileptons, THfTrack const& dmesons)
+  void runDileptonDmeson(TEvent const& /*event*/, TDqTrack const& dileptons, THfTrack const& dmesons)
   {
     float ptDilepton = -999;
     float ptDmeson = -999;

@@ -724,7 +724,7 @@ struct RobustFluctuationObservables {
 
   void processRobustFluctuationObservables(
     Colls::iterator const& collision,
-    aod::FT0s const& ft0s,
+    aod::FT0s const&,
     BCsRun3 const& bcs,
     aod::Origins const& origins,
     soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
@@ -1980,7 +1980,7 @@ struct RobustFluctuationObservables {
   }     // end of processRobustFluctuationObservables()
 
   // shortcut function to fill 2D histograms
-  void fillHistForThisCut(string cutName, int multNTracksPV, int multTrk, int nTracksGlobalAccepted, double multT0A, double multT0C, double multV0A, double t0cCentr, int bc)
+  void fillHistForThisCut(string cutName, int multNTracksPV, int multTrk, int nTracksGlobalAccepted, double multT0A, double multT0C, double multV0A, double /*t0cCentr*/, int bc)
   {
     // registry.get<TH1>(HIST("eta"))->Fill(track.eta());
     // arrPointers[histId][cutId]->Fill(xval, yval, weight);

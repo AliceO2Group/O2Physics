@@ -96,7 +96,7 @@ struct ftofPidQaMC {
   void process(const Trks& tracks,
                const aod::McTrackLabels& labels,
                const aod::FTOFs&,
-               const aod::McParticles_000& mcParticles,
+               const aod::McParticles_000&,
                const aod::Collisions& colls)
   {
     for (const auto& col : colls) {

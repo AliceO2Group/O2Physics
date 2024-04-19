@@ -359,7 +359,7 @@ struct tableMakerMuonMchTrkEfficiency {
   }
 
   /// process to fill histograms
-  void FillHistosMC(double mEta, double mPhi, double mPt, uint16_t mchBitmap, bool isSel, double mGenEta, double mGenPt, double mGenPhi)
+  void FillHistosMC(double mEta, double mPhi, double mPt, uint16_t /*mchBitmap*/, bool isSel, double mGenEta, double mGenPt, double mGenPhi)
   {
 
     registry.fill(HIST("hPtRecPtGen"), mPt, mGenPt);
@@ -585,7 +585,7 @@ struct tableMakerMuonMchTrkEfficiency {
   }
 
   //! process function for full muon information
-  void processReco(myEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs, myMuons const& muons)
+  void processReco(myEvents::iterator const& collision, aod::BCsWithTimestamps const&, myMuons const& muons)
   {
     /// Run event selection
     runEventSelection<gkEventFillMap>(collision);
@@ -606,8 +606,8 @@ struct tableMakerMuonMchTrkEfficiency {
 
   //! process function for simulated muon information
   //! group according to reconstructed Collisions
-  void processSim(myEventsMC::iterator const& collision, aod::BCsWithTimestamps const& bcs, myMuonsMC const& muons,
-                  aod::McParticles_001 const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processSim(myEventsMC::iterator const& collision, aod::BCsWithTimestamps const&, myMuonsMC const& muons,
+                  aod::McParticles_001 const&, aod::McCollisions const&)
   {
     // TODO: investigate the collisions without corresponding mcCollision
     if (!collision.has_mcCollision()) {
@@ -629,7 +629,7 @@ struct tableMakerMuonMchTrkEfficiency {
   //! process function for reducedsimulated muon information
   //! group according to reconstructed Collisions
   void processSimReduced(myReducedEventsMC::iterator const& collision, myReducedMuonsMC const& muons,
-                         aod::McParticles_001 const& mcParticles, aod::McCollisions const& mcCollisions)
+                         aod::McParticles_001 const&, aod::McCollisions const&)
   {
 
     /// Run event selection

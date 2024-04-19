@@ -285,7 +285,7 @@ struct rhoanalysis {
 
   using EventMC = soa::Join<aod::Collisions, aod::TPCMults, aod::FT0Mults, aod::CentFT0Ms, aod::McCollisionLabels>;
   using TrackMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::pidTPCFullPi, aod::McTrackLabels>>;
-  void processMC(EventMC::iterator const& events, TrackMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processMC(EventMC::iterator const& events, TrackMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     if (!events.has_mcCollision())
       return;

@@ -193,7 +193,7 @@ struct phianalysisTHnSparse {
     return multiplicity;
   }
 
-  void processData(EventCandidate const& collision, TrackCandidates const& tracks)
+  void processData(EventCandidate const& collision, TrackCandidates const& /*tracks*/)
   {
     float multiplicity;
 
@@ -318,7 +318,7 @@ struct phianalysisTHnSparse {
   }
   PROCESS_SWITCH(phianalysisTHnSparse, processData, "Process Event for Data", true);
 
-  void processTrue(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processTrue(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& /*tracks*/, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     if (!static_cast<bool>(produce.True))
       return;

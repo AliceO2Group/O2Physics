@@ -321,7 +321,7 @@ struct qaKFParticleLc {
   }
 
   template <typename T>
-  bool isSelectedLcTopo(const T& KFLc_PV, const T& KFPV)
+  bool isSelectedLcTopo(const T& KFLc_PV, const T& /*KFPV*/)
   {
     /// Pt selection
     if (KFLc_PV.GetPt() < d_pTMinLc || KFLc_PV.GetPt() > d_pTMaxLc) {
