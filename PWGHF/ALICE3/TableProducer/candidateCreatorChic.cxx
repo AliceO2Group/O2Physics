@@ -253,7 +253,7 @@ struct HfCandidateCreatorChicMc {
         if (indexMother > -1 && indexMotherGamma == indexMother && candidate.prong1().mcparticle().pdgCode() == kGamma) {
           auto particleMother = mcParticles.rawIteratorAt(indexMother);
           hEphotonMatched->Fill(candidate.prong1().e());
-          hMassEMatched->Fill(sqrt(candidate.prong1().px() * candidate.prong1().px() + candidate.prong1().py() * candidate.prong1().py() + candidate.prong1().pz() * candidate.prong1().pz()));
+          hMassEMatched->Fill(RecoDecay::p(candidate.pVectorProng1()));
           if (particleMother.has_daughters()) {
             std::vector<int> arrAllDaughtersIndex;
             RecoDecay::getDaughters(particleMother, &arrAllDaughtersIndex, std::array{static_cast<int>(kGamma), static_cast<int>(Pdg::kJPsi)}, 1);

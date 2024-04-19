@@ -636,7 +636,7 @@ struct TaskPolarisationCharmHadrons {
           pzCharmHad = candidate.pz();
         }
         massDau = massProton; // (*)
-        rapidity = RecoDecay::y(std::array{pxCharmHad, pyCharmHad, pzCharmHad}, massLc);
+        rapidity = RecoDecay::y(candidate.pVector(), massLc);
 
         /// mass-hypothesis-dependent variables
         if (iMass == charm_polarisation::MassHyposLcToPKPi::PKPi && candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {

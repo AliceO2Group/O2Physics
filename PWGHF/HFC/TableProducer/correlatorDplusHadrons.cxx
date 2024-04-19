@@ -131,7 +131,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, MassDPlus);
+      double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -456,7 +456,7 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, MassDPlus);
+      double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -583,7 +583,7 @@ struct HfCorrelatorDplusHadrons {
           continue;
         }
 
-        double yD = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, MassDPlus);
+        double yD = RecoDecay::y(t1.pVector(), MassDPlus);
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }

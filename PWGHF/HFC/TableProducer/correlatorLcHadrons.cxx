@@ -673,7 +673,7 @@ struct HfCorrelatorLcHadrons {
           continue;
         }
 
-        double yL = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, MassLambdaCPlus);
+        double yL = RecoDecay::y(t1.pVector(), MassLambdaCPlus);
         if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
           continue;
         }
