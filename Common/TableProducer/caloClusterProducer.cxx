@@ -111,7 +111,7 @@ struct caloClusterProducerTask {
   void processStandalone(o2::aod::BCsWithTimestamps const& bcs,
                          o2::aod::Collisions const& colls,
                          o2::aod::Calos const& cells,
-                         o2::aod::CaloTriggers const& ctrs,
+                         o2::aod::CaloTriggers const&,
                          o2::aod::CPVClusters const& cpvs)
   {
 
@@ -405,7 +405,7 @@ struct caloClusterProducerTask {
   void processStandaloneMC(o2::aod::BCsWithTimestamps const& bcs,
                            o2::aod::Collisions const& colls,
                            mcCells& cells,
-                           o2::aod::CaloTriggers const& ctrs,
+                           o2::aod::CaloTriggers const&,
                            o2::aod::CPVClusters const& cpvs)
   {
 
@@ -736,7 +736,7 @@ struct caloClusterProducerTask {
   void processFull(o2::aod::BCsWithTimestamps const& bcs,
                    o2::aod::Collisions const& colls,
                    o2::aod::Calos const& cells,
-                   o2::aod::CaloTriggers const& ctrs,
+                   o2::aod::CaloTriggers const&,
                    o2::aod::CPVClusters const& cpvs,
                    o2::aod::FullTracks const& tracks)
   {
@@ -1146,7 +1146,7 @@ struct caloClusterProducerTask {
   void processFullMC(o2::aod::BCsWithTimestamps const& bcs,
                      o2::aod::Collisions const& colls,
                      mcCells& cells,
-                     o2::aod::CaloTriggers const& ctrs,
+                     o2::aod::CaloTriggers const&,
                      o2::aod::CPVClusters const& cpvs,
                      o2::aod::FullTracks const& tracks)
   {
@@ -1601,7 +1601,7 @@ struct caloClusterProducerTask {
     return (module - 1) * kCpvX * kCpvZ + ix * kCpvZ + iz; // modules: 1,2,3,4
   }
 
-  bool impactOnPHOS(o2::track::TrackParametrization<float>& trackPar, float trackEta, float trackPhi, float zvtx, int16_t& module, float& trackX, float& trackZ)
+  bool impactOnPHOS(o2::track::TrackParametrization<float>& trackPar, float trackEta, float trackPhi, float /*zvtx*/, int16_t& module, float& trackX, float& trackZ)
   {
     // eta,phi was calculated at EMCAL radius.
     // Extrapolate to PHOS assuming zeroB and current vertex

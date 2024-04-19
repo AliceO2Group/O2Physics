@@ -135,7 +135,7 @@ struct TrackPropagation {
 
   template <typename TTrack, typename TParticle, bool isMc, bool fillCovMat = false, bool useTrkPid = false>
   void fillTrackTables(TTrack const& tracks,
-                       TParticle const& mcParticles,
+                       TParticle const&,
                        aod::Collisions const&,
                        aod::BCsWithTimestamps const& bcs)
   {

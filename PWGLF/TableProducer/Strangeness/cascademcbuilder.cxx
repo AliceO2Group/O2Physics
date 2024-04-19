@@ -57,7 +57,7 @@ struct cascademcbuilder {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build cascade labels
-  void processCascades(aod::CascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
+  void processCascades(aod::CascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& /*v0table*/, aod::McTrackLabels const&, aod::McParticles const&)
   {
     for (auto& casc : casctable) {
       int pdgCode = -1, pdgCodeMother = -1;
@@ -196,7 +196,7 @@ struct cascademcbuilder {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build tracked cascade labels
-  void processTrackedCascades(aod::TraCascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
+  void processTrackedCascades(aod::TraCascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& /*v0table*/, aod::McTrackLabels const&, aod::McParticles const&)
   {
     for (auto& casc : casctable) {
       int lLabel = -1;
@@ -239,7 +239,7 @@ struct cascademcbuilder {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build cascade labels
-  void processBBTags(aod::CascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
+  void processBBTags(aod::CascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& /*v0table*/, aod::McTrackLabels const&, aod::McParticles const&)
   {
     for (auto& casc : casctable) {
       bool bbTag = false; // bachelor-baryon correlation tag to pass

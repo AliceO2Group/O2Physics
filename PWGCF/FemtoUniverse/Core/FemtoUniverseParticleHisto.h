@@ -118,7 +118,7 @@ class FemtoUniverseParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <typename T>
-  void init_MC(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis)
+  void init_MC(std::string folderName, std::string /*tempFitVarAxisTitle*/, T& tempFitVarpTAxis, T& tempFitVarAxis)
   {
     /// Particle-type specific histograms
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverseMCparticle::MCTypeName[o2::aod::femtouniverseMCparticle::MCType::kTruth]).c_str();

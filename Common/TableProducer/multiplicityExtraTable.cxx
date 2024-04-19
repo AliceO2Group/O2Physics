@@ -40,7 +40,7 @@ struct MultiplicityExtraTable {
   int newRunNumber = -999;
   int oldRunNumber = -999;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -50,7 +50,7 @@ struct MultiplicityExtraTable {
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-  void process(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const& ft0s, aod::FDDs const&, aod::Zdcs const&)
+  void process(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&)
   {
     bool Tvx = false;
     bool isFV0OrA = false;
