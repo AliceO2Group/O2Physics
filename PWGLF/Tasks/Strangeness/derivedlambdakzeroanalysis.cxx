@@ -152,7 +152,7 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisITScluMap{"axisITSMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
   ConfigurableAxis axisDetMap{"axisDetMap", {16, -0.5f, 15.5f}, "Detector use map"};
   ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {13, -0.5f, 12.5f}, "ITS Coarse cluster map"};
-  ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {4, -0.5f, 3.5f}, "Detector Coarse user map"};
+  ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {5, -0.5f, 4.5f}, "Detector Coarse user map"};
 
   // MC coll assoc QA axis
   ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
@@ -653,8 +653,6 @@ struct derivedlambdakzeroanalysis {
     return (bitmap & mask) == mask;
   }
 
-<<<<<<< HEAD
-=======
   uint computeITSclusBitmap(uint8_t itsClusMap)
   // Focus on the 12 dominant ITS cluster configurations
   {
@@ -730,6 +728,7 @@ struct derivedlambdakzeroanalysis {
 
   uint computeDetBitmap(uint8_t detMap)
   // Focus on the 4 dominant track configurations :
+  //  Others
   //  ITS-TPC
   //  ITS-TPC-TRD
   //  ITS-TPC-TOF
@@ -739,22 +738,21 @@ struct derivedlambdakzeroanalysis {
 
     if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF))) {
       // ITS-TPC-TRD-TOF
-      bitMap = 3;
+      bitMap = 4;
     } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF))) {
       // ITS-TPC-TOF
-      bitMap = 2;
+      bitMap = 3;
     } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD))) {
       // ITS-TPC-TRD
-      bitMap = 1;
+      bitMap = 2;
     } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC))) {
       // ITS-TPC
-      bitMap = 0;
+      bitMap = 1;
     }
 
     return bitMap;
   }
 
->>>>>>> c085615c (Fix whitespaces)
   template <typename TV0>
   void analyseCandidate(TV0 v0, float pt, float centrality, uint64_t selMap)
   // precalculate this information so that a check is one mask operation, not many

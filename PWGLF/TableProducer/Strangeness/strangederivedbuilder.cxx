@@ -86,6 +86,7 @@ struct strangederivedbuilder {
   //__________________________________________________
   // track extra references
   Produces<aod::DauTrackExtras> dauTrackExtras;   // daughter track detector properties
+  Produces<aod::DauTrackMCIds> dauTrackMCIds;      // daughter track MC Particle ID
   Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID
   Produces<aod::DauTrackTOFPIDs> dauTrackTOFPIDs; // daughter track TOF PID
   Produces<aod::V0Extras> v0Extras;               // references DauTracks from V0s
@@ -456,15 +457,16 @@ struct strangederivedbuilder {
     // done!
   }
 
-  void processTrackExtras(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, TracksWithExtra const& tracksExtra, aod::V0s const&)
+  template <typename V0Datas, typename CascDatas, typename KFCascDatas, typename TraCascDatas, typename tracksWithExtra>
+  void fillTrackExtras(V0Datas const& V0s, CascDatas const& Cascades, KFCascDatas const& KFCascades, TraCascDatas const& TraCascades, tracksWithExtra const& tracksExtra)
   {
     std::vector<int> trackMap(tracksExtra.size(), -1); // index -1: not used
 
     //__________________________________________________
     // mark tracks that belong to V0s
     for (auto const& v0 : V0s) {
-      auto const& posTrack = v0.posTrack_as<TracksWithExtra>();
-      auto const& negTrack = v0.negTrack_as<TracksWithExtra>();
+      auto const& posTrack = v0.template posTrack_as<tracksWithExtra>();
+      auto const& negTrack = v0.template negTrack_as<tracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
     }
@@ -472,9 +474,9 @@ struct strangederivedbuilder {
     //__________________________________________________
     // index tracks that belong to CascDatas
     for (auto const& casc : Cascades) {
-      auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto posTrack = casc.posTrack_as<TracksWithExtra>();
-      auto negTrack = casc.negTrack_as<TracksWithExtra>();
+      auto bachTrack = casc.template bachelor_as<tracksWithExtra>();
+      auto posTrack = casc.template posTrack_as<tracksWithExtra>();
+      auto negTrack = casc.template negTrack_as<tracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
       trackMap[bachTrack.globalIndex()] = 0;
@@ -482,9 +484,9 @@ struct strangederivedbuilder {
     //__________________________________________________
     // index tracks that belong to KFCascDatas
     for (auto const& casc : KFCascades) {
-      auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto posTrack = casc.posTrack_as<TracksWithExtra>();
-      auto negTrack = casc.negTrack_as<TracksWithExtra>();
+      auto bachTrack = casc.template bachelor_as<tracksWithExtra>();
+      auto posTrack = casc.template posTrack_as<tracksWithExtra>();
+      auto negTrack = casc.template negTrack_as<tracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
       trackMap[bachTrack.globalIndex()] = 0;
@@ -492,10 +494,10 @@ struct strangederivedbuilder {
     //__________________________________________________
     // index tracks that belong to TraCascDatas
     for (auto const& casc : TraCascades) {
-      auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto posTrack = casc.posTrack_as<TracksWithExtra>();
-      auto negTrack = casc.negTrack_as<TracksWithExtra>();
-      auto strangeTrack = casc.strangeTrack_as<TracksWithExtra>();
+      auto bachTrack = casc.template bachelor_as<tracksWithExtra>();
+      auto posTrack = casc.template posTrack_as<tracksWithExtra>();
+      auto negTrack = casc.template negTrack_as<tracksWithExtra>();
+      auto strangeTrack = casc.template strangeTrack_as<tracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
       trackMap[bachTrack.globalIndex()] = 0;
@@ -513,17 +515,17 @@ struct strangederivedbuilder {
     //__________________________________________________
     // populate track references
     for (auto const& v0 : V0s) {
-      auto const& posTrack = v0.posTrack_as<TracksWithExtra>();
-      auto const& negTrack = v0.negTrack_as<TracksWithExtra>();
+      auto const& posTrack = v0.template posTrack_as<tracksWithExtra>();
+      auto const& negTrack = v0.template negTrack_as<tracksWithExtra>();
       v0Extras(trackMap[posTrack.globalIndex()],
                trackMap[negTrack.globalIndex()]); // joinable with V0Datas
     }
     //__________________________________________________
     // populate track references
     for (auto const& casc : Cascades) {
-      auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto posTrack = casc.posTrack_as<TracksWithExtra>();
-      auto negTrack = casc.negTrack_as<TracksWithExtra>();
+      auto bachTrack = casc.template bachelor_as<tracksWithExtra>();
+      auto posTrack = casc.template posTrack_as<tracksWithExtra>();
+      auto negTrack = casc.template negTrack_as<tracksWithExtra>();
       cascExtras(trackMap[posTrack.globalIndex()],
                  trackMap[negTrack.globalIndex()],
                  trackMap[bachTrack.globalIndex()]); // joinable with CascDatas
@@ -531,7 +533,7 @@ struct strangederivedbuilder {
     //__________________________________________________
     // populate track references
     for (auto const& casc : TraCascades) {
-      auto strangeTrack = casc.strangeTrack_as<TracksWithExtra>();
+      auto strangeTrack = casc.template strangeTrack_as<tracksWithExtra>();
       straTrackExtras(trackMap[strangeTrack.globalIndex()]); // joinable with TraCascDatas
     }
     //__________________________________________________
@@ -540,6 +542,12 @@ struct strangederivedbuilder {
       if (trackMap[tr.globalIndex()] >= 0) {
         dauTrackExtras(tr.detectorMap(), tr.itsClusterSizes(),
                        tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
+
+        // if the table has MC info
+        if constexpr ( requires {tr.mcParticle();} ) {
+            // do your thing with the mcParticleIds only in case the table has the MC info
+            dauTrackMCIds( tr.mcParticleId() ); // joinable with dauTrackExtras
+        }
 
         // round if requested
         if (roundNSigmaVariables) {
@@ -559,6 +567,18 @@ struct strangederivedbuilder {
         dauTrackTOFPIDs(tr.tofSignal(), tr.tofEvTime(), tr.length());
       }
     }
+    // done!
+  }
+
+  void processTrackExtras(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal> const& tracksExtra, aod::V0s const&)
+  {
+    fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
+    // done!
+  }
+
+  void processTrackExtrasMC(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal> const& tracksExtra, aod::V0s const&)
+  {
+    fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
     // done!
   }
 
@@ -764,6 +784,7 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsMC, "Produce collisions (V0s + casc)", false);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasV0sOnly, "Produce track extra information (V0s only)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information (V0s + casc)", true);
+  PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasMC, "Produce track extra information (V0s + casc)", false);
   PROCESS_SWITCH(strangederivedbuilder, processStrangeMothers, "Produce tables with mother info for V0s + casc", true);
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkTracked, "Produce tables interconnecting cascades", false);
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkKF, "Produce tables interconnecting cascades", false);

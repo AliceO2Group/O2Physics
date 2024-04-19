@@ -95,6 +95,10 @@ DECLARE_SOA_COLUMN(TPCClusters, tpcClusters, uint8_t);          //! N TPC cluste
 DECLARE_SOA_COLUMN(TPCCrossedRows, tpcCrossedRows, uint8_t);    //! N TPC clusters
 
 //______________________________________________________
+// Daughter track MC information
+DECLARE_SOA_COLUMN(ParticleMCId, particleMCId, int);          //! particle MC Id
+
+//______________________________________________________
 // for extras: replicated here to ensure ease of manipulating the ITS information
 // directly from the V0 extras table in simple ways for derived data as well
 DECLARE_SOA_DYNAMIC_COLUMN(ITSClusterMap, itsClusterMap, //! ITS cluster map, one bit per layer, starting from the innermost
@@ -137,6 +141,9 @@ DECLARE_SOA_TABLE(DauTrackExtras, "AOD", "DAUTRACKEXTRA", //! detector propertie
                   dautrack::HasTPC<dautrack::DetectorMap>,
                   dautrack::HasTRD<dautrack::DetectorMap>,
                   dautrack::HasTOF<dautrack::DetectorMap>);
+
+DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
+                  dautrack::ParticleMCId);
 
 using DauTrackExtra = DauTrackExtras::iterator;
 
@@ -232,6 +239,7 @@ DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
 
 //______________________________________________________
 // REGULAR COLUMNS FOR V0MCCORES
+DECLARE_SOA_COLUMN(ParticleIdMC, particleIdMC, int);            //! V0 Particle ID
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);                      //! V0 PDG Code
 DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);          //! V0 mother PDG code (for feeddown)
 DECLARE_SOA_COLUMN(PDGCodePositive, pdgCodePositive, int);      //! V0 positive prong PDG code
@@ -551,12 +559,20 @@ DECLARE_SOA_EXTENDED_TABLE_USER(V0fCCores, StoredV0fCCores, "V0FCCOREEXT",      
 DECLARE_SOA_TABLE_FULL(V0fCCovs, "V0fCCovs", "AOD", "V0FCCOVS", //! V0 covariance matrices
                        v0data::PositionCovMat, v0data::MomentumCovMat, o2::soa::Marker<2>);
 
-DECLARE_SOA_TABLE(V0MCCores, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
+DECLARE_SOA_TABLE(V0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
                   v0data::PDGCode, v0data::PDGCodeMother,
                   v0data::PDGCodePositive, v0data::PDGCodeNegative,
                   v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
+
+DECLARE_SOA_TABLE_VERSIONED(V0MCCores_001, "AOD", "V0MCCORE", 1, //! debug information
+                            v0data::ParticleIdMC, //! MC properties of the V0 for posterior analysis
+                            v0data::PDGCode, v0data::PDGCodeMother, 
+                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
+                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
 DECLARE_SOA_TABLE(V0MCCollRefs, "AOD", "V0MCCOLLREF", //! refers MC candidate back to proper MC Collision
                   o2::soa::Index<>, v0data::StraMCCollisionId, o2::soa::Marker<2>);
@@ -568,6 +584,7 @@ DECLARE_SOA_TABLE(GeAntiLambda, "AOD", "GeAntiLambda", v0data::GeneratedAntiLamb
 DECLARE_SOA_TABLE(V0MCMothers, "AOD", "V0MCMOTHER", //! optional table for MC mothers
                   o2::soa::Index<>, v0data::MotherMCPartId);
 
+using V0MCCores = V0MCCores_001;
 using V0Index = V0Indices::iterator;
 using V0Core = V0Cores::iterator;
 using V0TrackX = V0TrackXs::iterator;
