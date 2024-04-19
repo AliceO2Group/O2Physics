@@ -41,35 +41,56 @@ EMEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
   EMEventCut* cut = new EMEventCut(cutName, cutName);
   std::string nameStr = cutName;
 
-  if (!nameStr.compare("minbias")) {
-    cut->SetRequireFT0AND(true);
-    cut->SetZvtxRange(-10.f, +10.f);
-    cut->SetRequireNoTFB(false);
-    cut->SetRequireNoITSROFB(false);
-    return cut;
-  }
-
   if (!nameStr.compare("nocut")) {
+    cut->SetRequireSel8(false);
     cut->SetRequireFT0AND(false);
     cut->SetZvtxRange(-1e+10, +1e+10);
     cut->SetRequireNoTFB(false);
     cut->SetRequireNoITSROFB(false);
+    cut->SetRequireNoSameBunchPileup(false);
+    cut->SetRequireVertexITSTPC(false);
+    cut->SetRequireIsGoodZvtxFT0vsPV(false);
     return cut;
   }
 
-  if (!nameStr.compare("minbias_notfb")) {
+  if (!nameStr.compare("ft0and")) {
+    cut->SetRequireSel8(false);
     cut->SetRequireFT0AND(true);
     cut->SetZvtxRange(-10.f, +10.f);
-    cut->SetRequireNoTFB(true);
+    cut->SetRequireNoTFB(false);
     cut->SetRequireNoITSROFB(false);
+    cut->SetRequireNoSameBunchPileup(false);
+    cut->SetRequireVertexITSTPC(false);
+    cut->SetRequireIsGoodZvtxFT0vsPV(false);
     return cut;
   }
 
-  if (!nameStr.compare("minbias_notfb_noitsrofb")) {
+  if (!nameStr.compare("minbias")) {
+    cut->SetRequireSel8(true);
     cut->SetRequireFT0AND(true);
     cut->SetZvtxRange(-10.f, +10.f);
-    cut->SetRequireNoTFB(true);
-    cut->SetRequireNoITSROFB(true);
+    cut->SetRequireNoTFB(false);     // included in sel8
+    cut->SetRequireNoITSROFB(false); // included in sel8
+    cut->SetRequireNoSameBunchPileup(false);
+    cut->SetRequireVertexITSTPC(false);
+    cut->SetRequireIsGoodZvtxFT0vsPV(false);
+
+    if (nameStr.find("notfb") != std::string::npos) {
+      cut->SetRequireNoTFB(true);
+    }
+    if (nameStr.find("noitsrofb") != std::string::npos) {
+      cut->SetRequireNoITSROFB(true);
+    }
+    if (nameStr.find("nosbp") != std::string::npos) {
+      cut->SetRequireNoSameBunchPileup(true);
+    }
+    if (nameStr.find("vtxitstpc") != std::string::npos) {
+      cut->SetRequireVertexITSTPC(true);
+    }
+    if (nameStr.find("goodvtx") != std::string::npos) {
+      cut->SetRequireIsGoodZvtxFT0vsPV(true);
+    }
+
     return cut;
   }
 
@@ -424,7 +445,7 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
 
   if (!nameStr.compare("nocut")) {
     // apply kinetic cuts
-    cut->SetTrackPtRange(0.05, 1e+10f);
+    cut->SetTrackPtRange(0.1, 1e+10f);
     cut->SetTrackEtaRange(-0.9, +0.9);
 
     // for pair
@@ -434,11 +455,11 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
     cut->ApplyPrefilter(false);
 
     // for track cuts
-    cut->SetMinNCrossedRowsTPC(100);
+    cut->SetMinNCrossedRowsTPC(40);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
     cut->SetChi2PerClusterTPC(0.0, 4.0);
     cut->SetChi2PerClusterITS(0.0, 5.0);
-    cut->SetNClustersITS(5, 7);
+    cut->SetNClustersITS(4, 7);
     cut->SetMaxDcaXY(1.0);
     cut->SetMaxDcaZ(1.0);
     return cut;

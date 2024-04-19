@@ -299,7 +299,18 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
         list->Add(new TH2F("hMvsOPA_Pi0", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 500, 0, 0.5, 100, 0.0f, 0.1f));    // ee from pi0 dalitz decay
         list->Add(new TH2F("hMvsOPA_Eta", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 500, 0, 0.5, 100, 0.0f, 0.1f));    // ee from eta dalitz decay
         list->Add(new TH2F("hMvsOPA_Photon", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 500, 0, 0.5, 100, 0.0f, 0.1f)); // ee from photon conversion
-      }                                                                                                                                          // end of mc
+
+        static constexpr std::string_view parnames_LMEE[] = {"Pi0", "Eta", "EtaPrime", "Rho", "Omega", "Phi", "PromptJpsi", "NonPromptJpsi", "Ce_Ce", "Be_Be", "BCe_BCe", "BCe_Be_SameB", "BCe_Be_DiffB"};
+        const int npar_lmee = sizeof(parnames_LMEE) / sizeof(parnames_LMEE[0]);
+        for (int i = 0; i < npar_lmee; i++) {
+          THnSparseF* hs_dilepton_mc_rec = new THnSparseF(Form("hs_dilepton_mc_rec_%s", parnames_LMEE[i].data()), Form("hs_dilepton_mc_rec from %s;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c);DCA_{ee}^{3D} (#sigma);#varphi_{V} (rad.);", parnames_LMEE[i].data()), ndim, nbins, xmin, xmax);
+          hs_dilepton_mc_rec->SetBinEdges(0, mee);
+          hs_dilepton_mc_rec->SetBinEdges(1, pt);
+          hs_dilepton_mc_rec->SetBinEdges(2, dca);
+          hs_dilepton_mc_rec->Sumw2();
+          list->Add(hs_dilepton_mc_rec);
+        }
+      } // end of mc
     } else if (TString(histClass).Contains("MuMu")) {
       const int ndim = 4; // m, pt, dca, phiv
       const int nbins[ndim] = {90, 20, ndca - 1, 1};
@@ -597,6 +608,15 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       TH2F* hMvsPt = new TH2F("hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", 400, 0, 4.0f, 1000, 0, 10.f);
       hMvsPt->Sumw2();
       list->Add(hMvsPt);
+
+      static constexpr std::string_view parnames_LMEE[] = {"Pi0", "Eta", "EtaPrime", "Rho", "Omega", "Phi", "PromptJpsi", "NonPromptJpsi", "Ce_Ce", "Be_Be", "BCe_BCe", "BCe_Be_SameB", "BCe_Be_DiffB"};
+      const int npar_lmee = sizeof(parnames_LMEE) / sizeof(parnames_LMEE[0]);
+      for (int i = 0; i < npar_lmee; i++) {
+        TH2F* hMvsPt = new TH2F(Form("hMvsPt_%s", parnames_LMEE[i].data()), Form("m_{ee} vs. p_{T,ee} from MC %s;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", parnames_LMEE[i].data()), 400, 0, 4.0f, 1000, 0, 10.f);
+        hMvsPt->Sumw2();
+        list->Add(hMvsPt);
+      }
+
     } else if (TString(subGroup) == "dimuon") {
       TH2F* hMvsPt = new TH2F("hMvsPt", "m_{#mu#mu} vs. p_{T,#mu#mu};m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c)", 90, 0.2, 1.1f, 200, 0, 2.f);
       hMvsPt->Sumw2();
