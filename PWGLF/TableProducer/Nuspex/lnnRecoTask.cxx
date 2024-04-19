@@ -75,7 +75,7 @@ struct lnnCandidate {
   float recoPhiPi() const { return std::atan2(momPi[1], momPi[0]); }
   float recoEtaPi() const { return std::asinh(momPi[2] / recoPtPi()); }
   float genPt() const { return std::hypot(gMom[0], gMom[1]); }
-  float genPt3H() const { return std::hypot(mom3H[0], mom3H[1]); }
+  float genPt3H() const { return std::hypot(gMom3H[0], gMom3H[1]); }
   float genPhi() const { return std::atan2(gMom[1], gMom[0]); }
   float genEta() const { return std::asinh(gMom[2] / genPt()); }
 
@@ -588,7 +588,7 @@ struct lnnRecoTask {
                       lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
                       lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
                       lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags,
-                      chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
+                      chargeFactor*lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
                       lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.survEvSelection);
       }
     }
