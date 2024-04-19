@@ -216,6 +216,49 @@ struct AssociateMCInfo {
           fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
           fCounters[0]++;
         }
+
+        bool is_hf_l = false;
+        if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && (abs(pdg) == 11 || abs(pdg) == 13) && mctrack.has_mothers()) {
+          auto mp = mctrack.template mothers_first_as<aod::McParticles>(); // mother particle of electron
+          int pdg_mother = abs(mp.pdgCode());
+          if (std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 3] == '4' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 3] == '5' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 4] == '4' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 4] == '5') {
+            is_hf_l = true;
+          }
+        }
+
+        if (is_hf_l) {
+          // Next, store mother-chain for only HF->l, because HF->ll analysis requires correlation between HF hadrons or quarks. PLEASE DON'T do this for other partices.
+          int motherid = -999; // first mother index
+          if (mctrack.has_mothers()) {
+            motherid = mctrack.mothersIds()[0]; // first mother index
+          }
+          while (motherid > -1) {
+            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mcTracks.iteratorAt(motherid);
+
+              if (abs(mp.pdgCode()) < 100) { // don't store quark/gluon informaiton, because data size explodes.
+                break;
+              }
+
+              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                fNewLabels[mp.globalIndex()] = fCounters[0];
+                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                // fMCFlags[mp.globalIndex()] = mcflags;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                fCounters[0]++;
+              }
+
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0]; // first mother index
+              } else {
+                motherid = -999;
+              }
+            } else {
+              motherid = -999;
+            }
+          } // end of mother chain loop
+        }
       } // end of mc track loop
 
       if constexpr (static_cast<bool>(system & kPCM)) {
