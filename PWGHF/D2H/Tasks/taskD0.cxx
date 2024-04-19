@@ -485,11 +485,11 @@ struct HfTaskD0 {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
-        if (yCandGenMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0)) > yCandGenMax) {
+        if (yCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > yCandGenMax) {
           continue;
         }
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0);
+        auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0);
         registry.fill(HIST("hPtGen"), ptGen);
         registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {

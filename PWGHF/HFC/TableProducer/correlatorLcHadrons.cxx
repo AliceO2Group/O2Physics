@@ -154,7 +154,7 @@ struct HfCorrelatorLcHadronsSelection {
       if (std::abs(particle.pdgCode()) != Pdg::kLambdaCPlus) {
         continue;
       }
-      double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassLambdaCPlus);
+      double yL = RecoDecay::y(particle.pVector(), MassLambdaCPlus);
       if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
         continue;
       }
@@ -520,7 +520,7 @@ struct HfCorrelatorLcHadrons {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
-        double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassLambdaCPlus);
+        double yL = RecoDecay::y(particle.pVector(), MassLambdaCPlus);
         if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
           continue;
         }

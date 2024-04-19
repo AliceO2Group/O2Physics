@@ -723,7 +723,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massB);
+        auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
         std::array<float, 2> ptProngs;
@@ -756,7 +756,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massB);
+        auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
         std::array<float, 2> ptProngs;

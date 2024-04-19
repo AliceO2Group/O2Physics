@@ -217,7 +217,7 @@ struct HfTreeCreatorChicToJpsiGamma {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massChic),
+          RecoDecay::y(particle.pVector(), massChic),
           0., // put here the jpsi mass
           particle.flagMcMatchGen(),
           particle.originMcGen());

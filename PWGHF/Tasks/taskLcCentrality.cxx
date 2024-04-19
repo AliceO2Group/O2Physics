@@ -183,7 +183,7 @@ struct HfTaskLcCentralityMc {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus)) > yCandMax) {
           continue;
         }
         auto ptGen = particle.pt();

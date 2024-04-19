@@ -126,7 +126,7 @@ struct HfCorrelatorDsHadronsSelCollision {
         if (std::abs(particle.pdgCode()) != Pdg::kDS) {
           continue;
         }
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassDS);
+        double yD = RecoDecay::y(particle.pVector(), MassDS);
         if (std::abs(yD) > yCandMax || particle.pt() < ptCandMin) {
           continue;
         }
@@ -719,7 +719,7 @@ struct HfCorrelatorDsHadrons {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassDS); // TODO
+        double yD = RecoDecay::y(particle.pVector(), MassDS); // TODO
         if (yCandGenMax >= 0. && std::abs(yD) > yCandGenMax) {
           continue;
         }
