@@ -217,16 +217,21 @@ struct AssociateMCInfo {
           fCounters[0]++;
         }
 
-        bool is_hf_l = false;
+        bool is_used_for_gen = false;
         if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && (abs(pdg) == 11 || abs(pdg) == 13) && mctrack.has_mothers()) {
           auto mp = mctrack.template mothers_first_as<aod::McParticles>(); // mother particle of electron
           int pdg_mother = abs(mp.pdgCode());
-          if (std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 3] == '4' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 3] == '5' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 4] == '4' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 4] == '5') {
-            is_hf_l = true;
+
+          bool is_from_sm = pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333 || pdg_mother == 443 || pdg_mother == 100443 || pdg_mother == 553 || pdg_mother == 100553 || pdg_mother == 200553;
+          bool is_from_c_hadron = std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 3] == '4' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 4] == '4';
+          bool is_from_b_hadron = std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 3] == '5' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 4] == '5';
+
+          if ((is_from_sm || is_from_c_hadron || is_from_b_hadron)) {
+            is_used_for_gen = true;
           }
         }
 
-        if (is_hf_l) {
+        if (is_used_for_gen) {
           // Next, store mother-chain for only HF->l, because HF->ll analysis requires correlation between HF hadrons or quarks. PLEASE DON'T do this for other partices.
           int motherid = -999; // first mother index
           if (mctrack.has_mothers()) {
