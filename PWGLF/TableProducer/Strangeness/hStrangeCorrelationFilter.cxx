@@ -385,7 +385,7 @@ struct hstrangecorrelationfilter {
       }
     }
   }
-  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& V0s, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&, CascadesLinkedTagged const&)
+  void processCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, DauTracks const&, soa::Filtered<V0DatasWithoutTrackX> const& /*V0s*/, soa::Filtered<aod::CascDatas> const& Cascades, aod::V0sLinked const&, CascadesLinkedTagged const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {

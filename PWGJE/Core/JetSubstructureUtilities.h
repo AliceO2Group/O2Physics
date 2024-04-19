@@ -53,7 +53,7 @@ namespace jetsubstructureutilities
  * @param pseudoJet converted pseudoJet object which is passed by reference
  */
 template <typename T, typename U, typename V, typename O>
-fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& tracks, V const& clusters, O const& candidates, fastjet::PseudoJet& pseudoJet)
+fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& /*tracks*/, V const& /*clusters*/, O const& /*candidates*/, fastjet::PseudoJet& pseudoJet)
 {
   std::vector<fastjet::PseudoJet> jetConstituents;
   for (auto& jetConstituent : jet.template tracks_as<U>()) {

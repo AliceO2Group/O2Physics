@@ -238,7 +238,7 @@ struct epvector {
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
   using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>>;
 
-  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const&, MyTracks const& tracks)
+  void process(MyCollisions::iterator const& coll, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, aod::BCsWithTimestamps const&, MyTracks const& tracks)
   {
     auto centrality = coll.centFT0C();
     auto bc = coll.bc_as<aod::BCsWithTimestamps>();

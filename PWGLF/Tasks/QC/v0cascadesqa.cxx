@@ -339,7 +339,7 @@ struct v0cascadesQA {
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
   int ncoll = 0;
 
-  void processReconstructedV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
+  void processReconstructedV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& fullV0s, DaughterTracks&)
   {
     if (sel8 && !collision.sel8()) {
       return;
@@ -490,7 +490,7 @@ struct v0cascadesQA {
   ////////// V0 QA - MC //////////
   ////////////////////////////////
 
-  void processMcV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s, aod::McParticles const&, MyTracksMC const& tracks)
+  void processMcV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s, aod::McParticles const&, MyTracksMC const&)
   {
     if (sel8 && !collision.sel8()) {
       return;
@@ -571,7 +571,7 @@ struct v0cascadesQA {
   // if( (part==5) && (TMath::Abs(fCasc_NSigPosPion)>3 || TMath::Abs(fCasc_NSigNegProton)>3 || TMath::Abs(fCasc_NSigBacKaon)>3) ) return kFALSE;
   // if( (part==6) && (TMath::Abs(fCasc_NSigNegPion)>3 || TMath::Abs(fCasc_NSigPosProton)>3 || TMath::Abs(fCasc_NSigBacKaon)>3) ) return kFALSE;
 
-  void processReconstructedCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
+  void processReconstructedCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, DaughterTracks&)
   {
     if (sel8 && !collision.sel8()) {
       return;
@@ -671,7 +671,7 @@ struct v0cascadesQA {
   ////////// Cascade QA - MC ///////////
   //////////////////////////////////////
 
-  void processMcCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const& fullV0s, MyTracksMC const& tracks, aod::McParticles const& mcParticles)
+  void processMcCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, MyTracksMC const&, aod::McParticles const&)
   {
     if (sel8 && !collision.sel8()) {
       return;

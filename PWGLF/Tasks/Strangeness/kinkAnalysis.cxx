@@ -511,7 +511,7 @@ struct kinkAnalysis {
     return pools;
   }
 
-  void calculateInvMass(CompleteCollisions const& collisions, CompleteTracks const& tracks, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcWtmp, gsl::span<std::vector<TrackCand>> trackPoolM, gsl::span<std::vector<TrackCand>> trackPoolD, int chargeM, int chargeD, int particleName, const aod::McParticles* partTable = nullptr)
+  void calculateInvMass(CompleteCollisions const& collisions, CompleteTracks const& tracks, o2::aod::AmbiguousTracks const& /*ambiTracks*/, aod::BCsWithTimestamps const& /*bcWtmp*/, gsl::span<std::vector<TrackCand>> trackPoolM, gsl::span<std::vector<TrackCand>> trackPoolD, int chargeM, int chargeD, int particleName, const aod::McParticles* partTable = nullptr)
   {
 
     int ntrInner = chargeM < 0 ? trackPoolM[NEG].size() : trackPoolM[POS].size();

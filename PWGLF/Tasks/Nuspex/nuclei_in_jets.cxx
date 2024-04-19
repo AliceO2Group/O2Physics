@@ -195,6 +195,8 @@ struct nuclei_in_jets {
     registryMC.add("antiproton_dca_sec", "antiproton_dca_sec", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -0.5, 0.5, "DCA_{xy} (cm)"}});
 
     // Histograms for reweighting
+    registryMC.add("antiproton_eta_pt_pythia", "antiproton_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {80, -0.8, 0.8, "#eta"}});
+    registryMC.add("antideuteron_eta_pt", "antideuteron_eta_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {80, -0.8, 0.8, "#eta"}});
     registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {80, -0.8, 0.8, "#eta"}});
     registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {80, -0.8, 0.8, "#eta"}});
   }
@@ -878,10 +880,12 @@ struct nuclei_in_jets {
           registryMC.fill(HIST("antiproton_weighted_ue"), particle.pt(), wpr_ue);
           registryMC.fill(HIST("antiproton_jet_gen"), particle.pt(), wpr_jet);
           registryMC.fill(HIST("antiproton_ue_gen"), particle.pt(), wpr_ue);
+          registryMC.fill(HIST("antiproton_eta_pt_pythia"), particle.pt(), particle.eta());
         }
         if (particle.pdgCode() == -1000010020) {
           registryMC.fill(HIST("antideuteron_jet_gen"), particle.pt(), wde_jet);
           registryMC.fill(HIST("antideuteron_ue_gen"), particle.pt(), wde_ue);
+          registryMC.fill(HIST("antideuteron_eta_pt"), particle.pt(), particle.eta());
         }
         if (particle.pdgCode() == -1000020030) {
           registryMC.fill(HIST("antihelium3_jet_gen"), particle.pt(), whe_jet);
@@ -891,7 +895,7 @@ struct nuclei_in_jets {
     }
   }
 
-  void processRec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const& mcCollisions, const aod::McParticles& mcParticles)
+  void processRec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const& /*mcCollisions*/, const aod::McParticles& /*mcParticles*/)
   {
 
     for (const auto& collision : collisions) {

@@ -129,11 +129,11 @@ struct HfTreeCreatorChicToJpsiGamma {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mcCollisions,
+               aod::McCollisions const&,
                soa::Join<aod::HfCandChic, aod::HfCandChicMcRec, aod::HfSelChicToJpsiGamma> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& particles,
-               aod::Tracks const& tracks,
-               aod::HfCand2Prong const& jpsiCands)
+               aod::Tracks const&,
+               aod::HfCand2Prong const&)
   {
 
     // Filling event properties

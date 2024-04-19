@@ -333,7 +333,7 @@ struct JetChCorr {
   }
 
   template <bool isSubtracted, typename T, typename U>
-  void analyseCharged(T const& jet, U const& tracks)
+  void analyseCharged(T const& jet, U const& /*tracks*/)
   {
     jetConstituents.clear();
 
@@ -391,7 +391,7 @@ struct JetChCorr {
       jetReclustering<false, isSubtracted>(jet);
   }
 
-  void processDummy(JetTracks const& tracks)
+  void processDummy(JetTracks const&)
   {
   }
   PROCESS_SWITCH(JetChCorr, processDummy, "Dummy process function turned on by default", true);
@@ -417,7 +417,7 @@ struct JetChCorr {
   PROCESS_SWITCH(JetChCorr, processChargedJetsMCD, "charged jet substructure", false);
 
   void processChargedJetsMCP(typename soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet,
-                             JetParticles const& particles)
+                             JetParticles const&)
   {
     jetConstituents.clear();
     for (auto& jetConstituent : jet.template tracks_as<JetParticles>()) {

@@ -567,7 +567,7 @@ struct QAHistTask {
   PROCESS_SWITCH(QAHistTask, processDataCent, "process data containing centralities", false);
 
   void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
-                 aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+                 aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
     MC_truth_reg.fill(HIST("histRecVtxMC"), collisions.posZ());

@@ -27,6 +27,7 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -318,9 +319,9 @@ struct skimmerGammaConversion {
   PresliceUnsorted<aod::V0Datas> perCollision = aod::v0data::collisionId;
 
   void processRec(aod::Collisions const& collisions,
-                  aod::BCsWithTimestamps const& bcs,
+                  aod::BCsWithTimestamps const&,
                   aod::V0Datas const& V0s,
-                  tracksAndTPCInfo const& theTracks)
+                  tracksAndTPCInfo const&)
   {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -348,9 +349,9 @@ struct skimmerGammaConversion {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   void processMc(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions,
                  aod::McCollisions const&,
-                 aod::BCsWithTimestamps const& bcs,
+                 aod::BCsWithTimestamps const&,
                  aod::V0Datas const& theV0s,
-                 tracksAndTPCInfoMC const& theTracks,
+                 tracksAndTPCInfoMC const&,
                  aod::McParticles const& mcTracks)
   {
     for (auto& collision : collisions) {
@@ -394,7 +395,7 @@ struct skimmerGammaConversion {
   PROCESS_SWITCH(skimmerGammaConversion, processMc, "process reconstructed and mc info ", false);
 
   template <typename TV0, typename TTRACK>
-  eV0Confirmation isTrueV0(TV0 const& theV0,
+  eV0Confirmation isTrueV0(TV0 const& /*theV0*/,
                            TTRACK const& theTrackPos,
                            TTRACK const& theTrackNeg)
   {

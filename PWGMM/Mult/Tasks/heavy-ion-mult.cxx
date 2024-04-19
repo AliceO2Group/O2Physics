@@ -367,7 +367,7 @@ struct HeavyIonMultiplicity {
 
   PROCESS_SWITCH(HeavyIonMultiplicity, processDataCentFT0C, "process data CentFT0C", false);
 
-  void processMCCentFT0C(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processMCCentFT0C(CollisionMCTrueTable::iterator const& /*TrueCollision*/, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
     if (RecCollisions.size() == 0 || RecCollisions.size() > 1) {
       return;

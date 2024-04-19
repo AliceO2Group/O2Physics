@@ -110,7 +110,7 @@ struct HfCorrelatorLcHadronsSelection {
   }
 
   void processLcSelectionData(aod::Collision const& collision,
-                              soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates)
+                              soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&)
   {
     bool isLcFound = 0;
     if (selectedLcCandidates.size() > 0) {
@@ -129,7 +129,7 @@ struct HfCorrelatorLcHadronsSelection {
   PROCESS_SWITCH(HfCorrelatorLcHadronsSelection, processLcSelectionData, "Process Lc Collision Selection Data", true);
 
   void processLcSelectionMcRec(aod::Collision const& collision,
-                               soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const& candidates)
+                               soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&)
   {
     bool isLcFound = 0;
     if (selectedLcCandidatesMc.size() > 0) {
@@ -146,7 +146,7 @@ struct HfCorrelatorLcHadronsSelection {
   }
   PROCESS_SWITCH(HfCorrelatorLcHadronsSelection, processLcSelectionMcRec, "Process Lc Selection McRec", false);
 
-  void processLcSelectionMcGen(aod::McCollision const& mcCollision,
+  void processLcSelectionMcGen(aod::McCollision const&,
                                aod::McParticles const& mcParticles)
   {
     bool isLcFound = 0;
@@ -253,7 +253,7 @@ struct HfCorrelatorLcHadrons {
   /// Lc-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via Mc truth)
   void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
                    aod::TracksWDca const& tracks,
-                   soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates)
+                   soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&)
   {
     // protection against empty tables to be sliced
     if (selectedLcCandidates.size() == 0) {
@@ -361,7 +361,7 @@ struct HfCorrelatorLcHadrons {
   /// Lc-Hadron correlation process starts for McRec
   void processMcRec(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
                     aod::TracksWDca const& tracks,
-                    soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const& candidates)
+                    soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&)
   {
     if (selectedLcCandidatesMc.size() == 0) {
       return;
@@ -502,7 +502,7 @@ struct HfCorrelatorLcHadrons {
     int counterLcHadron = 0;
     registry.fill(HIST("hMcEvtCount"), 0);
 
-    auto getTracksSize = [&mcParticles](aod::McCollision const& collision) {
+    auto getTracksSize = [&mcParticles](aod::McCollision const& /*collision*/) {
       int nTracks = 0;
       for (const auto& track : mcParticles) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {

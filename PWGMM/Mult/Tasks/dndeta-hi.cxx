@@ -315,7 +315,7 @@ struct MultiplicityCounter {
   template <typename C>
   void runCounting(
     C const& collisions,
-    FiTracks const& tracks)
+    FiTracks const& /*tracks*/)
   {
 
     for (auto& collision : collisions) {
@@ -665,8 +665,8 @@ struct MultiplicityCounter {
 
   void processTrackEfficiencyGeneral(
     typename soa::Join<MyCollisions, aod::McCollisionLabels>::iterator const& collision,
-    aod::McCollisions const& mcCollisions, Particles const& particles,
-    FiLTracks const& tracks)
+    aod::McCollisions const& /*mcCollisions*/, Particles const& particles,
+    FiLTracks const& /*tracks*/)
   {
 
     if (!collision.sel8()) {
@@ -759,7 +759,7 @@ struct MultiplicityCounter {
   void processV0Counting(
     MyCollisionsCent const& collisions,
     aod::V0Datas const& fullV0s,
-    FiTracks const& tracks)
+    FiTracks const& /*tracks*/)
   {
     for (auto& collision : collisions) {
       if (!collision.sel8())
@@ -788,11 +788,11 @@ struct MultiplicityCounter {
 
   void processMCV0Counting(
     soa::Join<MyCollisionsCent, aod::McCollisionLabels> const& collisions,
-    aod::McCollisions const& MCCollisions,
-    Particles const& mcParticles,
+    aod::McCollisions const& /*MCCollisions*/,
+    Particles const& /*mcParticles*/,
     soa::Filtered<aod::V0Datas> const& fullV0s,
-    soa::Filtered<LabeledTracksEx> const& tracks,
-    DaughterTracks const& Dautrks)
+    soa::Filtered<LabeledTracksEx> const& /*tracks*/,
+    DaughterTracks const& /*Dautrks*/)
   {
     for (auto& collision : collisions) {
       auto cent = -1.f;

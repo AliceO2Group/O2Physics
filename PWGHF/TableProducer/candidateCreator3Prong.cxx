@@ -30,10 +30,12 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::hf_evsel;
+using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_collision_centrality;
 using namespace o2::constants::physics;
@@ -90,7 +92,7 @@ struct HfCandidateCreator3Prong {
   // filter candidates
   Filter filterSelected3Prongs = (createDplus && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0)) || (createDs && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0)) || (createLc && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi))) != static_cast<uint8_t>(0)) || (createXic && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi))) != static_cast<uint8_t>(0));
 
-  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
+  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hCandidates;
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -142,6 +144,7 @@ struct HfCandidateCreator3Prong {
     hPosXAfterEvSel = registry.add<TH1>("hPosXAfterEvSel", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
     hPosYAfterEvSel = registry.add<TH1>("hPosYAfterEvSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>("hNumPvContributorsAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{500, -0.5, 499.5}}});
+    hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     massPi = MassPiPlus;
     massK = MassKPlus;
@@ -164,13 +167,16 @@ struct HfCandidateCreator3Prong {
 
     /// collision monitoring
     setLabelHistoEvSel(hCollisions);
+
+    /// candidate monitoring
+    setLabelHistoCands(hCandidates);
   }
 
   template <bool doPvRefit = false, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand>
-  void runCreator3Prong(Coll const& collisions,
+  void runCreator3Prong(Coll const&,
                         Cand const& rowsTrackIndexProng3,
-                        aod::TracksWCovExtra const& tracks,
-                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+                        aod::TracksWCovExtra const&,
+                        aod::BCsWithTimestamps const&)
   {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
@@ -206,9 +212,18 @@ struct HfCandidateCreator3Prong {
       df.setBz(bz);
 
       // reconstruct the 3-prong secondary vertex
-      if (df.process(trackParVar0, trackParVar1, trackParVar2) == 0) {
+      hCandidates->Fill(SVFitting::BeforeFit);
+      try {
+        if (df.process(trackParVar0, trackParVar1, trackParVar2) == 0) {
+          continue;
+        }
+      } catch (const std::runtime_error& error) {
+        LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+        hCandidates->Fill(SVFitting::Fail);
         continue;
       }
+      hCandidates->Fill(SVFitting::FitOk);
+
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();

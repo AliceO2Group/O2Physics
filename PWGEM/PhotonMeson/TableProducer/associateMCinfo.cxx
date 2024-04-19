@@ -78,7 +78,7 @@ struct AssociateMCInfo {
   Preslice<MyEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   template <uint8_t system, typename TTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs, typename TEMPrimaryElectrons, typename TEMPrimaryMuons>
-  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const& o2tracks, TPCMs const& v0photons, TPCMLegs const& v0legs, TPHOSs const& phosclusters, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
+  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const& o2tracks, TPCMs const& v0photons, TPCMLegs const& /*v0legs*/, TPHOSs const& /*phosclusters*/, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
   {
     // temporary variables used for the indexing of the skimmed MC stack
     std::map<uint64_t, int> fNewLabels;
@@ -526,7 +526,7 @@ struct AssociateMCInfo {
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, phosclusters, emcclusters, emprimaryelectrons, nullptr);
   }
 
-  void processDummy(MyCollisionsMC const& collisions) {}
+  void processDummy(MyCollisionsMC const&) {}
 
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM, "create em mc event table for PCM", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE, "create em mc event table for PCM, DalitzEE", false);

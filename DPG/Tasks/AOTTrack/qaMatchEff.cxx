@@ -1334,7 +1334,7 @@ struct qaMatchEff {
   ///   Template function to perform the analysis   ///
   /////////////////////////////////////////////////////
   template <bool IS_MC, typename T, typename P, typename B>
-  void fillHistograms(T& tracks, P& mcParticles, B const& bcs)
+  void fillHistograms(T& tracks, P& /*mcParticles*/, B const& /*bcs*/)
   {
     //
     float trackPt = 0; //, ITStrackPt = 0;

@@ -398,7 +398,7 @@ void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& co
 }
 
 template <typename CollisionObject, typename ParticlesList>
-void DptDptFilter::processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult)
+void DptDptFilter::processGenerated(CollisionObject const& mccollision, ParticlesList const&, float centormult)
 {
   using namespace dptdptfilter;
 

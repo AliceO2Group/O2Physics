@@ -458,27 +458,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     return flag;
   }
 
-  /// Single-track cuts for 2-prongs, 3-prongs, bachelor+V0, bachelor+cascade decays
-  /// \param trackPt is the track pt
-  /// \param dca is a 2-element array with dca in transverse and longitudinal directions
-  /// \param candType is the flag to decide which cuts to be applied (either for 2-prong, 3-prong, bachelor+V0 or bachelor+cascade decays)
-  /// \return true if track passes all cuts
-  bool isSelectedTrackDCA(const float& trackPt, const std::array<float, 2>& dca, const int candType)
-  {
-    auto pTBinTrack = findBin(binsPtTrack, trackPt);
-    if (pTBinTrack == -1) {
-      return false;
-    }
-
-    if (std::abs(dca[0]) < cutsSingleTrack[candType].get(pTBinTrack, "min_dcaxytoprimary")) {
-      return false; // minimum DCAxy
-    }
-    if (std::abs(dca[0]) > cutsSingleTrack[candType].get(pTBinTrack, "max_dcaxytoprimary")) {
-      return false; // maximum DCAxy
-    }
-    return true;
-  }
-
   /// Single-track cuts for 2-prongs or 3-prongs
   /// \param hfTrack is a track
   /// \param trackPt is the track pt
@@ -657,7 +636,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     iCut = 5;
     if (statusProng > 0) {
       for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; ++iCandType) {
-        if (TESTBIT(statusProng, iCandType) && !isSelectedTrackDCA(trackPt, dca, iCandType)) {
+        if (TESTBIT(statusProng, iCandType) && !isSelectedTrackDcaXY(binsPtTrack, &cutsSingleTrack[iCandType], trackPt, dca[0])) {
           CLRBIT(statusProng, iCandType);
           if (fillHistograms) {
             registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iCut);
@@ -713,7 +692,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \param dcaXYdcaZ is an array containing the dcaXY and dcaZ of trackToRemove with respect to the refitted PV
   template <typename TTrack>
   void performPvRefitTrack(aod::Collision const& collision,
-                           aod::BCsWithTimestamps const& bcWithTimeStamps,
+                           aod::BCsWithTimestamps const&,
                            std::vector<int64_t> vecPvContributorGlobId,
                            std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov,
                            TTrack const& trackToRemove,
@@ -898,7 +877,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \return true if the track is compatible with a proton hypothesis
   template <int pidStrategy, typename TTracks, typename GroupedTrackIndices, typename GroupedPvContributors>
   void runTagSelTracks(aod::Collision const& collision,
-                       TTracks const& tracks,
+                       TTracks const&,
                        GroupedTrackIndices const& trackIndicesCollision,
                        GroupedPvContributors const& pvContrCollision,
                        aod::BCsWithTimestamps const& bcWithTimeStamps,
@@ -1224,7 +1203,7 @@ struct HfTrackIndexSkimCreator {
   Configurable<int64_t> timestampCcdbForHfFilters{"timestampCcdbForHfFilters", 1657032422771, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadMlModelsFromCCDB{"loadMlModelsFromCCDB", true, "Flag to enable or disable the loading of ML models from CCDB"};
 
-  Configurable<LabeledArray<std::string>> onnxFileNames{"onnxFileNames", {hf_cuts_bdt_multiclass::onnxFileNameSpecies[0], 5, 1, hf_cuts_bdt_multiclass::labelsSpecies, hf_cuts_bdt_multiclass::labelsPt}, "ONNX file names for ML models"};
+  Configurable<LabeledArray<std::string>> onnxFileNames{"onnxFileNames", {hf_cuts_bdt_multiclass::onnxFileNameSpecies[0], 5, 1, hf_cuts_bdt_multiclass::labelsSpecies, hf_cuts_bdt_multiclass::labelsModels}, "ONNX file names for ML models"};
 
   Configurable<LabeledArray<double>> thresholdMlScoreD0ToKPi{"thresholdMlScoreD0ToKPi", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of D0 candidates"};
   Configurable<LabeledArray<double>> thresholdMlScoreDplusToPiKPi{"thresholdMlScoreDplusToPiKPi", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of D+ candidates"};
@@ -1297,7 +1276,7 @@ struct HfTrackIndexSkimCreator {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const& context)
+  void init(InitContext const&)
   {
     if (!doprocess2And3ProngsWithPvRefit && !doprocess2And3ProngsNoPvRefit) {
       return;
@@ -1906,7 +1885,7 @@ struct HfTrackIndexSkimCreator {
   /// \param pvCoord is a vector where to store X, Y and Z values of refitted PV
   /// \param pvCovMatrix is a vector where to store the covariance matrix values of refitted PV
   void performPvRefitCandProngs(SelectedCollisions::iterator const& collision,
-                                aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                aod::BCsWithTimestamps const&,
                                 std::vector<int64_t> vecPvContributorGlobId,
                                 std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov,
                                 std::vector<int64_t> vecCandPvContributorGlobId,
@@ -2036,7 +2015,7 @@ struct HfTrackIndexSkimCreator {
   template <bool doPvRefit = false, typename TTracks>
   void run2And3Prongs(SelectedCollisions const& collisions,
                       aod::BCsWithTimestamps const& bcWithTimeStamps,
-                      FilteredTrackAssocSel const& trackIndices,
+                      FilteredTrackAssocSel const&,
                       TTracks const& tracks)
   {
 
@@ -3059,7 +3038,7 @@ struct HfTrackIndexSkimCreatorCascades {
   // histograms
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const& context)
+  void init(InitContext const&)
   {
     if (!doprocessCascades) {
       return;
@@ -3106,7 +3085,7 @@ struct HfTrackIndexSkimCreatorCascades {
   void processCascades(SelectedCollisions const& collisions,
                        aod::V0Datas const& v0s,
                        FilteredTrackAssocSel const& trackIndices,
-                       aod::TracksWCovDcaExtra const& tracks,
+                       aod::TracksWCovDcaExtra const&,
                        aod::BCsWithTimestamps const&)
   {
     // set the magnetic field from CCDB
@@ -3474,7 +3453,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   void processLfCascades(SelectedCollisions const& collisions,
                          CascFull const& cascades,
                          SelectedHfTrackAssoc const& trackIndices,
-                         aod::TracksWCovDca const& tracks,
+                         aod::TracksWCovDca const&,
                          aod::BCsWithTimestamps const&,
                          V0Full const&)
   {

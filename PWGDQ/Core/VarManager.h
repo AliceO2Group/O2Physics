@@ -2157,7 +2157,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
       values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
       values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
-      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * TMath::Sign(1., dca1sigXY) * TMath::Sign(1., dca2sigXY) * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
 
       double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
       double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();

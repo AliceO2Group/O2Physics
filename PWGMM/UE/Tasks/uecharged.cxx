@@ -236,7 +236,7 @@ void ueCharged::processMC(CollisionTableMCTrue::iterator const& mcCollision, Col
   // processTrue(collisions, particles);
 }
 
-void ueCharged::processDataMC(CollisionTableMCData::iterator const& collision, TrackTableMCData const& tracks, ParticleTableMC const& particles, aod::McCollisions const& mcCollisions)
+void ueCharged::processDataMC(CollisionTableMCData::iterator const& collision, TrackTableMCData const& tracks, ParticleTableMC const& particles, aod::McCollisions const& /*mcCollisions*/)
 {
   processMeasMC<false>(collision, tracks, particles);
 }

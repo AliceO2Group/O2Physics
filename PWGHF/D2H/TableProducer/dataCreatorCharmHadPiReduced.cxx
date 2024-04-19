@@ -33,6 +33,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -40,6 +41,7 @@ using namespace o2::aod;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_trkcandsel;
 
 enum Event : uint8_t {
   Processed = 0,
@@ -148,6 +150,7 @@ struct HfDataCreatorCharmHadPiReduced {
   Preslice<CandsD0FilteredWithMl> candsD0PerCollisionWithMl = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
+  std::shared_ptr<TH1> hCandidatesD0, hCandidatesDPlus;
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -232,6 +235,12 @@ struct HfDataCreatorCharmHadPiReduced {
     registry.add(Form("hPt%s", histMassTitle0.data()), Form("%s candidates candidates;%s candidate #it{p}_{T} (GeV/#it{c});entries", charmHadTitle0.data(), charmHadTitle0.data()), {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add(Form("hCpa%s", histMassTitle0.data()), Form("%s candidates;%s cosine of pointing angle;entries", charmHadTitle0.data(), charmHadTitle0.data()), {HistType::kTH1F, {{110, -1.1, 1.1}}});
+
+    /// candidate monitoring
+    hCandidatesD0 = registry.add<TH1>("hCandidatesD0", "D candidate counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesDPlus = registry.add<TH1>("hCandidatesDPlus", "B candidate counter", {HistType::kTH1D, {axisCands}});
+    setLabelHistoCands(hCandidatesD0);
+    setLabelHistoCands(hCandidatesDPlus);
   }
 
   /// Pion selection (D Pi <-- B0)
@@ -424,9 +433,9 @@ struct HfDataCreatorCharmHadPiReduced {
   void runDataCreation(aod::Collision const& collision,
                        CCharmCands const& candsC,
                        aod::TrackAssoc const& trackIndices,
-                       TTracks const& tracks,
+                       TTracks const&,
                        PParticles const& particlesMc,
-                       aod::BCsWithTimestamps const& bcs)
+                       aod::BCsWithTimestamps const&)
   {
     // helpers for ReducedTables filling
     int indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
@@ -518,9 +527,19 @@ struct HfDataCreatorCharmHadPiReduced {
       o2::track::TrackParCov trackParCovCharmHad{};
       std::array<float, 3> pVecCharm{};
       if constexpr (decChannel == DecayChannel::B0ToDminusPi) { // D∓ → π∓ K± π∓
-        if (df3.process(trackParCov0, trackParCov1, trackParCov2) == 0) {
+
+        hCandidatesDPlus->Fill(SVFitting::BeforeFit);
+        try {
+          if (df3.process(trackParCov0, trackParCov1, trackParCov2) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+          hCandidatesDPlus->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidatesDPlus->Fill(SVFitting::FitOk);
+
         auto secondaryVertexCharm = df3.getPCACandidate();
         trackParCov0.propagateTo(secondaryVertexCharm[0], bz);
         trackParCov1.propagateTo(secondaryVertexCharm[0], bz);
@@ -532,9 +551,19 @@ struct HfDataCreatorCharmHadPiReduced {
         trackParCovCharmHad = df3.createParentTrackParCov();
         trackParCovCharmHad.setAbsCharge(charmHadDauTracks[1].sign());   // to be sure
       } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
-        if (df2.process(trackParCov0, trackParCov1) == 0) {
+
+        hCandidatesD0->Fill(SVFitting::BeforeFit);
+        try {
+          if (df2.process(trackParCov0, trackParCov1) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+          hCandidatesD0->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidatesD0->Fill(SVFitting::FitOk);
+
         auto secondaryVertexCharm = df2.getPCACandidate();
         trackParCov0.propagateTo(secondaryVertexCharm[0], bz);
         trackParCov1.propagateTo(secondaryVertexCharm[0], bz);
