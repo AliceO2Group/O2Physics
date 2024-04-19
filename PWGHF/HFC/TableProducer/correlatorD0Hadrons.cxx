@@ -358,7 +358,6 @@ struct HfCorrelatorD0Hadrons {
       registry.fill(HIST("hY"), hfHelper.yD0(candidate1));
       registry.fill(HIST("hSelectionStatus"), candidate1.isSelD0bar() + (candidate1.isSelD0() * 2));
       registry.fill(HIST("hD0Bin"), poolBin);
-      //====================correlation D0 leading particle===============================
 
       // ============ D-h correlation dedicated section ==================================
 
@@ -407,7 +406,8 @@ struct HfCorrelatorD0Hadrons {
         }
 
         if (correlateD0WithLeadingParticle) {
-          if (track.globalIndex() != leadingIndex) continue;
+          if (track.globalIndex() != leadingIndex)
+            continue;
         }
 
         entryD0HadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
