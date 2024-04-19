@@ -264,8 +264,6 @@ struct HfCorrelatorD0Hadrons {
     // mass histogram for D0bar background candidates only
     registry.add("hMassD0barRecBg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountD0TriggersGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    // leading partical information
-    registry.add("hLeadingParticalD0", "deltaPhi deltaEta leadingPt D0Pt poolbin", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {100, -2., 2.}, {180, 0., 18.}, {180, 0., 18.}, {10, 0, 10}}});
   }
   // Find Leading Particle
   template <typename TTracks>
@@ -361,18 +359,13 @@ struct HfCorrelatorD0Hadrons {
       registry.fill(HIST("hSelectionStatus"), candidate1.isSelD0bar() + (candidate1.isSelD0() * 2));
       registry.fill(HIST("hD0Bin"), poolBin);
       //====================correlation D0 leading particle===============================
-      if (correlateD0WithLeadingParticle) {
-        for (auto const& track : tracks) {
-          if (track.globalIndex() != leadingIndex)
-            continue;
-          registry.fill(HIST("hLeadingParticalD0"), getDeltaPhi(track.phi(), candidate1.phi()), track.eta() - candidate1.eta(), track.pt(), candidate1.pt(), poolBin);
-        }
-      }
+
       // ============ D-h correlation dedicated section ==================================
 
       // ========================== track loop starts here ================================
       for (const auto& track : tracks) {
         registry.fill(HIST("hTrackCounter"), 1); // fill total no. of tracks
+
         // Remove D0 daughters by checking track indices
         if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
           continue;
@@ -411,6 +404,11 @@ struct HfCorrelatorD0Hadrons {
         }
         if ((candidate1.isSelD0bar() >= selectionFlagD0bar) && !isSoftPiD0bar) {
           signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0barOnly;
+        }
+
+        if (correlateD0WithLeadingParticle) {
+          if (track.globalIndex() != leadingIndex)
+            continue;
         }
 
         entryD0HadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
