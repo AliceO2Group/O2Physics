@@ -46,7 +46,7 @@ class JQVectors : public std::conditional_t<gap, JQVectorsGapBase<Q, nh, nk>, JQ
   using hasWeightEff = decltype(std::declval<T&>().weightEff());
 
   template <class JInputClass>
-  inline void Calculate(JInputClass& inputInst, float etamax, float etamin)
+  inline void Calculate(JInputClass& inputInst, float etamin, float etamax)
   {
     // calculate Q-vector for QC method ( no subgroup )
     for (UInt_t ih = 0; ih < nh; ++ih) {
