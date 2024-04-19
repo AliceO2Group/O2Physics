@@ -406,7 +406,8 @@ struct HfCorrelatorD0Hadrons {
         }
 
         if (correlateD0WithLeadingParticle) {
-          if (track.globalIndex() != leadingIndex) continue;
+          if (track.globalIndex() != leadingIndex)
+            continue;
         }
 
         entryD0HadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
