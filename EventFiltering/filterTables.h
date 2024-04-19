@@ -106,6 +106,7 @@ DECLARE_SOA_COLUMN(TrackedCascade, hasTrackedCascade, bool);     //! at least 1 
 DECLARE_SOA_COLUMN(TrackedXi, hasTrackedXi, bool);               //! at least 1 tracked Xi
 DECLARE_SOA_COLUMN(TrackedOmega, hasTrackedOmega, bool);         //! at least 1 tracked Omega
 DECLARE_SOA_COLUMN(Tracked3Body, hasTracked3Body, bool);         //! at least 1 tracked 3Body
+DECLARE_SOA_COLUMN(OmegaHighMult, hasOmegaHighMult, bool);           //! at least 1 Omega + high-mult event
 
 // F1-proton
 DECLARE_SOA_COLUMN(TriggerEventF1Proton, triggereventf1proton, bool); //! F1 - proton femto trigger event
@@ -204,7 +205,7 @@ using FullJetFilter = FullJetFilters::iterator;
 
 // strangeness (lf)
 DECLARE_SOA_TABLE(StrangenessFilters, "AOD", "LFStrgFilters", //!
-                  filtering::Omega, filtering::hadronOmega, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega);
+                  filtering::Omega, filtering::hadronOmega, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega, filtering::OmegaHighMult);
 
 using StrangenessFilter = StrangenessFilters::iterator;
 

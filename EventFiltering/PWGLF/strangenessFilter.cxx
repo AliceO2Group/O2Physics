@@ -68,9 +68,9 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosStrangenessTracking{"QAHistosStrangenessTracking", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 13, -1., 12.)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 14, -1., 13.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
-  OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Xi events with pT_h higher than thrd; hadrons with p_{T}>bincenter (GeV/c); Number of events", 11, 0., 11.)};
+  OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Omega events with pT_h higher than thrd; min p_{T, trigg} (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
 
   // Selection criteria for cascades
@@ -108,6 +108,7 @@ struct strangenessFilter {
   Configurable<bool> kint7{"kint7", 0, "Apply kINT7 event selection"};
   Configurable<bool> sel7{"sel7", 0, "Apply sel7 event selection"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
+  Configurable<bool> LowLimitFT0MMult{"LowLimitFT0MMult", 0, "FT0M selection for omega + high multiplicity trigger"};
   Configurable<bool> isTimeFrameBorderCut{"isTimeFrameBorderCut", 1, "Apply timeframe border cut"};
   Configurable<bool> useSigmaBasedMassCutXi{"useSigmaBasedMassCutXi", true, "Mass window based on n*sigma instead of fixed"};
   Configurable<bool> useSigmaBasedMassCutOmega{"useSigmaBasedMassCutOmega", true, "Mass window based on n*sigma instead of fixed"};
@@ -193,6 +194,7 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(11, "#Xi");
     hProcessedEvents->GetXaxis()->SetBinLabel(12, aod::filtering::TrackedXi::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(13, aod::filtering::TrackedOmega::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(14, aod::filtering::OmegaHighMult::columnLabel());
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
@@ -276,6 +278,7 @@ struct strangenessFilter {
     QAHistosTriggerParticles.add("hDCAxyTriggerAllEv", "hDCAxyTriggerAllEv", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy of trigger particles"}, {ptTriggAxis}});
     QAHistosTriggerParticles.add("hDCAzTriggerAllEv", "hDCAzTriggerAllEv", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz of trigger particles"}, {ptTriggAxis}});
 
+    EventsvsMultiplicity.add("AllEventsvsMultiplicityT0M", "T0M distribution of all events", HistType::kTH1F, {multAxisT0M});
     if (doextraQA) {
       EventsvsMultiplicity.add("AllEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of all events", HistType::kTH1F, {multAxisV0A});
       EventsvsMultiplicity.add("hadEventsvsMultiplicityZeqV0A", "ZeqV0A distribution of events with hight pT hadron", HistType::kTH1F, {multAxisV0A});
@@ -661,8 +664,8 @@ struct strangenessFilter {
                    aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const&, aod::BCsWithTimestamps const&)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Omega, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
-    // [7] tracked Xi, [8] tracked Omega
-    bool keepEvent[9]{}; // explicitly zero-initialised
+    // [7] tracked Xi, [8] tracked Omega, [9] Omega + high mult event
+    bool keepEvent[10]{}; // explicitly zero-initialised
 
     if (sel8 && !collision.sel8()) {
       fillTriggerTable(keepEvent);
@@ -687,6 +690,10 @@ struct strangenessFilter {
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityZeqT0M"), collision.multZeqFT0A() + collision.multZeqFT0C());
       EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityZeqNTracksPV"), collision.multZeqNTracksPV());
     }
+
+    Bool_t isHighMultEvent = 0;
+    EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0M"), collision.multFT0M());
+    if (collision.multFT0M() > LowLimitFT0MMult ) isHighMultEvent = 1;
 
     // constants
     const float ctauxi = 4.91;     // from PDG
@@ -1013,7 +1020,7 @@ struct strangenessFilter {
     }
     QAHistosTriggerParticles.fill(HIST("hTriggeredParticlesAllEv"), triggcounterAllEv);
 
-    // High-pT hadron + Xi trigger definition
+    // High-pT hadron + Omega trigger definition
     if (omegacounter > 0) {
       for (auto track : tracks) { // start loop over tracks
         if (isTrackFilter && !mTrackSelector.IsSelected(track)) {
@@ -1058,6 +1065,11 @@ struct strangenessFilter {
     // Omega with high radius trigger definition
     if (omegalargeRcounter > 0) {
       keepEvent[6] = true;
+    }
+
+    // Omega in high multiplicity events
+    if (omegacounter > 0 && isHighMultEvent) {
+      keepEvent[9] = true;
     }
 
     // strangeness tracking selection
@@ -1272,6 +1284,9 @@ struct strangenessFilter {
     }
     if (keepEvent[8]) {
       hProcessedEvents->Fill(11.5);
+    }
+    if (keepEvent[9]) {
+      hProcessedEvents->Fill(12.5);
     }
 
     // Filling the table
