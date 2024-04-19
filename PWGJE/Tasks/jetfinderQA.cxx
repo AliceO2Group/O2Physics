@@ -522,7 +522,7 @@ struct JetFinderQATask {
     }
   }
 
-  void processJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracks const& tracks)
+  void processJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracks const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -538,7 +538,7 @@ struct JetFinderQATask {
 
   void processJetsRhoAreaSubData(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
                                  soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
-                                 JetTracks const& tracks)
+                                 JetTracks const&)
   {
     for (auto jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -552,7 +552,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsRhoAreaSubData, "jet finder QA for rho-area subtracted jets", false);
 
-  void processEvtWiseConstSubJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents> const& jets, JetTracksSub const& tracks)
+  void processEvtWiseConstSubJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents> const& jets, JetTracksSub const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -566,10 +566,10 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processEvtWiseConstSubJetsData, "jet finder QA for eventwise constituent-subtracted jets data", false);
 
-  void processJetsSubMatched(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processJetsSubMatched(soa::Filtered<JetCollisions>::iterator const&,
                              soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets> const& jets,
-                             soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets> const& jetSubs,
-                             JetTracks const& tracks, JetTracksSub const& tracksSub)
+                             soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets> const&,
+                             JetTracks const&, JetTracksSub const&)
   {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -583,7 +583,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsSubMatched, "jet finder QA matched unsubtracted and constituent subtracted jets", false);
 
-  void processJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, JetTracks const& tracks)
+  void processJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, JetTracks const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -597,7 +597,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCD, "jet finder QA mcd", false);
 
-  void processJetsMCDWeighted(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets, JetTracks const& tracks)
+  void processJetsMCDWeighted(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets, JetTracks const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -618,7 +618,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCDWeighted, "jet finder QA mcd with weighted events", false);
 
-  void processJetsMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, JetParticles const& particles)
+  void processJetsMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, JetParticles const&)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -630,7 +630,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCP, "jet finder QA mcp", false);
 
-  void processJetsMCPWeighted(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights>::iterator const& jet, JetParticles const& particles)
+  void processJetsMCPWeighted(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights>::iterator const& jet, JetParticles const&)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -649,10 +649,10 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCPWeighted, "jet finder QA mcp with weighted events", false);
 
-  void processJetsMCPMCDMatched(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processJetsMCPMCDMatched(soa::Filtered<JetCollisions>::iterator const&,
                                 soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& mcdjets,
-                                soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const& mcpjets,
-                                JetTracks const& tracks, JetParticles const& particles)
+                                soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const&,
+                                JetTracks const&, JetParticles const&)
   {
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -666,10 +666,10 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCPMCDMatched, "jet finder QA matched mcp and mcd", false);
 
-  void processJetsMCPMCDMatchedWeighted(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processJetsMCPMCDMatchedWeighted(soa::Filtered<JetCollisions>::iterator const&,
                                         soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights> const& mcdjets,
-                                        soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetEventWeights> const& mcpjets,
-                                        JetTracks const& tracks, JetParticles const& particles)
+                                        soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets, aod::ChargedMCParticleLevelJetEventWeights> const&,
+                                        JetTracks const&, JetParticles const&)
   {
     for (const auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -830,7 +830,7 @@ struct JetFinderQATask {
   PROCESS_SWITCH(JetFinderQATask, processTracks, "QA for charged tracks", false);
 
   void processTracksWeighted(soa::Join<JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
-                             JetMcCollisions const& mcCollisions,
+                             JetMcCollisions const&,
                              soa::Filtered<JetTracks> const& tracks)
   {
     float eventWeight = collision.mcCollision().weight();

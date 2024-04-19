@@ -42,7 +42,7 @@ struct ApplySmearing {
 
   MomentumSmearer smearer;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     smearer.setResFileName(TString(fConfigResFileName));
     smearer.setResPtHistName(TString(fConfigResPtHistName));
@@ -87,9 +87,9 @@ struct ApplySmearing {
     applySmearing(tracksMC);
   }
 
-  void processDummyCocktail(aod::McParticles const& tracksMC) {}
+  void processDummyCocktail(aod::McParticles const&) {}
 
-  void processDummyMCanalysis(ReducedMCTracks const& tracksMC) {}
+  void processDummyMCanalysis(ReducedMCTracks const&) {}
 
   PROCESS_SWITCH(ApplySmearing, processMCanalysis, "Run for MC analysis", false);
   PROCESS_SWITCH(ApplySmearing, processCocktail, "Run for cocktail analysis", false);
@@ -175,8 +175,8 @@ struct CheckSmearing {
     Check(tracksMC);
   }
 
-  void processDummyMCanalysis(ReducedMCTracks const& tracksMC) {}
-  void processDummyCocktail(aod::McParticles const& tracksMC) {}
+  void processDummyMCanalysis(ReducedMCTracks const&) {}
+  void processDummyCocktail(aod::McParticles const&) {}
 
   PROCESS_SWITCH(CheckSmearing, processCheckMCanalysis, "Run for MC analysis", false);
   PROCESS_SWITCH(CheckSmearing, processCheckCocktail, "Run for cocktail analysis", false);

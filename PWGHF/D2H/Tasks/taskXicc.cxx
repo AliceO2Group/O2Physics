@@ -179,7 +179,7 @@ struct HfTaskXiccMc {
 
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi, aod::HfCandXiccMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXiccMcGen> const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   {
     // MC rec.
     for (const auto& candidate : candidates) {

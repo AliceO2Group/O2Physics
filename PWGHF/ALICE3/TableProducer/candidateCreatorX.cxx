@@ -271,7 +271,7 @@ struct HfCandidateCreatorXMc {
 
   void process(aod::HfCandX const& candidates,
                aod::HfCand2Prong const&,
-               aod::TracksWMc const& tracks,
+               aod::TracksWMc const&,
                aod::McParticles const& mcParticles)
   {
     int indexRec = -1;

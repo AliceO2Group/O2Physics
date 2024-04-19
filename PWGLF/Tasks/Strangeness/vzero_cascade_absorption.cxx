@@ -164,7 +164,7 @@ struct vzero_cascade_absorption {
 
   // Single-Track Selection
   template <typename T1, typename C>
-  bool passedSingleTrackSelection(const T1& track, const C& collision)
+  bool passedSingleTrackSelection(const T1& track, const C&)
   {
     // Single-Track Selections
     if (requirehitsITS && (!track.hasITS()))
@@ -335,7 +335,7 @@ struct vzero_cascade_absorption {
   }
 
   // Process Data
-  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, FullTracks const& tracks)
+  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, FullTracks const&)
   {
 
     // Event Counter (before event sel)
@@ -423,7 +423,7 @@ struct vzero_cascade_absorption {
   PROCESS_SWITCH(vzero_cascade_absorption, processData, "Process data", true);
 
   // Process MC
-  void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, aod::V0Datas const& fullV0s, MCTracks const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+  void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, aod::V0Datas const& fullV0s, MCTracks const&, aod::McParticles&, aod::McCollisions const&)
   {
 
     // Event Counter (before event sel)
@@ -555,7 +555,7 @@ struct vzero_cascade_absorption {
   }   // end processMC
   PROCESS_SWITCH(vzero_cascade_absorption, processMC, "Process mc", false);
 
-  void processMCgen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
+  void processMCgen(aod::McCollision const&, aod::McParticles& mcParticles)
   {
     for (auto& mcParticle : mcParticles) {
 

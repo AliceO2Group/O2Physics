@@ -59,7 +59,7 @@ struct LumiQaTask {
     histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
   }
 
-  void process(BCsRun3 const& bcs, aod::Zdcs const& zdcs, aod::FT0s const& ft0s)
+  void process(BCsRun3 const& bcs, aod::Zdcs const&, aod::FT0s const&)
   {
     int runNumber = bcs.iteratorAt(0).runNumber();
     LOGP(info, "runNumber={}", runNumber);

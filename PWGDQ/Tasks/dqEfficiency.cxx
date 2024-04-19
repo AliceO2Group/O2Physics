@@ -116,7 +116,7 @@ struct AnalysisEventSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, typename TEvent, typename TEventsMC>
-  void runSelection(TEvent const& event, TEventsMC const& mcEvents)
+  void runSelection(TEvent const& event, TEventsMC const& /*mcEvents*/)
   {
     // Reset the values array
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -222,7 +222,7 @@ struct AnalysisTrackSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvent, typename TTracks, typename TEventsMC, typename TTracksMC>
-  void runSelection(TEvent const& event, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  void runSelection(TEvent const& event, TTracks const& tracks, TEventsMC const& /*eventsMC*/, TTracksMC const& /*tracksMC*/)
   {
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
     // fill event information which might be needed in histograms that combine track and event properties
@@ -382,7 +382,7 @@ struct AnalysisMuonSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TMuonFillMap, uint32_t TMuonMCFillMap, typename TEvent, typename TMuons, typename TEventsMC, typename TMuonsMC>
-  void runSelection(TEvent const& event, TMuons const& muons, TEventsMC const& eventsMC, TMuonsMC const& muonsMC)
+  void runSelection(TEvent const& event, TMuons const& muons, TEventsMC const& /*eventsMC*/, TMuonsMC const& /*muonsMC*/)
   {
     // cout << "Event ######################################" << endl;
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
@@ -685,7 +685,7 @@ struct AnalysisSameEventPairing {
   }
 
   template <int TPairType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2, typename TEventsMC, typename TTracksMC>
-  void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& /*eventsMC*/, TTracksMC const& /*tracksMC*/)
   {
     if (fCurrentRun != event.runNumber()) {
       if (fUseRemoteField.value) {
@@ -1084,7 +1084,7 @@ struct AnalysisDileptonTrack {
 
   // Template function to run pair - track combinations
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TDileptons, typename TEventsMC, typename TTracksMC>
-  void runDileptonTrack(TEvent const& event, TTracks const& tracks, TDileptons const& dileptons, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  void runDileptonTrack(TEvent const& event, TTracks const& tracks, TDileptons const& dileptons, TEventsMC const& /*eventsMC*/, TTracksMC const& /*tracksMC*/)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesTrack);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);

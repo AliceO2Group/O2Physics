@@ -141,7 +141,7 @@ struct JetFragmentation {
 
   int eventSelection = -1;
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
 
@@ -825,7 +825,7 @@ struct JetFragmentation {
   }
 
   template <typename collisionType, typename v0Type, typename trackType, typename particleType>
-  void fillMcMatchedV0Histograms(collisionType const& collision, v0Type const& v0, trackType const& tracks, particleType const& particles, double weight = 1.)
+  void fillMcMatchedV0Histograms(collisionType const& collision, v0Type const& v0, trackType const&, particleType const&, double weight = 1.)
   {
     auto negTrack = v0.template negTrack_as<trackType>();
     auto posTrack = v0.template posTrack_as<trackType>();
@@ -907,7 +907,7 @@ struct JetFragmentation {
   }
 
   template <typename CollisionType, typename V0Type, typename TrackType>
-  void fillDataV0Histograms(CollisionType const& collision, V0Type const& V0s, TrackType const& tracks)
+  void fillDataV0Histograms(CollisionType const& collision, V0Type const& V0s, TrackType const&)
   {
     for (const auto& v0 : V0s) {
       double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
@@ -1421,12 +1421,12 @@ struct JetFragmentation {
     }
   }
 
-  void processDummy(JetTracks const& tracks) {}
+  void processDummy(JetTracks const&) {}
   PROCESS_SWITCH(JetFragmentation, processDummy, "Dummy process function turned on by default", true);
 
   void processMcD(soa::Filtered<JetCollisionsMCD>::iterator const& collision,
-                  JetMcCollisions const& mcCollisions,
-                  McDJets const& jets,
+                  JetMcCollisions const&,
+                  McDJets const&,
                   JetTracks const& tracks)
   {
     if (!collision.has_mcCollision()) {
@@ -1497,11 +1497,11 @@ struct JetFragmentation {
   PROCESS_SWITCH(JetFragmentation, processDataRun3, "Run 3 Data", false);
 
   void processMcMatched(soa::Filtered<JetCollisionsMCD>::iterator const& collision,
-                        MatchedMcDJets const& mcDetJets,
-                        JetTracksMCD const& tracks,
-                        JetMcCollisions const& mcCollisions,
+                        MatchedMcDJets const&,
+                        JetTracksMCD const&,
+                        JetMcCollisions const&,
                         MatchedMcPJets const& allMcPartJets,
-                        JetParticles const& mcParticles)
+                        JetParticles const&)
   {
     if (!collision.has_mcCollision()) {
       return;
@@ -1584,7 +1584,7 @@ struct JetFragmentation {
   PROCESS_SWITCH(JetFragmentation, processMcMatched, "Monte Carlo particle and detector level", false);
 
   void processMcMatchedV0(soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>::iterator const& collision,
-                          aod::McCollisions const& mcCollisions,
+                          aod::McCollisions const&,
                           soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                           soa::Join<MyTracks, aod::McTrackLabels> const& tracks,
                           aod::McParticles const& mcParticles)
@@ -1606,15 +1606,15 @@ struct JetFragmentation {
   PROCESS_SWITCH(JetFragmentation, processMcMatchedV0, "Monte Carlo V0", false);
 
   void processMcMatchedV0Frag(soa::Filtered<soa::Join<JetCollisionsMCD, aod::JCollisionPIs>>::iterator const& jcoll,
-                              MatchedMcDJets const& mcDetJets,
-                              JetTracksMCD const& tracks,
+                              MatchedMcDJets const&,
+                              JetTracksMCD const&,
                               soa::Join<aod::V0Datas, aod::McV0Labels> const& allV0s,
-                              JetMcCollisions const& allJMcCollisions,
+                              JetMcCollisions const&,
                               MatchedMcPJets const& allMcPartJets,
-                              JetParticles const& allJMcParticles,
-                              aod::McCollisions const& allMcCollisions,
+                              JetParticles const&,
+                              aod::McCollisions const&,
                               aod::McParticles const& allMcParticles,
-                              aod::Collisions const& allCollisions)
+                              aod::Collisions const&)
   {
     if (!jcoll.has_mcCollision()) {
       return;
@@ -1762,8 +1762,8 @@ struct JetFragmentation {
 
   void processDataV0Frag(soa::Filtered<soa::Join<JetCollisions, aod::JCollisionPIs>>::iterator const& jcoll,
                          ChargedJetsWithConstituents const& jets,
-                         JetTracks const& jtracks,
-                         aod::Collisions const& collisions,
+                         JetTracks const&,
+                         aod::Collisions const&,
                          aod::V0Datas const& allV0s,
                          MyTracks const& allTracks)
   {

@@ -415,7 +415,7 @@ struct hyperKinkRecoTask {
     return pools;
   }
 
-  void fillCandidateData(CollisionsFull const& collisions, TracksFull const& tracks, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcWtmp, std::array<std::vector<TrackCand>, 4> trackPool)
+  void fillCandidateData(CollisionsFull const& collisions, TracksFull const& tracks, o2::aod::AmbiguousTracks const&, aod::BCsWithTimestamps const&, std::array<std::vector<TrackCand>, 4> trackPool)
   {
     gsl::span<std::vector<TrackCand>> hyperPool{trackPool.data(), 2};
     gsl::span<std::vector<TrackCand>> tritPool{trackPool.data() + 2, 2};
@@ -579,7 +579,7 @@ struct hyperKinkRecoTask {
     }
   }
 
-  void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const& particlesMC)
+  void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const&)
   {
 
     for (auto& kinkCand : mKinkCandidates) {

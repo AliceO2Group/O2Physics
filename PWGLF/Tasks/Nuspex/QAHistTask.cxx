@@ -567,7 +567,7 @@ struct QAHistTask {
   PROCESS_SWITCH(QAHistTask, processDataCent, "process data containing centralities", false);
 
   void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
-                 aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+                 aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
     MC_truth_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
@@ -617,6 +617,11 @@ struct QAHistTask {
       MC_recon_reg.fill(HIST("histGlobalpDist"), track.p(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCpDist"), track.tpcInnerParam(), pdgbin);
       MC_recon_reg.fill(HIST("histpTCorralation_2"), track.p(), track.tpcInnerParam(), pdgbin);
+
+      if (particle.pdgCode() == 211)
+        MC_recon_reg.fill(HIST("histpTCorralation_pion"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
+      if (particle.pdgCode() == -211)
+        MC_recon_reg.fill(HIST("histpTCorralation_apion"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
 
       if (track.hasTOF()) {
         Float_t TOFmass2 = ((track.mass()) * (track.mass()));

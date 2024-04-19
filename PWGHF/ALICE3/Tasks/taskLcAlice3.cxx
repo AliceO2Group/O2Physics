@@ -52,7 +52,7 @@ struct HfTaskLcAlice3 {
 
   void process(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLcAlice3, aod::HfCand3ProngMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   {
     for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {

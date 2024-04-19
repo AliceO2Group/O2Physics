@@ -98,7 +98,7 @@ struct HfCandidateCreatorChic {
                soa::Filtered<soa::Join<
                  aod::HfCand2Prong,
                  aod::HfSelJpsi>> const& jpsiCands,
-               aod::TracksWCov const& tracks,
+               aod::TracksWCov const&,
                aod::ECALs const& ecals)
   {
     // loop over Jpsi candidates
@@ -223,9 +223,9 @@ struct HfCandidateCreatorChicMc {
 
   void process(aod::HfCandChic const& candidates,
                aod::HfCand2Prong const&,
-               aod::TracksWMc const& tracks,
+               aod::TracksWMc const&,
                aod::McParticles const& mcParticles,
-               aod::ECALs const& ecals)
+               aod::ECALs const&)
   {
     int indexRec = -1;
     // int8_t sign = 0;

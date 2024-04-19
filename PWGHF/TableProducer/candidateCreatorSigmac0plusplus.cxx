@@ -259,7 +259,7 @@ struct HfCandidateCreatorSigmac0plusplus {
                     TRK const& trackSoftPi,
                     aod::TracksWDcaExtra const& tracks,
                     CandidatesLc const& candidates,
-                    aod::BCsWithTimestamps const& bcWithTimeStamps)
+                    aod::BCsWithTimestamps const&)
   {
 
     auto thisCollId = collision.globalIndex();

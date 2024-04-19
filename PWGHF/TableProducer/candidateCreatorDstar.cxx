@@ -30,9 +30,11 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::hf_evsel;
+using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_collision_centrality;
 using namespace o2::constants::physics;
 using namespace o2::framework;
@@ -86,7 +88,7 @@ struct HfCandidateCreatorDstar {
   AxisSpec ptAxis = {100, 0., 2.0, "#it{p}_{T} (GeV/#it{c}"};
   AxisSpec dcaAxis = {200, -500., 500., "#it{d}_{xy,z} (#mum)"};
 
-  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
+  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hCandidates;
   HistogramRegistry registry{
     "registry",
     {{"Refit/hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}}},
@@ -143,6 +145,7 @@ struct HfCandidateCreatorDstar {
     hPosXAfterEvSel = registry.add<TH1>("EvSel/hPosXAfterEvSel", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
     hPosYAfterEvSel = registry.add<TH1>("EvSel/hPosYAfterEvSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>("EvSel/hNumPvContributorsAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{500, -0.5, 499.5}}});
+    hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     // LOG(info) << "Init Function Invoked";
     massPi = MassPiPlus;
@@ -166,6 +169,9 @@ struct HfCandidateCreatorDstar {
 
     /// collision monitoring
     setLabelHistoEvSel(hCollisions);
+
+    /// candidate monitoring
+    setLabelHistoCands(hCandidates);
   }
 
   /// @brief function for secondary vertex reconstruction and candidate creator
@@ -177,11 +183,11 @@ struct HfCandidateCreatorDstar {
   /// @param tracks track table with Cov object
   /// @param bcWithTimeStamps Bunch Crossing with timestamps
   template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandsDstar>
-  void runCreatorDstar(Coll const& collisions,
+  void runCreatorDstar(Coll const&,
                        CandsDstar const& rowsTrackIndexDstar,
-                       aod::Hf2Prongs const& rowsTrackIndexD0,
-                       aod::TracksWCov const& tracks,
-                       aod::BCsWithTimestamps const& bcWithTimeStamps)
+                       aod::Hf2Prongs const&,
+                       aod::TracksWCov const&,
+                       aod::BCsWithTimestamps const&)
   {
     // LOG(info) << "runCreatorDstar function called";
     // LOG(info) << "candidate loop starts";
@@ -233,9 +239,18 @@ struct HfCandidateCreatorDstar {
       df.setBz(bz);
 
       // reconstruct the 2-prong secondary vertex
-      if (df.process(trackD0Prong0ParVarPos1, trackD0Prong1ParVarNeg1) == 0) {
+      hCandidates->Fill(SVFitting::BeforeFit);
+      try {
+        if (df.process(trackD0Prong0ParVarPos1, trackD0Prong1ParVarNeg1) == 0) {
+          continue;
+        }
+      } catch (const std::runtime_error& error) {
+        LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+        hCandidates->Fill(SVFitting::Fail);
         continue;
       }
+      hCandidates->Fill(SVFitting::FitOk);
+
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();

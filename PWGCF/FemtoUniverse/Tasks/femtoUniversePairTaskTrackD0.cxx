@@ -368,7 +368,7 @@ struct femtoUniversePairTaskTrackD0 {
     eventHisto.fillQA(col);
   }
 
-  void processD0mesons(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  void processD0mesons(o2::aod::FDCollision& col, FemtoFullParticles&)
   {
     auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsAllDmesons = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -425,7 +425,7 @@ struct femtoUniversePairTaskTrackD0 {
   PROCESS_SWITCH(femtoUniversePairTaskTrackD0, processD0mesons, "Enable processing D0 mesons", true);
 
   // D0-D0bar pair correlations (side-band methode)
-  void processSideBand(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  void processSideBand(o2::aod::FDCollision& col, FemtoFullParticles&)
   {
     auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
@@ -435,13 +435,13 @@ struct femtoUniversePairTaskTrackD0 {
     // loop over D0/D0bar candidates (ONLY)
     for (auto const& cand1 : groupPartsOnlyD0D0bar) {
       // Check if the first candidate is D0 meson
-      if (cand1.mLambda() > 0.0f && cand1.mAntiLambda() < 0.0f) {
+      if (cand1.mLambda() < 0.0f && cand1.mAntiLambda() > 0.0f) {
         continue;
       }
 
       for (auto const& cand2 : groupPartsOnlyD0D0bar) {
         // Check if the second candidate is D0bar meson
-        if (cand2.mLambda() < 0.0f && cand2.mAntiLambda() > 0.0f) {
+        if (cand2.mLambda() > 0.0f && cand2.mAntiLambda() < 0.0f) {
           continue;
         }
         deltaPhi = getDeltaPhi(cand1.phi(), cand2.phi());

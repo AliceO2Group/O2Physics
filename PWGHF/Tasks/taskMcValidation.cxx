@@ -461,9 +461,9 @@ struct HfTaskMcValidationRec {
 
   void process(HfCand2ProngWithMCRec const& cand2Prongs,
                HfCand3ProngWithMCRec const& cand3Prongs,
-               TracksWithSel const& tracks,
+               TracksWithSel const&,
                aod::McParticles const& mcParticles,
-               aod::McCollisions const& mcCollisions,
+               aod::McCollisions const&,
                CollisionsWithMCLabels const& collisions,
                aod::BCs const&)
   {

@@ -52,27 +52,27 @@ JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const char* name) : fVertex(0),
-                                                   fCent(0),
-                                                   fCBin(0),
-                                                   fHMG(0),
-                                                   fBin_Subset(),
-                                                   fBin_h(),
-                                                   fBin_k(),
-                                                   fBin_hh(),
-                                                   fBin_kk(),
-                                                   fHistCentBin(),
-                                                   fh_cent(),
-                                                   fh_ImpactParameter(),
-                                                   fh_vertex(),
-                                                   fh_eta(),
-                                                   fh_phi(),
-                                                   fh_phieta(),
-                                                   fh_phietaz(),
-                                                   fh_ntracks(),
-                                                   fh_vn(),
-                                                   fh_vna(),
-                                                   fh_vn_vn()
+JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
+                                                       fCent(0),
+                                                       fCBin(0),
+                                                       fHMG(0),
+                                                       fBin_Subset(),
+                                                       fBin_h(),
+                                                       fBin_k(),
+                                                       fBin_hh(),
+                                                       fBin_kk(),
+                                                       fHistCentBin(),
+                                                       fh_cent(),
+                                                       fh_ImpactParameter(),
+                                                       fh_vertex(),
+                                                       fh_eta(),
+                                                       fh_phi(),
+                                                       fh_phieta(),
+                                                       fh_phietaz(),
+                                                       fh_ntracks(),
+                                                       fh_vn(),
+                                                       fh_vna(),
+                                                       fh_vn_vn()
 {
   // cout << "analysis task created " << endl;
 
@@ -335,7 +335,7 @@ TComplex JFFlucAnalysis::Q(int n, int p)
 {
   // Return QvectorQC
   // Q{-n, p} = Q{n, p}*
-  return n >= 0 ? QvectorQC[n][p] : C(QvectorQC[-n][p]);
+  return n >= 0 ? pqvecs->QvectorQC[n][p] : C(pqvecs->QvectorQC[-n][p]);
 }
 
 TComplex JFFlucAnalysis::Two(int n1, int n2)
@@ -352,14 +352,14 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t* popt)
+void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 {
   for (UInt_t ih = 2; ih < kNH; ih++) {
-    fh_cos_n_phi[ih][fCBin]->Fill(QvectorQC[ih][1].Re() / QvectorQC[0][1].Re());
-    fh_sin_n_phi[ih][fCBin]->Fill(QvectorQC[ih][1].Im() / QvectorQC[0][1].Re());
+    fh_cos_n_phi[ih][fCBin]->Fill(pqvecs->QvectorQC[ih][1].Re() / pqvecs->QvectorQC[0][1].Re());
+    fh_sin_n_phi[ih][fCBin]->Fill(pqvecs->QvectorQC[ih][1].Im() / pqvecs->QvectorQC[0][1].Re());
     //
     //
-    Double_t psi = QvectorQC[ih][1].Theta();
+    Double_t psi = pqvecs->QvectorQC[ih][1].Theta();
     fh_psi_n[ih][fCBin]->Fill(psi);
     fh_cos_n_psi_n[ih][fCBin]->Fill(TMath::Cos((Double_t)ih * psi));
     fh_sin_n_psi_n[ih][fCBin]->Fill(TMath::Sin((Double_t)ih * psi));
@@ -372,7 +372,7 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
   TComplex ncorr[kNH][nKL];
   TComplex ncorr2[kNH][nKL][kcNH][nKL];
 
-  const TComplex(*pQq)[kNH][nKL] = QvectorQCgap;
+  const TComplex(*pQq)[kNH][nKL] = pqvecs->QvectorQCgap;
 
   for (UInt_t i = 0; i < 2; ++i) {
     if ((subeventMask & (1 << i)) == 0)
@@ -531,7 +531,7 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
   if (flags & kFlucEbEWeighting) {
     event_weight_four = Four(0, 0, 0, 0).Re();
     event_weight_two = Two(0, 0).Re();
-    event_weight_two_gap = (QvectorQCgap[kSubA][0][1] * QvectorQCgap[kSubB][0][1]).Re();
+    event_weight_two_gap = (pqvecs->QvectorQCgap[kSubA][0][1] * pqvecs->QvectorQCgap[kSubB][0][1]).Re();
   }
 
   for (UInt_t ih = 2; ih < kNH; ih++) {
@@ -544,12 +544,12 @@ void JFFlucAnalysis::UserExec(Option_t* popt)
     TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
     fh_SC_with_QC_2corr[ih][fCBin]->Fill(sctwo.Re(), event_weight_two);
 
-    TComplex sctwoGap = (QvectorQCgap[kSubA][ih][1] * TComplex::Conjugate(QvectorQCgap[kSubB][ih][1])) / (QvectorQCgap[kSubA][0][1] * QvectorQCgap[kSubB][0][1]).Re();
+    TComplex sctwoGap = (pqvecs->QvectorQCgap[kSubA][ih][1] * TComplex::Conjugate(pqvecs->QvectorQCgap[kSubB][ih][1])) / (pqvecs->QvectorQCgap[kSubA][0][1] * pqvecs->QvectorQCgap[kSubB][0][1]).Re();
     fh_SC_with_QC_2corr_gap[ih][fCBin]->Fill(sctwoGap.Re(), event_weight_two_gap);
   }
 }
 
 //________________________________________________________________________
-void JFFlucAnalysis::Terminate(Option_t* popt)
+void JFFlucAnalysis::Terminate(Option_t* /*popt*/)
 {
 }

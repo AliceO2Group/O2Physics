@@ -409,7 +409,7 @@ void IdentifiedBfFilter::processWithoutCentPIDDetectorLevel(aod::CollisionEvSel 
 }
 
 template <typename CollisionObject, typename ParticlesList>
-void IdentifiedBfFilter::processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult)
+void IdentifiedBfFilter::processGenerated(CollisionObject const& mccollision, ParticlesList const&, float centormult)
 {
   using namespace identifiedbffilter;
 

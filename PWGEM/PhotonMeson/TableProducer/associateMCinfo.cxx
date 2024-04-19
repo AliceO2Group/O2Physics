@@ -78,7 +78,7 @@ struct AssociateMCInfo {
   Preslice<MyEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   template <uint8_t system, typename TTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs, typename TEMPrimaryElectrons, typename TEMPrimaryMuons>
-  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const& o2tracks, TPCMs const& v0photons, TPCMLegs const& v0legs, TPHOSs const& phosclusters, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
+  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const& o2tracks, TPCMs const& v0photons, TPCMLegs const& /*v0legs*/, TPHOSs const& /*phosclusters*/, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
   {
     // temporary variables used for the indexing of the skimmed MC stack
     std::map<uint64_t, int> fNewLabels;
@@ -116,6 +116,9 @@ struct AssociateMCInfo {
           continue;
         }
         int pdg = mctrack.pdgCode();
+        if (abs(pdg) > 1e+9) {
+          continue;
+        }
 
         // fill basic histograms
         if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && abs(mctrack.y()) < 0.5) {
@@ -163,6 +166,12 @@ struct AssociateMCInfo {
           && (abs(pdg) != 553)    // Upsilon(1S)
           && (abs(pdg) != 100553) // Upsilon(2S)
           && (abs(pdg) != 200553) // Upsilon(3S)
+
+          // heavy flavor hadrons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 3] != '4') // charmed mesons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 3] != '5') // beauty mesons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 4] != '4') // charmed baryons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 4] != '5') // beauty baryons
 
           // strange hadrons
           // && (abs(pdg) != 310)  // K0S
@@ -526,7 +535,7 @@ struct AssociateMCInfo {
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, phosclusters, emcclusters, emprimaryelectrons, nullptr);
   }
 
-  void processDummy(MyCollisionsMC const& collisions) {}
+  void processDummy(MyCollisionsMC const&) {}
 
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM, "create em mc event table for PCM", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE, "create em mc event table for PCM, DalitzEE", false);

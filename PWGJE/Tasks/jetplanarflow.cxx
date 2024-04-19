@@ -273,7 +273,7 @@ struct JetPlanarFlowTask {
     }
   }
 
-  void processDummy(JetTracks const& tracks)
+  void processDummy(JetTracks const&)
   {
   }
   PROCESS_SWITCH(JetPlanarFlowTask, processDummy, "Dummy process function turned on by default", true);

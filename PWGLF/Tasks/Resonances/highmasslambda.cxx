@@ -336,7 +336,7 @@ struct highmasslambda {
   double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();   // FIXME: Get from the common header
   double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();   // FIXME: Get from the common header
   double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
-  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, AllTrackCandidates const& alltracks, ResoV0s const& V0s, aod::BCs const&)
+  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, AllTrackCandidates const&, ResoV0s const& V0s, aod::BCs const&)
   {
     if (!collision.sel8()) {
       return;
@@ -443,7 +443,7 @@ struct highmasslambda {
     }
   }
   PROCESS_SWITCH(highmasslambda, processSameEvent, "Process Same event", true);
-  void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks, AllTrackCandidates const& alltracks, ResoV0s const& V0s)
+  void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks, AllTrackCandidates const&, ResoV0s const& V0s)
   {
     auto tracksV0sTuple = std::make_tuple(tracks, V0s);
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};

@@ -176,7 +176,7 @@ struct lfmatchingqa {
   }
   PROCESS_SWITCH(lfmatchingqa, processData, "Data analysis", true);
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TracksFullMC const& tracks, aod::McParticles const& particlesMC, aod::BCs const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TracksFullMC const& tracks, aod::McParticles const&, aod::BCs const&)
   {
 
     if (!collision.sel8())
