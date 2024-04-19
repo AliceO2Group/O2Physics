@@ -184,7 +184,7 @@ struct jetFilter {
   {
 
     // collision process loop
-    bool keepEvent[kTriggerObjects]{false};
+    bool keepEvent[kTriggerObjects]{false, false, false, false};
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackLowPt], keepEvent[kTrackHighPt]);
       return;
