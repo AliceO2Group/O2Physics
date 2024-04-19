@@ -171,7 +171,8 @@ struct singleTrackSelector {
 
       for (auto ii : particlesToKeep)
         if (o2::aod::singletrackselector::TPCselection(track, std::make_pair(ii, keepWithinNsigmaTPC))) {
-          if(track.p() > _pRemoveTofOutOfRange && !o2::aod::singletrackselector::TOFselection(track, std::make_pair(ii, std::vector<float>{-10.0, 10.0}), 10.0)) continue;
+          if (track.p() > _pRemoveTofOutOfRange && !o2::aod::singletrackselector::TOFselection(track, std::make_pair(ii, std::vector<float>{-10.0, 10.0}), 10.0))
+            continue;
 
           tableRow(tableRowColl.lastIndex(),
                    track.p(),

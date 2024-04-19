@@ -221,7 +221,7 @@ struct FemtoCorrelations {
         for (int j = 0; j < _kTbins.value.size() - 1; j++) {
           auto hDblTrk_SE = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_SE_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j), kTH2F, {{600, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
           auto hDblTrk_ME = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_ME_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j), kTH2F, {{600, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
-          
+
           DoubleTrack_SE_histos_perMult.push_back(std::move(hDblTrk_SE));
           DoubleTrack_ME_histos_perMult.push_back(std::move(hDblTrk_ME));
         }
@@ -271,8 +271,10 @@ struct FemtoCorrelations {
           LOGF(fatal, "kTbin value obtained for a pair is less than 0");
         }
 
-        if (_fillDetaDphi) DoubleTrack_SE_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
-        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC)) continue;
+        if (_fillDetaDphi)
+          DoubleTrack_SE_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+          continue;
 
         kThistos[multBin][kTbin]->Fill(pair_kT);
         mThistos[multBin][kTbin]->Fill(Pair->GetMt());       // test
@@ -320,11 +322,14 @@ struct FemtoCorrelations {
         }
 
         if (_fillDetaDphi) {
-          if (!SE_or_ME) DoubleTrack_SE_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
-          else DoubleTrack_ME_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+          if (!SE_or_ME)
+            DoubleTrack_SE_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+          else
+            DoubleTrack_ME_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         }
 
-        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC)) continue;
+        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+          continue;
 
         if (!SE_or_ME) {
           SEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar());
@@ -349,7 +354,7 @@ struct FemtoCorrelations {
         Pair->ResetPair();
       }
     }
-  } 
+  }
 
   void process(soa::Filtered<FilteredCollisions> const& collisions, soa::Filtered<FilteredTracks> const& tracks)
   {

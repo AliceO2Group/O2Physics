@@ -13,7 +13,6 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
 
-
 // this task produces a dummy "SingleCollExtras" table that is now required in the analysis tasks. Needed to have a compatibility with old der. data
 
 #include <fairlogger/Logger.h>
@@ -37,9 +36,9 @@ struct singleTrackSelectorDummy {
 
   void process(aod::SingleCollSels::iterator const&)
   {
-      tableRowCollExtra(true,
-                        true,
-                        true);
+    tableRowCollExtra(true,
+                      true,
+                      true);
   }
 };
 

@@ -304,7 +304,8 @@ struct FemtoCorrelationsMC {
 
         trackOrigin = track.origin();
 
-        if(trackOrigin > -1 && trackOrigin < 3) DCA_histos_1[centBin][track.origin()]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
+        if (trackOrigin > -1 && trackOrigin < 3)
+          DCA_histos_1[centBin][track.origin()]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
 
         if (abs(track.dcaXY()) > _dcaXY || abs(track.dcaZ()) > _dcaZ)
           continue;
@@ -312,7 +313,8 @@ struct FemtoCorrelationsMC {
         trackPDG = track.pdgCode();
 
         Purity_histos_1[centBin][0]->Fill(track.p());
-        if(trackPDG == 11 || trackPDG == 13 || trackPDG == 211 || trackPDG == 321 || trackPDG == 2212 || trackPDG == 1000010020) Purity_histos_1[centBin][trackPDG]->Fill(track.p());
+        if (trackPDG == 11 || trackPDG == 13 || trackPDG == 211 || trackPDG == 321 || trackPDG == 2212 || trackPDG == 1000010020)
+          Purity_histos_1[centBin][trackPDG]->Fill(track.p());
 
         selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track)); // filling the map: eventID <-> selected particles1
       }
@@ -323,13 +325,15 @@ struct FemtoCorrelationsMC {
 
         trackOrigin = track.origin();
 
-        if(trackOrigin > -1 && trackOrigin < 3) DCA_histos_2[centBin][track.origin()]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
+        if (trackOrigin > -1 && trackOrigin < 3)
+          DCA_histos_2[centBin][track.origin()]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
 
         if (abs(track.dcaXY()) > _dcaXY || abs(track.dcaZ()) > _dcaZ)
           continue;
 
         Purity_histos_2[centBin][0]->Fill(track.p());
-        if(trackPDG == 11 || trackPDG == 13 || trackPDG == 211 || trackPDG == 321 || trackPDG == 2212 || trackPDG == 1000010020) Purity_histos_2[centBin][trackPDG]->Fill(track.p());
+        if (trackPDG == 11 || trackPDG == 13 || trackPDG == 211 || trackPDG == 321 || trackPDG == 2212 || trackPDG == 1000010020)
+          Purity_histos_2[centBin][trackPDG]->Fill(track.p());
 
         selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track)); // filling the map: eventID <-> selected particles2
       }
