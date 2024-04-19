@@ -140,8 +140,10 @@ DECLARE_SOA_COLUMN(GlobalBCId, globalBC, uint64_t);            //! Global Bunch 
 DECLARE_SOA_COLUMN(EvSelBC, evSelBC, uint64_t);                //! Global Bunch crossing Id
 DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);       //! Collision time
 DECLARE_SOA_COLUMN(CollisionTimeRes, collisionTimeRes, float); //! Collision time resolution
-DECLARE_SOA_COLUMN(CefpTriggered, cefpTriggered, uint64_t);    //! CEFP triggers before downscalings
-DECLARE_SOA_COLUMN(CefpSelected, cefpSelected, uint64_t);      //! CEFP decision
+DECLARE_SOA_COLUMN(CefpTriggered0, cefpTriggered0, uint64_t);  //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpTriggered1, cefpTriggered1, uint64_t);  //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpSelected0, cefpSelected0, uint64_t);    //! CEFP decision
+DECLARE_SOA_COLUMN(CefpSelected1, cefpSelected1, uint64_t);    //! CEFP decision
 
 } // namespace decision
 
@@ -228,7 +230,7 @@ using PhotonFilter = PhotonFilters::iterator;
 
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
-                  decision::BCId, decision::GlobalBCId, decision::EvSelBC, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered, decision::CefpSelected);
+                  decision::BCId, decision::GlobalBCId, decision::EvSelBC, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered0, decision::CefpTriggered1, decision::CefpSelected0, decision::CefpSelected1);
 using CefpDecision = CefpDecisions::iterator;
 
 // cefp decision
