@@ -1069,8 +1069,8 @@ struct strangenessFilter {
     }
 
     // Omega in high multiplicity events
+    if (omegacounter > 0) EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmega"), collision.multFT0M());
     if (omegacounter > 0 && isHighMultEvent) {
-      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MwOmega"), collision.multFT0M());
       keepEvent[9] = true;
     }
 
