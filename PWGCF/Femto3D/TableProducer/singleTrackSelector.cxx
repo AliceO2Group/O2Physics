@@ -116,7 +116,7 @@ struct singleTrackSelector {
 
     if (enable_gen_info) {
       registry.add("hNEvents_MCGen", "hNEvents_MCGen", {HistType::kTH1F, {{1, 0.f, 1.f}}});
-      registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2*TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
     }
   }
@@ -420,7 +420,7 @@ struct singleTrackSelector {
   PROCESS_SWITCH(singleTrackSelector, processMCRun3, "process MC Run3", false);
 
   void processGenRun3(aod::McCollisions::iterator const& mcCollision,
-                     aod::McParticles const& mcParticles)
+                      aod::McParticles const& mcParticles)
   {
     if (abs(mcCollision.posZ()) > _vertexZ) {
       return;
