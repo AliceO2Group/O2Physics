@@ -62,7 +62,7 @@ struct tofOfflineCalib {
   std::shared_ptr<TH1> hBadRefWithTRD;
 
   unsigned int randomSeed = 0;
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     auto h = histos.add<TH1>("events", "Events", kTH1D, {{10, 0, 10, "Event selection"}});

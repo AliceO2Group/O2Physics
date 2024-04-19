@@ -266,7 +266,7 @@ struct UpcCandProducer {
   template <typename TBCs>
   void skimMCInfo(o2::aod::McCollisions const& mcCollisions,
                   o2::aod::McParticles const& mcParticles,
-                  TBCs const& bcs)
+                  TBCs const& /*bcs*/)
   {
     std::vector<int32_t> newEventIDs(mcCollisions.size(), -1);
 
@@ -385,7 +385,7 @@ struct UpcCandProducer {
                         uint64_t globalBC,
                         uint64_t closestBcITSTPC,
                         const o2::aod::McTrackLabels* mcTrackLabels,
-                        std::unordered_map<int64_t, uint64_t>& ambBarrelTrBCs)
+                        std::unordered_map<int64_t, uint64_t>& /*ambBarrelTrBCs*/)
   {
     for (auto trackID : trackIDs) {
       const auto& track = tracks.iteratorAt(trackID);
@@ -443,9 +443,9 @@ struct UpcCandProducer {
                       uint64_t midbc,
                       std::vector<std::pair<uint64_t, int64_t>>& v,
                       BCsWithBcSels const& bcs,
-                      o2::aod::FT0s const& ft0s,
-                      o2::aod::FDDs const& fdds,
-                      o2::aod::FV0As const& fv0as)
+                      o2::aod::FT0s const& /*ft0s*/,
+                      o2::aod::FDDs const& /*fdds*/,
+                      o2::aod::FV0As const& /*fv0as*/)
   {
     auto it = std::find_if(v.begin(),
                            v.end(),
@@ -583,10 +583,10 @@ struct UpcCandProducer {
   template <typename TBCs>
   void collectBarrelTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
                            int trackType,
-                           TBCs const& bcs,
-                           o2::aod::Collisions const& collisions,
+                           TBCs const& /*bcs*/,
+                           o2::aod::Collisions const& /*collisions*/,
                            BarrelTracks const& barrelTracks,
-                           o2::aod::AmbiguousTracks const& ambBarrelTracks,
+                           o2::aod::AmbiguousTracks const& /*ambBarrelTracks*/,
                            std::unordered_map<int64_t, uint64_t>& ambBarrelTrBCs)
   {
     for (const auto& trk : barrelTracks) {
@@ -621,10 +621,10 @@ struct UpcCandProducer {
   template <typename TBCs>
   void collectForwardTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
                             int typeFilter,
-                            TBCs const& bcs,
-                            o2::aod::Collisions const& collisions,
+                            TBCs const& /*bcs*/,
+                            o2::aod::Collisions const& /*collisions*/,
                             ForwardTracks const& fwdTracks,
-                            o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                            o2::aod::AmbiguousFwdTracks const& /*ambFwdTracks*/,
                             std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
   {
     for (const auto& trk : fwdTracks) {
@@ -698,7 +698,7 @@ struct UpcCandProducer {
                                o2::aod::BCs const& bcs,
                                o2::aod::Collisions const& collisions,
                                o2::aod::FT0s const& ft0s,
-                               o2::aod::FDDs const& fdds,
+                               o2::aod::FDDs const& /*fdds*/,
                                o2::aod::FV0As const& fv0as,
                                o2::aod::Zdcs const& zdcs,
                                const o2::aod::McTrackLabels* mcBarrelTrackLabels)
@@ -1184,7 +1184,7 @@ struct UpcCandProducer {
                            o2::aod::BCs const& bcs,
                            o2::aod::Collisions const& collisions,
                            o2::aod::FT0s const& ft0s,
-                           o2::aod::FDDs const& fdds,
+                           o2::aod::FDDs const& /*fdds*/,
                            o2::aod::FV0As const& fv0as,
                            o2::aod::Zdcs const& zdcs,
                            const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)

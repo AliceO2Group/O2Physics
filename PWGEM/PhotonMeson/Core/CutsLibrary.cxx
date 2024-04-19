@@ -93,7 +93,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetV0PtRange(0.1f, 1e10f);
@@ -113,7 +113,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetV0PtRange(0.1f, 1e10f);
@@ -136,7 +136,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetIsWithinBeamPipe(true);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetRequireITSTPC(true);
     // for v0
     cut->SetV0PtRange(0.1f, 1e10f);
@@ -156,7 +156,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetRequireITSonly(true);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(4, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     // for v0
     cut->SetV0PtRange(0.1f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
@@ -198,7 +198,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetNClustersITS(2, 4);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     // cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetV0PtRange(0.1f, 1e10f);
@@ -222,7 +222,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetNClustersITS(2, 4);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     // cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetV0PtRange(0.1f, 1e10f);
@@ -246,7 +246,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetNClustersITS(0, 2);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 2);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     // cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetV0PtRange(0.1f, 1e10f);
@@ -271,7 +271,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
@@ -293,7 +293,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetIsWithinBeamPipe(true);
     cut->SetRequireITSTPC(true);
     // for v0
@@ -314,7 +314,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetRequireITSonly(true);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(4, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     // for v0
     cut->SetV0PtRange(0.05f, 1e10f);
     cut->SetV0EtaRange(-0.9, +0.9);
@@ -355,7 +355,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetChi2PerClusterTPC(0.0, 4.0);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetV0PtRange(0.1f, 1e10f);
@@ -377,7 +377,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetIsWithinBeamPipe(false);
     // for v0
     cut->SetV0PtRange(0.1f, 1e10f);
@@ -398,7 +398,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetTPCNsigmaElRange(-3, +3);
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITS(0.0, 16.0);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetIsWithinBeamPipe(true);
     cut->SetRequireITSTPC(true);
     // for v0
@@ -506,12 +506,27 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
   cut->SetMaxPhivPairMeeDep([](float mee) { return (mee - -0.028) / 0.0185; });
   cut->SetPairDCARange(min_dca3d_pair, max_dca3d_pair); // in sigma
 
+  cut->ApplyPhiV(true);
+  if (nameStr.find("wophiv") != std::string::npos) {
+    cut->ApplyPhiV(false);
+  } else if (nameStr.find("wphiv") != std::string::npos) {
+    cut->ApplyPhiV(true);
+  }
+
+  cut->ApplyPrefilter(false);
+  if (nameStr.find("wpf") != std::string::npos) {
+    cut->ApplyPrefilter(true);
+  } else if (nameStr.find("wopf") != std::string::npos) {
+    cut->ApplyPrefilter(false);
+  }
+
   // for track cuts
   cut->SetMinNCrossedRowsTPC(100);
   cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
   cut->SetChi2PerClusterTPC(0.0, 4.0);
   cut->SetChi2PerClusterITS(0.0, 5.0);
   cut->SetNClustersITS(5, 7);
+  cut->SetMeanClusterSizeITSob(0, 16);
   cut->SetMaxDcaXY(1.0);
   cut->SetMaxDcaZ(1.0);
 
@@ -521,58 +536,51 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
     cut->SetChi2PerClusterTPC(0.0, 4.0);
     cut->SetChi2PerClusterITS(0.0, 5.0);
     cut->SetNClustersITS(4, 7);
+    cut->SetMeanClusterSizeITSob(0, 16);
     cut->SetMaxDcaXY(1.0);
     cut->SetMaxDcaZ(1.0);
-  }
-
-  cut->ApplyPhiV(true);
-  if (nameStr.find("wophiv") != std::string::npos) {
-    cut->ApplyPhiV(false);
-  }
-
-  cut->ApplyPrefilter(false);
-  if (nameStr.find("wpf") != std::string::npos) {
-    cut->ApplyPrefilter(true);
+  } else if (nameStr.find("nominalB") != std::string::npos) {
+    cut->SetMinNCrossedRowsTPC(100);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetChi2PerClusterITS(0.0, 5.0);
+    cut->SetNClustersITS(5, 7);
+    cut->SetMeanClusterSizeITSob(0, 16);
+    cut->SetMaxDcaXY(1.0);
+    cut->SetMaxDcaZ(1.0);
   }
 
   // long pid name should be top, because of if--else if conditions.
 
   if (nameStr.find("mee") != std::string::npos) { // for electron
-    if (nameStr.find("tpchadrejortofreq_lowB") != std::string::npos) {
+    if (nameStr.find("tpcmupikaprrejortofreq") != std::string::npos) {
       // for PID
       cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
       cut->SetTOFbetaRange(true, 0.0, 0.95);
       cut->SetTPCNsigmaElRange(-2, +3);
-      cut->SetTPCNsigmaMuRange(-2, +2);
       cut->SetTPCNsigmaPiRange(-3, +3);
       cut->SetTPCNsigmaKaRange(-3, +3);
       cut->SetTPCNsigmaPrRange(-3, +3);
       cut->SetTOFNsigmaElRange(-3, +3);
+      cut->SetTPCNsigmaMuRange(-2, +2);
       cut->SetMuonExclusionTPC(true);
       return cut;
-    } else if (nameStr.find("tpchadrejortofreq") != std::string::npos) {
+    } else if (nameStr.find("tpcpikaprrejortofreq") != std::string::npos) {
       // for PID
       cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
       cut->SetTOFbetaRange(true, 0.0, 0.95);
       cut->SetTPCNsigmaElRange(-2, +3);
-      cut->SetTPCNsigmaPiRange(-1e+10, +3);
+      cut->SetTPCNsigmaPiRange(-3, +3);
       cut->SetTPCNsigmaKaRange(-3, +3);
       cut->SetTPCNsigmaPrRange(-3, +3);
       cut->SetTOFNsigmaElRange(-3, +3);
-      return cut;
-    } else if (nameStr.find("tpconly_lowB") != std::string::npos) {
-      // for PID
-      cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
-      cut->SetTOFbetaRange(true, 0.0, 0.95);
-      cut->SetTPCNsigmaElRange(-2, +3);
-      cut->SetTPCNsigmaPiRange(-3, +3);
       return cut;
     } else if (nameStr.find("tpconly") != std::string::npos) {
       // for PID
       cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
       cut->SetTOFbetaRange(true, 0.0, 0.95);
       cut->SetTPCNsigmaElRange(-2, +3);
-      cut->SetTPCNsigmaPiRange(-1e+10, +3);
+      cut->SetTPCNsigmaPiRange(-3, +3);
       return cut;
     } else if (nameStr.find("tpcelonly") != std::string::npos) {
       // for PID

@@ -127,7 +127,7 @@ struct BCRangeSelector {
   }
 
   // need a trivial process method: the parameters determine the tables available in the input
-  void process(CCs const& collisions, aod::BCs const& bcs, aod::CefpDecisions const& fdecisions)
+  void process(CCs const& /*collisions*/, aod::BCs const&, aod::CefpDecisions const&)
   {
   }
 };

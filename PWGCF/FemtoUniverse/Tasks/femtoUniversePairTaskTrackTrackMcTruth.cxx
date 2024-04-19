@@ -154,7 +154,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
+  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float /*magFieldTesla*/, int multCol)
   {
     bool swpart = fNeventsProcessed % 2;
     fNeventsProcessed++;
@@ -212,7 +212,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol)
+  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType /*parts*/, float /*magFieldTesla*/, int multCol)
   {
     bool swpart = fNeventsProcessed % 2;
     fNeventsProcessed++;

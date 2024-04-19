@@ -137,7 +137,7 @@ struct v0selector {
   Configurable<bool> fillhisto{"fillhisto", false, "flag to fill histograms"};
 
   HistogramRegistry registry{"registry"};
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext&)
   {
     if (fillhisto) {
       registry.add("hV0Candidate", "hV0Candidate", HistType::kTH1F, {{2, 0.5f, 2.5f}});
@@ -540,7 +540,7 @@ struct trackPIDQA {
     }
   }
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
+  void processDummy(soa::Join<aod::Collisions, aod::EvSels>::iterator const&)
   {
     // do nothing
   }

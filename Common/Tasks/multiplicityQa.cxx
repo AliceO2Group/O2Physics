@@ -294,7 +294,7 @@ struct MultiplicityQa {
     histos.fill(HIST("h2dNContribCorrAll"), NcontribsTRD, NcontribsTOF);
   }
 
-  void processCollisionsWithMCInfo(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::McCollisionLabels>::iterator const& col, soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions)
+  void processCollisionsWithMCInfo(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultZeqs, aod::McCollisionLabels>::iterator const& col, soa::Join<aod::McCollisions, aod::McCollsExtra> const&)
   {
     if (selection == 7 && !col.sel7()) {
       return;

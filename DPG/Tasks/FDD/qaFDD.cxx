@@ -290,7 +290,7 @@ struct fddQA {
     }
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::FDDs const& fdds,
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::FDDs const&,
                aod::BCs const&)
   {
     float multFDDA = 0.f;
@@ -344,8 +344,8 @@ struct fddQA {
                  "Process FDD and FT0 info", true);
 
   void
-    processCorr(soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>::iterator const& col, aod::FT0s const& ft0s,
-                aod::FV0As const& fv0s, aod::Zdcs const& zdcs, aod::BCs const&)
+    processCorr(soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>::iterator const& col, aod::FT0s const&,
+                aod::FV0As const&, aod::Zdcs const&, aod::BCs const&)
   {
     float sumAmpFT0C = 0;
     float sumAmpFV0 = 0;
@@ -451,7 +451,7 @@ struct fddQA {
   PROCESS_SWITCH(fddQA, processCorr,
                  "Process FDD time correlation", false);
 
-  void processFT0(aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCs const&)
+  void processFT0(aod::FT0s const& ft0s, aod::FV0As const&, aod::BCs const&)
   {
     for (auto& ft0 : ft0s) {
       int localBCFT0 = ft0.bc().globalBC() % nBCsPerOrbit;
@@ -476,7 +476,7 @@ struct fddQA {
 
   void
     processFITFromBC(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&,
-                     aod::Zdcs const& zdcs)
+                     aod::Zdcs const&)
   {
     bool Ora = false;
     bool Orc = false;

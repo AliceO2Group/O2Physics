@@ -144,7 +144,7 @@ struct JetFinderHFTask {
 
   // function that generalically processes Data and reco level events
   template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
-  void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O& originalTracks, float minJetPt, float maxJetPt)
+  void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O& /*originalTracks*/, float minJetPt, float maxJetPt)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -186,7 +186,7 @@ struct JetFinderHFTask {
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, true);
   }
 
-  void processDummy(JetCollisions const& collisions)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetFinderHFTask, processDummy, "Dummy process function turned on by default", true);

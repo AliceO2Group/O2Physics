@@ -184,7 +184,7 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(2, "Event selection");
     hProcessedEvents->GetXaxis()->SetBinLabel(3, "Events w/ high-#it{p}_{T} hadron");
     hProcessedEvents->GetXaxis()->SetBinLabel(4, aod::filtering::Omega::columnLabel());
-    hProcessedEvents->GetXaxis()->SetBinLabel(5, aod::filtering::hadronXi::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(5, aod::filtering::hadronOmega::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(6, aod::filtering::DoubleXi::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(7, aod::filtering::TripleXi::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(8, aod::filtering::QuadrupleXi::columnLabel());
@@ -402,7 +402,7 @@ struct strangenessFilter {
     strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8]);
   }
 
-  void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& dtracks)
+  void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& /*dtracks*/)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] tracked V0, [10] tracked 3Body
@@ -657,11 +657,11 @@ struct strangenessFilter {
   ////////// Strangeness Filter - Run 3 MC /////////////
   //////////////////////////////////////////////////////
 
-  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& dtracks,
-                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades, aod::AssignedTrackedV0s const& trackedV0s, aod::AssignedTracked3Bodys const& tracked3Bodys, aod::V0s const&, aod::BCsWithTimestamps const&)
+  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& /*dtracks*/,
+                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const&, aod::BCsWithTimestamps const&)
   {
-    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
-    // [7] tracked Xi, [8] tracked Omega, [9] tracked V0, [10] tracked 3Body
+    // Is event good? [0] = Omega, [1] = high-pT hadron + Omega, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
+    // [7] tracked Xi, [8] tracked Omega
     bool keepEvent[9]{}; // explicitly zero-initialised
 
     if (sel8 && !collision.sel8()) {
@@ -972,11 +972,11 @@ struct strangenessFilter {
     }
 
     bool EvtwhMinPt[11];
-    bool EvtwhMinPtXi[11];
+    bool EvtwhMinPtCasc[11];
     float ThrdPt[11];
     for (int i = 0; i < 11; i++) {
       EvtwhMinPt[i] = 0.;
-      EvtwhMinPtXi[i] = 0.;
+      EvtwhMinPtCasc[i] = 0.;
       ThrdPt[i] = static_cast<float>(i);
     }
 
@@ -1014,7 +1014,7 @@ struct strangenessFilter {
     QAHistosTriggerParticles.fill(HIST("hTriggeredParticlesAllEv"), triggcounterAllEv);
 
     // High-pT hadron + Xi trigger definition
-    if (xicounter > 0) {
+    if (omegacounter > 0) {
       for (auto track : tracks) { // start loop over tracks
         if (isTrackFilter && !mTrackSelector.IsSelected(track)) {
           continue;
@@ -1023,7 +1023,7 @@ struct strangenessFilter {
         QAHistosTriggerParticles.fill(HIST("hPtTriggerSelEv"), track.pt());
         for (int i = 0; i < 11; i++) {
           if (track.pt() > ThrdPt[i])
-            EvtwhMinPtXi[i] = 1;
+            EvtwhMinPtCasc[i] = 1;
         }
         keepEvent[1] = true;
       } // end loop over tracks
@@ -1031,7 +1031,7 @@ struct strangenessFilter {
     }
 
     for (int i = 0; i < 11; i++) {
-      if (EvtwhMinPtXi[i])
+      if (EvtwhMinPtCasc[i])
         hEvtvshMinPt->Fill(i + 0.5);
     }
 

@@ -80,7 +80,7 @@ struct JCatalyst {
   Produces<aod::JTracks> particleTrack;
   Produces<aod::JCollisions> collisionData;
 
-  void init(InitContext const& ic)
+  void init(InitContext const&)
   {
     LOGF(info, "JCatalyst init()");
   }
