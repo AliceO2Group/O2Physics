@@ -641,6 +641,18 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   dilepton_track_index::Vx1, dilepton_track_index::Vy1, dilepton_track_index::Vz1, dilepton_track_index::Vt1,
                   dilepton_track_index::Vx2, dilepton_track_index::Vy2, dilepton_track_index::Vz2, dilepton_track_index::Vt2,
                   dilepton_track_index::IsAmbig1, dilepton_track_index::IsAmbig2,
+                  reducedpair::U2Q2,
+                  reducedpair::U3Q3,
+                  reducedpair::R2EP_AB,
+                  reducedpair::R2SP_AB,
+                  reducedpair::CentFT0C,
+                  reducedpair::Cos2DeltaPhi,
+                  reducedpair::Cos3DeltaPhi,
+                  reducedpair::CORR2POI,
+                  reducedpair::CORR4POI,
+                  reducedpair::M01POI,
+                  reducedpair::M0111POI,
+                  reducedpair::MultDimuons,
                   reducedpair::VertexPz,
                   reducedpair::SVertex);
 

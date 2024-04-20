@@ -705,8 +705,6 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kR2SP_AC] = "";
   fgVariableNames[kR2SP_BC] = "R_{2}^{SP} (BC) ";
   fgVariableUnits[kR2SP_BC] = "";
-  fgVariableNames[kR2SP_FT0CFT0A] = "R_{2}^{SP} (FT0C-FT0A) ";
-  fgVariableUnits[kR2SP_FT0CFT0A] = "";
   fgVariableNames[kR2SP_FT0CTPCPOS] = "R_{2}^{SP} (FT0C-TPCpos) ";
   fgVariableUnits[kR2SP_FT0CTPCPOS] = "";
   fgVariableNames[kR2SP_FT0CTPCNEG] = "R_{2}^{SP}  (FT0C-TPCneg) ";

@@ -265,7 +265,6 @@ class VarManager : public TObject
     kR2SP_AB,
     kR2SP_AC,
     kR2SP_BC,
-    kR2SP_FT0CFT0A,
     kR2SP_FT0CTPCPOS,
     kR2SP_FT0CTPCNEG,
     kR2SP_FT0ATPCPOS,
@@ -3245,7 +3244,6 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kR2SP_AB] = (values[kQ2X0A] * values[kQ2X0B] + values[kQ2Y0A] * values[kQ2Y0B]);
   values[kR2SP_AC] = (values[kQ2X0A] * values[kQ2X0C] + values[kQ2Y0A] * values[kQ2Y0C]);
   values[kR2SP_BC] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
-  values[kR2SP_FT0CFT0A] = (xQVecFT0c * xQVecFT0a + yQVecFT0c * yQVecFT0a);
   values[kR2SP_FT0CTPCPOS] = (xQVecFT0c * xQVecBPos + yQVecFT0c * yQVecBPos);
   values[kR2SP_FT0CTPCNEG] = (xQVecFT0c * xQVecBNeg + yQVecFT0c * yQVecBNeg);
   values[kR2SP_FT0ATPCPOS] = (xQVecFT0a * xQVecBPos + yQVecFT0a * yQVecBPos);
