@@ -128,8 +128,8 @@ struct UDQCmid {
 
   // ...............................................................................................................................................
   void processMain(CC const& collision, BCs const& bct0s,
-                   TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
-                   aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
+                   TCs const& tracks, FWs const& fwdtracks, ATs const& /*ambtracks*/, AFTs const& /*ambfwdtracks*/,
+                   aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/,
                    aod::Zdcs& zdcs)
   {
     LOGF(debug, "<UDQCmid. Collision %d", collision.globalIndex());
@@ -432,8 +432,8 @@ struct UDQCmid {
 
   //.....................................................................................................................
   // Distribution of number of PV contributors for all collisions and those with empty FT0
-  void processFewProng(CC const& collision, BCs const& bct0s,
-                       aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  void processFewProng(CC const& collision, BCs const& /*bct0s*/,
+                       aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/)
   {
     // count collisions
     registry.get<TH1>(HIST("fpStat"))->Fill(1., 1.);

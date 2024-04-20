@@ -18,7 +18,13 @@
 
 ClassImp(EMEventCut);
 
-const char* EMEventCut::mCutNames[static_cast<int>(EMEventCut::EMEventCuts::kNCuts)] = {"RequireFT0AND", "Zvtx", "RequireNoTFB", "RequireNoITSROFB"};
+const char* EMEventCut::mCutNames[static_cast<int>(EMEventCut::EMEventCuts::kNCuts)] = {"Sel8", "FT0AND", "Zvtx", "eNoTFB", "RequireNoITSROFB", "NoSameBunchPileup", "GoodVertexITSTPC", "GoodZvtxFT0vsPV"};
+
+void EMEventCut::SetRequireSel8(bool flag)
+{
+  mRequireSel8 = flag;
+  LOG(info) << "EM Event Cut, require sel8: " << mRequireSel8;
+}
 
 void EMEventCut::SetRequireFT0AND(bool flag)
 {
@@ -43,6 +49,24 @@ void EMEventCut::SetRequireNoITSROFB(bool flag)
 {
   mRequireNoITSROFB = flag;
   LOG(info) << "EM Event Cut, require No ITS ROF border: " << mRequireNoITSROFB;
+}
+
+void EMEventCut::SetRequireNoSameBunchPileup(bool flag)
+{
+  mRequireNoSameBunchPileup = flag;
+  LOG(info) << "EM Event Cut, require No same bunch pileup: " << mRequireNoSameBunchPileup;
+}
+
+void EMEventCut::SetRequireVertexITSTPC(bool flag)
+{
+  mRequireVertexITSTPC = flag;
+  LOG(info) << "EM Event Cut, require vertex reconstructed by ITS-TPC matched track: " << mRequireVertexITSTPC;
+}
+
+void EMEventCut::SetRequireIsGoodZvtxFT0vsPV(bool flag)
+{
+  mRequireGoodZvtxFT0vsPV = flag;
+  LOG(info) << "EM Event Cut, require good Zvtx between FT0 vs. PV: " << mRequireGoodZvtxFT0vsPV;
 }
 
 void EMEventCut::print() const

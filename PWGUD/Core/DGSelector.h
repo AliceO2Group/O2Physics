@@ -32,7 +32,7 @@ class DGSelector
   ~DGSelector() { delete fPDG; }
 
   template <typename CC, typename BCs, typename TCs, typename FWs>
-  int Print(DGCutparHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
+  int Print(DGCutparHolder /*diffCuts*/, CC& collision, BCs& /*bcRange*/, TCs& /*tracks*/, FWs& /*fwdtracks*/)
   {
     LOGF(info, "Size of array %i", collision.size());
     return 1;

@@ -76,7 +76,7 @@ struct BCRangeSelector {
     std::vector<IRFrame> bcRanges;
     int nColl{0}, nSelected{0};
     for (auto collision : cols) {
-      if (filt.cefpSelected()) {
+      if (filt.cefpSelected0() || filt.cefpSelected1()) {
         if (firstSelectedCollision < 0) {
           firstSelectedCollision = nColl;
         }
