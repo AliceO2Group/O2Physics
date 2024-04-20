@@ -562,7 +562,7 @@ struct TaskPolarisationCharmHadrons {
 
         massDau = massPi; // (*)
         const float bkgRotAngle = bkgRotationAngleStep * bkgRotationId;
-        std::array<float, 3> threeVecSoftPi{candidate.pxSoftPi() * std::cos(bkgRotAngle) - candidate.pxSoftPi() * std::sin(bkgRotAngle), candidate.pxSoftPi() * std::cos(bkgRotAngle) + candidate.pxSoftPi() * std::sin(bkgRotAngle), candidate.pzSoftPi()}; // we rotate the soft pion
+        std::array<float, 3> threeVecSoftPi{candidate.pxSoftPi() * std::cos(bkgRotAngle) - candidate.pySoftPi() * std::sin(bkgRotAngle), candidate.pxSoftPi() * std::sin(bkgRotAngle) + candidate.pySoftPi() * std::cos(bkgRotAngle), candidate.pzSoftPi()}; // we rotate the soft pion
         std::array<float, 3> threeVecD0Prong0{candidate.pxProng0(), candidate.pxProng0(), candidate.pzProng0()};
         std::array<float, 3> threeVecD0Prong1{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
         if (bkgRotationId > 0) {
