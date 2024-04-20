@@ -2058,10 +2058,12 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   values[kMCEta] = track.eta();
   values[kMCY] = track.y();
   values[kMCParticleGeneratorId] = track.producedByGenerator();
-  if (track.has_mothers()) {
-    auto motherId = track.mothersIds()[0];
-    auto mother = mcStack.rawIteratorAt(motherId);
-    values[kMCMotherPdgCode] = mother.pdgCode();
+  if (fgUsedVars[kMCMotherPdgCode]) {
+    if (track.has_mothers()) {
+      auto motherId = track.mothersIds()[0];
+      auto mother = mcStack.rawIteratorAt(motherId);
+      values[kMCMotherPdgCode] = mother.pdgCode();
+    }
   }
 
   FillTrackDerived(values);

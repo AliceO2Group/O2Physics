@@ -1272,7 +1272,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
 
     if (classStr.Contains("Track") && !classStr.Contains("Pairs")) {
       if (classStr.Contains("Barrel")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid,mc");
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid,mc,mcMother");
       }
       if (classStr.Contains("Muon")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
