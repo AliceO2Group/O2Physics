@@ -60,6 +60,7 @@ struct skimmerDalitzEE {
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for loose track sample"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 4.0, "max. TOF n sigma for electron inclusion"};
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 10, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 40, "min. crossed rows"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
@@ -70,6 +71,14 @@ struct skimmerDalitzEE {
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
   Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1e+10, "max DCA 3D in sigma"};
   Configurable<float> max_mean_itsob_cluster_size{"max_mean_itsob_cluster_size", 16.f, "max. <ITSob cluster size> x cos(lambda)"}; // this is to suppress random combination. default 4 + 1 for skimming.
+
+  Configurable<bool> applyTPChadrejORTOFreq{"applyTPChadrejORTOFreq", false, "flag to apply TPChadrej-or-TOFreq at the skimming level"};
+  Configurable<bool> applyPiRej_TPC{"applyPiRej_TPC", false, "flag to apply Pion rejection in TPC at the skimming level"};
+  Configurable<bool> applyKaRej_TPC{"applyKaRej_TPC", false, "flag to apply Kaon rejection in TPC at the skimming level"};
+  Configurable<bool> applyPrRej_TPC{"applyPrRej_TPC", false, "flag to apply Proton rejection in TPC at the skimming level"};
+  Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.0, "max. TPC n sigma for pion exclusion"};
+  Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.0, "max. TPC n sigma for kaon exclusion"};
+  Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 2.0, "max. TPC n sigma for proton exclusion"};
 
   HistogramRegistry fRegistry{
     "fRegistry",
@@ -136,7 +145,50 @@ struct skimmerDalitzEE {
       return false;
     }
 
+    if (!isElectron(track)) {
+      return false;
+    }
+
     return true;
+  }
+
+  template <typename TTrack>
+  bool isElectron(TTrack const& track)
+  {
+    if (applyTPChadrejORTOFreq) {
+      return isElectron_TPChadrej(track) || isElectron_TOFrequire(track);
+    } else {
+      return true;
+    }
+    return true;
+  }
+
+  template <typename TTrack>
+  bool isElectron_TPChadrej(TTrack const& track)
+  {
+    if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
+      return false;
+    }
+    if (applyPiRej_TPC && abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi) {
+      return false;
+    }
+    if (applyKaRej_TPC && abs(track.tpcNSigmaKa()) < maxTPCNsigmaKa) {
+      return false;
+    }
+    if (applyPrRej_TPC && abs(track.tpcNSigmaPr()) < maxTPCNsigmaPr) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename TTrack>
+  bool isElectron_TOFrequire(TTrack const& track)
+  {
+    if (applyPiRej_TPC && abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi) {
+      return false;
+    }
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
   }
 
   template <EM_EEPairType pairtype, bool isCEFP, typename TCollision, typename TTracks1, typename TTracks2>
