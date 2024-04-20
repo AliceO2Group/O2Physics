@@ -458,10 +458,12 @@ struct DQEventQvector {
 
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0) {
       VarManager::FillQVectorFromCentralFW(collision);
-      if (fConfigQA) {
-        fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
-        if (fEventCut->IsSelected(VarManager::fgValues)) {
-          fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
+      if ((tracks1.size() > 0) && (VarManager::fgValues[VarManager::kMultA] * VarManager::fgValues[VarManager::kMultB] * VarManager::fgValues[VarManager::kMultC] != 0.0)) {
+        if (fConfigQA) {
+          fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
+          if (fEventCut->IsSelected(VarManager::fgValues)) {
+            fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
+          }
         }
       }
       if (fEventCut->IsSelected(VarManager::fgValues)) {
