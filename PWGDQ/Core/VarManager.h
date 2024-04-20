@@ -2056,7 +2056,7 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   values[kMCPt] = track.pt();
   values[kMCPhi] = track.phi();
   values[kMCEta] = track.eta();
-  values[kMCY] = track.y();
+  values[kMCY] = -track.y();
   values[kMCParticleGeneratorId] = track.producedByGenerator();
   if (track.has_mothers()) {
     auto motherId = track.mothersIds()[0];
