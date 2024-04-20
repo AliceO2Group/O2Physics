@@ -137,7 +137,7 @@ struct FemtoCorrelationsMC {
     TPCcuts_2 = std::make_pair(_particlePDG_2, _tpcNSigma_2);
     TOFcuts_2 = std::make_pair(_particlePDG_2, _tofNSigma_2);
 
-    for (int i = 0; i < _centBins.value.size() - 1; i++) {
+    for (unsigned int i = 0; i < _centBins.value.size() - 1; i++) {
 
       std::map<int, std::shared_ptr<TH3>> DCA_histos_1_perMult;
       DCA_histos_1_perMult[0] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_primary", i), "dcaxyz_vs_pt_primary", kTH3F, {{100, 0., 5., "pt"}, {250, -1., 1., "DCA_XY(pt) primary"}, {250, -1., 1., "DCA_Z(pt) primary"}});
@@ -180,7 +180,7 @@ struct FemtoCorrelationsMC {
       std::vector<std::shared_ptr<TH2>> DoubleTrack_SE_histos_perMult;
       std::vector<std::shared_ptr<TH2>> DoubleTrack_ME_histos_perMult;
 
-      for (int j = 0; j < _kTbins.value.size() - 1; j++) {
+      for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
         auto kT_tmp = registry.add<TH1>(Form("Cent%i/kT_cent%i_kT%i", i, i, j), Form("kT_cent%i_kT%i", i, j), kTH1F, {{500, 0., 5., "kT"}});
         auto Res_tmp = registry.add<TH2>(Form("Cent%i/ResolutionMatrix_cent%i_kT%i", i, i, j), Form("ResolutionMatrix_rec(gen)_cent%i_kT%i", i, j), kTH2F, {{CFkStarBinning, "k*_gen (GeV/c)"}, {CFkStarBinning, "k*_rec (GeV/c)"}});
         auto DblTrk_SE_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_SE_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j), kTH2F, {{600, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
@@ -199,10 +199,10 @@ struct FemtoCorrelationsMC {
   }
 
   template <typename Type>
-  void fillEtaPhi(Type const& tracks, int centBin)
-  {                                              // template for particles from the same collision identical
-    for (int ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
-      for (int iii = ii + 1; iii < tracks.size(); iii++) {
+  void fillEtaPhi(Type const& tracks, unsigned int centBin)
+  {                                                       // template for particles from the same collision identical
+    for (unsigned int ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
+      for (unsigned int iii = ii + 1; iii < tracks.size(); iii++) {
 
         Pair->SetPair(tracks[ii], tracks[iii]);
         float pair_kT = Pair->GetKt();
@@ -210,13 +210,9 @@ struct FemtoCorrelationsMC {
         if (pair_kT < *_kTbins.value.begin() || pair_kT >= *(_kTbins.value.end() - 1))
           continue;
 
-        int kTbin = o2::aod::singletrackselector::getBinIndex<int>(pair_kT, _kTbins);
-        if (kTbin >= 0) {
-          if (kTbin > DoubleTrack_SE_histos[centBin].size())
-            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins");
-        } else {
-          LOGF(fatal, "kTbin value obtained for a pair is less than 0");
-        }
+        unsigned int kTbin = o2::aod::singletrackselector::getBinIndex<unsigned int>(pair_kT, _kTbins);
+        if (kTbin > DoubleTrack_SE_histos[centBin].size())
+          LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins");
 
         kThistos[centBin][kTbin]->Fill(pair_kT);
         DoubleTrack_SE_histos[centBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
@@ -226,7 +222,7 @@ struct FemtoCorrelationsMC {
   }
 
   template <typename Type>
-  void fillEtaPhi(Type const& tracks1, Type const& tracks2, int centBin)
+  void fillEtaPhi(Type const& tracks1, Type const& tracks2, unsigned int centBin)
   { // template for particles from the same collision non-identical
     for (auto ii : tracks1) {
       for (auto iii : tracks2) {
@@ -237,13 +233,9 @@ struct FemtoCorrelationsMC {
         if (pair_kT < *_kTbins.value.begin() || pair_kT >= *(_kTbins.value.end() - 1))
           continue;
 
-        int kTbin = o2::aod::singletrackselector::getBinIndex<int>(pair_kT, _kTbins);
-        if (kTbin >= 0) {
-          if (kTbin > DoubleTrack_SE_histos[centBin].size())
-            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins");
-        } else {
-          LOGF(fatal, "kTbin value obtained for a pair is less than 0");
-        }
+        unsigned int kTbin = o2::aod::singletrackselector::getBinIndex<unsigned int>(pair_kT, _kTbins);
+        if (kTbin > DoubleTrack_SE_histos[centBin].size())
+          LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins");
 
         kThistos[centBin][kTbin]->Fill(pair_kT);
         DoubleTrack_SE_histos[centBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
@@ -253,7 +245,7 @@ struct FemtoCorrelationsMC {
   }
 
   template <typename Type>
-  void fillResMatrix(Type const& tracks1, Type const& tracks2, int centBin)
+  void fillResMatrix(Type const& tracks1, Type const& tracks2, unsigned int centBin)
   { // template for ME
     for (auto ii : tracks1) {
       for (auto iii : tracks2) {
@@ -263,13 +255,9 @@ struct FemtoCorrelationsMC {
         if (pair_kT < *_kTbins.value.begin() || pair_kT >= *(_kTbins.value.end() - 1))
           continue;
 
-        int kTbin = o2::aod::singletrackselector::getBinIndex<int>(pair_kT, _kTbins);
-        if (kTbin >= 0) {
-          if (kTbin > Resolution_histos[centBin].size() || kTbin > DoubleTrack_ME_histos[centBin].size())
-            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins");
-        } else {
-          LOGF(fatal, "kTbin value obtained for a pair is less than 0");
-        }
+        unsigned int kTbin = o2::aod::singletrackselector::getBinIndex<unsigned int>(pair_kT, _kTbins);
+        if (kTbin > Resolution_histos[centBin].size() || kTbin > DoubleTrack_ME_histos[centBin].size())
+          LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins");
 
         TLorentzVector first4momentumGen;
         first4momentumGen.SetPtEtaPhiM(ii->pt_MC(), ii->eta_MC(), ii->phi_MC(), particle_mass(_particlePDG_1));
@@ -298,7 +286,7 @@ struct FemtoCorrelationsMC {
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() < *_centBins.value.begin() || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() >= *(_centBins.value.end() - 1))
         continue;
 
-      int centBin = o2::aod::singletrackselector::getBinIndex<int>(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc(), _centBins);
+      unsigned int centBin = o2::aod::singletrackselector::getBinIndex<unsigned int>(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc(), _centBins);
 
       if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1))) {
 
@@ -310,7 +298,7 @@ struct FemtoCorrelationsMC {
         if (abs(track.dcaXY()) > _dcaXY || abs(track.dcaZ()) > _dcaZ)
           continue;
 
-        trackPDG = track.pdgCode();
+        trackPDG = abs(track.pdgCode());
 
         Purity_histos_1[centBin][0]->Fill(track.p());
         if (trackPDG == 11 || trackPDG == 13 || trackPDG == 211 || trackPDG == 321 || trackPDG == 2212 || trackPDG == 1000010020)
@@ -330,6 +318,8 @@ struct FemtoCorrelationsMC {
 
         if (abs(track.dcaXY()) > _dcaXY || abs(track.dcaZ()) > _dcaZ)
           continue;
+
+        trackPDG = abs(track.pdgCode());
 
         Purity_histos_2[centBin][0]->Fill(track.p());
         if (trackPDG == 11 || trackPDG == 13 || trackPDG == 211 || trackPDG == 321 || trackPDG == 2212 || trackPDG == 1000010020)
@@ -362,18 +352,18 @@ struct FemtoCorrelationsMC {
 
       for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
 
-        for (int indx1 = 0; indx1 < (i->second).size(); indx1++) { // iterating over all selected collisions with selected tracks
+        for (unsigned int indx1 = 0; indx1 < (i->second).size(); indx1++) { // iterating over all selected collisions with selected tracks
 
           auto col1 = (i->second)[indx1];
 
           Pair->SetMagField1(col1->magField());
           Pair->SetMagField2(col1->magField());
 
-          int centBin = std::floor((i->first).second);
+          unsigned int centBin = std::floor((i->first).second);
 
           fillEtaPhi(selectedtracks_1[col1->index()], centBin); // filling deta(dphi*) -- SE identical
 
-          for (int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+          for (unsigned int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
             auto col2 = (i->second)[indx2];
 
@@ -387,18 +377,18 @@ struct FemtoCorrelationsMC {
 
       for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
 
-        for (int indx1 = 0; indx1 < (i->second).size(); indx1++) { // iterating over all selected collisions with selected tracks1
+        for (unsigned int indx1 = 0; indx1 < (i->second).size(); indx1++) { // iterating over all selected collisions with selected tracks1
 
           auto col1 = (i->second)[indx1];
 
           Pair->SetMagField1(col1->magField());
           Pair->SetMagField2(col1->magField());
 
-          int centBin = std::floor((i->first).second);
+          unsigned int centBin = std::floor((i->first).second);
 
           fillEtaPhi(selectedtracks_1[col1->index()], selectedtracks_2[col1->index()], centBin); // filling deta(dphi*) -- SE non-identical
 
-          for (int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+          for (unsigned int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
             auto col2 = (i->second)[indx2];
 

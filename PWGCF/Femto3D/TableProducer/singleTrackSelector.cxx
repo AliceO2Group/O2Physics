@@ -102,7 +102,7 @@ struct singleTrackSelector {
   std::vector<int> particlesToKeep;
   std::vector<int> particlesToReject;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
 
     particlesToKeep = _particlesToKeep;
