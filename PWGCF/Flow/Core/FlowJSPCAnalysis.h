@@ -25,6 +25,7 @@
 // O2 headers. //
 // #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
+#include "PWGCF/JCorran/Core/JQVectors.h"
 // #include "Framework/StaticFor.h"
 
 using namespace o2;
@@ -40,7 +41,9 @@ class FlowJSPCAnalysis
 
   void SetHistRegistry(HistogramRegistry* histReg) { mHistRegistry = histReg; }
   Int_t GetCentBin(float cValue);
-  void CalculateQvectors(const vector<float>& phiAngles, const vector<float>& phiWeights);
+
+  using JQVectorsT = JQVectors<TComplex, 113, 15, false>;
+  inline void SetQvectors(const JQVectorsT* _qvecs) { qvecs = _qvecs; }
   void Correlation(Int_t c_nPart, Int_t c_nHarmo, Int_t* harmo, Double_t* correlData);
   void CalculateCorrelators(const Int_t fCentBin);
   void FillHistograms(const Int_t fCentBin, Int_t ind, Double_t cNum, Double_t cDenom, Double_t wNum, Double_t wDenom);
@@ -77,7 +80,8 @@ class FlowJSPCAnalysis
   const Int_t mNqHarmos = 113; ///< Highest harmo for Q(n,p): (v8*14part)+1.
   const Int_t mNqPowers = 15;  ///< Max power for Q(n,p): 14part+1.
   // array<array<TComplex, mNqPowers>,mNqHarmos> cQvectors;
-  TComplex cQvectors[113][15];
+  const JQVectorsT* qvecs;
+
   HistogramRegistry* mHistRegistry = nullptr;
 
   Int_t fHarmosArray[12][8];

@@ -14,14 +14,12 @@
 // O2 headers.
 
 // O2 Physics headers.
-#include "PWGCF/Flow/Core/FlowJHistManager.h"
+#include "PWGCF/JCorran/Core/FlowJHistManager.h"
 
 // Namespaces.
 using namespace o2;
 using namespace o2::framework;
 
-namespace o2::analysis::PWGCF
-{
 /// \brief Create the histograms in the QA registry.
 void FlowJHistManager::CreateHistQA()
 {
@@ -172,5 +170,3 @@ int FlowJHistManager::GetCentBin(float cValue)
   // --> The measured percentile is larger than the final class we consider.
   return -1;
 }
-
-} // namespace o2::analysis::PWGCF

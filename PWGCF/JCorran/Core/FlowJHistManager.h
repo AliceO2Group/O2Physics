@@ -12,8 +12,8 @@
 // \brief   Histogram manager for the AC-related analyses.
 // \author  Cindy Mordasini (cindy.mordasini@cern.ch)
 
-#ifndef PWGCF_FLOW_CORE_FLOWJHISTMANAGER_H_
-#define PWGCF_FLOW_CORE_FLOWJHISTMANAGER_H_
+#ifndef PWGCF_JCORRAN_CORE_FLOWJHISTMANAGER_H_
+#define PWGCF_JCORRAN_CORE_FLOWJHISTMANAGER_H_
 
 /* Header files. */
 #include <iostream>
@@ -40,8 +40,6 @@ using namespace o2::framework;
 // ----------------------------------------------------------------------------
 // Histogram manager to fill the general QA common to all flow tasks.
 // ----------------------------------------------------------------------------
-namespace o2::analysis::PWGCF
-{
 class FlowJHistManager
 {
  public:
@@ -313,6 +311,5 @@ class FlowJHistManager
 
   ClassDefNV(FlowJHistManager, 1);
 };
-} // namespace o2::analysis::PWGCF
 
-#endif // PWGCF_FLOW_CORE_FLOWJHISTMANAGER_H_
+#endif // PWGCF_JCORRAN_CORE_FLOWJHISTMANAGER_H_

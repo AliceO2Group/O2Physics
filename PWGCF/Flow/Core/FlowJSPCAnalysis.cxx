@@ -24,33 +24,11 @@ using namespace std;
 namespace o2::analysis::PWGCF
 {
 
-void FlowJSPCAnalysis::CalculateQvectors(const vector<float>& phiAngles, const vector<float>& phiWeights)
-{
-  for (auto& Qn : cQvectors) {
-    for (auto& Qnp : Qn) {
-      Qnp = TComplex(0, 0);
-    }
-  }
-
-  for (int iT = 0; iT < phiAngles.size(); ++iT) {
-    float iPhi = phiAngles.at(iT);
-    float iWeight = phiWeights.at(iT);
-
-    for (int iH = 0; iH < mNqHarmos; iH++) {
-      for (int iP = 0; iP < mNqPowers; iP++) {
-        double weightToP = TMath::Power(iWeight, iP);
-        cQvectors[iH][iP] += TComplex(weightToP * TMath::Cos(iH * iPhi), weightToP * TMath::Sin(iH * iPhi));
-      }
-    }
-  }
-
-} // End of Calculate Q-vectors
-
 TComplex FlowJSPCAnalysis::Q(const Int_t harmN, const Int_t p)
 {
   if (harmN >= 0)
-    return cQvectors[harmN][p];
-  return TComplex::Conjugate(cQvectors[-harmN][p]);
+    return qvecs->QvectorQC[harmN][p];
+  return TComplex::Conjugate(qvecs->QvectorQC[-harmN][p]);
 } // End of Q
 
 /// \brief Calculate multi-particle correlators using recursion.

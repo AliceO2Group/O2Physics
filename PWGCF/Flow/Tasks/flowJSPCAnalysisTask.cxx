@@ -38,7 +38,7 @@
 
 #include "PWGCF/Flow/Core/FlowJSPCAnalysis.h"
 #include "PWGCF/Flow/Core/FlowJSPCObservables.h"
-#include "PWGCF/Flow/Core/FlowJHistManager.h"
+#include "PWGCF/JCorran/Core/FlowJHistManager.h"
 
 // Namespaces and definitions.
 using namespace o2;
@@ -56,6 +56,7 @@ using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 struct flowJSPCAnalysisTask {
   HistogramRegistry SPCHistograms{"SPCResults", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   FlowJSPCAnalysis spcAnalysis;
+  FlowJSPCAnalysis::JQVectorsT jqvecs;
 
   HistogramRegistry qaHistRegistry{"qaHistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   FlowJHistManager histManager;
@@ -160,20 +161,15 @@ struct flowJSPCAnalysisTask {
     Int_t cBin = histManager.GetCentBin(cent);
     // printf("Centrality: %.2f,\tBin: %d\n", cent, cBin);
     SPCHistograms.fill(HIST("FullCentrality"), cent);
-    vector<float> trackPhi;
-    vector<float> trackWeight;
-    int nTracks = 0;
+    int nTracks = tracks.size();
 
     for (auto& track : tracks) {
       if (cfgFillQA)
         histManager.FillTrackQA<1>(track, cBin, coll.posZ());
-      trackPhi.push_back(track.phi());
       // printf("Track phi: %.3f, %.2f\n", track.phi(), cent);
       // We get the NUE and NUA weight values from the objects fetched earlier
       // in the CCDB. These weights still need to be inverted to be used in
       // the computations of the Q-vectors.
-      float wNUE = 1.; // Unit NUE weight for pT.
-      float wNUA = 1.; // Unit NUA weight for phi.
 
       if (cfgUseNUE) {
         ;
@@ -181,20 +177,18 @@ struct flowJSPCAnalysisTask {
       if (cfgUseNUA) {
         ;
       }
-      nTracks++;
-      trackWeight.push_back(1. / (wNUE * wNUA));
     }
 
     if (cfgFillQA)
       histManager.FillEventQA<1>(coll, cBin, cent, nTracks);
 
-    spcAnalysis.CalculateQvectors(trackPhi, trackWeight);
+    jqvecs.Calculate(tracks, 0.0, cfgTrackCuts.cfgEtaMax);
+    spcAnalysis.SetQvectors(&jqvecs);
+    printf("Q-vectors calculated\n");
     spcAnalysis.CalculateCorrelators(cBin);
 
     /* Reset the variables for the next collision. */
     // This ensures no mixing between collision can happen accidentally.
-    trackPhi.clear();
-    trackWeight.clear();
 
     LOGF(info, "Collision analysed. Next...");
   }

@@ -16,7 +16,6 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
-#pragma link C++ class o2::analysis::PWGCF::FlowJHistManager + ;
 #pragma link C++ class o2::analysis::PWGCF::FlowJSPCAnalysis + ;
 #pragma link C++ class o2::analysis::PWGCF::FlowJSPCObservables + ;
 

@@ -36,13 +36,12 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGCF/Flow/Core/FlowJHistManager.h"
+#include "PWGCF/JCorran/Core/FlowJHistManager.h"
 
 // Namespaces and definitions.
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::analysis::PWGCF;
 using namespace std;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,

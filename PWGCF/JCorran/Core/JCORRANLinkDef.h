@@ -15,3 +15,4 @@
 
 #pragma link C++ class JFFlucAnalysis + ;
 #pragma link C++ class JHistManager + ;
+#pragma link C++ class FlowJHistManager + ;
