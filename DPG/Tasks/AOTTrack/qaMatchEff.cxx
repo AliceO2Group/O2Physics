@@ -71,15 +71,15 @@ struct qaMatchEff {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   //
   // Track selections
-  Configurable<bool> isUseTrackSelections{"isUseTrackSelections", false, "Boolean to switch the track selections on/off."};
-  Configurable<bool> isUseAnalysisTrackSelections{"isUseAnalysisTrackSelections", false, "Boolean to switch if the analysis track selections are used. If true, all the Explicit track cuts are ignored."};
+  Configurable<bool> b_useTrackSelections{"b_useTrackSelections", false, "Boolean to switch the track selections on/off."};
+  Configurable<int> filterbitTrackSelections{"filterbitTrackSelections", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   // kinematics
   Configurable<float> ptMinCutInnerWallTPC{"ptMinCutInnerWallTPC", 0.1f, "Minimum transverse momentum calculated at the inner wall of TPC (GeV/c)"};
   Configurable<float> ptMinCut{"ptMinCut", 0.1f, "Minimum transverse momentum (GeV/c)"};
   Configurable<float> ptMaxCut{"ptMaxCut", 100.f, "Maximum transverse momentum (GeV/c)"};
   Configurable<float> etaMinCut{"etaMinCut", -2.0f, "Minimum pseudorapidity"};
   Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
-  Configurable<bool> isUseTPCinnerWallPt{"isUseTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
+  Configurable<bool> b_useTPCinnerWallPt{"b_useTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
   // DCA and PID cuts
   Configurable<LabeledArray<float>> dcaMaxCut{"dcaMaxCut", {parTableDCA[0], nParDCA, nParVaDCA, parClassDCA, parNameDCA}, "Track DCA cuts"};
   Configurable<LabeledArray<float>> nSigmaPID{"nSigmaPID", {parTablePID[0], nParPID, nParVaPID, parClassPID, parNamePID}, "PID nSigma cuts TPC and TOF"};
@@ -187,6 +187,12 @@ struct qaMatchEff {
   //      ******     BE VERY CAREFUL!   --  FILTERS !!!  *****
   //
   Filter zPrimVtxLim = nabs(aod::collision::posZ) < zPrimVtxMax;
+  Filter trackFilter = (filterbitTrackSelections.node() == 0) ||
+                       ((filterbitTrackSelections.node() == 1) && requireGlobalTrackInFilter()) || /// filterbit 4 track selections + tight DCA cuts
+                       ((filterbitTrackSelections.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((filterbitTrackSelections.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((filterbitTrackSelections.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((filterbitTrackSelections.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   //
   //
   //
@@ -204,9 +210,9 @@ struct qaMatchEff {
     else
       initData();
 
-    if ((!isitMC && (doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) || (isitMC && (doprocessData || doprocessDataNoColl || doprocessTrkIUMC)))
+    if ((!isitMC && (doprocessMCFilteredTracks || doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) || (isitMC && (doprocessDataFilteredTracks || doprocessData || doprocessDataNoColl || doprocessTrkIUMC)))
       LOGF(fatal, "Initialization set for MC and processData function flagged  (or viceversa)! Fix the configuration.");
-    if ((doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) || (doprocessData && doprocessDataNoColl && doprocessTrkIUData))
+    if ((doprocessMCFilteredTracks && doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) || (doprocessDataFilteredTracks && doprocessData && doprocessDataNoColl && doprocessTrkIUData))
       LOGF(fatal, "Cannot process for both without collision tag and with collision tag at the same time! Fix the configuration.");
     if (doprocessTrkIUMC && makethn) {
       LOGF(fatal, "No DCA for IU tracks. Put makethn = false.");
@@ -216,7 +222,7 @@ struct qaMatchEff {
     }
     //
     /// initialize the track selections
-    if (isUseTrackSelections) {
+    if (b_useTrackSelections) {
       // kinematics
       cutObject.SetEtaRange(etaMinCut, etaMaxCut);
       cutObject.SetPtRange(ptMinCut, ptMaxCut);
@@ -239,12 +245,6 @@ struct qaMatchEff {
       for (std::set<uint8_t>::iterator it = set_customITShitmap.begin(); it != set_customITShitmap.end(); it++) {
       }
       cutObject.SetRequireHitsInITSLayers(customMinITShits, set_customITShitmap);
-
-      if (isUseAnalysisTrackSelections) {
-        LOG(info) << "### Using analysis track selections";
-        cutObject = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, 0);
-        LOG(info) << "### Analysis track selections set";
-      }
     }
     if (doDebug)
       LOGF(info, ">>>>>>>>>>>>>>>>>>>     END  Init function ");
@@ -265,14 +265,7 @@ struct qaMatchEff {
       histos.add("data/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - data", kTHnSparseF,
                  {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnPhiAxis, thnSpecAxis, thnITSclumapAxis, thnHasDetAxis});
 
-<<<<<<< HEAD
-    // control plots always done
-    if (doDebug)
-      LOGF(info, ">>>>>>>>>>>>>>>>>>>     before booking ");
-    histos.add("data/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
-=======
     // histos.add("data/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
->>>>>>> deed3c37 (memory slimming)
     histos.add("data/control/zPrimary", "Position of primary vertex along beam axis;z position [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     histos.add("data/control/yPrimary", "Position of primary vertex along y axis;y position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("data/control/xPrimary", "Position of primary vertex along x axis;x position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
@@ -305,31 +298,6 @@ struct qaMatchEff {
     histos.add("data/control/SitsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
     histos.add("data/control/SitsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
     histos.add("data/control/SitsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
-    if (doDebug)
-      LOGF(info, ">>>>>>>>>>>>>>>>>>>     after booking ");
-
-    if (!makehistos)
-      return;
-    //
-    //
-
-    histos.add("data/control/itsCMnoTPC", "ITS cluster map when no TPC;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/itsCMwTPC", "ITS cluster map w/TPC;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/itsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/itsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/itsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/itsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/itsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/itsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-
-    histos.add("data/control/SitsCMnoTPC", "ITS cluster map when no TPC;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/SitsCMwTPC", "ITS cluster map w/TPC;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/SitsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/SitsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/SitsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/SitsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/SitsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("data/control/SitsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
     if (doDebug)
       LOGF(info, ">>>>>>>>>>>>>>>>>>>     after booking ");
 
@@ -787,47 +755,13 @@ struct qaMatchEff {
     // thnsparse for fractions
     if (makethn)
       histos.add("MC/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - MC", kTHnSparseF,
-<<<<<<< HEAD
-                 {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnPhiAxis, thnSpecAxis, thnITSclumapAxis, thnTPCcluAxis, thnHasDetAxis});
-    //
-    // control plots always done
-    //
-    histos.add("MC/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
-=======
                  {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnPhiAxis, thnSpecAxis, thnITSclumapAxis, thnHasDetAxis});
     //
     // histos.add("MC/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
->>>>>>> deed3c37 (memory slimming)
     histos.add("MC/control/zPrimary", "Position of primary vertex along beam axis;z position [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     histos.add("MC/control/yPrimary", "Position of primary vertex along y axis;y position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("MC/control/xPrimary", "Position of primary vertex along x axis;x position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("MC/control/chi2Prim", "#chi^2 of primary vertex fit;#chi^2", kTH1D, {{200, 0., 100.0}}, true);
-<<<<<<< HEAD
-    histos.add("MC/control/zDCA_tpc", "DCA along z TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/control/xyDCA_tpc", "DCA in x-y plane TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/control/xyDCA_tpcits", "DCA in x-y plane TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-
-    if (!makehistos)
-      return;
-    histos.add("MC/control/itsCMnoTPC", "ITS cluster map when no TPC;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/itsCMwTPC", "ITS cluster map w/TPC;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/itsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/itsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/itsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/itsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/itsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/itsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-
-    histos.add("MC/control/SitsCMnoTPC", "ITS cluster map when no TPC;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/SitsCMwTPC", "ITS cluster map w/TPC;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/SitsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/SitsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/SitsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/SitsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/SitsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-    histos.add("MC/control/SitsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD;ITS cluster map", kTH1D, {{128, -0.5, 127.5}}, true);
-=======
     // histos.add("MC/control/zDCA_tpc", "DCA along z TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     // histos.add("MC/control/xyDCA_tpc", "DCA in x-y plane TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     // histos.add("MC/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
@@ -854,7 +788,6 @@ struct qaMatchEff {
     histos.add("MC/control/SitsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
     histos.add("MC/control/SitsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
     histos.add("MC/control/SitsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
->>>>>>> deed3c37 (memory slimming)
 
     //
     //  local X,Z of track
@@ -1364,11 +1297,11 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedKineCuts(T& track)
   {
-    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
+    if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
       return false;
-    if (isUseTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
+    if (b_useTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
       return false; // pt selection active only if the required pt is that calculated at the inner wall of TPC
     }
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kEtaRange))
@@ -1384,7 +1317,7 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedTPCCuts(T& track)
   {
-    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
+    if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kTPCNCls))
       return false;
@@ -1400,7 +1333,7 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedITSCuts(T& track)
   {
-    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
+    if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kITSChi2NDF))
       return false;
@@ -1415,8 +1348,6 @@ struct qaMatchEff {
   template <bool IS_MC, typename T>
   void fillGeneralHistos(T& coll)
   {
-    if (doDebug)
-      LOGF(info, ">>>>>>>>>>>>>>>>>>>     Fill general histos ");
     if constexpr (IS_MC) {
       histos.fill(HIST("MC/control/zPrimary"), coll.posZ());
       histos.fill(HIST("MC/control/yPrimary"), coll.posY());
@@ -1449,7 +1380,7 @@ struct qaMatchEff {
   ///   Template function to perform the analysis   ///
   /////////////////////////////////////////////////////
   template <bool IS_MC, typename T, typename P, typename B>
-  void fillHistograms(T& tracks, P& /*mcParticles*/, B const& /*bcs*/)
+  void fillHistograms(T& tracks, P& mcParticles, B const& bcs)
   {
     //
     float trackPt = 0; //, ITStrackPt = 0;
@@ -1492,7 +1423,7 @@ struct qaMatchEff {
       /// Using pt calculated at the inner wall of TPC
       /// Caveat: tgl still from tracking: this is not the value of tgl at the
       /// inner wall of TPC
-      if (isUseTPCinnerWallPt)
+      if (b_useTPCinnerWallPt)
         trackPt = tpcinner_pt;
       else
         trackPt = reco_pt;
@@ -1509,7 +1440,7 @@ struct qaMatchEff {
       // Using pt calculated at the inner wall of TPC
       // Caveat: tgl still from tracking: this is not the value of tgl at the
       // inner wall of TPC
-      // if (isUseTPCinnerWallPtForITS)
+      // if (b_useTPCinnerWallPtForITS)
       //   ITStrackPt = tpcinner_pt;
       // else
       //   ITStrackPt = reco_pt;
@@ -1528,7 +1459,6 @@ struct qaMatchEff {
         tofNSigmaKaon = track.tofNSigmaKa();
         tofNSigmaProton = track.tofNSigmaPr();
       }
-      const bool trkWTRD = track.hasTRD();
       const bool trkWTOF = track.hasTOF();
       const bool trkWTRD = track.hasTRD();
       const bool trkWTPC = track.hasTPC();
@@ -1736,8 +1666,6 @@ struct qaMatchEff {
       //
       // all tracks, no conditions
       //
-      if (!makehistos)
-        return;
 
       if (!makehistos)
         return;
@@ -2565,83 +2493,6 @@ struct qaMatchEff {
         LOGF(info, ">>>>>>>>>>>>>>>>>>>     after FILLING ");
 
       //
-      //
-      if (trkWITS) {
-        if (IS_MC) { ////////////////////////   MC
-          if (!trkWTPC)
-            histos.get<TH1>(HIST("MC/control/itsCMnoTPC"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && !trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && trkWTRD && !trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
-          if (trkWTPC)
-            histos.get<TH1>(HIST("MC/control/itsCMwTPC"))->Fill(track.itsClusterMap());
-          if (trkWTPC && trkWTRD && !trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
-          if (trkWTPC && !trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-          if (trkWTPC && trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
-        } else { ////////////////////////   DATA
-          if (!trkWTPC)
-            histos.get<TH1>(HIST("data/control/itsCMnoTPC"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && !trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && trkWTRD && !trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
-          if (trkWTPC)
-            histos.get<TH1>(HIST("data/control/itsCMwTPC"))->Fill(track.itsClusterMap());
-          if (trkWTPC && trkWTRD && !trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
-          if (trkWTPC && !trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-          if (trkWTPC && trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
-        }
-        if (isTrackSelectedITSCuts(track)) {
-          if (IS_MC) { ////////////////////////   MC
-            if (!trkWTPC)
-              histos.get<TH1>(HIST("MC/control/SitsCMnoTPC"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && !trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && trkWTRD && !trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
-            if (trkWTPC)
-              histos.get<TH1>(HIST("MC/control/SitsCMwTPC"))->Fill(track.itsClusterMap());
-            if (trkWTPC && trkWTRD && !trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
-            if (trkWTPC && !trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-            if (trkWTPC && trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
-          } else { ////////////////////////   DATA
-            if (!trkWTPC)
-              histos.get<TH1>(HIST("data/control/SitsCMnoTPC"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && !trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && trkWTRD && !trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
-            if (trkWTPC)
-              histos.get<TH1>(HIST("data/control/SitsCMwTPC"))->Fill(track.itsClusterMap());
-            if (trkWTPC && trkWTRD && !trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
-            if (trkWTPC && !trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-            if (trkWTPC && trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
-          }
-        }
-      }
-
-      //
       // all tracks with pt>0.5
       // if (trackPt > 0.5) {
       //   if (trkWTPC && isTrackSelectedTPCCuts(track)) {
@@ -3151,6 +3002,13 @@ struct qaMatchEff {
   }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
 
+  void processMCFilteredTracks(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const& mcParticles)
+  {
+    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
+    fillGeneralHistos<true>(collision);
+  }
+  PROCESS_SWITCH(qaMatchEff, processMCFilteredTracks, "process MC with filtered tracks with filterbit selections", false);
+
   ////////////////////////////////////////////////////////////
   ///   Process MC with collision grouping and IU tracks   ///
   ////////////////////////////////////////////////////////////
@@ -3189,6 +3047,17 @@ struct qaMatchEff {
       LOGF(info, ">>>>>>>>>>>>>>>>>>>     PROCESS DATA after fill general");
   }
   PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
+
+  void processDataFilteredTracks(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>> const& tracks, BCsWithTimeStamp const& bcs)
+  {
+    if (enableMonitorVsTime) {
+      // tracks.rawIteratorAt(0).collision().bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
+      setUpTimeMonitoring(bcs);
+    }
+    fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
+    fillGeneralHistos<false>(collision);
+  }
+  PROCESS_SWITCH(qaMatchEff, processDataFilteredTracks, "process data with filtered tracks with filterbit selections", false);
 
   /////////////////////////////////////////////////////////////
   ///   Process data with collision grouping and IU tracks  ///
