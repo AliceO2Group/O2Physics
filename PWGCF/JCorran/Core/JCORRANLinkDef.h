@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGCF_JCORRAN_CORE_PWGCFJCORRANLINKDEF_H_
-#define PWGCF_JCORRAN_CORE_PWGCFJCORRANLINKDEF_H_
+#ifndef PWGCF_JCORRAN_CORE_JCORRANLINKDEF_H_
+#define PWGCF_JCORRAN_CORE_JCORRANLINKDEF_H_
 
 #pragma link off all globals;
 #pragma link off all classes;
@@ -20,4 +20,4 @@
 #pragma link C++ class JHistManager + ;
 #pragma link C++ class FlowJHistManager + ;
 
-#endif // PWGCF_JCORRAN_CORE_PWGCFJCORRANLINKDEF_H_
+#endif // PWGCF_JCORRAN_CORE_JCORRANLINKDEF_H_
