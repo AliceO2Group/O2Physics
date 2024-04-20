@@ -283,7 +283,8 @@ struct HfFilter { // Main struct for HF triggers
                Hf3ProngsWithMl const& cand3Prongs,
                aod::TrackAssoc const& trackIndices,
                BigTracksPID const&,
-               aod::V0PhotonsKF const& photons)
+               aod::V0PhotonsKF const& photons,
+               aod::V0Legs const&)
   {
     for (const auto& collision : collisions) {
 
@@ -503,8 +504,8 @@ struct HfFilter { // Main struct for HF triggers
         if (!keepEvent[kPhotonCharm2P] && isSignalTagged && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
           auto photonsThisCollision = photons.sliceBy(photonsPerCollision, thisCollId);
           for (const auto& photon : photonsThisCollision) {
-            auto posTrack = photon.posTrack_as<BigTracksPID>();
-            auto negTrack = photon.negTrack_as<BigTracksPID>();
+            auto posTrack = photon.posTrack_as<aod::V0Legs>();
+            auto negTrack = photon.negTrack_as<aod::V0Legs>();
             if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod)) {
               continue;
             }
@@ -984,8 +985,8 @@ struct HfFilter { // Main struct for HF triggers
           auto massDsPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massKa});
           auto photonsThisCollision = photons.sliceBy(photonsPerCollision, thisCollId);
           for (const auto& photon : photonsThisCollision) {
-            auto posTrack = photon.posTrack_as<BigTracksPID>();
-            auto negTrack = photon.negTrack_as<BigTracksPID>();
+            auto posTrack = photon.posTrack_as<aod::V0Legs>();
+            auto negTrack = photon.negTrack_as<aod::V0Legs>();
             if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod)) {
               continue;
             }
