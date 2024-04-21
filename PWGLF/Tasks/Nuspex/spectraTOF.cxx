@@ -499,8 +499,6 @@ struct tofSpectra {
           histos.add(hpt_den_prm_recoev[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
           histos.add(hpt_den_prm_evsel[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
           histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
-          histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
-          histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
           //***************************************************************************************
         } else {
           histos.add(hpt_num_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
@@ -518,9 +516,9 @@ struct tofSpectra {
           histos.add(hpt_den_prm_recoev[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_den_prm_evsel[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-          histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-          histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH1D, {ptAxis});
         }
+        histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH1D, {ptAxis});
         if (enableDCAxyzHistograms) {
           histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
           histos.add(hdcaxystr[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
@@ -1678,22 +1676,13 @@ struct tofSpectra {
     if (mcParticle.pdgCode() != PDGs[i]) {
       return;
     }
-    const float multiplicity = getMultiplicity(collision);
 
     if (mcParticle.isPhysicalPrimary()) {
-      if (abs(mcCollision.posZ()) < cfgCutVertex ) {
-         if (includeCentralityMC){
-        histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
-         } else {
-            histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt());
-           }
+      if (abs(mcCollision.posZ()) < cfgCutVertex) {
+        histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt());
       } else {
-         if (includeCentralityMC){
-         histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
-         } else {
-            histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt());
-          }
-        }
+        histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt());
+      }
     }
   }
 
