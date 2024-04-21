@@ -140,8 +140,6 @@ struct DalitzEEQC {
   Preslice<MyTracks> perCollision_track = aod::emprimaryelectron::emeventId;
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
-  std::vector<uint64_t> used_trackIds;
-
   void processQC(MyCollisions const&, MyDalitzEEs const&, MyTracks const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
@@ -173,6 +171,8 @@ struct DalitzEEQC {
       for (const auto& cut : fDalitzEECuts) {
         THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
         THashList* list_track_cut = static_cast<THashList*>(list_track->FindObject(cut.GetName()));
+
+        std::vector<uint64_t> used_trackIds;
         used_trackIds.reserve(uls_pairs_per_coll.size() * 2);
 
         int nuls = 0, nlspp = 0, nlsmm = 0;
