@@ -229,9 +229,9 @@ struct SGCandProducer {
       // update SGTracks tables
       for (auto& track : tracks) {
         if (track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta()) {
-          if (track.isPVContributor())
+          if (track.isPVContributor()) {
             updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-          else if (saveAllTracks) {
+          } else if (saveAllTracks) {
             if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50))
               updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
             // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
