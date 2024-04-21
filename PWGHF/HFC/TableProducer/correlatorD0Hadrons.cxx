@@ -409,6 +409,7 @@ struct HfCorrelatorD0Hadrons {
           if (track.globalIndex() != leadingIndex)
             continue;
         }
+        registry.fill(HIST("hTrackCounter"), 4); // fill no. of tracks  have leading particle
 
         entryD0HadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
                           track.eta() - candidate1.eta(),
