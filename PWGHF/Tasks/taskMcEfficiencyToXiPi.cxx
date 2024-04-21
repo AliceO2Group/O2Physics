@@ -298,10 +298,10 @@ struct HfTaskMcEfficiencyToXiPi {
       for(int i = 0; i < static_cast<int>(lambda.daughtersIds().size()); i++){
       //for(auto& dauLambda : lambda.daughters_as<aod::McParticles>()){
         if(std::abs(genParticles.rawIteratorAt(lambda.daughtersIds()[i]).pdgCode()) == kProton && genParticles.rawIteratorAt(lambda.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay){
-          protonId = cascade.daughtersIds()[i];
+          protonId = lambda.daughtersIds()[i];
         }
         if(std::abs(genParticles.rawIteratorAt(lambda.daughtersIds()[i]).pdgCode()) == kPiPlus && genParticles.rawIteratorAt(lambda.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay){
-          pionFromLambdaId = cascade.daughtersIds()[i];
+          pionFromLambdaId = lambda.daughtersIds()[i];
         }
       }
       if (protonId < 0 || pionFromLambdaId < 0) {
