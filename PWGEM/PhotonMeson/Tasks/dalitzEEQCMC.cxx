@@ -170,7 +170,7 @@ struct DalitzEEQCMC {
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     double values_single[4] = {0, 0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
@@ -227,7 +227,6 @@ struct DalitzEEQCMC {
           values[0] = uls_pair.mass();
           values[1] = uls_pair.pt();
           values[2] = dca_ee_3d;
-          values[3] = uls_pair.phiv();
 
           if (mother_id > -1) {
             auto mcmother = mcparticles.iteratorAt(mother_id);
@@ -354,7 +353,6 @@ struct DalitzEEQCMC {
           values[0] = lspp_pair.mass();
           values[1] = lspp_pair.pt();
           values[2] = dca_ee_3d;
-          values[3] = lspp_pair.phiv();
 
           if ((posmc.isPhysicalPrimary() || posmc.producedByGenerator()) && (elemc.isPhysicalPrimary() || elemc.producedByGenerator())) {
             switch (hfee_type) {
@@ -418,7 +416,6 @@ struct DalitzEEQCMC {
           values[0] = lsmm_pair.mass();
           values[1] = lsmm_pair.pt();
           values[2] = dca_ee_3d;
-          values[3] = lsmm_pair.phiv();
 
           if ((posmc.isPhysicalPrimary() || posmc.producedByGenerator()) && (elemc.isPhysicalPrimary() || elemc.producedByGenerator())) {
             switch (hfee_type) {

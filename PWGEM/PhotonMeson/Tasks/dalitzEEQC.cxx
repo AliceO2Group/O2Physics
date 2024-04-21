@@ -146,7 +146,7 @@ struct DalitzEEQC {
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     double values_single[4] = {0, 0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
@@ -195,8 +195,8 @@ struct DalitzEEQC {
             values[0] = uls_pair.mass();
             values[1] = uls_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = uls_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
+            reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_uls_same"))->Fill(uls_pair.phiv(), uls_pair.mass());
             nuls++;
             for (auto& track : {pos, ele}) {
               if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
@@ -226,8 +226,8 @@ struct DalitzEEQC {
             values[0] = lspp_pair.mass();
             values[1] = lspp_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = lspp_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_same"))->Fill(values);
+            reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_lspp_same"))->Fill(lspp_pair.phiv(), lspp_pair.mass());
             nlspp++;
           }
         } // end of lspp pair loop
@@ -252,8 +252,8 @@ struct DalitzEEQC {
             values[0] = lsmm_pair.mass();
             values[1] = lsmm_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = lsmm_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_same"))->Fill(values);
+            reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_lsmm_same"))->Fill(lsmm_pair.phiv(), lsmm_pair.mass());
             nlsmm++;
           }
         } // end of lsmm pair loop
@@ -286,7 +286,7 @@ struct DalitzEEQC {
   void MixedEventPairing(TEvents const& collisions, TTracks const& tracks, TMixedBinning const& colBinning)
   {
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     ROOT::Math::PtEtaPhiMVector v1, v2, v12;
     float phiv = 0;
     double values_single[4] = {0, 0, 0, 0};
@@ -330,15 +330,17 @@ struct DalitzEEQC {
           values[0] = v12.M();
           values[1] = v12.Pt();
           values[2] = dca_ee_3d;
-          values[3] = phiv;
 
           if (cut.IsSelectedTrack(t1) && cut.IsSelectedTrack(t2) && cut.IsSelectedPair(v12.M(), dca_ee_3d, phiv)) {
             if (t1.sign() * t2.sign() < 0) {
               reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
+              reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_uls_mix"))->Fill(phiv, v12.M());
             } else if (t1.sign() > 0 && t2.sign() > 0) {
               reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_mix"))->Fill(values);
+              reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_lspp_mix"))->Fill(phiv, v12.M());
             } else if (t1.sign() < 0 && t2.sign() < 0) {
               reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_mix"))->Fill(values);
+              reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_lsmm_mix"))->Fill(phiv, v12.M());
             } else {
               LOGF(info, "This should not happen.");
             }
