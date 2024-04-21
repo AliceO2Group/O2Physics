@@ -1691,8 +1691,8 @@ struct tofSpectra {
          histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
          } else {
             histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt());
-          }   
-      }
+          }
+        }
     }
   }
 
