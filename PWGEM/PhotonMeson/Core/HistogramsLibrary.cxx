@@ -204,19 +204,19 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
     }
 
     if (TString(histClass).Contains("EE")) {
-      const int nm = 167;
+      const int nm = 145;
       double mee[nm] = {0.f};
       for (int i = 0; i < 110; i++) {
         mee[i] = 0.01 * (i - 0) + 0.0; // every 0.01 GeV/c2 up to 1.1 GeV/c2
       }
-      for (int i = 110; i < 128; i++) {
-        mee[i] = 0.1 * (i - 110) + 1.1; // every 0.1 GeV/c2 from 1.1 to 2.9 GeV/c2
+      for (int i = 110; i < 126; i++) {
+        mee[i] = 0.1 * (i - 110) + 1.1; // every 0.1 GeV/c2 from 1.1 to 2.7 GeV/c2
       }
-      for (int i = 128; i < 158; i++) {
-        mee[i] = 0.01 * (i - 128) + 2.9; // every 0.01 GeV/c2 from 2.9 to 3.2 GeV/c2
+      for (int i = 126; i < 136; i++) {
+        mee[i] = 0.05 * (i - 126) + 2.7; // every 0.05 GeV/c2 from 2.7 to 3.2 GeV/c2
       }
-      for (int i = 158; i < nm; i++) {
-        mee[i] = 0.1 * (i - 158) + 3.2; // every 0.01 GeV/c2 from 3.2 to 3.5 GeV/c2
+      for (int i = 136; i < nm; i++) {
+        mee[i] = 0.1 * (i - 136) + 3.2; // every 0.1 GeV/c2 from 3.2 to 4.0 GeV/c2
       }
 
       const int npt = 61;
