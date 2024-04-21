@@ -101,7 +101,7 @@ struct FemtoCorrelations {
   // P.P.S. the chosen way of optimizing the mixing midgt not be the correct one -- feel free to propose the right one!
   // P.P.P.S. choose wisely....
   // P.P.P.P.S this way is still being testing i might be reconsidered; might change in the future, keep looking at the source code
-  Configurable<int> _MEreductionFactor{"MEreductionFactor", 1, "only one (pseudo)randomly choosen event out per pair $value events will be processed and contribute to the final mixing (if < 1 -> all the possible event pairs (per vertex&cent bin) will be processed); implemented for the sake of efficiency; look at the source code;"};
+  Configurable<unsigned int> _MEreductionFactor{"MEreductionFactor", 1, "only one (pseudo)randomly choosen event out per pair $value events will be processed and contribute to the final mixing (if < 2 -> all the possible event pairs (per vertex&cent bin) will be processed); implemented for the sake of efficiency; look at the source code;"};
 
   bool IsIdentical;
 
@@ -434,7 +434,7 @@ struct FemtoCorrelations {
     if (IsIdentical) { //====================================== mixing identical ======================================
 
       for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
-        int EvPerBin = (i->second).size();
+        unsigned int EvPerBin = (i->second).size();
 
         for (unsigned int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
 
