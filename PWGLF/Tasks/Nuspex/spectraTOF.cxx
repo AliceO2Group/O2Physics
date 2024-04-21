@@ -499,8 +499,6 @@ struct tofSpectra {
           histos.add(hpt_den_prm_recoev[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
           histos.add(hpt_den_prm_evsel[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
           histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
-          histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
-          histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
           //***************************************************************************************
         } else {
           histos.add(hpt_num_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
@@ -518,9 +516,9 @@ struct tofSpectra {
           histos.add(hpt_den_prm_recoev[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_den_prm_evsel[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-          histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-          histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH1D, {ptAxis});
         }
+        histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH1D, {ptAxis});
         if (enableDCAxyzHistograms) {
           histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
           histos.add(hdcaxystr[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
@@ -1740,7 +1738,7 @@ struct tofSpectra {
           histos.fill(HIST("MC/no_collision/neg"), track.pt());
         }
         continue;
-      };
+      }
       if (!isEventSelected<false, false>(track.collision_as<CollisionCandidateMC>())) {
         continue;
       }
