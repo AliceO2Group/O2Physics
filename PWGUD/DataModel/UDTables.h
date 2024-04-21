@@ -228,7 +228,7 @@ DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //!
 DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
 DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t); //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int32_t); //! Id of original collision if any, -1 if ambiguous
-DECLARE_SOA_COLUMN(UDITSNCls, uditsNCls, uint8_t);                       //! Number of ITS clusters found
+DECLARE_SOA_COLUMN(UDITSNCls, uditsNCls, uint8_t);     //! Number of ITS clusters found
 DECLARE_SOA_DYNAMIC_COLUMN(IsAmbiguous, isAmbiguous,
                            [](int32_t collisionId) -> bool {
                              return collisionId == -1;
@@ -284,7 +284,7 @@ DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::TOFExpMom,
                   udtrack::DetectorMap,
                   udtrack::UDITSNCls,
-                  //track::v001::ITSNCls,
+                  // track::v001::ITSNCls,
                   track::HasITS<udtrack::DetectorMap>,
                   track::HasTPC<udtrack::DetectorMap>,
                   track::HasTRD<udtrack::DetectorMap>,

@@ -31,48 +31,48 @@ using namespace o2::framework::expressions;
 #define mpion 0.1396
 #define mkaon 0.4937
 #define mproton 0.9383
-  template <typename T>
-  int trackselector(const T& track)
-  {
-    TLorentzVector a;
-    a.SetXYZM(track.px(), track.py(), track.pz(), mpion);
-    if (std::abs(track.dcaZ()) > 2.)
-      return 0;
-    if (std::abs(track.dcaXY()) > .0105 + .035 / pow(a.Pt(), 1.1))
-      return 0;
-    if (track.tpcChi2NCl() > 4)
-      return 0;
-    if (track.tpcNClsFindable() < 70)
-      return 0;
-    if (track.itsChi2NCl() > 36)
-      return 0;
-    return 1;
-  }
-  template <typename T>
-  int trackpid(const T& track, bool use_tof)
-  {
-    int pid = 0;
-    float pi, ka, pr;
-    float tpi, tka, tpr;
-    pi = std::abs(track.tpcNSigmaPi());
-    ka = std::abs(track.tpcNSigmaKa());
-    pr = std::abs(track.tpcNSigmaPr());
-    if (pi < 1. && pi < ka && pi < pr)
+template <typename T>
+int trackselector(const T& track)
+{
+  TLorentzVector a;
+  a.SetXYZM(track.px(), track.py(), track.pz(), mpion);
+  if (std::abs(track.dcaZ()) > 2.)
+    return 0;
+  if (std::abs(track.dcaXY()) > .0105 + .035 / pow(a.Pt(), 1.1))
+    return 0;
+  if (track.tpcChi2NCl() > 4)
+    return 0;
+  if (track.tpcNClsFindable() < 70)
+    return 0;
+  if (track.itsChi2NCl() > 36)
+    return 0;
+  return 1;
+}
+template <typename T>
+int trackpid(const T& track, bool use_tof)
+{
+  int pid = 0;
+  float pi, ka, pr;
+  float tpi, tka, tpr;
+  pi = std::abs(track.tpcNSigmaPi());
+  ka = std::abs(track.tpcNSigmaKa());
+  pr = std::abs(track.tpcNSigmaPr());
+  if (pi < 1. && pi < ka && pi < pr)
+    pid = 1;
+  else if (ka < 1. && ka < pi && ka < pr)
+    pid = 2;
+  else if (pr < 1. && pr < pi && pr < ka)
+    pid = 3;
+  if (use_tof && track.tofChi2() > -1) {
+    tpi = std::abs(track.tofNSigmaPi());
+    tka = std::abs(track.tofNSigmaKa());
+    tpr = std::abs(track.tofNSigmaPr());
+    if (std::sqrt(pi * pi + tpi * tpi) < 2 && std::sqrt(pi * pi + tpi * tpi) < std::sqrt(ka * ka + tka * tka) && std::sqrt(pi * pi + tpi * tpi) < std::sqrt(pr * pr + tpr * tpr))
       pid = 1;
-    else if (ka < 1. && ka < pi && ka < pr)
+    else if (std::sqrt(ka * ka + tka * tka) < 2 && std::sqrt(pi * pi + tpi * tpi) > std::sqrt(ka * ka + tka * tka) && std::sqrt(ka * ka + tka * tka) < std::sqrt(pr * pr + tpr * tpr))
       pid = 2;
-    else if (pr < 1. && pr < pi && pr < ka)
+    else if (std::sqrt(pr * pr + tpr * tpr) < 2 && std::sqrt(pr * pr + tpr * tpr) < std::sqrt(ka * ka + tka * tka) && std::sqrt(pi * pi + tpi * tpi) > std::sqrt(pr * pr + tpr * tpr))
       pid = 3;
-    if (use_tof && track.tofChi2() > -1) {
-      tpi = std::abs(track.tofNSigmaPi());
-      tka = std::abs(track.tofNSigmaKa());
-      tpr = std::abs(track.tofNSigmaPr());
-      if (std::sqrt(pi * pi + tpi * tpi) < 2 && std::sqrt(pi * pi + tpi * tpi) < std::sqrt(ka * ka + tka * tka) && std::sqrt(pi * pi + tpi * tpi) < std::sqrt(pr * pr + tpr * tpr))
-        pid = 1;
-      else if (std::sqrt(ka * ka + tka * tka) < 2 && std::sqrt(pi * pi + tpi * tpi) > std::sqrt(ka * ka + tka * tka) && std::sqrt(ka * ka + tka * tka) < std::sqrt(pr * pr + tpr * tpr))
-        pid = 2;
-      else if (std::sqrt(pr * pr + tpr * tpr) < 2 && std::sqrt(pr * pr + tpr * tpr) < std::sqrt(ka * ka + tka * tka) && std::sqrt(pi * pi + tpi * tpi) > std::sqrt(pr * pr + tpr * tpr))
-        pid = 3;
-    }
-    return pid;
   }
+  return pid;
+}
