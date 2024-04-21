@@ -192,12 +192,11 @@ struct DalitzEEQCMC {
       auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emeventId, collision.globalIndex(), cache);
       auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzee::emeventId, collision.globalIndex(), cache);
 
-      std::vector<uint64_t> used_trackIds;
-      used_trackIds.reserve(uls_pairs_per_coll.size() * 2);
-
       for (const auto& cut : fDalitzEECuts) {
         THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
         THashList* list_track_cut = static_cast<THashList*>(list_track->FindObject(cut.GetName()));
+        std::vector<uint64_t> used_trackIds;
+        used_trackIds.reserve(uls_pairs_per_coll.size() * 2);
 
         int nuls = 0;
         for (auto& uls_pair : uls_pairs_per_coll) {

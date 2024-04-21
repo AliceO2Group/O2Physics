@@ -440,10 +440,10 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
 
   if (TString(histClass) == "singlephoton") {
     if (TString(subGroup).Contains("qvector")) {
-      list->Add(new TH2F("hPt_SPQ2FT0M", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FT0M}", 400, 0.0f, 20, 200, -10, +10));
-      list->Add(new TH2F("hPt_SPQ2FT0A", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FT0A}", 400, 0.0f, 20, 200, -10, +10));
-      list->Add(new TH2F("hPt_SPQ2FT0C", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FT0C}", 400, 0.0f, 20, 200, -10, +10));
-      list->Add(new TH2F("hPt_SPQ2FV0A", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FV0A}", 400, 0.0f, 20, 200, -10, +10));
+      list->Add(new TH2F("hPt_SPQ2FT0M", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FT0M}", 400, 0.0f, 20, 40, -10, +10));
+      list->Add(new TH2F("hPt_SPQ2FT0A", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FT0A}", 400, 0.0f, 20, 40, -10, +10));
+      list->Add(new TH2F("hPt_SPQ2FT0C", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FT0C}", 400, 0.0f, 20, 40, -10, +10));
+      list->Add(new TH2F("hPt_SPQ2FV0A", "p_{T,#gamma} vs. SP;p_{T,#gamma} (GeV/c);u_{2}^{#gamma} #upoint Q_{2}^{FV0A}", 400, 0.0f, 20, 40, -10, +10));
       reinterpret_cast<TH2F*>(list->FindObject("hPt_SPQ2FT0M"))->Sumw2();
       reinterpret_cast<TH2F*>(list->FindObject("hPt_SPQ2FT0A"))->Sumw2();
       reinterpret_cast<TH2F*>(list->FindObject("hPt_SPQ2FT0C"))->Sumw2();
@@ -490,7 +490,7 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
 
     if (TString(subGroup).Contains("qvector")) {
       const int ndim_sp = 3;
-      const int nbins_sp[ndim_sp] = {nmgg - 1, npTgg - 1, 200};
+      const int nbins_sp[ndim_sp] = {nmgg - 1, npTgg - 1, 40};
       const double xmin_sp[ndim_sp] = {0.0, 0.0, -10.f};
       const double xmax_sp[ndim_sp] = {0.8, 20.0, +10.f};
 
@@ -675,32 +675,46 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
   if (TString(histClass) == "photon_hbt") {
     const int nm_hbt = 6;
     double m_hbt[nm_hbt] = {0.0, 0.14, 0.5, 1.1, 2.0, 2.5};
+
+    const int ndca_hbt = 27;
+    double dca_hbt[ndca_hbt] = {0.f};
+    for (int i = 0; i < 20; i++) {
+      dca_hbt[i] = 0.1 * i;
+    }
+    for (int i = 20; i < ndca_hbt; i++) {
+      dca_hbt[i] = 0.5 * (i - 20) + 2.0;
+    }
+
     THnSparseF* hs_q_same = nullptr;
     THnSparseF* hs_q_mix = nullptr;
 
     if (TString(subGroup) == "1d") {
-      const int ndim_1d = 4; // m1, m2, kt, qinv
-      const int nbins_1d[ndim_1d] = {nm_hbt - 1, nm_hbt - 1, 10, 40};
-      const double xmin_1d[ndim_1d] = {0.0, 0.0, 0.0, 0.0};
-      const double xmax_1d[ndim_1d] = {2.5, 2.5, 1.0, 0.4};
+      const int ndim_1d = 6; // m1, m2, dca1, dca2, kt, qinv
+      const int nbins_1d[ndim_1d] = {nm_hbt - 1, nm_hbt - 1, ndca_hbt - 1, ndca_hbt - 1, 10, 40};
+      const double xmin_1d[ndim_1d] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+      const double xmax_1d[ndim_1d] = {2.5, 2.5, 5.0, 5.0, 1.0, 0.4};
 
-      hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim_1d, nbins_1d, xmin_1d, xmax_1d);
+      hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});DCA_{1}^{3D} (#sigma);DCA_{2}^{3D} (#sigma);k_{T} (GeV/c);q_{inv} (GeV/c);", ndim_1d, nbins_1d, xmin_1d, xmax_1d);
       hs_q_same->Sumw2();
       hs_q_same->SetBinEdges(0, m_hbt);
       hs_q_same->SetBinEdges(1, m_hbt);
+      hs_q_same->SetBinEdges(2, dca_hbt);
+      hs_q_same->SetBinEdges(3, dca_hbt);
       hs_q_mix = reinterpret_cast<THnSparseF*>(hs_q_same->Clone("hs_q_mix"));
       list->Add(hs_q_same);
       list->Add(hs_q_mix);
     } else if (TString(subGroup) == "3d") {
-      const int ndim_3d = 8; // m1, m2, kt, qinv, qlong_cms, qout_cms, qside_cms, qlong_lcms
-      const int nbins_3d[ndim_3d] = {nm_hbt - 1, nm_hbt - 1, 10, 40, 80, 80, 80, 80};
-      const double xmin_3d[ndim_3d] = {0.0, 0.0, 0.0, 0.0, -0.4, -0.4, -0.4, -0.4};
-      const double xmax_3d[ndim_3d] = {2.5, 2.5, 1.0, 0.4, +0.4, +0.4, +0.4, +0.4};
+      const int ndim_3d = 10; // m1, m2, dca1, dca2, kt, qinv, qlong_cms, qout_cms, qside_cms, qlong_lcms
+      const int nbins_3d[ndim_3d] = {nm_hbt - 1, nm_hbt - 1, ndca_hbt - 1, ndca_hbt - 1, 10, 40, 80, 80, 80, 80};
+      const double xmin_3d[ndim_3d] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.4, -0.4, -0.4, -0.4};
+      const double xmax_3d[ndim_3d] = {2.5, 2.5, 2.0, 2.0, 1.0, 0.4, +0.4, +0.4, +0.4, +0.4};
 
-      hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim_3d, nbins_3d, xmin_3d, xmax_3d);
+      hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});DCA_{1}^{3D} (#sigma);DCA_{2}^{3D} (#sigma);k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim_3d, nbins_3d, xmin_3d, xmax_3d);
       hs_q_same->Sumw2();
       hs_q_same->SetBinEdges(0, m_hbt);
       hs_q_same->SetBinEdges(1, m_hbt);
+      hs_q_same->SetBinEdges(2, dca_hbt);
+      hs_q_same->SetBinEdges(3, dca_hbt);
       hs_q_mix = reinterpret_cast<THnSparseF*>(hs_q_same->Clone("hs_q_mix"));
       list->Add(hs_q_same);
       list->Add(hs_q_mix);
