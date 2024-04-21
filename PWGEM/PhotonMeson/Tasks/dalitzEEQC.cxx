@@ -317,6 +317,13 @@ struct DalitzEEQC {
           v2 = ROOT::Math::PtEtaPhiMVector(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
           v12 = v1 + v2;
           phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision1.bz());
+          // if (!std::isfinite(phiv)) {
+          //   LOGF(info, "t1.px() = %f, t1.py() = %f, t1.pz() = %f, t2.px() = %f, t2.py() = %f, t2.pz() = %f, phiv = %f", t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), phiv);
+          // }
+
+          if (t1.trackId() == t2.trackId()) { // this is protection against pairing identical 2 tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
+            continue;
+          }
 
           dca_pos_3d = t1.dca3DinSigma();
           dca_ele_3d = t2.dca3DinSigma();
