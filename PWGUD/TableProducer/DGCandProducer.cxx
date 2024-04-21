@@ -126,8 +126,7 @@ struct DGCandProducer {
                       track.trdSignal(),
                       track.length(),
                       track.tofExpMom(),
-                      track.detectorMap(),
-                      track.itsNCls());
+                      track.detectorMap());
     outputTracksFlag(track.has_collision(),
                      track.isPVContributor());
     outputTracksLabel(track.globalIndex());
