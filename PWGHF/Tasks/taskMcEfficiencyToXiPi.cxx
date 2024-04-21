@@ -18,6 +18,7 @@
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
@@ -223,7 +224,7 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // exclude cases with undesired decays
       int counterCharmDau = 0;
-      for(auto& dauCharm : mcParticle.daughters_as<aod::McParticles>()){
+      for(auto& dauCharm : mcParticle.template daughters_as<T2>()){
         if(dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary){
           counterCharmDau++;
         }
@@ -233,7 +234,7 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       int cascId = -999;
       int pionId = -999;
-      for(int i = 0; i < static_cast<int>(mcParticle.daughtersIds.size()); i++){
+      for(int i = 0; i < static_cast<int>(mcParticle.daughtersIds().size()); i++){
       //for(auto& dauCharm : mcParticle.daughters_as<aod::McParticles>()){
         if(std::abs(genParticles.rawIteratorAt(mcParticle.daughtersIds()[i]).pdgCode()) == kXiMinus && (genParticles.rawIteratorAt(mcParticle.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay || genParticles.rawIteratorAt(mcParticle.daughtersIds()[i]).getProcess() == TMCProcess::kPPrimary)){
           cascId = mcParticle.daughtersIds()[i];
@@ -257,7 +258,7 @@ struct HfTaskMcEfficiencyToXiPi {
       // check LF daughters pt (pion<--cascade) and eta
       // first create cascade daughters objects
       int counterCascDau = 0;
-      for(auto& dauCasc : cascade.daughters_as<aod::McParticles>()){
+      for(auto& dauCasc : cascade.template daughters_as<T2>()){
         if(dauCasc.getProcess() == TMCProcess::kPDecay){
           counterCascDau++;
         }
@@ -267,7 +268,7 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       int lambdaId = -999;
       int pionFromCascadeId = -999;
-      for(int i = 0; i < static_cast<int>(cascade.daughtersIds.size()); i++){
+      for(int i = 0; i < static_cast<int>(cascade.daughtersIds().size()); i++){
       //for(auto& dauCasc : cascade.daughters_as<aod::McParticles>()){
         if(std::abs(genParticles.rawIteratorAt(cascade.daughtersIds()[i]).pdgCode()) == kLambda0 && genParticles.rawIteratorAt(cascade.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay){
           lambdaId = cascade.daughtersIds()[i];
@@ -284,7 +285,7 @@ struct HfTaskMcEfficiencyToXiPi {
       auto pionFromCascade = genParticles.rawIteratorAt(pionFromCascadeId);
       // then create lambda daughters objects
       int counterLambdaDau = 0;
-      for(auto& dauLambda : lambda.daughters_as<aod::McParticles>()){
+      for(auto& dauLambda : lambda.template daughters_as<T2>()){
         if(dauLambda.getProcess() == TMCProcess::kPDecay){
           counterLambdaDau++;
         }
@@ -294,7 +295,7 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       int protonId = -999;
       int pionFromLambdaId = -999;
-      for(int i = 0; i < static_cast<int>(lambda.daughtersIds.size()); i++){
+      for(int i = 0; i < static_cast<int>(lambda.daughtersIds().size()); i++){
       //for(auto& dauLambda : lambda.daughters_as<aod::McParticles>()){
         if(std::abs(genParticles.rawIteratorAt(lambda.daughtersIds()[i]).pdgCode()) == kProton && genParticles.rawIteratorAt(lambda.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay){
           protonId = cascade.daughtersIds()[i];
