@@ -203,6 +203,9 @@ struct HfTaskMcEfficiencyToXiPi {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
     }
 
+    int charmDec = 0;
+    int cascDec = 0;
+    int lamDec = 0;
     for (const auto& mcParticle : genParticles) {
 
       // check if I am treating the desired charm baryon
@@ -234,19 +237,20 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       int cascId = -999;
       int pionId = -999;
-      for(int i = 0; i < static_cast<int>(mcParticle.daughtersIds().size()); i++){
-      //for(auto& dauCharm : mcParticle.daughters_as<aod::McParticles>()){
-        if(std::abs(genParticles.rawIteratorAt(mcParticle.daughtersIds()[i]).pdgCode()) == kXiMinus && (genParticles.rawIteratorAt(mcParticle.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay || genParticles.rawIteratorAt(mcParticle.daughtersIds()[i]).getProcess() == TMCProcess::kPPrimary)){
-          cascId = mcParticle.daughtersIds()[i];
-        }
-        if(std::abs(genParticles.rawIteratorAt(mcParticle.daughtersIds()[i]).pdgCode()) == kPiPlus && (genParticles.rawIteratorAt(mcParticle.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay || genParticles.rawIteratorAt(mcParticle.daughtersIds()[i]).getProcess() == TMCProcess::kPPrimary)){
-          pionId = mcParticle.daughtersIds()[i];
+      for(auto& dauCharm : mcParticle.template daughters_as<T2>()){
+        if(std::abs(dauCharm.pdgCode()) == kXiMinus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)){
+          cascId = dauCharm.globalIndex();
+        } else if(std::abs(dauCharm.pdgCode()) == kPiPlus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)){
+          pionId = dauCharm.globalIndex();
+        } else {
+          continue;
         }
       }
       if (cascId < 0 || pionId < 0) {
         LOGP(debug, "Invalid charm baryon daughters PDG codes/production processes");
         continue;
       }
+      charmDec++;
       auto cascade = genParticles.rawIteratorAt(cascId);
       auto pion = genParticles.rawIteratorAt(pionId);
       // check pion <-- charm baryon pt and eta
@@ -268,19 +272,20 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       int lambdaId = -999;
       int pionFromCascadeId = -999;
-      for(int i = 0; i < static_cast<int>(cascade.daughtersIds().size()); i++){
-      //for(auto& dauCasc : cascade.daughters_as<aod::McParticles>()){
-        if(std::abs(genParticles.rawIteratorAt(cascade.daughtersIds()[i]).pdgCode()) == kLambda0 && genParticles.rawIteratorAt(cascade.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay){
-          lambdaId = cascade.daughtersIds()[i];
-        }
-        if(std::abs(genParticles.rawIteratorAt(cascade.daughtersIds()[i]).pdgCode()) == kPiPlus && genParticles.rawIteratorAt(cascade.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay){
-          pionFromCascadeId = cascade.daughtersIds()[i];
+      for(auto& dauCasc : cascade.template daughters_as<T2>()){
+        if(std::abs(dauCasc.pdgCode()) == kLambda0 && dauCasc.getProcess() == TMCProcess::kPDecay){
+          lambdaId = dauCasc.globalIndex();
+        } else if(std::abs(dauCasc.pdgCode()) == kPiPlus && dauCasc.getProcess() == TMCProcess::kPDecay){
+          pionFromCascadeId = dauCasc.globalIndex();
+        } else {
+          continue;
         }
       }
       if (lambdaId < 0 || pionFromCascadeId < 0) {
         LOGP(debug, "Invalid cascade daughters PDG codes/production processes");
         continue;
       }
+      cascDec++;
       auto lambda = genParticles.rawIteratorAt(lambdaId);
       auto pionFromCascade = genParticles.rawIteratorAt(pionFromCascadeId);
       // then create lambda daughters objects
@@ -295,18 +300,20 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       int protonId = -999;
       int pionFromLambdaId = -999;
-      for(int i = 0; i < static_cast<int>(lambda.daughtersIds().size()); i++){
-      //for(auto& dauLambda : lambda.daughters_as<aod::McParticles>()){
-        if(std::abs(genParticles.rawIteratorAt(lambda.daughtersIds()[i]).pdgCode()) == kProton && genParticles.rawIteratorAt(lambda.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay){
-          protonId = lambda.daughtersIds()[i];
-        }
-        if(std::abs(genParticles.rawIteratorAt(lambda.daughtersIds()[i]).pdgCode()) == kPiPlus && genParticles.rawIteratorAt(lambda.daughtersIds()[i]).getProcess() == TMCProcess::kPDecay){
-          pionFromLambdaId = lambda.daughtersIds()[i];
+      for(auto& dauV0 : lambda.template daughters_as<T2>()){
+        if(std::abs(dauV0.pdgCode()) == kProton && dauV0.getProcess() == TMCProcess::kPDecay){
+          protonId = dauV0.globalIndex();
+        } else if(std::abs(dauV0.pdgCode()) == kPiPlus && dauV0.getProcess() == TMCProcess::kPDecay){
+          pionFromLambdaId = dauV0.globalIndex();
+        } else {
+          continue;
         }
       }
       if (protonId < 0 || pionFromLambdaId < 0) {
+        LOGP(debug, "Invalid lambda daughters PDG codes/production processes");
         continue;
       }
+      lamDec++;
       auto proton = genParticles.rawIteratorAt(protonId);
       auto pionFromLambda = genParticles.rawIteratorAt(pionFromLambdaId);
       // check on pt and eta
@@ -394,6 +401,7 @@ struct HfTaskMcEfficiencyToXiPi {
       }
 
     } // close loop mcParticles
+    LOGF(info, "Total: charm dec %i - cascade dec %i - lambda dec %i", charmDec, cascDec, lamDec);
   }   // close candidateMcLoop
 
   // process functions
