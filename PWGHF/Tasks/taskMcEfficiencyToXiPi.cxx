@@ -203,9 +203,6 @@ struct HfTaskMcEfficiencyToXiPi {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
     }
 
-    int charmDec = 0;
-    int cascDec = 0;
-    int lamDec = 0;
     for (const auto& mcParticle : genParticles) {
 
       // check if I am treating the desired charm baryon
@@ -250,7 +247,6 @@ struct HfTaskMcEfficiencyToXiPi {
         LOGP(debug, "Invalid charm baryon daughters PDG codes/production processes");
         continue;
       }
-      charmDec++;
       auto cascade = genParticles.rawIteratorAt(cascId);
       auto pion = genParticles.rawIteratorAt(pionId);
       // check pion <-- charm baryon pt and eta
@@ -285,7 +281,6 @@ struct HfTaskMcEfficiencyToXiPi {
         LOGP(debug, "Invalid cascade daughters PDG codes/production processes");
         continue;
       }
-      cascDec++;
       auto lambda = genParticles.rawIteratorAt(lambdaId);
       auto pionFromCascade = genParticles.rawIteratorAt(pionFromCascadeId);
       // then create lambda daughters objects
@@ -313,7 +308,6 @@ struct HfTaskMcEfficiencyToXiPi {
         LOGP(debug, "Invalid lambda daughters PDG codes/production processes");
         continue;
       }
-      lamDec++;
       auto proton = genParticles.rawIteratorAt(protonId);
       auto pionFromLambda = genParticles.rawIteratorAt(pionFromLambdaId);
       // check on pt and eta
@@ -401,7 +395,6 @@ struct HfTaskMcEfficiencyToXiPi {
       }
 
     } // close loop mcParticles
-    LOGF(info, "Total: charm dec %i - cascade dec %i - lambda dec %i", charmDec, cascDec, lamDec);
   }   // close candidateMcLoop
 
   // process functions
