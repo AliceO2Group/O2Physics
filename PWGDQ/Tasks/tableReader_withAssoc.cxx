@@ -790,6 +790,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsExtra> dimuonsExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
+  Produces<aod::RefFlowDimuon> refFlowDimuonList;
   Produces<aod::DileptonsInfo> dileptonInfoList;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
@@ -1250,6 +1251,7 @@ struct AnalysisSameEventPairing {
 
         if constexpr (eventHasQvector) {
           dileptonFlowList(VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi]);
+          refFlowDimuonList(VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kMultA]);
         }
 
         // Fill histograms

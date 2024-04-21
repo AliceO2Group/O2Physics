@@ -756,6 +756,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsExtra> dimuonExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
+  Produces<aod::RefFlowDimuon> refFlowDimuonList;
   Produces<aod::DileptonsInfo> dileptonInfoList;
   float mMagField = 0.0;
   o2::parameters::GRPMagField* grpmag = nullptr;
@@ -1108,6 +1109,7 @@ struct AnalysisSameEventPairing {
 
       if constexpr (eventHasQvector) {
         dileptonFlowList(VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi]);
+        refFlowDimuonList(VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kMultA]);
       }
 
       int iCut = 0;
@@ -1253,14 +1255,14 @@ struct AnalysisSameEventPairing {
     VarManager::FillEvent<gkEventFillMapWithCovQvector>(event, VarManager::fgValues);
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCovQvector, gkTrackFillMap>(event, tracks, tracks);
   }
-  void processVnDecayToMuMuSkimmed(soa::Filtered<MyEventsVtxCovSelectedQvector>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
+  void processVnDecayToMuMuSkimmed(soa::Filtered<MyEventsVtxCovSelectedQvectorExtra>::iterator const& event, soa::Filtered<MyMuonTracksSelectedWithColl> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
-    VarManager::FillEvent<gkEventFillMapWithCovQvector>(event, VarManager::fgValues);
-    runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCovQvector, gkMuonFillMap>(event, muons, muons);
+    VarManager::FillEvent<gkEventFillMapWithCovQvectorExtra>(event, VarManager::fgValues);
+    runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCovQvectorExtra, gkMuonFillMap>(event, muons, muons);
   }
-  void processVnDecayToMuMuSkimmedWithWeights(soa::Filtered<MyEventsVtxCovSelectedQvectorExtra>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
+  void processVnDecayToMuMuSkimmedWithWeights(soa::Filtered<MyEventsVtxCovSelectedQvectorExtra>::iterator const& event, soa::Filtered<MyMuonTracksSelectedWithColl> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);

@@ -76,6 +76,10 @@ DECLARE_SOA_COLUMN(S11A, s11a, float);         //! Weighted multiplicity (p = 1,
 DECLARE_SOA_COLUMN(S12A, s12a, float);         //! Weighted multiplicity (p = 1, k = 2)
 DECLARE_SOA_COLUMN(S13A, s13a, float);         //! Weighted multiplicity (p = 1, k = 3)
 DECLARE_SOA_COLUMN(S31A, s31a, float);         //! Weighted multiplicity (p = 3, k = 1)
+DECLARE_SOA_COLUMN(S21A, s21a, float);         //! Weighted multiplicity (p = 2, k = 1)
+DECLARE_SOA_COLUMN(S22A, s22a, float);         //! Weighted multiplicity (p = 2, k = 2)
+DECLARE_SOA_COLUMN(S41A, s41a, float);         //! Weighted multiplicity (p = 4, k = 1)
+DECLARE_SOA_COLUMN(S14A, s14a, float);         //! Weighted multiplicity (p = 1, k = 4)
 DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float); //!  Ref Flow correlator <2>
 DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float); //!  Ref Flow correlator <4>
 DECLARE_SOA_COLUMN(M11REF, m11ref, float);     //!  Weighted multiplicity of <<2>> for reference flow
@@ -110,7 +114,7 @@ DECLARE_SOA_TABLE(ReducedEventsQvector, "AOD", "REQVECTOR", //!    Event Q-vecto
 
 DECLARE_SOA_TABLE(ReducedEventsQvectorExtra, "AOD", "REQVECTOREXTRA", //!    Event Q-vector extra information
                   reducedevent::Q42XA, reducedevent::Q42YA, reducedevent::Q23XA, reducedevent::Q23YA,
-                  reducedevent::S11A, reducedevent::S12A, reducedevent::S13A, reducedevent::S31A);
+                  reducedevent::S11A, reducedevent::S12A, reducedevent::S21A, reducedevent::S13A, reducedevent::S31A);
 
 DECLARE_SOA_TABLE(ReducedEventsQvectorCentr, "AOD", "REQVECTORCTR", //!    Event Q-vector information from central framework
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::QvecBPosRe, qvec::QvecBPosIm, qvec::QvecBNegRe, qvec::QvecBNegIm,
@@ -530,6 +534,11 @@ DECLARE_SOA_COLUMN(R2SP, r2sp, float);                                   //! Eve
 DECLARE_SOA_COLUMN(R2EP, r2ep, float);                                   //! Event plane resolution for EP method
 DECLARE_SOA_COLUMN(CORR2POI, corr2poi, float);                           //! POI FLOW CORRELATOR <2'>
 DECLARE_SOA_COLUMN(CORR4POI, corr4poi, float);                           //! POI FLOW CORRELATOR <4'>
+DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float);                           //! POI FLOW CORRELATOR <2> (by dimuons)
+DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float);                           //! POI FLOW CORRELATOR <4> (by dimuons)
+DECLARE_SOA_COLUMN(M11REF, m11ref, float);                               //!  Weighted multiplicity of <<2>> for reference flow (by dimuons)
+DECLARE_SOA_COLUMN(M1111REF, m1111ref, float);                           //!  Weighted multiplicity of <<4>> for reference flow (by dimuons)
+DECLARE_SOA_COLUMN(MultA, multa, float);                                 //!  Multiplicity A of reference flow (by dimuons)
 DECLARE_SOA_COLUMN(M01POI, m01poi, float);                               //! POI event weight for <2'>
 DECLARE_SOA_COLUMN(M0111POI, m0111poi, float);                           //! POI event weight for <4'>
 DECLARE_SOA_COLUMN(MultDimuons, multdimuons, int);                       //! Dimuon multiplicity
@@ -586,6 +595,14 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::Cos2DeltaPhi,
                   reducedpair::Cos3DeltaPhi);
 
+DECLARE_SOA_TABLE(RefFlowDimuons, "AOD", "RTREFFLOWDIMUON", //!
+                  reducedpair::CORR2REF,
+                  reducedpair::CORR4REF,
+                  reducedpair::M11REF,
+                  reducedpair::M1111REF,
+                  reducedpair::CentFT0C,
+                  reducedpair::MultA);
+
 // Dilepton collision information (joined with DileptonsExtra) allowing to connect different tables (cross PWGs)
 DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
                   reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
@@ -631,6 +648,7 @@ using Dimuon = Dimuons::iterator;
 using DielectronExtra = DielectronsExtra::iterator;
 using DimuonExtra = DimuonsExtra::iterator;
 using DileptonFlow = DileptonsFlow::iterator;
+using RefFlowDimuon = RefFlowDimuons::iterator;
 using DileptonInfo = DileptonsInfo::iterator;
 using DimuonAll = DimuonsAll::iterator;
 
