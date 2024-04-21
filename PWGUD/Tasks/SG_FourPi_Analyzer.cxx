@@ -13,6 +13,7 @@
 // \author Sasha Bylinkin, alexander.bylinkin@gmail.com
 // \since  April 2023
 
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -31,7 +32,7 @@
 using namespace std;
 using namespace o2;
 using namespace o2::aod;
-// using namespace o2::aod::track::v001;
+//using namespace o2::aod::track::v001;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 #define mpion 0.1396
@@ -91,9 +92,9 @@ struct SG_FourPi_Analyzer {
     // Single gap either side
     TLorentzVector v01;
     //  int truegapSide = sgSelector.trueGap(collision);
-    // int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
-    float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
-    // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
+    //int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
+    float FIT_cut[5]={FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    //int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
@@ -102,74 +103,70 @@ struct SG_FourPi_Analyzer {
     // Look for D0 and D0bar
     float sign = 0;
     for (auto t : tracks) {
-      // int itsNCls = t.itsNCls();
-      int itsNCls = t.uditsNCls();
-      std::cout << t.itsClusterSizes() << "\t" << itsNCls << std::endl;
-      registry.fill(HIST("ITSNCls"), itsNCls);
-      //}
-      TLorentzVector a;
-      a.SetXYZM(t.px(), t.py(), t.pz(), mpion);
-      if (trackselector(t)) {
-        sign += t.sign();
-        goodTracks.push_back(a);
-      }
+	    int itsNCls = t.itsNCls();
+//	    int uditsNCls = t.uditsNCls();
+//	     int itsNCls = o2::aod::track::v001::ITSNCls<track::ITSClusterSizes>;
+//	    if (t.itsNCls()) {std::cout << t.itsClusterSizes()<<std::endl;
+//	    registry.fill(HIST("ITSNCls"), t.itsClusterSizes());}
+	   //if (itsNCls) {
+		   std::cout <<t.itsClusterSizes()<<"\t"<< itsNCls<<std::endl;
+	    registry.fill(HIST("ITSNCls"), itsNCls);
+	   //}
+       TLorentzVector a;
+       a.SetXYZM(t.px(), t.py(), t.pz(), mpion);
+	    if (trackselector(t)){
+		    sign += t.sign();
+		    goodTracks.push_back(a); 
+	    }
     }
-    //    std::cout << goodTracks.size()<<std::endl;
-    if (goodTracks.size() == 4) {
-      for (auto pion : goodTracks) {
-        v01 += pion;
-      }
-      // Apply pion hypothesis and create pairs
-      // Opposite sign pairs
+//    std::cout << goodTracks.size()<<std::endl;
+    if (goodTracks.size()==4) {
+	    for (auto pion : goodTracks){
+		    v01 += pion;
+	    }
+            // Apply pion hypothesis and create pairs
+        // Opposite sign pairs
 
-      if (sign == 0) {
-        registry.fill(HIST("os_4Pi_pT"), v01.Pt());
-        registry.fill(HIST("os_4Pi_eTa"), v01.Eta());
-        if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-          registry.fill(HIST("os_4Pi_invm"), v01.M());
-        if (gapSide == 0) {
-          registry.fill(HIST("os_4Pi_pT_0"), v01.Pt());
-          registry.fill(HIST("os_4Pi_eTa_0"), v01.Eta());
-          if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("os_4Pi_invm_0"), v01.M());
-        }
-        if (gapSide == 1) {
-          registry.fill(HIST("os_4Pi_pT_1"), v01.Pt());
-          registry.fill(HIST("os_4Pi_eTa_1"), v01.Eta());
-          if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("os_4Pi_invm_1"), v01.M());
-        }
-        if (gapSide == 2) {
-          registry.fill(HIST("os_4Pi_pT_2"), v01.Pt());
-          registry.fill(HIST("os_4Pi_eTa_2"), v01.Eta());
-          if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("os_4Pi_invm_2"), v01.M());
-        }
-      } else {
-        registry.fill(HIST("ss_4Pi_pT"), v01.Pt());
-        registry.fill(HIST("ss_4Pi_eTa"), v01.Eta());
-        if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-          registry.fill(HIST("ss_4Pi_invm"), v01.M());
-        if (gapSide == 0) {
-          registry.fill(HIST("ss_4Pi_pT_0"), v01.Pt());
-          registry.fill(HIST("ss_4Pi_eTa_0"), v01.Eta());
-          if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("ss_4Pi_invm_0"), v01.M());
-        }
-        if (gapSide == 1) {
-          registry.fill(HIST("ss_4Pi_pT_1"), v01.Pt());
-          registry.fill(HIST("ss_4Pi_eTa_1"), v01.Eta());
-          if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("ss_4Pi_invm_1"), v01.M());
-        }
-        if (gapSide == 2) {
-          registry.fill(HIST("ss_4Pi_pT_2"), v01.Pt());
-          registry.fill(HIST("ss_4Pi_eTa_2"), v01.Eta());
-          if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("ss_4Pi_invm_2"), v01.M());
+        if (sign == 0) {
+          registry.fill(HIST("os_4Pi_pT"), v01.Pt());
+          registry.fill(HIST("os_4Pi_eTa"), v01.Eta());
+       if(TMath::Abs(v01.Eta()<0.9) && v01.Pt() < .15)   registry.fill(HIST("os_4Pi_invm"), v01.M());
+          if (gapSide == 0) {
+            registry.fill(HIST("os_4Pi_pT_0"), v01.Pt());
+            registry.fill(HIST("os_4Pi_eTa_0"), v01.Eta());
+if(TMath::Abs(v01.Eta()<0.9) && v01.Pt() < .15)             registry.fill(HIST("os_4Pi_invm_0"), v01.M());
+          }
+          if (gapSide == 1) {
+            registry.fill(HIST("os_4Pi_pT_1"), v01.Pt());
+            registry.fill(HIST("os_4Pi_eTa_1"), v01.Eta());
+if(TMath::Abs(v01.Eta()<0.9) && v01.Pt() < .15)             registry.fill(HIST("os_4Pi_invm_1"), v01.M());
+          }
+          if (gapSide == 2) {
+            registry.fill(HIST("os_4Pi_pT_2"), v01.Pt());
+            registry.fill(HIST("os_4Pi_eTa_2"), v01.Eta());
+if(TMath::Abs(v01.Eta()<0.9) && v01.Pt() < .15)             registry.fill(HIST("os_4Pi_invm_2"), v01.M());
+          }
+        } else {
+          registry.fill(HIST("ss_4Pi_pT"), v01.Pt());
+          registry.fill(HIST("ss_4Pi_eTa"), v01.Eta());
+if(TMath::Abs(v01.Eta()<0.9) && v01.Pt() < .15)           registry.fill(HIST("ss_4Pi_invm"), v01.M());
+          if (gapSide == 0) {
+            registry.fill(HIST("ss_4Pi_pT_0"), v01.Pt());
+            registry.fill(HIST("ss_4Pi_eTa_0"), v01.Eta());
+if(TMath::Abs(v01.Eta()<0.9) && v01.Pt() < .15)             registry.fill(HIST("ss_4Pi_invm_0"), v01.M());
+          }
+          if (gapSide == 1) {
+            registry.fill(HIST("ss_4Pi_pT_1"), v01.Pt());
+            registry.fill(HIST("ss_4Pi_eTa_1"), v01.Eta());
+if(TMath::Abs(v01.Eta()<0.9) && v01.Pt() < .15)             registry.fill(HIST("ss_4Pi_invm_1"), v01.M());
+          }
+          if (gapSide == 2) {
+            registry.fill(HIST("ss_4Pi_pT_2"), v01.Pt());
+            registry.fill(HIST("ss_4Pi_eTa_2"), v01.Eta());
+if(TMath::Abs(v01.Eta()<0.9) && v01.Pt() < .15)             registry.fill(HIST("ss_4Pi_invm_2"), v01.M());
+          }
         }
       }
-    }
   }
 };
 
