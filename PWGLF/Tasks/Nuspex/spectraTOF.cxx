@@ -1678,6 +1678,7 @@ struct tofSpectra {
     if (mcParticle.pdgCode() != PDGs[i]) {
       return;
     }
+    const float multiplicity = getMultiplicity(collision);
 
     if (mcParticle.isPhysicalPrimary()) {
       if (abs(mcCollision.posZ()) < cfgCutVertex ) {
