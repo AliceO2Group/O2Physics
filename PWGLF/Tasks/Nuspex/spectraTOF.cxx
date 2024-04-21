@@ -1738,7 +1738,7 @@ struct tofSpectra {
           histos.fill(HIST("MC/no_collision/neg"), track.pt());
         }
         continue;
-      };
+      }
       if (!isEventSelected<false, false>(track.collision_as<CollisionCandidateMC>())) {
         continue;
       }
