@@ -161,7 +161,7 @@ struct DalitzMuMuQCMC {
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzmumu = static_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
     for (auto& collision : grouped_collisions) {
@@ -211,7 +211,6 @@ struct DalitzMuMuQCMC {
               values[0] = uls_pair.mass();
               values[1] = uls_pair.pt();
               values[2] = dca_ee_3d;
-              values[3] = uls_pair.phiv();
               reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
 
               nuls++;
