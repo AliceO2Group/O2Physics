@@ -1680,10 +1680,19 @@ struct tofSpectra {
     }
 
     if (mcParticle.isPhysicalPrimary()) {
-      if (abs(mcCollision.posZ()) < cfgCutVertex) {
-        histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt());
+      if (abs(mcCollision.posZ()) < cfgCutVertex ) {
+         if (includeCentralityMC){
+        histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+         } else {
+            histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt());
+           }
       } else {
-        histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt());
+         if (includeCentralityMC){
+         histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+         } else {
+            histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt());
+          }
+        
       }
     }
   }
