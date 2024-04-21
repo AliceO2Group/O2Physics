@@ -71,15 +71,15 @@ struct qaMatchEff {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   //
   // Track selections
-  Configurable<bool> isUseTrackSelections{"isUseTrackSelections", false, "Boolean to switch the track selections on/off."};
-  Configurable<bool> isUseAnalysisTrackSelections{"isUseAnalysisTrackSelections", false, "Boolean to switch if the analysis track selections are used. If true, all the Explicit track cuts are ignored."};
+  Configurable<bool> b_useTrackSelections{"b_useTrackSelections", false, "Boolean to switch the track selections on/off."};
+  Configurable<int> filterbitTrackSelections{"filterbitTrackSelections", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   // kinematics
   Configurable<float> ptMinCutInnerWallTPC{"ptMinCutInnerWallTPC", 0.1f, "Minimum transverse momentum calculated at the inner wall of TPC (GeV/c)"};
   Configurable<float> ptMinCut{"ptMinCut", 0.1f, "Minimum transverse momentum (GeV/c)"};
   Configurable<float> ptMaxCut{"ptMaxCut", 100.f, "Maximum transverse momentum (GeV/c)"};
   Configurable<float> etaMinCut{"etaMinCut", -2.0f, "Minimum pseudorapidity"};
   Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
-  Configurable<bool> isUseTPCinnerWallPt{"isUseTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
+  Configurable<bool> b_useTPCinnerWallPt{"b_useTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
   // DCA and PID cuts
   Configurable<LabeledArray<float>> dcaMaxCut{"dcaMaxCut", {parTableDCA[0], nParDCA, nParVaDCA, parClassDCA, parNameDCA}, "Track DCA cuts"};
   Configurable<LabeledArray<float>> nSigmaPID{"nSigmaPID", {parTablePID[0], nParPID, nParVaPID, parClassPID, parNamePID}, "PID nSigma cuts TPC and TOF"};
@@ -146,6 +146,7 @@ struct qaMatchEff {
   // configuration for THnSparse's
   //
   Configurable<bool> makethn{"makethn", false, "choose if produce thnsparse"};
+  Configurable<bool> makehistos{"makehistos", true, "choose if produce histos"};
   ConfigurableAxis thnd0{"thnd0", {150, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
   ConfigurableAxis thndz{"thndz", {150, -10.0f, 10.0f}, "impact parameter in z [cm]"};
   ConfigurableAxis thnPt{"thnPt", {80, 0.0f, 20.0f}, "pt [GeV/c]"};
@@ -165,14 +166,14 @@ struct qaMatchEff {
   AxisSpec thnTypeAxis{thnType, "0:prim-1:sec-2:matsec"};
   AxisSpec thnSpecAxis{thnSpec, "signed particle ID"};
   AxisSpec thnITSclumapAxis{thnITSclumap, "ITS cluster map"};
-  AxisSpec thnTPCcluAxis{thnTPCclu, "TPC nclust found"};
+  //  AxisSpec thnTPCcluAxis{thnTPCclu, "TPC nclust found"};
   AxisSpec thnHasDetAxis{thnHasDet, "presence of ITS, TPC, TOF"};
   //
   // Tracks selection object
   TrackSelection cutObject;
   //
   // do you want pt comparison 2d's ?
-  Configurable<bool> makept2d{"makept2d", false, "choose if produce pt reco/TPC derived pt 2dims "};
+  // Configurable<bool> makept2d{"makept2d", false, "choose if produce pt reco/TPC derived pt 2dims "};
   //
   // common flags for PID
   Configurable<bool> isPIDPionRequired{"isPIDPionRequired", false, "choose if apply pion PID"};
@@ -186,6 +187,12 @@ struct qaMatchEff {
   //      ******     BE VERY CAREFUL!   --  FILTERS !!!  *****
   //
   Filter zPrimVtxLim = nabs(aod::collision::posZ) < zPrimVtxMax;
+  Filter trackFilter = (filterbitTrackSelections.node() == 0) ||
+                       ((filterbitTrackSelections.node() == 1) && requireGlobalTrackInFilter()) || /// filterbit 4 track selections + tight DCA cuts
+                       ((filterbitTrackSelections.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((filterbitTrackSelections.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((filterbitTrackSelections.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((filterbitTrackSelections.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   //
   //
   //
@@ -194,7 +201,8 @@ struct qaMatchEff {
   void init(o2::framework::InitContext&)
   {
     if (doDebug)
-      LOG(info) << "===========================================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  is it MC? = " << isitMC;
+      LOGF(info, ">>>>>>>>>>>>>>>>>>>     Init function ");
+
     //
     // let's know if it's MC or data
     if (isitMC)
@@ -202,9 +210,9 @@ struct qaMatchEff {
     else
       initData();
 
-    if ((!isitMC && (doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) || (isitMC && (doprocessData || doprocessDataNoColl || doprocessTrkIUMC)))
+    if ((!isitMC && (doprocessMCFilteredTracks || doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) || (isitMC && (doprocessDataFilteredTracks || doprocessData || doprocessDataNoColl || doprocessTrkIUMC)))
       LOGF(fatal, "Initialization set for MC and processData function flagged  (or viceversa)! Fix the configuration.");
-    if ((doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) || (doprocessData && doprocessDataNoColl && doprocessTrkIUData))
+    if ((doprocessMCFilteredTracks && doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) || (doprocessDataFilteredTracks && doprocessData && doprocessDataNoColl && doprocessTrkIUData))
       LOGF(fatal, "Cannot process for both without collision tag and with collision tag at the same time! Fix the configuration.");
     if (doprocessTrkIUMC && makethn) {
       LOGF(fatal, "No DCA for IU tracks. Put makethn = false.");
@@ -214,7 +222,7 @@ struct qaMatchEff {
     }
     //
     /// initialize the track selections
-    if (isUseTrackSelections) {
+    if (b_useTrackSelections) {
       // kinematics
       cutObject.SetEtaRange(etaMinCut, etaMaxCut);
       cutObject.SetPtRange(ptMinCut, ptMaxCut);
@@ -234,22 +242,12 @@ struct qaMatchEff {
           set_customITShitmap.insert(static_cast<uint8_t>(index_ITSlayer));
         }
       }
-      LOG(info) << "### customITShitmap: " << customITShitmap;
-      LOG(info) << "### customMinITShits: " << customMinITShits;
-      LOG(info) << "### set_customITShitmap.size(): " << set_customITShitmap.size();
-      LOG(info) << "### Custom ITS hitmap checked: ";
       for (std::set<uint8_t>::iterator it = set_customITShitmap.begin(); it != set_customITShitmap.end(); it++) {
-        LOG(info) << "Layer " << static_cast<int>(*it) << " ";
       }
-      LOG(info) << "############";
       cutObject.SetRequireHitsInITSLayers(customMinITShits, set_customITShitmap);
-
-      if (isUseAnalysisTrackSelections) {
-        LOG(info) << "### Using analysis track selections";
-        cutObject = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, 0);
-        LOG(info) << "### Analysis track selections set";
-      }
     }
+    if (doDebug)
+      LOGF(info, ">>>>>>>>>>>>>>>>>>>     END  Init function ");
   }
   // end Init function
   //
@@ -258,61 +256,87 @@ struct qaMatchEff {
   void initData()
   {
     if (doDebug)
-      LOGF(info, "*********************************************************** DATA  ***************************************************");
+      LOGF(info, "*****************     Init  DATA  function ");
     //
     // data histos
     //
     // thnsparse for fractions - only if selected
     if (makethn)
       histos.add("data/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - data", kTHnSparseF,
-                 {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnPhiAxis, thnSpecAxis, thnITSclumapAxis, thnTPCcluAxis, thnHasDetAxis});
+                 {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnPhiAxis, thnSpecAxis, thnITSclumapAxis, thnHasDetAxis});
 
-    /// control plots
-    histos.add("data/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
+    // histos.add("data/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
     histos.add("data/control/zPrimary", "Position of primary vertex along beam axis;z position [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     histos.add("data/control/yPrimary", "Position of primary vertex along y axis;y position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("data/control/xPrimary", "Position of primary vertex along x axis;x position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("data/control/chi2Prim", "#chi^2 of primary vertex fit;#chi^2", kTH1D, {{200, 0., 100.0}}, true);
-    histos.add("data/control/zDCA_tpc", "DCA along z TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/control/xyDCA_tpc", "DCA in x-y plane TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("data/control/xyDCA_tpcits", "DCA in x-y plane TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("data/control/zDCA_tpc", "DCA along z TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("data/control/xyDCA_tpc", "DCA in x-y plane TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("data/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("data/control/xyDCA_tpcits", "DCA in x-y plane TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+
+    if (!makehistos)
+      return;
+    // control plots
+    if (doDebug)
+      LOGF(info, ">>>>>>>>>>>>>>>>>>>     before booking ");
+
+    histos.add("data/control/itsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/itsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/itsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/itsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/itsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/itsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/itsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/itsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
+
+    histos.add("data/control/SitsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/SitsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/SitsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/SitsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/SitsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/SitsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/SitsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("data/control/SitsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
+    if (doDebug)
+      LOGF(info, ">>>>>>>>>>>>>>>>>>>     after booking ");
 
     // TPC found/findable clusters and crossed rows distributions - no conditions
     histos.add("data/TPCclust/tpcNClsFound", "Number of TPC found clusters", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcNClsFindable", "Number of TPC findable clusters", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcCrossedRows", "Number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcsFindableMinusCrossedRows", "Number of TPC findable clusters minus crossed rows", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("data/TPCclust/tpcNClsFindable", "Number of TPC findable clusters", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcCrossedRows", "Number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows", "Number of TPC findable clusters minus crossed rows", kTH1F, {{200, -200.0, 200.0}}, true);
 
     histos.add("data/TPCclust/tpcNClsFound_tpc", "Number of TPC found clusters - TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcNClsFindable_tpc", "Number of TPC findable clusters - TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcCrossedRows_tpc", "Number of TPC crossed rows - TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_tpc", "Number of TPC findable clusters minus crossed rows - TPC tag", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("data/TPCclust/tpcNClsFindable_tpc", "Number of TPC findable clusters - TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcCrossedRows_tpc", "Number of TPC crossed rows - TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_tpc", "Number of TPC findable clusters minus crossed rows - TPC tag", kTH1F, {{200, -200.0, 200.0}}, true);
 
     histos.add("data/TPCclust/tpcNClsFound_tpcits", "Number of TPC found clusters - TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcNClsFindable_tpcits", "Number of TPC findable clusters - TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcCrossedRows_tpcits", "Number of TPC crossed rows - TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_tpcits", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("data/TPCclust/tpcNClsFindable_tpcits", "Number of TPC findable clusters - TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcCrossedRows_tpcits", "Number of TPC crossed rows - TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_tpcits", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag", kTH1F, {{200, -200.0, 200.0}}, true);
+
     //
     // in [1,2] GeV pt interval
-    histos.add("data/TPCclust/tpcNClsFound_tpc_1g", "Number of TPC found clusters - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcNClsFindable_tpc_1g", "Number of TPC findable clusters - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcCrossedRows_tpc_1g", "Number of TPC crossed rows - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_tpc_1g", "Number of TPC findable clusters minus crossed rows - TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("data/TPCclust/tpcNClsFound_tpc_1g", "Number of TPC found clusters - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcNClsFindable_tpc_1g", "Number of TPC findable clusters - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcCrossedRows_tpc_1g", "Number of TPC crossed rows - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_tpc_1g", "Number of TPC findable clusters minus crossed rows - TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
-    histos.add("data/TPCclust/tpcNClsFound_tpcits_1g", "Number of TPC found clusters - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcNClsFindable_tpcits_1g", "Number of TPC findable clusters - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcCrossedRows_tpcits_1g", "Number of TPC crossed rows - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_tpcits_1g", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("data/TPCclust/tpcNClsFound_tpcits_1g", "Number of TPC found clusters - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcNClsFindable_tpcits_1g", "Number of TPC findable clusters - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcCrossedRows_tpcits_1g", "Number of TPC crossed rows - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_tpcits_1g", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
-    /// compare pt's (tracking and innerParamTPC)
-    if (makept2d) {
-      histos.add("data/control/ptptconfTPCall", "Tracking pt vs TPC inner wall pt - TPC tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
-      histos.add("data/control/ptptconfITSall", "Tracking pt vs TPC inner wall pt - ITS tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
-      histos.add("data/control/ptptconfTPCITS", "Tracking pt vs TPC inner wall pt - TPC & ITS tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
-      histos.add("data/control/ptptconfITSo", "Tracking pt vs TPC inner wall pt - ITS-only tracks", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
-      histos.add("data/control/ptptconfTPCo", "Tracking pt vs TPC inner wall pt - TPC-only tracks", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
-    }
+    // // compare pt's (tracking and innerParamTPC)
+    // if (makept2d) {
+    //   histos.add("data/control/ptptconfTPCall", "Tracking pt vs TPC inner wall pt - TPC tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    //   histos.add("data/control/ptptconfITSall", "Tracking pt vs TPC inner wall pt - ITS tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    //   histos.add("data/control/ptptconfTPCITS", "Tracking pt vs TPC inner wall pt - TPC & ITS tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    //   histos.add("data/control/ptptconfITSo", "Tracking pt vs TPC inner wall pt - ITS-only tracks", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    //   histos.add("data/control/ptptconfTPCo", "Tracking pt vs TPC inner wall pt - TPC-only tracks", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    // }
     //
     // tpc, its and tpc+its request for all, positive and negative charges vs
 
@@ -331,10 +355,10 @@ struct qaMatchEff {
 
     //
     //  local X,Z of track
-    histos.add("data/control/trackXhist_tpcONLY", "x distribution - data TPC ONLY tag", kTH1D, {axisX}, true);
-    histos.add("data/control/trackXhist_tpcits", "x distribution - data TPC+ITS tag", kTH1D, {axisX}, true);
-    histos.add("data/control/trackZhist_tpcONLY", "z distribution - data TPC ONLY tag", kTH1D, {axisZ}, true);
-    histos.add("data/control/trackZhist_tpcits", "z distribution - data TPC+ITS tag", kTH1D, {axisZ}, true);
+    // histos.add("data/control/trackXhist_tpcONLY", "x distribution - data TPC ONLY tag", kTH1D, {axisX}, true);
+    // histos.add("data/control/trackXhist_tpcits", "x distribution - data TPC+ITS tag", kTH1D, {axisX}, true);
+    // histos.add("data/control/trackZhist_tpcONLY", "z distribution - data TPC ONLY tag", kTH1D, {axisZ}, true);
+    // histos.add("data/control/trackZhist_tpcits", "z distribution - data TPC+ITS tag", kTH1D, {axisZ}, true);
 
     // pt, phi, eta TOF tagged
     histos.add("data/pthist_toftpc", "#it{p}_{T} distribution - data TOF+TPC tag", kTH1D, {axisPt}, true);
@@ -347,10 +371,10 @@ struct qaMatchEff {
     //
     // if you want just pions
     if (isPIDPionRequired) {
-      histos.add("data/PID/zDCA_tpc_pi", "DCA along z - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-      histos.add("data/PID/xyDCA_tpc_pi", "DCA in x-y plane - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-      histos.add("data/PID/zDCA_tpcits_pi", "DCA along z - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-      histos.add("data/PID/xyDCA_tpcits_pi", "DCA in x-y plane - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/zDCA_tpc_pi", "DCA along z - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/xyDCA_tpc_pi", "DCA in x-y plane - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/zDCA_tpcits_pi", "DCA along z - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/xyDCA_tpcits_pi", "DCA in x-y plane - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
       histos.add("data/PID/pthist_tpc_pi", "#it{p}_{T} distribution - data TPC tag - pions", kTH1D, {axisPt}, true);
       histos.add("data/PID/etahist_tpc_pi", "#eta distribution - data TPC tag - pions", kTH1D, {axisEta}, true);
@@ -404,31 +428,31 @@ struct qaMatchEff {
 
       // TPC found clusters distribution
       histos.add("data/TPCclust/tpcNClsFound_pi", "Number of TPC found clusters - pions", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_pi", "Number of TPC findable clusters - pions", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_pi", "Number of TPC crossed rows - pions", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pi", "Number of TPC findable clusters minus crossed rows - pions", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_pi", "Number of TPC findable clusters - pions", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_pi", "Number of TPC crossed rows - pions", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pi", "Number of TPC findable clusters minus crossed rows - pions", kTH1F, {{200, -200.0, 200.0}}, true);
 
       histos.add("data/TPCclust/tpcNClsFound_pi_tpc", "Number of TPC found clusters - TPC tag - pions", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_pi_tpc", "Number of TPC findable clusters - TPC tag - pions", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_pi_tpc", "Number of TPC crossed rows - TPC tag - pions", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpc", "Number of TPC findable clusters minus crossed rows - TPC tag - pions", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_pi_tpc", "Number of TPC findable clusters - TPC tag - pions", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_pi_tpc", "Number of TPC crossed rows - TPC tag - pions", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpc", "Number of TPC findable clusters minus crossed rows - TPC tag - pions", kTH1F, {{200, -200.0, 200.0}}, true);
 
       histos.add("data/TPCclust/tpcNClsFound_pi_tpcits", "Number of TPC found clusters - TPC+ITS tag - pions", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_pi_tpcits", "Number of TPC findable clusters - TPC+ITS tag - pions", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_pi_tpcits", "Number of TPC crossed rows - TPC+ITS tag - pions", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpcits", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag - pions", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_pi_tpcits", "Number of TPC findable clusters - TPC+ITS tag - pions", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_pi_tpcits", "Number of TPC crossed rows - TPC+ITS tag - pions", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpcits", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag - pions", kTH1F, {{200, -200.0, 200.0}}, true);
 
       //
       // in [1,2] GeV pt interval
-      histos.add("data/TPCclust/tpcNClsFound_pi_tpc_1g", "Number of TPC found clusters pions TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_pi_tpc_1g", "Number of TPC findable clusters pions TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_pi_tpc_1g", "Number of TPC crossed rows pions TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpc_1g", "Number of TPC findable clusters minus crossed rows pions TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFound_pi_tpc_1g", "Number of TPC found clusters pions TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_pi_tpc_1g", "Number of TPC findable clusters pions TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_pi_tpc_1g", "Number of TPC crossed rows pions TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpc_1g", "Number of TPC findable clusters minus crossed rows pions TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
-      histos.add("data/TPCclust/tpcNClsFound_pi_tpcits_1g", "Number of TPC found clusters pions TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_pi_tpcits_1g", "Number of TPC findable clusters pions TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_pi_tpcits_1g", "Number of TPC crossed rows pions TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpcits_1g", "Number of TPC findable clusters minus crossed rows pions TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFound_pi_tpcits_1g", "Number of TPC found clusters pions TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_pi_tpcits_1g", "Number of TPC findable clusters pions TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_pi_tpcits_1g", "Number of TPC crossed rows pions TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpcits_1g", "Number of TPC findable clusters minus crossed rows pions TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
       // plus
       histos.add("data/PID/pthist_tpc_piplus", "#it{p}_{T} distribution - data TPC tag - pos. pions", kTH1D, {axisPt}, true);
@@ -452,31 +476,31 @@ struct qaMatchEff {
     if (isPIDKaonRequired) {
       //
       // in [1,2] GeV pt interval
-      histos.add("data/TPCclust/tpcNClsFound_ka_tpc_1g", "Number of TPC found clusters kaons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_ka_tpc_1g", "Number of TPC findable clusters kaons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_ka_tpc_1g", "Number of TPC crossed rows kaons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpc_1g", "Number of TPC findable clusters minus crossed rows kaons TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFound_ka_tpc_1g", "Number of TPC found clusters kaons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_ka_tpc_1g", "Number of TPC findable clusters kaons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_ka_tpc_1g", "Number of TPC crossed rows kaons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpc_1g", "Number of TPC findable clusters minus crossed rows kaons TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
-      histos.add("data/TPCclust/tpcNClsFound_ka_tpcits_1g", "Number of TPC found clusters kaons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_ka_tpcits_1g", "Number of TPC findable clusters kaons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_ka_tpcits_1g", "Number of TPC crossed rows kaons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpcits_1g", "Number of TPC findable clusters minus crossed rows kaons TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFound_ka_tpcits_1g", "Number of TPC found clusters kaons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_ka_tpcits_1g", "Number of TPC findable clusters kaons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_ka_tpcits_1g", "Number of TPC crossed rows kaons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpcits_1g", "Number of TPC findable clusters minus crossed rows kaons TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
       // TPC found clusters distribution
       histos.add("data/TPCclust/tpcNClsFound_ka", "Number of TPC found clusters - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_ka", "Number of TPC findable clusters - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_ka", "Number of TPC crossed rows - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_ka", "Number of TPC findable clusters minus crossed rows - kaons", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_ka", "Number of TPC findable clusters - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_ka", "Number of TPC crossed rows - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_ka", "Number of TPC findable clusters minus crossed rows - kaons", kTH1F, {{200, -200.0, 200.0}}, true);
 
       histos.add("data/TPCclust/tpcNClsFound_ka_tpc", "Number of TPC found clusters - TPC tag - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_ka_tpc", "Number of TPC findable clusters - TPC tag - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_ka_tpc", "Number of TPC crossed rows - TPC tag - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpc", "Number of TPC findable clusters minus crossed rows - TPC tag - kaons", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_ka_tpc", "Number of TPC findable clusters - TPC tag - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_ka_tpc", "Number of TPC crossed rows - TPC tag - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpc", "Number of TPC findable clusters minus crossed rows - TPC tag - kaons", kTH1F, {{200, -200.0, 200.0}}, true);
 
       histos.add("data/TPCclust/tpcNClsFound_ka_tpcits", "Number of TPC found clusters - TPC+ITS tag - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_ka_tpcits", "Number of TPC findable clusters - TPC+ITS tag - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_ka_tpcits", "Number of TPC crossed rows - TPC+ITS tag - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpcits", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag - kaons", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_ka_tpcits", "Number of TPC findable clusters - TPC+ITS tag - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_ka_tpcits", "Number of TPC crossed rows - TPC+ITS tag - kaons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpcits", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag - kaons", kTH1F, {{200, -200.0, 200.0}}, true);
 
       histos.add("data/PID/zDCA_tpc_ka", "DCA along z - kaons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
       histos.add("data/PID/xyDCA_tpc_ka", "DCA in x-y plane - kaons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
@@ -555,37 +579,37 @@ struct qaMatchEff {
     if (isPIDProtonRequired) {
       //
       // in [1,2] GeV pt interval
-      histos.add("data/TPCclust/tpcNClsFound_pr_tpc_1g", "Number of TPC found clusters protons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_pr_tpc_1g", "Number of TPC findable clusters protons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_pr_tpc_1g", "Number of TPC crossed rows protons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpc_1g", "Number of TPC findable clusters minus crossed rows protons TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFound_pr_tpc_1g", "Number of TPC found clusters protons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_pr_tpc_1g", "Number of TPC findable clusters protons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_pr_tpc_1g", "Number of TPC crossed rows protons TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpc_1g", "Number of TPC findable clusters minus crossed rows protons TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
-      histos.add("data/TPCclust/tpcNClsFound_pr_tpcits_1g", "Number of TPC found clusters protons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_pr_tpcits_1g", "Number of TPC findable clusters protons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_pr_tpcits_1g", "Number of TPC crossed rows protons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpcits_1g", "Number of TPC findable clusters minus crossed rows protons TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFound_pr_tpcits_1g", "Number of TPC found clusters protons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_pr_tpcits_1g", "Number of TPC findable clusters protons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_pr_tpcits_1g", "Number of TPC crossed rows protons TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpcits_1g", "Number of TPC findable clusters minus crossed rows protons TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
       //
       // TPC found clusters distribution
       histos.add("data/TPCclust/tpcNClsFound_pr", "Number of TPC found clusters - protons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_pr", "Number of TPC findable clusters - protons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_pr", "Number of TPC crossed rows - protons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pr", "Number of TPC findable clusters minus crossed rows - protons", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_pr", "Number of TPC findable clusters - protons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_pr", "Number of TPC crossed rows - protons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pr", "Number of TPC findable clusters minus crossed rows - protons", kTH1F, {{200, -200.0, 200.0}}, true);
 
       histos.add("data/TPCclust/tpcNClsFound_pr_tpc", "Number of TPC found clusters - TPC tag - protons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_pr_tpc", "Number of TPC findable clusters - TPC tag - protons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_pr_tpc", "Number of TPC crossed rows - TPC tag - protons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpc", "Number of TPC findable clusters minus crossed rows - TPC tag - protons", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_pr_tpc", "Number of TPC findable clusters - TPC tag - protons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_pr_tpc", "Number of TPC crossed rows - TPC tag - protons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpc", "Number of TPC findable clusters minus crossed rows - TPC tag - protons", kTH1F, {{200, -200.0, 200.0}}, true);
 
       histos.add("data/TPCclust/tpcNClsFound_pr_tpcits", "Number of TPC found clusters - TPC+ITS tag - protons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcNClsFindable_pr_tpcits", "Number of TPC findable clusters - TPC+ITS tag - protons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcCrossedRows_pr_tpcits", "Number of TPC crossed rows - TPC+ITS tag - protons", kTH1F, {{161, -0.5, 160.5}}, true);
-      histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpcits", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag - protons", kTH1F, {{200, -200.0, 200.0}}, true);
+      // histos.add("data/TPCclust/tpcNClsFindable_pr_tpcits", "Number of TPC findable clusters - TPC+ITS tag - protons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcCrossedRows_pr_tpcits", "Number of TPC crossed rows - TPC+ITS tag - protons", kTH1F, {{161, -0.5, 160.5}}, true);
+      // histos.add("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpcits", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag - protons", kTH1F, {{200, -200.0, 200.0}}, true);
 
-      histos.add("data/PID/zDCA_tpc_pr", "DCA along z - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-      histos.add("data/PID/xyDCA_tpc_pr", "DCA in x-y plane - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-      histos.add("data/PID/zDCA_tpcits_pr", "DCA along z - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-      histos.add("data/PID/xyDCA_tpcits_pr", "DCA in x-y plane - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/zDCA_tpc_pr", "DCA along z - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/xyDCA_tpc_pr", "DCA in x-y plane - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/zDCA_tpcits_pr", "DCA along z - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/xyDCA_tpcits_pr", "DCA in x-y plane - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
       histos.add("data/PID/pthist_tpc_pr", "#it{p}_{T} distribution - data TPC tag - protons", kTH1D, {axisPt}, true);
       histos.add("data/PID/etahist_tpc_pr", "#eta distribution - data TPC tag - protons", kTH1D, {axisEta}, true);
@@ -681,10 +705,10 @@ struct qaMatchEff {
       histos.add("data/PID/etahist_tpcits_noidminus", "#eta distribution - data TPC+ITS tag - neg. no ident.", kTH1D, {axisEta}, true);
       histos.add("data/PID/phihist_tpcits_noidminus", "#phi distribution - data TPC+ITS tag - neg. no ident. ", kTH1D, {axisPhi}, true);
       //
-      histos.add("data/PID/zDCA_tpc_noid", "DCA along z - no pi/K/P TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-      histos.add("data/PID/xyDCA_tpc_noid", "DCA in x-y plane - no pi/K/P TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-      histos.add("data/PID/zDCA_tpcits_noid", "DCA along z - no pi/K/P TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-      histos.add("data/PID/xyDCA_tpcits_noid", "DCA in x-y plane - no pi/K/P TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/zDCA_tpc_noid", "DCA along z - no pi/K/P TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/xyDCA_tpc_noid", "DCA in x-y plane - no pi/K/P TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/zDCA_tpcits_noid", "DCA along z - no pi/K/P TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+      // histos.add("data/PID/xyDCA_tpcits_noid", "DCA in x-y plane - no pi/K/P TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     }
     //
 
@@ -705,13 +729,13 @@ struct qaMatchEff {
     histos.add("data/phihist_tpcits_neg", "#phi distribution - data q<0 TPC+ITS tag", kTH1D, {axisPhi}, true);
     //
     // pt>0.5 GeV/c threshold
-    histos.add("data/pthist_tpc_05", "#it{p}_{T} distribution - data TPC tag, #it{p}_{T}>0.5", kTH1D, {axisPt}, true);
-    histos.add("data/etahist_tpc_05", "#eta distribution - data TPC tag, #it{p}_{T}>0.5", kTH1D, {axisEta}, true);
-    histos.add("data/phihist_tpc_05", "#phi distribution - data TPC tag, #it{p}_{T}>0.5", kTH1D, {axisPhi}, true);
+    // histos.add("data/pthist_tpc_05", "#it{p}_{T} distribution - data TPC tag, #it{p}_{T}>0.5", kTH1D, {axisPt}, true);
+    // histos.add("data/etahist_tpc_05", "#eta distribution - data TPC tag, #it{p}_{T}>0.5", kTH1D, {axisEta}, true);
+    // histos.add("data/phihist_tpc_05", "#phi distribution - data TPC tag, #it{p}_{T}>0.5", kTH1D, {axisPhi}, true);
 
-    histos.add("data/pthist_tpcits_05", "#it{p}_{T} distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1D, {axisPt}, true);
-    histos.add("data/etahist_tpcits_05", "#eta distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1D, {axisEta}, true);
-    histos.add("data/phihist_tpcits_05", "#phi distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1D, {axisPhi}, true);
+    // histos.add("data/pthist_tpcits_05", "#it{p}_{T} distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1D, {axisPt}, true);
+    // histos.add("data/etahist_tpcits_05", "#eta distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1D, {axisEta}, true);
+    // histos.add("data/phihist_tpcits_05", "#phi distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1D, {axisPhi}, true);
   }
   //
   // Init MC function
@@ -731,60 +755,82 @@ struct qaMatchEff {
     // thnsparse for fractions
     if (makethn)
       histos.add("MC/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - MC", kTHnSparseF,
-                 {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnPhiAxis, thnSpecAxis, thnITSclumapAxis, thnTPCcluAxis, thnHasDetAxis});
-
-    /// control plots
-    histos.add("MC/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
+                 {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnPhiAxis, thnSpecAxis, thnITSclumapAxis, thnHasDetAxis});
+    //
+    // histos.add("MC/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
     histos.add("MC/control/zPrimary", "Position of primary vertex along beam axis;z position [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     histos.add("MC/control/yPrimary", "Position of primary vertex along y axis;y position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("MC/control/xPrimary", "Position of primary vertex along x axis;x position [cm]", kTH1D, {{200, -0.1, 0.1}}, true);
     histos.add("MC/control/chi2Prim", "#chi^2 of primary vertex fit;#chi^2", kTH1D, {{200, 0., 100.0}}, true);
-    histos.add("MC/control/zDCA_tpc", "DCA along z TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/control/xyDCA_tpc", "DCA in x-y plane TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/control/xyDCA_tpcits", "DCA in x-y plane TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/control/zDCA_tpc", "DCA along z TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/control/xyDCA_tpc", "DCA in x-y plane TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/control/xyDCA_tpcits", "DCA in x-y plane TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+
+    if (!makehistos)
+      return;
+    //
+    // control plots
+    histos.add("MC/control/itsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/itsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/itsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/itsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/itsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/itsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/itsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/itsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
+
+    histos.add("MC/control/SitsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/SitsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/SitsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/SitsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/SitsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/SitsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/SitsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    histos.add("MC/control/SitsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
+
     //
     //  local X,Z of track
-    histos.add("MC/control/trackXhist_tpcONLY", "x distribution - data TPC ONLY tag", kTH1D, {axisX}, true);
-    histos.add("MC/control/trackXhist_tpcits", "x distribution - data TPC+ITS tag", kTH1D, {axisX}, true);
-    histos.add("MC/control/trackZhist_tpcONLY", "z distribution - data TPC ONLY tag", kTH1D, {axisZ}, true);
-    histos.add("MC/control/trackZhist_tpcits", "z distribution - data TPC+ITS tag", kTH1D, {axisZ}, true);
+    // histos.add("MC/control/trackXhist_tpcONLY", "x distribution - data TPC ONLY tag", kTH1D, {axisX}, true);
+    // histos.add("MC/control/trackXhist_tpcits", "x distribution - data TPC+ITS tag", kTH1D, {axisX}, true);
+    // histos.add("MC/control/trackZhist_tpcONLY", "z distribution - data TPC ONLY tag", kTH1D, {axisZ}, true);
+    // histos.add("MC/control/trackZhist_tpcits", "z distribution - data TPC+ITS tag", kTH1D, {axisZ}, true);
 
     // TPC found/findable clusters and crossed rows distributions - no conditions
     histos.add("MC/TPCclust/tpcNClsFound", "Number of TPC found clusters", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable", "Number of TPC findable clusters", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows", "Number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows", "Number of TPC findable clusters minus crossed rows", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable", "Number of TPC findable clusters", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows", "Number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows", "Number of TPC findable clusters minus crossed rows", kTH1F, {{200, -200.0, 200.0}}, true);
 
     histos.add("MC/TPCclust/tpcNClsFound_tpc", "Number of TPC found clusters - TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_tpc", "Number of TPC findable clusters - TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_tpc", "Number of TPC crossed rows - TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_tpc", "Number of TPC findable clusters minus crossed rows - TPC tag", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_tpc", "Number of TPC findable clusters - TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_tpc", "Number of TPC crossed rows - TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_tpc", "Number of TPC findable clusters minus crossed rows - TPC tag", kTH1F, {{200, -200.0, 200.0}}, true);
 
     histos.add("MC/TPCclust/tpcNClsFound_tpcits", "Number of TPC found clusters - TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_tpcits", "Number of TPC findable clusters - TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_tpcits", "Number of TPC crossed rows - TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_tpcits", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_tpcits", "Number of TPC findable clusters - TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_tpcits", "Number of TPC crossed rows - TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_tpcits", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag", kTH1F, {{200, -200.0, 200.0}}, true);
     //
     //  pt in [1,2] GeV
-    histos.add("MC/TPCclust/tpcNClsFound_tpc_1g", "Number of TPC found clusters - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_tpc_1g", "Number of TPC findable clusters - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_tpc_1g", "Number of TPC crossed rows - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_tpc_1g", "Number of TPC findable clusters minus crossed rows - TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFound_tpc_1g", "Number of TPC found clusters - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_tpc_1g", "Number of TPC findable clusters - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_tpc_1g", "Number of TPC crossed rows - TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_tpc_1g", "Number of TPC findable clusters minus crossed rows - TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
-    histos.add("MC/TPCclust/tpcNClsFound_tpcits_1g", "Number of TPC found clusters - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_tpcits_1g", "Number of TPC findable clusters - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_tpcits_1g", "Number of TPC crossed rows - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_tpcits_1g", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFound_tpcits_1g", "Number of TPC found clusters - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_tpcits_1g", "Number of TPC findable clusters - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_tpcits_1g", "Number of TPC crossed rows - TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_tpcits_1g", "Number of TPC findable clusters minus crossed rows - TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
     /// compare pt's (tracking and innerParamTPC)
-    if (makept2d) {
-      histos.add("MC/control/ptptconfTPCall", "Tracking pt vs TPC inner wall pt - TPC tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
-      histos.add("MC/control/ptptconfITSall", "Tracking pt vs TPC inner wall pt - ITS tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
-      histos.add("MC/control/ptptconfTPCITS", "Tracking pt vs TPC inner wall pt - TPC & ITS tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
-      histos.add("MC/control/ptptconfITSo", "Tracking pt vs TPC inner wall pt - ITS-only tracks", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
-      histos.add("MC/control/ptptconfTPCo", "Tracking pt vs TPC inner wall pt - TPC-only tracks", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
-    }
+    // if (makept2d) {
+    //   histos.add("MC/control/ptptconfTPCall", "Tracking pt vs TPC inner wall pt - TPC tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    //   histos.add("MC/control/ptptconfITSall", "Tracking pt vs TPC inner wall pt - ITS tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    //   histos.add("MC/control/ptptconfTPCITS", "Tracking pt vs TPC inner wall pt - TPC & ITS tag", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    //   histos.add("MC/control/ptptconfITSo", "Tracking pt vs TPC inner wall pt - ITS-only tracks", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    //   histos.add("MC/control/ptptconfTPCo", "Tracking pt vs TPC inner wall pt - TPC-only tracks", kTH2D, {{100, 0.0, 10.0, "tracking #it{p}_{T}"}, {100, 0.0, 10.0, "TPC #it{p}_{T}"}});
+    // }
     //
     // all, positive, negative
 
@@ -833,11 +879,11 @@ struct qaMatchEff {
     histos.add("MC/primsec/qopthist_tpc_prim", "Q/#it{p}_{T} distribution - MC prim TPC tag", kTH1D, {axisQoPt}, true);
     histos.add("MC/primsec/qopthist_tpcits_prim", "Q/#it{p}_{T} distribution - MC prim TPC+ITS tag", kTH1D, {axisQoPt}, true);
 
-    histos.add("MC/primsec/zDCA_tpc_prim", "DCA along z TPC tag - primaries;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/primsec/zDCA_tpcits_prim", "DCA along z TPC+ITS tag - primaries;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/zDCA_tpc_prim", "DCA along z TPC tag - primaries;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/zDCA_tpcits_prim", "DCA along z TPC+ITS tag - primaries;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
-    histos.add("MC/primsec/xyDCA_tpc_prim", "DCA in x-y plane TPC tag - primaries;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/primsec/xyDCA_tpcits_prim", "DCA in x-y plane TPC+ITS tag - primaries;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/xyDCA_tpc_prim", "DCA in x-y plane TPC tag - primaries;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/xyDCA_tpcits_prim", "DCA in x-y plane TPC+ITS tag - primaries;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
     histos.add("MC/primsec/pthist_tpc_prim", "#it{p}_{T} distribution - MC prim TPC tag", kTH1D, {axisPt}, true);
     histos.add("MC/primsec/etahist_tpc_prim", "#eta distribution - MC prim TPC tag", kTH1D, {axisEta}, true);
@@ -851,11 +897,11 @@ struct qaMatchEff {
     histos.add("MC/primsec/qopthist_tpc_secd", "Q/#it{p}_{T} distribution - MC dec. sec. TPC tag", kTH1D, {axisQoPt}, true);
     histos.add("MC/primsec/qopthist_tpcits_secd", "Q/#it{p}_{T} distribution - MC dec. sec. TPC+ITS tag", kTH1D, {axisQoPt}, true);
 
-    histos.add("MC/primsec/zDCA_tpc_secd", "DCA along z TPC tag - secd;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/primsec/zDCA_tpcits_secd", "DCA along z TPC+ITS tag - secd;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/zDCA_tpc_secd", "DCA along z TPC tag - secd;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/zDCA_tpcits_secd", "DCA along z TPC+ITS tag - secd;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
-    histos.add("MC/primsec/xyDCA_tpc_secd", "DCA in x-y plane TPC tag - secd;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/primsec/xyDCA_tpcits_secd", "DCA in x-y plane TPC+ITS tag - secd;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/xyDCA_tpc_secd", "DCA in x-y plane TPC tag - secd;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/xyDCA_tpcits_secd", "DCA in x-y plane TPC+ITS tag - secd;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
     histos.add("MC/primsec/pthist_tpc_secd", "#it{p}_{T} distribution - MC dec. sec. TPC tag", kTH1D, {axisPt}, true);
     histos.add("MC/primsec/etahist_tpc_secd", "#eta distribution - MC dec. sec. TPC tag", kTH1D, {axisEta}, true);
@@ -869,11 +915,11 @@ struct qaMatchEff {
     histos.add("MC/primsec/qopthist_tpc_secm", "Q/#it{p}_{T} distribution - MC mat. sec. TPC tag", kTH1D, {axisQoPt}, true);
     histos.add("MC/primsec/qopthist_tpcits_secm", "Q/#it{p}_{T} distribution - MC mat. sec. TPC+ITS tag", kTH1D, {axisQoPt}, true);
 
-    histos.add("MC/primsec/zDCA_tpc_secm", "DCA along z TPC tag - secm;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/primsec/zDCA_tpcits_secm", "DCA along z TPC+ITS tag - secm;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/zDCA_tpc_secm", "DCA along z TPC tag - secm;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/zDCA_tpcits_secm", "DCA along z TPC+ITS tag - secm;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
-    histos.add("MC/primsec/xyDCA_tpc_secm", "DCA in x-y plane TPC tag - secm;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/primsec/xyDCA_tpcits_secm", "DCA in x-y plane TPC+ITS tag - secm;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/xyDCA_tpc_secm", "DCA in x-y plane TPC tag - secm;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/primsec/xyDCA_tpcits_secm", "DCA in x-y plane TPC+ITS tag - secm;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
     histos.add("MC/primsec/pthist_tpc_secm", "#it{p}_{T} distribution - MC mat. sec. TPC tag", kTH1D, {axisPt}, true);
     histos.add("MC/primsec/etahist_tpc_secm", "#eta distribution - MC mat. sec. TPC tag", kTH1D, {axisEta}, true);
@@ -887,20 +933,20 @@ struct qaMatchEff {
     //  DCA of identified
     //
 
-    histos.add("MC/PID/zDCA_tpc_pi", "DCA along z - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/PID/xyDCA_tpc_pi", "DCA in x-y plane - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/PID/zDCA_tpcits_pi", "DCA along z - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/PID/xyDCA_tpcits_pi", "DCA in x-y plane - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/zDCA_tpc_pi", "DCA along z - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/xyDCA_tpc_pi", "DCA in x-y plane - pions TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/zDCA_tpcits_pi", "DCA along z - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/xyDCA_tpcits_pi", "DCA in x-y plane - pions TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
-    histos.add("MC/PID/zDCA_tpc_ka", "DCA along z - kaons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/PID/xyDCA_tpc_ka", "DCA in x-y plane - kaons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/PID/zDCA_tpcits_ka", "DCA along z - kaons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/PID/xyDCA_tpcits_ka", "DCA in x-y plane - kaons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/zDCA_tpc_ka", "DCA along z - kaons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/xyDCA_tpc_ka", "DCA in x-y plane - kaons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/zDCA_tpcits_ka", "DCA along z - kaons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/xyDCA_tpcits_ka", "DCA in x-y plane - kaons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
-    histos.add("MC/PID/zDCA_tpc_pr", "DCA along z - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/PID/xyDCA_tpc_pr", "DCA in x-y plane - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/PID/zDCA_tpcits_pr", "DCA along z - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
-    histos.add("MC/PID/xyDCA_tpcits_pr", "DCA in x-y plane - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/zDCA_tpc_pr", "DCA along z - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/xyDCA_tpc_pr", "DCA in x-y plane - protons TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/zDCA_tpcits_pr", "DCA along z - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    // histos.add("MC/PID/xyDCA_tpcits_pr", "DCA in x-y plane - protons TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
 
     //
     // pions only
@@ -938,33 +984,33 @@ struct qaMatchEff {
     //  for "MC truth" pions
     //
     histos.add("MC/TPCclust/tpcNClsFound_piMC", "Number of TPC found clusters - #pi_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_piMC", "Number of TPC findable clusters - #pi_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_piMC", "Number of TPC crossed rows - #pi_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC", "Number of TPC findable clusters minus crossed rows - #pi_{MC}", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_piMC", "Number of TPC findable clusters - #pi_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_piMC", "Number of TPC crossed rows - #pi_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC", "Number of TPC findable clusters minus crossed rows - #pi_{MC}", kTH1F, {{200, -200.0, 200.0}}, true);
     //
     //
     // TPC found clusters distribution
     histos.add("MC/TPCclust/tpcNClsFound_piMC_tpc", "TPC found clusters - #pi_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_piMC_tpc", "TPC findable clusters - #pi_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_piMC_tpc", "TPC crossed rows - #pi_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpc", "TPC findable clusters minus crossed rows - #pi_{MC} TPC tag", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_piMC_tpc", "TPC findable clusters - #pi_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_piMC_tpc", "TPC crossed rows - #pi_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpc", "TPC findable clusters minus crossed rows - #pi_{MC} TPC tag", kTH1F, {{200, -200.0, 200.0}}, true);
 
     histos.add("MC/TPCclust/tpcNClsFound_piMC_tpcits", "TPC found clusters - #pi_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_piMC_tpcits", "TPC findable clusters - #pi_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_piMC_tpcits", "TPC crossed rows - #pi_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpcits", "TPC findable clusters minus crossed rows - #pi_{MC} TPC+ITS tag", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_piMC_tpcits", "TPC findable clusters - #pi_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_piMC_tpcits", "TPC crossed rows - #pi_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpcits", "TPC findable clusters minus crossed rows - #pi_{MC} TPC+ITS tag", kTH1F, {{200, -200.0, 200.0}}, true);
 
     //
     //  pt in [1,2] GeV
-    histos.add("MC/TPCclust/tpcNClsFound_piMC_tpc_1g", "Number of TPC found clusters - #pi_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_piMC_tpc_1g", "Number of TPC findable clusters - #pi_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_piMC_tpc_1g", "Number of TPC crossed rows - #pi_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpc_1g", "Number of TPC findable clusters minus crossed rows - #pi_{MC} TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFound_piMC_tpc_1g", "Number of TPC found clusters - #pi_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_piMC_tpc_1g", "Number of TPC findable clusters - #pi_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_piMC_tpc_1g", "Number of TPC crossed rows - #pi_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpc_1g", "Number of TPC findable clusters minus crossed rows - #pi_{MC} TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
-    histos.add("MC/TPCclust/tpcNClsFound_piMC_tpcits_1g", "Number of TPC found clusters - #pi_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_piMC_tpcits_1g", "Number of TPC findable clusters - #pi_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_piMC_tpcits_1g", "Number of TPC crossed rows - #pi_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpcits_1g", "Number of TPC findable clusters minus crossed rows - #pi_{MC} TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFound_piMC_tpcits_1g", "Number of TPC found clusters - #pi_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_piMC_tpcits_1g", "Number of TPC findable clusters - #pi_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_piMC_tpcits_1g", "Number of TPC crossed rows - #pi_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpcits_1g", "Number of TPC findable clusters minus crossed rows - #pi_{MC} TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
     //
     //
 
@@ -1056,30 +1102,30 @@ struct qaMatchEff {
     //
     // TPC found clusters distribution
     histos.add("MC/TPCclust/tpcNClsFound_prMC", "Number of TPC found clusters - protons_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_prMC", "Number of TPC findable clusters - protons_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_prMC", "Number of TPC crossed rows - protons_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC", "Number of TPC findable clusters minus crossed rows - protons_{MC}", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_prMC", "Number of TPC findable clusters - protons_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_prMC", "Number of TPC crossed rows - protons_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC", "Number of TPC findable clusters minus crossed rows - protons_{MC}", kTH1F, {{200, -200.0, 200.0}}, true);
 
     histos.add("MC/TPCclust/tpcNClsFound_prMC_tpc", "Number of TPC found clusters - protons_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_prMC_tpc", "Number of TPC findable clusters - protons_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_prMC_tpc", "Number of TPC crossed rows - protons_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpc", "Number of TPC findable clusters minus crossed rows - protons_{MC} TPC tag", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_prMC_tpc", "Number of TPC findable clusters - protons_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_prMC_tpc", "Number of TPC crossed rows - protons_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpc", "Number of TPC findable clusters minus crossed rows - protons_{MC} TPC tag", kTH1F, {{200, -200.0, 200.0}}, true);
 
     histos.add("MC/TPCclust/tpcNClsFound_prMC_tpcits", "Number of TPC found clusters - protons_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_prMC_tpcits", "Number of TPC findable clusters - protons_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_prMC_tpcits", "Number of TPC crossed rows - protons_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpcits", "Number of TPC findable clusters minus crossed rows - protons_{MC} TPC+ITS tag", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_prMC_tpcits", "Number of TPC findable clusters - protons_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_prMC_tpcits", "Number of TPC crossed rows - protons_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpcits", "Number of TPC findable clusters minus crossed rows - protons_{MC} TPC+ITS tag", kTH1F, {{200, -200.0, 200.0}}, true);
     //
     //  pt in [1,2] GeV
-    histos.add("MC/TPCclust/tpcNClsFound_prMC_tpc_1g", "Number of TPC found clusters - protons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_prMC_tpc_1g", "Number of TPC findable clusters - protons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_prMC_tpc_1g", "Number of TPC crossed rows - protons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpc_1g", "Number of TPC findable clusters minus crossed rows - protons_{MC} TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFound_prMC_tpc_1g", "Number of TPC found clusters - protons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_prMC_tpc_1g", "Number of TPC findable clusters - protons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_prMC_tpc_1g", "Number of TPC crossed rows - protons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpc_1g", "Number of TPC findable clusters minus crossed rows - protons_{MC} TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
-    histos.add("MC/TPCclust/tpcNClsFound_prMC_tpcits_1g", "Number of TPC found clusters - protons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_prMC_tpcits_1g", "Number of TPC findable clusters - protons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_prMC_tpcits_1g", "Number of TPC crossed rows - protons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpcits_1g", "Number of TPC findable clusters minus crossed rows - protons_{MC} TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFound_prMC_tpcits_1g", "Number of TPC found clusters - protons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_prMC_tpcits_1g", "Number of TPC findable clusters - protons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_prMC_tpcits_1g", "Number of TPC crossed rows - protons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpcits_1g", "Number of TPC findable clusters minus crossed rows - protons_{MC} TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
     //
     //
@@ -1143,31 +1189,31 @@ struct qaMatchEff {
     //
     // TPC found clusters distribution
     histos.add("MC/TPCclust/tpcNClsFound_kaMC", "Number of TPC found clusters - kaons_{MC}", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_kaMC", "Number of TPC findable clusters - kaons_{MC} ", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_kaMC", "Number of TPC crossed rows - kaons_{MC} ", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC", "Number of TPC findable clusters minus crossed rows - kaons_{MC} ", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_kaMC", "Number of TPC findable clusters - kaons_{MC} ", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_kaMC", "Number of TPC crossed rows - kaons_{MC} ", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC", "Number of TPC findable clusters minus crossed rows - kaons_{MC} ", kTH1F, {{200, -200.0, 200.0}}, true);
 
     histos.add("MC/TPCclust/tpcNClsFound_kaMC_tpc", "Number of TPC found clusters - kaons_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_kaMC_tpc", "Number of TPC findable clusters - kaons_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_kaMC_tpc", "Number of TPC crossed rows - kaons_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpc", "Number of TPC findable clusters minus crossed rows - kaons_{MC} TPC tag", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_kaMC_tpc", "Number of TPC findable clusters - kaons_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_kaMC_tpc", "Number of TPC crossed rows - kaons_{MC} TPC tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpc", "Number of TPC findable clusters minus crossed rows - kaons_{MC} TPC tag", kTH1F, {{200, -200.0, 200.0}}, true);
 
     histos.add("MC/TPCclust/tpcNClsFound_kaMC_tpcits", "Number of TPC found clusters - kaons_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_kaMC_tpcits", "Number of TPC findable clusters - kaons_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_kaMC_tpcits", "Number of TPC crossed rows - kaons_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpcits", "Number of TPC findable clusters minus crossed rows - kaons_{MC} TPC+ITS tag", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_kaMC_tpcits", "Number of TPC findable clusters - kaons_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_kaMC_tpcits", "Number of TPC crossed rows - kaons_{MC} TPC+ITS tag", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpcits", "Number of TPC findable clusters minus crossed rows - kaons_{MC} TPC+ITS tag", kTH1F, {{200, -200.0, 200.0}}, true);
 
     //
     //  pt in [1,2] GeV
-    histos.add("MC/TPCclust/tpcNClsFound_kaMC_tpc_1g", "Number of TPC found clusters - kaons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_kaMC_tpc_1g", "Number of TPC findable clusters - kaons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_kaMC_tpc_1g", "Number of TPC crossed rows - kaons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpc_1g", "Number of TPC findable clusters minus crossed rows - kaons_{MC} TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFound_kaMC_tpc_1g", "Number of TPC found clusters - kaons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_kaMC_tpc_1g", "Number of TPC findable clusters - kaons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_kaMC_tpc_1g", "Number of TPC crossed rows - kaons_{MC} TPC tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpc_1g", "Number of TPC findable clusters minus crossed rows - kaons_{MC} TPC tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
-    histos.add("MC/TPCclust/tpcNClsFound_kaMC_tpcits_1g", "Number of TPC found clusters - kaons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcNClsFindable_kaMC_tpcits_1g", "Number of TPC findable clusters - kaons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcCrossedRows_kaMC_tpcits_1g", "Number of TPC crossed rows - kaons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
-    histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpcits_1g", "Number of TPC findable clusters minus crossed rows - kaons_{MC} TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFound_kaMC_tpcits_1g", "Number of TPC found clusters - kaons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcNClsFindable_kaMC_tpcits_1g", "Number of TPC findable clusters - kaons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcCrossedRows_kaMC_tpcits_1g", "Number of TPC crossed rows - kaons_{MC} TPC+ITS tag pt1-2", kTH1F, {{161, -0.5, 160.5}}, true);
+    // histos.add("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpcits_1g", "Number of TPC findable clusters minus crossed rows - kaons_{MC} TPC+ITS tag pt1-2", kTH1F, {{200, -200.0, 200.0}}, true);
 
     //
     //
@@ -1197,43 +1243,43 @@ struct qaMatchEff {
     histos.add("MC/PID/etahist_tpcits_kaminus", "#eta distribution - neg. kaons MC TPC+ITS tag", kTH1D, {axisEta}, true);
     histos.add("MC/PID/phihist_tpcits_kaminus", "#phi distribution - neg. kaons MC TPC+ITS tag", kTH1D, {axisPhi}, true);
 
-    // pions+kaons
-    // all
-    histos.add("MC/PID/pthist_tpc_piK", "#it{p}_{T} distribution - #pi+kaons MC TPC tag", kTH1D, {axisPt}, true);
-    histos.add("MC/PID/etahist_tpc_piK", "#eta distribution - #pi+kaons MC TPC tag", kTH1D, {axisEta}, true);
-    histos.add("MC/PID/phihist_tpc_piK", "#phi distribution - #pi+kaons MC TPC tag", kTH1D, {axisPhi}, true);
+    // // pions+kaons
+    // // all
+    // histos.add("MC/PID/pthist_tpc_piK", "#it{p}_{T} distribution - #pi+kaons MC TPC tag", kTH1D, {axisPt}, true);
+    // histos.add("MC/PID/etahist_tpc_piK", "#eta distribution - #pi+kaons MC TPC tag", kTH1D, {axisEta}, true);
+    // histos.add("MC/PID/phihist_tpc_piK", "#phi distribution - #pi+kaons MC TPC tag", kTH1D, {axisPhi}, true);
 
-    histos.add("MC/PID/pthist_tpcits_piK", "#it{p}_{T} distribution - #pi+kaons MC TPC+ITS tag", kTH1D, {axisPt}, true);
-    histos.add("MC/PID/etahist_tpcits_piK", "#eta distribution - #pi+kaons MC TPC+ITS tag", kTH1D, {axisEta}, true);
-    histos.add("MC/PID/phihist_tpcits_piK", "#phi distribution - #pi+kaons MC TPC+ITS tag", kTH1D, {axisPhi}, true);
+    // histos.add("MC/PID/pthist_tpcits_piK", "#it{p}_{T} distribution - #pi+kaons MC TPC+ITS tag", kTH1D, {axisPt}, true);
+    // histos.add("MC/PID/etahist_tpcits_piK", "#eta distribution - #pi+kaons MC TPC+ITS tag", kTH1D, {axisEta}, true);
+    // histos.add("MC/PID/phihist_tpcits_piK", "#phi distribution - #pi+kaons MC TPC+ITS tag", kTH1D, {axisPhi}, true);
 
-    // pt>0.5 GeV/c threshold
-    histos.add("MC/pthist_tpc_05", "#it{p}_{T} distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1D, {axisPt}, true);
-    histos.add("MC/etahist_tpc_05", "#eta distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1D, {axisEta}, true);
-    histos.add("MC/phihist_tpc_05", "#phi distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1D, {axisPhi}, true);
+    // // pt>0.5 GeV/c threshold
+    // histos.add("MC/pthist_tpc_05", "#it{p}_{T} distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1D, {axisPt}, true);
+    // histos.add("MC/etahist_tpc_05", "#eta distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1D, {axisEta}, true);
+    // histos.add("MC/phihist_tpc_05", "#phi distribution - MC TPC tag, #it{p}_{T}>0.5", kTH1D, {axisPhi}, true);
 
-    histos.add("MC/pthist_tpcits_05", "#it{p}_{T} distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1D, {axisPt}, true);
-    histos.add("MC/etahist_tpcits_05", "#eta distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1D, {axisEta}, true);
-    histos.add("MC/phihist_tpcits_05", "#phi distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1D, {axisPhi}, true);
+    // histos.add("MC/pthist_tpcits_05", "#it{p}_{T} distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1D, {axisPt}, true);
+    // histos.add("MC/etahist_tpcits_05", "#eta distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1D, {axisEta}, true);
+    // histos.add("MC/phihist_tpcits_05", "#phi distribution - MC TPC+ITS tag, #it{p}_{T}>0.5", kTH1D, {axisPhi}, true);
 
-    //
-    // all but primary/secondary pions
-    histos.add("MC/PID/pthist_tpc_nopi", "#it{p}_{T} distribution - MC TPC tag ! prim/secd #pi", kTH1D, {axisPt}, true);
-    histos.add("MC/PID/etahist_tpc_nopi", "#eta distribution - MC TPC tag ! prim/secd #pi", kTH1D, {axisEta}, true);
-    histos.add("MC/PID/phihist_tpc_nopi", "#phi distribution - MC TPC tag ! prim/secd #pi", kTH1D, {axisPhi}, true);
+    // //
+    // // all but primary/secondary pions
+    // histos.add("MC/PID/pthist_tpc_nopi", "#it{p}_{T} distribution - MC TPC tag ! prim/secd #pi", kTH1D, {axisPt}, true);
+    // histos.add("MC/PID/etahist_tpc_nopi", "#eta distribution - MC TPC tag ! prim/secd #pi", kTH1D, {axisEta}, true);
+    // histos.add("MC/PID/phihist_tpc_nopi", "#phi distribution - MC TPC tag ! prim/secd #pi", kTH1D, {axisPhi}, true);
 
-    histos.add("MC/PID/pthist_tpcits_nopi", "#it{p}_{T} distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1D, {axisPt}, true);
-    histos.add("MC/PID/etahist_tpcits_nopi", "#eta distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1D, {axisEta}, true);
-    histos.add("MC/PID/phihist_tpcits_nopi", "#phi distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1D, {axisPhi}, true);
-    //
-    // extras: difference between reconstructed and MC truth for eta, phi
-    histos.add("MC/control/etahist_diff", "#eta difference track-MC ", kTH1D, {axisDEta}, true);
-    histos.add("MC/control/phihist_diff", "#phi difference track-MC", kTH1D, {axisDPh}, true);
-    //
-    // hist sorting out PDG codes in wide bins
-    histos.add("MC/PID/pdghist_num", "PDG code - when non primary #pi TPC+ITS tag", kTH1D, {axisPDG}, true);
-    histos.add("MC/PID/pdghist_den", "PDG code - when non primary #pi TPC tag", kTH1D, {axisPDG}, true);
-    histos.add("MC/PID/pdghist_denits", "PDG code - when non primary #pi ITS tag", kTH1D, {axisPDG}, true);
+    // histos.add("MC/PID/pthist_tpcits_nopi", "#it{p}_{T} distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1D, {axisPt}, true);
+    // histos.add("MC/PID/etahist_tpcits_nopi", "#eta distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1D, {axisEta}, true);
+    // histos.add("MC/PID/phihist_tpcits_nopi", "#phi distribution - MC TPC+ITS tag ! prim/secd #pi", kTH1D, {axisPhi}, true);
+    // //
+    // // extras: difference between reconstructed and MC truth for eta, phi
+    // histos.add("MC/control/etahist_diff", "#eta difference track-MC ", kTH1D, {axisDEta}, true);
+    // histos.add("MC/control/phihist_diff", "#phi difference track-MC", kTH1D, {axisDPh}, true);
+    // //
+    // // hist sorting out PDG codes in wide bins
+    // histos.add("MC/PID/pdghist_num", "PDG code - when non primary #pi TPC+ITS tag", kTH1D, {axisPDG}, true);
+    // histos.add("MC/PID/pdghist_den", "PDG code - when non primary #pi TPC tag", kTH1D, {axisPDG}, true);
+    // histos.add("MC/PID/pdghist_denits", "PDG code - when non primary #pi ITS tag", kTH1D, {axisPDG}, true);
 
   } // end initMC
 
@@ -1251,11 +1297,11 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedKineCuts(T& track)
   {
-    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
+    if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
       return false;
-    if (isUseTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
+    if (b_useTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
       return false; // pt selection active only if the required pt is that calculated at the inner wall of TPC
     }
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kEtaRange))
@@ -1271,7 +1317,7 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedTPCCuts(T& track)
   {
-    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
+    if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kTPCNCls))
       return false;
@@ -1287,7 +1333,7 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedITSCuts(T& track)
   {
-    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
+    if (!b_useTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kITSChi2NDF))
       return false;
@@ -1334,7 +1380,7 @@ struct qaMatchEff {
   ///   Template function to perform the analysis   ///
   /////////////////////////////////////////////////////
   template <bool IS_MC, typename T, typename P, typename B>
-  void fillHistograms(T& tracks, P& /*mcParticles*/, B const& /*bcs*/)
+  void fillHistograms(T& tracks, P& mcParticles, B const& bcs)
   {
     //
     float trackPt = 0; //, ITStrackPt = 0;
@@ -1377,7 +1423,7 @@ struct qaMatchEff {
       /// Using pt calculated at the inner wall of TPC
       /// Caveat: tgl still from tracking: this is not the value of tgl at the
       /// inner wall of TPC
-      if (isUseTPCinnerWallPt)
+      if (b_useTPCinnerWallPt)
         trackPt = tpcinner_pt;
       else
         trackPt = reco_pt;
@@ -1388,23 +1434,21 @@ struct qaMatchEff {
       Float_t clustpc = (Float_t)track.tpcNClsFound();
       Float_t findcltpc = (Float_t)track.tpcNClsFindable();
       Float_t crowstpc = (Float_t)track.tpcNClsCrossedRows();
-      Float_t finclusmincrotpc = (Float_t)track.tpcNClsFindableMinusCrossedRows();
+      // Float_t finclusmincrotpc = (Float_t)track.tpcNClsFindableMinusCrossedRows();
       //
       // special case for ITS tracks
       // Using pt calculated at the inner wall of TPC
       // Caveat: tgl still from tracking: this is not the value of tgl at the
       // inner wall of TPC
-      // if (isUseTPCinnerWallPtForITS)
+      // if (b_useTPCinnerWallPtForITS)
       //   ITStrackPt = tpcinner_pt;
       // else
       //   ITStrackPt = reco_pt;
 
       countData++;
       //
-      //  keep sign of track as boolean
-      bool positiveTrack = false;
-      if (track.signed1Pt() > 0)
-        positiveTrack = true;
+      //  keep sign of track
+      Int_t signOfTrack = track.signed1Pt() > 0 ? 1 : -1;
       //
       // PID sigmas
       if constexpr (!IS_MC) {
@@ -1416,6 +1460,7 @@ struct qaMatchEff {
         tofNSigmaProton = track.tofNSigmaPr();
       }
       const bool trkWTOF = track.hasTOF();
+      const bool trkWTRD = track.hasTRD();
       const bool trkWTPC = track.hasTPC();
       const bool trkWITS = track.hasITS();
       bool pionPIDwithTPC = (nSigmaPID->get("TPC", "nSigPionMin") < tpcNSigmaPion && tpcNSigmaPion < nSigmaPID->get("TPC", "nSigPionMax"));
@@ -1443,7 +1488,7 @@ struct qaMatchEff {
         siPDGCode = mcpart.pdgCode();
         tpPDGCode = TMath::Abs(siPDGCode);
         if (mcpart.isPhysicalPrimary()) {
-          histos.get<TH1>(HIST("MC/control/etahist_diff"))->Fill(mcpart.eta() - track.eta());
+          // histos.get<TH1>(HIST("MC/control/etahist_diff"))->Fill(mcpart.eta() - track.eta());
           auto delta = mcpart.phi() - track.phi();
           if (delta > PI) {
             delta -= TwoPI;
@@ -1451,7 +1496,7 @@ struct qaMatchEff {
           if (delta < -PI) {
             delta += TwoPI;
           }
-          histos.get<TH1>(HIST("MC/control/phihist_diff"))->Fill(delta);
+          // histos.get<TH1>(HIST("MC/control/phihist_diff"))->Fill(delta);
         }
 
         /// MC info for THnSparse filling
@@ -1496,62 +1541,22 @@ struct qaMatchEff {
         //
         //    WARNING !!!     MIND the order of lines below, pions are preferred over kaons which are preferred over protons
         specind = -9999;
-        if (isProton && !(isKaon || isPion)) {
-          if (positiveTrack) {
-            specind = 4;
-          } else {
-            specind = -4; // protons ONLY
-          }
-        }
-        if (isKaon && !(isPion || isProton)) {
-          if (positiveTrack) {
-            specind = 3;
-          } else {
-            specind = -3; // kaons ONLY
-          }
-        }
-        if (isPion && !(isKaon || isProton)) { // pions ONLY
-          if (positiveTrack) {
-            specind = 2;
-          } else {
-            specind = -2;
-          }
-        }
-        if (isPion && isKaon && !isProton) { // maybe pion, maybe kaon
-          if (positiveTrack) {
-            specind = 5;
-          } else {
-            specind = -5;
-          }
-        }
-        if (isPion && isProton && !isKaon) { // maybe pion, maybe proton
-          if (positiveTrack) {
-            specind = 6;
-          } else {
-            specind = -6;
-          }
-        }
-        if (isKaon && isProton && !isPion) { // maybe proton, maybe kaon
-          if (positiveTrack) {
-            specind = 7;
-          } else {
-            specind = -7;
-          }
-        }
-        if (isPion && isKaon && isProton) { // maybe pion, maybe kaon, maybe proton
-          if (positiveTrack) {
-            specind = 9;
-          } else {
-            specind = -9;
-          }
-        }
-        if (!isPion && !isKaon && !isProton) { // PID is NOT pion or kaon or proton
-          if (positiveTrack) {
-            specind = 1;
-          } else {
-            specind = -1;
-          }
-        }
+        if (isProton && !(isKaon || isPion))
+          specind = signOfTrack * 4; // protons ONLY
+        if (isKaon && !(isPion || isProton))
+          specind = signOfTrack * 3; // kaons ONLY
+        if (isPion && !(isKaon || isProton))
+          specind = signOfTrack * 2; // pions ONLY
+        if (isPion && isKaon && !isProton)
+          specind = signOfTrack * 5; // maybe pion, maybe kaon
+        if (isPion && isProton && !isKaon)
+          specind = signOfTrack * 6; // maybe pion, maybe proton
+        if (isKaon && isProton && !isPion)
+          specind = signOfTrack * 7; // maybe proton, maybe kaon
+        if (isPion && isKaon && isProton)
+          specind = signOfTrack * 9; // maybe pion, maybe kaon, maybe proton
+        if (!isPion && !isKaon && !isProton)
+          specind = signOfTrack * 1; // PID is NOT pion or kaon or proton
       }
       //
       //***************************************************************************************************************************************************************************
@@ -1560,65 +1565,60 @@ struct qaMatchEff {
       if (trkWITS && isTrackSelectedITSCuts(track)) {
         hasdet = 1;
         //
-        //
         // fill thnsparse for fraction analysis
         if (makethn) {
           if constexpr (IS_MC) {
-            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           } else {
-            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           }
         }
       }
       if (trkWTPC && isTrackSelectedTPCCuts(track)) {
         hasdet = 2;
         //
-        //
         // fill thnsparse for fraction analysis
         if (makethn) {
           if constexpr (IS_MC) {
-            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           } else {
-            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           }
         }
       }
       if (trkWITS && trkWTPC && isTrackSelectedTPCCuts(track) && isTrackSelectedITSCuts(track)) {
         hasdet = 3;
         //
-        //
         // fill thnsparse for fraction analysis
         if (makethn) {
           if constexpr (IS_MC) {
-            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           } else {
-            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           }
         }
       }
       if (trkWTOF && trkWTPC && isTrackSelectedTPCCuts(track)) {
         hasdet = 4;
         //
-        //
         // fill thnsparse for fraction analysis
         if (makethn) {
           if constexpr (IS_MC) {
-            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           } else {
-            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           }
         }
       }
       if (trkWITS && isTrackSelectedITSCuts(track) && trkWTOF) {
         hasdet = 5;
         //
-        //
         // fill thnsparse for fraction analysis
         if (makethn) {
           if constexpr (IS_MC) {
-            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           } else {
-            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           }
         }
       }
@@ -1629,35 +1629,35 @@ struct qaMatchEff {
         // fill thnsparse for fraction analysis
         if (makethn) {
           if constexpr (IS_MC) {
-            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           } else {
-            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           }
         }
       }
-      if (trkWITS && isTrackSelectedITSCuts(track) && !trkWTPC) {
+      if (trkWITS && isTrackSelectedITSCuts(track) && !trkWTPC) { // ITS NOT TPC
         hasdet = 7;
         //
         //
         // fill thnsparse for fraction analysis
         if (makethn) {
           if constexpr (IS_MC) {
-            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           } else {
-            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           }
         }
       }
-      if (trkWTPC && isTrackSelectedTPCCuts(track) && !trkWITS) {
+      if (trkWTPC && isTrackSelectedTPCCuts(track) && !trkWITS) { //  TPC NOT ITS
         hasdet = 8;
         //
         //
         // fill thnsparse for fraction analysis
         if (makethn) {
           if constexpr (IS_MC) {
-            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           } else {
-            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), clustpc, hasdet);
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
           }
         }
       }
@@ -1667,39 +1667,43 @@ struct qaMatchEff {
       // all tracks, no conditions
       //
 
+      if (!makehistos)
+        return;
+
       //  TPC clusters - all particles all dets
       //
       if constexpr (IS_MC) { ////////////////////////   MC
         histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound"))->Fill(clustpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable"))->Fill(findcltpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows"))->Fill(crowstpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows"))->Fill(crowstpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable"))->Fill(findcltpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows"))->Fill(crowstpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows"))->Fill(crowstpc);
+
       } else {
         histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound"))->Fill(clustpc);
-        histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable"))->Fill(findcltpc);
-        histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows"))->Fill(crowstpc);
-        histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows"))->Fill(finclusmincrotpc);
+        // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable"))->Fill(findcltpc);
+        // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows"))->Fill(crowstpc);
+        // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows"))->Fill(finclusmincrotpc);
       }
 
       //  TPC clusters all pions MC truth
       //
       if (tpPDGCode == 211) {
         histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_piMC"))->Fill(clustpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_piMC"))->Fill(findcltpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_piMC"))->Fill(crowstpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC"))->Fill(crowstpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_piMC"))->Fill(findcltpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_piMC"))->Fill(crowstpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC"))->Fill(crowstpc);
       }
       if (tpPDGCode == 321) {
         histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_kaMC"))->Fill(clustpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC"))->Fill(findcltpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC"))->Fill(crowstpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC"))->Fill(crowstpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC"))->Fill(findcltpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC"))->Fill(crowstpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC"))->Fill(crowstpc);
       }
       if (tpPDGCode == 2212) {
         histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_prMC"))->Fill(clustpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC"))->Fill(findcltpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC"))->Fill(crowstpc);
-        histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC"))->Fill(crowstpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC"))->Fill(findcltpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC"))->Fill(crowstpc);
+        // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC"))->Fill(crowstpc);
       }
       //  TPC clusters all pions
       //
@@ -1712,9 +1716,9 @@ struct qaMatchEff {
         // } else {
         if constexpr (!IS_MC) { // DATA
           histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pi"))->Fill(clustpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pi"))->Fill(findcltpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pi"))->Fill(crowstpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pi"))->Fill(finclusmincrotpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pi"))->Fill(findcltpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pi"))->Fill(crowstpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pi"))->Fill(finclusmincrotpc);
         }
       }
       //  TPC clusters all kaons
@@ -1728,9 +1732,9 @@ struct qaMatchEff {
         // } else {
         if constexpr (!IS_MC) { // DATA
           histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_ka"))->Fill(clustpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_ka"))->Fill(findcltpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_ka"))->Fill(crowstpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_ka"))->Fill(finclusmincrotpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_ka"))->Fill(findcltpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_ka"))->Fill(crowstpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_ka"))->Fill(finclusmincrotpc);
         }
       }
       //  TPC clusters all protons
@@ -1744,9 +1748,9 @@ struct qaMatchEff {
         // } else {
         if constexpr (!IS_MC) { // DATA
           histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pr"))->Fill(clustpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pr"))->Fill(findcltpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pr"))->Fill(crowstpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pr"))->Fill(finclusmincrotpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pr"))->Fill(findcltpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pr"))->Fill(crowstpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pr"))->Fill(finclusmincrotpc);
         }
       }
       //
@@ -1758,30 +1762,30 @@ struct qaMatchEff {
           //
           // TPC clusters
           histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_tpc"))->Fill(clustpc);
-          histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_tpc"))->Fill(findcltpc);
-          histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_tpc"))->Fill(crowstpc);
-          histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_tpc"))->Fill(crowstpc);
+          // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_tpc"))->Fill(findcltpc);
+          // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_tpc"))->Fill(crowstpc);
+          // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_tpc"))->Fill(crowstpc);
           //
           // pt 1-2
-          if (trackPt <= 2 && trackPt > 1) {
-            histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_tpc_1g"))->Fill(clustpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_tpc_1g"))->Fill(findcltpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_tpc_1g"))->Fill(crowstpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_tpc_1g"))->Fill(crowstpc);
-          }
+          // if (trackPt <= 2 && trackPt > 1) {
+          //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_tpc_1g"))->Fill(clustpc);
+          //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_tpc_1g"))->Fill(findcltpc);
+          //   histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_tpc_1g"))->Fill(crowstpc);
+          //   histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_tpc_1g"))->Fill(crowstpc);
+          // }
           //
-          histos.fill(HIST("MC/control/zDCA_tpc"), track.dcaZ());
-          histos.fill(HIST("MC/control/xyDCA_tpc"), track.dcaXY());
+          // histos.fill(HIST("MC/control/zDCA_tpc"), track.dcaZ());
+          // histos.fill(HIST("MC/control/xyDCA_tpc"), track.dcaXY());
           //
-          if (makept2d) {
-            histos.fill(HIST("MC/control/ptptconfTPCall"), reco_pt, tpcinner_pt);
-            if (!trkWITS)
-              histos.fill(HIST("MC/control/ptptconfTPCo"), reco_pt, tpcinner_pt);
-          }
-          if (!trkWITS) {
-            histos.get<TH1>(HIST("MC/control/trackXhist_tpcONLY"))->Fill(track.x());
-            histos.get<TH1>(HIST("MC/control/trackZhist_tpcONLY"))->Fill(track.z());
-          }
+          // if (makept2d) {
+          //   histos.fill(HIST("MC/control/ptptconfTPCall"), reco_pt, tpcinner_pt);
+          //   if (!trkWITS)
+          //     histos.fill(HIST("MC/control/ptptconfTPCo"), reco_pt, tpcinner_pt);
+          // }
+          // if (!trkWITS) {
+          //   histos.get<TH1>(HIST("MC/control/trackXhist_tpcONLY"))->Fill(track.x());
+          //   histos.get<TH1>(HIST("MC/control/trackZhist_tpcONLY"))->Fill(track.z());
+          // }
           histos.get<TH1>(HIST("MC/qopthist_tpc"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(track.phi());
@@ -1791,133 +1795,33 @@ struct qaMatchEff {
             histos.get<TH1>(HIST("MC/phihist_toftpc"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_toftpc"))->Fill(track.eta());
           }
-          // if (isPion) {
-          //   //
-          //   // TPC clusters
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_pi_tpc"))->Fill(clustpc);
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_pi_tpc"))->Fill(findcltpc);
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_pi_tpc"))->Fill(crowstpc);
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_pi_tpc"))->Fill(crowstpc);
-          //   //
-          //   // pt 1-2
-          //   if (trackPt <= 2 && trackPt > 1) {
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_pi_tpc_1g"))->Fill(clustpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_pi_tpc_1g"))->Fill(findcltpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_pi_tpc_1g"))->Fill(crowstpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_pi_tpc_1g"))->Fill(crowstpc);
-          //   }
-          // }
-          // if (isKaon) {
-          //   //
-          //   // TPC clusters
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_ka_tpc"))->Fill(clustpc);
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_ka_tpc"))->Fill(findcltpc);
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_ka_tpc"))->Fill(crowstpc);
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_ka_tpc"))->Fill(crowstpc);
-          //   //
-          //   // pt 1-2
-          //   if (trackPt <= 2 && trackPt > 1) {
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_ka_tpc_1g"))->Fill(clustpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_ka_tpc_1g"))->Fill(findcltpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_ka_tpc_1g"))->Fill(crowstpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_ka_tpc_1g"))->Fill(crowstpc);
-          //   }
-          // }
-          // if (isProton) {
-          //   //
-          //   // TPC clusters
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_pr_tpc"))->Fill(clustpc);
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_pr_tpc"))->Fill(findcltpc);
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_pr_tpc"))->Fill(crowstpc);
-          //   histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_pr_tpc"))->Fill(crowstpc);
-          //   //
-          //   // pt 1-2
-          //   if (trackPt <= 2 && trackPt > 1) {
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_pr_tpc_1g"))->Fill(clustpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_pr_tpc_1g"))->Fill(findcltpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_pr_tpc_1g"))->Fill(crowstpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_pr_tpc_1g"))->Fill(crowstpc);
-          //   }
-          // }
-          // if (trkWITS && isTrackSelectedITSCuts(track)) { ////////////////////////////////////////////   ITS tag inside TPC tagged
-          //   if (isPion) {
-          //     //
-          //     // TPC clusters
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_pi_tpcits"))->Fill(clustpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_pi_tpcits"))->Fill(findcltpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_pi_tpcits"))->Fill(crowstpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_pi_tpcits"))->Fill(crowstpc);
-          //     //
-          //     // pt 1-2
-          //     if (trackPt <= 2 && trackPt > 1) {
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_pi_tpcits_1g"))->Fill(clustpc);
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_pi_tpcits_1g"))->Fill(findcltpc);
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_pi_tpcits_1g"))->Fill(crowstpc);
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_pi_tpcits_1g"))->Fill(crowstpc);
-          //     }
-          //   }
-          //   if (isKaon) {
-          //     //
-          //     // TPC clusters
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_ka_tpcits"))->Fill(clustpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_ka_tpcits"))->Fill(findcltpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_ka_tpcits"))->Fill(crowstpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_ka_tpcits"))->Fill(crowstpc);
-          //     //
-          //     // pt 1-2
-          //     if (trackPt <= 2 && trackPt > 1) {
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_ka_tpcits_1g"))->Fill(clustpc);
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_ka_tpcits_1g"))->Fill(findcltpc);
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_ka_tpcits_1g"))->Fill(crowstpc);
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_ka_tpcits_1g"))->Fill(crowstpc);
-          //     }
-          //   }
-          //   if (isProton) {
-          //     //
-          //     // TPC clusters
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_pr_tpcits"))->Fill(clustpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_pr_tpcits"))->Fill(findcltpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_pr_tpcits"))->Fill(crowstpc);
-          //     histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_pr_tpcits"))->Fill(crowstpc);
-          //     //
-          //     // pt 1-2
-          //     if (trackPt <= 2 && trackPt > 1) {
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_pr_tpcits_1g"))->Fill(clustpc);
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_pr_tpcits_1g"))->Fill(findcltpc);
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_pr_tpcits_1g"))->Fill(crowstpc);
-          //    histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_pr_tpcits_1g"))->Fill(crowstpc);
-          //     }
-          //   }
-          // }
-          // //
-          // //
         } else { ////////////////////////   DATA
           //
           // TPC clusters
           histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_tpc"))->Fill(clustpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_tpc"))->Fill(findcltpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_tpc"))->Fill(crowstpc);
-          histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_tpc"))->Fill(crowstpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_tpc"))->Fill(findcltpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_tpc"))->Fill(crowstpc);
+          // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_tpc"))->Fill(crowstpc);
           // pt 1-2
           if (trackPt <= 2 && trackPt > 1) {
-            histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_tpc_1g"))->Fill(clustpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_tpc_1g"))->Fill(findcltpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_tpc_1g"))->Fill(crowstpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_tpc_1g"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_tpc_1g"))->Fill(clustpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_tpc_1g"))->Fill(findcltpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_tpc_1g"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_tpc_1g"))->Fill(crowstpc);
           }
           //
-          histos.fill(HIST("data/control/zDCA_tpc"), track.dcaZ());
-          histos.fill(HIST("data/control/xyDCA_tpc"), track.dcaXY());
+          // histos.fill(HIST("data/control/zDCA_tpc"), track.dcaZ());
+          // histos.fill(HIST("data/control/xyDCA_tpc"), track.dcaXY());
           //
-          if (makept2d) {
-            histos.fill(HIST("data/control/ptptconfTPCall"), reco_pt, tpcinner_pt);
-            if (!trkWITS)
-              histos.fill(HIST("data/control/ptptconfTPCo"), reco_pt, tpcinner_pt);
-          }
-          if (!trkWITS) {
-            histos.get<TH1>(HIST("data/control/trackXhist_tpcONLY"))->Fill(track.x());
-            histos.get<TH1>(HIST("data/control/trackZhist_tpcONLY"))->Fill(track.z());
-          }
+          // if (makept2d) {
+          //   histos.fill(HIST("data/control/ptptconfTPCall"), reco_pt, tpcinner_pt);
+          //   if (!trkWITS)
+          //     histos.fill(HIST("data/control/ptptconfTPCo"), reco_pt, tpcinner_pt);
+          // }
+          // if (!trkWITS) {
+          //   histos.get<TH1>(HIST("data/control/trackXhist_tpcONLY"))->Fill(track.x());
+          //   histos.get<TH1>(HIST("data/control/trackZhist_tpcONLY"))->Fill(track.z());
+          // }
           histos.get<TH1>(HIST("data/qopthist_tpc"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(track.phi());
@@ -1929,7 +1833,7 @@ struct qaMatchEff {
               const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
               histos.get<TH1>(HIST("data/hTrkTPCvsTime"))->Fill(timestamp);
               if (enableTHnSparseMonitorVsTime) {
-                histos.get<THnSparse>(HIST("data/hTrkTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, positiveTrack ? 0.5 : -0.5, track.tpcNClsFound(), track.itsNCls());
+                histos.get<THnSparse>(HIST("data/hTrkTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, signOfTrack * 0.5, track.tpcNClsFound(), track.itsNCls());
               }
             }
           }
@@ -1946,25 +1850,25 @@ struct qaMatchEff {
             //
             // TPC clusters
             histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pi_tpc"))->Fill(clustpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pi_tpc"))->Fill(findcltpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pi_tpc"))->Fill(crowstpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpc"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pi_tpc"))->Fill(findcltpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pi_tpc"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpc"))->Fill(crowstpc);
             //
             // pt 1-2
-            if (trackPt <= 2 && trackPt > 1) {
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pi_tpc_1g"))->Fill(clustpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pi_tpc_1g"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pi_tpc_1g"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpc_1g"))->Fill(crowstpc);
-            }
+            // if (trackPt <= 2 && trackPt > 1) {
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pi_tpc_1g"))->Fill(clustpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pi_tpc_1g"))->Fill(findcltpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pi_tpc_1g"))->Fill(crowstpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpc_1g"))->Fill(crowstpc);
+            // }
             //
-            histos.get<TH1>(HIST("data/PID/zDCA_tpc_pi"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("data/PID/xyDCA_tpc_pi"))->Fill(track.dcaXY());
+            // histos.get<TH1>(HIST("data/PID/zDCA_tpc_pi"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("data/PID/xyDCA_tpc_pi"))->Fill(track.dcaXY());
             //
             histos.get<TH1>(HIST("data/PID/pthist_tpc_pi"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/PID/phihist_tpc_pi"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/PID/etahist_tpc_pi"))->Fill(track.eta());
-            if (positiveTrack) {
+            if (signOfTrack > 0) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_piplus"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/PID/phihist_tpc_piplus"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/PID/etahist_tpc_piplus"))->Fill(track.eta());
@@ -1977,13 +1881,13 @@ struct qaMatchEff {
           if (isPIDPionRequired) {
             if (pionPIDwithTPC) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_pi_PIDTPC"))->Fill(trackPt);
-              if (positiveTrack)
+              if (signOfTrack > 0)
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_piplus_PIDTPC"))->Fill(trackPt);
               else
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_piminus_PIDTPC"))->Fill(trackPt);
               if (!trkWTOF || !pionPIDwithTOF) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_pi_PIDTPC_O"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_piplus_PIDTPC_O"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_piminus_PIDTPC_O"))->Fill(trackPt);
@@ -1991,13 +1895,13 @@ struct qaMatchEff {
             }
             if (trkWTOF && pionPIDwithTOF) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_pi_PIDTOF"))->Fill(trackPt);
-              if (positiveTrack)
+              if (signOfTrack)
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_piplus_PIDTOF"))->Fill(trackPt);
               else
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_piminus_PIDTOF"))->Fill(trackPt);
               if (!pionPIDwithTPC) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_pi_PIDTOF_O"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_piplus_PIDTOF_O"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_piminus_PIDTOF_O"))->Fill(trackPt);
@@ -2005,7 +1909,7 @@ struct qaMatchEff {
             }
             if (pionPIDwithTPC && trkWTOF && pionPIDwithTOF) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_pi_PIDTPCTOF"))->Fill(trackPt);
-              if (positiveTrack)
+              if (signOfTrack > 0)
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_piplus_PIDTPCTOF"))->Fill(trackPt);
               else
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_piminus_PIDTPCTOF"))->Fill(trackPt);
@@ -2016,25 +1920,25 @@ struct qaMatchEff {
             //
             // TPC clusters
             histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_ka_tpc"))->Fill(clustpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_ka_tpc"))->Fill(findcltpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_ka_tpc"))->Fill(crowstpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpc"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_ka_tpc"))->Fill(findcltpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_ka_tpc"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpc"))->Fill(crowstpc);
             //
             // pt 1-2
-            if (trackPt <= 2 && trackPt > 1) {
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_ka_tpc_1g"))->Fill(clustpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_ka_tpc_1g"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_ka_tpc_1g"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpc_1g"))->Fill(crowstpc);
-            }
+            // if (trackPt <= 2 && trackPt > 1) {
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_ka_tpc_1g"))->Fill(clustpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_ka_tpc_1g"))->Fill(findcltpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_ka_tpc_1g"))->Fill(crowstpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpc_1g"))->Fill(crowstpc);
+            // }
             //
-            histos.get<TH1>(HIST("data/PID/zDCA_tpc_ka"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("data/PID/xyDCA_tpc_ka"))->Fill(track.dcaXY());
+            // histos.get<TH1>(HIST("data/PID/zDCA_tpc_ka"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("data/PID/xyDCA_tpc_ka"))->Fill(track.dcaXY());
             //
             histos.get<TH1>(HIST("data/PID/pthist_tpc_ka"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/PID/phihist_tpc_ka"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/PID/etahist_tpc_ka"))->Fill(track.eta());
-            if (positiveTrack) {
+            if (signOfTrack > 0) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_kaplus"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/PID/phihist_tpc_kaplus"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/PID/etahist_tpc_kaplus"))->Fill(track.eta());
@@ -2047,13 +1951,13 @@ struct qaMatchEff {
           if (isPIDKaonRequired) {
             if (kaonPIDwithTPC) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_ka_PIDTPC"))->Fill(trackPt);
-              if (positiveTrack)
+              if (signOfTrack > 0)
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_kaplus_PIDTPC"))->Fill(trackPt);
               else
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_kaminus_PIDTPC"))->Fill(trackPt);
               if (!trkWTOF || !kaonPIDwithTOF) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_ka_PIDTPC_O"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_kaplus_PIDTPC_O"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_kaminus_PIDTPC_O"))->Fill(trackPt);
@@ -2061,13 +1965,13 @@ struct qaMatchEff {
             }
             if (trkWTOF && kaonPIDwithTOF) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_ka_PIDTOF"))->Fill(trackPt);
-              if (positiveTrack)
+              if (signOfTrack > 0)
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_kaplus_PIDTOF"))->Fill(trackPt);
               else
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_kaminus_PIDTOF"))->Fill(trackPt);
               if (!kaonPIDwithTPC) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_ka_PIDTOF_O"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_kaplus_PIDTOF_O"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_kaminus_PIDTOF_O"))->Fill(trackPt);
@@ -2075,7 +1979,7 @@ struct qaMatchEff {
             }
             if (kaonPIDwithTPC && trkWTOF && kaonPIDwithTOF) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_ka_PIDTPCTOF"))->Fill(trackPt);
-              if (positiveTrack)
+              if (signOfTrack > 0)
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_kaplus_PIDTPCTOF"))->Fill(trackPt);
               else
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_kaminus_PIDTPCTOF"))->Fill(trackPt);
@@ -2086,25 +1990,25 @@ struct qaMatchEff {
             //
             // TPC clusters
             histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pr_tpc"))->Fill(clustpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pr_tpc"))->Fill(findcltpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pr_tpc"))->Fill(crowstpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpc"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pr_tpc"))->Fill(findcltpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pr_tpc"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpc"))->Fill(crowstpc);
             //
             // pt 1-2
-            if (trackPt <= 2 && trackPt > 1) {
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pr_tpc_1g"))->Fill(clustpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pr_tpc_1g"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pr_tpc_1g"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpc_1g"))->Fill(crowstpc);
-            }
+            // if (trackPt <= 2 && trackPt > 1) {
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pr_tpc_1g"))->Fill(clustpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pr_tpc_1g"))->Fill(findcltpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pr_tpc_1g"))->Fill(crowstpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpc_1g"))->Fill(crowstpc);
+            // }
             //
-            histos.get<TH1>(HIST("data/PID/zDCA_tpc_pr"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("data/PID/xyDCA_tpc_pr"))->Fill(track.dcaXY());
+            // histos.get<TH1>(HIST("data/PID/zDCA_tpc_pr"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("data/PID/xyDCA_tpc_pr"))->Fill(track.dcaXY());
             //
             histos.get<TH1>(HIST("data/PID/pthist_tpc_pr"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/PID/phihist_tpc_pr"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/PID/etahist_tpc_pr"))->Fill(track.eta());
-            if (positiveTrack) {
+            if (signOfTrack > 0) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_prplus"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/PID/phihist_tpc_prplus"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/PID/etahist_tpc_prplus"))->Fill(track.eta());
@@ -2117,13 +2021,13 @@ struct qaMatchEff {
           if (isPIDProtonRequired) {
             if (protonPIDwithTPC) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_pr_PIDTPC"))->Fill(trackPt);
-              if (positiveTrack)
+              if (signOfTrack > 0)
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_prplus_PIDTPC"))->Fill(trackPt);
               else
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_prminus_PIDTPC"))->Fill(trackPt);
               if (!trkWTOF || !protonPIDwithTOF) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_pr_PIDTPC_O"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_prplus_PIDTPC_O"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_prminus_PIDTPC_O"))->Fill(trackPt);
@@ -2131,13 +2035,13 @@ struct qaMatchEff {
             }
             if (trkWTOF && protonPIDwithTOF) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_pr_PIDTOF"))->Fill(trackPt);
-              if (positiveTrack)
+              if (signOfTrack > 0)
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_prplus_PIDTOF"))->Fill(trackPt);
               else
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_prminus_PIDTOF"))->Fill(trackPt);
               if (!protonPIDwithTPC) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_pr_PIDTOF_O"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_prplus_PIDTOF_O"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpc_prminus_PIDTOF_O"))->Fill(trackPt);
@@ -2145,7 +2049,7 @@ struct qaMatchEff {
             }
             if (protonPIDwithTPC && trkWTOF && protonPIDwithTOF) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_pr_PIDTPCTOF"))->Fill(trackPt);
-              if (positiveTrack)
+              if (signOfTrack > 0)
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_prplus_PIDTPCTOF"))->Fill(trackPt);
               else
                 histos.get<TH1>(HIST("data/PID/pthist_tpc_prminus_PIDTPCTOF"))->Fill(trackPt);
@@ -2153,12 +2057,12 @@ struct qaMatchEff {
           }
           // end protons
           if (!isPion && !isKaon && !isProton && (isPIDPionRequired || isPIDKaonRequired || isPIDProtonRequired)) {
-            histos.get<TH1>(HIST("data/PID/zDCA_tpc_noid"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("data/PID/xyDCA_tpc_noid"))->Fill(track.dcaXY());
+            // histos.get<TH1>(HIST("data/PID/zDCA_tpc_noid"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("data/PID/xyDCA_tpc_noid"))->Fill(track.dcaXY());
             histos.get<TH1>(HIST("data/PID/pthist_tpc_noid"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/PID/phihist_tpc_noid"))->Fill(track.phi());
             histos.get<TH1>(HIST("data/PID/etahist_tpc_noid"))->Fill(track.eta());
-            if (positiveTrack) {
+            if (signOfTrack > 0) {
               histos.get<TH1>(HIST("data/PID/pthist_tpc_noidplus"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/PID/phihist_tpc_noidplus"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/PID/etahist_tpc_noidplus"))->Fill(track.eta());
@@ -2175,30 +2079,30 @@ struct qaMatchEff {
             //
             // TPC clusters
             histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_tpcits"))->Fill(clustpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_tpcits"))->Fill(findcltpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_tpcits"))->Fill(crowstpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_tpcits"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_tpcits"))->Fill(findcltpc);
+            // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_tpcits"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_tpcits"))->Fill(crowstpc);
             //
             // pt 1-2
-            if (trackPt <= 2 && trackPt > 1) {
-              histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_tpcits_1g"))->Fill(clustpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_tpcits_1g"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_tpcits_1g"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_tpcits_1g"))->Fill(crowstpc);
-            }
+            // if (trackPt <= 2 && trackPt > 1) {
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_tpcits_1g"))->Fill(clustpc);
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_tpcits_1g"))->Fill(findcltpc);
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_tpcits_1g"))->Fill(crowstpc);
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_tpcits_1g"))->Fill(crowstpc);
+            // }
             //
-            histos.get<TH1>(HIST("MC/control/zDCA_tpcits"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("MC/control/xyDCA_tpcits"))->Fill(track.dcaXY());
-            if (makept2d)
-              histos.fill(HIST("MC/control/ptptconfTPCITS"), reco_pt, tpcinner_pt);
+            // histos.get<TH1>(HIST("MC/control/zDCA_tpcits"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("MC/control/xyDCA_tpcits"))->Fill(track.dcaXY());
+            // if (makept2d)
+            //   histos.fill(HIST("MC/control/ptptconfTPCITS"), reco_pt, tpcinner_pt);
             histos.get<TH1>(HIST("MC/qopthist_tpcits"))->Fill(track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
             //
             histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(track.eta());
             //
-            histos.get<TH1>(HIST("MC/control/trackXhist_tpcits"))->Fill(track.x());
-            histos.get<TH1>(HIST("MC/control/trackZhist_tpcits"))->Fill(track.z());
+            // histos.get<TH1>(HIST("MC/control/trackXhist_tpcits"))->Fill(track.x());
+            // histos.get<TH1>(HIST("MC/control/trackZhist_tpcits"))->Fill(track.z());
 
             if (trkWTOF) {
               histos.get<TH1>(HIST("MC/pthist_toftpcits"))->Fill(trackPt);
@@ -2209,51 +2113,51 @@ struct qaMatchEff {
             //
             // TPC clusters
             histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_tpcits"))->Fill(clustpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_tpcits"))->Fill(findcltpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_tpcits"))->Fill(crowstpc);
-            histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_tpcits"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_tpcits"))->Fill(findcltpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_tpcits"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_tpcits"))->Fill(crowstpc);
             //
             // pt 1-2
-            if (trackPt <= 2 && trackPt > 1) {
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_tpcits_1g"))->Fill(clustpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_tpcits_1g"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_tpcits_1g"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_tpcits_1g"))->Fill(crowstpc);
-            }
+            // if (trackPt <= 2 && trackPt > 1) {
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_tpcits_1g"))->Fill(clustpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_tpcits_1g"))->Fill(findcltpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_tpcits_1g"))->Fill(crowstpc);
+            //   histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_tpcits_1g"))->Fill(crowstpc);
+            // }
             //
-            histos.get<TH1>(HIST("data/control/zDCA_tpcits"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("data/control/xyDCA_tpcits"))->Fill(track.dcaXY());
-            if (makept2d)
-              histos.fill(HIST("data/control/ptptconfTPCITS"), reco_pt, tpcinner_pt);
+            // histos.get<TH1>(HIST("data/control/zDCA_tpcits"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("data/control/xyDCA_tpcits"))->Fill(track.dcaXY());
+            // if (makept2d)
+            //   histos.fill(HIST("data/control/ptptconfTPCITS"), reco_pt, tpcinner_pt);
             histos.get<TH1>(HIST("data/qopthist_tpcits"))->Fill(track.signed1Pt());
             //
-            histos.get<TH1>(HIST("data/control/trackXhist_tpcits"))->Fill(track.x());
-            histos.get<TH1>(HIST("data/control/trackZhist_tpcits"))->Fill(track.z());
+            // histos.get<TH1>(HIST("data/control/trackXhist_tpcits"))->Fill(track.x());
+            // histos.get<TH1>(HIST("data/control/trackZhist_tpcits"))->Fill(track.z());
             //
             //  PID is applied
             if (isPion) {
               //
               // TPC clusters
               histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pi_tpcits"))->Fill(clustpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pi_tpcits"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pi_tpcits"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pi_tpcits"))->Fill(findcltpc);
+              // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pi_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpcits"))->Fill(crowstpc);
               //
               // pt 1-2
-              if (trackPt <= 2 && trackPt > 1) {
-                histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pi_tpcits_1g"))->Fill(clustpc);
-                histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pi_tpcits_1g"))->Fill(findcltpc);
-                histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pi_tpcits_1g"))->Fill(crowstpc);
-                histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpcits_1g"))->Fill(crowstpc);
-              }
+              // if (trackPt <= 2 && trackPt > 1) {
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pi_tpcits_1g"))->Fill(clustpc);
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pi_tpcits_1g"))->Fill(findcltpc);
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pi_tpcits_1g"))->Fill(crowstpc);
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pi_tpcits_1g"))->Fill(crowstpc);
+              // }
               //
-              histos.get<TH1>(HIST("data/PID/zDCA_tpcits_pi"))->Fill(track.dcaZ());
-              histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_pi"))->Fill(track.dcaXY());
+              // histos.get<TH1>(HIST("data/PID/zDCA_tpcits_pi"))->Fill(track.dcaZ());
+              // histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_pi"))->Fill(track.dcaXY());
               //
               histos.get<TH1>(HIST("data/PID/pthist_tpcits_pi"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/PID/phihist_tpcits_pi"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/PID/etahist_tpcits_pi"))->Fill(track.eta());
-              if (positiveTrack) {
+              if (signOfTrack > 0) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_piplus"))->Fill(trackPt);
                 histos.get<TH1>(HIST("data/PID/phihist_tpcits_piplus"))->Fill(track.phi());
                 histos.get<TH1>(HIST("data/PID/etahist_tpcits_piplus"))->Fill(track.eta());
@@ -2266,13 +2170,13 @@ struct qaMatchEff {
             if (isPIDPionRequired) {
               if (pionPIDwithTPC) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_pi_PIDTPC"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_piplus_PIDTPC"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_piminus_PIDTPC"))->Fill(trackPt);
                 if (!trkWTOF || !pionPIDwithTOF) {
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_pi_PIDTPC_O"))->Fill(trackPt);
-                  if (positiveTrack)
+                  if (signOfTrack > 0)
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_piplus_PIDTPC_O"))->Fill(trackPt);
                   else
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_piminus_PIDTPC_O"))->Fill(trackPt);
@@ -2280,13 +2184,13 @@ struct qaMatchEff {
               }
               if (trkWTOF && pionPIDwithTOF) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_pi_PIDTOF"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_piplus_PIDTOF"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_piminus_PIDTOF"))->Fill(trackPt);
                 if (!pionPIDwithTPC) {
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_pi_PIDTOF_O"))->Fill(trackPt);
-                  if (positiveTrack)
+                  if (signOfTrack > 0)
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_piplus_PIDTOF_O"))->Fill(trackPt);
                   else
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_piminus_PIDTOF_O"))->Fill(trackPt);
@@ -2294,7 +2198,7 @@ struct qaMatchEff {
               }
               if (pionPIDwithTPC && trkWTOF && pionPIDwithTOF) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_pi_PIDTPCTOF"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_piplus_PIDTPCTOF"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_piminus_PIDTPCTOF"))->Fill(trackPt);
@@ -2305,25 +2209,25 @@ struct qaMatchEff {
               //
               // TPC clusters
               histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_ka_tpcits"))->Fill(clustpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_ka_tpcits"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_ka_tpcits"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_ka_tpcits"))->Fill(findcltpc);
+              // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_ka_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpcits"))->Fill(crowstpc);
               //
               // pt 1-2
-              if (trackPt <= 2 && trackPt > 1) {
-                histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_ka_tpcits_1g"))->Fill(clustpc);
-                histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_ka_tpcits_1g"))->Fill(findcltpc);
-                histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_ka_tpcits_1g"))->Fill(crowstpc);
-                histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpcits_1g"))->Fill(crowstpc);
-              }
+              // if (trackPt <= 2 && trackPt > 1) {
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_ka_tpcits_1g"))->Fill(clustpc);
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_ka_tpcits_1g"))->Fill(findcltpc);
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_ka_tpcits_1g"))->Fill(crowstpc);
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_ka_tpcits_1g"))->Fill(crowstpc);
+              // }
               //
-              histos.get<TH1>(HIST("data/PID/zDCA_tpcits_ka"))->Fill(track.dcaZ());
-              histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_ka"))->Fill(track.dcaXY());
+              // histos.get<TH1>(HIST("data/PID/zDCA_tpcits_ka"))->Fill(track.dcaZ());
+              // histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_ka"))->Fill(track.dcaXY());
               //
               histos.get<TH1>(HIST("data/PID/pthist_tpcits_ka"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/PID/phihist_tpcits_ka"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/PID/etahist_tpcits_ka"))->Fill(track.eta());
-              if (positiveTrack) {
+              if (signOfTrack > 0) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaplus"))->Fill(trackPt);
                 histos.get<TH1>(HIST("data/PID/phihist_tpcits_kaplus"))->Fill(track.phi());
                 histos.get<TH1>(HIST("data/PID/etahist_tpcits_kaplus"))->Fill(track.eta());
@@ -2336,13 +2240,13 @@ struct qaMatchEff {
             if (isPIDKaonRequired) {
               if (kaonPIDwithTPC) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_ka_PIDTPC"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaplus_PIDTPC"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaminus_PIDTPC"))->Fill(trackPt);
                 if (!trkWTOF || !kaonPIDwithTOF) {
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_ka_PIDTPC_O"))->Fill(trackPt);
-                  if (positiveTrack)
+                  if (signOfTrack > 0)
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaplus_PIDTPC_O"))->Fill(trackPt);
                   else
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaminus_PIDTPC_O"))->Fill(trackPt);
@@ -2350,13 +2254,13 @@ struct qaMatchEff {
               }
               if (trkWTOF && kaonPIDwithTOF) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_ka_PIDTOF"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaplus_PIDTOF"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaminus_PIDTOF"))->Fill(trackPt);
                 if (!kaonPIDwithTPC) {
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_ka_PIDTOF_O"))->Fill(trackPt);
-                  if (positiveTrack)
+                  if (signOfTrack > 0)
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaplus_PIDTOF_O"))->Fill(trackPt);
                   else
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaminus_PIDTOF_O"))->Fill(trackPt);
@@ -2364,7 +2268,7 @@ struct qaMatchEff {
               }
               if (kaonPIDwithTPC && trkWTOF && kaonPIDwithTOF) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_ka_PIDTPCTOF"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaplus_PIDTPCTOF"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_kaminus_PIDTPCTOF"))->Fill(trackPt);
@@ -2375,25 +2279,25 @@ struct qaMatchEff {
               //
               // TPC clusters
               histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pr_tpcits"))->Fill(clustpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pr_tpcits"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pr_tpcits"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pr_tpcits"))->Fill(findcltpc);
+              // histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pr_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpcits"))->Fill(crowstpc);
               //
               // pt 1-2
-              if (trackPt <= 2 && trackPt > 1) {
-                histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pr_tpcits_1g"))->Fill(clustpc);
-                histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pr_tpcits_1g"))->Fill(findcltpc);
-                histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pr_tpcits_1g"))->Fill(crowstpc);
-                histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpcits_1g"))->Fill(crowstpc);
-              }
+              // if (trackPt <= 2 && trackPt > 1) {
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFound_pr_tpcits_1g"))->Fill(clustpc);
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcNClsFindable_pr_tpcits_1g"))->Fill(findcltpc);
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcCrossedRows_pr_tpcits_1g"))->Fill(crowstpc);
+              //   histos.get<TH1>(HIST("data/TPCclust/tpcsFindableMinusCrossedRows_pr_tpcits_1g"))->Fill(crowstpc);
+              // }
               //
-              histos.get<TH1>(HIST("data/PID/zDCA_tpcits_pr"))->Fill(track.dcaZ());
-              histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_pr"))->Fill(track.dcaXY());
+              // histos.get<TH1>(HIST("data/PID/zDCA_tpcits_pr"))->Fill(track.dcaZ());
+              // histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_pr"))->Fill(track.dcaXY());
               //
               histos.get<TH1>(HIST("data/PID/pthist_tpcits_pr"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/PID/phihist_tpcits_pr"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/PID/etahist_tpcits_pr"))->Fill(track.eta());
-              if (positiveTrack) {
+              if (signOfTrack > 0) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_prplus"))->Fill(trackPt);
                 histos.get<TH1>(HIST("data/PID/phihist_tpcits_prplus"))->Fill(track.phi());
                 histos.get<TH1>(HIST("data/PID/etahist_tpcits_prplus"))->Fill(track.eta());
@@ -2406,13 +2310,13 @@ struct qaMatchEff {
             if (isPIDProtonRequired) {
               if (protonPIDwithTPC) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_pr_PIDTPC"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_prplus_PIDTPC"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_prminus_PIDTPC"))->Fill(trackPt);
                 if (!trkWTOF || !protonPIDwithTOF) {
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_pr_PIDTPC_O"))->Fill(trackPt);
-                  if (positiveTrack)
+                  if (signOfTrack > 0)
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_prplus_PIDTPC_O"))->Fill(trackPt);
                   else
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_prminus_PIDTPC_O"))->Fill(trackPt);
@@ -2420,13 +2324,13 @@ struct qaMatchEff {
               }
               if (trkWTOF && protonPIDwithTOF) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_pr_PIDTOF"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_prplus_PIDTOF"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_prminus_PIDTOF"))->Fill(trackPt);
                 if (!protonPIDwithTPC) {
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_pr_PIDTOF_O"))->Fill(trackPt);
-                  if (positiveTrack)
+                  if (signOfTrack > 0)
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_prplus_PIDTOF_O"))->Fill(trackPt);
                   else
                     histos.get<TH1>(HIST("data/PID/pthist_tpcits_prminus_PIDTOF_O"))->Fill(trackPt);
@@ -2434,7 +2338,7 @@ struct qaMatchEff {
               }
               if (protonPIDwithTPC && trkWTOF && protonPIDwithTOF) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_pr_PIDTPCTOF"))->Fill(trackPt);
-                if (positiveTrack)
+                if (signOfTrack > 0)
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_prplus_PIDTPCTOF"))->Fill(trackPt);
                 else
                   histos.get<TH1>(HIST("data/PID/pthist_tpcits_prminus_PIDTPCTOF"))->Fill(trackPt);
@@ -2451,19 +2355,19 @@ struct qaMatchEff {
                 const auto timestamp = track.collision().template bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
                 histos.get<TH1>(HIST("data/hTrkITSTPCvsTime"))->Fill(timestamp);
                 if (enableTHnSparseMonitorVsTime) {
-                  histos.get<THnSparse>(HIST("data/hTrkITSTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, positiveTrack ? 0.5 : -0.5, track.tpcNClsFound(), track.itsNCls());
+                  histos.get<THnSparse>(HIST("data/hTrkITSTPCvsTimePtEtaPosZ"))->Fill(timestamp, trackPt, track.eta(), track.collision().posZ(), 1. / trackPt, signOfTrack * 0.5, track.tpcNClsFound(), track.itsNCls());
                 }
               }
             }
             //
             // not identified
             if (!isPion && !isKaon && !isProton && (isPIDPionRequired || isPIDKaonRequired || isPIDProtonRequired)) {
-              histos.get<TH1>(HIST("data/PID/zDCA_tpcits_noid"))->Fill(track.dcaZ());
-              histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_noid"))->Fill(track.dcaXY());
+              // histos.get<TH1>(HIST("data/PID/zDCA_tpcits_noid"))->Fill(track.dcaZ());
+              // histos.get<TH1>(HIST("data/PID/xyDCA_tpcits_noid"))->Fill(track.dcaXY());
               histos.get<TH1>(HIST("data/PID/pthist_tpcits_noid"))->Fill(trackPt);
               histos.get<TH1>(HIST("data/PID/phihist_tpcits_noid"))->Fill(track.phi());
               histos.get<TH1>(HIST("data/PID/etahist_tpcits_noid"))->Fill(track.eta());
-              if (positiveTrack) {
+              if (signOfTrack > 0) {
                 histos.get<TH1>(HIST("data/PID/pthist_tpcits_noidplus"))->Fill(trackPt);
                 histos.get<TH1>(HIST("data/PID/phihist_tpcits_noidplus"))->Fill(track.phi());
                 histos.get<TH1>(HIST("data/PID/etahist_tpcits_noidplus"))->Fill(track.eta());
@@ -2481,59 +2385,139 @@ struct qaMatchEff {
               histos.get<TH1>(HIST("data/etahist_toftpcits"))->Fill(track.eta());
             }
           }
-          /// control plot: correlation # ITS its vs ITS layer
-          int itsNhits = 0;
-          for (unsigned int i = 0; i < 7; i++) {
-            if (track.itsClusterMap() & (1 << i)) {
-              itsNhits += 1;
-            }
-          }
-          bool trkHasITS = false;
-          for (unsigned int i = 0; i < 7; i++) {
-            if (track.itsClusterMap() & (1 << i)) {
-              trkHasITS = true;
-              if (IS_MC) { ////////////////////////   MC
-                histos.fill(HIST("MC/control/itsHitsMatched"), i, itsNhits);
-              } else { ////////////////////////   DATA
-                histos.fill(HIST("data/control/itsHitsMatched"), i, itsNhits);
-              }
-            }
-          }
-          if (!trkHasITS) {
-            if (IS_MC) { ////////////////////////   MC
-              histos.fill(HIST("MC/control/itsHitsMatched"), -1, itsNhits);
-            } else { ////////////////////////   DATA
-              histos.fill(HIST("data/control/itsHitsMatched"), -1, itsNhits);
-            }
-          }
+          // // control plot: correlation # ITS its vs ITS layer
+          // int itsNhits = 0;
+          // for (unsigned int i = 0; i < 7; i++) {
+          //   if (track.itsClusterMap() & (1 << i)) {
+          //     itsNhits += 1;
+          //   }
+          // }
+          // bool trkHasITS = false;
+          // for (unsigned int i = 0; i < 7; i++) {
+          //   if (track.itsClusterMap() & (1 << i)) {
+          //     trkHasITS = true;
+          //     if (IS_MC) { ////////////////////////   MC
+          //       histos.fill(HIST("MC/control/itsHitsMatched"), i, itsNhits);
+          //     } else { ////////////////////////   DATA
+          //       histos.fill(HIST("data/control/itsHitsMatched"), i, itsNhits);
+          //     }
+          //   }
+          // }
+          // if (!trkHasITS) {
+          //   if (IS_MC) { ////////////////////////   MC
+          //     histos.fill(HIST("MC/control/itsHitsMatched"), -1, itsNhits);
+          //   } else { ////////////////////////   DATA
+          //     histos.fill(HIST("data/control/itsHitsMatched"), -1, itsNhits);
+          //   }
+          // }
         } //  end if ITS
       }   //  end if TPC
+      if (doDebug)
+        LOGF(info, ">>>>>>>>>>>>>>>>>>>     before FILLING ");
+
+      if (trkWITS) {
+        if (IS_MC) { ////////////////////////   MC
+          if (!trkWTPC)
+            histos.get<TH1>(HIST("MC/control/itsCMnoTPC"))->Fill(track.itsClusterMap());
+          if (!trkWTPC && !trkWTRD && trkWTOF)
+            histos.get<TH1>(HIST("MC/control/itsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+          if (!trkWTPC && trkWTRD && !trkWTOF)
+            histos.get<TH1>(HIST("MC/control/itsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
+          if (!trkWTPC && trkWTRD && trkWTOF)
+            histos.get<TH1>(HIST("MC/control/itsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
+          if (trkWTPC)
+            histos.get<TH1>(HIST("MC/control/itsCMwTPC"))->Fill(track.itsClusterMap());
+          if (trkWTPC && trkWTRD && !trkWTOF)
+            histos.get<TH1>(HIST("MC/control/itsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
+          if (trkWTPC && !trkWTRD && trkWTOF)
+            histos.get<TH1>(HIST("MC/control/itsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+          if (trkWTPC && trkWTRD && trkWTOF)
+            histos.get<TH1>(HIST("MC/control/itsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
+        } else { ////////////////////////   DATA
+          if (!trkWTPC)
+            histos.get<TH1>(HIST("data/control/itsCMnoTPC"))->Fill(track.itsClusterMap());
+          if (!trkWTPC && !trkWTRD && trkWTOF)
+            histos.get<TH1>(HIST("data/control/itsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+          if (!trkWTPC && trkWTRD && !trkWTOF)
+            histos.get<TH1>(HIST("data/control/itsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
+          if (!trkWTPC && trkWTRD && trkWTOF)
+            histos.get<TH1>(HIST("data/control/itsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
+          if (trkWTPC)
+            histos.get<TH1>(HIST("data/control/itsCMwTPC"))->Fill(track.itsClusterMap());
+          if (trkWTPC && trkWTRD && !trkWTOF)
+            histos.get<TH1>(HIST("data/control/itsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
+          if (trkWTPC && !trkWTRD && trkWTOF)
+            histos.get<TH1>(HIST("data/control/itsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+          if (trkWTPC && trkWTRD && trkWTOF)
+            histos.get<TH1>(HIST("data/control/itsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
+        }
+        if (isTrackSelectedITSCuts(track)) {
+          if (IS_MC) { ////////////////////////   MC
+            if (!trkWTPC)
+              histos.get<TH1>(HIST("MC/control/SitsCMnoTPC"))->Fill(track.itsClusterMap());
+            if (!trkWTPC && !trkWTRD && trkWTOF)
+              histos.get<TH1>(HIST("MC/control/SitsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+            if (!trkWTPC && trkWTRD && !trkWTOF)
+              histos.get<TH1>(HIST("MC/control/SitsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
+            if (!trkWTPC && trkWTRD && trkWTOF)
+              histos.get<TH1>(HIST("MC/control/SitsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
+            if (trkWTPC)
+              histos.get<TH1>(HIST("MC/control/SitsCMwTPC"))->Fill(track.itsClusterMap());
+            if (trkWTPC && trkWTRD && !trkWTOF)
+              histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
+            if (trkWTPC && !trkWTRD && trkWTOF)
+              histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+            if (trkWTPC && trkWTRD && trkWTOF)
+              histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
+          } else { ////////////////////////   DATA
+            if (!trkWTPC)
+              histos.get<TH1>(HIST("data/control/SitsCMnoTPC"))->Fill(track.itsClusterMap());
+            if (!trkWTPC && !trkWTRD && trkWTOF)
+              histos.get<TH1>(HIST("data/control/SitsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+            if (!trkWTPC && trkWTRD && !trkWTOF)
+              histos.get<TH1>(HIST("data/control/SitsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
+            if (!trkWTPC && trkWTRD && trkWTOF)
+              histos.get<TH1>(HIST("data/control/SitsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
+            if (trkWTPC)
+              histos.get<TH1>(HIST("data/control/SitsCMwTPC"))->Fill(track.itsClusterMap());
+            if (trkWTPC && trkWTRD && !trkWTOF)
+              histos.get<TH1>(HIST("data/control/SitsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
+            if (trkWTPC && !trkWTRD && trkWTOF)
+              histos.get<TH1>(HIST("data/control/SitsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+            if (trkWTPC && trkWTRD && trkWTOF)
+              histos.get<TH1>(HIST("data/control/SitsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
+          }
+        }
+      }
+      if (doDebug)
+        LOGF(info, ">>>>>>>>>>>>>>>>>>>     after FILLING ");
+
       //
       // all tracks with pt>0.5
-      if (trackPt > 0.5) {
-        if (trkWTPC && isTrackSelectedTPCCuts(track)) {
-          if constexpr (IS_MC) { ////////////////////////   MC
-            histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(trackPt);
-            histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(track.phi());
-            histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(track.eta());
-          } else { ////////////////////////   DATA
-            histos.get<TH1>(HIST("data/pthist_tpc_05"))->Fill(trackPt);
-            histos.get<TH1>(HIST("data/phihist_tpc_05"))->Fill(track.phi());
-            histos.get<TH1>(HIST("data/etahist_tpc_05"))->Fill(track.eta());
-          }
-          if (trkWITS && isTrackSelectedITSCuts(track)) {
-            if constexpr (IS_MC) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(trackPt);
-              histos.get<TH1>(HIST("MC/phihist_tpcits_05"))->Fill(track.phi());
-              histos.get<TH1>(HIST("MC/etahist_tpcits_05"))->Fill(track.eta());
-            } else {
-              histos.get<TH1>(HIST("data/pthist_tpcits_05"))->Fill(trackPt);
-              histos.get<TH1>(HIST("data/phihist_tpcits_05"))->Fill(track.phi());
-              histos.get<TH1>(HIST("data/etahist_tpcits_05"))->Fill(track.eta());
-            }
-          } //  end if ITS
-        }   //  end if TPC
-      }     //  end if pt > 0.5
+      // if (trackPt > 0.5) {
+      //   if (trkWTPC && isTrackSelectedTPCCuts(track)) {
+      //     if constexpr (IS_MC) { ////////////////////////   MC
+      //       histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(trackPt);
+      //       histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(track.phi());
+      //       histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(track.eta());
+      //     } else { ////////////////////////   DATA
+      //       histos.get<TH1>(HIST("data/pthist_tpc_05"))->Fill(trackPt);
+      //       histos.get<TH1>(HIST("data/phihist_tpc_05"))->Fill(track.phi());
+      //       histos.get<TH1>(HIST("data/etahist_tpc_05"))->Fill(track.eta());
+      //     }
+      //     if (trkWITS && isTrackSelectedITSCuts(track)) {
+      //       if constexpr (IS_MC) {
+      //         histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(trackPt);
+      //         histos.get<TH1>(HIST("MC/phihist_tpcits_05"))->Fill(track.phi());
+      //         histos.get<TH1>(HIST("MC/etahist_tpcits_05"))->Fill(track.eta());
+      //       } else {
+      //         histos.get<TH1>(HIST("data/pthist_tpcits_05"))->Fill(trackPt);
+      //         histos.get<TH1>(HIST("data/phihist_tpcits_05"))->Fill(track.phi());
+      //         histos.get<TH1>(HIST("data/etahist_tpcits_05"))->Fill(track.eta());
+      //       }
+      //     } //  end if ITS
+      //   }   //  end if TPC
+      // }     //  end if pt > 0.5
       //
       // positive only
       if (track.signed1Pt() > 0) {
@@ -2595,8 +2579,8 @@ struct qaMatchEff {
         // only primaries
         if (mcpart.isPhysicalPrimary()) {
           if (trkWTPC && isTrackSelectedTPCCuts(track)) {
-            histos.get<TH1>(HIST("MC/primsec/zDCA_tpc_prim"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("MC/primsec/xyDCA_tpc_prim"))->Fill(track.dcaXY());
+            // histos.get<TH1>(HIST("MC/primsec/zDCA_tpc_prim"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("MC/primsec/xyDCA_tpc_prim"))->Fill(track.dcaXY());
             //
             histos.get<TH1>(HIST("MC/primsec/qopthist_tpc_prim"))->Fill(track.signed1Pt());
             histos.get<TH1>(HIST("MC/primsec/pthist_tpc_prim"))->Fill(trackPt);
@@ -2617,8 +2601,8 @@ struct qaMatchEff {
           //
           // only secondaries from decay
           if (trkWTPC && isTrackSelectedTPCCuts(track)) {
-            histos.get<TH1>(HIST("MC/primsec/zDCA_tpc_secd"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("MC/primsec/xyDCA_tpc_secd"))->Fill(track.dcaXY());
+            // histos.get<TH1>(HIST("MC/primsec/zDCA_tpc_secd"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("MC/primsec/xyDCA_tpc_secd"))->Fill(track.dcaXY());
             //
             histos.get<TH1>(HIST("MC/primsec/qopthist_tpc_secd"))->Fill(track.signed1Pt());
             histos.get<TH1>(HIST("MC/primsec/pthist_tpc_secd"))->Fill(trackPt);
@@ -2639,8 +2623,8 @@ struct qaMatchEff {
           //
           // only secondaries from material
           if (trkWTPC && isTrackSelectedTPCCuts(track)) {
-            histos.get<TH1>(HIST("MC/primsec/zDCA_tpc_secm"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("MC/primsec/xyDCA_tpc_secm"))->Fill(track.dcaXY());
+            // histos.get<TH1>(HIST("MC/primsec/zDCA_tpc_secm"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("MC/primsec/xyDCA_tpc_secm"))->Fill(track.dcaXY());
             //
             histos.get<TH1>(HIST("MC/primsec/qopthist_tpc_secm"))->Fill(track.signed1Pt());
             histos.get<TH1>(HIST("MC/primsec/pthist_tpc_secm"))->Fill(trackPt);
@@ -2664,25 +2648,25 @@ struct qaMatchEff {
             //
             // TPC clusters
             histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_prMC_tpc"))->Fill(clustpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC_tpc"))->Fill(findcltpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC_tpc"))->Fill(crowstpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpc"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC_tpc"))->Fill(findcltpc);
+            // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC_tpc"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpc"))->Fill(crowstpc);
             //
             // pt 1-2
-            if (trackPt <= 2 && trackPt > 1) {
-              histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_prMC_tpc_1g"))->Fill(clustpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC_tpc_1g"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC_tpc_1g"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpc_1g"))->Fill(crowstpc);
-            }
+            // if (trackPt <= 2 && trackPt > 1) {
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_prMC_tpc_1g"))->Fill(clustpc);
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC_tpc_1g"))->Fill(findcltpc);
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC_tpc_1g"))->Fill(crowstpc);
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpc_1g"))->Fill(crowstpc);
+            // }
             //
-            histos.get<TH1>(HIST("MC/PID/zDCA_tpc_pr"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("MC/PID/xyDCA_tpc_pr"))->Fill(track.dcaXY());
+            // histos.get<TH1>(HIST("MC/PID/zDCA_tpc_pr"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("MC/PID/xyDCA_tpc_pr"))->Fill(track.dcaXY());
             //
             histos.get<TH1>(HIST("MC/PID/pthist_tpc_pr"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/PID/phihist_tpc_pr"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/PID/etahist_tpc_pr"))->Fill(track.eta());
-            if (positiveTrack) {
+            if (signOfTrack > 0) {
               histos.get<TH1>(HIST("MC/PID/pthist_tpc_prplus"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/PID/phihist_tpc_prplus"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/PID/etahist_tpc_prplus"))->Fill(track.eta());
@@ -2695,25 +2679,25 @@ struct qaMatchEff {
               //
               // TPC clusters
               histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_prMC_tpcits"))->Fill(clustpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC_tpcits"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC_tpcits"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC_tpcits"))->Fill(findcltpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpcits"))->Fill(crowstpc);
               //
               // pt 1-2
-              if (trackPt <= 2 && trackPt > 1) {
-                histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_prMC_tpcits_1g"))->Fill(clustpc);
-                histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC_tpcits_1g"))->Fill(findcltpc);
-                histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC_tpcits_1g"))->Fill(crowstpc);
-                histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpcits_1g"))->Fill(crowstpc);
-              }
+              // if (trackPt <= 2 && trackPt > 1) {
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_prMC_tpcits_1g"))->Fill(clustpc);
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_prMC_tpcits_1g"))->Fill(findcltpc);
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_prMC_tpcits_1g"))->Fill(crowstpc);
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_prMC_tpcits_1g"))->Fill(crowstpc);
+              // }
               //
-              histos.get<TH1>(HIST("MC/PID/zDCA_tpcits_pr"))->Fill(track.dcaZ());
-              histos.get<TH1>(HIST("MC/PID/xyDCA_tpcits_pr"))->Fill(track.dcaXY());
+              // histos.get<TH1>(HIST("MC/PID/zDCA_tpcits_pr"))->Fill(track.dcaZ());
+              // histos.get<TH1>(HIST("MC/PID/xyDCA_tpcits_pr"))->Fill(track.dcaXY());
               //
               histos.get<TH1>(HIST("MC/PID/pthist_tpcits_pr"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pr"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pr"))->Fill(track.eta());
-              if (positiveTrack) {
+              if (signOfTrack > 0) {
                 histos.get<TH1>(HIST("MC/PID/pthist_tpcits_prplus"))->Fill(trackPt);
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_prplus"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_prplus"))->Fill(track.eta());
@@ -2739,18 +2723,18 @@ struct qaMatchEff {
             // pt 1-2
             if (trackPt <= 2 && trackPt > 1) {
               histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_piMC_tpc_1g"))->Fill(clustpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_piMC_tpc_1g"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_piMC_tpc_1g"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpc_1g"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_piMC_tpc_1g"))->Fill(findcltpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_piMC_tpc_1g"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpc_1g"))->Fill(crowstpc);
             }
             //
-            histos.get<TH1>(HIST("MC/PID/zDCA_tpc_pi"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("MC/PID/xyDCA_tpc_pi"))->Fill(track.dcaXY());
+            // histos.get<TH1>(HIST("MC/PID/zDCA_tpc_pi"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("MC/PID/xyDCA_tpc_pi"))->Fill(track.dcaXY());
             //
             histos.get<TH1>(HIST("MC/PID/pthist_tpc_pi"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/PID/phihist_tpc_pi"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/PID/etahist_tpc_pi"))->Fill(track.eta());
-            if (positiveTrack) {
+            if (signOfTrack > 0) {
               histos.get<TH1>(HIST("MC/PID/pthist_tpc_piplus"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/PID/phihist_tpc_piplus"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/PID/etahist_tpc_piplus"))->Fill(track.eta());
@@ -2763,25 +2747,25 @@ struct qaMatchEff {
               //
               // TPC clusters
               histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_piMC_tpcits"))->Fill(clustpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_piMC_tpcits"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_piMC_tpcits"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_piMC_tpcits"))->Fill(findcltpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_piMC_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpcits"))->Fill(crowstpc);
               //
               // pt 1-2
-              if (trackPt <= 2 && trackPt > 1) {
-                histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_piMC_tpcits_1g"))->Fill(clustpc);
-                histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_piMC_tpcits_1g"))->Fill(findcltpc);
-                histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_piMC_tpcits_1g"))->Fill(crowstpc);
-                histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpcits_1g"))->Fill(crowstpc);
-              }
+              // if (trackPt <= 2 && trackPt > 1) {
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_piMC_tpcits_1g"))->Fill(clustpc);
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_piMC_tpcits_1g"))->Fill(findcltpc);
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_piMC_tpcits_1g"))->Fill(crowstpc);
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_piMC_tpcits_1g"))->Fill(crowstpc);
+              // }
               //
-              histos.get<TH1>(HIST("MC/PID/zDCA_tpcits_pi"))->Fill(track.dcaZ());
-              histos.get<TH1>(HIST("MC/PID/xyDCA_tpcits_pi"))->Fill(track.dcaXY());
+              // histos.get<TH1>(HIST("MC/PID/zDCA_tpcits_pi"))->Fill(track.dcaZ());
+              // histos.get<TH1>(HIST("MC/PID/xyDCA_tpcits_pi"))->Fill(track.dcaXY());
               //
               histos.get<TH1>(HIST("MC/PID/pthist_tpcits_pi"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/PID/phihist_tpcits_pi"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/PID/etahist_tpcits_pi"))->Fill(track.eta());
-              if (positiveTrack) {
+              if (signOfTrack > 0) {
                 histos.get<TH1>(HIST("MC/PID/pthist_tpcits_piplus"))->Fill(trackPt);
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_piplus"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_piplus"))->Fill(track.eta());
@@ -2867,25 +2851,25 @@ struct qaMatchEff {
             //
             // TPC clusters
             histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_kaMC_tpc"))->Fill(clustpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC_tpc"))->Fill(findcltpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC_tpc"))->Fill(crowstpc);
-            histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpc"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC_tpc"))->Fill(findcltpc);
+            // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC_tpc"))->Fill(crowstpc);
+            // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpc"))->Fill(crowstpc);
             //
             // pt 1-2
-            if (trackPt <= 2 && trackPt > 1) {
-              histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_kaMC_tpc_1g"))->Fill(clustpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC_tpc_1g"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC_tpc_1g"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpc_1g"))->Fill(crowstpc);
-            }
+            // if (trackPt <= 2 && trackPt > 1) {
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_kaMC_tpc_1g"))->Fill(clustpc);
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC_tpc_1g"))->Fill(findcltpc);
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC_tpc_1g"))->Fill(crowstpc);
+            //   histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpc_1g"))->Fill(crowstpc);
+            // }
             //
-            histos.get<TH1>(HIST("MC/PID/zDCA_tpc_ka"))->Fill(track.dcaZ());
-            histos.get<TH1>(HIST("MC/PID/xyDCA_tpc_ka"))->Fill(track.dcaXY());
+            // histos.get<TH1>(HIST("MC/PID/zDCA_tpc_ka"))->Fill(track.dcaZ());
+            // histos.get<TH1>(HIST("MC/PID/xyDCA_tpc_ka"))->Fill(track.dcaXY());
             //
             histos.get<TH1>(HIST("MC/PID/pthist_tpc_ka"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/PID/phihist_tpc_ka"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/PID/etahist_tpc_ka"))->Fill(track.eta());
-            if (positiveTrack) {
+            if (signOfTrack > 0) {
               histos.get<TH1>(HIST("MC/PID/pthist_tpc_kaplus"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/PID/phihist_tpc_kaplus"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/PID/etahist_tpc_kaplus"))->Fill(track.eta());
@@ -2898,25 +2882,25 @@ struct qaMatchEff {
               //
               // TPC clusters
               histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_kaMC_tpcits"))->Fill(clustpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC_tpcits"))->Fill(findcltpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC_tpcits"))->Fill(crowstpc);
-              histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC_tpcits"))->Fill(findcltpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC_tpcits"))->Fill(crowstpc);
+              // histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpcits"))->Fill(crowstpc);
               //
               // pt 1-2
-              if (trackPt <= 2 && trackPt > 1) {
-                histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_kaMC_tpcits_1g"))->Fill(clustpc);
-                histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC_tpcits_1g"))->Fill(findcltpc);
-                histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC_tpcits_1g"))->Fill(crowstpc);
-                histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpcits_1g"))->Fill(crowstpc);
-              }
+              // if (trackPt <= 2 && trackPt > 1) {
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFound_kaMC_tpcits_1g"))->Fill(clustpc);
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcNClsFindable_kaMC_tpcits_1g"))->Fill(findcltpc);
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcCrossedRows_kaMC_tpcits_1g"))->Fill(crowstpc);
+              //   histos.get<TH1>(HIST("MC/TPCclust/tpcsFindableMinusCrossedRows_kaMC_tpcits_1g"))->Fill(crowstpc);
+              // }
               //
-              histos.get<TH1>(HIST("MC/PID/zDCA_tpcits_ka"))->Fill(track.dcaZ());
-              histos.get<TH1>(HIST("MC/PID/xyDCA_tpcits_ka"))->Fill(track.dcaXY());
+              // histos.get<TH1>(HIST("MC/PID/zDCA_tpcits_ka"))->Fill(track.dcaZ());
+              // histos.get<TH1>(HIST("MC/PID/xyDCA_tpcits_ka"))->Fill(track.dcaXY());
               //
               histos.get<TH1>(HIST("MC/PID/pthist_tpcits_ka"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/PID/phihist_tpcits_ka"))->Fill(track.phi());
               histos.get<TH1>(HIST("MC/PID/etahist_tpcits_ka"))->Fill(track.eta());
-              if (positiveTrack) {
+              if (signOfTrack > 0) {
                 histos.get<TH1>(HIST("MC/PID/pthist_tpcits_kaplus"))->Fill(trackPt);
                 histos.get<TH1>(HIST("MC/PID/phihist_tpcits_kaplus"))->Fill(track.phi());
                 histos.get<TH1>(HIST("MC/PID/etahist_tpcits_kaplus"))->Fill(track.eta());
@@ -2948,10 +2932,10 @@ struct qaMatchEff {
     } //  end loop on tracks
     //
     //
-    if (doDebug) {
-      LOGF(info, "Selected tracks: %d ", countData);
-      LOGF(info, "Selected tracks with MC: %d, tracks w/o MC: %d ", countData, countNoMC);
-    }
+    // if (doDebug) {
+    //   LOGF(info, "Selected tracks: %d ", countData);
+    //   LOGF(info, "Selected tracks with MC: %d, tracks w/o MC: %d ", countData, countNoMC);
+    // }
   }
 
   /// Function to add histograms for time-based monitoring of matching efficiency (debug purposes)
@@ -3018,6 +3002,13 @@ struct qaMatchEff {
   }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
 
+  void processMCFilteredTracks(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const& mcParticles)
+  {
+    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
+    fillGeneralHistos<true>(collision);
+  }
+  PROCESS_SWITCH(qaMatchEff, processMCFilteredTracks, "process MC with filtered tracks with filterbit selections", false);
+
   ////////////////////////////////////////////////////////////
   ///   Process MC with collision grouping and IU tracks   ///
   ////////////////////////////////////////////////////////////
@@ -3046,10 +3037,27 @@ struct qaMatchEff {
       // tracks.rawIteratorAt(0).collision().bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
       setUpTimeMonitoring(bcs);
     }
+    if (doDebug)
+      LOGF(info, ">>>>>>>>>>>>>>>>>>>     PROCESS DATA before fillh ");
+    fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
+    if (doDebug)
+      LOGF(info, ">>>>>>>>>>>>>>>>>>>     PROCESS DATA before fill general  ");
+    fillGeneralHistos<false>(collision);
+    if (doDebug)
+      LOGF(info, ">>>>>>>>>>>>>>>>>>>     PROCESS DATA after fill general");
+  }
+  PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
+
+  void processDataFilteredTracks(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>> const& tracks, BCsWithTimeStamp const& bcs)
+  {
+    if (enableMonitorVsTime) {
+      // tracks.rawIteratorAt(0).collision().bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
+      setUpTimeMonitoring(bcs);
+    }
     fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
     fillGeneralHistos<false>(collision);
   }
-  PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
+  PROCESS_SWITCH(qaMatchEff, processDataFilteredTracks, "process data with filtered tracks with filterbit selections", false);
 
   /////////////////////////////////////////////////////////////
   ///   Process data with collision grouping and IU tracks  ///
