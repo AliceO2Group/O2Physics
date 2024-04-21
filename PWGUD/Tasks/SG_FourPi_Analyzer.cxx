@@ -105,10 +105,6 @@ struct SG_FourPi_Analyzer {
     for (auto t : tracks) {
       // int itsNCls = t.itsNCls();
       int itsNCls = t.uditsNCls();
-      //	     int itsNCls = o2::aod::track::v001::ITSNCls<track::ITSClusterSizes>;
-      //	    if (t.itsNCls()) {std::cout << t.itsClusterSizes()<<std::endl;
-      //	    registry.fill(HIST("ITSNCls"), t.itsClusterSizes());}
-      // if (itsNCls) {
       std::cout << t.itsClusterSizes() << "\t" << itsNCls << std::endl;
       registry.fill(HIST("ITSNCls"), itsNCls);
       //}
