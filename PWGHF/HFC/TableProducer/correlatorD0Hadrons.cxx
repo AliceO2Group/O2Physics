@@ -366,9 +366,9 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hTrackCounter"), 1); // fill total no. of tracks
 
         // Remove D0 daughters by checking track indices
-        /* if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
-           continue;
-         }*/
+        if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
+          continue;
+        }
         if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.)
           continue; // Remove secondary tracks
 
