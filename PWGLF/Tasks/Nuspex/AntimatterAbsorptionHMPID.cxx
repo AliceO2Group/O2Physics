@@ -29,7 +29,6 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/TrackParametrization.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -271,16 +270,13 @@ struct AntimatterAbsorptionHMPID {
   }
 
   // Info for TPC PID
-  using PidInfoTPC = soa::Join<aod::pidTPCLfFullPi, aod::pidTPCLfFullKa,
-                               aod::pidTPCLfFullPr, aod::pidTPCLfFullDe,
-                               aod::pidTPCLfFullTr, aod::pidTPCLfFullHe,
-                               aod::pidTPCLfFullAl>;
+  using PidInfoTPC = soa::Join<aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                               aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe>;
 
   // Info for TOF PID
   using PidInfoTOF = soa::Join<aod::pidTOFFullPi, aod::pidTOFFullKa,
                                aod::pidTOFFullPr, aod::pidTOFFullDe,
                                aod::pidTOFFullTr, aod::pidTOFFullHe,
-                               aod::pidTOFFullAl,
                                aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
 
   // Full Tracks
@@ -295,11 +291,14 @@ struct AntimatterAbsorptionHMPID {
     if (!event.sel8())
       return;
 
+    // Event Counter
+    registryQC.fill(HIST("number_of_events_data"), 1.5);
+
     if (abs(event.posZ()) > 10.0)
       return;
 
     // Event Counter
-    registryQC.fill(HIST("number_of_events_data"), 1.5);
+    registryQC.fill(HIST("number_of_events_data"), 2.5);
 
     for (const auto& hmpid : hmpids) {
 
