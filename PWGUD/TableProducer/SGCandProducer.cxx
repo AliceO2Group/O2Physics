@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+#include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
@@ -32,11 +33,11 @@ struct SGCandProducer {
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
   Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
   Configurable<bool> savenonPVCITSOnlyTracks{"savenonPVCITSOnlyTracks", false, "save non PV contributors with ITS only information"};
-  Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", true, "reject collisions at a TF boundary"};
-  Configurable<bool> noITSROFrameBorder{"noITSROFrameBorder", true, "reject ITS RO Frame Border"};
-  Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
-  Configurable<bool> IsGoodVertex{"IsGoodVertex", false, "Select FT0 PV vertex matching"};
-  Configurable<bool> ITSTPCVertex{"ITSTPCVertex", true, "reject ITS-only vertex"}; // if one wants to look at Single Gap pp events
+   Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", true, "reject collisions at a TF boundary"};
+   Configurable<bool> noITSROFrameBorder{"noITSROFrameBorder", true, "reject ITS RO Frame Border"};
+   Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
+   Configurable<bool> IsGoodVertex{"IsGoodVertex", false, "Select FT0 PV vertex matching"};
+   Configurable<bool> ITSTPCVertex{"ITSTPCVertex", true, "reject ITS-only vertex"}; //if one wants to look at Single Gap pp events
   //  SG selector
   SGSelector sgSelector;
 
@@ -134,7 +135,9 @@ struct SGCandProducer {
                       track.trdSignal(),
                       track.length(),
                       track.tofExpMom(),
-                      track.detectorMap());
+                      track.detectorMap(),
+		      track.itsNCls()
+			      );
     outputTracksFlag(track.has_collision(),
                      track.isPVContributor());
     outputTracksLabel(track.globalIndex());
@@ -148,30 +151,30 @@ struct SGCandProducer {
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               aod::Zdcs& /*zdcs*/, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+               aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
-    // reject collisions at TF boundaries
+    //reject collisions at TF boundaries
     if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
-    // reject collisions at ITS RO TF boundaries
+    //reject collisions at ITS RO TF boundaries
     if (noITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
     // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
-    // reject Same Bunch PileUp
+    //reject Same Bunch PileUp
     if (noSameBunchPileUp && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return;
     }
     // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
-    // check vertex matching to FT0
+    //check vertex matching to FT0
     if (IsGoodVertex && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
     }
     // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
-    // reject ITS Only vertices
+    //reject ITS Only vertices
     if (ITSTPCVertex && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return;
     }
