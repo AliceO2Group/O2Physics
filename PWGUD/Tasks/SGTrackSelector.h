@@ -13,6 +13,9 @@
 // \author Sasha Bylinkin, alexander.bylinkin@gmail.com
 // \since  April 2023
 
+#ifndef PWGUD_TASKS_SGTRACKSELECTOR_H_
+#define PWGUD_TASKS_SGTRACKSELECTOR_H_
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -76,3 +79,5 @@ int trackpid(const T& track, bool use_tof)
   }
   return pid;
 }
+
+#endif // PWGUD_TASKS_SGTRACKSELECTOR_H_
