@@ -347,7 +347,7 @@ struct DGBCCandProducer {
                       track.length(),
                       track.tofExpMom(),
                       track.detectorMap(),
-		      track.itsNCls());
+                      track.itsNCls());
     outputTracksFlag(track.has_collision(),
                      track.isPVContributor());
     outputTracksLabel(track.globalIndex());
