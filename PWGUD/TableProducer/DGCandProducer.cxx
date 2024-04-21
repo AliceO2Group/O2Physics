@@ -216,7 +216,7 @@ struct DGCandProducer {
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               aod::Zdcs& zdcs, aod::FV0As& fv0as, aod::FT0s& ft0s, aod::FDDs& fdds)
+               aod::Zdcs& /*zdcs*/, aod::FV0As& fv0as, aod::FT0s& ft0s, aod::FDDs& fdds)
   {
     LOGF(debug, "<DGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
@@ -507,7 +507,7 @@ struct McDGCandProducer {
   // save the MC truth of all events of interest and of the DG events
   void processMC(aod::McCollisions const& mccols, aod::McParticles const& mcparts,
                  UDCCs const& dgcands, UDTCs const& udtracks,
-                 CCs const& collisions, BCs const& bcs, TCs const& tracks)
+                 CCs const& /*collisions*/, BCs const& /*bcs*/, TCs const& /*tracks*/)
   {
     LOGF(info, "Number of McCollisions %d", mccols.size());
     LOGF(info, "Number of DG candidates %d", dgcands.size());
@@ -645,7 +645,7 @@ struct McDGCandProducer {
   }
   PROCESS_SWITCH(McDGCandProducer, processMC, "Produce MC tables", false);
 
-  void processDummy(aod::Collisions const& collisions)
+  void processDummy(aod::Collisions const& /*collisions*/)
   {
     // do nothing
     LOGF(info, "Running dummy process function!");
