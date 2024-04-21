@@ -366,9 +366,9 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hTrackCounter"), 1); // fill total no. of tracks
 
         // Remove D0 daughters by checking track indices
-        if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
-          continue;
-        }
+        /* if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
+           continue;
+         }*/
         if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.)
           continue; // Remove secondary tracks
 
@@ -407,9 +407,9 @@ struct HfCorrelatorD0Hadrons {
 
         if (correlateD0WithLeadingParticle) {
           if (track.globalIndex() != leadingIndex) {
-            registry.fill(HIST("hTrackCounter"), 4); // fill no. of tracks  have leading particle
             continue;
           }
+          registry.fill(HIST("hTrackCounter"), 4); // fill no. of tracks  have leading particle
         }
 
         entryD0HadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
