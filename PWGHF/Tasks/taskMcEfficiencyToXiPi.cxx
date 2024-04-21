@@ -223,8 +223,8 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // exclude cases with undesired decays
       int counterCharmDau = 0;
-      for(auto& dauCharm : mcParticle.template daughters_as<T2>()){
-        if(dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary){
+      for (auto& dauCharm : mcParticle.template daughters_as<T2>()) {
+        if (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary) {
           counterCharmDau++;
         }
       }
@@ -233,10 +233,10 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       int cascId = -999;
       int pionId = -999;
-      for(auto& dauCharm : mcParticle.template daughters_as<T2>()){
-        if(std::abs(dauCharm.pdgCode()) == kXiMinus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)){
+      for (auto& dauCharm : mcParticle.template daughters_as<T2>()) {
+        if (std::abs(dauCharm.pdgCode()) == kXiMinus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)) {
           cascId = dauCharm.globalIndex();
-        } else if(std::abs(dauCharm.pdgCode()) == kPiPlus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)){
+        } else if (std::abs(dauCharm.pdgCode()) == kPiPlus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)) {
           pionId = dauCharm.globalIndex();
         } else {
           continue;
@@ -257,8 +257,8 @@ struct HfTaskMcEfficiencyToXiPi {
       // check LF daughters pt (pion<--cascade) and eta
       // first create cascade daughters objects
       int counterCascDau = 0;
-      for(auto& dauCasc : cascade.template daughters_as<T2>()){
-        if(dauCasc.getProcess() == TMCProcess::kPDecay){
+      for (auto& dauCasc : cascade.template daughters_as<T2>()) {
+        if (dauCasc.getProcess() == TMCProcess::kPDecay) {
           counterCascDau++;
         }
       }
@@ -267,10 +267,10 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       int lambdaId = -999;
       int pionFromCascadeId = -999;
-      for(auto& dauCasc : cascade.template daughters_as<T2>()){
-        if(std::abs(dauCasc.pdgCode()) == kLambda0 && dauCasc.getProcess() == TMCProcess::kPDecay){
+      for (auto& dauCasc : cascade.template daughters_as<T2>()) {
+        if (std::abs(dauCasc.pdgCode()) == kLambda0 && dauCasc.getProcess() == TMCProcess::kPDecay) {
           lambdaId = dauCasc.globalIndex();
-        } else if(std::abs(dauCasc.pdgCode()) == kPiPlus && dauCasc.getProcess() == TMCProcess::kPDecay){
+        } else if (std::abs(dauCasc.pdgCode()) == kPiPlus && dauCasc.getProcess() == TMCProcess::kPDecay) {
           pionFromCascadeId = dauCasc.globalIndex();
         } else {
           continue;
@@ -284,8 +284,8 @@ struct HfTaskMcEfficiencyToXiPi {
       auto pionFromCascade = genParticles.rawIteratorAt(pionFromCascadeId);
       // then create lambda daughters objects
       int counterLambdaDau = 0;
-      for(auto& dauLambda : lambda.template daughters_as<T2>()){
-        if(dauLambda.getProcess() == TMCProcess::kPDecay){
+      for (auto& dauLambda : lambda.template daughters_as<T2>()) {
+        if (dauLambda.getProcess() == TMCProcess::kPDecay) {
           counterLambdaDau++;
         }
       }
@@ -294,10 +294,10 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       int protonId = -999;
       int pionFromLambdaId = -999;
-      for(auto& dauV0 : lambda.template daughters_as<T2>()){
-        if(std::abs(dauV0.pdgCode()) == kProton && dauV0.getProcess() == TMCProcess::kPDecay){
+      for (auto& dauV0 : lambda.template daughters_as<T2>()) {
+        if (std::abs(dauV0.pdgCode()) == kProton && dauV0.getProcess() == TMCProcess::kPDecay) {
           protonId = dauV0.globalIndex();
-        } else if(std::abs(dauV0.pdgCode()) == kPiPlus && dauV0.getProcess() == TMCProcess::kPDecay){
+        } else if (std::abs(dauV0.pdgCode()) == kPiPlus && dauV0.getProcess() == TMCProcess::kPDecay) {
           pionFromLambdaId = dauV0.globalIndex();
         } else {
           continue;
