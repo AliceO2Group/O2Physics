@@ -453,14 +453,14 @@ struct Pi0EtaToGammaGamma {
 
               if (cfgDoFlow) {
                 values[0] = v12.M(), values[1] = v12.Pt();
-                std::array<float, 2> u_gg = {static_cast<float>(v12.Px() / v12.Pt()), static_cast<float>(v12.Py() / v12.Pt())};
-                values[2] = RecoDecay::dotProd(u_gg, q2ft0m);
+                std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
+                values[2] = RecoDecay::dotProd(u2_gg, q2ft0m);
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0M"))->Fill(values);
-                values[2] = RecoDecay::dotProd(u_gg, q2ft0a);
+                values[2] = RecoDecay::dotProd(u2_gg, q2ft0a);
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0A"))->Fill(values);
-                values[2] = RecoDecay::dotProd(u_gg, q2ft0c);
+                values[2] = RecoDecay::dotProd(u2_gg, q2ft0c);
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0C"))->Fill(values);
-                values[2] = RecoDecay::dotProd(u_gg, q2fv0a);
+                values[2] = RecoDecay::dotProd(u2_gg, q2fv0a);
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FV0A"))->Fill(values);
               } else {
                 reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());

@@ -494,7 +494,7 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       const double xmin_sp[ndim_sp] = {0.0, 0.0, -10.f};
       const double xmax_sp[ndim_sp] = {0.8, 20.0, +10.f};
 
-      THnSparseF* hs_same_tmp = new THnSparseF("hs_same_tmp", "hs_same_tmp;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c);u_{2}^{#gamma#gamma}#upointQ_{2}^{FT0M};", ndim_sp, nbins_sp, xmin_sp, xmax_sp);
+      THnSparseF* hs_same_tmp = new THnSparseF("hs_same_tmp", "hs_same_tmp;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma#gamma} (GeV/c);u_{2}^{#gamma#gamma} #upoint Q_{2}^{FT0M};", ndim_sp, nbins_sp, xmin_sp, xmax_sp);
       hs_same_tmp->SetBinEdges(0, mgg);
       hs_same_tmp->SetBinEdges(1, pTgg);
       hs_same_tmp->Sumw2();
@@ -502,7 +502,7 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       for (int i = 0; i < 4; i++) {
         THnSparseF* hs = reinterpret_cast<THnSparseF*>(hs_same_tmp->Clone(Form("hs_Same_SPQ2%s", sp_names[i].data())));
         hs->SetTitle(Form("diphoton info %s", sp_names[i].data()));
-        hs->GetAxis(2)->SetTitle(Form("u_{2}^{#gamma#gamma}#upointQ_{2}^{%s}", sp_names[i].data()));
+        hs->GetAxis(2)->SetTitle(Form("u_{2}^{#gamma#gamma} #upoint Q_{2}^{%s}", sp_names[i].data()));
         list->Add(hs);
       }
     } else {
