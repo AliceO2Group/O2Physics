@@ -15,6 +15,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include <vector>
 
 namespace o2::aod
 {
