@@ -213,7 +213,7 @@ struct DiffMCQA {
   Preslice<aod::McParticles> partPerMcCollision = aod::mcparticle::mcCollisionId;
 
   // ...............................................................................................................
-  void processMCTruth(aod::McCollision const& mccollision, soa::SmallGroups<CCs> const& collisions, aod::McParticles const& McParts)
+  void processMCTruth(aod::McCollision const& /*mccollision*/, soa::SmallGroups<CCs> const& collisions, aod::McParticles const& McParts)
   {
     LOGF(info, "Number of collisions %d", collisions.size());
     LOGF(info, "Number of McParts %d", McParts.size());
@@ -240,11 +240,11 @@ struct DiffMCQA {
 
   // ...............................................................................................................
   void processMain(CC const& collision, BCs const& bct0s,
-                   TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
-                   aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
+                   TCs const& tracks, FWs const& fwdtracks, ATs const& /*ambtracks*/, AFTs const& /*ambfwdtracks*/,
+                   aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/,
                    aod::Zdcs& zdcs, aod::Calos& calos,
                    aod::V0s const& v0s, aod::Cascades const& cascades,
-                   aod::McCollisions const& McCols, aod::McParticles const& McParts)
+                   aod::McCollisions const& /*McCols*/, aod::McParticles const& McParts)
   {
     bool isDGcandidate = true;
 

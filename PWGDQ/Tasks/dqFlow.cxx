@@ -234,7 +234,7 @@ struct DQEventQvector {
   }
 
   // Fill the FlowContainer
-  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag)
+  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool /*fillflag*/)
   {
     // Calculate the correlations from the GFW
     double dnx, dny, valx;
@@ -451,7 +451,7 @@ struct DQEventQvector {
     // Fill the tree for the reduced event table with Q vector quantities
     if (fEventCut->IsSelected(VarManager::fgValues)) {
       eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultB], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
-      eventQvectorExtra(VarManager::fgValues[VarManager::kQ42XA], VarManager::fgValues[VarManager::kQ42YA], VarManager::fgValues[VarManager::kQ23XA], VarManager::fgValues[VarManager::kQ23YA], VarManager::fgValues[VarManager::kS11A], VarManager::fgValues[VarManager::kS12A], VarManager::fgValues[VarManager::kS13A], VarManager::fgValues[VarManager::kS31A]);
+      eventQvectorExtra(VarManager::fgValues[VarManager::kQ42XA], VarManager::fgValues[VarManager::kQ42YA], VarManager::fgValues[VarManager::kQ23XA], VarManager::fgValues[VarManager::kQ23YA], VarManager::fgValues[VarManager::kS11A], VarManager::fgValues[VarManager::kS12A], VarManager::fgValues[VarManager::kS21A], VarManager::fgValues[VarManager::kS13A], VarManager::fgValues[VarManager::kS31A]);
       eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
     }
 

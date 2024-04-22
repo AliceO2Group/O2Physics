@@ -50,7 +50,7 @@ struct DerivedBasicConsumer {
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
   }
 
-  void process(aod::DrCollision const& collision)
+  void process(aod::DrCollision const& /*collision*/)
   {
     histos.fill(HIST("eventCounter"), 0.5);
   }

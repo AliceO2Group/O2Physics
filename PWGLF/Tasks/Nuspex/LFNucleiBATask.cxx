@@ -195,6 +195,23 @@ struct LFNucleiBATask {
     if (doprocessData == true && doprocessMCReco == true) {
       LOG(fatal) << "Can't enable processData and processMCReco in the same time, pick one!";
     }
+    spectraGen.add<TH1>("LfEv/pT_nocut", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/pT_TVXtrigger", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/pT_TFrameBorder", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/pT_ITSROFBorder", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/pT_sel8", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+
+    spectraGen.add<TH1>("LfEv/helium/pT_nocut_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/helium/pT_TVXtrigger_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/helium/pT_TFrameBorder_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/helium/pT_ITSROFBorder_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/helium/pT_sel8_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+
+    spectraGen.add<TH1>("LfEv/helium/pT_nocut_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/helium/pT_TVXtrigger_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/helium/pT_TFrameBorder_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/helium/pT_ITSROFBorder_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/helium/pT_sel8_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
 
     if (enableDebug) {
       debugHistos.add<TH1>("qa/h1VtxZ_nocut", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
@@ -1609,7 +1626,7 @@ struct LFNucleiBATask {
   template <bool IsMC, bool IsFilteredData, typename CollisionType, typename TracksType, typename ParticleType>
   void fillHistograms(const CollisionType& event,
                       const TracksType& tracks,
-                      const ParticleType& particles)
+                      const ParticleType& /*particles*/)
   {
     // Event histos fill
     histos.fill(HIST("event/eventSelection"), 0);
@@ -3047,10 +3064,10 @@ struct LFNucleiBATask {
             }
             histos.fill(HIST("tracks/helium/h1antiHeliumSpectra"), antihePt);
             histos.fill(HIST("tracks/helium/h1antiHeliumSpectra_Z2"), 2 * antihePt);
-            histos.fill(HIST("tracks/helium/h2antiHeliumYvsPt"), track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)), hePt);
-            histos.fill(HIST("tracks/helium/h2antiHeliumYvsPt_Z2"), track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)), 2 * hePt);
-            histos.fill(HIST("tracks/helium/h2antiHeliumEtavsPt"), track.eta(), hePt);
-            histos.fill(HIST("tracks/helium/h2antiHeliumEtavsPt_Z2"), track.eta(), 2 * hePt);
+            histos.fill(HIST("tracks/helium/h2antiHeliumYvsPt"), track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)), antihePt);
+            histos.fill(HIST("tracks/helium/h2antiHeliumYvsPt_Z2"), track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)), 2 * antihePt);
+            histos.fill(HIST("tracks/helium/h2antiHeliumEtavsPt"), track.eta(), antihePt);
+            histos.fill(HIST("tracks/helium/h2antiHeliumEtavsPt_Z2"), track.eta(), 2 * antihePt);
             //   if (enablePIDplot)
             //     histos.fill(HIST("tracks/helium/h2TPCsignVsTPCmomentumantiHelium"), antiheTPCmomentum, track.tpcSignal());
             // }
@@ -4208,9 +4225,9 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrueWPID"), antihePt);
                 histos.fill(HIST("tracks/helium/h1antiHeliumSpectraTrueWPID_Z2"), 2 * antihePt);
                 if (enablePtSpectra) {
-                  histos.fill(HIST("tracks/eff/helium/hPtantiHeTrue"), 2 * hePt);
+                  histos.fill(HIST("tracks/eff/helium/hPtantiHeTrue"), 2 * antihePt);
                   if (track.hasTOF() && doTOFplots) {
-                    histos.fill(HIST("tracks/eff/helium/hPtantiHeTOFTrue"), 2 * hePt);
+                    histos.fill(HIST("tracks/eff/helium/hPtantiHeTOFTrue"), 2 * antihePt);
                   }
                 }
               }
@@ -4220,7 +4237,7 @@ struct LFNucleiBATask {
 
                 if (std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe) {
                   if (track.hasTOF() && doTOFplots) {
-                    histos.fill(HIST("tracks/helium/TOF/h1antiHeliumSpectraTruePrim_Z2"), 2 * hePt);
+                    histos.fill(HIST("tracks/helium/TOF/h1antiHeliumSpectraTruePrim_Z2"), 2 * antihePt);
                   }
                 }
 
@@ -4331,7 +4348,7 @@ struct LFNucleiBATask {
   }
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFV0As, aod::CentFT0Cs>;
-  // using EventCandidatesMC = soa::Join<EventCandidates, aod::McCollisionLabels>;
+  using EventCandidatesMC = soa::Join<EventCandidates, aod::McCollisionLabels>;
 
   using TrackCandidates0 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension,
                                      aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
@@ -4416,6 +4433,87 @@ struct LFNucleiBATask {
     fillHistograms<true /*MC*/, false /*Filtered*/>(event, tracks, mcParticles);
   } // CLOSING PROCESS MC RECO
   PROCESS_SWITCH(LFNucleiBATask, processMCRecoLfPid, "process mc reco with LfPid", false);
+
+  Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
+  SliceCache cache;
+  // Process function that runs on the original AO2D (for the MC) with the LfPIDcalibration
+  void processMCRecoLfPidEv(EventCandidatesMC const& collisions,
+                            soa::Join<TrackCandidatesLfPid, aod::McTrackLabels> const&,
+                            aod::McParticles const& mcParticles,
+                            aod::McCollisions const&)
+  {
+    /*
+      for (const auto& track : tracks) {
+      if (!track.has_collision())
+        continue;
+      // const auto& mcParticle = track.mcParticle();
+    }
+    */
+
+    for (const auto& collision : collisions) {
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+      // const auto& mcParticle = track.mcParticle();
+      const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
+      for (const auto& mcParticle : particlesInCollision) {
+        spectraGen.fill(HIST("LfEv/pT_nocut"), mcParticle.pt());
+        if (mcParticle.pdgCode() == PDGHelium) {
+          spectraGen.fill(HIST("LfEv/helium/pT_nocut_He"), mcParticle.pt());
+        }
+        if (mcParticle.pdgCode() == -PDGHelium) {
+          spectraGen.fill(HIST("LfEv/helium/pT_nocut_antiHe"), mcParticle.pt());
+        }
+      }
+      if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+        for (const auto& mcParticle : particlesInCollision) {
+          spectraGen.fill(HIST("LfEv/pT_TVXtrigger"), mcParticle.pt());
+          if (mcParticle.pdgCode() == PDGHelium) {
+            spectraGen.fill(HIST("LfEv/helium/pT_TVXtrigger_He"), mcParticle.pt());
+          }
+          if (mcParticle.pdgCode() == -PDGHelium) {
+            spectraGen.fill(HIST("LfEv/helium/pT_TVXtrigger_antiHe"), mcParticle.pt());
+          }
+        }
+      }
+      if (collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        for (const auto& mcParticle : particlesInCollision) {
+          spectraGen.fill(HIST("LfEv/pT_TFrameBorder"), mcParticle.pt());
+          if (mcParticle.pdgCode() == PDGHelium) {
+            spectraGen.fill(HIST("LfEv/helium/pT_TFrameBorder_He"), mcParticle.pt());
+          }
+          if (mcParticle.pdgCode() == -PDGHelium) {
+            spectraGen.fill(HIST("LfEv/helium/pT_TFrameBorder_antiHe"), mcParticle.pt());
+          }
+        }
+      }
+      if (collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        for (const auto& mcParticle : particlesInCollision) {
+          spectraGen.fill(HIST("LfEv/pT_ITSROFBorder"), mcParticle.pt());
+          if (mcParticle.pdgCode() == PDGHelium) {
+            spectraGen.fill(HIST("LfEv/helium/pT_ITSROFBorder_He"), mcParticle.pt());
+          }
+          if (mcParticle.pdgCode() == -PDGHelium) {
+            spectraGen.fill(HIST("LfEv/helium/pT_ITSROFBorder_antiHe"), mcParticle.pt());
+          }
+        }
+      }
+      if (collision.sel8()) {
+        for (const auto& mcParticle : particlesInCollision) {
+          spectraGen.fill(HIST("LfEv/pT_sel8"), mcParticle.pt());
+          if (mcParticle.pdgCode() == PDGHelium) {
+            spectraGen.fill(HIST("LfEv/helium/pT_sel8_He"), mcParticle.pt());
+          }
+          if (mcParticle.pdgCode() == -PDGHelium) {
+            spectraGen.fill(HIST("LfEv/helium/pT_sel8_antiHe"), mcParticle.pt());
+          }
+        }
+      }
+    }
+  }
+
+  // CLOSING PROCESS MC RECO
+  PROCESS_SWITCH(LFNucleiBATask, processMCRecoLfPidEv, "process mc reco with LfPid w/ Event", false);
 
   // Process function that runs on the filtered AO2D (for the MC)
   void processMCRecoFiltered(o2::aod::LfNuclEvents::iterator const& event,

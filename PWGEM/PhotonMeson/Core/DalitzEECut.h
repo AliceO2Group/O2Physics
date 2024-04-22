@@ -62,6 +62,7 @@ class DalitzEECut : public TNamed
     kDCAz,
     kITSNCls,
     kITSChi2NDF,
+    kITSCluserSize,
     kPrefilter,
     kNCuts
   };
@@ -167,6 +168,9 @@ class DalitzEECut : public TNamed
       return false;
     }
     if (!IsSelectedTrack(track, DalitzEECuts::kITSChi2NDF)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kITSCluserSize)) {
       return false;
     }
 
@@ -338,6 +342,9 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kITSChi2NDF:
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
+      case DalitzEECuts::kITSCluserSize:
+        return mMinMeanClusterSizeITS < track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
+
       case DalitzEECuts::kPrefilter:
         return track.pfb() <= 0;
 
@@ -362,6 +369,7 @@ class DalitzEECut : public TNamed
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
+  void SetMeanClusterSizeITSob(float min, float max);
 
   void SetPIDScheme(PIDSchemes scheme);
   void SetMinPinTOF(float min);
@@ -422,6 +430,7 @@ class DalitzEECut : public TNamed
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
   bool mApplyPhiV{true};
   bool mApplyPF{false};
+  float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // max <its cluster size> x cos(Lmabda)
 
   // pid cuts
   PIDSchemes mPIDScheme{PIDSchemes::kUnDef};

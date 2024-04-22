@@ -150,13 +150,13 @@ struct DalitzMuMuQC {
 
   std::vector<uint64_t> used_trackIds;
 
-  void processQC(MyCollisions const& collisions, MyDalitzMuMus const& dileptons, MyTracks const& tracks)
+  void processQC(MyCollisions const&, MyDalitzMuMus const&, MyTracks const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzmumu = static_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
     for (auto& collision : grouped_collisions) {
@@ -195,7 +195,6 @@ struct DalitzMuMuQC {
             values[0] = uls_pair.mass();
             values[1] = uls_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = uls_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
             nuls++;
             for (auto& track : {pos, ele}) {
@@ -219,7 +218,6 @@ struct DalitzMuMuQC {
             values[0] = lspp_pair.mass();
             values[1] = lspp_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = lspp_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_lspp_same"))->Fill(values);
             nlspp++;
           }
@@ -237,7 +235,6 @@ struct DalitzMuMuQC {
             values[0] = lsmm_pair.mass();
             values[1] = lsmm_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = lsmm_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_lsmm_same"))->Fill(values);
             nlsmm++;
           }
@@ -271,7 +268,7 @@ struct DalitzMuMuQC {
   void MixedEventPairing(TEvents const& collisions, TTracks const& tracks, TMixedBinning const& colBinning)
   {
     THashList* list_dalitzmumu = static_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     ROOT::Math::PtEtaPhiMVector v1, v2, v12;
     float phiv = 0;
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
@@ -297,6 +294,10 @@ struct DalitzMuMuQC {
       for (auto& cut : fDalitzMuMuCuts) {
         THashList* list_dalitzmumu_cut = static_cast<THashList*>(list_dalitzmumu->FindObject(cut.GetName()));
         for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks_coll1, tracks_coll2))) {
+          if (t1.trackId() == t2.trackId()) { // this is protection against pairing identical 2 tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
+            continue;
+          }
+
           v1 = ROOT::Math::PtEtaPhiMVector(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
           v2 = ROOT::Math::PtEtaPhiMVector(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
           v12 = v1 + v2;
@@ -308,7 +309,6 @@ struct DalitzMuMuQC {
           values[0] = v12.M();
           values[1] = v12.Pt();
           values[2] = dca_ee_3d;
-          values[3] = phiv;
 
           if (cut.IsSelectedTrack(t1) && cut.IsSelectedTrack(t2) && cut.IsSelectedPair(v12.M(), dca_ee_3d, phiv)) {
             if (t1.sign() * t2.sign() < 0) {
@@ -338,7 +338,7 @@ struct DalitzMuMuQC {
   }
   PROCESS_SWITCH(DalitzMuMuQC, processEventMixing, "run Dalitz MuMu QC event mixing", true);
 
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DalitzMuMuQC, processDummy, "Dummy function", false);
 };
 

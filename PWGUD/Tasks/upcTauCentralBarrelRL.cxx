@@ -616,7 +616,7 @@ struct UpcTauCentralBarrelRL {
   } // end init
 
   // run (always called before process :( )
-  void run(ProcessingContext& context)
+  void run(ProcessingContext& /*context*/)
   {
 
     if (verboseInfo)
@@ -1877,7 +1877,7 @@ struct UpcTauCentralBarrelRL {
 
   } // end processDGrecoLevel
 
-  void processAnalysisFinished(FullUDCollision const& collisions)
+  void processAnalysisFinished(FullUDCollision const& /*collisions*/)
   {
 
     if (verboseInfo)

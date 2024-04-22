@@ -160,7 +160,7 @@ struct TaskPolarisationCharmHadrons {
     const AxisSpec thnAxisCosThetaStarBeam{configThnAxisCosThetaStarBeam, "cos(#vartheta_{beam})"};
     const AxisSpec thnAxisMlBkg{configThnAxisMlBkg, "ML bkg"};
     const AxisSpec thnAxisMlNonPrompt{configThnAxisMlNonPrompt, "ML non-prompt"};
-    const AxisSpec thnAxisIsRotatedCandidate{{2, -0.5f, 1.5f}, "0: standard candidate, 1: rotated candidate"};
+    const AxisSpec thnAxisIsRotatedCandidate{2, -0.5f, 1.5f, "rotated bkg"};
 
     if (doprocessDstarWithMl || doprocessDstarMcWithMl) {
       /// analysis for D*+ meson with ML, w/o rot. background axis
@@ -354,29 +354,29 @@ struct TaskPolarisationCharmHadrons {
             registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, isRotatedCandidate);
           }
         }
-      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
-        if constexpr (withMl) {                          // with ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+      } else {                                                                           // MC --> no distinction among channels, since rotational bkg not supported
+        if constexpr (withMl) {                                                          // with ML
+          if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
             if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
             } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
               registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
             }
-          } else { // non-prompt
+          } else {                                                                       // non-prompt
             if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
             } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
               registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
             }
           }
-        } else {                                         // without ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+        } else {                                                                         // without ML
+          if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
             if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar);
             } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
               registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
             }
-          } else { // non-prompt
+          } else {                                                                       // non-prompt
             if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar);
             } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
@@ -400,15 +400,29 @@ struct TaskPolarisationCharmHadrons {
             registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, isRotatedCandidate);
           }
         }
-      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
-        if constexpr (withMl) {                          // with ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+      } else {                                                                           // MC --> no distinction among channels, since rotational bkg not supported
+        if constexpr (withMl) {                                                          // with ML
+          if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
+            if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+              registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+              registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            }
+          } else {                                                                       // non-prompt
+            if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+              registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+              registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            }
+          }
+        } else {                                                                         // without ML
+          if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
             if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar);
             } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
               registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
             }
-          } else { // non-prompt
+          } else {                                                                       // non-prompt
             if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar);
             } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
@@ -432,15 +446,29 @@ struct TaskPolarisationCharmHadrons {
             registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, isRotatedCandidate);
           }
         }
-      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
-        if constexpr (withMl) {                          // with ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+      } else {                                                                           // MC --> no distinction among channels, since rotational bkg not supported
+        if constexpr (withMl) {                                                          // with ML
+          if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
+            if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+              registry.fill(HIST("hRecoPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+              registry.fill(HIST("hRecoPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            }
+          } else {                                                                       // non-prompt
+            if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+              registry.fill(HIST("hRecoNonPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+              registry.fill(HIST("hRecoNonPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            }
+          }
+        } else {                                                                         // without ML
+          if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
             if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               registry.fill(HIST("hRecoPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar);
             } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
               registry.fill(HIST("hRecoPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
             }
-          } else { // non-prompt
+          } else {                                                                       // non-prompt
             if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               registry.fill(HIST("hRecoNonPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar);
             } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
@@ -464,15 +492,29 @@ struct TaskPolarisationCharmHadrons {
             registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, isRotatedCandidate);
           }
         }
-      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
-        if constexpr (withMl) {                          // with ML
-          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+      } else {                                                                           // MC --> no distinction among channels, since rotational bkg not supported
+        if constexpr (withMl) {                                                          // with ML
+          if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
+            if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+              registry.fill(HIST("hRecoPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+              registry.fill(HIST("hRecoPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            }
+          } else {                                                                       // non-prompt
+            if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+              registry.fill(HIST("hRecoNonPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+              registry.fill(HIST("hRecoNonPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+            }
+          }
+        } else {                                                                         // without ML
+          if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
             if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               registry.fill(HIST("hRecoPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar);
             } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
               registry.fill(HIST("hRecoPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
             }
-          } else { // non-prompt
+          } else {                                                                       // non-prompt
             if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               registry.fill(HIST("hRecoNonPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, invMassD0, cosThetaStar);
             } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
@@ -562,7 +604,7 @@ struct TaskPolarisationCharmHadrons {
 
         massDau = massPi; // (*)
         const float bkgRotAngle = bkgRotationAngleStep * bkgRotationId;
-        std::array<float, 3> threeVecSoftPi{candidate.pxSoftPi() * std::cos(bkgRotAngle) - candidate.pxSoftPi() * std::sin(bkgRotAngle), candidate.pxSoftPi() * std::cos(bkgRotAngle) + candidate.pxSoftPi() * std::sin(bkgRotAngle), candidate.pzSoftPi()}; // we rotate the soft pion
+        std::array<float, 3> threeVecSoftPi{candidate.pxSoftPi() * std::cos(bkgRotAngle) - candidate.pySoftPi() * std::sin(bkgRotAngle), candidate.pxSoftPi() * std::sin(bkgRotAngle) + candidate.pySoftPi() * std::cos(bkgRotAngle), candidate.pzSoftPi()}; // we rotate the soft pion
         std::array<float, 3> threeVecD0Prong0{candidate.pxProng0(), candidate.pxProng0(), candidate.pzProng0()};
         std::array<float, 3> threeVecD0Prong1{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
         if (bkgRotationId > 0) {

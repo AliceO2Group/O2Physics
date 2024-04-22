@@ -279,7 +279,7 @@ struct Pi0EnergyScaleCalibTask {
   }
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions>::iterator const& collision, o2::aod::Calos const& allcalos, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& cells)
+  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions>::iterator const& collision, o2::aod::Calos const&, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& cells)
   {
     mHistManager.fill(HIST("events"), 1); // Fill "All events" bin of event histogram
     LOG(debug) << "processCollisions";

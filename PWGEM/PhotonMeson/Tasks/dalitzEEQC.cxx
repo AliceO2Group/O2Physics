@@ -140,15 +140,13 @@ struct DalitzEEQC {
   Preslice<MyTracks> perCollision_track = aod::emprimaryelectron::emeventId;
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
-  std::vector<uint64_t> used_trackIds;
-
-  void processQC(MyCollisions const& collisions, MyDalitzEEs const& dileptons, MyTracks const& tracks)
+  void processQC(MyCollisions const&, MyDalitzEEs const&, MyTracks const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     double values_single[4] = {0, 0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
@@ -173,6 +171,8 @@ struct DalitzEEQC {
       for (const auto& cut : fDalitzEECuts) {
         THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
         THashList* list_track_cut = static_cast<THashList*>(list_track->FindObject(cut.GetName()));
+
+        std::vector<uint64_t> used_trackIds;
         used_trackIds.reserve(uls_pairs_per_coll.size() * 2);
 
         int nuls = 0, nlspp = 0, nlsmm = 0;
@@ -195,8 +195,8 @@ struct DalitzEEQC {
             values[0] = uls_pair.mass();
             values[1] = uls_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = uls_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
+            reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_uls_same"))->Fill(uls_pair.phiv(), uls_pair.mass());
             nuls++;
             for (auto& track : {pos, ele}) {
               if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
@@ -226,8 +226,8 @@ struct DalitzEEQC {
             values[0] = lspp_pair.mass();
             values[1] = lspp_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = lspp_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_same"))->Fill(values);
+            reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_lspp_same"))->Fill(lspp_pair.phiv(), lspp_pair.mass());
             nlspp++;
           }
         } // end of lspp pair loop
@@ -252,8 +252,8 @@ struct DalitzEEQC {
             values[0] = lsmm_pair.mass();
             values[1] = lsmm_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = lsmm_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_same"))->Fill(values);
+            reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_lsmm_same"))->Fill(lsmm_pair.phiv(), lsmm_pair.mass());
             nlsmm++;
           }
         } // end of lsmm pair loop
@@ -286,7 +286,7 @@ struct DalitzEEQC {
   void MixedEventPairing(TEvents const& collisions, TTracks const& tracks, TMixedBinning const& colBinning)
   {
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     ROOT::Math::PtEtaPhiMVector v1, v2, v12;
     float phiv = 0;
     double values_single[4] = {0, 0, 0, 0};
@@ -317,6 +317,13 @@ struct DalitzEEQC {
           v2 = ROOT::Math::PtEtaPhiMVector(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
           v12 = v1 + v2;
           phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision1.bz());
+          // if (!std::isfinite(phiv)) {
+          //   LOGF(info, "t1.px() = %f, t1.py() = %f, t1.pz() = %f, t2.px() = %f, t2.py() = %f, t2.pz() = %f, phiv = %f", t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), phiv);
+          // }
+
+          if (t1.trackId() == t2.trackId()) { // this is protection against pairing identical 2 tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
+            continue;
+          }
 
           dca_pos_3d = t1.dca3DinSigma();
           dca_ele_3d = t2.dca3DinSigma();
@@ -330,15 +337,17 @@ struct DalitzEEQC {
           values[0] = v12.M();
           values[1] = v12.Pt();
           values[2] = dca_ee_3d;
-          values[3] = phiv;
 
           if (cut.IsSelectedTrack(t1) && cut.IsSelectedTrack(t2) && cut.IsSelectedPair(v12.M(), dca_ee_3d, phiv)) {
             if (t1.sign() * t2.sign() < 0) {
               reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
+              reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_uls_mix"))->Fill(phiv, v12.M());
             } else if (t1.sign() > 0 && t2.sign() > 0) {
               reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_mix"))->Fill(values);
+              reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_lspp_mix"))->Fill(phiv, v12.M());
             } else if (t1.sign() < 0 && t2.sign() < 0) {
               reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_mix"))->Fill(values);
+              reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_lsmm_mix"))->Fill(phiv, v12.M());
             } else {
               LOGF(info, "This should not happen.");
             }
@@ -372,7 +381,7 @@ struct DalitzEEQC {
   }
   PROCESS_SWITCH(DalitzEEQC, processEventMixing, "run Dalitz EE QC event mixing", true);
 
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DalitzEEQC, processDummy, "Dummy function", false);
 };
 

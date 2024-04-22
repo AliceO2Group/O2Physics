@@ -94,7 +94,7 @@ struct decay3bodyBuilder {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<3> fitter3body;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -193,7 +193,7 @@ struct decay3bodyBuilder {
   //------------------------------------------------------------------
   // 3body candidate builder
   template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
-  void buildVtx3BodyDataTable(TCollisionTable const& collision, TTrackTable const& tracks, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
+  void buildVtx3BodyDataTable(TCollisionTable const& collision, TTrackTable const& /*tracks*/, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   {
 
     for (auto& vtx3body : decay3bodys) {
@@ -330,13 +330,13 @@ struct decay3bodyLabelBuilder {
 
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
 
-  void processDoNotBuildLabels(aod::Collisions::iterator const& collision)
+  void processDoNotBuildLabels(aod::Collisions::iterator const&)
   {
     // dummy process function - should not be required in the future
   }
   PROCESS_SWITCH(decay3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const&)
   {
     std::vector<int> lIndices;
     lIndices.reserve(vtx3bodydatas.size());

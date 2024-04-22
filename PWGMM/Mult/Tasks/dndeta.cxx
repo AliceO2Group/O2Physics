@@ -58,13 +58,17 @@ struct MultiplicityCounter {
   Configurable<bool> addFDD{"addFDD", false, "add FDD estimators"};
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
+  Configurable<bool> checkTF{"checkTF", true, "check TF border"};
+  Configurable<bool> checkITSROF{"checkITSROF", true, "check ITS readout frame border"};
   Configurable<bool> checkFT0PVcoincidence{"checkFT0PVcoincidence", true, "Check coincidence between FT0 and PV"};
   Configurable<bool> rejectITSonly{"rejectITSonly", false, "Reject ITS-only vertex"};
 
   template <typename C>
   inline bool isCollisionSelected(C const& collision)
   {
-    return collision.sel8() &&
+    return collision.selection_bit(aod::evsel::kIsTriggerTVX) &&
+           (!checkTF || collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+           (!checkITSROF || collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
            (!checkFT0PVcoincidence || collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) &&
            (!rejectITSonly || collision.selection_bit(aod::evsel::kIsVertexITSTPC));
   }

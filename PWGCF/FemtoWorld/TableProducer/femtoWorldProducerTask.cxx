@@ -733,7 +733,7 @@ struct femtoWorldProducerTask {
   }
   PROCESS_SWITCH(femtoWorldProducerTask, processProdTrackV0Run2, "Produce Femto tables", true);
 
-  void processProdTrackPhiRun2(aod::FemtoFullCollisionRun2 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, o2::aod::V0Datas const& fullV0s)
+  void processProdTrackPhiRun2(aod::FemtoFullCollisionRun2 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, o2::aod::V0Datas const&)
   {
 
     // get magnetic field for run
@@ -1693,7 +1693,7 @@ struct femtoWorldProducerTask {
   }
   PROCESS_SWITCH(femtoWorldProducerTask, processProdTrackV0Run3, "Produce Femto tables", true);
 
-  void processProdTrackPhiRun3(aod::FemtoFullCollisionRun3 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, o2::aod::V0Datas const& fullV0s)
+  void processProdTrackPhiRun3(aod::FemtoFullCollisionRun3 const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks, o2::aod::V0Datas const&)
   {
 
     // get magnetic field for run

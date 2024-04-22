@@ -315,29 +315,29 @@ DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
 DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
 DECLARE_SOA_DYNAMIC_COLUMN(CentFV0A, centFV0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(CentFT0A, centFT0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(CentFT0C, centFT0C, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFV0A, multZeqFV0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFT0A, multZeqFT0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFT0C, multZeqFT0C, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFDDA, multZeqFDDA, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFDDC, multZeqFDDC, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultTracklets, multTracklets, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultTPC, multTPC, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(SelectionBit, selection_bit, //! Dummy
-                           [](aod::evsel::EventSelectionFlags v) -> bool { return true; });
+                           [](aod::evsel::EventSelectionFlags /*v*/) -> bool { return true; });
 
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
@@ -378,19 +378,19 @@ DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaZ, //! Unpacked dcaz
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Absolute value of signed pT
                            [](float signedPt) -> float { return std::abs(signedPt); });
 DECLARE_SOA_DYNAMIC_COLUMN(HasITS, hasITS, //! Dummy
-                           [](float v) -> bool { return true; });
+                           [](float /*v*/) -> bool { return true; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTPC, hasTPC, //! Dummy
-                           [](float v) -> bool { return true; });
+                           [](float /*v*/) -> bool { return true; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF measurement
                            [](float tofSignal) -> bool { return tofSignal > 0; });
 DECLARE_SOA_DYNAMIC_COLUMN(TRDSignal, trdSignal, //! Dummy
-                           [](float v) -> float { return 0.f; });
+                           [](float /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signedpt, float eta) -> float { return std::abs(signedpt) * cosh(eta); });
-DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float /*v*/) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
-DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float v) -> uint32_t { return 0; });          // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float v) -> uint8_t { return 0; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float /*v*/) -> uint32_t { return 0; });      // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float /*v*/) -> uint8_t { return 0; }); // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                            //! Track rapidity, computed under the mass assumption given as input
                            [](float signedPt, float eta, float mass) -> float {
                              const auto pt = std::abs(signedPt);
@@ -399,9 +399,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                  
                              const auto energy = sqrt(p * p + mass * mass);
                              return 0.5f * log((energy + pz) / (energy - pz));
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, [](float v) -> bool { return false; }); // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackITS, isQualityTrackITS, [](float v) -> bool { return false; });     // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, [](float v) -> bool { return false; });     // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, [](float /*v*/) -> bool { return false; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackITS, isQualityTrackITS, [](float /*v*/) -> bool { return false; });     // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, [](float /*v*/) -> bool { return false; });     // Dummy
 
 } // namespace spectra
 

@@ -127,11 +127,12 @@ class VarManager : public TObject
     kDecayToEE = 0, // e.g. J/psi        -> e+ e-
     kDecayToMuMu,   // e.g. J/psi        -> mu+ mu-
     kDecayToPiPi,
-    kElectronMuon,   // e.g. Electron - muon correlations
-    kBcToThreeMuons, // e.g. Bc           -> mu+ mu- mu+
-    kBtoJpsiEEK,     // e.g. B+           -> e+ e- K+
-    kXtoJpsiPiPi,    // e.g. X(3872)      -> J/psi pi+ pi-
-    kChictoJpsiEE,   // e.g. Chi_c1      -> J/psi e+ e-
+    kElectronMuon,              // e.g. Electron - muon correlations
+    kBcToThreeMuons,            // e.g. Bc           -> mu+ mu- mu+
+    kBtoJpsiEEK,                // e.g. B+           -> e+ e- K+
+    kXtoJpsiPiPi,               // e.g. X(3872)      -> J/psi pi+ pi-
+    kChictoJpsiEE,              // e.g. Chi_c1      -> J/psi e+ e-
+    kTripleCandidateToEEPhoton, // e.g. chi_c   -> e+ e- photon or pi0 -> e+ e- photon
     kNMaxCandidateTypes
   };
 
@@ -517,8 +518,12 @@ class VarManager : public TObject
     kQ23YA,
     kS11A,
     kS12A,
+    kS21A,
     kS13A,
     kS31A,
+    kS22A,
+    kS41A,
+    kS14A,
     kM11REF,
     kM01POI,
     kM1111REF,
@@ -588,6 +593,11 @@ class VarManager : public TObject
 
     // Index used to scan bit maps
     kBitMapIndex,
+
+    // deltaMass = kPairMass - kPairMassDau
+    kDeltaMass,
+    // deltaMass_jpsi = kPairMass - kPairMassDau +3.096900
+    kDeltaMass_jpsi,
 
     kNVars
   }; // end of Variables enumeration
@@ -786,6 +796,8 @@ class VarManager : public TObject
   static void FillTwoMixEvents(T1 const& event1, T1 const& event2, T2 const& tracks1, T2 const& tracks2, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
+  template <uint32_t fillMap, typename T>
+  static void FillPhoton(T const& photon, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C, typename M, typename P>
@@ -796,16 +808,22 @@ class VarManager : public TObject
   static void FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
+  template <typename T1, typename T2, typename T3>
+  static void FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <int pairType, typename T1, typename T2>
   static void FillPairME(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <typename T1, typename T2>
   static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kDecayToEE);
+  template <typename T1, typename T2, typename T3>
+  static void FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, bool propToSV = false, float* values = nullptr);
   template <int candidateType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1>
   static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
+  template <typename T1, typename T2>
+  static void FillDileptonPhoton(T1 const& dilepton, T2 const& photon, float* values = nullptr);
   template <typename T>
   static void FillHadron(T const& hadron, float* values = nullptr, float hadronMass = 0.0f);
   template <int partType, typename Cand, typename H, typename T>
@@ -1339,6 +1357,7 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kQ23YA] = event.q23ya();
       values[kS11A] = event.s11a();
       values[kS12A] = event.s12a();
+      values[kS21A] = event.s21a();
       values[kS13A] = event.s13a();
       values[kS31A] = event.s31a();
     }
@@ -1451,7 +1470,7 @@ void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
 }
 
 template <uint32_t fillMap, typename T1, typename T2>
-void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& tracks1, T2 const& tracks2, float* values)
+void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& /*tracks1*/, T2 const& /*tracks2*/, float* values)
 {
   if (!values) {
     values = fgValues;
@@ -1990,6 +2009,38 @@ void VarManager::FillTrackCollisionMatCorr(T const& track, C const& collision, M
   }
 }
 
+template <uint32_t fillMap, typename T>
+void VarManager::FillPhoton(T const& track, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  // Quantities based on the basic table (contains just kine information and filter bits)
+  if constexpr ((fillMap & Track) > 0 || (fillMap & ReducedTrack) > 0) {
+    values[kPt] = track.pt();
+    if (fgUsedVars[kP]) {
+      values[kP] = track.p();
+    }
+    if (fgUsedVars[kPx]) {
+      values[kPx] = track.px();
+    }
+    if (fgUsedVars[kPy]) {
+      values[kPy] = track.py();
+    }
+    if (fgUsedVars[kPz]) {
+      values[kPz] = track.pz();
+    }
+    if (fgUsedVars[kInvPt]) {
+      values[kInvPt] = 1. / track.pt();
+    }
+    values[kEta] = track.eta();
+    values[kPhi] = track.phi();
+    values[kRap] = track.eta(); // photon does not know rapidity .y()
+    values[kMassDau] = track.mGamma();
+  }
+}
+
 template <typename U, typename T>
 void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
 {
@@ -2010,12 +2061,14 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   values[kMCPt] = track.pt();
   values[kMCPhi] = track.phi();
   values[kMCEta] = track.eta();
-  values[kMCY] = track.y();
+  values[kMCY] = -track.y();
   values[kMCParticleGeneratorId] = track.producedByGenerator();
-  if (track.has_mothers()) {
-    auto motherId = track.mothersIds()[0];
-    auto mother = mcStack.rawIteratorAt(motherId);
-    values[kMCMotherPdgCode] = mother.pdgCode();
+  if (fgUsedVars[kMCMotherPdgCode]) {
+    if (track.has_mothers()) {
+      auto motherId = track.mothersIds()[0];
+      auto mother = mcStack.rawIteratorAt(motherId);
+      values[kMCMotherPdgCode] = mother.pdgCode();
+    }
   }
 
   FillTrackDerived(values);
@@ -2157,7 +2210,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
       values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
       values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
-      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
+      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * TMath::Sign(1., dca1sigXY) * TMath::Sign(1., dca2sigXY) * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
 
       double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
       double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
@@ -2265,6 +2318,43 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   }
 }
 
+template <typename T1, typename T2, typename T3>
+void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* values, PairCandidateType pairType)
+{
+
+  if (!values) {
+    values = fgValues;
+  }
+  if (pairType == kTripleCandidateToEEPhoton) {
+    float m1 = o2::constants::physics::MassElectron;
+    float m3 = o2::constants::physics::MassPhoton;
+    float m4 = o2::constants::physics::MassJPsi;
+
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m1);
+    ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m3);
+    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+    ROOT::Math::PtEtaPhiMVector v123 = v12 + v3;
+    values[kPairMass] = v123.M();
+    values[kPairPt] = v123.Pt();
+    values[kPairEta] = v123.Eta();
+    values[kPairPhi] = v123.Phi();
+    values[kPairMassDau] = v12.M();
+    values[kMassDau] = m3;
+    values[kPairPtDau] = v12.Pt();
+    values[kPt] = t3.pt();
+    values[kEta] = t3.eta();
+    values[kEta1] = t1.eta();
+    values[kEta2] = t2.eta();
+    values[kDeltaEta] = v12.Eta();
+    values[VarManager::kDeltaMass] = v123.M() - v12.M();
+    values[VarManager::kDeltaMass_jpsi] = v123.M() - v12.M() + m4;
+    values[kRap] = v123.Rapidity();
+    values[kPt1] = t1.pt();
+    values[kPt2] = t2.pt();
+  }
+}
+
 template <int pairType, typename T1, typename T2>
 void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
 {
@@ -2340,6 +2430,43 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
   values[kEta] = v12.Eta();
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
+}
+
+template <typename T1, typename T2, typename T3>
+void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values, PairCandidateType pairType)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  if (pairType == kTripleCandidateToEEPhoton) {
+    float m1 = o2::constants::physics::MassElectron;
+    float m2 = o2::constants::physics::MassElectron;
+    float m3 = o2::constants::physics::MassPhoton;
+    float m4 = o2::constants::physics::MassJPsi;
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+    ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m3);
+    ROOT::Math::PtEtaPhiMVector v123 = v12 + v3;
+    values[kPairMass] = v123.M();
+    values[kPairPt] = v123.Pt();
+    values[kPairEta] = v123.Eta();
+    values[kPhi] = v123.Phi();
+    values[kPairMassDau] = v12.M();
+    values[kMassDau] = m3;
+    values[kPairPtDau] = v12.Pt();
+    values[kPt] = t3.pt();
+    values[kEta] = t3.eta();
+    values[kEta1] = t1.eta();
+    values[kEta2] = t2.eta();
+    values[kDeltaEta] = v12.Eta();
+    values[VarManager::kDeltaMass] = v123.M() - v12.M();
+    values[VarManager::kDeltaMass_jpsi] = v123.M() - v12.M() + m4;
+    values[kRap] = -v123.Rapidity();
+    values[kPt1] = t1.pt();
+    values[kPt2] = t2.pt();
+  }
 }
 
 template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
@@ -2957,7 +3084,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 }
 
 template <typename C, typename A>
-void VarManager::FillQVectorFromGFW(C const& collision, A const& compA11, A const& compB11, A const& compC11, A const& compA21, A const& compB21, A const& compC21, A const& compA31, A const& compB31, A const& compC31, A const& compA41, A const& compB41, A const& compC41, A const& compA23, A const& compA42, float S10A, float S10B, float S10C, float S11A, float S11B, float S11C, float S12A, float S13A, float S14A, float S21A, float S22A, float S31A, float S41A, float* values)
+void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A const& compB11, A const& compC11, A const& compA21, A const& compB21, A const& compC21, A const& compA31, A const& compB31, A const& compC31, A const& compA41, A const& compB41, A const& compC41, A const& compA23, A const& compA42, float S10A, float S10B, float S10C, float S11A, float S11B, float S11C, float S12A, float S13A, float S14A, float S21A, float S22A, float S31A, float S41A, float* values)
 {
   if (!values) {
     values = fgValues;
@@ -2995,8 +3122,12 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA11, A cons
   values[kQ23YA] = compA23.imag(); // Only being used by cumulants, no need for normalization
   values[kS11A] = S11A;
   values[kS12A] = S12A;
+  values[kS21A] = S21A;
   values[kS13A] = S13A;
   values[kS31A] = S31A;
+  values[kS22A] = S22A;
+  values[kS14A] = S14A;
+  values[kS41A] = S41A;
 
   // Fill event multiplicities
   values[kMultA] = S10A;
@@ -3181,6 +3312,10 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kM0111POI] = values[kMultDimuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
     values[kCORR2POI] = (P2 * conj(Q21)).real() / values[kM01POI];
     values[kCORR4POI] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POI];
+    values[kM11REF] = values[kS21A] - values[kS12A];
+    values[kM1111REF] = values[kS41A] - 6. * values[kS12A] * values[kS21A] + 8. * values[kS13A] * values[kS11A] + 3. * values[kS22A] - 6. * values[kS14A];
+    values[kCORR2REF] = (norm(Q21) - values[kS12A]) / values[kM11REF];
+    values[kCORR4REF] = (pow(norm(Q21), 2) + norm(Q42) - 2. * (Q42 * conj(Q21) * conj(Q21)).real() + 8. * (Q23 * conj(Q21)).real() - 4. * values[kS12A] * norm(Q21) - 6. * values[kS14A] - 2. * values[kS22A]) / values[kM1111REF];
   }
 }
 
@@ -3222,6 +3357,33 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
   }
   if (fgUsedVars[kDeltaEta]) {
     values[kDeltaEta] = dilepton.eta() - hadron.eta();
+  }
+}
+
+template <typename T1, typename T2>
+void VarManager::FillDileptonPhoton(T1 const& dilepton, T2 const& photon, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  if (fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kPairEta] || fgUsedVars[kPairPhi]) {
+    ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
+    ROOT::Math::PtEtaPhiMVector v2(photon.pt(), photon.eta(), photon.phi(), photon.mGamma());
+    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+    values[kPairMass] = v12.M();
+    values[kPairPt] = v12.Pt();
+    values[kPairEta] = v12.Eta();
+    values[kPairPhi] = v12.Phi();
+    values[kPairMassDau] = dilepton.mass();
+    values[kMassDau] = photon.mGamma();
+    values[kPairPtDau] = dilepton.pt();
+    values[kPt] = photon.pt();
+    values[kDeltaEta] = dilepton.eta();
+    values[kEta] = photon.eta();
+    values[VarManager::kDeltaMass] = v12.M() - dilepton.mass();
+    float m4 = o2::constants::physics::MassJPsi;
+    values[VarManager::kDeltaMass_jpsi] = v12.M() - dilepton.mass() + m4;
+    values[kRap] = v12.Rapidity();
   }
 }
 

@@ -172,7 +172,7 @@ struct EMPhotonFilter {
   // Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   template <uint8_t system, typename TCollisions, typename TPhotons1, typename TPhotons2, typename TPhotons3, typename TV0Legs, typename TDielectrons, typename TEMPrimaryElectrons>
-  void runFilter(TCollisions const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPhotons3 const& photons3, TV0Legs const&, TDielectrons const& dielectrons, TEMPrimaryElectrons const& emprimaryelectrons)
+  void runFilter(TCollisions const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPhotons3 const& /*photons3*/, TV0Legs const&, TDielectrons const& dielectrons, TEMPrimaryElectrons const& /*emprimaryelectrons*/)
   {
     for (auto& collision : collisions) {
       mHistManager.fill(HIST("hEventCounter"), 1.);

@@ -212,6 +212,10 @@ struct flowQC {
     initCCDB(bc);
     gRandom->SetSeed(bc.timestamp());
 
+    if (!eventSelection(collision)) {
+      return;
+    }
+
     flow.fill(HIST("hRecVtxZData"), collision.posZ());
 
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};

@@ -354,7 +354,7 @@ struct deltaAnalysis {
   }
   PROCESS_SWITCH(deltaAnalysis, processSameEvent, "Process same event", false);
 
-  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(EventCandidates const& /*collisions*/, TrackCandidates const& /*tracks*/)
   {
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (!c1.sel8()) {

@@ -702,7 +702,7 @@ void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, B const& bcs, 
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims, SliceCache& cache)
+bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& /*lims*/, SliceCache& cache)
 {
   const auto& ZdcBC = zdcs.sliceByCached(aod::zdc::bcId, bc.globalIndex(), cache);
   return (ZdcBC.size() == 0);
@@ -710,7 +710,7 @@ bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims, SliceCache
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims, SliceCache& cache)
+bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& /*lims*/, SliceCache& cache)
 {
   const auto& CaloBC = calos.sliceByCached(aod::calo::bcId, bc.globalIndex(), cache);
   return (CaloBC.size() == 0);

@@ -318,11 +318,11 @@ struct EventSelectionQaTask {
   void processRun2(
     ColEvSels const& cols,
     BCsRun2 const& bcs,
-    aod::Zdcs const& zdcs,
-    aod::FV0As const& fv0as,
-    aod::FV0Cs const& fv0cs,
-    aod::FT0s const& ft0s,
-    aod::FDDs const& fdds)
+    aod::Zdcs const&,
+    aod::FV0As const&,
+    aod::FV0Cs const&,
+    aod::FT0s const&,
+    aod::FDDs const&)
   {
     bool isINT1period = 0;
     if (!applySelection) {
@@ -518,10 +518,10 @@ struct EventSelectionQaTask {
     FullTracksIU const& tracks,
     aod::AmbiguousTracks const& ambTracks,
     BCsRun3 const& bcs,
-    aod::Zdcs const& zdcs,
-    aod::FV0As const& fv0as,
-    aod::FT0s const& ft0s,
-    aod::FDDs const& fdds)
+    aod::Zdcs const&,
+    aod::FV0As const&,
+    aod::FT0s const&,
+    aod::FDDs const&)
   {
     int runNumber = bcs.iteratorAt(0).runNumber();
     uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
@@ -1069,7 +1069,7 @@ struct EventSelectionQaTask {
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 
-  void processMCRun3(aod::McCollisions const& mcCols, soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels> const& cols, BCsRun3 const& bcs, aod::FT0s const& ft0s)
+  void processMCRun3(aod::McCollisions const& mcCols, soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels> const& cols, BCsRun3 const&, aod::FT0s const&)
   {
     for (auto& mcCol : mcCols) {
       auto bc = mcCol.bc_as<BCsRun3>();

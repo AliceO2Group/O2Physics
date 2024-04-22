@@ -80,6 +80,15 @@ struct MshapeQaTask {
       histos.add("hSecondsAsideITSTPCcontrib", "", kTH1F, {axisSeconds});
       histos.add("hSecondsCsideITSTPCcontrib", "", kTH1F, {axisSeconds});
       histos.add("hSecondsCollisions", "", kTH1F, {axisSeconds});
+
+      const AxisSpec axisPhi{64, 0, TMath::TwoPi(), "#varphi"};
+      histos.add("hSecondsITSlayer0vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      histos.add("hSecondsITSlayer1vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      histos.add("hSecondsITSlayer2vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      histos.add("hSecondsITSlayer3vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      histos.add("hSecondsITSlayer4vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      histos.add("hSecondsITSlayer5vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      histos.add("hSecondsITSlayer6vsPhi", "", kTH2F, {axisSeconds, axisPhi});
     }
 
     int64_t ts = col.bc_as<BCsRun3>().timestamp();
@@ -130,6 +139,22 @@ struct MshapeQaTask {
         } else {
           nCsideITSTPCContrib++;
         }
+
+        // study ITS cluster pattern vs sec
+        if (track.itsClusterMap() & (1 << 0))
+          histos.fill(HIST("hSecondsITSlayer0vsPhi"), secFromSOR, track.phi());
+        if (track.itsClusterMap() & (1 << 1))
+          histos.fill(HIST("hSecondsITSlayer1vsPhi"), secFromSOR, track.phi());
+        if (track.itsClusterMap() & (1 << 2))
+          histos.fill(HIST("hSecondsITSlayer2vsPhi"), secFromSOR, track.phi());
+        if (track.itsClusterMap() & (1 << 3))
+          histos.fill(HIST("hSecondsITSlayer3vsPhi"), secFromSOR, track.phi());
+        if (track.itsClusterMap() & (1 << 4))
+          histos.fill(HIST("hSecondsITSlayer4vsPhi"), secFromSOR, track.phi());
+        if (track.itsClusterMap() & (1 << 5))
+          histos.fill(HIST("hSecondsITSlayer5vsPhi"), secFromSOR, track.phi());
+        if (track.itsClusterMap() & (1 << 6))
+          histos.fill(HIST("hSecondsITSlayer6vsPhi"), secFromSOR, track.phi());
       }
     }
     histos.fill(HIST("hSecondsCollisions"), secFromSOR);

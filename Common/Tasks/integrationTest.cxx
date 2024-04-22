@@ -73,7 +73,7 @@ struct integrationTest {
                 kNTables
   };
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     TString lTableNames[] =
       {
@@ -199,13 +199,13 @@ struct integrationTest {
   }
   PROCESS_SWITCH(integrationTest, processDataModel, "Check data model", true);
 
-  void processBCs(aod::BC const& bc, aod::Collisions const& collisions)
+  void processBCs(aod::BC const&, aod::Collisions const& collisions)
   {
     histos.fill(HIST("hCollisionsPerBC"), (float)collisions.size());
   }
   PROCESS_SWITCH(integrationTest, processBCs, "Check collisions per BC", true);
 
-  void processCollisions(aod::Collision const& collision, FullTracksIU const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades)
+  void processCollisions(aod::Collision const&, FullTracksIU const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades)
   {
     Int_t lHasITS = 0, lHasTPC = 0, lHasTRD = 0, lHasTOF = 0;
     for (auto& track : tracks) {

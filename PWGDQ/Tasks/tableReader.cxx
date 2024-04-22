@@ -455,7 +455,7 @@ struct AnalysisPrefilterSelection {
   std::map<int, bool> fPrefiltermap;
   AnalysisCompositeCut* fPairCut;
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext&)
   {
     fPairCut = new AnalysisCompositeCut(true);
     TString pairCutStr = fConfigPrefilterPairCut.value;
@@ -756,6 +756,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsExtra> dimuonExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
+  Produces<aod::RefFlowDimuon> refFlowDimuonList;
   Produces<aod::DileptonsInfo> dileptonInfoList;
   float mMagField = 0.0;
   o2::parameters::GRPMagField* grpmag = nullptr;
@@ -771,6 +772,7 @@ struct AnalysisSameEventPairing {
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
+  Configurable<bool> fConfigAmbiguousHist{"cfgAmbiHist", false, "Enable Ambiguous histograms for time association studies"};
   Configurable<bool> fConfigMultDimuons{"cfgMultDimuons", false, "Multiplicity for Unlike Dimuons"};
   Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
   Configurable<bool> fUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
@@ -863,7 +865,11 @@ struct AnalysisSameEventPairing {
                 Form("PairsBarrelSEPM_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
                 Form("PairsBarrelSEPP_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
                 Form("PairsBarrelSEMM_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName())};
-              histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+              if (fConfigAmbiguousHist) {
+                histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+              } else {
+                histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+              }
               fTrackHistNames.push_back(names);
             } // end loop (pair cuts)
           }   // end if (pair cuts)
@@ -882,7 +888,11 @@ struct AnalysisSameEventPairing {
             Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())};
-          histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+          if (fConfigAmbiguousHist) {
+            histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+          } else {
+            histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          }
           fMuonHistNames.push_back(names);
 
           TString cutNamesStr = fConfigPairCuts.value;
@@ -1108,6 +1118,7 @@ struct AnalysisSameEventPairing {
 
       if constexpr (eventHasQvector) {
         dileptonFlowList(VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi]);
+        refFlowDimuonList(VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kMultA]);
       }
 
       int iCut = 0;
@@ -1115,18 +1126,18 @@ struct AnalysisSameEventPairing {
         if (twoTrackFilter & (uint32_t(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
-            if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+            if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
               fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][0].Data()), VarManager::fgValues);
             }
           } else {
             if (t1.sign() > 0) {
               fHistMan->FillHistClass(histNames[iCut][1].Data(), VarManager::fgValues);
-              if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+              if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
                 fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][1].Data()), VarManager::fgValues);
               }
             } else {
               fHistMan->FillHistClass(histNames[iCut][2].Data(), VarManager::fgValues);
-              if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+              if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
                 fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][2].Data()), VarManager::fgValues);
               }
             }
@@ -1138,18 +1149,18 @@ struct AnalysisSameEventPairing {
               continue;
             if (t1.sign() * t2.sign() < 0) {
               fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
-              if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+              if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
                 fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][0].Data()), VarManager::fgValues);
               }
             } else {
               if (t1.sign() > 0) {
                 fHistMan->FillHistClass(histNames[iCut][1].Data(), VarManager::fgValues);
-                if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+                if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
                   fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][1].Data()), VarManager::fgValues);
                 }
               } else {
                 fHistMan->FillHistClass(histNames[iCut][2].Data(), VarManager::fgValues);
-                if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+                if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
                   fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][2].Data()), VarManager::fgValues);
                 }
               }
@@ -1253,14 +1264,14 @@ struct AnalysisSameEventPairing {
     VarManager::FillEvent<gkEventFillMapWithCovQvector>(event, VarManager::fgValues);
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCovQvector, gkTrackFillMap>(event, tracks, tracks);
   }
-  void processVnDecayToMuMuSkimmed(soa::Filtered<MyEventsVtxCovSelectedQvector>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
+  void processVnDecayToMuMuSkimmed(soa::Filtered<MyEventsVtxCovSelectedQvectorExtra>::iterator const& event, soa::Filtered<MyMuonTracksSelectedWithColl> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
-    VarManager::FillEvent<gkEventFillMapWithCovQvector>(event, VarManager::fgValues);
-    runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCovQvector, gkMuonFillMap>(event, muons, muons);
+    VarManager::FillEvent<gkEventFillMapWithCovQvectorExtra>(event, VarManager::fgValues);
+    runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCovQvectorExtra, gkMuonFillMap>(event, muons, muons);
   }
-  void processVnDecayToMuMuSkimmedWithWeights(soa::Filtered<MyEventsVtxCovSelectedQvectorExtra>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
+  void processVnDecayToMuMuSkimmedWithWeights(soa::Filtered<MyEventsVtxCovSelectedQvectorExtra>::iterator const& event, soa::Filtered<MyMuonTracksSelectedWithColl> const& muons)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
@@ -1332,7 +1343,7 @@ struct AnalysisFwdTrackPid {
 
   Configurable<float> fConfigMaxDCA{"cfgMaxDCA", 0.5f, "Manually set maximum DCA of the track"};
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext&)
   {
   }
 
