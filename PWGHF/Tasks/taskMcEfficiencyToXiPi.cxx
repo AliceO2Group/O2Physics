@@ -238,8 +238,6 @@ struct HfTaskMcEfficiencyToXiPi {
           cascId = dauCharm.globalIndex();
         } else if (std::abs(dauCharm.pdgCode()) == kPiPlus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)) {
           pionId = dauCharm.globalIndex();
-        } else {
-          continue;
         }
       }
       if (cascId < 0 || pionId < 0) {
@@ -272,8 +270,6 @@ struct HfTaskMcEfficiencyToXiPi {
           lambdaId = dauCasc.globalIndex();
         } else if (std::abs(dauCasc.pdgCode()) == kPiPlus && dauCasc.getProcess() == TMCProcess::kPDecay) {
           pionFromCascadeId = dauCasc.globalIndex();
-        } else {
-          continue;
         }
       }
       if (lambdaId < 0 || pionFromCascadeId < 0) {
@@ -299,8 +295,6 @@ struct HfTaskMcEfficiencyToXiPi {
           protonId = dauV0.globalIndex();
         } else if (std::abs(dauV0.pdgCode()) == kPiPlus && dauV0.getProcess() == TMCProcess::kPDecay) {
           pionFromLambdaId = dauV0.globalIndex();
-        } else {
-          continue;
         }
       }
       if (protonId < 0 || pionFromLambdaId < 0) {
