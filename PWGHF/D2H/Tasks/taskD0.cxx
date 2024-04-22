@@ -49,8 +49,15 @@ struct HfTaskD0 {
   Configurable<int> selectionCand{"selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
   Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
+  Configurable<int> nBinsNonPromptScore{"nBinsNonPromptScore", 50, "Number of non-prompt score bins in output ThnSparse"};
+  Configurable<int> nBinsBkgScore{"nBinsBkgScore", 50, "Number of bkg score bins in output ThnSparse"};
+  Configurable<int> nBinsInvMass{"nBinsInvMass", 120, "Number of inv-mass bins in output ThnSparse"};
+  Configurable<int> nBinsPt{"nBinsPt", 360, "Number of pT bins in output ThnSparse"};
+  Configurable<double> ptCandMin{"ptCandMin", 0., "min. cand. pT in output ThnSparse"};
+  Configurable<double> ptCandMax{"ptCandMax", 50., "max. cand. pT in output ThnSparse"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
+  
 
   HfHelper hfHelper;
 
@@ -74,7 +81,7 @@ struct HfTaskD0 {
   Partition<D0CandidatesMlMc> selectedD0CandidatesMlMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
   Partition<D0CandidatesMlMcKF> selectedD0CandidatesMlMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
 
-  HistogramConfigSpec hTHnBdtScoreVsMassVsPtVsYVsOriginVsD0Type{HistType::kTHnSparseD, {{50, 0.f, 1.f}, {50, 0.f, 1.f}, {120, 1.5848, 2.1848}, {360, 0., 36.}, {100, -5., 5.}, {3, -0.5, 2.5}, {4, -0.5, 3.5}}};
+  HistogramConfigSpec hTHnBdtScoreVsMassVsPtVsYVsOriginVsD0Type{HistType::kTHnSparseD, {{nBinsBkgScore, 0.f, 1.f}, {nBinsNonPromptScore, 0.f, 1.f}, {nBinsInvMass, 1.5848, 2.1848}, {nBinsPt, ptCandMin, ptCandMax}, {100, -5., 5.}, {3, -0.5, 2.5}, {4, -0.5, 3.5}}};
 
   HistogramRegistry registry{
     "registry",
