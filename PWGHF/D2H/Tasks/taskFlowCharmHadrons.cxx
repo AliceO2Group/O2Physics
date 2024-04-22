@@ -271,7 +271,6 @@ struct HfTaskFlowCharmHadrons {
       case QvecEstimator::FT0C:
         xQVec = collision.qvecFT0CRe();
         yQVec = collision.qvecFT0CIm();
-        break;
       case QvecEstimator::TPCPos:
         xQVec = collision.qvecBPosRe();
         yQVec = collision.qvecBPosIm();
