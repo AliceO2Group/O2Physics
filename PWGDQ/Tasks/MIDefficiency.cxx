@@ -61,7 +61,7 @@ struct midEfficiency {
   // MID mapping for LB calculation
   o2::mid::Mapping mapping;
 
-  void init(o2::framework::InitContext const& ic)
+  void init(o2::framework::InitContext const&)
   {
 
     LOGF(debug, "Initialization starting");
@@ -93,7 +93,7 @@ struct midEfficiency {
   } // end of init
 
   template <typename TEvent, typename Muons>
-  void runMidEffCounters(TEvent const& event, Muons const& muons)
+  void runMidEffCounters(TEvent const& /*event*/, Muons const& muons)
   {
     LOGF(debug, "Calling process function");
 

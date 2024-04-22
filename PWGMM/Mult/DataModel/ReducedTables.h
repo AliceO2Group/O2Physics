@@ -240,16 +240,12 @@ DECLARE_SOA_COLUMN(GeneratedForwardMultiplicityA, tfA, int);
 DECLARE_SOA_COLUMN(GeneratedForwardMultiplicityC, tfC, int);
 DECLARE_SOA_COLUMN(ReconstructedForwardMultiplicityA, mfA, float);
 DECLARE_SOA_COLUMN(ReconstructedForwardMultiplicityC, mfC, float);
-DECLARE_SOA_COLUMN(ImpactParameter, b, float);
-DECLARE_SOA_COLUMN(ProcessId, id, int);
 } // namespace features
 
 DECLARE_SOA_TABLE(RFeatMins, "AOD", "RFEATMIN",
                   soa::Index<>,
                   features::GeneratedCentralMultiplicity,
                   features::ReconstructedCentralMultiplicity,
-                  features::ProcessId,
-                  features::ImpactParameter,
                   features::ReconstructedVertexX,
                   features::ReconstructedVertexY,
                   features::ReconstructedVertexZ,

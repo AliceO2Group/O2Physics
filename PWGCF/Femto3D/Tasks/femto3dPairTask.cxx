@@ -47,6 +47,10 @@ struct FemtoCorrelations {
   /// Construct a registry object with direct declaration
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Configurable<bool> _removeSameBunchPileup{"removeSameBunchPileup", false, ""};
+  Configurable<bool> _requestGoodZvtxFT0vsPV{"requestGoodZvtxFT0vsPV", false, ""};
+  Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
+
   Configurable<float> _min_P{"min_P", 0.0, "lower mometum limit"};
   Configurable<float> _max_P{"max_P", 100.0, "upper mometum limit"};
   Configurable<float> _eta{"eta", 100.0, "abs eta value limit"};
@@ -88,6 +92,7 @@ struct FemtoCorrelations {
   ConfigurableAxis CFkStarBinning{"CFkStarBinning", {500, 0.005, 5.005}, "k* binning of the CF (Nbins, lowlimit, uplimit)"};
 
   Configurable<bool> _fill3dCF{"fill3dCF", false, "flag for filling 3D LCMS histos: true -- fill; false -- not"};
+  Configurable<bool> _fillDetaDphi{"fillDetaDphi", false, "flag for filling dEta(dPhi*) histos: true -- fill; false -- not; note: they're filled before the double track cut"};
   ConfigurableAxis CF3DqLCMSBinning{"CF3DqLCMSBinning", {60, -0.3, 0.3}, "q_out/side/long binning of the CF 3D in LCMS (Nbins, lowlimit, uplimit)"};
   // the next configarable is responsible for skipping (pseudo)randomly chosen ($value -1) pairs of events in the mixing process
   // migth be useful (for the sake of execution time and the output file size ...) in case of too many events per DF since in the SE thacks are mixed in N_ev and in the ME 0.5*N_ev*(N_ev - 1)
@@ -96,7 +101,7 @@ struct FemtoCorrelations {
   // P.P.S. the chosen way of optimizing the mixing midgt not be the correct one -- feel free to propose the right one!
   // P.P.P.S. choose wisely....
   // P.P.P.P.S this way is still being testing i might be reconsidered; might change in the future, keep looking at the source code
-  Configurable<int> _MEreductionFactor{"MEreductionFactor", 1, "only one (pseudo)randomly choosen event out per pair $value events will be processed and contribute to the final mixing (if < 1 -> all the possible event pairs (per vertex&cent bin) will be processed); implemented for the sake of efficiency; look at the source code;"};
+  Configurable<unsigned int> _MEreductionFactor{"MEreductionFactor", 1, "only one (pseudo)randomly choosen event out per pair $value events will be processed and contribute to the final mixing (if < 2 -> all the possible event pairs (per vertex&cent bin) will be processed); implemented for the sake of efficiency; look at the source code;"};
 
   bool IsIdentical;
 
@@ -106,7 +111,7 @@ struct FemtoCorrelations {
   std::pair<int, std::vector<float>> TPCcuts_2;
   std::pair<int, std::vector<float>> TOFcuts_2;
 
-  using FilteredCollisions = aod::SingleCollSels;
+  using FilteredCollisions = soa::Join<aod::SingleCollSels, aod::SingleCollExtras>;
   using FilteredTracks = aod::SingleTrackSels;
 
   typedef std::shared_ptr<soa::Filtered<FilteredTracks>::iterator> trkType;
@@ -142,6 +147,9 @@ struct FemtoCorrelations {
   std::vector<std::vector<std::shared_ptr<TH3>>> MEhistos_3D;
   std::vector<std::vector<std::shared_ptr<TH3>>> qLCMSvskStar;
 
+  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_SE_histos;
+  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_ME_histos;
+
   void init(o2::framework::InitContext&)
   {
 
@@ -163,7 +171,7 @@ struct FemtoCorrelations {
     TPCcuts_2 = std::make_pair(_particlePDG_2, _tpcNSigma_2);
     TOFcuts_2 = std::make_pair(_particlePDG_2, _tofNSigma_2);
 
-    for (int i = 0; i < _centBins.value.size() - 1; i++) {
+    for (unsigned int i = 0; i < _centBins.value.size() - 1; i++) {
       std::vector<std::shared_ptr<TH1>> SEperMult_1D;
       std::vector<std::shared_ptr<TH1>> MEperMult_1D;
       std::vector<std::shared_ptr<TH1>> kTperMult;
@@ -172,7 +180,7 @@ struct FemtoCorrelations {
       auto hMult = registry.add<TH1>(Form("Cent%i/TPCMult_cent%i", i, i), Form("TPCMult_cent%i", i), kTH1F, {{5001, -0.5, 5000.5, "Mult."}});
       MultHistos.push_back(std::move(hMult));
 
-      for (int j = 0; j < _kTbins.value.size() - 1; j++) {
+      for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
         auto hSE_1D = registry.add<TH1>(Form("Cent%i/SE_1D_cent%i_kT%i", i, i, j), Form("SE_1D_cent%i_kT%i", i, j), kTH1F, {{CFkStarBinning, "k* (GeV/c)"}});
         auto hME_1D = registry.add<TH1>(Form("Cent%i/ME_1D_cent%i_kT%i", i, i, j), Form("ME_1D_cent%i_kT%i", i, j), kTH1F, {{CFkStarBinning, "k* (GeV/c)"}});
         auto hkT = registry.add<TH1>(Form("Cent%i/kT_cent%i_kT%i", i, i, j), Form("kT_cent%i_kT%i", i, j), kTH1F, {{500, 0., 5., "kT"}});
@@ -193,7 +201,7 @@ struct FemtoCorrelations {
         std::vector<std::shared_ptr<TH3>> MEperMult_3D;
         std::vector<std::shared_ptr<TH3>> qLCMSvskStarperMult;
 
-        for (int j = 0; j < _kTbins.value.size() - 1; j++) {
+        for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
           auto hSE_3D = registry.add<TH3>(Form("Cent%i/SE_3D_cent%i_kT%i", i, i, j), Form("SE_3D_cent%i_kT%i", i, j), kTH3F, {{CF3DqLCMSBinning, "q_out (GeV/c)"}, {CF3DqLCMSBinning, "q_side (GeV/c)"}, {CF3DqLCMSBinning, "q_long (GeV/c)"}});
           auto hME_3D = registry.add<TH3>(Form("Cent%i/ME_3D_cent%i_kT%i", i, i, j), Form("ME_3D_cent%i_kT%i", i, j), kTH3F, {{CF3DqLCMSBinning, "q_out (GeV/c)"}, {CF3DqLCMSBinning, "q_side (GeV/c)"}, {CF3DqLCMSBinning, "q_long (GeV/c)"}});
           auto hqLCMSvskStar = registry.add<TH3>(Form("Cent%i/qLCMSvskStar_cent%i_kT%i", i, i, j), Form("qLCMSvskStar_cent%i_kT%i", i, j), kTH3F, {{CF3DqLCMSBinning, "q_out (GeV/c)"}, {CF3DqLCMSBinning, "q_side (GeV/c)"}, {CF3DqLCMSBinning, "q_long (GeV/c)"}});
@@ -204,6 +212,21 @@ struct FemtoCorrelations {
         SEhistos_3D.push_back(std::move(SEperMult_3D));
         MEhistos_3D.push_back(std::move(MEperMult_3D));
         qLCMSvskStar.push_back(std::move(qLCMSvskStarperMult));
+      }
+
+      if (_fillDetaDphi) {
+        std::vector<std::shared_ptr<TH2>> DoubleTrack_SE_histos_perMult;
+        std::vector<std::shared_ptr<TH2>> DoubleTrack_ME_histos_perMult;
+
+        for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
+          auto hDblTrk_SE = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_SE_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j), kTH2F, {{600, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+          auto hDblTrk_ME = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_ME_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j), kTH2F, {{600, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+
+          DoubleTrack_SE_histos_perMult.push_back(std::move(hDblTrk_SE));
+          DoubleTrack_ME_histos_perMult.push_back(std::move(hDblTrk_ME));
+        }
+        DoubleTrack_SE_histos.push_back(std::move(DoubleTrack_SE_histos_perMult));
+        DoubleTrack_ME_histos.push_back(std::move(DoubleTrack_ME_histos_perMult));
       }
     }
 
@@ -218,19 +241,15 @@ struct FemtoCorrelations {
   }
 
   template <typename Type>
-  void mixTracks(Type const& tracks, int multBin)
+  void mixTracks(Type const& tracks, unsigned int multBin)
   { // template for identical particles from the same collision
-    if (multBin >= 0) {
-      if (multBin > SEhistos_1D.size())
-        LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (1D)");
-      if (_fill3dCF && multBin > SEhistos_3D.size())
-        LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (3D)");
-    } else {
-      LOGF(fatal, "multBin value passed to the mixTracks function is less than 0");
-    }
+    if (multBin > SEhistos_1D.size())
+      LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (1D)");
+    if (_fill3dCF && multBin > SEhistos_3D.size())
+      LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (3D)");
 
-    for (int ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
-      for (int iii = ii + 1; iii < tracks.size(); iii++) {
+    for (unsigned int ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
+      for (unsigned int iii = ii + 1; iii < tracks.size(); iii++) {
 
         Pair->SetPair(tracks[ii], tracks[iii]);
         float pair_kT = Pair->GetKt();
@@ -238,26 +257,25 @@ struct FemtoCorrelations {
         if (pair_kT < *_kTbins.value.begin() || pair_kT >= *(_kTbins.value.end() - 1))
           continue;
 
-        int kTbin = o2::aod::singletrackselector::getBinIndex<int>(pair_kT, _kTbins);
-        if (kTbin >= 0) {
-          if (kTbin > SEhistos_1D[multBin].size())
-            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (1D)");
-          if (_fill3dCF && kTbin > SEhistos_3D[multBin].size())
-            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
-        } else {
-          LOGF(fatal, "kTbin value obtained for a pair is less than 0");
-        }
+        unsigned int kTbin = o2::aod::singletrackselector::getBinIndex<unsigned int>(pair_kT, _kTbins);
+        if (kTbin > SEhistos_1D[multBin].size())
+          LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (1D)");
+        if (_fill3dCF && kTbin > SEhistos_3D[multBin].size())
+          LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
 
-        if (!Pair->IsClosePair(_deta, _dphi, _radiusTPC)) {
-          kThistos[multBin][kTbin]->Fill(pair_kT);
-          mThistos[multBin][kTbin]->Fill(Pair->GetMt());       // test
-          SEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar()); // close pair rejection and fillig the SE histo
+        if (_fillDetaDphi)
+          DoubleTrack_SE_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+          continue;
 
-          if (_fill3dCF) {
-            std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
-            TVector3 qLCMS = std::pow(-1, (mt() % 2)) * Pair->GetQLCMS(); // introducing randomness to the pair order ([first, second]); important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
-            SEhistos_3D[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z());
-          }
+        kThistos[multBin][kTbin]->Fill(pair_kT);
+        mThistos[multBin][kTbin]->Fill(Pair->GetMt());       // test
+        SEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar()); // close pair rejection and fillig the SE histo
+
+        if (_fill3dCF) {
+          std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
+          TVector3 qLCMS = std::pow(-1, (mt() % 2)) * Pair->GetQLCMS(); // introducing randomness to the pair order ([first, second]); important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
+          SEhistos_3D[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z());
         }
         Pair->ResetPair();
       }
@@ -265,16 +283,12 @@ struct FemtoCorrelations {
   }
 
   template <int SE_or_ME, typename Type>
-  void mixTracks(Type const& tracks1, Type const& tracks2, int multBin)
+  void mixTracks(Type const& tracks1, Type const& tracks2, unsigned int multBin)
   { // last value: 0 -- SE; 1 -- ME
-    if (multBin >= 0) {
-      if (multBin > SEhistos_1D.size())
-        LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (1D)");
-      if (_fill3dCF && multBin > SEhistos_3D.size())
-        LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (3D)");
-    } else {
-      LOGF(fatal, "multBin value passed to the mixTracks function is less than 0");
-    }
+    if (multBin > SEhistos_1D.size())
+      LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (1D)");
+    if (_fill3dCF && multBin > SEhistos_3D.size())
+      LOGF(fatal, "multBin value passed to the mixTracks function exceeds the configured number of Cent. bins (3D)");
 
     for (auto ii : tracks1) {
       for (auto iii : tracks2) {
@@ -285,36 +299,40 @@ struct FemtoCorrelations {
         if (pair_kT < *_kTbins.value.begin() || pair_kT >= *(_kTbins.value.end() - 1))
           continue;
 
-        int kTbin = o2::aod::singletrackselector::getBinIndex<int>(pair_kT, _kTbins);
-        if (kTbin >= 0) {
-          if (kTbin > SEhistos_1D[multBin].size())
-            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (1D)");
-          if (_fill3dCF && kTbin > SEhistos_3D[multBin].size())
-            LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
-        } else {
-          LOGF(fatal, "kTbin value obtained for a pair is less than 0");
+        unsigned int kTbin = o2::aod::singletrackselector::getBinIndex<unsigned int>(pair_kT, _kTbins);
+        if (kTbin > SEhistos_1D[multBin].size())
+          LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (1D)");
+        if (_fill3dCF && kTbin > SEhistos_3D[multBin].size())
+          LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
+
+        if (_fillDetaDphi) {
+          if (!SE_or_ME)
+            DoubleTrack_SE_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+          else
+            DoubleTrack_ME_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         }
 
-        if (!Pair->IsClosePair(_deta, _dphi, _radiusTPC)) {
-          if (!SE_or_ME) {
-            SEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar());
-            kThistos[multBin][kTbin]->Fill(pair_kT);
-            mThistos[multBin][kTbin]->Fill(Pair->GetMt()); // test
+        if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
+          continue;
 
-            if (_fill3dCF) {
-              std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
-              TVector3 qLCMS = std::pow(-1, (mt() % 2)) * Pair->GetQLCMS(); // introducing randomness to the pair order ([first, second]); important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
-              SEhistos_3D[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z());
-            }
-          } else {
-            MEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar());
+        if (!SE_or_ME) {
+          SEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar());
+          kThistos[multBin][kTbin]->Fill(pair_kT);
+          mThistos[multBin][kTbin]->Fill(Pair->GetMt()); // test
 
-            if (_fill3dCF) {
-              std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
-              TVector3 qLCMS = std::pow(-1, (mt() % 2)) * Pair->GetQLCMS(); // introducing randomness to the pair order ([first, second]); important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
-              MEhistos_3D[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z());
-              qLCMSvskStar[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z(), Pair->GetKstar());
-            }
+          if (_fill3dCF) {
+            std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
+            TVector3 qLCMS = std::pow(-1, (mt() % 2)) * Pair->GetQLCMS(); // introducing randomness to the pair order ([first, second]); important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
+            SEhistos_3D[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z());
+          }
+        } else {
+          MEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar());
+
+          if (_fill3dCF) {
+            std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
+            TVector3 qLCMS = std::pow(-1, (mt() % 2)) * Pair->GetQLCMS(); // introducing randomness to the pair order ([first, second]); important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
+            MEhistos_3D[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z());
+            qLCMSvskStar[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z(), Pair->GetKstar());
           }
         }
         Pair->ResetPair();
@@ -329,6 +347,12 @@ struct FemtoCorrelations {
 
     for (auto track : tracks) {
       if (abs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
+        continue;
+      if (_removeSameBunchPileup && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
+        continue;
+      if (_requestGoodZvtxFT0vsPV && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isGoodZvtxFT0vsPV())
+        continue;
+      if (_requestVertexITSTPC && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isVertexITSTPC())
         continue;
       if (track.tpcFractionSharedCls() > _tpcFractionSharedCls || track.itsNCls() < _itsNCls)
         continue;
@@ -386,6 +410,13 @@ struct FemtoCorrelations {
       if (collision.multPerc() < *_centBins.value.begin() || collision.multPerc() >= *(_centBins.value.end() - 1))
         continue;
 
+      if (_removeSameBunchPileup && !collision.isNoSameBunchPileup())
+        continue;
+      if (_requestGoodZvtxFT0vsPV && !collision.isGoodZvtxFT0vsPV())
+        continue;
+      if (_requestVertexITSTPC && !collision.isVertexITSTPC())
+        continue;
+
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {
         if (IsIdentical)
           continue;
@@ -403,21 +434,21 @@ struct FemtoCorrelations {
     if (IsIdentical) { //====================================== mixing identical ======================================
 
       for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
-        int EvPerBin = (i->second).size();
+        unsigned int EvPerBin = (i->second).size();
 
-        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+        for (unsigned int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
 
           auto col1 = (i->second)[indx1];
 
           Pair->SetMagField1(col1->magField());
           Pair->SetMagField2(col1->magField());
 
-          int centBin = std::floor((i->first).second);
+          unsigned int centBin = std::floor((i->first).second);
           MultHistos[centBin]->Fill(col1->mult());
 
           mixTracks(selectedtracks_1[col1->index()], centBin); // mixing SE identical
 
-          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+          for (unsigned int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
             if (_MEreductionFactor.value > 1) {
               std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
               if ((mt() % (_MEreductionFactor.value + 1)) < _MEreductionFactor.value)
@@ -435,21 +466,21 @@ struct FemtoCorrelations {
     } else { //====================================== mixing non-identical ======================================
 
       for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
-        int EvPerBin = (i->second).size();
+        unsigned int EvPerBin = (i->second).size();
 
-        for (int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
+        for (unsigned int indx1 = 0; indx1 < EvPerBin; indx1++) { // loop over all the events in each vertex&mult bin
 
           auto col1 = (i->second)[indx1];
 
           Pair->SetMagField1(col1->magField());
           Pair->SetMagField2(col1->magField());
 
-          int centBin = std::floor((i->first).second);
+          unsigned int centBin = std::floor((i->first).second);
           MultHistos[centBin]->Fill(col1->mult());
 
           mixTracks<0>(selectedtracks_1[col1->index()], selectedtracks_2[col1->index()], centBin); // mixing SE non-identical, in <> brackets: 0 -- SE; 1 -- ME
 
-          for (int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+          for (unsigned int indx2 = indx1 + 1; indx2 < EvPerBin; indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
             if (_MEreductionFactor.value > 1) {
               std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
               if (mt() % (_MEreductionFactor.value + 1) < _MEreductionFactor.value)

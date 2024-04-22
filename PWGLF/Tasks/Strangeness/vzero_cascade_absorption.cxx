@@ -39,6 +39,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
@@ -112,7 +113,8 @@ struct vzero_cascade_absorption {
   void init(InitContext const&)
   {
     // Histograms
-    registryQC.add("event_counter", "event counter", HistType::kTH1F, {{4, 0, 4, "number of events in data (first 2 bins) and mc (last 2 bins)"}});
+    registryQC.add("event_counter_data", "event counter data", HistType::kTH1F, {{5, 0, 5, "number of events"}});
+    registryQC.add("event_counter_mc", "event counter mc", HistType::kTH1F, {{5, 0, 5, "number of events"}});
 
     // K0 short
     registryData.add("K0_before_target_data", "K0 before target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
@@ -157,14 +159,13 @@ struct vzero_cascade_absorption {
 
   bool hasHitOnITSlayer(uint8_t itsClsmap, int layer)
   {
-
     unsigned char test_bit = 1 << layer;
     return (itsClsmap & test_bit);
   }
 
   // Single-Track Selection
   template <typename T1, typename C>
-  bool passedSingleTrackSelection(const T1& track, const C& collision)
+  bool passedSingleTrackSelection(const T1& track, const C&)
   {
     // Single-Track Selections
     if (requirehitsITS && (!track.hasITS()))
@@ -335,18 +336,24 @@ struct vzero_cascade_absorption {
   }
 
   // Process Data
-  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, FullTracks const& tracks)
+  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, FullTracks const&)
   {
-
     // Event Counter (before event sel)
-    registryQC.fill(HIST("event_counter"), 0.5);
+    registryQC.fill(HIST("event_counter_data"), 0.5);
 
     // Event Selection
     if (!collision.sel8())
       return;
 
     // Event Counter (after event sel)
-    registryQC.fill(HIST("event_counter"), 1.5);
+    registryQC.fill(HIST("event_counter_data"), 1.5);
+
+    // Cut on Zvertex
+    if (abs(collision.posZ()) > 10.0)
+      return;
+
+    // Event Counter (after cut on z_vtx)
+    registryQC.fill(HIST("event_counter_data"), 2.5);
 
     auto hit_ITS_before_target = static_cast<std::vector<float>>(hit_requirement_before_target);
     auto hit_ITS_after_target = static_cast<std::vector<float>>(hit_requirement_after_target);
@@ -417,172 +424,193 @@ struct vzero_cascade_absorption {
         if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs)
           registryData.fill(HIST("AntiLambda_after_target_data"), v0.p(), v0.mAntiLambda());
       }
-
     } // end loop on V0s
   }   // end processData
   PROCESS_SWITCH(vzero_cascade_absorption, processData, "Process data", true);
 
-  // Process MC
-  void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, aod::V0Datas const& fullV0s, MCTracks const& tracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+  Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
+  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
+
+  // Process MC Rec
+  void processMCrec(SimCollisions const& collisions, MCTracks const&, aod::V0Datas const& fullV0s, aod::McCollisions const&, const aod::McParticles&)
   {
 
-    // Event Counter (before event sel)
-    registryQC.fill(HIST("event_counter"), 2.5);
+    for (const auto& collision : collisions) {
 
-    // Event Selection
-    if (!collision.sel8())
-      return;
+      // Event Counter (before event sel)
+      registryQC.fill(HIST("event_counter_mc"), 0.5);
 
-    // Event Counter (after event sel)
-    registryQC.fill(HIST("event_counter"), 3.5);
-
-    // Loop over Reconstructed V0s
-    for (auto& v0 : fullV0s) {
-
-      // Positive and Negative Tracks
-      const auto& posTrack = v0.posTrack_as<MCTracks>();
-      const auto& negTrack = v0.negTrack_as<MCTracks>();
-
-      // Require TPC Refit
-      if (!posTrack.passedTPCRefit())
-        continue;
-      if (!negTrack.passedTPCRefit())
+      // Event Selection
+      if (!collision.sel8())
         continue;
 
-      auto hit_ITS_before_target = static_cast<std::vector<float>>(hit_requirement_before_target);
-      auto hit_ITS_after_target = static_cast<std::vector<float>>(hit_requirement_after_target);
+      // Event Counter (after event sel)
+      registryQC.fill(HIST("event_counter_mc"), 1.5);
 
-      // ITS Requirement
-      bool satisfyITSreq = true;
-      if (requirehitsITS) {
-        for (int i = 0; i < 7; i++) {
-          if (hit_ITS_before_target[i] > 0 && !hasHitOnITSlayer(posTrack.itsClusterMap(), i)) {
-            satisfyITSreq = false;
-            break;
+      // Cut on Zvertex
+      if (abs(collision.posZ()) > 10.0)
+        continue;
+
+      // Event Counter (after cut on z_vtx)
+      registryQC.fill(HIST("event_counter_mc"), 2.5);
+
+      auto v0s_per_coll = fullV0s.sliceBy(perCollision, collision.globalIndex());
+
+      // Loop over Reconstructed V0s
+      for (auto& v0 : v0s_per_coll) {
+
+        // Positive and Negative Tracks
+        const auto& posTrack = v0.posTrack_as<MCTracks>();
+        const auto& negTrack = v0.negTrack_as<MCTracks>();
+
+        // Require TPC Refit
+        if (!posTrack.passedTPCRefit())
+          continue;
+        if (!negTrack.passedTPCRefit())
+          continue;
+
+        auto hit_ITS_before_target = static_cast<std::vector<float>>(hit_requirement_before_target);
+        auto hit_ITS_after_target = static_cast<std::vector<float>>(hit_requirement_after_target);
+
+        // ITS Requirement
+        bool satisfyITSreq = true;
+        if (requirehitsITS) {
+          for (int i = 0; i < 7; i++) {
+            if (hit_ITS_before_target[i] > 0 && !hasHitOnITSlayer(posTrack.itsClusterMap(), i)) {
+              satisfyITSreq = false;
+              break;
+            }
+            if (hit_ITS_after_target[i] > 0 && !hasHitOnITSlayer(negTrack.itsClusterMap(), i)) {
+              satisfyITSreq = false;
+              break;
+            }
           }
-          if (hit_ITS_after_target[i] > 0 && !hasHitOnITSlayer(negTrack.itsClusterMap(), i)) {
-            satisfyITSreq = false;
-            break;
+        }
+
+        if (requirehitsITS && (!satisfyITSreq))
+          continue;
+
+        // MC Particles
+        if (!posTrack.has_mcParticle())
+          continue;
+        if (!negTrack.has_mcParticle())
+          continue;
+
+        auto posParticle = posTrack.mcParticle_as<aod::McParticles>();
+        auto negParticle = negTrack.mcParticle_as<aod::McParticles>();
+        if (!posParticle.has_mothers() || !negParticle.has_mothers()) {
+          continue;
+        }
+
+        bool isK0s = false;
+        bool isLambda = false;
+        bool isAntiLambda = false;
+
+        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
+          for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
+            if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 310)
+              isK0s = true;
+
+            if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == +3122)
+              isLambda = true;
+            if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -3122)
+              isAntiLambda = true;
           }
         }
-      }
 
-      if (requirehitsITS && (!satisfyITSreq))
-        continue;
+        // Resolution in radial position
+        float Rgen = TMath::Sqrt(posParticle.vx() * posParticle.vx() + posParticle.vy() * posParticle.vy());
+        float Rrec = v0.v0radius();
+        float deltaR = Rgen - Rrec;
 
-      // MC Particles
-      if (!posTrack.has_mcParticle())
-        continue;
-      if (!negTrack.has_mcParticle())
-        continue;
+        // K0 Short
+        if (passedK0Selection(v0, negTrack, posTrack, collision) && isK0s) {
 
-      auto posParticle = posTrack.mcParticle_as<aod::McParticles>();
-      auto negParticle = negTrack.mcParticle_as<aod::McParticles>();
-      if (!posParticle.has_mothers() || !negParticle.has_mothers()) {
-        continue;
-      }
+          // Before Target
+          if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs) {
+            registryMC.fill(HIST("K0_before_target_mc"), v0.p(), v0.mK0Short());
+            registryMC.fill(HIST("K0_Rresolution_before_target"), v0.p(), deltaR);
+          }
 
-      bool isK0s = false;
-      bool isLambda = false;
-      bool isAntiLambda = false;
-
-      for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
-        for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
-          if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 310)
-            isK0s = true;
-
-          if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == +3122)
-            isLambda = true;
-          if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -3122)
-            isAntiLambda = true;
-        }
-      }
-
-      // Resolution in radial position
-      float Rgen = TMath::Sqrt(posParticle.vx() * posParticle.vx() + posParticle.vy() * posParticle.vy());
-      float Rrec = v0.v0radius();
-      float deltaR = Rgen - Rrec;
-
-      // K0 Short
-      if (passedK0Selection(v0, negTrack, posTrack, collision) && isK0s) {
-
-        // Before Target
-        if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs) {
-          registryMC.fill(HIST("K0_before_target_mc"), v0.p(), v0.mK0Short());
-          registryMC.fill(HIST("K0_Rresolution_before_target"), v0.p(), deltaR);
+          // After Target
+          if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs) {
+            registryMC.fill(HIST("K0_after_target_mc"), v0.p(), v0.mK0Short());
+            registryMC.fill(HIST("K0_Rresolution_after_target"), v0.p(), deltaR);
+          }
         }
 
-        // After Target
-        if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs) {
-          registryMC.fill(HIST("K0_after_target_mc"), v0.p(), v0.mK0Short());
-          registryMC.fill(HIST("K0_Rresolution_after_target"), v0.p(), deltaR);
-        }
-      }
+        // Lambda
+        if (passedLambdaSelection(v0, negTrack, posTrack, collision) && isLambda) {
 
-      // Lambda
-      if (passedLambdaSelection(v0, negTrack, posTrack, collision) && isLambda) {
+          // Before Target
+          if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs) {
+            registryMC.fill(HIST("Lambda_before_target_mc"), v0.p(), v0.mLambda());
+            registryMC.fill(HIST("Lambda_Rresolution_before_target"), v0.p(), deltaR);
+          }
 
-        // Before Target
-        if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs) {
-          registryMC.fill(HIST("Lambda_before_target_mc"), v0.p(), v0.mLambda());
-          registryMC.fill(HIST("Lambda_Rresolution_before_target"), v0.p(), deltaR);
-        }
-
-        // After Target
-        if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs) {
-          registryMC.fill(HIST("Lambda_after_target_mc"), v0.p(), v0.mLambda());
-          registryMC.fill(HIST("Lambda_Rresolution_after_target"), v0.p(), deltaR);
-        }
-      }
-
-      // AntiLambda
-      if (passedAntiLambdaSelection(v0, negTrack, posTrack, collision) && isAntiLambda) {
-
-        // Before Target
-        if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs) {
-          registryMC.fill(HIST("AntiLambda_before_target_mc"), v0.p(), v0.mAntiLambda());
-          registryMC.fill(HIST("AntiLambda_Rresolution_before_target"), v0.p(), deltaR);
+          // After Target
+          if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs) {
+            registryMC.fill(HIST("Lambda_after_target_mc"), v0.p(), v0.mLambda());
+            registryMC.fill(HIST("Lambda_Rresolution_after_target"), v0.p(), deltaR);
+          }
         }
 
-        // After Target
-        if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs) {
-          registryMC.fill(HIST("AntiLambda_after_target_mc"), v0.p(), v0.mAntiLambda());
-          registryMC.fill(HIST("AntiLambda_Rresolution_after_target"), v0.p(), deltaR);
+        // AntiLambda
+        if (passedAntiLambdaSelection(v0, negTrack, posTrack, collision) && isAntiLambda) {
+
+          // Before Target
+          if (v0.v0radius() > Rmin_beforeAbs && v0.v0radius() < Rmax_beforeAbs) {
+            registryMC.fill(HIST("AntiLambda_before_target_mc"), v0.p(), v0.mAntiLambda());
+            registryMC.fill(HIST("AntiLambda_Rresolution_before_target"), v0.p(), deltaR);
+          }
+
+          // After Target
+          if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs) {
+            registryMC.fill(HIST("AntiLambda_after_target_mc"), v0.p(), v0.mAntiLambda());
+            registryMC.fill(HIST("AntiLambda_Rresolution_after_target"), v0.p(), deltaR);
+          }
         }
-      }
 
-    } // end loop on V0s
-  }   // end processMC
-  PROCESS_SWITCH(vzero_cascade_absorption, processMC, "Process mc", false);
+      } // end loop on V0s
+    }
+  } // end processMC
 
-  void processMCgen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
+  void processMCgen(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    for (auto& mcParticle : mcParticles) {
 
-      if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax)
-        continue;
+    for (const auto& mccollision : mcCollisions) {
 
-      float R = TMath::Sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy());
-      float p = mcParticle.p();
+      auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
 
-      // Lambda
-      if (mcParticle.pdgCode() == +3122) {
-        if (R > Rmin_beforeAbs && R < Rmax_beforeAbs)
-          registryMC.fill(HIST("Lambda_before_target_mc_gen"), p);
-        if (R > Rmin_afterAbs && R < Rmax_afterAbs)
-          registryMC.fill(HIST("Lambda_after_target_mc_gen"), p);
-      }
+      for (auto& mcParticle : mcParticles_per_coll) {
 
-      // AntiLambda
-      if (mcParticle.pdgCode() == -3122) {
-        if (R > Rmin_beforeAbs && R < Rmax_beforeAbs)
-          registryMC.fill(HIST("AntiLambda_before_target_mc_gen"), p);
-        if (R > Rmin_afterAbs && R < Rmax_afterAbs)
-          registryMC.fill(HIST("AntiLambda_after_target_mc_gen"), p);
+        if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax)
+          continue;
+
+        float R = TMath::Sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy());
+        float p = mcParticle.p();
+
+        // Lambda
+        if (mcParticle.pdgCode() == +3122) {
+          if (R > Rmin_beforeAbs && R < Rmax_beforeAbs)
+            registryMC.fill(HIST("Lambda_before_target_mc_gen"), p);
+          if (R > Rmin_afterAbs && R < Rmax_afterAbs)
+            registryMC.fill(HIST("Lambda_after_target_mc_gen"), p);
+        }
+
+        // AntiLambda
+        if (mcParticle.pdgCode() == -3122) {
+          if (R > Rmin_beforeAbs && R < Rmax_beforeAbs)
+            registryMC.fill(HIST("AntiLambda_before_target_mc_gen"), p);
+          if (R > Rmin_afterAbs && R < Rmax_afterAbs)
+            registryMC.fill(HIST("AntiLambda_after_target_mc_gen"), p);
+        }
       }
     }
   }
-  PROCESS_SWITCH(vzero_cascade_absorption, processMCgen, "Process generated MC", false);
+
+  PROCESS_SWITCH(vzero_cascade_absorption, processMCrec, "Process MC rec", false);
+  PROCESS_SWITCH(vzero_cascade_absorption, processMCgen, "Process MC gen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

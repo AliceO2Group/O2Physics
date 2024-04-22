@@ -42,7 +42,7 @@
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
 /PWGMM/UE @alibuild @aalkin @aortizve
-/PWGUD @alibuild @pbuehler
+/PWGUD @alibuild @pbuehler @abylinkin @rolavick
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
 /Tools/PIDML @alibuild @saganatt
 /Tools/ML @alibuild @fcatalan92 @fmazzasc

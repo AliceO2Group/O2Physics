@@ -336,7 +336,7 @@ struct highmasslambda {
   double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();   // FIXME: Get from the common header
   double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();   // FIXME: Get from the common header
   double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
-  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, AllTrackCandidates const& alltracks, ResoV0s const& V0s, aod::BCs const&)
+  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, AllTrackCandidates const&, ResoV0s const& V0s, aod::BCs const&)
   {
     if (!collision.sel8()) {
       return;
@@ -411,7 +411,7 @@ struct highmasslambda {
         }
         firstprimarytrack = firstprimarytrack + 1;
         Proton = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPr);
-        Kshort = ROOT::Math::PxPyPzMVector(v0.pt(), v0.eta(), v0.phi(), massK0s);
+        Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), massK0s);
         Lambdac = Proton + Kshort;
         if (TMath::Abs(Lambdac.Rapidity()) > confRapidity) {
           continue;
@@ -443,7 +443,7 @@ struct highmasslambda {
     }
   }
   PROCESS_SWITCH(highmasslambda, processSameEvent, "Process Same event", true);
-  void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks, AllTrackCandidates const& alltracks, ResoV0s const& V0s)
+  void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks, AllTrackCandidates const&, ResoV0s const& V0s)
   {
     auto tracksV0sTuple = std::make_tuple(tracks, V0s);
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
@@ -482,7 +482,7 @@ struct highmasslambda {
         }
 
         Proton = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPr);
-        Kshort = ROOT::Math::PxPyPzMVector(v0.pt(), v0.eta(), v0.phi(), massK0s);
+        Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), massK0s);
         Lambdac = Proton + Kshort;
         if (TMath::Abs(Lambdac.Rapidity()) > confRapidity) {
           continue;

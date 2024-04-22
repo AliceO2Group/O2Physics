@@ -193,7 +193,7 @@ struct kstarpbpb {
   double massPi = o2::constants::physics::MassPiMinus;
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
+  bool eventSelected(TCollision collision, const int& /*multTrk*/, const float& centrality)
   {
     if (collision.alias_bit(kTVXinTRD)) {
       // TRD triggered

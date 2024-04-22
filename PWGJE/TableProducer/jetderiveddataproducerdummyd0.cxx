@@ -39,7 +39,7 @@ struct JetDerivedDataProducerDummyD0Task {
   {
   }
 
-  void processDummy(aod::JDummys const& dummys)
+  void processDummy(aod::JDummys const&)
   {
   }
   PROCESS_SWITCH(JetDerivedDataProducerDummyD0Task, processDummy, "leaves all tables empty", true);

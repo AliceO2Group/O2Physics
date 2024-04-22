@@ -549,7 +549,7 @@ struct femtoUniverseProducerTask {
   }
 
   template <typename CollisionType, typename TrackType>
-  void fillMCTruthCollisions(CollisionType const& col, TrackType const& tracks)
+  void fillMCTruthCollisions(CollisionType const& col, TrackType const&)
   {
     for (auto& c : col) {
       const auto vtxZ = c.posZ();
@@ -678,7 +678,7 @@ struct femtoUniverseProducerTask {
   }
 
   template <bool isMC, typename CollisionType, typename V0Type, typename TrackType>
-  void fillV0(CollisionType const& col, V0Type const& fullV0s, TrackType const& tracks)
+  void fillV0(CollisionType const& col, V0Type const& fullV0s, TrackType const&)
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
@@ -769,7 +769,7 @@ struct femtoUniverseProducerTask {
   }
 
   template <bool isMC, typename HfCandidate, typename TrackType, typename CollisionType>
-  void fillD0mesons(CollisionType const& col, TrackType const& tracks, HfCandidate const& hfCands)
+  void fillD0mesons(CollisionType const&, TrackType const&, HfCandidate const& hfCands)
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
@@ -787,7 +787,7 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      if (std::abs(hfCand.eta()) < ConfD0Selection.ConfD0D0barCandEtaCut) {
+      if (std::abs(hfCand.eta()) > ConfD0Selection.ConfD0D0barCandEtaCut) {
         continue;
       }
 
@@ -819,7 +819,7 @@ struct femtoUniverseProducerTask {
       }
 
       if (ConfD0Selection.ConfStoreD0D0barWithinTheMassRange) {
-        if ((invMassD0 > ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0 < ConfD0Selection.ConfStoreD0D0barInvMassUpLimit) || (invMassD0bar > ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0bar < ConfD0Selection.ConfStoreD0D0barInvMassUpLimit))
+        if ((invMassD0 < ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0 > ConfD0Selection.ConfStoreD0D0barInvMassUpLimit) || (invMassD0bar < ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0bar > ConfD0Selection.ConfStoreD0D0barInvMassUpLimit))
           continue;
       }
 
@@ -1104,8 +1104,8 @@ struct femtoUniverseProducerTask {
   void processFullMC(aod::FemtoFullCollisionMC const& col,
                      aod::BCsWithTimestamps const&,
                      soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                     aod::McCollisions const& mcCollisions,
-                     aod::McParticles const& mcParticles,
+                     aod::McCollisions const&,
+                     aod::McParticles const&,
                      soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s)
   {
     // get magnetic field for run
@@ -1118,7 +1118,7 @@ struct femtoUniverseProducerTask {
   void processTrackMC(aod::FemtoFullCollisionMC const& col,
                       aod::BCsWithTimestamps const&,
                       soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                      aod::McCollisions const& mcCollisions,
+                      aod::McCollisions const&,
                       aod::McParticles const&)
   {
     // get magnetic field for run
@@ -1172,7 +1172,7 @@ struct femtoUniverseProducerTask {
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackD0mesonData,
                  "Provide experimental data for track D0 meson", false);
 
-  void processTrackMCTruth(aod::McCollision const& mcCol,
+  void processTrackMCTruth(aod::McCollision const&,
                            soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
                            aod::McParticles const& mcParticles,
                            aod::BCsWithTimestamps const&)

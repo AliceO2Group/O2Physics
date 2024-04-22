@@ -476,7 +476,7 @@ struct HfTaskDs {
   }
 
   template <CentralityEstimator centDetector, bool useMl, typename CandsDs>
-  void runMcAnalysis(CandsDs const& candidates,
+  void runMcAnalysis(CandsDs const& /*candidates*/,
                      CandDsMcGen const& mcParticles)
   {
     // MC rec.
@@ -545,7 +545,7 @@ struct HfTaskDs {
           auto y = 0;
 
           if (particle.flagMcDecayChanGen() == decayChannel) {
-            y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
+            y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS);
             if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
               continue;
             }
@@ -560,7 +560,7 @@ struct HfTaskDs {
               std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta()); // gen. level pT
             }
           } else if (fillDplusMc) {
-            y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
+            y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
             if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
               continue;
             }
@@ -581,7 +581,7 @@ struct HfTaskDs {
   }
 
   void processDataWithCentFT0C(CollisionsWithFT0C const&,
-                               CandDsData const& candidates)
+                               CandDsData const&)
   {
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, false>(selectedDsToKKPiCandData);
     runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, false>(selectedDsToPiKKCandData);
@@ -589,7 +589,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithCentFT0C, "Process data w/o ML information on Ds, with information on centrality from FT0C", false);
 
   void processDataWithCentFT0M(CollisionsWithFT0M const&,
-                               CandDsData const& candidates)
+                               CandDsData const&)
   {
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0M, false>(selectedDsToKKPiCandData);
     runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0M, false>(selectedDsToPiKKCandData);
@@ -597,7 +597,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithCentFT0M, "Process data w/o ML information on Ds, with information on centrality from FT0M", false);
 
   void processDataWithCentNTracksPV(CollisionsWithNTracksPV const&,
-                                    CandDsData const& candidates)
+                                    CandDsData const&)
   {
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::NTracksPV, false>(selectedDsToKKPiCandData);
     runDataAnalysis<FinalState::PiKK, CentralityEstimator::NTracksPV, false>(selectedDsToPiKKCandData);
@@ -605,7 +605,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithCentNTracksPV, "Process data w/o ML information on Ds, with information on centrality from NTracksPV", false);
 
   void processData(aod::Collisions const&,
-                   CandDsData const& candidates)
+                   CandDsData const&)
   {
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::None, false>(selectedDsToKKPiCandData);
     runDataAnalysis<FinalState::PiKK, CentralityEstimator::None, false>(selectedDsToPiKKCandData);
@@ -613,7 +613,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processData, "Process data w/o ML information on Ds, w/o information on centrality", true);
 
   void processDataWithMlAndCentFT0C(CollisionsWithFT0C const&,
-                                    CandDsDataWithMl const& candidates)
+                                    CandDsDataWithMl const&)
   {
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, true>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, true>(selectedDsToPiKKCandWithMlData);
@@ -621,7 +621,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentFT0C, "Process data with ML information on Ds, with information on centrality from FT0C", false);
 
   void processDataWithMlAndCentFT0M(CollisionsWithFT0M const&,
-                                    CandDsDataWithMl const& candidates)
+                                    CandDsDataWithMl const&)
   {
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0M, true>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0M, true>(selectedDsToPiKKCandWithMlData);
@@ -629,7 +629,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentFT0M, "Process data with ML information on Ds, with information on centrality from FT0M", false);
 
   void processDataWithMlAndCentNTracksPV(CollisionsWithNTracksPV const&,
-                                         CandDsDataWithMl const& candidates)
+                                         CandDsDataWithMl const&)
   {
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::NTracksPV, true>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<FinalState::PiKK, CentralityEstimator::NTracksPV, true>(selectedDsToPiKKCandWithMlData);
@@ -637,7 +637,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentNTracksPV, "Process data with ML information on Ds, with information on centrality", false);
 
   void processDataWithMl(aod::Collisions const&,
-                         CandDsDataWithMl const& candidates)
+                         CandDsDataWithMl const&)
   {
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::None, true>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<FinalState::PiKK, CentralityEstimator::None, true>(selectedDsToPiKKCandWithMlData);

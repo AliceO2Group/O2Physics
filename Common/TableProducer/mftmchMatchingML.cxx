@@ -201,7 +201,7 @@ struct mftmchMatchingML {
     }
   }
 
-  void process(aod::Collisions const& collisions, soa::Filtered<aod::FwdTracks> const& fwdtracks, aod::MFTTracks const& mfttracks)
+  void process(aod::Collisions const&, soa::Filtered<aod::FwdTracks> const& fwdtracks, aod::MFTTracks const& mfttracks)
   {
     for (auto& fwdtrack : fwdtracks) {
       if (fwdtrack.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {

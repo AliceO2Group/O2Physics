@@ -421,7 +421,7 @@ struct derivedCascadeAnalysis {
   }
 
   template <typename TCascade>
-  bool IsCascadeCandidateAccepted(TCascade casc, int counter, float centrality)
+  bool IsCascadeCandidateAccepted(TCascade casc, int counter, float /*centrality*/)
   {
     float cut = masswin;
     histos.fill(HIST("hCutValue"), 2, cut);

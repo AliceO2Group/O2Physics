@@ -12,14 +12,15 @@
 #include <vector>
 #include <TMath.h>
 
+#include "Common/Core/RecoDecay.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/CaloClusters.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Qvectors.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #ifndef PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
@@ -41,31 +42,38 @@ DECLARE_SOA_COLUMN(NmumuULS, nmumuuls, int);
 DECLARE_SOA_COLUMN(NmumuLSpp, nmumulspp, int);
 DECLARE_SOA_COLUMN(NmumuLSmm, nmumulsmm, int);
 DECLARE_SOA_COLUMN(NcollsPerBC, ncollsPerBC, int);
-DECLARE_SOA_COLUMN(Bz, bz, float);                       //! kG
-DECLARE_SOA_COLUMN(Q2xTPCPosEta, q2xtpcposeta, float);   //! Qx for 2nd harmonics in TPC positive eta region
-DECLARE_SOA_COLUMN(Q2yTPCPosEta, q2ytpcposeta, float);   //! Qy for 2nd harmonics in TPC positive eta region
-DECLARE_SOA_COLUMN(Q2xTPCNegEta, q2xtpcnegeta, float);   //! Qx for 2nd harmonics in TPC negative eta region
-DECLARE_SOA_COLUMN(Q2yTPCNegEta, q2ytpcnegeta, float);   //! Qy for 2nd harmonics in TPC negative eta region
-DECLARE_SOA_COLUMN(Q2xTPCFullEta, q2xtpcfulleta, float); //! Qx for 2nd harmonics in TPC full eta region
-DECLARE_SOA_COLUMN(Q2yTPCFullEta, q2ytpcfulleta, float); //! Qy for 2nd harmonics in TPC full eta region
-DECLARE_SOA_COLUMN(Q2xFT0A, q2xft0a, float);             //! Qx for 2nd harmonics in FT0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q2yFT0A, q2yft0a, float);             //! Qy for 2nd harmonics in FT0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q2xFT0C, q2xft0c, float);             //! Qx for 2nd harmonics in FT0C (i.e. negative eta)
-DECLARE_SOA_COLUMN(Q2yFT0C, q2yft0c, float);             //! Qy for 2nd harmonics in FT0C (i.e. negative eta)
-DECLARE_SOA_COLUMN(Q2xFV0A, q2xfv0a, float);             //! Qx for 2nd harmonics in FV0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q2yFV0A, q2yfv0a, float);             //! Qy for 2nd harmonics in FV0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q3xTPCPosEta, q3xtpcposeta, float);   //! Qx for 3rd harmonics in TPC positive eta region
-DECLARE_SOA_COLUMN(Q3yTPCPosEta, q3ytpcposeta, float);   //! Qy for 3rd harmonics in TPC positive eta region
-DECLARE_SOA_COLUMN(Q3xTPCNegEta, q3xtpcnegeta, float);   //! Qx for 3rd harmonics in TPC negative eta region
-DECLARE_SOA_COLUMN(Q3yTPCNegEta, q3ytpcnegeta, float);   //! Qy for 3rd harmonics in TPC negative eta region
-DECLARE_SOA_COLUMN(Q3xTPCFullEta, q3xtpcfulleta, float); //! Qx for 3rd harmonics in TPC full eta region
-DECLARE_SOA_COLUMN(Q3yTPCFullEta, q3ytpcfulleta, float); //! Qy for 3rd harmonics in TPC full eta region
-DECLARE_SOA_COLUMN(Q3xFT0A, q3xft0a, float);             //! Qx for 3rd harmonics in FT0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q3yFT0A, q3yft0a, float);             //! Qy for 3rd harmonics in FT0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q3xFT0C, q3xft0c, float);             //! Qx for 3rd harmonics in FT0C (i.e. negative eta)
-DECLARE_SOA_COLUMN(Q3yFT0C, q3yft0c, float);             //! Qy for 3rd harmonics in FT0C (i.e. negative eta)
-DECLARE_SOA_COLUMN(Q3xFV0A, q3xfv0a, float);             //! Qx for 3rd harmonics in FV0A (i.e. positive eta)
-DECLARE_SOA_COLUMN(Q3yFV0A, q3yfv0a, float);             //! Qy for 3rd harmonics in FV0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Bz, bz, float);           //! kG
+DECLARE_SOA_COLUMN(Q2xFT0M, q2xft0m, float); //! Qx for 2nd harmonics in FT0M (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2yFT0M, q2yft0m, float); //! Qy for 2nd harmonics in FT0M (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2xFT0A, q2xft0a, float); //! Qx for 2nd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2yFT0A, q2yft0a, float); //! Qy for 2nd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2xFT0C, q2xft0c, float); //! Qx for 2nd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q2yFT0C, q2yft0c, float); //! Qy for 2nd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q2xFV0A, q2xfv0a, float); //! Qx for 2nd harmonics in FV0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2yFV0A, q2yfv0a, float); //! Qy for 2nd harmonics in FV0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q2xBPos, q2xbpos, float); //! Qx for 2nd harmonics in Barrel positive eta region
+DECLARE_SOA_COLUMN(Q2yBPos, q2ybpos, float); //! Qy for 2nd harmonics in Barrel positive eta region
+DECLARE_SOA_COLUMN(Q2xBNeg, q2xbneg, float); //! Qx for 2nd harmonics in Barrel negative eta region
+DECLARE_SOA_COLUMN(Q2yBNeg, q2ybneg, float); //! Qy for 2nd harmonics in Barrel negative eta region
+DECLARE_SOA_COLUMN(Q3xFT0M, q3xft0m, float); //! Qx for 3rd harmonics in FT0M (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3yFT0M, q3yft0m, float); //! Qy for 3rd harmonics in FT0M (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3xFT0A, q3xft0a, float); //! Qx for 3rd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3yFT0A, q3yft0a, float); //! Qy for 3rd harmonics in FT0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3xFT0C, q3xft0c, float); //! Qx for 3rd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q3yFT0C, q3yft0c, float); //! Qy for 3rd harmonics in FT0C (i.e. negative eta)
+DECLARE_SOA_COLUMN(Q3xFV0A, q3xfv0a, float); //! Qx for 3rd harmonics in FV0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3yFV0A, q3yfv0a, float); //! Qy for 3rd harmonics in FV0A (i.e. positive eta)
+DECLARE_SOA_COLUMN(Q3xBPos, q3xbpos, float); //! Qx for 3rd harmonics in Barrel positive eta region
+DECLARE_SOA_COLUMN(Q3yBPos, q3ybpos, float); //! Qy for 3rd harmonics in Barrel positive eta region
+DECLARE_SOA_COLUMN(Q3xBNeg, q3xbneg, float); //! Qx for 3rd harmonics in Barrel negative eta region
+DECLARE_SOA_COLUMN(Q3yBNeg, q3ybneg, float); //! Qy for 3rd harmonics in Barrel negative eta region
+
+DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0M, ep2ft0m, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
+DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0A, ep2ft0a, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
+DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0C, ep2ft0c, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
+DECLARE_SOA_DYNAMIC_COLUMN(EP2FV0A, ep2fv0a, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
+DECLARE_SOA_DYNAMIC_COLUMN(EP2BPos, ep2bpos, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
+DECLARE_SOA_DYNAMIC_COLUMN(EP2BNeg, ep2bneg, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
 } // namespace emevent
 DECLARE_SOA_TABLE(EMEvents, "AOD", "EMEVENT", //!   Main event information table
                   o2::soa::Index<>, emevent::CollisionId, bc::GlobalBC, bc::RunNumber, evsel::Sel8, evsel::Alias, evsel::Selection, emevent::NcollsPerBC,
@@ -80,19 +88,26 @@ DECLARE_SOA_TABLE(EMEventsMult, "AOD", "EMEVENTMULT", //!   event multiplicity t
                   mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
                   mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC,
                   mult::MultTPC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1, mult::MultNTracksPVetaHalf,
-                  mult::IsInelGt0<mult::MultNTracksPVeta1>,
-                  mult::IsInelGt1<mult::MultNTracksPVeta1>);
+                  mult::IsInelGt0<mult::MultNTracksPVeta1>, mult::IsInelGt1<mult::MultNTracksPVeta1>);
 using EMEventMult = EMEventsMult::iterator;
 
 DECLARE_SOA_TABLE(EMEventsCent, "AOD", "EMEVENTCENT", //!   event centrality table, joinable to EMEvents
                   cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentNTPV);
 using EMEventCent = EMEventsCent::iterator;
 
-DECLARE_SOA_TABLE(EMEventsQvec, "AOD", "EMEVENTQVECTOR", //!   event q vector table, joinable to EMEvents
-                  emevent::Q2xTPCPosEta, emevent::Q2yTPCPosEta, emevent::Q2xTPCNegEta, emevent::Q2yTPCNegEta, emevent::Q2xTPCFullEta, emevent::Q2yTPCFullEta,
-                  emevent::Q2xFT0A, emevent::Q2yFT0A, emevent::Q2xFT0C, emevent::Q2yFT0C, emevent::Q2xFV0A, emevent::Q2yFV0A,
-                  emevent::Q3xTPCPosEta, emevent::Q3yTPCPosEta, emevent::Q3xTPCNegEta, emevent::Q3yTPCNegEta, emevent::Q3xTPCFullEta, emevent::Q3yTPCFullEta,
-                  emevent::Q3xFT0A, emevent::Q3yFT0A, emevent::Q3xFT0C, emevent::Q3yFT0C, emevent::Q3xFV0A, emevent::Q3yFV0A);
+DECLARE_SOA_TABLE(EMEventsQvec, "AOD", "EMEVENTQVEC", //!   event q vector table, joinable to EMEvents
+                  emevent::Q2xFT0M, emevent::Q2yFT0M, emevent::Q2xFT0A, emevent::Q2yFT0A, emevent::Q2xFT0C, emevent::Q2yFT0C, emevent::Q2xFV0A, emevent::Q2yFV0A,
+                  emevent::Q2xBPos, emevent::Q2yBPos, emevent::Q2xBNeg, emevent::Q2yBNeg,
+                  emevent::Q3xFT0M, emevent::Q3yFT0M, emevent::Q3xFT0A, emevent::Q3yFT0A, emevent::Q3xFT0C, emevent::Q3yFT0C, emevent::Q3xFV0A, emevent::Q3yFV0A,
+                  emevent::Q3xBPos, emevent::Q3yBPos, emevent::Q3xBNeg, emevent::Q3yBNeg,
+
+                  // Dynamic columns
+                  emevent::EP2FT0M<emevent::Q2xFT0M, emevent::Q2yFT0M>,
+                  emevent::EP2FT0A<emevent::Q2xFT0A, emevent::Q2yFT0A>,
+                  emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>,
+                  emevent::EP2FV0A<emevent::Q2xFV0A, emevent::Q2yFV0A>,
+                  emevent::EP2BPos<emevent::Q2xBPos, emevent::Q2yBPos>,
+                  emevent::EP2BNeg<emevent::Q2xBNeg, emevent::Q2yBNeg>);
 using EMEventQvec = EMEventsQvec::iterator;
 
 DECLARE_SOA_TABLE(EMEventsNgPCM, "AOD", "EMEVENTNGPCM", emevent::NgammaPCM); // joinable to EMEvents
@@ -238,7 +253,7 @@ namespace v0leg
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
-DECLARE_SOA_COLUMN(Sign, sign, int);               //!
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
 DECLARE_SOA_COLUMN(Px, px, float);                 //! Px at SV
 DECLARE_SOA_COLUMN(Py, py, float);                 //! Py at SV
 DECLARE_SOA_COLUMN(Pz, pz, float);                 //! Pz at SV
@@ -378,7 +393,7 @@ namespace emprimaryelectron
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
-DECLARE_SOA_COLUMN(Sign, sign, int);               //!
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
 DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);    //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
@@ -490,7 +505,7 @@ DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(Rapidity, rapidity, float);
 DECLARE_SOA_COLUMN(PhiV, phiv, float);
 DECLARE_SOA_COLUMN(OpeningAngle, opangle, float);
-DECLARE_SOA_COLUMN(Sign, sign, int);                                                                                                     //!
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                                                                  //!
 DECLARE_SOA_DYNAMIC_COLUMN(Energy, e, [](float pt, float eta, float m) { return RecoDecay::sqrtSumOfSquares(pt * std::cosh(eta), m); }); // e = sqrt(p*p + m*m)
 } // namespace dalitzee
 DECLARE_SOA_TABLE(DalitzEEs, "AOD", "DALITZEE", //!
@@ -510,7 +525,7 @@ namespace emprimarymuon
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
-DECLARE_SOA_COLUMN(Sign, sign, int);               //!
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
 DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);    //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
@@ -622,7 +637,7 @@ DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(Rapidity, rapidity, float);
 DECLARE_SOA_COLUMN(PhiV, phiv, float);
 DECLARE_SOA_COLUMN(OpeningAngle, opangle, float);
-DECLARE_SOA_COLUMN(Sign, sign, int);                                                                                                     //!
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                                                                  //!
 DECLARE_SOA_DYNAMIC_COLUMN(Energy, e, [](float pt, float eta, float m) { return RecoDecay::sqrtSumOfSquares(pt * std::cosh(eta), m); }); // e = sqrt(p*p + m*m)
 } // namespace dalitzmumu
 DECLARE_SOA_TABLE(DalitzMuMus, "AOD", "DALITZMUMU", //!

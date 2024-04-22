@@ -496,7 +496,7 @@ struct DGCandAnalyzer {
   using UDMcCollisionFull = UDMcCollisionsFull::iterator;
   using UDMcTracksFull = aod::UDMcParticles;
 
-  void processMcTruth(UDMcCollisionFull const& mcCollison, UDMcTracksFull const& mcParts)
+  void processMcTruth(UDMcCollisionFull const& /*mcCollison*/, UDMcTracksFull const& mcParts)
   {
 
     // which type of event is this
