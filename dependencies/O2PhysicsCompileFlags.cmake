@@ -12,7 +12,7 @@
 include_guard()
 
 # Set warnings for both gcc and clang.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-error \
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-error \
 -Werror=NSObject-attribute \
 -Werror=address \
 -Werror=address-of-packed-member \
