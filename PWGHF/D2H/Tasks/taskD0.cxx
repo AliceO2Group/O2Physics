@@ -216,7 +216,7 @@ struct HfTaskD0 {
       const AxisSpec thnAxisY{thnConfigAxisY, "y"};
       const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
       const AxisSpec thnAxisCandType{thnConfigAxisCandType, "D0 type"};
-      
+  
       registry.add("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type", "Thn for D0 candidates with BDT scores", HistType::kTHnSparseD, {thnAxisBkgScore, thnAxisNonPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisOrigin, thnAxisCandType});
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"))->Sumw2();
     }
