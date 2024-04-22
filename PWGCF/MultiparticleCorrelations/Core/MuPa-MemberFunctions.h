@@ -638,9 +638,9 @@ void InsanityChecks()
   }
 
   // *) Seed for random number generator must be non-negative integer:
-  if (tc.fRandomSeed < 0) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
-  }
+  // if (tc.fRandomSeed < 0) {
+  //   LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+  // }
 
   // *) Insanity checks on event cuts:
   if (tc.fProcessRec_Run2 || tc.fProcessRec_Run1) { // From documentation: Bypass this check if you analyse MC or continuous Run3 data.
