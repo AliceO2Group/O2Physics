@@ -232,7 +232,7 @@ struct Reducer {
 
 struct ReducerTest {
   Configurable<int> maxMult{"maxMult", 300, "Max multiplicity bin"};
-  HistogramRegistry r{"Common",{}};
+  HistogramRegistry r{"Common", {}};
 
   void init(InitContext const&)
   {
