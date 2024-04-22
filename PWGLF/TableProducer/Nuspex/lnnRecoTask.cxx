@@ -44,7 +44,7 @@ using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 
-using CollisionsFullWithFlow = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables>;
+//using CollisionsFullWithFlow = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables>;
 
 namespace
 {
@@ -111,7 +111,6 @@ struct lnnCandidate {
 struct lnnRecoTask {
 
   Produces<aod::DataLnnCands> outputDataTable;
-  Produces<aod::DataLnnCandsFlow> outputDataTableWithFlow;
   Produces<aod::MCLnnCands> outputMCTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -455,6 +454,17 @@ struct lnnRecoTask {
       }
     }
   }
+  
+  void processDataTracked(CollisionsFull const& collisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
+    isTracked.clear();
+    isTracked.resize(V0s.size(), false);
+    for (const auto& tV0 : tV0s) {
+      isTracked[tV0.v0Id()] = true;
+    }
+    processData(collisions, V0s, tracks, bcs);
+  }
+  PROCESS_SWITCH(hyperRecoTask, processDataTracked, "Data analysis wit tracked V0s information", false);
 
   void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -499,52 +509,7 @@ struct lnnRecoTask {
   //Data process
   PROCESS_SWITCH(lnnRecoTask, processData, "Data analysis", true);
 
-  void processDataWithFlow(CollisionsFullWithFlow const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
-  {
-
-    for (const auto& collision : collisions) {
-      lnnCandidates.clear();
-
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-
-      hEvents->Fill(0.);
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
-        continue;
-      hEvents->Fill(1.);
-      hZvtx->Fill(collision.posZ());
-      hCentFT0A->Fill(collision.centFT0A());
-      hCentFT0C->Fill(collision.centFT0C());
-      hCentFT0M->Fill(collision.centFT0M());
-      hCentFV0A->Fill(collision.centFV0A());
-
-      const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
-
-      fillCandidateData(collision, V0Table_thisCollision);
-
-      for (auto& lnnCand : lnnCandidates) {
-        outputDataTableWithFlow(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
-                                collision.psiFT0A(), collision.multFT0A(),
-                                collision.psiFT0C(), collision.multFT0C(),
-                                collision.psiTPC(), collision.multTPC(),
-                                collision.posX(), collision.posY(), collision.posZ(),
-                                lnnCand.isMatter,
-                                lnnCand.recoPt3H(), lnnCand.recoPhi3H(), lnnCand.recoEta3H(),
-                                lnnCand.recoPtPi(), lnnCand.recoPhiPi(), lnnCand.recoEtaPi(),
-                                lnnCand.decVtx[0], lnnCand.decVtx[1], lnnCand.decVtx[2],
-                                lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
-                                lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
-                                lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
-                                lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags);
-      }
-    }
-  }
-
-  //MonteCarlo process
-  PROCESS_SWITCH(lnnRecoTask, processDataWithFlow, "Data analysis with flow", false);
-
+  // MC process
   void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     filledMothers.clear();
