@@ -168,32 +168,32 @@ struct femtoDreamPairTaskTrackTrack {
 
   /// Binning configurables
   struct : ConfigurableGroup {
-    std::string prefix = "Binning";
-    ConfigurableAxis TempFitVar{"TempFitVar", {300, -0.15, 0.15}, "Binning of the TempFitVar in the pT vs. TempFitVar plot"};
-    ConfigurableAxis TrackpT{"TrackpT", {20, 0.5, 4.05}, "pT binning for pT vs. TempFitVar plot"};
-    ConfigurableAxis pT{"pT", {20, 0.5, 4.05}, "pT binning"};
-    ConfigurableAxis kstar{"kstar", {1500, 0., 6.}, "kstar binning"};
-    ConfigurableAxis kT{"kT", {150, 0., 9.}, "kT binning"};
-    ConfigurableAxis mT{"mT", {225, 0., 7.5}, "mT binning"};
-    ConfigurableAxis multTempFit{"multTempFit", {1, 0, 1}, "Multiplicity Binning for the TempFitVar plot"};
+    std::string prefix = "Binning.";
+    ConfigurableAxis TempFitVar{prefix + "TempFitVar", {300, -0.15, 0.15}, "Binning of the TempFitVar in the pT vs. TempFitVar plot"};
+    ConfigurableAxis TrackpT{prefix + "TrackpT", {20, 0.5, 4.05}, "pT binning for pT vs. TempFitVar plot"};
+    ConfigurableAxis pT{prefix + "pT", {20, 0.5, 4.05}, "pT binning"};
+    ConfigurableAxis kstar{prefix + "kstar", {1500, 0., 6.}, "kstar binning"};
+    ConfigurableAxis kT{prefix + "kT", {150, 0., 9.}, "kT binning"};
+    ConfigurableAxis mT{prefix + "mT", {225, 0., 7.5}, "mT binning"};
+    ConfigurableAxis multTempFit{prefix + "multTempFit", {1, 0, 1}, "Multiplicity Binning for the TempFitVar plot"};
   } Binning;
 
   struct : ConfigurableGroup {
-    std::string prefix = "Binning4D";
-    ConfigurableAxis kstar{"kstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
-    ConfigurableAxis mT{"mT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
-    ConfigurableAxis mult{"mult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
-    ConfigurableAxis multPercentile{"multPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
+    std::string prefix = "Binning4D.";
+    ConfigurableAxis kstar{prefix + "kstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
+    ConfigurableAxis mT{prefix + "mT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
+    ConfigurableAxis mult{prefix + "mult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
+    ConfigurableAxis multPercentile{prefix + "multPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
   } Binning4D;
 
   // Mixing configurables
   struct : ConfigurableGroup {
-    std::string prefix = "Mixing";
-    ConfigurableAxis MultMixBins{"MultMixBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
-    ConfigurableAxis MultPercentileMixBins{"MultPercentileMixBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "Mixing bins - multiplicity percentile"};
-    ConfigurableAxis VztxMixBins{"VztxMixBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-    Configurable<int> Depth{"Depth", 5, "Number of events for mixing"};
-    Configurable<int> Policy{"Policy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
+    std::string prefix = "Mixing.";
+    ConfigurableAxis MultMixBins{prefix + "MultMixBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
+    ConfigurableAxis MultPercentileMixBins{prefix + "MultPercentileMixBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "Mixing bins - multiplicity percentile"};
+    ConfigurableAxis VztxMixBins{prefix + "VztxMixBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+    Configurable<int> Depth{prefix + "Depth", 5, "Number of events for mixing"};
+    Configurable<int> Policy{prefix + "Policy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
   } Mixing;
 
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
