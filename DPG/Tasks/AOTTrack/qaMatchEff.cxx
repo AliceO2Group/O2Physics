@@ -156,7 +156,7 @@ struct qaMatchEff {
   ConfigurableAxis thnSpec{"thnSpec", {19, -9.5f, 9.5f}, "signed particle ID"};
   ConfigurableAxis thnITSclumap{"thnITSclumap", {128, -0.5f, 127.5f}, "ITS cluster map"};
   // ConfigurableAxis thnTPCclu{"thnTPCclu", {81, -0.5f, 160.5f}, "TPC nclust found"};
-  ConfigurableAxis thnHasDet{"thnHasDet", {9, -0.5f, 8.5f}, "presence of ITS, TPC, TOF"};
+  ConfigurableAxis thnHasDet{"thnHasDet", {12, -0.5f, 11.5f}, "presence of ITS, TPC, TOF, TRD"};
   AxisSpec thnd0Axis{thnd0, "#it{d}_{r#it{#varphi}} [cm]"};
   AxisSpec thndzAxis{thndz, "#it{d}_{z} [cm]"};
   AxisSpec thnPtAxis{thnPt, "#it{p}_{T}^{reco} [GeV/#it{c}]"};
@@ -166,7 +166,7 @@ struct qaMatchEff {
   AxisSpec thnSpecAxis{thnSpec, "signed particle ID"};
   AxisSpec thnITSclumapAxis{thnITSclumap, "ITS cluster map"};
   // AxisSpec thnTPCcluAxis{thnTPCclu, "TPC nclust found"};
-  AxisSpec thnHasDetAxis{thnHasDet, "presence of ITS, TPC, TOF"};
+  AxisSpec thnHasDetAxis{thnHasDet, "presence of ITS, TPC, TOF, TRD"};
   //
   // Tracks selection object
   TrackSelection cutObject;
@@ -282,23 +282,23 @@ struct qaMatchEff {
     if (!makehistos)
       return;
     //
-    histos.add("data/control/itsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/itsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/itsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/itsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/itsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/itsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/itsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/itsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/itsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/itsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/itsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/itsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/itsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/itsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/itsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/itsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
 
-    histos.add("data/control/SitsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/SitsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/SitsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/SitsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/SitsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/SitsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/SitsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("data/control/SitsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/SitsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/SitsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/SitsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/SitsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/SitsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/SitsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/SitsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("data/control/SitsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
 
     // TPC found/findable clusters and crossed rows distributions - no conditions
     histos.add("data/TPCclust/tpcNClsFound", "Number of TPC found clusters", kTH1F, {{161, -0.5, 160.5}}, true);
@@ -770,23 +770,23 @@ struct qaMatchEff {
       return;
     //
     // control plots
-    histos.add("MC/control/itsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/itsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/itsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/itsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/itsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/itsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/itsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/itsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/itsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/itsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/itsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/itsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/itsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/itsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/itsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/itsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
 
-    histos.add("MC/control/SitsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/SitsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/SitsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/SitsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/SitsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/SitsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/SitsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
-    histos.add("MC/control/SitsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/SitsCMnoTPC", "ITS cluster map when no TPC", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/SitsCMwTPC", "ITS cluster map w/TPC", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/SitsCMnoTPCwTOFnoTRD", "ITS cluster map when no TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/SitsCMnoTPCnoTOFwTRD", "ITS cluster map when no TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/SitsCMnoTPCwTRDwTOF", "ITS cluster map when no TPC w/TRD w/TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/SitsCMwTPCwTRDnoTOF", "ITS cluster map when TPC w/TRD no TOF", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/SitsCMwTPCwTOFnoTRD", "ITS cluster map when TPC w/TOF no TRD", kTH1D, {thnITSclumapAxis}, true);
+    // histos.add("MC/control/SitsCMwTPCwTOFwTRD", "ITS cluster map when TPC w/TOF w/TRD", kTH1D, {thnITSclumapAxis}, true);
 
     //
     //  local X,Z of track
@@ -1561,7 +1561,7 @@ struct qaMatchEff {
       //***************************************************************************************************************************************************************************
       //  MIND!!!!   THESE SETS OVERLAP!!!  ___M__U__S__T___ select one of the conditions in the analysis
       hasdet = 0;
-      if (trkWITS && isTrackSelectedITSCuts(track)) {
+      if (trkWITS && isTrackSelectedITSCuts(track)) { // ITS at least
         hasdet = 1;
         //
         //
@@ -1574,7 +1574,7 @@ struct qaMatchEff {
           }
         }
       }
-      if (trkWTPC && isTrackSelectedTPCCuts(track)) {
+      if (trkWTPC && isTrackSelectedTPCCuts(track)) { // TPC at least
         hasdet = 2;
         //
         //
@@ -1587,7 +1587,7 @@ struct qaMatchEff {
           }
         }
       }
-      if (trkWITS && trkWTPC && isTrackSelectedTPCCuts(track) && isTrackSelectedITSCuts(track)) {
+      if (trkWITS && trkWTPC && isTrackSelectedTPCCuts(track) && isTrackSelectedITSCuts(track)) { // ITS + TPC at least
         hasdet = 3;
         //
         //
@@ -1600,7 +1600,7 @@ struct qaMatchEff {
           }
         }
       }
-      if (trkWTOF && trkWTPC && isTrackSelectedTPCCuts(track)) {
+      if (trkWTOF && trkWTPC && isTrackSelectedTPCCuts(track)) { // TOF + TPC at least
         hasdet = 4;
         //
         //
@@ -1613,7 +1613,7 @@ struct qaMatchEff {
           }
         }
       }
-      if (trkWITS && isTrackSelectedITSCuts(track) && trkWTOF) {
+      if (trkWITS && isTrackSelectedITSCuts(track) && trkWTOF) { // TOF + ITS at least
         hasdet = 5;
         //
         //
@@ -1626,7 +1626,7 @@ struct qaMatchEff {
           }
         }
       }
-      if (trkWITS && trkWTOF && trkWTPC && isTrackSelectedTPCCuts(track) && isTrackSelectedITSCuts(track)) {
+      if (trkWITS && trkWTOF && trkWTPC && isTrackSelectedTPCCuts(track) && isTrackSelectedITSCuts(track)) { // TOF + TPC +ITS at least
         hasdet = 6;
         //
         //
@@ -1639,7 +1639,7 @@ struct qaMatchEff {
           }
         }
       }
-      if (trkWITS && isTrackSelectedITSCuts(track) && !trkWTPC) {
+      if (trkWITS && isTrackSelectedITSCuts(track) && !trkWTPC) { // ITS at least, NO TPC
         hasdet = 7;
         //
         //
@@ -1652,8 +1652,47 @@ struct qaMatchEff {
           }
         }
       }
-      if (trkWTPC && isTrackSelectedTPCCuts(track) && !trkWITS) {
+      if (trkWTPC && isTrackSelectedTPCCuts(track) && !trkWITS) { // TPC at least, NO ITS
         hasdet = 8;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
+          }
+        }
+      }
+      if (trkWITS && isTrackSelectedITSCuts(track) && trkWTRD) { // ITS + TRD at least
+        hasdet = 9;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
+          }
+        }
+      }
+      if (trkWITS && isTrackSelectedITSCuts(track) && trkWTRD && trkWTOF) { // ITS + TRD + TOF at least
+        hasdet = 10;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, track.phi(), specind, track.itsClusterMap(), hasdet);
+          }
+        }
+      }
+      if (trkWITS && isTrackSelectedITSCuts(track) && !trkWTRD && !trkWTOF && !trkWTPC) { // ITS ONLY!
+        hasdet = 11;
         //
         //
         // fill thnsparse for fraction analysis
@@ -2516,80 +2555,80 @@ struct qaMatchEff {
       }   //  end if TPC
       //
       //
-      if (trkWITS) {
-        if (IS_MC) { ////////////////////////   MC
-          if (!trkWTPC)
-            histos.get<TH1>(HIST("MC/control/itsCMnoTPC"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && !trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && trkWTRD && !trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
-          if (trkWTPC)
-            histos.get<TH1>(HIST("MC/control/itsCMwTPC"))->Fill(track.itsClusterMap());
-          if (trkWTPC && trkWTRD && !trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
-          if (trkWTPC && !trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-          if (trkWTPC && trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("MC/control/itsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
-        } else { ////////////////////////   DATA
-          if (!trkWTPC)
-            histos.get<TH1>(HIST("data/control/itsCMnoTPC"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && !trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && trkWTRD && !trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
-          if (!trkWTPC && trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
-          if (trkWTPC)
-            histos.get<TH1>(HIST("data/control/itsCMwTPC"))->Fill(track.itsClusterMap());
-          if (trkWTPC && trkWTRD && !trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
-          if (trkWTPC && !trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-          if (trkWTPC && trkWTRD && trkWTOF)
-            histos.get<TH1>(HIST("data/control/itsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
-        }
-        if (isTrackSelectedITSCuts(track)) {
-          if (IS_MC) { ////////////////////////   MC
-            if (!trkWTPC)
-              histos.get<TH1>(HIST("MC/control/SitsCMnoTPC"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && !trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && trkWTRD && !trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
-            if (trkWTPC)
-              histos.get<TH1>(HIST("MC/control/SitsCMwTPC"))->Fill(track.itsClusterMap());
-            if (trkWTPC && trkWTRD && !trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
-            if (trkWTPC && !trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-            if (trkWTPC && trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
-          } else { ////////////////////////   DATA
-            if (!trkWTPC)
-              histos.get<TH1>(HIST("data/control/SitsCMnoTPC"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && !trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && trkWTRD && !trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
-            if (!trkWTPC && trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
-            if (trkWTPC)
-              histos.get<TH1>(HIST("data/control/SitsCMwTPC"))->Fill(track.itsClusterMap());
-            if (trkWTPC && trkWTRD && !trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
-            if (trkWTPC && !trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
-            if (trkWTPC && trkWTRD && trkWTOF)
-              histos.get<TH1>(HIST("data/control/SitsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
-          }
-        }
-      }
+      // if (trkWITS) {
+      //    if (IS_MC) { ////////////////////////   MC
+      //      if (!trkWTPC)
+      //        histos.get<TH1>(HIST("MC/control/itsCMnoTPC"))->Fill(track.itsClusterMap());
+      //      if (!trkWTPC && !trkWTRD && trkWTOF)
+      //        histos.get<TH1>(HIST("MC/control/itsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+      //      if (!trkWTPC && trkWTRD && !trkWTOF)
+      //        histos.get<TH1>(HIST("MC/control/itsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
+      //      if (!trkWTPC && trkWTRD && trkWTOF)
+      //        histos.get<TH1>(HIST("MC/control/itsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
+      //      if (trkWTPC)
+      //        histos.get<TH1>(HIST("MC/control/itsCMwTPC"))->Fill(track.itsClusterMap());
+      //      if (trkWTPC && trkWTRD && !trkWTOF)
+      //        histos.get<TH1>(HIST("MC/control/itsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
+      //      if (trkWTPC && !trkWTRD && trkWTOF)
+      //        histos.get<TH1>(HIST("MC/control/itsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+      //      if (trkWTPC && trkWTRD && trkWTOF)
+      //        histos.get<TH1>(HIST("MC/control/itsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
+      //    } else { ////////////////////////   DATA
+      //      if (!trkWTPC)
+      //        histos.get<TH1>(HIST("data/control/itsCMnoTPC"))->Fill(track.itsClusterMap());
+      //      if (!trkWTPC && !trkWTRD && trkWTOF)
+      //        histos.get<TH1>(HIST("data/control/itsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+      //      if (!trkWTPC && trkWTRD && !trkWTOF)
+      //        histos.get<TH1>(HIST("data/control/itsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
+      //      if (!trkWTPC && trkWTRD && trkWTOF)
+      //        histos.get<TH1>(HIST("data/control/itsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
+      //      if (trkWTPC)
+      //        histos.get<TH1>(HIST("data/control/itsCMwTPC"))->Fill(track.itsClusterMap());
+      //      if (trkWTPC && trkWTRD && !trkWTOF)
+      //        histos.get<TH1>(HIST("data/control/itsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
+      //      if (trkWTPC && !trkWTRD && trkWTOF)
+      //        histos.get<TH1>(HIST("data/control/itsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+      //      if (trkWTPC && trkWTRD && trkWTOF)
+      //        histos.get<TH1>(HIST("data/control/itsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
+      //    }
+      //    if (isTrackSelectedITSCuts(track)) {
+      //      if (IS_MC) { ////////////////////////   MC
+      //        if (!trkWTPC)
+      //          histos.get<TH1>(HIST("MC/control/SitsCMnoTPC"))->Fill(track.itsClusterMap());
+      //        if (!trkWTPC && !trkWTRD && trkWTOF)
+      //          histos.get<TH1>(HIST("MC/control/SitsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+      //        if (!trkWTPC && trkWTRD && !trkWTOF)
+      //          histos.get<TH1>(HIST("MC/control/SitsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
+      //        if (!trkWTPC && trkWTRD && trkWTOF)
+      //          histos.get<TH1>(HIST("MC/control/SitsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
+      //        if (trkWTPC)
+      //          histos.get<TH1>(HIST("MC/control/SitsCMwTPC"))->Fill(track.itsClusterMap());
+      //        if (trkWTPC && trkWTRD && !trkWTOF)
+      //          histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
+      //        if (trkWTPC && !trkWTRD && trkWTOF)
+      //          histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+      //        if (trkWTPC && trkWTRD && trkWTOF)
+      //          histos.get<TH1>(HIST("MC/control/SitsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
+      //      } else { ////////////////////////   DATA
+      //        if (!trkWTPC)
+      //          histos.get<TH1>(HIST("data/control/SitsCMnoTPC"))->Fill(track.itsClusterMap());
+      //        if (!trkWTPC && !trkWTRD && trkWTOF)
+      //          histos.get<TH1>(HIST("data/control/SitsCMnoTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+      //        if (!trkWTPC && trkWTRD && !trkWTOF)
+      //          histos.get<TH1>(HIST("data/control/SitsCMnoTPCnoTOFwTRD"))->Fill(track.itsClusterMap());
+      //        if (!trkWTPC && trkWTRD && trkWTOF)
+      //          histos.get<TH1>(HIST("data/control/SitsCMnoTPCwTRDwTOF"))->Fill(track.itsClusterMap());
+      //        if (trkWTPC)
+      //          histos.get<TH1>(HIST("data/control/SitsCMwTPC"))->Fill(track.itsClusterMap());
+      //        if (trkWTPC && trkWTRD && !trkWTOF)
+      //          histos.get<TH1>(HIST("data/control/SitsCMwTPCwTRDnoTOF"))->Fill(track.itsClusterMap());
+      //        if (trkWTPC && !trkWTRD && trkWTOF)
+      //          histos.get<TH1>(HIST("data/control/SitsCMwTPCwTOFnoTRD"))->Fill(track.itsClusterMap());
+      //        if (trkWTPC && trkWTRD && trkWTOF)
+      //          histos.get<TH1>(HIST("data/control/SitsCMwTPCwTOFwTRD"))->Fill(track.itsClusterMap());
+      //      }
+      //    }
+      // }
       //
       // all tracks with pt>0.5
       // if (trackPt > 0.5) {
