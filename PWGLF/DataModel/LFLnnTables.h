@@ -91,25 +91,6 @@ DECLARE_SOA_TABLE(DataLnnCands, "AOD", "LNNCANDS",
                   lnnrec::Flags);
 
 
-//Declaration of the table DataLnnCandsFlow which contains information of TPC and ITS multiplicities and geometric variables
-DECLARE_SOA_TABLE(DataLnnCandsFlow, "AOD", "LNNCANDSFLOW",
-                  o2::soa::Index<>,
-                  lnnrec::CentralityFT0A, lnnrec::CentralityFT0C, lnnrec::CentralityFT0M,
-                  lnnrec::PsiFT0A, lnnrec::MultFT0A,
-                  lnnrec::PsiFT0C, lnnrec::MultFT0C,
-                  lnnrec::PsiTPC, lnnrec::MultTPC,
-                  lnnrec::XPrimVtx, lnnrec::YPrimVtx, lnnrec::ZPrimVtx,
-
-                  lnnrec::IsMatter,
-                  lnnrec::Pt3H, lnnrec::Phi3H, lnnrec::Eta3H,
-                  lnnrec::PtPi, lnnrec::PhiPi, lnnrec::EtaPi,
-                  lnnrec::XDecVtx, lnnrec::YDecVtx, lnnrec::ZDecVtx,
-                  lnnrec::DcaV0Daug, lnnrec::Dca3H, lnnrec::DcaPi,
-                  lnnrec::NSigma3H, lnnrec::NTPCclus3H, lnnrec::NTPCclusPi,
-                  lnnrec::TPCmom3H, lnnrec::TPCmomPi, lnnrec::TPCsignal3H, lnnrec::TPCsignalPi,
-                  lnnrec::ITSclusterSizes3H, lnnrec::ITSclusterSizesPi,
-                  lnnrec::Flags);
-
 DECLARE_SOA_TABLE(MCLnnCands, "AOD", "MCLNNCANDS",
                   o2::soa::Index<>,
                   lnnrec::CentralityFT0A, lnnrec::CentralityFT0C, lnnrec::CentralityFT0M,
@@ -136,7 +117,6 @@ DECLARE_SOA_TABLE(MCLnnCands, "AOD", "MCLNNCANDS",
                   lnnrec::SurvivedEventSelection);
 
 using DataLnnCand = DataLnnCands::iterator;
-using DataLnnCandFlow = DataLnnCandsFlow::iterator;
 using MCLnnCand = MCLnnCands::iterator;
 } // namespace o2::aod
 
