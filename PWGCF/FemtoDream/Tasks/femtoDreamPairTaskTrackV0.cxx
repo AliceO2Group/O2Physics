@@ -206,7 +206,7 @@ struct femtoDreamPairTaskTrackV0 {
 
   void init(InitContext& context)
   {
-    eventHisto.init(&qaRegistry, ConfOptIsMC);
+    eventHisto.init(&qaRegistry, Option.IsMC);
     // void init(HistogramRegistry* registry,
     //    T& MomentumBins, T& tempFitVarBins, T& NsigmaTPCBins, T& NsigmaTOFBins, T& NsigmaTPCTOFBins, T& InvMassBins,
     //    bool isMC, int pdgCode, bool isDebug = false)
