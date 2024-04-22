@@ -175,7 +175,7 @@ struct HfCandidateCreatorCharmResoReduced {
         registry.fill(HIST("hSelections"), 1 + Selections::DSel);
       }
       float invMassD = candD.invMass();
-      std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
+      std::array<float, 3> pVecD = candD.pVector();
       float ptD = RecoDecay::pt(pVecD);
       ;
       // loop on V0 candidates
@@ -190,7 +190,7 @@ struct HfCandidateCreatorCharmResoReduced {
         }
         float invMassReso{0.};
         float invMassV0{0.};
-        std::array<float, 3> pVecV0 = {candV0.px(), candV0.py(), candV0.pz()};
+        std::array<float, 3> pVecV0 = candV0.pVector();
         float ptV0 = RecoDecay::pt(pVecV0);
         float ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0, pVecD));
         switch (channel) {

@@ -216,7 +216,7 @@ struct HfTaskBplusReduced {
       auto candD0 = candidate.prong0_as<aod::HfRed2Prongs>();
       std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
       std::array<float, 3> posSvD{candD0.xSecondaryVertex(), candD0.ySecondaryVertex(), candD0.zSecondaryVertex()};
-      std::array<float, 3> momD{candD0.px(), candD0.py(), candD0.pz()};
+      std::array<float, 3> momD{candD0.pVector()};
       auto cospD0 = RecoDecay::cpa(posPv, posSvD, momD);
       auto decLenD0 = RecoDecay::distance(posPv, posSvD);
 
