@@ -21,9 +21,9 @@
 #define COMMON_CORE_PID_PARAMBASE_H_
 
 #include <algorithm> // std::copy
-#include <map> // std::map
-#include <string> // std::string
-#include <vector> // std::vector
+#include <map>       // std::map
+#include <string>    // std::string
+#include <vector>    // std::vector
 
 // ROOT includes
 #include "TNamed.h"
@@ -45,11 +45,11 @@ class Parameters : public TNamed
 
   /// Parametric constructor
   /// \param size Number of parameters in the container
-  explicit Parameters(unsigned int size) : mPar(std::vector<pidvar_t>(size)){}
+  explicit Parameters(unsigned int size) : mPar(std::vector<pidvar_t>(size)) {}
 
   /// Parametric constructor
   /// \param size Number of parameters in the container
-  Parameters(const TString name, unsigned int size) : TNamed(name, name), mPar(std::vector<pidvar_t>(size)){}
+  Parameters(const TString name, unsigned int size) : TNamed(name, name), mPar(std::vector<pidvar_t>(size)) {}
 
   /// Parametric constructor
   /// \param params Parameters to initialize the container
@@ -215,7 +215,7 @@ class Parametrization : public TNamed
   /// Parametric constructor
   /// \param name Name (and title) of the parametrization
   /// \param size Number of parameters of the parametrization
-  Parametrization(TString name, unsigned int size) : TNamed(name, name), mParameters(name + "Parameters", size){}
+  Parametrization(TString name, unsigned int size) : TNamed(name, name), mParameters(name + "Parameters", size) {}
 
   /// Parametric constructor
   /// \param name Name (and title) of the parametrization
