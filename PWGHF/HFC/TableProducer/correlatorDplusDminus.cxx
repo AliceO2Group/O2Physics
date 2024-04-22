@@ -139,7 +139,7 @@ struct HfCorrelatorDplusDminus {
   /// Dplus-Dminus correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision,
                    aod::TracksWDca const& tracks,
-                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
+                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -248,7 +248,7 @@ struct HfCorrelatorDplusDminus {
   /// Dplus-Dminus correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRec(aod::Collision const& collision,
                     aod::TracksWDca const& tracks,
-                    soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
+                    soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const&)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -373,7 +373,7 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processMcRec, "Process MC Reco mode", true);
 
   /// Dplus-Dminus correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
-  void processMcGen(aod::McCollision const& mcCollision,
+  void processMcGen(aod::McCollision const&,
                     McParticlesPlus3Prong const& mcParticles)
   {
     int counterDplusDminus = 0;
@@ -464,7 +464,7 @@ struct HfCorrelatorDplusDminus {
   PROCESS_SWITCH(HfCorrelatorDplusDminus, processMcGen, "Process MC Gen mode", false);
 
   /// c-cbar correlator table builder - for MC gen-level analysis
-  void processCCbar(aod::McCollision const& mcCollision,
+  void processCCbar(aod::McCollision const&,
                     McParticlesPlus2Prong const& mcParticles)
   {
     registry.fill(HIST("hMCEvtCount"), 0);

@@ -47,7 +47,7 @@ using namespace o2::soa;
 using namespace o2::aod::photonpair;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsNgPCM, aod::EMEventsNgPHOS, aod::EMEventsNgEMC, aod::EMEventsNee>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMEventsNgPCM, aod::EMEventsNgPHOS, aod::EMEventsNgEMC, aod::EMEventsNee>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -66,6 +66,8 @@ using MyPrimaryMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventI
 using MyPrimaryMuon = MyPrimaryMuons::iterator;
 
 struct Pi0EtaToGammaGamma {
+
+  Configurable<bool> cfgDoFlow{"cfgDoFlow", false, "flag to analyze vn"};
 
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
@@ -172,7 +174,12 @@ struct Pi0EtaToGammaGamma {
           std::string pair_cut_name = cut3.GetName();
           o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
           THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
-          o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "gammagamma_mass_pt", pairname.data());
+
+          if (cfgDoFlow) {
+            o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "gammagamma_mass_pt", Form("%s,%s", pairname.data(), ",qvector"));
+          } else {
+            o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "gammagamma_mass_pt", pairname.data());
+          }
         } // end of cut3 loop pair cut
       }   // end of cut2 loop
     }     // end of cut1 loop
@@ -197,7 +204,12 @@ struct Pi0EtaToGammaGamma {
       THashList* list_ev_pair = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data()));
       for (const auto& evtype : event_types) {
         THashList* list_ev_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_pair, evtype.data()));
-        o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_type, "Event", evtype.data());
+
+        if (cfgDoFlow) {
+          o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_type, "Event", "qvector");
+        } else {
+          o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_type, "Event", "");
+        }
       }
 
       o2::aod::pwgem::photon::histogram::AddHistClass(list_pair, pairname.data());
@@ -374,11 +386,12 @@ struct Pi0EtaToGammaGamma {
   }
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TEMPrimaryElectrons, typename TEMPrimaryMuons, typename TEMCMTs>
-  void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons, TEMCMTs const& emcmatchedtracks)
+  void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& /*legs*/, TEMPrimaryElectrons const& /*emprimaryelectrons*/, TEMPrimaryMuons const& /*emprimarymuons*/, TEMCMTs const& emcmatchedtracks)
   {
     THashList* list_ev_pair_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[0].data()));
     THashList* list_ev_pair_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[1].data()));
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
+    double values[3] = {0, 0, 0};
 
     for (auto& collision : collisions) {
       if ((pairtype == PairType::kPHOSPHOS || pairtype == PairType::kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
@@ -393,13 +406,28 @@ struct Pi0EtaToGammaGamma {
         continue;
       }
 
-      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_before, "", collision);
+      if (cfgDoFlow) {
+        o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent_Cent_Qvec>(list_ev_pair_before, "", collision);
+      } else {
+        o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_before, "", collision);
+      }
+
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_after, "", collision);
+
+      if (cfgDoFlow) {
+        o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent_Cent_Qvec>(list_ev_pair_after, "", collision);
+      } else {
+        o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_after, "", collision);
+      }
+
       reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
       reinterpret_cast<TH1F*>(list_ev_pair_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
+      std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
+      std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
+      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
@@ -422,11 +450,25 @@ struct Pi0EtaToGammaGamma {
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
 
-              if constexpr (pairtype == PairType::kEMCEMC) {
-                RotationBackground<aod::SkimEMCClusters>(v12, v1, v2, photons2_coll, g1.globalIndex(), g2.globalIndex(), cut, paircut, emcmatchedtracks);
+              if (cfgDoFlow) {
+                values[0] = v12.M(), values[1] = v12.Pt();
+                std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
+                values[2] = RecoDecay::dotProd(u2_gg, q2ft0m);
+                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0M"))->Fill(values);
+                values[2] = RecoDecay::dotProd(u2_gg, q2ft0a);
+                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0A"))->Fill(values);
+                values[2] = RecoDecay::dotProd(u2_gg, q2ft0c);
+                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0C"))->Fill(values);
+                values[2] = RecoDecay::dotProd(u2_gg, q2fv0a);
+                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FV0A"))->Fill(values);
+              } else {
+                reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
+                if constexpr (pairtype == PairType::kEMCEMC) {
+                  RotationBackground<aod::SkimEMCClusters>(v12, v1, v2, photons2_coll, g1.globalIndex(), g2.globalIndex(), cut, paircut, emcmatchedtracks);
+                }
               }
+
             } // end of combination
           }   // end of pair cut loop
         }     // end of cut loop
@@ -496,7 +538,21 @@ struct Pi0EtaToGammaGamma {
                 if (abs(v12.Rapidity()) > maxY) {
                   continue;
                 }
-                reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
+                if (cfgDoFlow) {
+                  values[0] = v12.M(), values[1] = v12.Pt();
+                  std::array<float, 2> u_gg = {static_cast<float>(v12.Px() / v12.Pt()), static_cast<float>(v12.Py() / v12.Pt())};
+                  values[2] = RecoDecay::dotProd(u_gg, q2ft0m);
+                  reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0M"))->Fill(values);
+                  values[2] = RecoDecay::dotProd(u_gg, q2ft0a);
+                  reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0A"))->Fill(values);
+                  values[2] = RecoDecay::dotProd(u_gg, q2ft0c);
+                  reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0C"))->Fill(values);
+                  values[2] = RecoDecay::dotProd(u_gg, q2fv0a);
+                  reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FV0A"))->Fill(values);
+                } else {
+                  reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
+                }
+
               } // end of combination
             }   // end of pair cut loop
           }     // end of cut2 loop
@@ -516,7 +572,7 @@ struct Pi0EtaToGammaGamma {
   BinningType_C colBinning_C{{ConfVtxBins, ConfCentBins}, true};
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TEMPrimaryElectrons, typename TEMPrimaryMuons, typename TEMCMTs, typename TMixedBinning>
-  void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons, TEMCMTs const& emcmatchedtracks, TMixedBinning const& colBinning)
+  void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& /*legs*/, TEMPrimaryElectrons const& /*emprimaryelectrons*/, TEMPrimaryMuons const& /*emprimarymuons*/, TEMCMTs const& /*emcmatchedtracks*/, TMixedBinning const& colBinning)
   {
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
@@ -576,7 +632,7 @@ struct Pi0EtaToGammaGamma {
 
   /// \brief Calculate background (using rotation background method only for EMCal!)
   template <typename TPhotons>
-  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, EMCPhotonCut const& cut, PairCut const& paircut, SkimEMCMTs const& emcmatchedtracks)
+  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, EMCPhotonCut const& cut, PairCut const& paircut, SkimEMCMTs const& /*emcmatchedtracks*/)
   {
     // if less than 3 clusters are present skip event since we need at least 3 clusters
     if (photons_coll.size() < 3) {
@@ -648,7 +704,7 @@ struct Pi0EtaToGammaGamma {
   Filter collisionFilter_subsys = (o2::aod::emevent::ngpcm >= 1) || (o2::aod::emevent::ngphos >= 1) || (o2::aod::emevent::ngemc >= 1) || (aod::emevent::neeuls >= 1);
   using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to mixed event.
 
-  void processPCMPCM(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
+  void processPCMPCM(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
     SameEventPairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision, perCollision, fPCMCuts, fPCMCuts, fPairCuts, legs, nullptr, nullptr, nullptr);
     if (cfgCentEstimator == 0) {
@@ -660,19 +716,19 @@ struct Pi0EtaToGammaGamma {
     }
   }
 
-  void processPHOSPHOS(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters)
+  void processPHOSPHOS(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters)
   {
     SameEventPairing<PairType::kPHOSPHOS>(grouped_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, fPairCuts, nullptr, nullptr, nullptr, nullptr);
     MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, fPairCuts, nullptr, nullptr, nullptr, nullptr, colBinning_C);
   }
 
-  void processEMCEMC(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& emcmatchedtracks)
+  void processEMCEMC(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& emcmatchedtracks)
   {
     SameEventPairing<PairType::kEMCEMC>(grouped_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fEMCCuts, fEMCCuts, fPairCuts, nullptr, nullptr, nullptr, emcmatchedtracks);
     MixedEventPairing<PairType::kEMCEMC>(filtered_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fEMCCuts, fEMCCuts, fPairCuts, nullptr, nullptr, nullptr, emcmatchedtracks, colBinning_C);
   }
 
-  void processPCMDalitzEE(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, MyFilteredDalitzEEs const& dileptons, MyPrimaryElectrons const& emprimaryelectrons)
+  void processPCMDalitzEE(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, MyFilteredDalitzEEs const& dileptons, MyPrimaryElectrons const& emprimaryelectrons)
   {
     SameEventPairing<PairType::kPCMDalitzEE>(grouped_collisions, v0photons, dileptons, perCollision, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons, nullptr, nullptr);
     if (cfgCentEstimator == 0) {
@@ -684,7 +740,7 @@ struct Pi0EtaToGammaGamma {
     }
   }
 
-  void processPCMDalitzMuMu(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, MyFilteredDalitzMuMus const& dileptons, MyPrimaryMuons const& emprimarymuons)
+  void processPCMDalitzMuMu(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, MyFilteredDalitzMuMus const& dileptons, MyPrimaryMuons const& emprimarymuons)
   {
     SameEventPairing<PairType::kPCMDalitzMuMu>(grouped_collisions, v0photons, dileptons, perCollision, perCollision_dalitzmumu, fPCMCuts, fDalitzMuMuCuts, fPairCuts, legs, nullptr, emprimarymuons, nullptr);
     if (cfgCentEstimator == 0) {
@@ -696,25 +752,25 @@ struct Pi0EtaToGammaGamma {
     }
   }
 
-  void processPCMPHOS(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::V0Legs const& legs)
+  void processPCMPHOS(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::V0Legs const& legs)
   {
     SameEventPairing<PairType::kPCMPHOS>(grouped_collisions, v0photons, phosclusters, perCollision, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr, nullptr, nullptr);
     MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr, nullptr, nullptr, colBinning_C);
   }
 
-  void processPCMEMC(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters, aod::V0Legs const& legs, aod::SkimEMCMTs const& emcmatchedtracks)
+  void processPCMEMC(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters, aod::V0Legs const& legs, aod::SkimEMCMTs const& emcmatchedtracks)
   {
     SameEventPairing<PairType::kPCMEMC>(grouped_collisions, v0photons, emcclusters, perCollision, perCollision_emc, fPCMCuts, fEMCCuts, fPairCuts, legs, nullptr, nullptr, emcmatchedtracks);
     MixedEventPairing<PairType::kPCMEMC>(filtered_collisions, v0photons, emcclusters, perCollision, perCollision_emc, fPCMCuts, fEMCCuts, fPairCuts, legs, nullptr, nullptr, emcmatchedtracks, colBinning_C);
   }
 
-  void processPHOSEMC(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& emcmatchedtracks)
+  void processPHOSEMC(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& emcmatchedtracks)
   {
     SameEventPairing<PairType::kPHOSEMC>(grouped_collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc, fPHOSCuts, fEMCCuts, fPairCuts, nullptr, nullptr, nullptr, emcmatchedtracks);
     MixedEventPairing<PairType::kPHOSEMC>(filtered_collisions, phosclusters, emcclusters, perCollision_phos, perCollision_emc, fPHOSCuts, fEMCCuts, fPairCuts, nullptr, nullptr, nullptr, emcmatchedtracks, colBinning_C);
   }
 
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
 
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processPCMPCM, "pairing PCM-PCM", false);
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processPHOSPHOS, "pairing PHOS-PHOS", false);

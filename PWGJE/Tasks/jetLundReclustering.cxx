@@ -112,7 +112,7 @@ struct JetLundReclustering {
   }
 
   // Dummy process
-  void processDummy(JetCollisions const& collisions)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetLundReclustering, processDummy, "Dummy process function, turned on by default", true);
@@ -120,7 +120,7 @@ struct JetLundReclustering {
   // Process function for charged jets
   void processChargedJets(soa::Filtered<JetCollisions>::iterator const& collision,
                           soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets,
-                          JetTracks const& tracks)
+                          JetTracks const&)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;

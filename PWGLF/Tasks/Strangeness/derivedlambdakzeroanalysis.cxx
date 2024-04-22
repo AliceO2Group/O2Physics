@@ -517,7 +517,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0, typename TCollision>
-  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision, float rapidityLambda, float rapidityK0Short, float pT)
+  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision, float rapidityLambda, float rapidityK0Short, float /*pT*/)
   // precalculate this information so that a check is one mask operation, not many
   {
     uint64_t bitMap = 0;
@@ -957,7 +957,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  void analyseCollisionAssociation(TV0 v0, float pt, int mcNch, bool correctAssociation, uint64_t selMap)
+  void analyseCollisionAssociation(TV0 /*v0*/, float pt, int mcNch, bool correctAssociation, uint64_t selMap)
   // analyse collision association
   {
     // __________________________________________
@@ -1059,7 +1059,7 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mccollisions)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/)
   {
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
     if (!collision.sel8()) {

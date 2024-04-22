@@ -420,7 +420,7 @@ struct TableMaker {
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
-  void skimCollisions(TEvents const& collisions, BCsWithTimestamps const& bcs)
+  void skimCollisions(TEvents const& collisions, BCsWithTimestamps const& /*bcs*/)
   {
     // Skim collisions
     // NOTE: So far, collisions are filtered based on the user specified analysis cuts and the filterPP event filter.
@@ -531,7 +531,7 @@ struct TableMaker {
   }
 
   template <uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void skimTracks(TEvent const& collision, BCsWithTimestamps const& bcs, TTracks const& tracks, TrackAssoc const& assocs)
+  void skimTracks(TEvent const& collision, BCsWithTimestamps const& /*bcs*/, TTracks const& /*tracks*/, TrackAssoc const& assocs)
   {
     // Skim the barrel tracks
     // Loop over the collision-track associations, retrieve the track, and apply track cuts for selection
@@ -648,7 +648,7 @@ struct TableMaker {
   }   // end skimTracks
 
   template <uint32_t TMFTFillMap, typename TEvent>
-  void skimMFT(TEvent const& collision, BCsWithTimestamps const& bcs, MFTTracks const& mfts, MFTTrackAssoc const& mftAssocs)
+  void skimMFT(TEvent const& collision, BCsWithTimestamps const& /*bcs*/, MFTTracks const& /*mfts*/, MFTTrackAssoc const& mftAssocs)
   {
     // Skim MFT tracks
     // So far no cuts are applied here
@@ -675,7 +675,7 @@ struct TableMaker {
   }
 
   template <uint32_t TMuonFillMap, typename TEvent, typename TMuons>
-  void skimMuons(TEvent const& collision, BCsWithTimestamps const& bcs, TMuons const& muons, FwdTrackAssoc const& muonAssocs)
+  void skimMuons(TEvent const& collision, BCsWithTimestamps const& /*bcs*/, TMuons const& muons, FwdTrackAssoc const& muonAssocs)
   {
     // Skim the fwd-tracks (muons)
     // Loop over the collision-track associations, recompute track properties depending on the collision assigned, and apply track cuts for selection

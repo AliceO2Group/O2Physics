@@ -86,7 +86,7 @@ struct cascademcfinder {
   std::vector<int> cascv0Index;
   std::vector<int> cascbachelorIndex;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // initialize histograms
     const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};

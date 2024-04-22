@@ -44,7 +44,7 @@ struct firstcorrelations {
   }
 
   template <typename TTarget, typename TCollision>
-  bool fillCollision(TTarget target, TCollision collision, float centrality)
+  bool fillCollision(TTarget /*target*/, TCollision /*collision*/, float /*centrality*/)
   {
     return true;
   }

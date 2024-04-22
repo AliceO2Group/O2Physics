@@ -363,7 +363,7 @@ void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::
 
 // function that does the HF matching of jets from jetsBasePerColl and jets from jetsTagPerColl; assumes both jetsBasePerColl and jetsTagPerColl have access to Mc information
 template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M, typename N, typename O>
-void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& candidatesBase, M const& candidatesTag, N const& tracksBase, O const& tracksTag)
+void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& /*candidatesBase*/, M const& /*candidatesTag*/, N const& /*tracksBase*/, O const& /*tracksTag*/)
 {
   for (const auto& jetBase : jetsBasePerCollision) {
     const auto candidateBase = jetBase.template hfcandidates_first_as<V>();
@@ -427,7 +427,7 @@ float getPtSum(T const& tracksBase, U const& tracksTag)
 }
 
 template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M>
-void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingPt, V const& tracksBase, M const& tracksTag, float minPtFraction)
+void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingPt, V const& /*tracksBase*/, M const& /*tracksTag*/, float minPtFraction)
 {
   float ptSumBase;
   float ptSumTag;

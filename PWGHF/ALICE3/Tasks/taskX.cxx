@@ -159,7 +159,7 @@ struct HfTaskXMc {
 
   void process(soa::Filtered<soa::Join<aod::HfCandX, aod::HfSelXToJpsiPiPi, aod::HfCandXMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXMcGen> const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   {
     // MC rec.
     int decayMode = modeXToJpsiToMuMuPiPi ? hf_cand_x::DecayType::XToJpsiToMuMuPiPi : hf_cand_x::DecayType::XToJpsiToEEPiPi;

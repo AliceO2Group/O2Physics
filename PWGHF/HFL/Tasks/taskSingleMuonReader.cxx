@@ -32,7 +32,20 @@ using namespace o2::framework::expressions;
 using MyCollisions = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyMuons = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
 
+namespace o2::aod
+{
+namespace single_muon
+{
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
+DECLARE_SOA_COLUMN(DeltaPt, deltaPt, float);
+} // namespace single_muon
+DECLARE_SOA_TABLE(HfSingleMuon, "AOD", "SINGLEMUON", single_muon::Pt, single_muon::DcaXY, single_muon::DeltaPt);
+} // namespace o2::aod
+
 struct HfTaskSingleMuonReader {
+  Produces<aod::HfSingleMuon> singleMuon;
+
   Configurable<int> trkType{"trkType", 0, "Muon track type, valid values are 0, 1, 2, 3 and 4"};
   Configurable<float> etaMin{"etaMin", -3.6, "eta minimum value"};
   Configurable<float> etaMax{"etaMax", -2.5, "eta maximum value"};
@@ -94,6 +107,7 @@ struct HfTaskSingleMuonReader {
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.matchMCHTrack_as<MyMuons>();
         auto Dpt = muonType3.pt() - pt;
+        singleMuon(pt, dcaXY, Dpt);
         registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, charge, chi2, Dpt);
       }
     }

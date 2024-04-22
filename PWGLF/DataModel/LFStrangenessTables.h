@@ -411,7 +411,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(PositivePhi, positivephi, //! positive daughter phi
                            [](float PxPos, float PyPos) -> float { return RecoDecay::phi(PxPos, PyPos); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsStandardV0, isStandardV0, //! is standard V0
-                           [](uint8_t V0Type) -> bool { return V0Type & (1 << 0); });
+                           [](uint8_t V0Type) -> bool { return V0Type == 1; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsPhotonTPConly, isPhotonTPConly, //! is tpc-only photon V0
                            [](uint8_t V0Type) -> bool { return V0Type & (1 << 1); });
 DECLARE_SOA_DYNAMIC_COLUMN(IsCollinear, isCollinear, //! is collinear V0

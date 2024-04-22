@@ -205,7 +205,7 @@ struct ExclusivePhi {
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
-  void process(UDCollisions::iterator const& collision, udtracksfull const& tracks)
+  void process(UDCollisions::iterator const&, udtracksfull const& tracks)
   //  void process(UDCollisionsFull::iterator const& collision, udtracksfull const& tracks)
   {
     registry.fill(HIST("hSelectionCounter"), 0);

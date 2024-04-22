@@ -82,7 +82,7 @@ struct AmbiguousTrackPropagation {
 
   using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext& /*initContext*/)
   {
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);

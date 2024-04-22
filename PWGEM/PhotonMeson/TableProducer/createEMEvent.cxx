@@ -19,9 +19,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 using namespace o2;
@@ -33,18 +30,22 @@ using MyBCs = soa::Join<aod::BCs, aod::BcSels>;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
+using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>;
 
-using MyCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>;
+using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
+using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>;
 
 struct CreateEMEvent {
   Produces<o2::aod::EMEvents> event;
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
+  Produces<o2::aod::EMEventsQvec> event_qvec;
 
   enum class EMEventType : int {
     kEvent = 0,
     kEvent_Cent = 1,
+    kEvent_Cent_Qvec = 2,
   };
 
   HistogramRegistry registry{"registry"};
@@ -95,10 +96,28 @@ struct CreateEMEvent {
 
       if constexpr (eventype == EMEventType::kEvent) {
         event_cent(105.f, 105.f, 105.f, 105.f);
+        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f);
       } else if constexpr (eventype == EMEventType::kEvent_Cent) {
         event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV());
+        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f);
+      } else if constexpr (eventype == EMEventType::kEvent_Cent_Qvec) {
+        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV());
+        event_qvec(collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(),
+                   collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
+                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f); // as of 20240416, only 2nd harmonics is supported.
       } else {
         event_cent(105.f, 105.f, 105.f, 105.f);
+        event_qvec(999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f, 999.f,
+                   999.f, 999.f, 999.f, 999.f);
       }
     } // end of collision loop
     map_ncolls_per_bc.clear();
@@ -122,13 +141,25 @@ struct CreateEMEvent {
   }
   PROCESS_SWITCH(CreateEMEvent, processEvent_Cent, "process event info", false);
 
+  void processEvent_Cent_Qvec(MyCollisions_Cent_Qvec const& collisions, MyBCs const& bcs)
+  {
+    skimEvent<false, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEvent, processEvent_Cent_Qvec, "process event info", false);
+
   void processEventMC_Cent(MyCollisionsMC_Cent const& collisions, MyBCs const& bcs)
   {
     skimEvent<true, EMEventType::kEvent_Cent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEvent, processEventMC_Cent, "process event info", false);
 
-  void processDummy(aod::Collisions const& collisions) {}
+  void processEventMC_Cent_Qvec(MyCollisionsMC_Cent_Qvec const& collisions, MyBCs const& bcs)
+  {
+    skimEvent<true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEvent, processEventMC_Cent_Qvec, "process event info", false);
+
+  void processDummy(aod::Collisions const&) {}
   PROCESS_SWITCH(CreateEMEvent, processDummy, "processDummy", true);
 };
 struct AssociatePhotonToEMEvent {

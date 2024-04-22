@@ -87,7 +87,7 @@ struct HfCandidateSelectorD0 {
   AxisSpec axisSelStatus{2, -0.5f, 1.5f};
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     std::array<bool, 2> doprocess{doprocessWithDCAFitterN, doprocessWithKFParticle};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {

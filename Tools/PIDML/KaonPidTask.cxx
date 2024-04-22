@@ -93,7 +93,7 @@ struct KaonPidTask {
     histos.add("hdEdXvsMomentum", ";P_{K^{+}K^{-}}; dE/dx in TPC (keV/cm)", kTH2F, {{100, 0., 4.}, {200, 20., 400.}});
   }
 
-  void process(MyFilteredCollision const& coll, o2::aod::MyTracks const& tracks)
+  void process(MyFilteredCollision const& coll, o2::aod::MyTracks const& /*tracks*/)
   {
     auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);

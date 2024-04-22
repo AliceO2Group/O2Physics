@@ -32,9 +32,11 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::hf_trkcandsel;
 using namespace o2::aod;
 using namespace o2::constants::physics;
 using namespace o2::framework;
@@ -102,6 +104,9 @@ struct HfCandidateCreatorBplus {
   OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, -2., 2.)};
   OutputObj<TH1F> hMassBplusToD0Pi{TH1F("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #bar{D^{0}}#pi^{+}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
 
+  std::shared_ptr<TH1> hCandidatesD, hCandidatesB;
+  HistogramRegistry registry{"registry"};
+
   void init(InitContext const&)
   {
     // invariant-mass window cut
@@ -133,6 +138,12 @@ struct HfCandidateCreatorBplus {
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
+
+    /// candidate monitoring
+    hCandidatesD = registry.add<TH1>("hCandidatesD", "D candidate counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesB = registry.add<TH1>("hCandidatesB", "B candidate counter", {HistType::kTH1D, {axisCands}});
+    setLabelHistoCands(hCandidatesD);
+    setLabelHistoCands(hCandidatesB);
   }
 
   /// Single-track cuts for pions on dcaXY
@@ -219,9 +230,17 @@ struct HfCandidateCreatorBplus {
         }
 
         // reconstruct D0 secondary vertex
-        if (df.process(trackParCovProng0, trackParCovProng1) == 0) {
+        hCandidatesD->Fill(SVFitting::BeforeFit);
+        try {
+          if (df.process(trackParCovProng0, trackParCovProng1) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for D cannot work, skipping the candidate.";
+          hCandidatesD->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidatesD->Fill(SVFitting::FitOk);
 
         const auto& vertexD0 = df.getPCACandidatePos();
         trackParCovProng0.propagateTo(vertexD0[0], bz);
@@ -278,9 +297,17 @@ struct HfCandidateCreatorBplus {
           std::array<float, 3> pVecBCand = {0., 0., 0.};
 
           // find the DCA between the D0 and the bachelor track, for B+
-          if (dfB.process(trackD0, trackParCovPi) == 0) {
+          hCandidatesB->Fill(SVFitting::BeforeFit);
+          try {
+            if (dfB.process(trackD0, trackParCovPi) == 0) {
+              continue;
+            }
+          } catch (const std::runtime_error& error) {
+            LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for B cannot work, skipping the candidate.";
+            hCandidatesB->Fill(SVFitting::Fail);
             continue;
           }
+          hCandidatesB->Fill(SVFitting::FitOk);
 
           dfB.propagateTracksToVertex();        // propagate the bachelor and D0 to the B+ vertex
           trackD0.getPxPyPzGlo(pVecD0);         // momentum of D0 at the B+ vertex
@@ -330,11 +357,11 @@ struct HfCandidateCreatorBplus {
                            hfFlag);
 
           rowCandidateProngs(candD0.globalIndex(), trackPion.globalIndex()); // index D0 and bachelor
-        } // track loop
-      }   // D0 cand loop
-    }     // collision
-  }       // process
-};        // struct
+        }                                                                    // track loop
+      }                                                                      // D0 cand loop
+    }                                                                        // collision
+  }                                                                          // process
+};                                                                           // struct
 
 /// Extends the base table with expression columns and performs MC matching
 struct HfCandidateCreatorBplusExpressions {
@@ -344,8 +371,8 @@ struct HfCandidateCreatorBplusExpressions {
 
   void init(InitContext const&) {}
 
-  void processMc(aod::HfCand2Prong const& dzero,
-                 aod::TracksWMc const& tracks,
+  void processMc(aod::HfCand2Prong const&,
+                 aod::TracksWMc const&,
                  aod::McParticles const& mcParticles,
                  aod::HfCandBplusProngs const& candsBplus)
   {

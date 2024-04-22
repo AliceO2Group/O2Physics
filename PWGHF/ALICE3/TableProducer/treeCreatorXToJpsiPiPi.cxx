@@ -153,10 +153,10 @@ struct HfTreeCreatorXToJpsiPiPi {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mcCollisions,
+               aod::McCollisions const&,
                soa::Join<aod::HfCandX, aod::HfCandXMcRec, aod::HfSelXToJpsiPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXMcGen> const& particles,
-               TracksWPid const& tracks)
+               TracksWPid const&)
   {
 
     // Filling event properties

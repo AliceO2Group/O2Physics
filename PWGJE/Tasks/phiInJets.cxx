@@ -436,7 +436,7 @@ struct phiInJets {
   using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using myCompleteJetTracks = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
   int nJEEvents = 0;
-  void processRec(o2::aod::JCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const& originalTracks)
+  void processRec(o2::aod::JCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const&)
   {
     if (cDebugLevel > 0) {
       nJEEvents++;
@@ -589,8 +589,8 @@ struct phiInJets {
   using JetMCDTable = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
 
   // void processMatchedGen(o2::aod::JMcCollision const& collision, aod::JMcParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
-  void processMatchedGen(aod::JMcCollision const& collision,
-                         JetMCDTable const& mcdjets,
+  void processMatchedGen(aod::JMcCollision const&,
+                         JetMCDTable const&,
                          JetMCPTable const& mcpjets,
                          aod::JMcParticles const& mcParticles)
 
@@ -672,9 +672,9 @@ struct phiInJets {
   //  void processMatchedRec(o2::aod::JCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const& originalTracks)
   void processMatchedRec(aod::JCollision const& collision,
                          JetMCDTable const& mcdjets,
-                         JetMCPTable const& mcpjets,
+                         JetMCPTable const&,
                          myCompleteJetTracks const& tracks,
-                         myCompleteTracks const& originalTracks,
+                         myCompleteTracks const&,
                          aod::McParticles const&)
   {
     if (fabs(collision.posZ()) > 10)

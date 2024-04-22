@@ -415,7 +415,7 @@ struct qaKFParticle {
   }
 
   template <typename T>
-  bool isSelectedDoTopo(const T& KFDZero_PV, const T& KFPion, const T& KFKaon, const T& KFDZero_DecayVtx, const T& KFPV)
+  bool isSelectedDoTopo(const T& KFDZero_PV, const T& /*KFPion*/, const T& /*KFKaon*/, const T& KFDZero_DecayVtx, const T& KFPV)
   {
     /// Pt selection
     if (KFDZero_PV.GetPt() < d_pTMinD0 || KFDZero_PV.GetPt() > d_pTMaxD0) {
@@ -586,7 +586,7 @@ struct qaKFParticle {
     }
   }
   template <typename T1, typename T2, typename T3>
-  void writeVarTree(const T1& kfpTrackPi, const T1& kfpTrackKa, const T2& KFPion, const T2& KFKaon, const T2& KFDZero_PV, const T2& KFDZero, const T2& KFPV, const T2& KFDZero_DecayVtx, float TPCnSigmaPi, float TOFnSigmaPi, float TPCnSigmaKa, float TOFnSigmaKa, float TPCNclsPi, float TPCNclsKa, float cosThetaStar, const T3& track1, const int source)
+  void writeVarTree(const T1& /*kfpTrackPi*/, const T1& /*kfpTrackKa*/, const T2& KFPion, const T2& KFKaon, const T2& KFDZero_PV, const T2& KFDZero, const T2& KFPV, const T2& KFDZero_DecayVtx, float TPCnSigmaPi, float TOFnSigmaPi, float TPCnSigmaKa, float TOFnSigmaKa, float TPCNclsPi, float TPCNclsKa, float cosThetaStar, const T3& track1, const int source)
   {
 
     float d0pid0ka = KFPion.GetDistanceFromVertexXY(KFPV) * KFKaon.GetDistanceFromVertexXY(KFPV);
@@ -863,7 +863,7 @@ struct qaKFParticle {
   using CollisionTableDataMult = soa::Join<aod::Collisions, aod::McCollisionLabels>;
   using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
   // Preslice<o2::aod::McCollisionLabels> perMcCollision = o2::aod::mccollisionlabel::mcCollisionId;
-  void processMC(soa::Filtered<CollisionTableMC>::iterator const& collision, soa::Filtered<CollisionTableMC> const& collisions, soa::Filtered<TrackTableMC> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions, aod::BCsWithTimestamps const&)
+  void processMC(soa::Filtered<CollisionTableMC>::iterator const& collision, soa::Filtered<CollisionTableMC> const& /*collisions*/, soa::Filtered<TrackTableMC> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& /*mcCollisions*/, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {

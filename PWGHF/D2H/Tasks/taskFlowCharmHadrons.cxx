@@ -262,6 +262,7 @@ struct HfTaskFlowCharmHadrons {
       case QvecEstimator::FT0C:
         xQVec = collision.qvecFT0CRe();
         yQVec = collision.qvecFT0CIm();
+        break;
       case QvecEstimator::TPCPos:
         xQVec = collision.qvecBPosRe();
         yQVec = collision.qvecBPosIm();
@@ -374,7 +375,7 @@ struct HfTaskFlowCharmHadrons {
 
   // Ds with ML
   void processDsMl(CollsWithQvecs::iterator const& collision,
-                   CandDsDataWMl const& candidatesDs)
+                   CandDsDataWMl const&)
   {
     auto candsDsToKKPiWMl = selectedDsToKKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsDsToPiKKWMl = selectedDsToPiKKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -385,7 +386,7 @@ struct HfTaskFlowCharmHadrons {
 
   // Ds with rectangular cuts
   void processDs(CollsWithQvecs::iterator const& collision,
-                 CandDsData const& candidatesDs)
+                 CandDsData const&)
   {
     auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -412,7 +413,7 @@ struct HfTaskFlowCharmHadrons {
 
   // D0 with ML
   void processD0Ml(CollsWithQvecs::iterator const& collision,
-                   CandD0DataWMl const& candidatesD0)
+                   CandD0DataWMl const&)
   {
     auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -423,7 +424,7 @@ struct HfTaskFlowCharmHadrons {
 
   // D0 with rectangular cuts
   void processD0(CollsWithQvecs::iterator const& collision,
-                 CandD0Data const& candidatesD0)
+                 CandD0Data const&)
   {
     auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);

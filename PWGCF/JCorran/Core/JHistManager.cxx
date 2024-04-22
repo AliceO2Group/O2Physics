@@ -254,7 +254,7 @@ void JBin::Print()
 int JBin::GetBin(double x)
 {
   auto i = TMath::BinarySearch(fBinD.size(), &fBinD[0], x);
-  if (fMode == kRange && i + 1 >= fBinD.size())
+  if (fMode == kRange && i + 1 >= decltype(i)(fBinD.size()))
     return -1;
   return i;
 }
@@ -590,7 +590,7 @@ TString JTH1::GetString()
   TString s = Form("%s\t%s\t\"%s\"\t%s\t",
                    ClassName(), fName.Data(), fTitle.Data(), fOption.Data());
   for (int i = 0; i < Dimension(); i++) {
-    if (fBins.size() > i && fBins[i] != NULL) {
+    if (decltype(i)(fBins.size()) > i && fBins[i] != NULL) {
       s += " " + fBins[i]->GetName();
     } else {
       s += TString(" ") + Form("%d", SizeOf(i));
@@ -641,8 +641,8 @@ TString JTH1::BuildName()
 {
   TString name = fName;
   if (!HasOption("Single")) {
-    for (UInt_t i = 0; i < Dimension(); i++) {
-      name += ((fBins.size() > i && fBins[i] != NULL) ? fBins[i]->GetIndexName() : "H") + Form("%02d", Index(i));
+    for (int i = 0; i < Dimension(); i++) {
+      name += ((decltype(i)(fBins.size()) > i && fBins[i] != NULL) ? fBins[i]->GetIndexName() : "H") + Form("%02d", Index(i));
     }
   }
   return name;
