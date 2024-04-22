@@ -42,8 +42,8 @@ namespace o2::aod::singletrackselector
 template <typename Type>
 Type getBinIndex(float const& value, std::vector<float> const& binning, int const& NsubBins = 1)
 {
-  Type res = -100;
-  for (int i = 0; i < binning.size() - 1; i++) {
+  Type res = 10e6;
+  for (unsigned int i = 0; i < binning.size() - 1; i++) {
     if (value >= binning[i] && binning[i + 1] > value) {
       if (NsubBins < 2) {
         res = (Type)i;
