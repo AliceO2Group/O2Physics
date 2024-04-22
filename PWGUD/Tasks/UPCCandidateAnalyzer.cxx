@@ -179,7 +179,7 @@ struct UpcCandAnalyzer {
   }
 
   template <typename TTrack>
-  bool checkTPCPID(TTrack& tr1, TTrack& tr2, float& m1, float& m2, bool* pidFlags, int32_t pdg1 = -1, int32_t pdg2 = -1)
+  bool checkTPCPID(TTrack& tr1, TTrack& tr2, float& m1, float& m2, bool* pidFlags, int32_t /*pdg1*/ = -1, int32_t /*pdg2*/ = -1)
   {
     bool pass = false;
 

@@ -93,8 +93,8 @@ struct nuclei_in_jets {
   Configurable<float> min_pt{"min_pt", 0.2f, "minimum pt of the tracks"};
   Configurable<float> min_eta{"min_eta", -0.8f, "minimum eta"};
   Configurable<float> max_eta{"max_eta", +0.8f, "maximum eta"};
-  Configurable<float> min_y{"min_y", -5.0f, "minimum y"};
-  Configurable<float> max_y{"max_y", +5.0f, "maximum y"};
+  Configurable<float> min_y{"min_y", -0.5f, "minimum y"};
+  Configurable<float> max_y{"max_y", +0.5f, "maximum y"};
   Configurable<float> max_dcaxy{"max_dcaxy", 0.1f, "Maximum DCAxy"};
   Configurable<float> max_dcaz{"max_dcaz", 0.1f, "Maximum DCAz"};
   Configurable<float> min_nsigmaTPC{"min_nsigmaTPC", -3.0f, "Minimum nsigma TPC"};
@@ -194,7 +194,13 @@ struct nuclei_in_jets {
     registryMC.add("antiproton_dca_prim", "antiproton_dca_prim", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -0.5, 0.5, "DCA_{xy} (cm)"}});
     registryMC.add("antiproton_dca_sec", "antiproton_dca_sec", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -0.5, 0.5, "DCA_{xy} (cm)"}});
 
+    // Fraction of Primary Antiprotons from MC
+    registryMC.add("antiproton_prim", "antiproton_prim", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("antiproton_all", "antiproton_all", HistType::kTH1F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}});
+
     // Histograms for reweighting
+    registryMC.add("antiproton_eta_pt_pythia", "antiproton_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {80, -0.8, 0.8, "#eta"}});
+    registryMC.add("antideuteron_eta_pt", "antideuteron_eta_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {80, -0.8, 0.8, "#eta"}});
     registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {80, -0.8, 0.8, "#eta"}});
     registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {80, -0.8, 0.8, "#eta"}});
   }
@@ -878,10 +884,12 @@ struct nuclei_in_jets {
           registryMC.fill(HIST("antiproton_weighted_ue"), particle.pt(), wpr_ue);
           registryMC.fill(HIST("antiproton_jet_gen"), particle.pt(), wpr_jet);
           registryMC.fill(HIST("antiproton_ue_gen"), particle.pt(), wpr_ue);
+          registryMC.fill(HIST("antiproton_eta_pt_pythia"), particle.pt(), particle.eta());
         }
         if (particle.pdgCode() == -1000010020) {
           registryMC.fill(HIST("antideuteron_jet_gen"), particle.pt(), wde_jet);
           registryMC.fill(HIST("antideuteron_ue_gen"), particle.pt(), wde_ue);
+          registryMC.fill(HIST("antideuteron_eta_pt"), particle.pt(), particle.eta());
         }
         if (particle.pdgCode() == -1000020030) {
           registryMC.fill(HIST("antihelium3_jet_gen"), particle.pt(), whe_jet);
@@ -891,7 +899,7 @@ struct nuclei_in_jets {
     }
   }
 
-  void processRec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const& mcCollisions, const aod::McParticles& mcParticles)
+  void processRec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const&, const aod::McParticles&)
   {
 
     for (const auto& collision : collisions) {
@@ -956,13 +964,21 @@ struct nuclei_in_jets {
         if (particle.pdgCode() == -2212 && (!particle.isPhysicalPrimary()) && TMath::Abs(track.dcaZ()) < max_dcaz)
           registryMC.fill(HIST("antiproton_dca_sec"), pt, track.dcaXY());
 
-        if (!particle.isPhysicalPrimary())
-          continue;
-
         // DCA Cuts
         if (TMath::Abs(track.dcaXY()) > max_dcaxy)
           continue;
         if (TMath::Abs(track.dcaZ()) > max_dcaz)
+          continue;
+
+        // Fraction of Primary Antiprotons
+        if (particle.pdgCode() == -2212) {
+          registryMC.fill(HIST("antiproton_all"), pt);
+          if (particle.isPhysicalPrimary()) {
+            registryMC.fill(HIST("antiproton_prim"), pt);
+          }
+        }
+
+        if (!particle.isPhysicalPrimary())
           continue;
 
         // Antiproton

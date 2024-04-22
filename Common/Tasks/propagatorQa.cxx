@@ -78,7 +78,7 @@ struct propagatorQa {
 
   o2::track::TrackPar lTrackParametrization;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     if (useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");

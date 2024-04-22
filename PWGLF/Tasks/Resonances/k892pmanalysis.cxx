@@ -53,6 +53,8 @@ struct k892pmanalysis {
   Configurable<int> cDCABins{"cDCABins", 150, "DCA binning"};
   /// Pre-selection cuts
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minimum pt cut"};
+  Configurable<double> cMaxEtacut{"cMaxEtacut", 0.8, "Track maximum eta cut"};
+  Configurable<double> cMaxV0Etacut{"cMaxV0Etacut", 0.8, "V0 maximum eta cut"};
   /// DCA Selections
   // DCAr to PV
   Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
@@ -142,6 +144,8 @@ struct k892pmanalysis {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
       return false;
+    if (std::abs(track.eta()) > cMaxEtacut)
+      return false;
     if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
       return false;
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
@@ -160,7 +164,7 @@ struct k892pmanalysis {
   bool V0Cut(const V0Type v0)
   {
     // V0 track cuts
-    if (std::abs(v0.eta()) > 0.8)
+    if (std::abs(v0.eta()) > cMaxV0Etacut)
       return false;
     if (v0.v0CosPA() < cV0MinCosPA)
       return false;

@@ -394,7 +394,7 @@ class V0PhotonCut : public TNamed
         if (!isITSonlyTrack(track)) {
           return true;
         }
-        return mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
+        return mMinMeanClusterSizeITS < track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
       }
 
       case V0PhotonCuts::kIsWithinBeamPipe: {
@@ -466,7 +466,7 @@ class V0PhotonCut : public TNamed
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
-  void SetMeanClusterSizeITS(float min, float max);
+  void SetMeanClusterSizeITSob(float min, float max);
 
   void SetTPCNsigmaElRange(float min = -3, float max = +3);
   void SetTPCNsigmaPiRange(float min = -1e+10, float max = 1e+10);

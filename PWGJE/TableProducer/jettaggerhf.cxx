@@ -70,7 +70,7 @@ struct JetTaggerHFTask {
     fSignImpXYSig = jettaggingutilities::setResolutionFunction(vecParams);
   }
 
-  void processDummy(JetCollisions const& collision)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processDummy, "Dummy process", true);
@@ -115,7 +115,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCD, "Fill tagging decision for mcd jets", false);
 
-  void processTraining(JetCollision const& collision, JetTableMCD const& mcdjets, JetTagTracksMCD const& tracks)
+  void processTraining(JetCollision const& /*collision*/, JetTableMCD const& /*mcdjets*/, JetTagTracksMCD const& /*tracks*/)
   {
     // To create table for ML
   }

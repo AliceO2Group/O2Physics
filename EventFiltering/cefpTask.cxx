@@ -23,7 +23,6 @@
 
 #include "filterTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -213,8 +212,6 @@ struct centralEventFilterTask {
 
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Produces<aod::CefpDecisions> tags;
-  Configurable<float> cfgTimingCut{"cfgTimingCut", 1.f, "nsigma timing cut associating BC and collisions"};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   FILTER_CONFIGURABLE(F1ProtonFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
@@ -228,16 +225,8 @@ struct centralEventFilterTask {
   FILTER_CONFIGURABLE(FullJetFilters);
   FILTER_CONFIGURABLE(PhotonFilters);
 
-  int mRunNumber{-1};
-  o2::InteractionRecord mEndOfITSramp{0, 0};
-
   void init(o2::framework::InitContext& initc)
   {
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(true);
-
     LOG(debug) << "Start init";
     int nCols{0};
     for (auto& table : mDownscaling) {
@@ -274,24 +263,6 @@ struct centralEventFilterTask {
     }
   }
 
-  void initCCDB(int runNumber)
-  {
-    if (mRunNumber == runNumber) {
-      return;
-    }
-    mRunNumber = runNumber;
-    auto rd = ccdb->getRunDuration(mRunNumber);
-    ccdb->setTimestamp((rd.first + rd.second) / 2);
-    auto* scl = ccdb->get<o2::ctp::CTPRunScalers>("CTP/Calib/Scalers");
-    scl->convertRawToO2();
-    auto svec = scl->getScalerRecordO2();
-    mEndOfITSramp = svec[0].intRecord;
-
-    auto* itsRamp = ccdb->get<std::vector<float>>("ITS/Calib/RampDuration");
-    uint64_t toleranceInBC = (itsRamp->at(0) + itsRamp->at(1)) * 1.e9 / constants::lhc::LHCBunchSpacingNS;
-    mEndOfITSramp += toleranceInBC;
-  }
-
   void run(ProcessingContext& pc)
   {
 
@@ -308,45 +279,31 @@ struct centralEventFilterTask {
     auto columnCollTime{collTabPtr->GetColumnByName(aod::Collision::CollisionTime::mLabel)};
     auto columnCollTimeRes{collTabPtr->GetColumnByName(aod::Collision::CollisionTimeRes::mLabel)};
     auto columnFoundBC{evSelTabPtr->GetColumnByName(o2::aod::evsel::FoundBCId::mLabel)};
-    auto columnRunNumber{bcTabPtr->GetColumnByName(aod::BC::RunNumber::mLabel)};
 
     auto chunkCollBCid{columnCollBCId->chunk(0)};
     auto chunkCollTime{columnCollTime->chunk(0)};
     auto chunkCollTimeRes{columnCollTimeRes->chunk(0)};
     auto chunkGloBC{columnGloBCId->chunk(0)};
     auto chunkFoundBC{columnFoundBC->chunk(0)};
-    auto chunkRunNumber{columnRunNumber->chunk(0)};
 
     auto CollBCIdArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkCollBCid);
     auto CollTimeArray = std::static_pointer_cast<arrow::NumericArray<arrow::FloatType>>(chunkCollTime);
     auto CollTimeResArray = std::static_pointer_cast<arrow::NumericArray<arrow::FloatType>>(chunkCollTimeRes);
     auto GloBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::UInt64Type>>(chunkGloBC);
     auto FoundBCArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkFoundBC);
-    auto RunNumberArray = std::static_pointer_cast<arrow::NumericArray<arrow::Int32Type>>(chunkRunNumber);
-
-    if (RunNumberArray->length()) {
-      initCCDB(RunNumberArray->Value(0));
-    }
 
     if (CollTimeArray->length() == 0) {
       LOG(warn) << "The collision table in the current folder is empty.";
     }
 
     int startCollision{0};
-    // for (int iC{0}; iC < CollBCIdArray->length(); ++iC) {
-    //   if (o2::InteractionRecord::long2IR(GloBCArray->Value(CollBCIdArray->Value(iC))) > mEndOfITSramp) {
-    //     break;
-    //   }
-    //   startCollision = iC;
-    // }
 
     auto mScalers{scalers.get<TH1>(HIST("mScalers"))};
     auto mFiltered{scalers.get<TH1>(HIST("mFiltered"))};
     auto mCovariance{scalers.get<TH2>(HIST("mCovariance"))};
 
     int64_t nEvents{collTabPtr->num_rows()};
-    std::vector<uint64_t> outTrigger, outDecision;
-    // int64_t nSelected{0};
+    std::vector<std::array<uint64_t, 2>> outTrigger, outDecision;
     for (auto& tableName : mDownscaling) {
       if (!pc.inputs().isValid(tableName.first)) {
         LOG(fatal) << tableName.first << " table is not valid.";
@@ -359,15 +316,16 @@ struct centralEventFilterTask {
       }
 
       if (outDecision.size() == 0) {
-        outDecision.resize(nEvents, 0u);
-        outTrigger.resize(nEvents, 0u);
+        outDecision.resize(nEvents, {0ull, 0ull});
+        outTrigger.resize(nEvents, {0ull, 0ull});
       }
 
       auto schema{tablePtr->schema()};
       for (auto& colName : tableName.second) {
         int bin{mScalers->GetXaxis()->FindBin(colName.first.data())};
         double binCenter{mScalers->GetXaxis()->GetBinCenter(bin)};
-        uint64_t triggerBit{BIT(bin - 2)};
+        uint64_t decisionBin{BIT(bin - 2) / 64};
+        uint64_t triggerBit{BIT(bin - 2) % 64};
         auto column{tablePtr->GetColumnByName(colName.first)};
         double downscaling{colName.second};
         if (column) {
@@ -378,11 +336,10 @@ struct centralEventFilterTask {
             for (int64_t iS{startCollision}; iS < chunk->length(); ++iS) {
               if (boolArray->Value(iS)) {
                 mScalers->Fill(binCenter);
-                outTrigger[entry] |= triggerBit;
+                outTrigger[entry][decisionBin] |= triggerBit;
                 if (mUniformGenerator(mGeneratorEngine) < downscaling) {
                   mFiltered->Fill(binCenter);
-                  outDecision[entry] |= triggerBit;
-                  // nSelected++;
+                  outDecision[entry][decisionBin] |= triggerBit;
                 }
               }
               entry++;
@@ -395,21 +352,25 @@ struct centralEventFilterTask {
     mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents - startCollision);
 
     for (uint64_t iE{0}; iE < outTrigger.size(); ++iE) {
-      for (int iB{0}; iB < 64; ++iB) {
-        if (!(outTrigger[iE] & BIT(iB))) {
-          continue;
-        }
-        for (int iC{iB}; iC < 64; ++iC) {
-          if (outTrigger[iE] & BIT(iC)) {
-            mCovariance->Fill(iB, iC);
+      for (uint64_t iD{0}; iD < outTrigger[0].size(); ++iD) {
+        for (int iB{0}; iB < 64; ++iB) {
+          if (!(outTrigger[iE][iD] & BIT(iB))) {
+            continue;
+          }
+          for (int jD{0}; jD < outTrigger[0].size(); ++jD) {
+            for (int iC{iB}; iC < 64; ++iC) {
+              if (outTrigger[iE][iD] & BIT(iC)) {
+                mCovariance->Fill(iD * 64 + iB, jD * 64 + iC);
+              }
+            }
           }
         }
-      }
-      if (outTrigger[iE]) {
-        mScalers->Fill(mScalers->GetNbinsX() - 1);
-      }
-      if (outDecision[iE]) {
-        mFiltered->Fill(mFiltered->GetNbinsX() - 1);
+        if (outTrigger[iE][iD]) {
+          mScalers->Fill(mScalers->GetNbinsX() - 1);
+        }
+        if (outDecision[iE][iD]) {
+          mFiltered->Fill(mFiltered->GetNbinsX() - 1);
+        }
       }
     }
 
@@ -421,7 +382,7 @@ struct centralEventFilterTask {
     }
     for (uint64_t iD{0}; iD < outDecision.size(); ++iD) {
       uint64_t foundBC = FoundBCArray->Value(iD) >= 0 && FoundBCArray->Value(iD) < GloBCArray->length() ? GloBCArray->Value(FoundBCArray->Value(iD)) : -1;
-      tags(CollBCIdArray->Value(iD), GloBCArray->Value(CollBCIdArray->Value(iD)), foundBC, CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD], outDecision[iD]);
+      tags(CollBCIdArray->Value(iD), GloBCArray->Value(CollBCIdArray->Value(iD)), foundBC, CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD][0], outTrigger[iD][1], outDecision[iD][0], outDecision[iD][1]);
     }
   }
 
@@ -429,7 +390,7 @@ struct centralEventFilterTask {
   using BC = BCs::iterator;
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
-  void process(CCs const& collisions, BCs const& bcs)
+  void process(CCs const&, BCs const&)
   {
   }
 

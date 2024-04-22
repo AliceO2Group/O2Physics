@@ -341,8 +341,8 @@ struct NonPromptCascadeTask {
   }
 
   void processTrackedCascadesMC(CollisionCandidatesRun3 const& collision,
-                                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
-                                aod::V0s const& v0s, TracksExtMC const& tracks,
+                                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
+                                aod::V0s const& /*v0s*/, TracksExtMC const& /*tracks*/,
                                 aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     candidates.clear();
@@ -577,8 +577,8 @@ struct NonPromptCascadeTask {
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
 
   void processTrackedCascadesData(CollisionCandidatesRun3 const& collision,
-                                  aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
-                                  aod::V0s const& v0s, TracksExtData const& tracks,
+                                  aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
+                                  aod::V0s const& /*v0s*/, TracksExtData const& /*tracks*/,
                                   aod::BCsWithTimestamps const&)
   {
     candidates.clear();

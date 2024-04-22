@@ -52,6 +52,10 @@ DECLARE_SOA_COLUMN(HfDoubleCharmMix, hasHfDoubleCharmMix, bool);     //! at leas
 DECLARE_SOA_COLUMN(HfV0Charm2P, hasHfV0Charm2P, bool);               //! V0 with 2-prong charm hadron
 DECLARE_SOA_COLUMN(HfV0Charm3P, hasHfV0Charm3P, bool);               //! V0 with 3-prong charm hadron
 DECLARE_SOA_COLUMN(HfCharmBarToXiBach, hasHfCharmBarToXiBach, bool); //! Charm baryon to Xi + bachelor
+DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);               //! SigmaC(2455)++K- and SigmaC(2520)++K- + c.c.
+DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);               //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
+DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);       //! photon with 2-prong charm hadron
+DECLARE_SOA_COLUMN(HfPhotonCharm3P, hasHfPhotonCharm3P, bool);       //! photon with 3-prong charm hadron
 
 // CF two body triggers
 DECLARE_SOA_COLUMN(PD, hasPD, bool); //! has d-p pair
@@ -92,7 +96,7 @@ DECLARE_SOA_COLUMN(GammaVeryLowPtDCAL, hasGammaVeryLowPtDCAL, bool);     //! Pho
 
 // strangeness (lf)
 DECLARE_SOA_COLUMN(Omega, hasOmega, bool);                       //! at leat 1 Omega
-DECLARE_SOA_COLUMN(hadronXi, hashadronXi, bool);                 //! at least 1 Xi + high-pt hadron
+DECLARE_SOA_COLUMN(hadronOmega, hashadronOmega, bool);           //! at least 1 Omega + high-pt hadron
 DECLARE_SOA_COLUMN(DoubleXi, hasDoubleXi, bool);                 //! at least 2 Xi
 DECLARE_SOA_COLUMN(TripleXi, hasTripleXi, bool);                 //! at least 3 Xi
 DECLARE_SOA_COLUMN(QuadrupleXi, hasQuadrupleXi, bool);           //! at least 4 Xi
@@ -102,6 +106,7 @@ DECLARE_SOA_COLUMN(TrackedCascade, hasTrackedCascade, bool);     //! at least 1 
 DECLARE_SOA_COLUMN(TrackedXi, hasTrackedXi, bool);               //! at least 1 tracked Xi
 DECLARE_SOA_COLUMN(TrackedOmega, hasTrackedOmega, bool);         //! at least 1 tracked Omega
 DECLARE_SOA_COLUMN(Tracked3Body, hasTracked3Body, bool);         //! at least 1 tracked 3Body
+DECLARE_SOA_COLUMN(OmegaHighMult, hasOmegaHighMult, bool);       //! at least 1 Omega + high-mult event
 
 // F1-proton
 DECLARE_SOA_COLUMN(TriggerEventF1Proton, triggereventf1proton, bool); //! F1 - proton femto trigger event
@@ -135,8 +140,10 @@ DECLARE_SOA_COLUMN(GlobalBCId, globalBC, uint64_t);            //! Global Bunch 
 DECLARE_SOA_COLUMN(EvSelBC, evSelBC, uint64_t);                //! Global Bunch crossing Id
 DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);       //! Collision time
 DECLARE_SOA_COLUMN(CollisionTimeRes, collisionTimeRes, float); //! Collision time resolution
-DECLARE_SOA_COLUMN(CefpTriggered, cefpTriggered, uint64_t);    //! CEFP triggers before downscalings
-DECLARE_SOA_COLUMN(CefpSelected, cefpSelected, uint64_t);      //! CEFP decision
+DECLARE_SOA_COLUMN(CefpTriggered0, cefpTriggered0, uint64_t);  //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpTriggered1, cefpTriggered1, uint64_t);  //! CEFP triggers before downscalings
+DECLARE_SOA_COLUMN(CefpSelected0, cefpSelected0, uint64_t);    //! CEFP decision
+DECLARE_SOA_COLUMN(CefpSelected1, cefpSelected1, uint64_t);    //! CEFP decision
 
 } // namespace decision
 
@@ -168,7 +175,7 @@ using DqFilter = DqFilters::iterator;
 
 // heavy flavours
 DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
-                  filtering::HfHighPt2P, filtering::HfHighPt3P, filtering::HfBeauty3P, filtering::HfBeauty4P, filtering::HfFemto2P, filtering::HfFemto3P, filtering::HfDoubleCharm2P, filtering::HfDoubleCharm3P, filtering::HfDoubleCharmMix, filtering::HfV0Charm2P, filtering::HfV0Charm3P, filtering::HfCharmBarToXiBach);
+                  filtering::HfHighPt2P, filtering::HfHighPt3P, filtering::HfBeauty3P, filtering::HfBeauty4P, filtering::HfFemto2P, filtering::HfFemto3P, filtering::HfDoubleCharm2P, filtering::HfDoubleCharm3P, filtering::HfDoubleCharmMix, filtering::HfV0Charm2P, filtering::HfV0Charm3P, filtering::HfCharmBarToXiBach, filtering::HfSigmaCPPK, filtering::HfSigmaC0K0, filtering::HfPhotonCharm2P, filtering::HfPhotonCharm3P);
 
 using HfFilter = HfFilters::iterator;
 
@@ -200,7 +207,7 @@ using FullJetFilter = FullJetFilters::iterator;
 
 // strangeness (lf)
 DECLARE_SOA_TABLE(StrangenessFilters, "AOD", "LFStrgFilters", //!
-                  filtering::Omega, filtering::hadronXi, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega);
+                  filtering::Omega, filtering::hadronOmega, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega, filtering::OmegaHighMult);
 
 using StrangenessFilter = StrangenessFilters::iterator;
 
@@ -223,7 +230,7 @@ using PhotonFilter = PhotonFilters::iterator;
 
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
-                  decision::BCId, decision::GlobalBCId, decision::EvSelBC, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered, decision::CefpSelected);
+                  decision::BCId, decision::GlobalBCId, decision::EvSelBC, decision::CollisionTime, decision::CollisionTimeRes, decision::CefpTriggered0, decision::CefpTriggered1, decision::CefpSelected0, decision::CefpSelected1);
 using CefpDecision = CefpDecisions::iterator;
 
 // cefp decision

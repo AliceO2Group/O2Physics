@@ -33,6 +33,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -83,8 +84,9 @@ struct HfFilter { // Main struct for HF triggers
 
   // double charm
   Configurable<LabeledArray<int>> enableDoubleCharmChannels{"enableDoubleCharmChannels", {activeDoubleCharmChannels[0], 1, 3, labelsEmpty, labelsColumnsDoubleCharmChannels}, "Flags to enable/disable double charm channels"};
+  Configurable<bool> keepOnlyDplusForDouble3Prongs{"keepOnlyDplusForDouble3Prongs", false, "Flag to enable/disable to keep only D+ in double charm 3-prongs trigger"};
 
-  // parameters for V0 + charm triggers
+  // parameters for resonance triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
   Configurable<LabeledArray<float>> cutsPtDeltaMassCharmReso{"cutsPtDeltaMassCharmReso", {cutsCharmReso[0], 3, 11, labelsRowsDeltaMassCharmReso, labelsColumnsDeltaMassCharmReso}, "pt (GeV/c) and invariant-mass delta (GeV/c2) for charm hadron resonances"};
   Configurable<bool> keepAlsoWrongDmesLambdaPairs{"keepAlsoWrongDmesLambdaPairs", true, "flat go keep also wrong sign D+Lambda pairs"};
@@ -271,22 +273,25 @@ struct HfFilter { // Main struct for HF triggers
   Preslice<Hf2ProngsWithMl> hf2ProngPerCollision = aod::track_association::collisionId;
   Preslice<Hf3ProngsWithMl> hf3ProngPerCollision = aod::track_association::collisionId;
   Preslice<aod::CascDatas> cascPerCollision = aod::cascdata::collisionId;
+  Preslice<aod::V0PhotonsKF> photonsPerCollision = aod::v0photonkf::collisionId;
 
   void process(CollsWithEvSel const& collisions,
                aod::BCsWithTimestamps const&,
-               aod::V0Datas const& theV0s,
+               aod::V0Datas const& v0s,
                aod::CascDatas const& cascades,
                Hf2ProngsWithMl const& cand2Prongs,
                Hf3ProngsWithMl const& cand3Prongs,
                aod::TrackAssoc const& trackIndices,
-               BigTracksPID const& tracks)
+               BigTracksPID const&,
+               aod::V0PhotonsKF const& photons,
+               aod::V0Legs const&)
   {
     for (const auto& collision : collisions) {
 
       bool keepEvent[kNtriggersHF]{false};
       if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f || (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && applyTimeFrameBorderCut))) { // safety margin for Zvtx
 
-        tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach]);
+        tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P]);
         continue;
       }
 
@@ -337,8 +342,8 @@ struct HfFilter { // Main struct for HF triggers
         auto trackParNeg = getTrackPar(trackNeg);
         o2::gpu::gpustd::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
-        std::array<float, 3> pVecPos{trackPos.px(), trackPos.py(), trackPos.pz()};
-        std::array<float, 3> pVecNeg{trackNeg.px(), trackNeg.py(), trackNeg.pz()};
+        std::array<float, 3> pVecPos{trackPos.pVector()};
+        std::array<float, 3> pVecNeg{trackNeg.pVector()};
         if (trackPos.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParPos, 2.f, noMatCorr, &dcaPos);
           getPxPyPz(trackParPos, pVecPos);
@@ -406,7 +411,7 @@ struct HfFilter { // Main struct for HF triggers
 
           auto trackParThird = getTrackPar(track);
           o2::gpu::gpustd::array<float, 2> dcaThird{track.dcaXY(), track.dcaZ()};
-          std::array<float, 3> pVecThird = {track.px(), track.py(), track.pz()};
+          std::array<float, 3> pVecThird = track.pVector();
           if (track.collisionId() != thisCollId) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParThird, 2.f, noMatCorr, &dcaThird);
             getPxPyPz(trackParThird, pVecThird);
@@ -448,7 +453,7 @@ struct HfFilter { // Main struct for HF triggers
                     }
                     auto trackParFourth = getTrackPar(trackB);
                     o2::gpu::gpustd::array<float, 2> dcaFourth{trackB.dcaXY(), trackB.dcaZ()};
-                    std::array<float, 3> pVecFourth = {trackB.px(), trackB.py(), trackB.pz()};
+                    std::array<float, 3> pVecFourth = trackB.pVector();
                     if (trackB.collisionId() != thisCollId) {
                       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFourth, 2.f, noMatCorr, &dcaFourth);
                       getPxPyPz(trackParFourth, pVecFourth);
@@ -496,156 +501,174 @@ struct HfFilter { // Main struct for HF triggers
         } // end loop over tracks
 
         // 2-prong with Gamma (conversion photon)
-        auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
-        for (const auto& v0 : v0sThisCollision) {
-          if (!keepEvent[kV0Charm2P] && (isSignalTagged) && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
+        if (!keepEvent[kPhotonCharm2P] && isSignalTagged && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
+          auto photonsThisCollision = photons.sliceBy(photonsPerCollision, thisCollId);
+          for (const auto& photon : photonsThisCollision) {
+            auto posTrack = photon.posTrack_as<aod::V0Legs>();
+            auto negTrack = photon.negTrack_as<aod::V0Legs>();
+            if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod)) {
+              continue;
+            }
+            gpu::gpustd::array<float, 2> dcaInfo;
+            std::array<float, 3> pVecPhoton = {photon.px(), photon.py(), photon.pz()};
+            std::array<float, 3> posVecPhoton = {photon.vx(), photon.vy(), photon.vz()};
+            auto trackParPhoton = o2::track::TrackPar(posVecPhoton, pVecPhoton, 0, true);
+            trackParPhoton.setPID(o2::track::PID::Photon);
+            trackParPhoton.setAbsCharge(0);
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParPhoton, 2.f, matCorr, &dcaInfo);
+            getPxPyPz(trackParPhoton, pVecPhoton);
+            float massDStarCand{-1.}, massDStarBarCand{-999.};
+            float massDiffDstar{-1.}, massDiffDstarBar{-999.};
+            auto pVecReso2Prong = RecoDecay::pVec(pVec2Prong, pVecPhoton);
+            auto ptCand = RecoDecay::pt(pVecReso2Prong);
+            if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 1u)) {
+              if (TESTBIT(selD0, 0)) {
+                massDStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecPhoton}, std::array{massPi, massKa, massGamma});
+                massDiffDstar = massDStarCand - massD0Cand;
+              }
+              if (TESTBIT(selD0, 1)) {
+                massDStarBarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecPhoton}, std::array{massKa, massPi, massGamma});
+                massDiffDstarBar = massDStarBarCand - massD0BarCand;
+              }
+              bool isGoodDstar = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDstar && massDiffDstar < cutsPtDeltaMassCharmReso->get(1u, 1u));
+              bool isGoodDstarBar = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDstarBar && massDiffDstarBar < cutsPtDeltaMassCharmReso->get(1u, 1u));
+
+              if (isGoodDstar || isGoodDstarBar) {
+                if (activateQA) {
+                  if (isGoodDstar) {
+                    hMassVsPtC[kNCharmParticles + 1]->Fill(ptCand, massDiffDstar);
+                  }
+                  if (isGoodDstarBar) {
+                    hMassVsPtC[kNCharmParticles + 1]->Fill(ptCand, massDiffDstarBar);
+                  }
+                }
+                keepEvent[kPhotonCharm2P] = true;
+                break; // we stop after the first D0-photon pair found
+              }
+            }
+          }
+        }
+
+        // 2-prong with K0S or Lambda
+        if (!keepEvent[kV0Charm2P] && isSignalTagged && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
+          auto v0sThisCollision = v0s.sliceBy(v0sPerCollision, thisCollId);
+          for (const auto& v0 : v0sThisCollision) {
             auto posTrack = v0.posTrack_as<BigTracksPID>();
             auto negTrack = v0.negTrack_as<BigTracksPID>();
             auto selV0 = helper.isSelectedV0(v0, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod);
-            if (selV0) {
-              // propagate to PV
-              gpu::gpustd::array<float, 2> dcaInfo;
-              std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
-              std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
-              std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
-              if (!keepEvent[kV0Charm2P] && TESTBIT(selV0, kPhoton)) {
-                auto trackParGamma = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-                trackParGamma.setPID(o2::track::PID::Photon);
-                trackParGamma.setAbsCharge(0);
-                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParGamma, 2.f, matCorr, &dcaInfo);
-                getPxPyPz(trackParGamma, pVecV0);
-                float massDStarCand{-1.}, massDStarBarCand{-999.};
-                float massDiffDstar{-1.}, massDiffDstarBar{-999.};
-                auto pVecReso2Prong = RecoDecay::pVec(pVec2Prong, pVecV0);
-                auto ptCand = RecoDecay::pt(pVecReso2Prong);
-                if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 1u)) {
-                  if (TESTBIT(selD0, 0)) {
-                    massDStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massPi, massKa, massGamma});
-                    massDiffDstar = massDStarCand - massD0Cand;
-                  }
-                  if (TESTBIT(selD0, 1)) {
-                    massDStarBarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massKa, massPi, massGamma});
-                    massDiffDstarBar = massDStarBarCand - massD0BarCand;
-                  }
-                  bool isGoodDstar = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDstar && massDiffDstar < cutsPtDeltaMassCharmReso->get(1u, 1u));
-                  bool isGoodDstarBar = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDstarBar && massDiffDstarBar < cutsPtDeltaMassCharmReso->get(1u, 1u));
+            if (!selV0) {
+              continue;
+            }
 
-                  if (isGoodDstar || isGoodDstarBar) {
-                    keepEvent[kV0Charm2P] = true;
-                    if (activateQA) {
-                      if (isGoodDstar) {
-                        hMassVsPtC[kNCharmParticles + 1]->Fill(ptCand, massDiffDstar);
-                      }
-                      if (isGoodDstarBar) {
-                        hMassVsPtC[kNCharmParticles + 1]->Fill(ptCand, massDiffDstarBar);
-                      }
-                    }
-                  }
+            // propagate to PV
+            gpu::gpustd::array<float, 2> dcaInfo;
+            std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
+            std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
+            std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
+            if (!keepEvent[kV0Charm2P] && TESTBIT(selV0, kK0S)) {
+
+              auto trackParK0 = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+              trackParK0.setPID(o2::track::PID::K0);
+              trackParK0.setAbsCharge(0);
+              o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
+              getPxPyPz(trackParK0, pVecV0);
+
+              // we first look for a D*+
+              for (const auto& trackBachelorId : trackIdsThisCollision) { // start loop over tracks
+                auto trackBachelor = trackBachelorId.track_as<BigTracksPID>();
+                if (trackBachelor.globalIndex() == trackPos.globalIndex() || trackBachelor.globalIndex() == trackNeg.globalIndex()) {
+                  continue;
                 }
-              }
-              if (!keepEvent[kV0Charm2P] && TESTBIT(selV0, kK0S)) {
 
-                auto trackParK0 = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-                trackParK0.setPID(o2::track::PID::K0);
-                trackParK0.setAbsCharge(0);
-                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
-                getPxPyPz(trackParK0, pVecV0);
+                auto trackParBachelor = getTrackPar(trackBachelor);
+                o2::gpu::gpustd::array<float, 2> dcaBachelor{trackBachelor.dcaXY(), trackBachelor.dcaZ()};
+                std::array<float, 3> pVecBachelor = trackBachelor.pVector();
+                if (trackBachelor.collisionId() != thisCollId) {
+                  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelor, 2.f, noMatCorr, &dcaBachelor);
+                  getPxPyPz(trackParBachelor, pVecBachelor);
+                }
 
-                // we first look for a D*+
-                for (const auto& trackBachelorId : trackIdsThisCollision) { // start loop over tracks
-                  auto trackBachelor = trackBachelorId.track_as<BigTracksPID>();
-                  if (trackBachelor.globalIndex() == trackPos.globalIndex() || trackBachelor.globalIndex() == trackNeg.globalIndex()) {
-                    continue;
+                int isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackBachelor, trackParBachelor, dcaBachelor, -1);
+                if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0, 0) && trackBachelor.sign() < 0) || (TESTBIT(selD0, 1) && trackBachelor.sign() > 0))) {
+                  std::array<float, 2> massDausD0{massPi, massKa};
+                  auto massD0dau = massD0Cand;
+                  if (trackBachelor.sign() < 0) {
+                    massDausD0[0] = massKa;
+                    massDausD0[1] = massPi;
+                    massD0dau = massD0BarCand;
                   }
-
-                  auto trackParBachelor = getTrackPar(trackBachelor);
-                  o2::gpu::gpustd::array<float, 2> dcaBachelor{trackBachelor.dcaXY(), trackBachelor.dcaZ()};
-                  std::array<float, 3> pVecBachelor = {trackBachelor.px(), trackBachelor.py(), trackBachelor.pz()};
-                  if (trackBachelor.collisionId() != thisCollId) {
-                    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelor, 2.f, noMatCorr, &dcaBachelor);
-                    getPxPyPz(trackParBachelor, pVecBachelor);
-                  }
-
-                  int isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackBachelor, trackParBachelor, dcaBachelor, -1);
-                  if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0, 0) && trackBachelor.sign() < 0) || (TESTBIT(selD0, 1) && trackBachelor.sign() > 0))) {
-                    std::array<float, 2> massDausD0{massPi, massKa};
-                    auto massD0dau = massD0Cand;
-                    if (trackBachelor.sign() < 0) {
-                      massDausD0[0] = massKa;
-                      massDausD0[1] = massPi;
-                      massD0dau = massD0BarCand;
-                    }
-                    auto pVecDStarCand = RecoDecay::pVec(pVec2Prong, pVecBachelor);
-                    auto ptDStarCand = RecoDecay::pt(pVecDStarCand);
-                    double massDStarCand{-999.}, massDiffDstar{-999.};
-                    if (ptDStarCand > cutsPtDeltaMassCharmReso->get(2u, 0u)) {
-                      massDStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor}, std::array{massDausD0[0], massDausD0[1], massPi});
-                      massDiffDstar = massDStarCand - massD0dau;
-                      if (cutsPtDeltaMassCharmReso->get(0u, 0u) <= massDiffDstar && massDiffDstar <= cutsPtDeltaMassCharmReso->get(1u, 0u)) {
-                        if (activateQA) {
-                          hMassVsPtC[kNCharmParticles]->Fill(ptDStarCand, massDiffDstar);
-                        }
-                        auto pVecReso2Prong = RecoDecay::pVec(pVecDStarCand, pVecV0);
-                        auto ptCand = RecoDecay::pt(pVecReso2Prong);
-                        if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 3u)) {
-                          auto massDStarK0S = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor, pVecV0}, std::array{massDausD0[0], massDausD0[1], massPi, massK0S});
-                          auto massDiffDsReso = massDStarK0S - massDStarCand;
-                          if (cutsPtDeltaMassCharmReso->get(0u, 3u) < massDiffDsReso && massDiffDsReso < cutsPtDeltaMassCharmReso->get(1u, 3u)) {
-                            if (activateQA) {
-                              hMassVsPtC[kNCharmParticles + 3]->Fill(ptCand, massDiffDsReso);
-                            }
-                            keepEvent[kV0Charm2P] = true;
+                  auto pVecDStarCand = RecoDecay::pVec(pVec2Prong, pVecBachelor);
+                  auto ptDStarCand = RecoDecay::pt(pVecDStarCand);
+                  double massDStarCand{-999.}, massDiffDstar{-999.};
+                  if (ptDStarCand > cutsPtDeltaMassCharmReso->get(2u, 0u)) {
+                    massDStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor}, std::array{massDausD0[0], massDausD0[1], massPi});
+                    massDiffDstar = massDStarCand - massD0dau;
+                    if (cutsPtDeltaMassCharmReso->get(0u, 0u) <= massDiffDstar && massDiffDstar <= cutsPtDeltaMassCharmReso->get(1u, 0u)) {
+                      if (activateQA) {
+                        hMassVsPtC[kNCharmParticles]->Fill(ptDStarCand, massDiffDstar);
+                      }
+                      auto pVecReso2Prong = RecoDecay::pVec(pVecDStarCand, pVecV0);
+                      auto ptCand = RecoDecay::pt(pVecReso2Prong);
+                      if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 3u)) {
+                        auto massDStarK0S = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecBachelor, pVecV0}, std::array{massDausD0[0], massDausD0[1], massPi, massK0S});
+                        auto massDiffDsReso = massDStarK0S - massDStarCand;
+                        if (cutsPtDeltaMassCharmReso->get(0u, 3u) < massDiffDsReso && massDiffDsReso < cutsPtDeltaMassCharmReso->get(1u, 3u)) {
+                          if (activateQA) {
+                            hMassVsPtC[kNCharmParticles + 3]->Fill(ptCand, massDiffDsReso);
                           }
+                          keepEvent[kV0Charm2P] = true;
+                          break;
                         }
                       }
                     }
                   }
                 }
               }
-              if (!keepEvent[kV0Charm2P] && (TESTBIT(selV0, kLambda) || TESTBIT(selV0, kAntiLambda))) { // Xic(3055) and Xic(3080) --> since it occupies only a small bandwidth, we might want to keep also wrong sign pairs
-                auto trackParLambda = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-                trackParLambda.setAbsCharge(0);
-                trackParLambda.setPID(o2::track::PID::Lambda);
-                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParLambda, 2.f, matCorr, &dcaInfo);
-                getPxPyPz(trackParLambda, pVecV0);
-                float massXicStarCand{-999.}, massXicStarBarCand{-999.};
-                float massDiffXicStarCand{-999.}, massDiffXicStarBarCand{-999.};
-                bool isRightSignXicStar{false}, isRightSignXicStarBar{false};
-                auto pVecReso2Prong = RecoDecay::pVec(pVec2Prong, pVecV0);
-                auto ptCand = RecoDecay::pt(pVecReso2Prong);
-                if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 5u)) {
-                  if (TESTBIT(selD0, 0)) {
-                    massXicStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massPi, massKa, massLambda});
-                    massDiffXicStarCand = massXicStarCand - massD0Cand;
-                    isRightSignXicStar = TESTBIT(selV0, kLambda); // right sign if Lambda
-                  }
-                  if (TESTBIT(selD0, 1)) {
-                    massXicStarBarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massKa, massPi, massLambda});
-                    massDiffXicStarBarCand = massXicStarBarCand - massD0BarCand;
-                    isRightSignXicStarBar = TESTBIT(selV0, kAntiLambda); // right sign if AntiLambda
-                  }
-                  bool isGoodXicStar = (cutsPtDeltaMassCharmReso->get(0u, 5u) < massDiffXicStarCand && massDiffXicStarCand < cutsPtDeltaMassCharmReso->get(1u, 5u));
-                  bool isGoodXicStarBar = (cutsPtDeltaMassCharmReso->get(0u, 5u) < massDiffXicStarBarCand && massDiffXicStarBarCand < cutsPtDeltaMassCharmReso->get(1u, 5u));
+            }
+            if (!keepEvent[kV0Charm2P] && (TESTBIT(selV0, kLambda) || TESTBIT(selV0, kAntiLambda))) { // Xic(3055) and Xic(3080) --> since it occupies only a small bandwidth, we might want to keep also wrong sign pairs
+              auto trackParLambda = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+              trackParLambda.setAbsCharge(0);
+              trackParLambda.setPID(o2::track::PID::Lambda);
+              o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParLambda, 2.f, matCorr, &dcaInfo);
+              getPxPyPz(trackParLambda, pVecV0);
+              float massXicStarCand{-999.}, massXicStarBarCand{-999.};
+              float massDiffXicStarCand{-999.}, massDiffXicStarBarCand{-999.};
+              bool isRightSignXicStar{false}, isRightSignXicStarBar{false};
+              auto pVecReso2Prong = RecoDecay::pVec(pVec2Prong, pVecV0);
+              auto ptCand = RecoDecay::pt(pVecReso2Prong);
+              if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 5u)) {
+                if (TESTBIT(selD0, 0)) {
+                  massXicStarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massPi, massKa, massLambda});
+                  massDiffXicStarCand = massXicStarCand - massD0Cand;
+                  isRightSignXicStar = TESTBIT(selV0, kLambda); // right sign if Lambda
+                }
+                if (TESTBIT(selD0, 1)) {
+                  massXicStarBarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massKa, massPi, massLambda});
+                  massDiffXicStarBarCand = massXicStarBarCand - massD0BarCand;
+                  isRightSignXicStarBar = TESTBIT(selV0, kAntiLambda); // right sign if AntiLambda
+                }
+                bool isGoodXicStar = (cutsPtDeltaMassCharmReso->get(0u, 5u) < massDiffXicStarCand && massDiffXicStarCand < cutsPtDeltaMassCharmReso->get(1u, 5u));
+                bool isGoodXicStarBar = (cutsPtDeltaMassCharmReso->get(0u, 5u) < massDiffXicStarBarCand && massDiffXicStarBarCand < cutsPtDeltaMassCharmReso->get(1u, 5u));
 
-                  if (activateQA) {
-                    if (isGoodXicStar) {
-                      if (isRightSignXicStar) {
-                        hMassVsPtC[kNCharmParticles + 7]->Fill(ptCand, massDiffXicStarCand);
-                      } else if (!isRightSignXicStar && keepAlsoWrongDmesLambdaPairs) {
-                        hMassVsPtC[kNCharmParticles + 8]->Fill(ptCand, massDiffXicStarBarCand);
-                      }
-                    }
-                    if (isGoodXicStarBar) {
-                      if (isRightSignXicStarBar) {
-                        hMassVsPtC[kNCharmParticles + 7]->Fill(ptCand, massDiffXicStarCand);
-                      } else if (!isRightSignXicStarBar && keepAlsoWrongDmesLambdaPairs) {
-                        hMassVsPtC[kNCharmParticles + 8]->Fill(ptCand, massDiffXicStarBarCand);
-                      }
+                if (activateQA) {
+                  if (isGoodXicStar) {
+                    if (isRightSignXicStar) {
+                      hMassVsPtC[kNCharmParticles + 7]->Fill(ptCand, massDiffXicStarCand);
+                    } else if (!isRightSignXicStar && keepAlsoWrongDmesLambdaPairs) {
+                      hMassVsPtC[kNCharmParticles + 8]->Fill(ptCand, massDiffXicStarBarCand);
                     }
                   }
-                  if ((isGoodXicStar && (isRightSignXicStar || keepAlsoWrongDmesLambdaPairs)) || (isGoodXicStarBar && (isRightSignXicStarBar || keepAlsoWrongDmesLambdaPairs))) {
-                    keepEvent[kV0Charm2P] = true;
+                  if (isGoodXicStarBar) {
+                    if (isRightSignXicStarBar) {
+                      hMassVsPtC[kNCharmParticles + 7]->Fill(ptCand, massDiffXicStarCand);
+                    } else if (!isRightSignXicStarBar && keepAlsoWrongDmesLambdaPairs) {
+                      hMassVsPtC[kNCharmParticles + 8]->Fill(ptCand, massDiffXicStarBarCand);
+                    }
                   }
+                }
+                if ((isGoodXicStar && (isRightSignXicStar || keepAlsoWrongDmesLambdaPairs)) || (isGoodXicStarBar && (isRightSignXicStarBar || keepAlsoWrongDmesLambdaPairs))) {
+                  keepEvent[kV0Charm2P] = true;
+                  break;
                 }
               }
             }
@@ -676,9 +699,9 @@ struct HfFilter { // Main struct for HF triggers
         o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
-        std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
-        std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
-        std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
+        std::array<float, 3> pVecFirst = trackFirst.pVector();
+        std::array<float, 3> pVecSecond = trackSecond.pVector();
+        std::array<float, 3> pVecThird = trackThird.pVector();
         if (trackFirst.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFirst, 2.f, noMatCorr, &dcaFirst);
           getPxPyPz(trackParFirst, pVecFirst);
@@ -746,7 +769,7 @@ struct HfFilter { // Main struct for HF triggers
           continue;
         }
 
-        if (std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) {
+        if ((!keepOnlyDplusForDouble3Prongs && std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) || (keepOnlyDplusForDouble3Prongs && isCharmTagged[kDplus - 1])) {
           indicesDau3Prong.push_back(std::vector<int64_t>{trackFirst.globalIndex(), trackSecond.globalIndex(), trackThird.globalIndex()});
         } // end multiple 3-prong selection
 
@@ -801,7 +824,7 @@ struct HfFilter { // Main struct for HF triggers
 
           auto trackParFourth = getTrackPar(track);
           o2::gpu::gpustd::array<float, 2> dcaFourth{track.dcaXY(), track.dcaZ()};
-          std::array<float, 3> pVecFourth = {track.px(), track.py(), track.pz()};
+          std::array<float, 3> pVecFourth = track.pVector();
           if (track.collisionId() != thisCollId) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFourth, 2.f, noMatCorr, &dcaFourth);
             getPxPyPz(trackParFourth, pVecFourth);
@@ -852,8 +875,7 @@ struct HfFilter { // Main struct for HF triggers
           } // end femto selection
 
           // SigmaC++ K- trigger
-          // Let's flag it together with SigmaC0K0s (i.e. in kV0Charm3P) even if there is no V0
-          if (!keepEvent[kV0Charm3P] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0 && helper.isSelectedKaonFromXicResoToSigmaC<true>(track)) {
+          if (!keepEvent[kSigmaCPPK] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0 && helper.isSelectedKaonFromXicResoToSigmaC<true>(track)) {
             // we need a candidate Lc->pKpi and a candidate soft kaon
 
             // look for SigmaC++ candidates
@@ -884,14 +906,14 @@ struct HfFilter { // Main struct for HF triggers
               // select soft pion candidates
               auto trackParSoftPi = getTrackPar(trackSoftPi);
               o2::gpu::gpustd::array<float, 2> dcaSoftPi{trackSoftPi.dcaXY(), trackSoftPi.dcaZ()};
-              std::array<float, 3> pVecSoftPi = {trackSoftPi.px(), trackSoftPi.py(), trackSoftPi.pz()};
+              std::array<float, 3> pVecSoftPi = trackSoftPi.pVector();
               if (trackSoftPi.collisionId() != thisCollId) {
                 // This is a track reassociated to this PV by the track-to-collision-associator
                 // Let's propagate this track to it, and calculate dcaXY, dcaZ
                 o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaSoftPi);
                 getPxPyPz(trackParSoftPi, pVecSoftPi);
               }
-              int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackSoftPi, trackParSoftPi, dcaSoftPi, kV0Charm3P);
+              int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackSoftPi, trackParSoftPi, dcaSoftPi, kSigmaCPPK);
               if (TESTBIT(isSoftPionSelected, kSoftPionForSigmaC) /*&& (TESTBIT(is3Prong[2], 0) || TESTBIT(is3Prong[2], 1))*/) {
 
                 // check the mass of the SigmaC++ candidate
@@ -926,8 +948,7 @@ struct HfFilter { // Main struct for HF triggers
                     bool isPiKPOk = (cutsPtDeltaMassCharmReso->get(0u, 10u) < deltaMassXicResoPiKP && deltaMassXicResoPiKP < cutsPtDeltaMassCharmReso->get(1u, 10u));
                     if (isPKPiOk || isPiKPOk) {
                       /// This is a good SigmaC++K- event
-                      /// Let's flag it together with SigmaC0K0s
-                      keepEvent[kV0Charm3P] = true;
+                      keepEvent[kSigmaCPPK] = true;
 
                       /// QA plot
                       if (activateQA) {
@@ -956,120 +977,130 @@ struct HfFilter { // Main struct for HF triggers
           }     // end candidate Lc->pKpi
         }       // end loop over tracks
 
-        // 3-prong with V0 (Ds gamma, D+ K0S, D+ Lambda)
-        auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
+        // Ds with photon
         bool isGoodDsToKKPi = (isSignalTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 0);
         bool isGoodDsToPiKK = (isSignalTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 1);
+        if (!keepEvent[kPhotonCharm3P] && (isGoodDsToKKPi || isGoodDsToPiKK)) {
+          auto massDsKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massKa, massKa, massPi});
+          auto massDsPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massKa});
+          auto photonsThisCollision = photons.sliceBy(photonsPerCollision, thisCollId);
+          for (const auto& photon : photonsThisCollision) {
+            auto posTrack = photon.posTrack_as<aod::V0Legs>();
+            auto negTrack = photon.negTrack_as<aod::V0Legs>();
+            if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod)) {
+              continue;
+            }
+            gpu::gpustd::array<float, 2> dcaInfo;
+            std::array<float, 3> pVecPhoton = {photon.px(), photon.py(), photon.pz()};
+            std::array<float, 3> posVecPhoton = {photon.vx(), photon.vy(), photon.vz()};
+            auto trackParPhoton = o2::track::TrackPar(posVecPhoton, pVecPhoton, 0, true);
+            trackParPhoton.setAbsCharge(0);
+            trackParPhoton.setPID(o2::track::PID::Photon);
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParPhoton, 2.f, matCorr, &dcaInfo);
+            getPxPyPz(trackParPhoton, pVecPhoton);
+            float massDsStarToKKPiCand{-1.}, massDsStarToPiKKCand{999.};
+            float massDiffDsStarToKKPi{-1.}, massDiffDsStarToPiKK{999.};
+            if (isGoodDsToKKPi) {
+              massDsStarToKKPiCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecPhoton}, std::array{massKa, massKa, massPi, massGamma});
+              massDiffDsStarToKKPi = massDsStarToKKPiCand - massDsKKPi;
+            }
+            if (isGoodDsToPiKK) {
+              massDsStarToPiKKCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecPhoton}, std::array{massPi, massKa, massKa, massGamma});
+              massDiffDsStarToPiKK = massDsStarToPiKKCand - massDsPiKK;
+            }
+
+            auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecPhoton);
+            auto ptCand = RecoDecay::pt(pVecReso3Prong);
+            if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 1u)) {
+              bool isGoodDsStarToKKPi = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToKKPi && massDiffDsStarToKKPi < cutsPtDeltaMassCharmReso->get(1u, 1u));
+              bool isGoodDsStarToPiKK = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToPiKK && massDiffDsStarToPiKK < cutsPtDeltaMassCharmReso->get(1u, 1u));
+              if (isGoodDsStarToKKPi || isGoodDsStarToPiKK) {
+                if (activateQA) {
+                  if (isGoodDsStarToKKPi) {
+                    hMassVsPtC[kNCharmParticles + 2]->Fill(ptCand, massDiffDsStarToKKPi);
+                  }
+                  if (isGoodDsStarToPiKK) {
+                    hMassVsPtC[kNCharmParticles + 2]->Fill(ptCand, massDiffDsStarToPiKK);
+                  }
+                }
+                keepEvent[kPhotonCharm3P] = true;
+                break; // we stop after the first Ds + photon found
+              }
+            }
+          }
+        }
+
+        // D+ with K0S or Lambda and SigmaC0 with K0S
+        auto v0sThisCollision = v0s.sliceBy(v0sPerCollision, thisCollId);
         bool isGoodDPlus = (isSignalTagged[kDplus - 1]) && is3ProngInMass[kDplus - 1];
+        bool isGoodLcToPKPi = (isSignalTagged[kLc - 1]) && TESTBIT(is3ProngInMass[kLc - 1], 0);
+        bool isGoodLcToPiKP = (isSignalTagged[kLc - 1]) && TESTBIT(is3ProngInMass[kLc - 1], 1);
         auto massDPlusCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massPi});
-        auto massDsKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massKa, massKa, massPi});
-        auto massDsPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massKa});
-        for (const auto& v0 : v0sThisCollision) {
-          if (!keepEvent[kV0Charm3P] && (isGoodDsToKKPi || isGoodDsToPiKK || isGoodDPlus)) {
+
+        if ((!keepEvent[kV0Charm3P] && isGoodDPlus) || (!keepEvent[kSigmaC0K0] && (isGoodLcToPKPi || isGoodLcToPiKP))) {
+          for (const auto& v0 : v0sThisCollision) {
             auto posTrack = v0.posTrack_as<BigTracksPID>();
             auto negTrack = v0.negTrack_as<BigTracksPID>();
             auto selV0 = helper.isSelectedV0(v0, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod);
-            if (selV0 > 0) {
-              // propagate to PV
-              gpu::gpustd::array<float, 2> dcaInfo;
-              std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
-              std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
-              std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
+            if (!selV0) {
+              continue;
+            }
+            gpu::gpustd::array<float, 2> dcaInfo;
+            std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
+            std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
+            std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
 
-              if (!keepEvent[kV0Charm3P] && (isGoodDsToKKPi || isGoodDsToPiKK) && TESTBIT(selV0, kPhoton)) {
-                auto trackParGamma = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-                trackParGamma.setAbsCharge(0);
-                trackParGamma.setPID(o2::track::PID::Photon);
-                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParGamma, 2.f, matCorr, &dcaInfo);
-                getPxPyPz(trackParGamma, pVecV0);
-                float massDsStarToKKPiCand{-1.}, massDsStarToPiKKCand{999.};
-                float massDiffDsStarToKKPi{-1.}, massDiffDsStarToPiKK{999.};
-                if (isGoodDsToKKPi) {
-                  massDsStarToKKPiCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massKa, massKa, massPi, massGamma});
-                  massDiffDsStarToKKPi = massDsStarToKKPiCand - massDsKKPi;
-                }
-                if (isGoodDsToPiKK) {
-                  massDsStarToPiKKCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massKa, massGamma});
-                  massDiffDsStarToPiKK = massDsStarToPiKKCand - massDsPiKK;
-                }
-
+            // we pair D+ with V0
+            if (!keepEvent[kV0Charm3P] && isGoodDPlus) {
+              if (!keepEvent[kV0Charm3P] && TESTBIT(selV0, kK0S)) { // Ds2*
+                auto trackParK0S = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+                trackParK0S.setAbsCharge(0);
+                trackParK0S.setPID(o2::track::PID::K0);
+                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0S, 2.f, matCorr, &dcaInfo);
+                getPxPyPz(trackParK0S, pVecV0);
+                auto massDsStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massPi, massK0S});
+                auto massDiffDsStar = massDsStarCand - massDPlusCand;
                 auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecV0);
                 auto ptCand = RecoDecay::pt(pVecReso3Prong);
-                if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 1u)) {
-                  bool isGoodDsStarToKKPi = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToKKPi && massDiffDsStarToKKPi < cutsPtDeltaMassCharmReso->get(1u, 1u));
-                  bool isGoodDsStarToPiKK = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToPiKK && massDiffDsStarToPiKK < cutsPtDeltaMassCharmReso->get(1u, 1u));
-
-                  if (isGoodDsStarToKKPi || isGoodDsStarToPiKK) {
-                    keepEvent[kV0Charm3P] = true;
+                if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 4u)) {
+                  if (cutsPtDeltaMassCharmReso->get(0u, 4u) < massDiffDsStar && massDiffDsStar < cutsPtDeltaMassCharmReso->get(1u, 4u)) {
                     if (activateQA) {
-                      if (isGoodDsStarToKKPi) {
-                        hMassVsPtC[kNCharmParticles + 2]->Fill(ptCand, massDiffDsStarToKKPi);
-                      }
-                      if (isGoodDsStarToPiKK) {
-                        hMassVsPtC[kNCharmParticles + 2]->Fill(ptCand, massDiffDsStarToPiKK);
-                      }
+                      hMassVsPtC[kNCharmParticles + 4]->Fill(ptCand, massDiffDsStar);
                     }
+                    keepEvent[kV0Charm3P] = true;
                   }
                 }
               }
-              if (!keepEvent[kV0Charm3P] && isGoodDPlus) {
-                if (TESTBIT(selV0, kK0S)) { // Ds2*
-                  auto trackParK0S = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-                  trackParK0S.setAbsCharge(0);
-                  trackParK0S.setPID(o2::track::PID::K0);
-                  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0S, 2.f, matCorr, &dcaInfo);
-                  getPxPyPz(trackParK0S, pVecV0);
-                  auto massDsStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massPi, massK0S});
-                  auto massDiffDsStar = massDsStarCand - massDPlusCand;
-                  auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecV0);
-                  auto ptCand = RecoDecay::pt(pVecReso3Prong);
-                  if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 4u)) {
-                    if (cutsPtDeltaMassCharmReso->get(0u, 4u) < massDiffDsStar && massDiffDsStar < cutsPtDeltaMassCharmReso->get(1u, 4u)) {
-                      if (activateQA) {
-                        hMassVsPtC[kNCharmParticles + 4]->Fill(ptCand, massDiffDsStar);
+              if (!keepEvent[kV0Charm3P] && (TESTBIT(selV0, kLambda) || TESTBIT(selV0, kAntiLambda))) { // Xic(3055) and Xic(3080) --> since it occupies only a small bandwidth, we might want to keep also wrong sign pairs
+                auto trackParLambda = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+                trackParLambda.setAbsCharge(0);
+                trackParLambda.setPID(o2::track::PID::Lambda);
+                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParLambda, 2.f, matCorr, &dcaInfo);
+                getPxPyPz(trackParLambda, pVecV0);
+                auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecV0);
+                auto ptCand = RecoDecay::pt(pVecReso3Prong);
+                if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 5u)) {
+                  auto massXicStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massPi, massLambda});
+                  auto massDiffXicStar = massXicStarCand - massDPlusCand;
+                  bool isRightSign = ((TESTBIT(selV0, kLambda) && sign3Prong > 0) || (TESTBIT(selV0, kAntiLambda) && sign3Prong < 0));
+                  if (cutsPtDeltaMassCharmReso->get(0u, 5u) < massDiffXicStar && massDiffXicStar < cutsPtDeltaMassCharmReso->get(1u, 5u)) {
+                    if (activateQA) {
+                      if (isRightSign) {
+                        hMassVsPtC[kNCharmParticles + 5]->Fill(ptCand, massDiffXicStar);
+                      } else if (!isRightSign && keepAlsoWrongDmesLambdaPairs) {
+                        hMassVsPtC[kNCharmParticles + 6]->Fill(ptCand, massDiffXicStar);
                       }
+                    }
+                    if (isRightSign || keepAlsoWrongDmesLambdaPairs) {
                       keepEvent[kV0Charm3P] = true;
                     }
                   }
                 }
-                if (TESTBIT(selV0, kLambda) || TESTBIT(selV0, kAntiLambda)) { // Xic(3055) and Xic(3080) --> since it occupies only a small bandwidth, we might want to keep also wrong sign pairs
-                  auto trackParLambda = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
-                  trackParLambda.setAbsCharge(0);
-                  trackParLambda.setPID(o2::track::PID::Lambda);
-                  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParLambda, 2.f, matCorr, &dcaInfo);
-                  getPxPyPz(trackParLambda, pVecV0);
-                  auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecV0);
-                  auto ptCand = RecoDecay::pt(pVecReso3Prong);
-                  if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 5u)) {
-                    auto massXicStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massPi, massLambda});
-                    auto massDiffXicStar = massXicStarCand - massDPlusCand;
-                    bool isRightSign = ((TESTBIT(selV0, kLambda) && sign3Prong > 0) || (TESTBIT(selV0, kAntiLambda) && sign3Prong < 0));
-                    if (cutsPtDeltaMassCharmReso->get(0u, 5u) < massDiffXicStar && massDiffXicStar < cutsPtDeltaMassCharmReso->get(1u, 5u)) {
-                      if (activateQA) {
-                        if (isRightSign) {
-                          hMassVsPtC[kNCharmParticles + 5]->Fill(ptCand, massDiffXicStar);
-                        } else if (!isRightSign && keepAlsoWrongDmesLambdaPairs) {
-                          hMassVsPtC[kNCharmParticles + 6]->Fill(ptCand, massDiffXicStar);
-                        }
-                      }
-                      if (isRightSign || keepAlsoWrongDmesLambdaPairs) {
-                        keepEvent[kV0Charm3P] = true;
-                      }
-                    }
-                  }
-                }
               }
-            }
-          }
+            } // end D+ with V0
 
-          /// SigmaC0K0s trigger
-          if (!keepEvent[kV0Charm3P] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0) {
-            auto posTrack = v0.posTrack_as<BigTracksPID>();
-            auto negTrack = v0.negTrack_as<BigTracksPID>();
-            auto selV0 = helper.isSelectedV0(v0, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod);
-            if (TESTBIT(selV0, kK0S)) {
-              /// end selected K0s
-
+            // we pair SigmaC0 with V0
+            if (!keepEvent[kSigmaC0K0] && (isGoodLcToPKPi || isGoodLcToPiKP) && TESTBIT(selV0, kK0S)) {
               // look for SigmaC0 candidates
               for (const auto& trackSoftPiId : trackIdsThisCollision) { // start loop over tracks (soft pi)
 
@@ -1093,14 +1124,14 @@ struct HfFilter { // Main struct for HF triggers
                 // select soft pion candidates
                 auto trackParSoftPi = getTrackPar(trackSoftPi);
                 o2::gpu::gpustd::array<float, 2> dcaSoftPi{trackSoftPi.dcaXY(), trackSoftPi.dcaZ()};
-                std::array<float, 3> pVecSoftPi = {trackSoftPi.px(), trackSoftPi.py(), trackSoftPi.pz()};
+                std::array<float, 3> pVecSoftPi = trackSoftPi.pVector();
                 if (trackSoftPi.collisionId() != thisCollId) {
                   // This is a track reassociated to this PV by the track-to-collision-associator
                   // Let's propagate this track to it, and calculate dcaXY, dcaZ
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaSoftPi);
                   getPxPyPz(trackParSoftPi, pVecSoftPi);
                 }
-                int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackSoftPi, trackParSoftPi, dcaSoftPi, kV0Charm3P);
+                int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackSoftPi, trackParSoftPi, dcaSoftPi, kSigmaC0K0);
                 if (TESTBIT(isSoftPionSelected, kSoftPionForSigmaC) /*&& (TESTBIT(is3Prong[2], 0) || TESTBIT(is3Prong[2], 1))*/) {
 
                   // check the mass of the SigmaC0 candidate
@@ -1112,8 +1143,8 @@ struct HfFilter { // Main struct for HF triggers
                     /// and keep it only if it is in the correct mass range
 
                     float massSigmaCPKPi{-999.}, massSigmaCPiKP{-999.}, deltaMassXicResoPKPi{-999.}, deltaMassXicResoPiKP{-999.};
-                    std::array<float, 3> pVecPiPosK0s = {posTrack.px(), posTrack.py(), posTrack.pz()};
-                    std::array<float, 3> pVecPiNegK0s = {negTrack.px(), negTrack.py(), negTrack.pz()};
+                    std::array<float, 3> pVecPiPosK0s = posTrack.pVector();
+                    std::array<float, 3> pVecPiNegK0s = negTrack.pVector();
                     float ptSigmaCKaon = RecoDecay::pt(pVecSigmaC, pVecPiPosK0s, pVecPiNegK0s);
                     if (ptSigmaCKaon > cutsPtDeltaMassCharmReso->get(2u, 10u)) {
                       if (TESTBIT(whichSigmaC, 0)) {
@@ -1129,7 +1160,7 @@ struct HfFilter { // Main struct for HF triggers
                       bool isPiKPOk = (cutsPtDeltaMassCharmReso->get(0u, 10u) < deltaMassXicResoPiKP && deltaMassXicResoPiKP < cutsPtDeltaMassCharmReso->get(1u, 10u));
                       if (isPKPiOk || isPiKPOk) {
                         /// This is a good SigmaC0K0s event
-                        keepEvent[kV0Charm3P] = true;
+                        keepEvent[kSigmaC0K0] = true;
 
                         /// QA plot
                         if (activateQA) {
@@ -1154,14 +1185,10 @@ struct HfFilter { // Main struct for HF triggers
                     }
                   }
                 }
-
               } // end loop over tracks (soft pi)
-
-            } /// end selected K0s
-          }   /// end of SigmaC0K0s trigger
-
-        } // end gamma selection
-
+            }
+          }
+        }
       } // end loop over 3-prong candidates
 
       if (!keepEvent[kCharmBarToXiBach]) {
@@ -1201,7 +1228,7 @@ struct HfFilter { // Main struct for HF triggers
             getPxPyPz(trackParCasc, pVecCascade);
 
             auto trackParBachelor = getTrackPar(track);
-            std::array<float, 3> pVecBachelor = {track.px(), track.py(), track.pz()};
+            std::array<float, 3> pVecBachelor = track.pVector();
             if (track.collisionId() != thisCollId) {
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelor, 2.f, noMatCorr, &dcaInfo);
               getPxPyPz(trackParBachelor, pVecBachelor);
@@ -1256,7 +1283,7 @@ struct HfFilter { // Main struct for HF triggers
         keepEvent[kDoubleCharmMix] = true;
       }
 
-      tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach]);
+      tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P]);
 
       if (!std::accumulate(keepEvent, keepEvent + kNtriggersHF, 0)) {
         hProcessedEvents->Fill(1);

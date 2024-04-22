@@ -34,7 +34,7 @@ bool IsPhysicalPrimary(TTrack const& mctrack)
 }
 //_______________________________________________________________________
 template <typename TCollision, typename T, typename TMCs>
-bool IsFromWD(TCollision const& mccollision, T const& mctrack, TMCs const& mcTracks)
+bool IsFromWD(TCollision const&, T const& mctrack, TMCs const& mcTracks)
 {
   // is this particle from weak decay?
   if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {

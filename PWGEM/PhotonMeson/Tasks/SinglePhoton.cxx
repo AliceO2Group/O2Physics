@@ -319,11 +319,11 @@ struct SinglePhoton {
             continue;
           }
           if (cfgDoFlow) {
-            std::array<float, 2> u_photon = {photon.px() / photon.pt(), photon.py() / photon.pt()};
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0M"))->Fill(photon.pt(), RecoDecay::dotProd(u_photon, q2ft0m));
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0A"))->Fill(photon.pt(), RecoDecay::dotProd(u_photon, q2ft0a));
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0C"))->Fill(photon.pt(), RecoDecay::dotProd(u_photon, q2ft0c));
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FV0A"))->Fill(photon.pt(), RecoDecay::dotProd(u_photon, q2fv0a));
+            std::array<float, 2> u2_photon = {std::cos(2 * photon.phi()), std::sin(2 * photon.phi())};
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0M"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0m));
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0a));
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0C"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0c));
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FV0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2fv0a));
           } else {
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt"))->Fill(photon.pt());
           }
@@ -337,7 +337,7 @@ struct SinglePhoton {
 
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
-  void processPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
+  void processPCM(MyCollisions const&, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
     FillPhoton<EMDetType::kPCM>(grouped_collisions, v0photons, perCollision, fPCMCuts, legs, nullptr);
   }
@@ -352,7 +352,7 @@ struct SinglePhoton {
   //    FillPhoton<EMDetType::kEMC>(grouped_collisions, emcclusters, perCollision_emc, fEMCCuts, nullptr, emcmatchedtracks);
   //  }
 
-  void processDummy(MyCollisions::iterator const& collision) {}
+  void processDummy(MyCollisions::iterator const&) {}
 
   PROCESS_SWITCH(SinglePhoton, processPCM, "single photon with PCM", false);
   // PROCESS_SWITCH(SinglePhoton, processPHOS, "single photon with PHOS", false);

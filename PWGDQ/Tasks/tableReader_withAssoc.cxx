@@ -571,7 +571,7 @@ struct AnalysisMuonSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvents, typename TMuons>
-  void runMuonSelection(ReducedMuonsAssoc const& assocs, TEvents const& events, TMuons const& muons)
+  void runMuonSelection(ReducedMuonsAssoc const& assocs, TEvents const& events, TMuons const& /*muons*/)
   {
     if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
       o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
@@ -708,7 +708,7 @@ struct AnalysisPrefilterSelection {
   }
 
   template <uint32_t TTrackFillMap, typename TTracks>
-  void runPrefilter(soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, TTracks const& tracks)
+  void runPrefilter(soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, TTracks const& /*tracks*/)
   {
 
     for (auto& [assoc1, assoc2] : o2::soa::combinations(assocs, assocs)) {
@@ -790,6 +790,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsExtra> dimuonsExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
+  Produces<aod::RefFlowDimuon> refFlowDimuonList;
   Produces<aod::DileptonsInfo> dileptonInfoList;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
@@ -1086,7 +1087,7 @@ struct AnalysisSameEventPairing {
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& tracks)
+  void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/)
   {
     if (fCurrentRun != events.begin().runNumber()) {
       initParamsFromCCDB(events.begin().timestamp(), TTwoProngFitter);
@@ -1250,6 +1251,7 @@ struct AnalysisSameEventPairing {
 
         if constexpr (eventHasQvector) {
           dileptonFlowList(VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi]);
+          refFlowDimuonList(VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kMultA]);
         }
 
         // Fill histograms
@@ -1307,7 +1309,7 @@ struct AnalysisSameEventPairing {
   }
 
   template <int TPairType, uint32_t TEventFillMap, typename TAssoc1, typename TAssoc2, typename TTracks1, typename TTracks2>
-  void runMixedPairing(TAssoc1 const& assocs1, TAssoc2 const& assocs2, TTracks1 const& tracks1, TTracks2 const& tracks2)
+  void runMixedPairing(TAssoc1 const& assocs1, TAssoc2 const& assocs2, TTracks1 const& /*tracks1*/, TTracks2 const& /*tracks2*/)
   {
     std::map<int, std::vector<TString>> histNames = fTrackHistNames;
     int pairSign = 0;
@@ -1691,7 +1693,7 @@ struct AnalysisDileptonTrack {
 
   void processBarrelMixedEvent(soa::Filtered<MyEventsHashSelected>& events,
                                soa::Filtered<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> const& assocs,
-                               MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
+                               MyBarrelTracksWithCov const&, soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
     if (events.size() == 0) {
       return;
@@ -1729,7 +1731,7 @@ struct AnalysisDileptonTrack {
 
   void processMuonMixedEvent(soa::Filtered<MyEventsHashSelected>& events,
                              soa::Filtered<soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>> const& assocs,
-                             MyMuonTracksWithCov const& tracks, soa::Filtered<MyDimuonCandidates> const& dileptons)
+                             MyMuonTracksWithCov const&, soa::Filtered<MyDimuonCandidates> const& dileptons)
   {
     if (events.size() == 0) {
       return;

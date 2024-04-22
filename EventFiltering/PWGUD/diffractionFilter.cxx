@@ -137,10 +137,10 @@ struct DGFilterRun3 {
                TCs& tracks,
                // MFs& mfttracks,
                FWs& fwdtracks,
-               aod::Zdcs& zdcs,
-               aod::FT0s& ft0s,
-               aod::FV0As& fv0as,
-               aod::FDDs& fdds)
+               aod::Zdcs& /*zdcs*/,
+               aod::FT0s& /*ft0s*/,
+               aod::FV0As& /*fv0as*/,
+               aod::FDDs& /*fdds*/)
   {
     // initialize
     LOGF(debug, "<DGFilterRun3. Collision %d", collision.globalIndex());

@@ -62,7 +62,7 @@ struct femtoDreamPairTaskTrackTrack {
     Configurable<bool> CPRPlotPerRadii{"Option.CPRPlotPerRadii", false, "Plot CPR per radii"};
     Configurable<float> CPRdeltaPhiMax{"Option.CPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
     Configurable<float> CPRdeltaEtaMax{"Option.CPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
-    ConfigurableAxis Dummy{"Dummy", {1, 0, 1}, "Option.Dummy axis"};
+    ConfigurableAxis Dummy{"Option.Dummy", {1, 0, 1}, "Dummy axis"};
     Configurable<bool> SmearingByOrigin{"Option.SmearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption"};
   } Option;
 
@@ -95,6 +95,8 @@ struct femtoDreamPairTaskTrackTrack {
     Configurable<float> PtMax{"Track1.PtMax", 999., "Maximum pT of partricle 1 (Track)"};
     Configurable<float> EtaMin{"Track1.EtaMin", -10., "Minimum eta of partricle 1 (Track)"};
     Configurable<float> EtaMax{"Track1.EtaMax", 10., "Maximum eta of partricle 1 (Track)"};
+    Configurable<float> TempFitVarMin{"Track1.TempFitVarMin", -10., "Minimum DCAxy of partricle 1 (Track)"};
+    Configurable<float> TempFitVarMax{"Track1.TempFitVarMax", 10., "Maximum DCAxy of partricle 1 (Track)"};
   } Track1;
 
   /// Partition for particle 1
@@ -104,7 +106,9 @@ struct femtoDreamPairTaskTrackTrack {
                                               (aod::femtodreamparticle::pt > Track1.PtMin) &&
                                               (aod::femtodreamparticle::pt < Track1.PtMax) &&
                                               (aod::femtodreamparticle::eta > Track1.EtaMin) &&
-                                              (aod::femtodreamparticle::eta < Track1.EtaMax);
+                                              (aod::femtodreamparticle::eta < Track1.EtaMax) &&
+                                              (aod::femtodreamparticle::tempFitVar > Track1.TempFitVarMin) &&
+                                              (aod::femtodreamparticle::tempFitVar < Track1.TempFitVarMax);
 
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
@@ -112,7 +116,9 @@ struct femtoDreamPairTaskTrackTrack {
                                                                             (aod::femtodreamparticle::pt > Track1.PtMin) &&
                                                                             (aod::femtodreamparticle::pt < Track1.PtMax) &&
                                                                             (aod::femtodreamparticle::eta > Track1.EtaMin) &&
-                                                                            (aod::femtodreamparticle::eta < Track1.EtaMax);
+                                                                            (aod::femtodreamparticle::eta < Track1.EtaMax) &&
+                                                                            (aod::femtodreamparticle::tempFitVar > Track1.TempFitVarMin) &&
+                                                                            (aod::femtodreamparticle::tempFitVar < Track1.TempFitVarMax);
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -129,6 +135,8 @@ struct femtoDreamPairTaskTrackTrack {
     Configurable<float> PtMax{"Track2.PtMax", 999., "Maximum pT of particle 2 (Track)"};
     Configurable<float> EtaMin{"Track2.EtaMin", -10., "Minimum eta of particle 2 (Track)"};
     Configurable<float> EtaMax{"Track2.EtaMax", 10., "Maximum eta of particle 2 (Track)"};
+    Configurable<float> TempFitVarMin{"Track2.TempFitVarMin", -10., "Minimum DCAxy of partricle 1 (Track)"};
+    Configurable<float> TempFitVarMax{"Track2.TempFitVarMax", 10., "Maximum DCAxy of partricle 1 (Track)"};
   } Track2;
 
   /// Partition for track 2
@@ -138,7 +146,9 @@ struct femtoDreamPairTaskTrackTrack {
                                               (aod::femtodreamparticle::pt > Track2.PtMin) &&
                                               (aod::femtodreamparticle::pt < Track2.PtMax) &&
                                               (aod::femtodreamparticle::eta > Track2.EtaMin) &&
-                                              (aod::femtodreamparticle::eta < Track2.EtaMax);
+                                              (aod::femtodreamparticle::eta < Track2.EtaMax) &&
+                                              (aod::femtodreamparticle::tempFitVar > Track2.TempFitVarMin) &&
+                                              (aod::femtodreamparticle::tempFitVar < Track2.TempFitVarMax);
 
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, Track2.CutBit)) &&
@@ -146,7 +156,9 @@ struct femtoDreamPairTaskTrackTrack {
                                                                             (aod::femtodreamparticle::pt > Track2.PtMin) &&
                                                                             (aod::femtodreamparticle::pt < Track2.PtMax) &&
                                                                             (aod::femtodreamparticle::eta > Track2.EtaMin) &&
-                                                                            (aod::femtodreamparticle::eta < Track2.EtaMax);
+                                                                            (aod::femtodreamparticle::eta < Track2.EtaMax) &&
+                                                                            (aod::femtodreamparticle::tempFitVar > Track2.TempFitVarMin) &&
+                                                                            (aod::femtodreamparticle::tempFitVar < Track2.TempFitVarMax);
 
   /// Histogramming for track 2
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
@@ -244,6 +256,8 @@ struct femtoDreamPairTaskTrackTrack {
             containsNameValuePair(device.options, "Track1.PtMax", Track1.PtMax.value) &&
             containsNameValuePair(device.options, "Track1.EtaMin", Track1.EtaMin.value) &&
             containsNameValuePair(device.options, "Track1.EtaMax", Track1.EtaMax.value) &&
+            containsNameValuePair(device.options, "Track1.TempFitVarMin", Track1.TempFitVarMin.value) &&
+            containsNameValuePair(device.options, "Track1.TempFitVarMax", Track1.TempFitVarMax.value) &&
             containsNameValuePair(device.options, "Track2.CutBit", Track2.CutBit.value) &&
             containsNameValuePair(device.options, "Track2.TPCBit", Track2.TPCBit.value) &&
             containsNameValuePair(device.options, "Track2.TPCTOFBit", Track2.TPCTOFBit.value) &&
@@ -251,7 +265,9 @@ struct femtoDreamPairTaskTrackTrack {
             containsNameValuePair(device.options, "Track2.PtMin", Track2.PtMin.value) &&
             containsNameValuePair(device.options, "Track2.PtMax", Track2.PtMax.value) &&
             containsNameValuePair(device.options, "Track2.EtaMin", Track2.EtaMin.value) &&
-            containsNameValuePair(device.options, "Track2.EtaMax", Track2.EtaMax.value)) {
+            containsNameValuePair(device.options, "Track2.EtaMax", Track2.EtaMax.value) &&
+            containsNameValuePair(device.options, "Track2.TempFitVarMin", Track2.TempFitVarMin.value) &&
+            containsNameValuePair(device.options, "Track2.TempFitVarMax", Track2.TempFitVarMax.value)) {
           mask.set(index);
           BitMask = static_cast<femtodreamcollision::BitMaskType>(mask.to_ulong());
           LOG(info) << "Configuration matched for device: " << device.name;

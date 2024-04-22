@@ -40,7 +40,10 @@ struct SG_FIT_Analyzer { // UDTutorial01
   ConfigurableAxis ZDCAxis{"ZDCAxis", {1000, -2.5, 199.5}, ""};
   Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
-
+  Configurable<float> FT0A_cut{"FT0A", 100., "FT0A threshold"};
+  Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
+  Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
+  Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   // initialize histogram registry
   HistogramRegistry registry{
     "registry",
@@ -108,9 +111,11 @@ struct SG_FIT_Analyzer { // UDTutorial01
     registry.add("ZDC/AZNA", "Amplitude ZNA, A Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/CZNA", "Amplitude ZNA, C Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/ACZNA", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/ACZNA_CR", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/AZNC", "Amplitude ZNC, A Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/CZNC", "Amplitude ZNC, C Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/ACZNC", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/ACZNC_CR", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/tAZNA", "Time ZNA", {HistType::kTH1F, {{100, -19.5, 19.5}}});
     registry.add("ZDC/tAZNC", "Time ZNC", {HistType::kTH1F, {{100, -19.5, 19.5}}});
     registry.add("ZDC/tCZNA", "Time ZNA", {HistType::kTH1F, {{100, -19.5, 19.5}}});
@@ -171,6 +176,11 @@ struct SG_FIT_Analyzer { // UDTutorial01
     registry.add("FIT/CFDDA3", "Amplitude FDDA 3n", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/CFDDA4", "Amplitude FDDA 4n", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/CFDDC", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFV0A_CR", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFT0A_CR", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFT0C_CR", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFDDA_CR", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFDDC_CR", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFV0A", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFT0A", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFT0C", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
@@ -279,7 +289,10 @@ struct SG_FIT_Analyzer { // UDTutorial01
 
     // fill collision histograms
     registry.get<TH1>(HIST("collisions/GapSide"))->Fill(dgcand.gapSide(), 1.);
-    int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
+    // int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
+    float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
+    int truegapSide = sgSelector.trueGap(dgcand, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
     registry.get<TH1>(HIST("collisions/TrueGapSide"))->Fill(truegapSide, 1.);
     // select PV contributors
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
@@ -296,6 +309,19 @@ struct SG_FIT_Analyzer { // UDTutorial01
     if (verbose) {
       LOGF(info, "<UDTutorial01sg>   Number of tracks %d", dgtracks.size());
       LOGF(info, "<UDTutorial01sg>   Number of PV contributors %d", PVContributors.size());
+    }
+    // check rho0 signals
+    bool coh_rho0 = false;
+    TLorentzVector p1, p2, rho;
+    if (PVContributors.size() == 2) {
+      for (auto& [t0, t1] : combinations(dgtracks, dgtracks)) {
+        // Apply pion hypothesis and create pairs
+        p1.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
+        p2.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
+        rho = p1 + p2;
+      }
+      if (TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.15)
+        coh_rho0 = true;
     }
     int pva = 0;
     int pvc = 0;
@@ -529,6 +555,15 @@ struct SG_FIT_Analyzer { // UDTutorial01
       registry.get<TH2>(HIST("FIT/ACFT0"))->Fill(totalA, totalC);
       registry.get<TH1>(HIST("FIT/ACFITA"))->Fill(totalA, 1.);
       registry.get<TH1>(HIST("FIT/ACFITC"))->Fill(totalC, 1.);
+      if (coh_rho0) {
+        registry.get<TH1>(HIST("ZDC/ACZNA_CR"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/ACZNC_CR"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/ACFT0A_CR"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFT0C_CR"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFV0A_CR"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFDDA_CR"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFDDC_CR"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
       registry.get<TH1>(HIST("FIT/ACFT0A"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
       registry.get<TH1>(HIST("FIT/ACFT0C"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
       registry.get<TH1>(HIST("FIT/ACFV0A"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);

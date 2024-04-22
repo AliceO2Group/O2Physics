@@ -86,9 +86,9 @@ struct cascadeprefilter {
 
   using FullTracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>;
 
-  void process(aod::Collision const& collision,
-               FullTracksExt const& tracks,
-               aod::V0Datas const& V0s)
+  void process(aod::Collision const& /*collision*/,
+               FullTracksExt const& /*tracks*/,
+               aod::V0Datas const& /*V0s*/)
   {
     for (auto& t0 : goodPosTracks) {
       if (!(t0.trackType() & o2::aod::track::TPCrefit)) {
@@ -149,8 +149,8 @@ struct cascadefinder {
 
   // Process: subscribes to a lot of things!
   void process(aod::Collision const& collision,
-               soa::Join<aod::FullTracks, aod::TracksCov> const& tracks,
-               aod::V0Datas const& V0s,
+               soa::Join<aod::FullTracks, aod::TracksCov> const& /*tracks*/,
+               aod::V0Datas const& /*V0s*/,
                aod::CascGoodLambdas const& lambdas,
                aod::CascGoodAntiLambdas const& antiLambdas,
                aod::CascGoodPosTracks const& pBachtracks,

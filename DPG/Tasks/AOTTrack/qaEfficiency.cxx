@@ -1100,7 +1100,7 @@ struct QaEfficiency {
       customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
       customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
       customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
-      customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10000.f; }); // No DCAxy cut will be used, this is done via the member function of the task
+      customTrackCuts.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; }); // No DCAxy cut will be used, this is done via the member function of the task
       customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
       customTrackCuts.print();
     }
@@ -1679,7 +1679,7 @@ struct QaEfficiency {
 
   // MC process
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
-  void processMC(o2::aod::McCollision const& mcCollision,
+  void processMC(o2::aod::McCollision const&,
                  o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
                  o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
                  o2::aod::McParticles const& mcParticles)
@@ -2019,7 +2019,7 @@ struct QaEfficiency {
   PROCESS_SWITCH(QaEfficiency, processDataWithPID, "process data with PID", false);
 
   void processHmpid(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
-                    TrackCandidates const& tracks,
+                    TrackCandidates const&,
                     o2::aod::HMPIDs const& hmpids)
   {
 

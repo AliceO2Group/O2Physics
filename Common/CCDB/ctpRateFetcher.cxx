@@ -46,7 +46,7 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
   return -1.;
 }
 
-double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& className, int inputType)
+double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* /*ccdb*/, uint64_t timeStamp, int /*runNumber*/, const std::string& className, int inputType)
 {
   std::vector<ctp::CTPClass> ctpcls = mConfig->getCTPClasses();
   std::vector<int> clslist = mConfig->getTriggerClassList();
@@ -66,7 +66,7 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, ui
   return pileUpCorrection(rate.second);
 }
 
-double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, int input)
+double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* /*ccdb*/, uint64_t timeStamp, int /*runNumber*/, int input)
 {
   std::vector<ctp::CTPScalerRecordO2> recs = mScalers->getScalerRecordO2();
   if (recs[0].scalersInps.size() == 48) {
