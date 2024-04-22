@@ -74,7 +74,7 @@ DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                             // boo
 DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool); // bool: true for survived event selection
 } // namespace lnnrec
 
-//Declaration of the table DataLnnCands which contains information of TPC, ITS and geometric variables
+// Declaration of the table DataLnnCands which contains information of TPC, ITS and geometric variables
 DECLARE_SOA_TABLE(DataLnnCands, "AOD", "LNNCANDS",
                   o2::soa::Index<>,
                   lnnrec::CentralityFT0A, lnnrec::CentralityFT0C, lnnrec::CentralityFT0M,
@@ -89,7 +89,6 @@ DECLARE_SOA_TABLE(DataLnnCands, "AOD", "LNNCANDS",
                   lnnrec::TPCmom3H, lnnrec::TPCmomPi, lnnrec::TPCsignal3H, lnnrec::TPCsignalPi,
                   lnnrec::ITSclusterSizes3H, lnnrec::ITSclusterSizesPi,
                   lnnrec::Flags);
-
 
 DECLARE_SOA_TABLE(MCLnnCands, "AOD", "MCLNNCANDS",
                   o2::soa::Index<>,
