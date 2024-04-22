@@ -134,9 +134,9 @@ struct mcCollisionExtra {
       auto mcCollision = collision.mcCollision();
       auto iter = std::find(sortedIndices.begin(), sortedIndices.end(), mcCollision.index());
       if (iter != sortedIndices.end()) {
-        int index = iter - sortedIndices.begin();
-        for (int iMcColl = index + 1; iMcColl < index + 17; iMcColl++) {
-          if (iMcColl >= static_cast<int>(sortedIndices.size()))
+        auto index = std::distance(iter, sortedIndices.begin());
+        for (size_t iMcColl = index + 1; iMcColl < index + 17; iMcColl++) {
+          if (iMcColl >= sortedIndices.size())
             continue;
           if (mcCollisionHasPoI[sortedIndices[iMcColl]])
             bitset(forwardHistory, iMcColl - index - 1);
