@@ -432,7 +432,7 @@ struct vzero_cascade_absorption {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
 
   // Process MC Rec
-  void processMCrec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::McCollisions const& mcCollisions, const aod::McParticles& mcParticles)
+  void processMCrec(SimCollisions const& collisions, MCTracks const&, aod::V0Datas const& fullV0s, aod::McCollisions const&, const aod::McParticles&)
   {
 
     for (const auto& collision : collisions) {
