@@ -222,15 +222,6 @@ struct HfTaskMcEfficiencyToXiPi {
       }
 
       // exclude cases with undesired decays
-      int counterCharmDau = 0;
-      for (auto& dauCharm : mcParticle.template daughters_as<T2>()) {
-        if (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary) {
-          counterCharmDau++;
-        }
-      }
-      if (counterCharmDau != 2) {
-        LOGP(fatal, "Invalid numbers of daughters for charm baryon {}: {}", mcParticle.globalIndex(), mcParticle.daughtersIds().size());
-      }
       int cascId = -999;
       int pionId = -999;
       for (auto& dauCharm : mcParticle.template daughters_as<T2>()) {
@@ -254,15 +245,6 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // check LF daughters pt (pion<--cascade) and eta
       // first create cascade daughters objects
-      int counterCascDau = 0;
-      for (auto& dauCasc : cascade.template daughters_as<T2>()) {
-        if (dauCasc.getProcess() == TMCProcess::kPDecay) {
-          counterCascDau++;
-        }
-      }
-      if (counterCascDau != 2) {
-        LOGP(fatal, "Invalid numbers of daughters for cascade {}: {}", cascade.globalIndex(), cascade.daughtersIds().size());
-      }
       int lambdaId = -999;
       int pionFromCascadeId = -999;
       for (auto& dauCasc : cascade.template daughters_as<T2>()) {
@@ -279,15 +261,6 @@ struct HfTaskMcEfficiencyToXiPi {
       auto lambda = genParticles.rawIteratorAt(lambdaId);
       auto pionFromCascade = genParticles.rawIteratorAt(pionFromCascadeId);
       // then create lambda daughters objects
-      int counterLambdaDau = 0;
-      for (auto& dauLambda : lambda.template daughters_as<T2>()) {
-        if (dauLambda.getProcess() == TMCProcess::kPDecay) {
-          counterLambdaDau++;
-        }
-      }
-      if (counterLambdaDau != 2) {
-        LOGP(fatal, "Invalid numbers of daughters for lambda {}: {}", lambda.globalIndex(), lambda.daughtersIds().size());
-      }
       int protonId = -999;
       int pionFromLambdaId = -999;
       for (auto& dauV0 : lambda.template daughters_as<T2>()) {
