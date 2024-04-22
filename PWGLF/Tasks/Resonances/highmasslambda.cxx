@@ -177,6 +177,8 @@ struct highmasslambda {
 
     histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
     histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
+    histos.add("hSparseV2SASameEvent_V2_new", "hSparseV2SASameEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisCentrality});
+    histos.add("hSparseV2SAMixedEvent_V2_new", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisCentrality});
 
     if (fillPolarization) {
       histos.add("hSparseV2SASameEventplus_SA", "hSparseV2SASameEventplus_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
@@ -221,7 +223,7 @@ struct highmasslambda {
     if (candidate.p() > 0.5 && candidate.p() <= 0.8 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
       return true;
     }
-    if (candidate.p() > 0.8 && candidate.hasTOF() && TMath::Sqrt(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < 2.0 * nsigmaCutTOF * nsigmaCutTOF) {
+    if (candidate.p() > 0.8 && candidate.hasTOF() && TMath::Sqrt(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < nsigmaCutTOF) {
       return true;
     }
     return false;
@@ -239,7 +241,7 @@ struct highmasslambda {
     if (candidate.p() > 0.8 && !candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.p() > 0.8 && candidate.hasTOF() && TMath::Sqrt(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < 2.0 * nsigmaCutTOF * nsigmaCutTOF) {
+    if (candidate.p() > 0.8 && candidate.hasTOF() && TMath::Sqrt(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < nsigmaCutTOF) {
       return true;
     }
     return false;
@@ -254,7 +256,7 @@ struct highmasslambda {
     const float pT = candidate.pt();
     const std::vector<float> decVtx = {candidate.x(), candidate.y(), candidate.z()};
     const float tranRad = candidate.v0radius();
-    const double dcaDaughv0 = candidate.dcaV0daughters();
+    const double dcaDaughv0 = TMath::Abs(candidate.dcaV0daughters());
     const double cpav0 = candidate.v0cosPA();
 
     float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
@@ -418,7 +420,10 @@ struct highmasslambda {
         }
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
+        auto diffangle = Proton.Phi() - Lambdac.Phi();
+        auto decaylength = std::abs(track1.dcaXY() / TMath::Sin(diffangle));
         histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), std::abs(v0.dcav0topv()), centrality);
+        histos.fill(HIST("hSparseV2SASameEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, decaylength, centrality);
 
         ROOT::Math::Boost boost{Lambdac.BoostToCM()};
         fourVecDauCM = boost(Kshort);
@@ -490,6 +495,9 @@ struct highmasslambda {
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), std::abs(v0.dcav0topv()), centrality);
+        auto diffangle = Proton.Phi() - Lambdac.Phi();
+        auto decaylength = std::abs(track1.dcaXY() / TMath::Sin(diffangle));
+        histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, decaylength, centrality);
 
         ROOT::Math::Boost boost{Lambdac.BoostToCM()};
         fourVecDauCM = boost(Kshort);
