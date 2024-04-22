@@ -233,7 +233,7 @@ struct femtoDreamPairTaskTrackV0 {
     pairCleaner.init(&qaRegistry);
     if (Option.CPROn.value) {
       pairCloseRejectionSE.init(&resultRegistry, &qaRegistry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 1, Option.CPROld.value);
-      pairCloseRejectionME.init(&resultRegistry, &qaRegistry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 2, Option.CPROld.value);
+      pairCloseRejectionME.init(&resultRegistry, &qaRegistry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 2, Option.CPROld.value, 8, true);
     }
 
     // get bit for the collision mask
