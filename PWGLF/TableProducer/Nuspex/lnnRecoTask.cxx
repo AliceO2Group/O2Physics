@@ -455,17 +455,6 @@ struct lnnRecoTask {
     }
   }
   
-  void processDataTracked(CollisionsFull const& collisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    isTracked.clear();
-    isTracked.resize(V0s.size(), false);
-    for (const auto& tV0 : tV0s) {
-      isTracked[tV0.v0Id()] = true;
-    }
-    processData(collisions, V0s, tracks, bcs);
-  }
-  PROCESS_SWITCH(hyperRecoTask, processDataTracked, "Data analysis wit tracked V0s information", false);
-
   void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
 
