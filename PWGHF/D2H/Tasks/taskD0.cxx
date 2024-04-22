@@ -56,10 +56,10 @@ struct HfTaskD0 {
   ConfigurableAxis thnConfigAxisBkgScore{"thnConfigAxisBkgScore", {50, 0, 1}, "Bkg score bins"};
   ConfigurableAxis thnConfigAxisNonPromptScore{"thnConfigAxisNonPromptScore", {50, 0, 1}, "Non-prompt score bins"};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 1.5848, 2.1848}, "Cand. inv-mass bins"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {50, 0, 50}, "Cand. pT bins"};
-  ConfigurableAxis thnConfigAxisRapidity{"thnConfigAxisRapidity", {100, -5, 5}, "Cand. rapidity bins"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {120, 0, 24}, "Cand. pT bins"};
+  ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
-  ConfigurableAxis thnConfigAxisD0Type{"thnConfigAxisD0Type", {4, -0.5, 3.5}, "D0 type"};
+  ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType", {4, -0.5, 3.5}, "D0 type"};
 
   HfHelper hfHelper;
 
@@ -82,8 +82,6 @@ struct HfTaskD0 {
   Partition<D0CandidatesMlKF> selectedD0CandidatesMlKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<D0CandidatesMlMc> selectedD0CandidatesMlMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
   Partition<D0CandidatesMlMcKF> selectedD0CandidatesMlMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
-
-  HistogramConfigSpec hTHnBdtScoreVsMassVsPtVsYVsOriginVsD0Type{HistType::kTHnSparseD, {thnConfigAxisBkgScore, thnConfigAxisNonPromptScore, thnConfigAxisMass, thnConfigAxisPt, thnConfigAxisRapidity, thnConfigAxisOrigin, thnConfigAxisD0Type}};
 
   HistogramRegistry registry{
     "registry",
@@ -211,7 +209,15 @@ struct HfTaskD0 {
     registry.add("hDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
     if (applyMl) {
-      registry.add("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type", "2-prong candidates;BDT score bkg.;BDT score non-prompt;inv. mass (#pi K) (GeV/#it{c}^{2});#it{p}_{T};y;Origin;D0 Type;", hTHnBdtScoreVsMassVsPtVsYVsOriginVsD0Type);
+      const AxisSpec thnAxisBkgScore{thnConfigAxisBkgScore, "BDT score bkg."};
+      const AxisSpec thnAxisNonPromptScore{thnConfigAxisNonPromptScore, "BDT score non-prompt."};
+      const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#pi K) (GeV/#it{c}^{2})"};
+      const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec thnAxisY{thnConfigAxisY, "y"};
+      const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
+      const AxisSpec thnAxisCandType{thnConfigAxisCandType, "D0 type"};
+      
+      registry.add("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type", "Thn for D0 candidates with BDT scores", HistType::kTHnSparseD, {thnAxisBkgScore, thnAxisNonPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisOrigin, thnAxisCandType});
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"))->Sumw2();
     }
   }
