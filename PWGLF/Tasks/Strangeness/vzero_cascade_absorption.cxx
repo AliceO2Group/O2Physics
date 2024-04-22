@@ -424,12 +424,12 @@ struct vzero_cascade_absorption {
         if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs)
           registryData.fill(HIST("AntiLambda_after_target_data"), v0.p(), v0.mAntiLambda());
       }
-
     } // end loop on V0s
   } // end processData
   PROCESS_SWITCH(vzero_cascade_absorption, processData, "Process data", true);
 
   Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
+  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
 
   // Process MC Rec
   void processMCrec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::McCollisions const& mcCollisions, const aod::McParticles& mcParticles)
@@ -573,11 +573,7 @@ struct vzero_cascade_absorption {
 
       } // end loop on V0s
     }
-
   } // end processMC
-  PROCESS_SWITCH(vzero_cascade_absorption, processMCrec, "Process MC rec", false);
-
-  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
 
   void processMCgen(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -612,6 +608,8 @@ struct vzero_cascade_absorption {
       }
     }
   }
+
+  PROCESS_SWITCH(vzero_cascade_absorption, processMCrec, "Process MC rec", false);
   PROCESS_SWITCH(vzero_cascade_absorption, processMCgen, "Process MC gen", false);
 };
 
