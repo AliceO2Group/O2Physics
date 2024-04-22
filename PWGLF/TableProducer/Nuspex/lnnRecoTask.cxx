@@ -465,7 +465,7 @@ struct lnnRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10)
         continue;
       hEvents->Fill(1.);
       hZvtx->Fill(collision.posZ());
@@ -510,7 +510,7 @@ struct lnnRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10)
         continue;
       hEvents->Fill(1.);
       hZvtx->Fill(collision.posZ());
