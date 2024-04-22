@@ -460,17 +460,19 @@ struct femtoDreamPairTaskTrackTrack {
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
   void doMixedEvent_Masked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
   {
-    if (Option.SameSpecies.value) {
+    if (!Option.SameSpecies.value && !Option.MixEventWithPairs) {
+      // If the two particles are not the same species and the events which are mixed should contain at least one particle of interest, create two paritition of collisions that contain at least one of the two particle of interest and mix them
+      // Make sure there is a check that we do not mix a event with itself in case it contains both partilces
       Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
       PartitionMaskedCol1.bindTable(cols);
+      Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
+      PartitionMaskedCol2.bindTable(cols);
       // use *Partition.mFiltered when passing the partition to mixing object
       // there is an issue when the partition is passed directly
       // workaround for now, change back once it is fixed
-      for (auto const& [collision1, collision2] : selfCombinations(policy, Mixing.Depth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol1.mFiltered)) {
-        // selfCombinations policy should not allow for same events
-        // print a warning to be on the safe side
+      for (auto const& [collision1, collision2] : combinations(soa::CombinationsFullIndexPolicy(policy, Mixing.Depth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol2.mFiltered))) {
+        // make sure that tracks in the same events are not mixed
         if (collision1.globalIndex() == collision2.globalIndex()) {
-          LOG(warn) << "Global Collision index " << collision1.globalIndex() << " clashing!";
           continue;
         }
         auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
@@ -485,16 +487,22 @@ struct femtoDreamPairTaskTrackTrack {
         }
       }
     } else {
-      Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
+      // Option 2: The two particles are not the same species and we do not mix event with pairs, in this case we only need to define one partition of collision and make self combinations
+      // Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask  && (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask&& aod::femtodreamcollision::downsample == true;
+      Partition<CollisionType> PartitionMaskedCol1 =
+        (ifnode(Option.SameSpecies && Option.MixEventWithPairs, (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask, false) ||
+         ifnode(Option.SameSpecies && !Option.MixEventWithPairs, (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask, false) ||
+         ifnode(!Option.SameSpecies && Option.MixEventWithPairs, (aod::femtodreamcollision::bitmaskTrackOne & BitMask && (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask), false)) &&
+        aod::femtodreamcollision::downsample == true;
       PartitionMaskedCol1.bindTable(cols);
-      Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
-      PartitionMaskedCol2.bindTable(cols);
       // use *Partition.mFiltered when passing the partition to mixing object
       // there is an issue when the partition is passed directly
       // workaround for now, change back once it is fixed
-      for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, Mixing.Depth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol2.mFiltered))) {
-        // make sure that tracks in the same events are not mixed
+      for (auto const& [collision1, collision2] : selfCombinations(policy, Mixing.Depth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol1.mFiltered)) {
+        // selfCombinations policy should not allow for same events to be mixed
+        // print a warning to be on the safe side
         if (collision1.globalIndex() == collision2.globalIndex()) {
+          LOG(warn) << "Global Collision index " << collision1.globalIndex() << " clashing!";
           continue;
         }
         auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
