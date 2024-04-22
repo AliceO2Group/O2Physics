@@ -57,7 +57,6 @@ struct HfTaskD0 {
   Configurable<double> ptCandMax{"ptCandMax", 50., "max. cand. pT in output ThnSparse"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
-  
 
   HfHelper hfHelper;
 
