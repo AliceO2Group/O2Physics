@@ -406,6 +406,7 @@ struct lambdaAnalysis {
   {
     TLorentzVector p1, p2, p;
     TRandom* rn = new TRandom();
+    float p_ptot = 0., k_ptot = 0.;
 
     for (auto const& [trkPr, trkKa] : soa::combinations(soa::CombinationsFullIndexPolicy(trk1, trk2))) {
       // Do not analyse same index tracks.
@@ -415,7 +416,7 @@ struct lambdaAnalysis {
       // pT, DCA, Global Tracks and PVcontrib selection.
       if (!selTracks(trkPr) || !selTracks(trkKa))
         continue;
-      
+
       // Apply PID Selection
       if (cUseOnlyTOFTrackPr && !trkPr.hasTOF())
         continue;
