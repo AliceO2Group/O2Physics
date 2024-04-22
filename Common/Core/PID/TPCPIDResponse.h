@@ -62,11 +62,11 @@ class Response
   const std::array<float, 5> GetBetheBlochParams() const { return mBetheBlochParams; }
   const std::array<float, 2> GetResolutionParamsDefault() const { return mResolutionParamsDefault; }
   const std::vector<double> GetResolutionParams() const { return mResolutionParams; }
-  const float GetMIP() const { return mMIP; }
-  const float GetNClNormalization() const { return nClNorm; }
-  const float GetChargeFactor() const { return mChargeFactor; }
-  const float GetMultiplicityNormalization() const { return mMultNormalization; }
-  const bool GetUseDefaultResolutionParam() const { return mUseDefaultResolutionParam; }
+  float GetMIP() const { return mMIP; }
+  float GetNClNormalization() const { return nClNorm; }
+  float GetChargeFactor() const { return mChargeFactor; }
+  float GetMultiplicityNormalization() const { return mMultNormalization; }
+  bool GetUseDefaultResolutionParam() const { return mUseDefaultResolutionParam; }
 
   /// Gets the expected signal of the track
   template <typename TrackType>

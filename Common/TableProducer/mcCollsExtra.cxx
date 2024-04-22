@@ -135,7 +135,7 @@ struct mcCollisionExtra {
       if (iter != sortedIndices.end()) {
         int index = iter - sortedIndices.begin();
         for (int iMcColl = index + 1; iMcColl < index + 17; iMcColl++) {
-          if (iMcColl >= sortedIndices.size())
+          if (iMcColl >= static_cast<int>(sortedIndices.size()))
             continue;
           if (mcCollisionHasPoI[sortedIndices[iMcColl]])
             bitset(forwardHistory, iMcColl - index - 1);

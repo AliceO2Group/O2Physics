@@ -183,7 +183,7 @@ class PidParameters : public TNamed
 
   /// Getter for the parameters
   /// \return returns an array of parameters
-  const pidvar_t GetParameter(int i) const { return mPar[i]; }
+  pidvar_t GetParameter(int i) const { return mPar[i]; }
 
   /// Getter for the size of the parameter
   /// \return returns the size of the parameter array
