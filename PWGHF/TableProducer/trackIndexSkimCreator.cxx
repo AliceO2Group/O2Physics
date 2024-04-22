@@ -3248,6 +3248,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Configurable<double> massXiPiMax{"massXiPiMax", 3., "Invariant mass upper limit for xi pi decay channel"};
   Configurable<double> massOmegaPiMin{"massOmegaPiMin", 2.4, "Invariant mass lower limit for omega pi decay channel"};
   Configurable<double> massOmegaPiMax{"massOmegaPiMax", 3., "Invariant mass upper limit for omega pi decay channel"};
+  Configurable<double> massOmegaKMin{"massOmegaKMin", 2.4, "Invariant mass lower limit for omega kaon decay channel"};
+  Configurable<double> massOmegaKMax{"massOmegaKMax", 3., "Invariant mass upper limit for omega kaon decay channel"};
   Configurable<double> massXiPiPiMin{"massXiPiPiMin", 2.1, "Invariant mass lower limit for xi pi pi decay channel"};
   Configurable<double> massXiPiPiMax{"massXiPiPiMax", 2.8, "Invariant mass upper limit for xi pi pi decay channel"};
 
@@ -3675,7 +3677,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
               std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecKaon1OmegaHyp};
               auto mass2ProngOmegaHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK]);
 
-              if ((std::abs(casc.mOmega() - massOmega) < cascadeMassWindow) && (mass2ProngOmegaHyp >= massOmegaPiMin) && (mass2ProngOmegaHyp <= massOmegaPiMax)) {
+              if ((std::abs(casc.mOmega() - massOmega) < cascadeMassWindow) && (mass2ProngOmegaHyp >= massOmegaKMin) && (mass2ProngOmegaHyp <= massOmegaKMax)) {
                 SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK);
               }
 
