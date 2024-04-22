@@ -52,6 +52,15 @@ struct HfTaskD0 {
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
 
+  // Configurable axis for THnSparse
+  ConfigurableAxis thnConfigAxisBkgScore{"thnAxisBkgScore", {50, 0.f, 1.f}, ""};
+  ConfigurableAxis thnConfigAxisNonPromptScore{"thnAxisNonPromptScore", {50, 0.f, 1.f}, ""};
+  ConfigurableAxis thnConfigAxisMass{"thnAxisMass", {120, 1.5848, 2.1848}, ""};
+  ConfigurableAxis thnConfigAxisPt{"thnAxisPt", {120, 0., 24.}, ""};
+  ConfigurableAxis thnConfigAxisY{"thnAxisY", {20, -1., 1.}, ""};
+  ConfigurableAxis thnConfigAxisOrigin{"thnAxisOrigin", {3, -0.5, 2.5}, ""};
+  ConfigurableAxis thnConfigAxisCandType{"thnAxisCandType", {4, -0.5, 3.5}, ""};
+
   HfHelper hfHelper;
 
   using D0Candidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
@@ -73,8 +82,6 @@ struct HfTaskD0 {
   Partition<D0CandidatesMlKF> selectedD0CandidatesMlKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<D0CandidatesMlMc> selectedD0CandidatesMlMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
   Partition<D0CandidatesMlMcKF> selectedD0CandidatesMlMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
-
-  HistogramConfigSpec hTHnBdtScoreVsMassVsPtVsYVsOriginVsD0Type{HistType::kTHnSparseD, {{100, 0.f, 1.f}, {100, 0.f, 1.f}, {120, 1.5848, 2.1848}, {360, 0., 36.}, {100, -5., 5.}, {3, -0.5, 2.5}, {4, -0.5, 3.5}}};
 
   HistogramRegistry registry{
     "registry",
@@ -202,7 +209,15 @@ struct HfTaskD0 {
     registry.add("hDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
     if (applyMl) {
-      registry.add("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type", "2-prong candidates;BDT score bkg.;BDT score non-prompt;inv. mass (#pi K) (GeV/#it{c}^{2});#it{p}_{T};y;Origin;D0 Type;", hTHnBdtScoreVsMassVsPtVsYVsOriginVsD0Type);
+      const AxisSpec thnAxisBkgScore{thnConfigAxisBkgScore, "BDT bkg score"};
+      const AxisSpec thnAxisNonPromptScore{thnConfigAxisNonPromptScore, "BDT bkg score"};
+      const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#pi K) (GeV/#it{c}^2)"};
+      const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec thnAxisY{thnConfigAxisY, "rapidity"};
+      const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "origin"};
+      const AxisSpec thnAxisCandType{thnConfigAxisCandType, "candidate type (D0)"};
+
+      registry.add("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type", "2-prong candidates", HistType::kTHnSparseF, {thnAxisBkgScore, thnAxisNonPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisOrigin, thnAxisCandType});
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"))->Sumw2();
     }
   }
