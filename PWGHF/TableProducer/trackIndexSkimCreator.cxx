@@ -3400,7 +3400,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
       // dcaFitter exception counter
       registry.add("hFitterStatusXi2Prong", "Charm DCAFitter status (xi hyp. - 2prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});       // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
       registry.add("hFitterStatusOmegaPi2Prong", "Charm DCAFitter status (omega hyp. - 2prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
-      registry.add("hFitterStatusOmegaK2Prong", "Charm DCAFitter status (omega hyp. - 2prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
+      registry.add("hFitterStatusOmegaK2Prong", "Charm DCAFitter status (omega hyp. - 2prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});  // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
       registry.add("hFitterStatusXi3Prong", "Charm DCAFitter status (xi hyp. - 3prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});       // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
     }
   }
@@ -3689,7 +3689,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
               LOGF(info, "Exception caught: failed to propagate tracks (2prong - omega k) to charm baryon decay vtx");
             }
           }
-
 
           // fill table row only if a vertex was found
           if (hfFlag != 0) {
