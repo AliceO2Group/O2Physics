@@ -63,7 +63,7 @@ struct MshapeQaTask {
       minSec = floor(grpecs->getTimeStart() / 1000.);
       maxSec = ceil(grpecs->getTimeEnd() / 1000.);
       int nTimeBins = static_cast<int>((maxSec - minSec) / confTimeBinWidthInSec);
-      double timeInterval = minSec + nTimeBins * confTimeBinWidthInSec;
+      double timeInterval = nTimeBins * confTimeBinWidthInSec;
       const AxisSpec axisSeconds{nTimeBins, 0, timeInterval, "seconds"};
       histos.add("hSecondsAsideQoverPtSumDcaR", "", kTH2F, {axisSeconds, axisSparseQoverPt});
       histos.add("hSecondsAsideQoverPtSumDcaZ", "", kTH2F, {axisSeconds, axisSparseQoverPt});
