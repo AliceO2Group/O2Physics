@@ -425,7 +425,7 @@ struct vzero_cascade_absorption {
           registryData.fill(HIST("AntiLambda_after_target_data"), v0.p(), v0.mAntiLambda());
       }
     } // end loop on V0s
-  } // end processData
+  }   // end processData
   PROCESS_SWITCH(vzero_cascade_absorption, processData, "Process data", true);
 
   Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
