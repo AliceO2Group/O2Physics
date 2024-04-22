@@ -24,6 +24,7 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "Common/Core/RecoDecay.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -356,7 +357,7 @@ struct lambdaAnalysis {
   {
 
     // get total momentum
-    float p = TMath::Sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
+    float p = RecoDecay::p(track.px(), track.py(), track.pz());
 
     // fill before QA first
     histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaPr());
@@ -406,7 +407,6 @@ struct lambdaAnalysis {
   {
     TLorentzVector p1, p2, p;
     TRandom* rn = new TRandom();
-    float p_ptot = 0., k_ptot = 0.;
 
     for (auto const& [trkPr, trkKa] : soa::combinations(soa::CombinationsFullIndexPolicy(trk1, trk2))) {
       // Do not analyse same index tracks.
