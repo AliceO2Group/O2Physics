@@ -414,7 +414,7 @@ struct upcJpsiCentralBarrel {
     return true;
   }
 
-  void process(UDCollisionFull const& collision, UDTracksFull const& tracks)
+  void process(UDCollisionFull const&, UDTracksFull const& tracks)
   {
     Statistics.get<TH1>(HIST("Statistics/hNumberOfCollisions"))->Fill(0); // number of collisions without any cuts
 
