@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file LFlnnTables.h
+/// \file LFLnnTables.h
 /// \brief Slim lnn tables
 ///
 
