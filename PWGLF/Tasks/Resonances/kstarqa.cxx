@@ -609,13 +609,12 @@ struct kstarqa {
 
   PROCESS_SWITCH(kstarqa, processME, "Process Mixed event", true);
 
-  void processGen(aod::McCollision const& /*mcCollision*/, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
+  void processGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     histos.fill(HIST("events_check"), 0.5);
-    // histos.fill(HIST("hMC"), 0.5);
-    // if (std::abs(mcCollision.posZ()) < cutzvertex) {
-    //   histos.fill(HIST("hMC"), 1.5);
-    // }
+    if (std::abs(mcCollision.posZ()) < cutzvertex) {
+      histos.fill(HIST("events_check"), 1.5);
+    }
     // int Nchinel = 0;
     // for (auto& mcParticle : mcParticles) {
     //   auto pdgcode = std::abs(mcParticle.pdgCode());
@@ -626,9 +625,9 @@ struct kstarqa {
     //   }
     // }
     // if (Nchinel > 0 && std::abs(mcCollision.posZ()) < cutzvertex)
-    //   histos.fill(HIST("hMC"), 2.5);
-    // std::vector<int64_t> SelectedEvents(collisions.size());
-    // int nevts = 0;
+    //   histos.fill(HIST("events_check"), 2.5);
+    std::vector<int64_t> SelectedEvents(collisions.size());
+    int nevts = 0;
     for (const auto& collision : collisions) {
       if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cutzvertex) {
         continue;
@@ -646,46 +645,44 @@ struct kstarqa {
       if (itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
         continue;
       }
-      // SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+      SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
 
-      histos.fill(HIST("events_check"), 1.5);
-
-      // SelectedEvents.resize(nevts);
-      // const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
-      // histos.fill(HIST("hMC"), 3.5);
-      // if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
-      //   return;
-      // }
-      // histos.fill(HIST("hMC"), 4.5);
-      for (auto& mcParticle : mcParticles) {
-        if (std::abs(mcParticle.y()) >= 0.5) {
+    // SelectedEvents.resize(nevts);
+    const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
+    histos.fill(HIST("events_check"), 3.5);
+    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+      return;
+    }
+    histos.fill(HIST("events_check"), 4.5);
+    for (auto& mcParticle : mcParticles) {
+      if (std::abs(mcParticle.y()) >= 0.5) {
+        continue;
+      }
+      if (abs(mcParticle.pdgCode()) != 313) {
+        continue;
+      }
+      auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+      if (kDaughters.size() != 2) {
+        continue;
+      }
+      auto passkaon = false;
+      auto passpion = false;
+      for (auto kCurrentDaughter : kDaughters) {
+        if (!kCurrentDaughter.isPhysicalPrimary()) {
           continue;
         }
-        if (abs(mcParticle.pdgCode()) != 313) {
-          continue;
+        if (abs(kCurrentDaughter.pdgCode()) == 321) {
+          passkaon = true;
+        } else if (abs(kCurrentDaughter.pdgCode()) == 211) {
+          passpion = true;
         }
-        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-        if (kDaughters.size() != 2) {
-          continue;
-        }
-        auto passkaon = false;
-        auto passpion = false;
-        for (auto kCurrentDaughter : kDaughters) {
-          if (!kCurrentDaughter.isPhysicalPrimary()) {
-            continue;
-          }
-          if (abs(kCurrentDaughter.pdgCode()) == 321) {
-            passkaon = true;
-          } else if (abs(kCurrentDaughter.pdgCode()) == 211) {
-            passpion = true;
-          }
-        }
-        if (passkaon && passpion) {
-          // if (mcParticle.pdgCode() > 0)
-          histos.fill(HIST("k892Gen"), mcParticle.pt());
-          // else
-          //   histos.fill(HIST("k892GenAnti"), mcParticle.pt());
-        }
+      }
+      if (passkaon && passpion) {
+        // if (mcParticle.pdgCode() > 0)
+        histos.fill(HIST("k892Gen"), mcParticle.pt());
+        // else
+        //   histos.fill(HIST("k892GenAnti"), mcParticle.pt());
       }
     }
   }
@@ -693,7 +690,6 @@ struct kstarqa {
 
   void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
   {
-    histos.fill(HIST("events_check"), 2.5);
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
 
@@ -717,9 +713,7 @@ struct kstarqa {
       return;
     }
 
-    histos.fill(HIST("events_check"), 3.5);
-
-    // histos.fill(HIST("hMC"), 5.5);
+    // histos.fill(HIST("events_check"), 5.5);
     // auto oldindex = -999;
     for (auto track1 : tracks) {
       if (!selectionTrack(track1)) {
