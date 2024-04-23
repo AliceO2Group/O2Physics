@@ -168,9 +168,9 @@ struct skimmerDalitzMuMu {
     return npair;
   }
 
-  Partition<MyTracks> posTracks = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && o2::aod::emprimarymuon::sign > 0 && minTPCNsigmaMu < o2::aod::pidtpc::tpcNSigmaMu&& o2::aod::pidtpc::tpcNSigmaMu < maxTPCNsigmaMu;
-  Partition<MyTracks> negTracks = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && o2::aod::emprimarymuon::sign < 0 && minTPCNsigmaMu < o2::aod::pidtpc::tpcNSigmaMu && o2::aod::pidtpc::tpcNSigmaMu < maxTPCNsigmaMu;
-  void process(MyCollisions const& collisions, MyTracks const& tracks)
+  Partition<MyTracks> posTracks = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && o2::aod::emprimarymuon::sign > int8_t(0) && minTPCNsigmaMu < o2::aod::pidtpc::tpcNSigmaMu&& o2::aod::pidtpc::tpcNSigmaMu < maxTPCNsigmaMu;
+  Partition<MyTracks> negTracks = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && o2::aod::emprimarymuon::sign < int8_t(0) && minTPCNsigmaMu < o2::aod::pidtpc::tpcNSigmaMu && o2::aod::pidtpc::tpcNSigmaMu < maxTPCNsigmaMu;
+  void processAnalysis(MyCollisions const& collisions, MyTracks const&)
   {
     for (auto& collision : collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
@@ -191,6 +191,20 @@ struct skimmerDalitzMuMu {
       event_nmumu(npair_uls, npair_lspp, npair_lsmm);
     } // end of collision loop
   }
+  PROCESS_SWITCH(skimmerDalitzMuMu, processAnalysis, "Process dalitz mumu for analysis", true);
+
+  void processOnlyNmumu(soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent> const& collisions)
+  {
+    for (auto& collision : collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        event_nmumu(0, 0, 0);
+        continue;
+      }
+      event_nmumu(0, 0, 0);
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(skimmerDalitzMuMu, processOnlyNmumu, "Process only nmumu", false); // for central event filter processing
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

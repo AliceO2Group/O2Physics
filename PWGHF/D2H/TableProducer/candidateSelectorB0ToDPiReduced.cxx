@@ -87,7 +87,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const& initContext)
+  void init(InitContext const&)
   {
     std::array<bool, 2> doprocess{doprocessSelection, doprocessSelectionWithDmesMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
@@ -141,7 +141,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
   /// \param configs config inherited from the Dpi data creator
   template <bool withDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsB0,
-                    TracksPion const& pionTracks,
+                    TracksPion const&,
                     HfCandB0Configs const& configs)
   {
     // get DplusPi creator configurable

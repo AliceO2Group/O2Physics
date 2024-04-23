@@ -122,7 +122,7 @@ struct UDTutorial04 {
 
   // find the McParticles belongin to given tracks
   template <typename MCTrack>
-  std::vector<int64_t> getDaughterParts_rec(TCs const& tracks, std::vector<int64_t> trackIds, MCTrack const& parts)
+  std::vector<int64_t> getDaughterParts_rec(TCs const& tracks, std::vector<int64_t> trackIds, MCTrack const& /*parts*/)
   {
     std::vector<int64_t> emptySelection;
     std::vector<int64_t> selectedParts;
@@ -416,7 +416,7 @@ struct UDTutorial04 {
   PROCESS_SWITCH(UDTutorial04, processMCTruth, "Process MC truth", true);
 
   // ...............................................................................................................
-  void processReco(CC const& collision, TCs const& tracks, aod::UDMcCollisions const& mccollisions, aod::UDMcParticles const& McParts)
+  void processReco(CC const& collision, TCs const& tracks, aod::UDMcCollisions const& /*mccollisions*/, aod::UDMcParticles const& McParts)
   {
     registry.get<TH1>(HIST("Reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("Reco/nTracks"))->Fill(tracks.size(), 1.);

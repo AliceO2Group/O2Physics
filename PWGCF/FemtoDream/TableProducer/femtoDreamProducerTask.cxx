@@ -530,8 +530,8 @@ struct femtoDreamProducerTask {
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                 aod::McCollisions const& mcCollisions,
-                 aod::McParticles const& mcParticles,
+                 aod::McCollisions const&,
+                 aod::McParticles const&,
                  soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
@@ -544,8 +544,8 @@ struct femtoDreamProducerTask {
   void processMC_noCentrality(aod::FemtoFullCollision_noCent_MC const& col,
                               aod::BCsWithTimestamps const&,
                               soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                              aod::McCollisions const& mcCollisions,
-                              aod::McParticles const& mcParticles,
+                              aod::McCollisions const&,
+                              aod::McParticles const&,
                               soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run

@@ -164,7 +164,7 @@ struct LfV0qaanalysis {
 
   void processData(V0Collisions::iterator const& collision,
                    soa::Filtered<aod::V0Datas> const& V0s,
-                   DauTracks const& tracks)
+                   DauTracks const& /*tracks*/)
   {
 
     // Apply event selection
@@ -236,9 +236,9 @@ struct LfV0qaanalysis {
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void processMCReco(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults> const& collisions,
-                     aod::McCollisions const& mcCollisions,
+                     aod::McCollisions const& /*mcCollisions*/,
                      soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
-                     aod::McParticles const& mcParticles, DauTracksMC const& tracks)
+                     aod::McParticles const& mcParticles, DauTracksMC const& /*tracks*/)
   {
     for (const auto& collision : collisions) {
       // Apply event selection

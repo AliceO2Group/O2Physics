@@ -334,11 +334,12 @@ struct JetChCorr {
   }
 
   template <bool isSubtracted, typename T, typename U>
-  void analyseCharged(T const& jet, U const& tracks)
+  void analyseCharged(T const& jet, U const& /*tracks*/)
   {
     if (jet.pt() > jetPtTh) {
       jetConstituents.clear();
 
+<<<<<<< HEAD
       int nn = 0;
       int iord[50];
       float ptc[50];
@@ -346,6 +347,28 @@ struct JetChCorr {
         fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
         ptc[nn] = jetConstituent.pt();
         nn++;
+=======
+    int nn = 0;
+    int iord[50];
+    float ptc[50];
+    for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
+      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
+      ptc[nn] = jetConstituent.pt();
+      nn++;
+    }
+    TMath::Sort(nn, ptc, iord);
+
+    nn = 0;
+    ch_mult = jet.tracksIds().size();
+    for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
+      if (iord[nn] > 1)
+        continue;
+
+      if (iord[nn] == 0) {
+        trackL = jetConstituent.globalIndex();
+        ch_l = jetConstituent.sign();
+        v1.SetXYZ(jetConstituent.pt(), jetConstituent.py(), jetConstituent.pz());
+>>>>>>> refs/remotes/origin/master
       }
       TMath::Sort(nn, ptc, iord);
 
@@ -394,7 +417,7 @@ struct JetChCorr {
     }
   }
 
-  void processDummy(JetTracks const& tracks)
+  void processDummy(JetTracks const&)
   {
   }
   PROCESS_SWITCH(JetChCorr, processDummy, "Dummy process function turned on by default", true);
@@ -420,7 +443,7 @@ struct JetChCorr {
   PROCESS_SWITCH(JetChCorr, processChargedJetsMCD, "charged jet substructure", false);
 
   void processChargedJetsMCP(typename soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet,
-                             JetParticles const& particles)
+                             JetParticles const&)
   {
     jetConstituents.clear();
     for (auto& jetConstituent : jet.template tracks_as<JetParticles>()) {

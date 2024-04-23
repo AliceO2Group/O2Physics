@@ -111,7 +111,7 @@ class FemtoDreamCollisionSelection
   }
 
   template <typename C, typename T, typename TC>
-  bool isEmptyCollision(C const& col, T const& tracks, TC& trackCuts)
+  bool isEmptyCollision(C const& /*col*/, T const& tracks, TC& trackCuts)
   {
     // check if there is no selected track
     for (auto const& track : tracks) {
@@ -123,7 +123,7 @@ class FemtoDreamCollisionSelection
   }
 
   template <typename C, typename V, typename VC, typename T>
-  bool isEmptyCollision(C const& col, V const& V0s, VC& V0Cuts, T const& Tracks)
+  bool isEmptyCollision(C const& col, V const& V0s, VC& V0Cuts, T const& /*Tracks*/)
   {
     // check if there is no selected V0
     for (auto const& V0 : V0s) {
@@ -165,7 +165,7 @@ class FemtoDreamCollisionSelection
   /// \param tracks All tracks
   /// \return value of the sphericity of the event
   template <typename T1, typename T2>
-  float computeSphericity(T1 const& col, T2 const& tracks)
+  float computeSphericity(T1 const& /*col*/, T2 const& /*tracks*/)
   {
     return 2.f;
   }

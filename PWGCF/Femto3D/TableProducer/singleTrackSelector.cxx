@@ -52,12 +52,13 @@ struct singleTrackSelector {
   Configurable<int> centTableToUse{"centTableToUse", 1, "Flag to choose cent./mult.perc. estimator (Run3 only [FTOC for PbPb; FTOM for pp], for Run2 the V0M is used): 0 -> CentFV0As, 1 -> CentFT0Ms, 2 -> CentFT0As, 3 -> CentFT0Cs, 4 -> CentFDDMs, 5 -> CentNTPVs"};
   Configurable<int> multTableToUse{"multTableToUse", 1, "Flag to choose mult. estimator (Run3 only): 0 -> TPCMults, 1 -> MultNTracksPV, 2 -> MultNTracksPVeta1"};
   Configurable<bool> rejectNotPropagatedTrks{"rejectNotPropagatedTrks", true, "rejects tracks that are not propagated to the primary vertex"};
-  Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TF border"};
 
   Configurable<std::vector<int>> _particlesToKeep{"particlesToKeepPDGs", std::vector<int>{2212, 1000010020}, "PDG codes of perticles for which the 'singletrackselector' tables will be created (only proton and deurton are supported now)"};
   Configurable<std::vector<float>> keepWithinNsigmaTPC{"keepWithinNsigmaTPC", std::vector<float>{-4.0f, 4.0f}, "TPC range for preselection of particles specified with PDG"};
   Configurable<std::vector<int>> _particlesToReject{"particlesToRejectPDGs", std::vector<int>{211, 321}, "PDG codes of particles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-5.0f, 5.0f}, "TOF rejection Nsigma range for particles specified with PDG to be rejected"};
+
+  Configurable<float> _pRemoveTofOutOfRange{"pRemoveTofOutOfRange", 100.f, "momentum starting from which request TOF nSigma to be within the stored range (-10 < Nsigma < 10)"};
 
   Configurable<float> _min_P{"min_P", 0.f, "lower mometum limit"};
   Configurable<float> _max_P{"max_P", 100.f, "upper mometum limit"};
@@ -78,8 +79,9 @@ struct singleTrackSelector {
   using CollRun2 = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>;
   using CollRun3 = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::CentNTPVs>;
 
-  Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleCollSels> tableRowColl;
+  Produces<o2::aod::SingleCollExtras> tableRowCollExtra;
+  Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleTrkExtras> tableRowExtra;
   Produces<o2::aod::SingleTrkMCs> tableRowMC;
 
@@ -100,7 +102,7 @@ struct singleTrackSelector {
   std::vector<int> particlesToKeep;
   std::vector<int> particlesToReject;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
 
     particlesToKeep = _particlesToKeep;
@@ -169,6 +171,8 @@ struct singleTrackSelector {
 
       for (auto ii : particlesToKeep)
         if (o2::aod::singletrackselector::TPCselection(track, std::make_pair(ii, keepWithinNsigmaTPC))) {
+          if (track.p() > _pRemoveTofOutOfRange && !o2::aod::singletrackselector::TOFselection(track, std::make_pair(ii, std::vector<float>{-10.0, 10.0}), 10.0))
+            continue;
 
           tableRow(tableRowColl.lastIndex(),
                    track.p(),
@@ -261,58 +265,59 @@ struct singleTrackSelector {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    if (removeTFBorder && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    float centValue = -100.0f;
 
-      float centValue = -100.0f;
+    switch (centTableToUse) {
+      case 0:
+        centValue = collision.centFV0A();
+        break;
+      case 1:
+        centValue = collision.centFT0M();
+        break;
+      case 2:
+        centValue = collision.centFT0A();
+        break;
+      case 3:
+        centValue = collision.centFT0C();
+        break;
+      case 4:
+        centValue = collision.centFDDM();
+        break;
+      case 5:
+        centValue = collision.centNTPV();
+        break;
+      default:
+        LOGF(fatal, "Invalid flag for cent./mult.perc. estimator has been choosen. Please check.");
+        break;
+    }
+    if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
+      int multValue = -1;
 
-      switch (centTableToUse) {
+      switch (multTableToUse) {
         case 0:
-          centValue = collision.centFV0A();
+          multValue = collision.multTPC();
           break;
         case 1:
-          centValue = collision.centFT0M();
+          multValue = collision.multNTracksPV();
           break;
         case 2:
-          centValue = collision.centFT0A();
-          break;
-        case 3:
-          centValue = collision.centFT0C();
-          break;
-        case 4:
-          centValue = collision.centFDDM();
-          break;
-        case 5:
-          centValue = collision.centNTPV();
+          multValue = collision.multNTracksPVeta1();
           break;
         default:
-          LOGF(fatal, "Invalid flag for cent./mult.perc. estimator has been choosen. Please check.");
+          LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
           break;
       }
-      if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
-        int multValue = -1;
 
-        switch (multTableToUse) {
-          case 0:
-            multValue = collision.multTPC();
-            break;
-          case 1:
-            multValue = collision.multNTracksPV();
-            break;
-          case 2:
-            multValue = collision.multNTracksPVeta1();
-            break;
-          default:
-            LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
-            break;
-        }
+      tableRowColl(multValue,
+                   centValue,
+                   collision.posZ(),
+                   d_bz);
 
-        tableRowColl(multValue,
-                     centValue,
-                     collision.posZ(),
-                     d_bz);
+      tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
+                        collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
+                        collision.selection_bit(aod::evsel::kIsVertexITSTPC));
 
-        fillTrackTables<false>(tracks);
-      }
+      fillTrackTables<false>(tracks);
     }
   }
   PROCESS_SWITCH(singleTrackSelector, processDataRun3, "process data Run3", true);
@@ -404,6 +409,10 @@ struct singleTrackSelector {
                    centValue,
                    collision.posZ(),
                    d_bz);
+
+      tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
+                        collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
+                        collision.selection_bit(aod::evsel::kIsVertexITSTPC));
 
       fillTrackTables<true>(tracks);
     }

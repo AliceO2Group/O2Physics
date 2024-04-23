@@ -373,7 +373,7 @@ struct phipbpb {
   ROOT::Math::PxPyPzMVector PhiMesonMother, KaonPlus, KaonMinus, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
 
-  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
+  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::BCs const&)
   {
     if (!collision.sel8()) {
       return;
@@ -495,7 +495,7 @@ struct phipbpb {
     }
   }
   PROCESS_SWITCH(phipbpb, processSameEvent, "Process Same event", true);
-  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& /*tracks*/)
   {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
     for (auto const& [collision1, collision2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
@@ -677,7 +677,7 @@ struct phipbpb {
     }
   }
   PROCESS_SWITCH(phipbpb, processMixedEventOpti, "Process Mixed event new", true);
-  void processMC(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processMC(CollisionMCTrueTable::iterator const& /*TrueCollision*/, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
     histos.fill(HIST("hMC"), 0);
     if (RecCollisions.size() == 0) {
@@ -804,11 +804,11 @@ struct phipbpb {
               auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
               auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
               // auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+              auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
               auto cosThetaStarOP = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
               auto cosThetaStarOPbeam = beamvector.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(beamvector.Mag2());
               auto SA_A0 = 1 - (cosThetaStarOP * cosThetaStarOP);
               // auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
-              auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
               auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
               auto v2 = TMath::Cos(2.0 * phiminuspsi);
               if (!fillRapidity) {
@@ -880,10 +880,10 @@ struct phipbpb {
           eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
           auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
           auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
-          auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
-          auto cosThetaStarOPbeam = TMath::Abs(beamvector.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(beamvector.Mag2()));
+          auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
+          auto cosThetaStarOP = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
+          auto cosThetaStarOPbeam = beamvector.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(beamvector.Mag2());
           auto SA_A0 = 1 - (cosThetaStarOP * cosThetaStarOP);
-          auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
           auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
           auto v2 = TMath::Cos(2.0 * phiminuspsi);
           if (!fillRapidity) {

@@ -31,12 +31,12 @@ template <typename MCParticleLevelJetTable, typename MCParticleLevelWeightsTable
 struct JetEventWeightMCPTask {
   Produces<MCParticleLevelWeightsTable> mcParticleLevelWeightsTable;
 
-  void processDummy(JetMcCollisions const& collisions)
+  void processDummy(JetMcCollisions const&)
   {
   }
   PROCESS_SWITCH(JetEventWeightMCPTask, processDummy, "Dummy process", true);
 
-  void processMCParticleLevelEventWeight(MCParticleLevelJetTable const& jet, JetMcCollisions const& collisions)
+  void processMCParticleLevelEventWeight(MCParticleLevelJetTable const& jet, JetMcCollisions const&)
   {
     mcParticleLevelWeightsTable(jet.globalIndex(), jet.mcCollision().weight());
   }

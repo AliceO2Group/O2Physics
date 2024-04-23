@@ -229,7 +229,7 @@ struct lithium4analysis {
   }
 
   template <typename T1, typename T2>
-  bool FillCandidateInfo(const T1& candidateHe3, const T2& candidatePr, bool mix, bool isMC = false)
+  bool FillCandidateInfo(const T1& candidateHe3, const T2& candidatePr, bool mix, bool /*isMC*/ = false)
   {
     lithium4Candidate l4Cand;
 
@@ -399,7 +399,7 @@ struct lithium4analysis {
   }
   PROCESS_SWITCH(lithium4analysis, processSameEvent, "Process Same event", false);
 
-  void processMixedEvent(EventCandidates& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(EventCandidates& /*collisions*/, TrackCandidates const& /*tracks*/)
   {
     l4Candidates.clear();
     for (auto& [c1, tracks1, c2, tracks2] : pair) {

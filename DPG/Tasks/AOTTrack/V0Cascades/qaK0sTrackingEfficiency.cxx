@@ -86,7 +86,7 @@ struct qaK0sTrackingEfficiency {
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   template <typename T1, typename T2, typename C>
-  bool acceptV0(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision)
+  bool acceptV0(const T1& v0, const T2& ntrack, const T2& ptrack, const C& /*collision*/)
   {
     // Apply selections on V0
     if (v0.v0cosPA() < v0cospa)
@@ -102,7 +102,7 @@ struct qaK0sTrackingEfficiency {
     return kTRUE;
   }
 
-  void process(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, PIDTracks const& tracks)
+  void process(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, PIDTracks const&)
   // TODO: add centrality
   {
     registry.fill(HIST("h_EventCounter"), 0.);

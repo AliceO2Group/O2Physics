@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+#include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
@@ -32,7 +33,11 @@ struct SGCandProducer {
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
   Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
   Configurable<bool> savenonPVCITSOnlyTracks{"savenonPVCITSOnlyTracks", false, "save non PV contributors with ITS only information"};
-  // Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", true, "reject collisions at a TF boundary"};
+  Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", true, "reject collisions at a TF boundary"};
+  Configurable<bool> noITSROFrameBorder{"noITSROFrameBorder", true, "reject ITS RO Frame Border"};
+  Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
+  Configurable<bool> IsGoodVertex{"IsGoodVertex", false, "Select FT0 PV vertex matching"};
+  Configurable<bool> ITSTPCVertex{"ITSTPCVertex", true, "reject ITS-only vertex"}; // if one wants to look at Single Gap pp events
   //  SG selector
   SGSelector sgSelector;
 
@@ -115,7 +120,7 @@ struct SGCandProducer {
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
     outputTracksExtra(track.tpcInnerParam(),
-                      track.itsClusterMap(),
+                      track.itsClusterSizes(),
                       track.tpcNClsFindable(),
                       track.tpcNClsFindableMinusFound(),
                       track.tpcNClsFindableMinusCrossedRows(),
@@ -149,9 +154,29 @@ struct SGCandProducer {
     LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     // reject collisions at TF boundaries
-    // if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-    //  return;
-    //}
+    if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return;
+    }
+    // reject collisions at ITS RO TF boundaries
+    if (noITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return;
+    }
+    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    // reject Same Bunch PileUp
+    if (noSameBunchPileUp && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    // check vertex matching to FT0
+    if (IsGoodVertex && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return;
+    }
+    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    // reject ITS Only vertices
+    if (ITSTPCVertex && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
+      return;
+    }
+    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     // nominal BC
     if (!collision.has_foundBC()) {
@@ -203,10 +228,14 @@ struct SGCandProducer {
       }
       // update SGTracks tables
       for (auto& track : tracks) {
-        if (track.isPVContributor() || saveAllTracks) {
-          if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50) && track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta())
+        if (track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta()) {
+          if (track.isPVContributor()) {
             updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-          // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+          } else if (saveAllTracks) {
+            if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50))
+              updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+            // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+          }
         }
       }
       // update SGFwdTracks tables

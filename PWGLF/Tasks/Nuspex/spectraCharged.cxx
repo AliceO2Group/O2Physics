@@ -306,7 +306,7 @@ void chargedSpectra::initEventMC(const C& collision, const P& particles)
  */
 //**************************************************************************************************
 template <typename C, typename P>
-void chargedSpectra::processTrue(const C& collision, const P& particles)
+void chargedSpectra::processTrue(const C& /*collision*/, const P& particles)
 {
   if (!vars.isAcceptedEventMC) {
     return;
@@ -330,7 +330,7 @@ void chargedSpectra::processTrue(const C& collision, const P& particles)
  */
 //**************************************************************************************************
 template <bool IS_MC, typename C, typename T>
-void chargedSpectra::processMeas(const C& collision, const T& tracks)
+void chargedSpectra::processMeas(const C& /*collision*/, const T& tracks)
 {
   if (!vars.isAcceptedEvent) {
     return;

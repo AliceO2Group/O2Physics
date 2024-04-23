@@ -19,6 +19,7 @@
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Tasks/SGTrackSelector.h"
 //#include "Common/DataModel/PIDResponse.h"
 //#include "PWGUD/Core/RLhelper.h"
 #include <TString.h>
@@ -34,13 +35,28 @@ using namespace o2::framework::expressions;
 struct SGSpectraAnalyzer {
   SGSelector sgSelector;
   Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
+  Configurable<float> FT0A_cut{"FT0A", 100., "FT0A threshold"};
+  Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
+  Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
+  Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   Configurable<float> eta_cut{"Eta", 0.9, "Eta cut"};
   Configurable<bool> use_tof{"Use_TOF", true, "TOF PID"};
   HistogramRegistry registry{
     "registry",
     {// Pion histograms for each eta bin and gapSide
+     {"E_mult_SG", "Photon-Ion c.m.s. Energy vs Multiplicity", {HistType::kTH2F, {{50, -.5, 49.5}, {250, 10, 300}}}},
+     {"E_mult_DG", "Photon-Ion c.m.s. Energy vs Multiplicity", {HistType::kTH2F, {{50, -.5, 49.5}, {250, 10, 300}}}},
+     {"E_M_SG", "Photon-Ion c.m.s. Energy vs Mass", {HistType::kTH2F, {{1000, .05, 25.05}, {250, 10, 300}}}},
+     {"E_M_DG", "Photon-Ion c.m.s. Energy vs Mass", {HistType::kTH2F, {{1000, .05, 25.05}, {250, 10, 300}}}},
+     {"E_Y_SG", "Photon-Ion c.m.s. Energy vs Rapidity", {HistType::kTH2F, {{200, -1., 1.}, {250, 10, 300}}}},
+     {"E_Y_DG", "Photon-Ion c.m.s. Energy vs Rapidity", {HistType::kTH2F, {{200, -1., 1.}, {250, 10, 300}}}},
+
      {"ITS_Cluster_nonPV", "ITS Cluster Size", {HistType::kTH1F, {{140, -.5, 139.5}}}},
+     {"all_tracks_SG", "All Tracks SG", {HistType::kTH1F, {{50, -.5, 49.5}}}},
+     {"all_tracks_DG", "All Tracks DG", {HistType::kTH1F, {{50, -.5, 49.5}}}},
+     {"good_tracks_SG", "Good Tracks SG", {HistType::kTH1F, {{50, -.5, 49.5}}}},
+     {"good_tracks_DG", "Good Tracks DG", {HistType::kTH1F, {{50, -.5, 49.5}}}},
      {"ITS_Cluster_PV", "ITS Cluster Size", {HistType::kTH1F, {{140, -.5, 139.5}}}},
      {"ITS_Chi2_PV", "ITS Chi2", {HistType::kTH1F, {{10000, -999.5, 999.5}}}},
      {"ITS_Chi2_nonPV", "ITS Chi2", {HistType::kTH1F, {{10000, -999.5, 999.5}}}},
@@ -128,51 +144,6 @@ struct SGSpectraAnalyzer {
   // using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcs>;
   using UDCollisionFull = UDCollisionsFull::iterator;
 
-  template <typename T>
-  int trackselector(const T& track, bool use_tof)
-  {
-    TLorentzVector a;
-    a.SetXYZM(track.px(), track.py(), track.pz(), mpion);
-    if (std::abs(track.dcaZ()) > 2.)
-      return 0;
-    if (std::abs(track.dcaXY()) > .0105 + .035 / pow(a.Pt(), 1.1))
-      return 0;
-    if (track.tpcChi2NCl() > 4)
-      return 0;
-    if (track.tpcNClsFindable() < 70)
-      return 0;
-    if (track.itsChi2NCl() > 36)
-      return 0;
-    return 1;
-  }
-  template <typename T>
-  int trackpid(const T& track, bool use_tof)
-  {
-    int pid = 0;
-    float pi, ka, pr;
-    float tpi, tka, tpr;
-    pi = std::abs(track.tpcNSigmaPi());
-    ka = std::abs(track.tpcNSigmaKa());
-    pr = std::abs(track.tpcNSigmaPr());
-    if (pi < 1. && pi < ka && pi < pr)
-      pid = 1;
-    else if (ka < 1. && ka < pi && ka < pr)
-      pid = 2;
-    else if (pr < 1. && pr < pi && pr < ka)
-      pid = 3;
-    if (use_tof && track.tofChi2() > -1) {
-      tpi = std::abs(track.tofNSigmaPi());
-      tka = std::abs(track.tofNSigmaKa());
-      tpr = std::abs(track.tofNSigmaPr());
-      if (std::sqrt(pi * pi + tpi * tpi) < 2 && std::sqrt(pi * pi + tpi * tpi) < std::sqrt(ka * ka + tka * tka) && std::sqrt(pi * pi + tpi * tpi) < std::sqrt(pr * pr + tpr * tpr))
-        pid = 1;
-      else if (std::sqrt(ka * ka + tka * tka) < 2 && std::sqrt(pi * pi + tpi * tpi) > std::sqrt(ka * ka + tka * tka) && std::sqrt(ka * ka + tka * tka) < std::sqrt(pr * pr + tpr * tpr))
-        pid = 2;
-      else if (std::sqrt(pr * pr + tpr * tpr) < 2 && std::sqrt(pr * pr + tpr * tpr) < std::sqrt(ka * ka + tka * tka) && std::sqrt(pi * pi + tpi * tpi) > std::sqrt(pr * pr + tpr * tpr))
-        pid = 3;
-    }
-    return pid;
-  }
   /*
   template <typename T>
   bool ispion(const T& track, bool use_tof){
@@ -214,12 +185,17 @@ struct SGSpectraAnalyzer {
   void process(UDCollisionFull const& collision, udtracksfull const& tracks)
   {
     TLorentzVector a;
+    TLorentzVector am;
+    TLorentzVector sum;
+    int goodtracks = 0;
+    int alltracks = 0;
+    sum.SetXYZM(0, 0, 0, 0);
     int gapSide = collision.gapSide();
-    int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
+    float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
     gapSide = truegapSide;
     if (gapSide < 0 || gapSide > 2)
       return;
-
     for (auto& track : tracks) {
       if (!track.isPVContributor()) {
         registry.get<TH1>(HIST("ITS_Cluster_nonPV"))->Fill(track.itsClusterSizes());
@@ -245,26 +221,67 @@ struct SGSpectraAnalyzer {
         registry.get<TH1>(HIST("TPC_IP_PV"))->Fill(track.tpcInnerParam());
         registry.get<TH1>(HIST("DcaZ_PV"))->Fill(track.dcaZ());
         registry.get<TH1>(HIST("DcaXY_PV"))->Fill(track.dcaXY());
-        if (trackselector(track, use_tof)) {
+        alltracks++;
+        if (trackselector(track)) {
+          int track_pid = trackpid(track, use_tof);
           // if (ispion(track, use_tof)) {
-          if (trackpid(track, use_tof) == 1) {
+          if (track_pid <= 1) {
             a.SetXYZM(track.px(), track.py(), track.pz(), mpion);
-            if (std::abs(a.Eta()) < eta_cut)
+            am.SetXYZM(track.px(), track.py(), -track.pz(), mpion);
+            if (std::abs(a.Eta()) < eta_cut) {
+              goodtracks++;
               fillHistograms("Pion", a.Pt(), a.Eta(), gapSide);
+              if (gapSide == 0)
+                sum = sum + a;
+              else
+                sum = sum + am;
+            }
           }
           //      if (iskaon(track, use_tof)) {
-          if (trackpid(track, use_tof) == 2) {
+          if (track_pid == 2) {
             a.SetXYZM(track.px(), track.py(), track.pz(), mkaon);
-            if (std::abs(a.Eta()) < eta_cut)
+            am.SetXYZM(track.px(), track.py(), -track.pz(), mkaon);
+            if (std::abs(a.Eta()) < eta_cut) {
+              goodtracks++;
               fillHistograms("Kaon", a.Pt(), a.Eta(), gapSide);
+              if (gapSide == 0)
+                sum = sum + a;
+              else
+                sum = sum + am;
+            }
           }
           //    if (isproton(track, use_tof)) {
-          if (trackpid(track, use_tof) == 3) {
+          if (track_pid == 3) {
             a.SetXYZM(track.px(), track.py(), track.pz(), mproton);
-            if (std::abs(a.Eta()) < eta_cut)
+            am.SetXYZM(track.px(), track.py(), -track.pz(), mproton);
+            if (std::abs(a.Eta()) < eta_cut) {
+              goodtracks++;
               fillHistograms("Proton", a.Pt(), a.Eta(), gapSide);
+              if (gapSide == 0)
+                sum = sum + a;
+              else
+                sum = sum + am;
+            }
           }
         }
+      }
+    }
+    if (goodtracks > 1) {
+      float W_gPb = TMath::Sqrt(2 * 2680 * sum.M() * TMath::Exp(sum.Rapidity()));
+      if (sum.M() < .2)
+        std::cout << goodtracks << "\t" << sum.M() << "\t" << sum.Pt() << std::endl;
+      if (gapSide < 2) {
+        registry.get<TH2>(HIST("E_mult_SG"))->Fill(goodtracks, W_gPb);
+        registry.get<TH2>(HIST("E_M_SG"))->Fill(sum.M(), W_gPb);
+        registry.get<TH2>(HIST("E_Y_SG"))->Fill(sum.Rapidity(), W_gPb);
+        registry.get<TH1>(HIST("all_tracks_SG"))->Fill(alltracks);
+        registry.get<TH1>(HIST("good_tracks_SG"))->Fill(goodtracks);
+      } else {
+        registry.get<TH2>(HIST("E_mult_DG"))->Fill(goodtracks, W_gPb);
+        registry.get<TH2>(HIST("E_M_DG"))->Fill(sum.M(), W_gPb);
+        registry.get<TH2>(HIST("E_Y_DG"))->Fill(sum.Rapidity(), W_gPb);
+        registry.get<TH1>(HIST("all_tracks_DG"))->Fill(alltracks);
+        registry.get<TH1>(HIST("good_tracks_DG"))->Fill(goodtracks);
       }
     }
   }

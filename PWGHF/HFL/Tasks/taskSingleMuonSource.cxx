@@ -303,9 +303,6 @@ struct HfTaskSingleMuonSource {
                aod::McParticles const&)
   {
     // event selections
-    if (!collision.sel8()) {
-      return;
-    }
     if (std::abs(collision.posZ()) > edgeZ) {
       return;
     }

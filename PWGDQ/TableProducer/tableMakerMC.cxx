@@ -305,8 +305,8 @@ struct TableMakerMC {
 
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename TAmbiTracks, typename TAmbiMuons>
-  void fullSkimming(TEvent const& collisions, aod::BCsWithTimestamps const& bcs, TTracks const& tracksBarrel, TMuons const& tracksMuon,
-                    aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, TAmbiTracks const& ambiTracksMid, TAmbiMuons const& ambiTracksFwd)
+  void fullSkimming(TEvent const& collisions, aod::BCsWithTimestamps const& /*bcs*/, TTracks const& tracksBarrel, TMuons const& tracksMuon,
+                    aod::McCollisions const& /*mcEvents*/, aod::McParticles_001 const& mcTracks, TAmbiTracks const& ambiTracksMid, TAmbiMuons const& ambiTracksFwd)
   {
     // Loop over collisions and produce skimmed data tables for:
     // 1) all selected collisions

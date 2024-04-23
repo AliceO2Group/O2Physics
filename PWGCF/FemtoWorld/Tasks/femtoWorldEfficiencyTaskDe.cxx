@@ -335,7 +335,7 @@ struct femtoWorldEficiencyTaskDe {
 
   using BigTracksMC = soa::Join<TracksPID, aod::McTrackLabels, aod::TrackSelection>;
   Preslice<BigTracksMC> perCollisionID = aod::track::collisionId;
-  void processMCTruth(aod::McCollision const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, aod::McParticles const& mcparticles, soa::Filtered<BigTracksMC> const& tracks)
+  void processMCTruth(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, aod::McParticles const& mcparticles, soa::Filtered<BigTracksMC> const& tracks)
   {
     // Loop over reconstructed collisions corresponding to MC collision
     for (auto& collision : collisions) {
