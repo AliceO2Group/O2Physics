@@ -30,7 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct dgCandAnalyzer {
+struct DGCandAnalyzer {
 
   // configurables
   Configurable<bool> verbose{"Verbose", {}, "Additional printouts"};
@@ -526,6 +526,6 @@ struct dgCandAnalyzer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<dgCandAnalyzer>(cfgc, TaskName{"dgcandanalyzer"}),
+    adaptAnalysisTask<DGCandAnalyzer>(cfgc, TaskName{"dgcandanalyzer"}),
   };
 }
