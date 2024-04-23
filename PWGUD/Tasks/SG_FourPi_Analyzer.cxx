@@ -104,7 +104,6 @@ struct SG_FourPi_Analyzer {
     for (auto t : tracks) {
       int itsNCls = t.itsNCls();
       // if (itsNCls) {
-      std::cout << t.itsClusterSizes() << "\t" << itsNCls << std::endl;
       registry.fill(HIST("ITSNCls"), itsNCls);
       //}
       TLorentzVector a;
