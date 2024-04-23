@@ -1357,7 +1357,6 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kQ23YA] = event.q23ya();
       values[kS11A] = event.s11a();
       values[kS12A] = event.s12a();
-      values[kS21A] = event.s21a();
       values[kS13A] = event.s13a();
       values[kS31A] = event.s31a();
     }
