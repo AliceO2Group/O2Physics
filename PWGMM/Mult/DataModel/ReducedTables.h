@@ -18,7 +18,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-
 namespace o2::aod
 {
 
