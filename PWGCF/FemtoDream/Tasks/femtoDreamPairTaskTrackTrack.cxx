@@ -79,8 +79,14 @@ struct femtoDreamPairTaskTrackTrack {
 
   using FilteredCollisions = soa::Filtered<FDCollisions>;
   using FilteredCollision = FilteredCollisions::iterator;
+  using FilteredMCCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDMCCollLabels>>;
+  using FilteredMCCollision = FilteredMCCollisions::iterator;
+
   using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, FDDownSample>>;
   using FilteredMaskedCollision = FilteredMaskedCollisions::iterator;
+  using FilteredMaskedMCCollisions = soa::Filtered<soa::Join<FDCollisions, aod::FDMCCollLabels, FDColMasks, FDDownSample>>;
+  using FilteredMaskedMCCollision = FilteredMaskedMCCollisions::iterator;
+
   femtodreamcollision::BitMaskType BitMask = -1;
 
   /// Track 1
@@ -216,7 +222,7 @@ struct femtoDreamPairTaskTrackTrack {
     if (Option.RandomizePair.value) {
       random = new TRandom3(0);
     }
-    eventHisto.init(&qaRegistry);
+    eventHisto.init(&qaRegistry, Option.IsMC);
     trackHistoPartOne.init(&qaRegistry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
     if (!Option.SameSpecies) {
       trackHistoPartTwo.init(&qaRegistry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track2.PDGCode);
@@ -286,10 +292,10 @@ struct femtoDreamPairTaskTrackTrack {
     }
   };
 
-  template <typename CollisionType>
+  template <bool isMC, typename CollisionType>
   void fillCollision(CollisionType col)
   {
-    eventHisto.fillQA(col);
+    eventHisto.fillQA<isMC>(col);
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -358,7 +364,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// \param parts subscribe to the femtoDreamParticleTable
   void processSameEvent(FilteredCollision& col, o2::aod::FDParticles& parts)
   {
-    fillCollision(col);
+    fillCollision<false>(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     if (SliceTrk1.size() == 0 && SliceTrk2.size() == 0) {
@@ -379,7 +385,7 @@ struct femtoDreamPairTaskTrackTrack {
         return;
       }
     }
-    fillCollision(col);
+    fillCollision<false>(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<false>(SliceTrk1, SliceTrk2, parts, col);
@@ -390,10 +396,12 @@ struct femtoDreamPairTaskTrackTrack {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
   /// \param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(FilteredCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+  void processSameEventMC(FilteredMCCollision& col,
+                          o2::aod::FDMCCollisions&,
+                          soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                           o2::aod::FDMCParticles&)
   {
-    fillCollision(col);
+    fillCollision<true>(col);
     auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMCTrk2 = PartitionMCTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     if (SliceMCTrk1.size() == 0 && SliceMCTrk2.size() == 0) {
@@ -403,7 +411,7 @@ struct femtoDreamPairTaskTrackTrack {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
-  void processSameEventMCMasked(FilteredMaskedCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+  void processSameEventMCMasked(FilteredMaskedMCCollision& col, o2::aod::FDMCCollisions&, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                                 o2::aod::FDMCParticles&)
   {
     if (Option.SameSpecies.value) {
@@ -415,7 +423,7 @@ struct femtoDreamPairTaskTrackTrack {
         return;
       }
     }
-    fillCollision(col);
+    fillCollision<true>(col);
     auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMCTrk2 = PartitionMCTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<true>(SliceMCTrk1, SliceMCTrk2, parts, col);
@@ -539,7 +547,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
   /// @param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(FilteredCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  void processMixedEventMC(FilteredMCCollisions& cols, o2::aod::FDMCCollisions&, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     switch (Mixing.Policy.value) {
       case femtodreamcollision::kMult:
@@ -557,7 +565,7 @@ struct femtoDreamPairTaskTrackTrack {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEventMC, "Enable processing mixed events MC", false);
 
-  void processMixedEventMCMasked(FilteredMaskedCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  void processMixedEventMCMasked(FilteredMaskedMCCollisions& cols, o2::aod::FDMCCollisions&, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     switch (Mixing.Policy.value) {
       case femtodreamcollision::kMult:

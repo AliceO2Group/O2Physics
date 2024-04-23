@@ -124,7 +124,7 @@ struct HfCandidateCreatorB0Reduced {
 
     for (const auto& candD : candsDThisColl) {
       auto trackParCovD = getTrackParCov(candD);
-      std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
+      std::array<float, 3> pVecD = candD.pVector();
 
       for (const auto& trackPion : tracksPionThisCollision) {
         // this track is among daughters
@@ -133,7 +133,7 @@ struct HfCandidateCreatorB0Reduced {
         }
 
         auto trackParCovPi = getTrackParCov(trackPion);
-        std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+        std::array<float, 3> pVecPion = trackPion.pVector();
 
         // compute invariant mass square and apply selection
         auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});

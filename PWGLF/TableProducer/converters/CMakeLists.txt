@@ -9,7 +9,12 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(strangederivedconverter
-                    SOURCES strangederivedconverter.cxx
+o2physics_add_dpl_workflow(stradautracksconverter
+                    SOURCES stradautracksconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strarawcentsconverter
+                    SOURCES strarawcentsconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
