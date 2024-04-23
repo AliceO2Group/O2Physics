@@ -20,7 +20,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct upcCandAnalyzer {
+struct UpcCandAnalyzer {
   bool fIsMC = true;
 
   Preslice<o2::aod::UDMcParticles> perMcCollision = o2::aod::udmcparticle::udMcCollisionId;
@@ -737,5 +737,5 @@ struct upcCandAnalyzer {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<upcCandAnalyzer>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<UpcCandAnalyzer>(cfgc)};
 }
