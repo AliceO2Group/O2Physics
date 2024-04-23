@@ -22,7 +22,7 @@
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct upcCandProducerQa {
+struct UpcCandProducerQa {
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
@@ -198,5 +198,5 @@ struct upcCandProducerQa {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<upcCandProducerQa>(cfgc)};
+    adaptAnalysisTask<UpcCandProducerQa>(cfgc)};
 }
