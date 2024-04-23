@@ -29,7 +29,7 @@ using namespace o2::framework::expressions;
 /// \author Anisa Khatun, Kansas University
 /// \date 14/2/2024
 
-struct polarisationRho {
+struct PolarisationRho {
 
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -559,5 +559,5 @@ struct polarisationRho {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<polarisationRho>(cfgc)};
+    adaptAnalysisTask<PolarisationRho>(cfgc)};
 }
