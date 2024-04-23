@@ -4438,9 +4438,9 @@ struct LFNucleiBATask {
   SliceCache cache;
   // Process function that runs on the original AO2D (for the MC) with the LfPIDcalibration
   void processMCRecoLfPidEv(EventCandidatesMC const& collisions,
-                            soa::Join<TrackCandidatesLfPid, aod::McTrackLabels> const& tracks,
+                            soa::Join<TrackCandidatesLfPid, aod::McTrackLabels> const&,
                             aod::McParticles const& mcParticles,
-                            aod::McCollisions const& mcCollisions)
+                            aod::McCollisions const&)
   {
     /*
       for (const auto& track : tracks) {

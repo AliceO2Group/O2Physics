@@ -1155,7 +1155,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
 /// \param hArmPod is the pointer to an array of QA histo AP plot after selection
 /// \return an integer passes all cuts
 template <typename Photon, typename Coll, typename T, typename H2>
-inline bool HfFilterHelper::isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const Coll& collision, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
+inline bool HfFilterHelper::isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const Coll&, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
 {
 
   // eta of daughters

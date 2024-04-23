@@ -249,7 +249,7 @@ struct HfTreeCreatorXToJpsiPiPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massX),
+          RecoDecay::y(particle.pVector(), massX),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

@@ -367,7 +367,7 @@ struct HfTreeCreatorB0ToDPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassB0),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassB0),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

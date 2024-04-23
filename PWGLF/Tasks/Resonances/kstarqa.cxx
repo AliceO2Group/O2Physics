@@ -529,7 +529,7 @@ struct kstarqa {
 
   PROCESS_SWITCH(kstarqa, processSE, "Process Same event", true);
 
-  void processME(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processME(EventCandidates const&, TrackCandidates const&)
 
   {
 

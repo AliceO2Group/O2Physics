@@ -319,11 +319,11 @@ struct SinglePhoton {
             continue;
           }
           if (cfgDoFlow) {
-            std::array<float, 2> u_photon = {photon.px() / photon.pt(), photon.py() / photon.pt()};
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0M"))->Fill(photon.pt(), RecoDecay::dotProd(u_photon, q2ft0m));
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0A"))->Fill(photon.pt(), RecoDecay::dotProd(u_photon, q2ft0a));
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0C"))->Fill(photon.pt(), RecoDecay::dotProd(u_photon, q2ft0c));
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FV0A"))->Fill(photon.pt(), RecoDecay::dotProd(u_photon, q2fv0a));
+            std::array<float, 2> u2_photon = {std::cos(2 * photon.phi()), std::sin(2 * photon.phi())};
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0M"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0m));
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0a));
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0C"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0c));
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FV0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2fv0a));
           } else {
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt"))->Fill(photon.pt());
           }

@@ -87,6 +87,9 @@ TH1F* fhEtaA = nullptr;
 TH1F* fhPhiB = nullptr;
 TH1F* fhPhiA = nullptr;
 
+TH2F* fhdEdxB = nullptr;
+TH2F* fhdEdxA[kIdBfNoOfSpecies] = {nullptr};
+
 TH1F* fhDCAxyB = nullptr;
 TH1F* fhDCAxyA = nullptr;
 TH1F* fhFineDCAxyA = nullptr;
@@ -613,6 +616,7 @@ struct IdentifiedBfFilterTracks {
       fhEtaB = new TH1F("fHistEtaB", "#eta distribution for reconstructed before;#eta;counts", 40, -2.0, 2.0);
       fhEtaA = new TH1F("fHistEtaA", "#eta distribution for reconstructed;#eta;counts", etabins, etalow, etaup);
       fhPhiB = new TH1F("fHistPhiB", "#phi distribution for reconstructed before;#phi;counts", 360, 0.0, constants::math::TwoPI);
+      fhdEdxB = new TH2F("fHistdEdxB", "dE/dx vs P before; dE/dx (a.u.); P (GeV/c)", 1000, 0.0, 1000.0, 100, 0.0, 15.0);
       fhPhiA = new TH1F("fHistPhiA", "#phi distribution for reconstructed;#phi;counts", 360, 0.0, constants::math::TwoPI);
       fhDCAxyB = new TH1F("DCAxyB", "DCA_{xy} distribution for reconstructed before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
       fhDCAxyA = new TH1F("DCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 1000, -4., 4.0);
@@ -648,6 +652,9 @@ struct IdentifiedBfFilterTracks {
         fhDeltaNA[sp] = new TH1F(TString::Format("fhDeltaNA_%s", speciesName[sp]).Data(),
                                  TString::Format("N(%s^{#plus}) #minus N(%s^{#minus}) distribution for reconstructed;N(%s^{#plus}) #minus N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
                                  79, -39.5, 39.5);
+        fhdEdxA[sp] = new TH2F(TString::Format("fhdEdxA_%s", speciesName[sp]).Data(),
+                               TString::Format("dE/dx vs P reconstructed %s; dE/dx (a.u.); P (GeV/c)", speciesTitle[sp]).Data(),
+                               1000, 0.0, 1000.0, ptbins, ptlow, ptup);
       }
 
       /* add the hstograms to the output list */
@@ -659,6 +666,7 @@ struct IdentifiedBfFilterTracks {
       fOutputList->Add(fhEtaA);
       fOutputList->Add(fhPhiB);
       fOutputList->Add(fhPhiA);
+      fOutputList->Add(fhdEdxB);
       fOutputList->Add(fhDCAxyB);
       fOutputList->Add(fhDCAxyA);
       fOutputList->Add(fhFineDCAxyA);
@@ -679,6 +687,7 @@ struct IdentifiedBfFilterTracks {
         fOutputList->Add(fhPtNegA[sp]);
         fOutputList->Add(fhNPosNegA[sp]);
         fOutputList->Add(fhDeltaNA[sp]);
+        fOutputList->Add(fhdEdxA[sp]);
       }
     }
 
@@ -1212,6 +1221,7 @@ void IdentifiedBfFilterTracks::fillTrackHistosBeforeSelection(TrackObject const&
   fhPtB->Fill(track.pt());
   fhEtaB->Fill(track.eta());
   fhPhiB->Fill(track.phi());
+  fhdEdxB->Fill(track.tpcSignal(), track.p());
   if (track.sign() > 0) {
     fhPtPosB->Fill(track.pt());
   } else {
@@ -1230,6 +1240,7 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
     fhPhiA->Fill(track.phi());
     fhDCAxyA->Fill(track.dcaXY());
     fhDCAzA->Fill(track.dcaZ());
+
     if (track.dcaXY() < 1.0) {
       fhFineDCAxyA->Fill(track.dcaXY());
     }
@@ -1239,6 +1250,7 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
   }
   fhPA[sp]->Fill(track.p());
   fhPtA[sp]->Fill(track.pt());
+  fhdEdxA[sp]->Fill(track.tpcSignal(), track.p());
   if (track.sign() > 0) {
     fhPtPosA[sp]->Fill(track.pt());
   } else {

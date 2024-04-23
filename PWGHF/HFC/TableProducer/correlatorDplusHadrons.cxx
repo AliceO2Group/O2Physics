@@ -77,7 +77,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   Partition<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>> selectedDplusCandidatesMc = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   void processDplusSelectionData(aod::Collision const& collision,
-                                 soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
+                                 soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const&)
   {
     bool isDplusFound = 0;
     if (selectedDplusCandidates.size() > 0) {
@@ -99,7 +99,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   PROCESS_SWITCH(HfCorrelatorDplusHadronsDplusSelection, processDplusSelectionData, "Process Dplus Selection Data", false);
 
   void processDplusSelectionMcRec(aod::Collision const& collision,
-                                  soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
+                                  soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const&)
   {
     bool isDplusFound = 0;
     if (selectedDplusCandidatesMc.size() > 0) {
@@ -123,7 +123,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadronsDplusSelection, processDplusSelectionMcRec, "Process Dplus Selection MCRec", false);
 
-  void processDplusSelectionMcGen(aod::McCollision const& mcCollision,
+  void processDplusSelectionMcGen(aod::McCollision const&,
                                   aod::McParticles const& mcParticles)
   {
     bool isDplusFound = 0;
@@ -131,7 +131,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, MassDPlus);
+      double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -241,7 +241,7 @@ struct HfCorrelatorDplusHadrons {
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(SelCollisionsWithDplus::iterator const& collision,
                    TracksWithDca const& tracks,
-                   CandidatesDplusData const& candidates, aod::BCsWithTimestamps const&)
+                   CandidatesDplusData const&, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
@@ -339,7 +339,7 @@ struct HfCorrelatorDplusHadrons {
   /// Dplus-Hadron correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRec(SelCollisionsWithDplus::iterator const& collision,
                     TracksWithDca const& tracks,
-                    CandidatesDplusMcRec const& candidates)
+                    CandidatesDplusMcRec const&)
   {
     if (selectedDplusCandidatesMc.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
@@ -444,7 +444,7 @@ struct HfCorrelatorDplusHadrons {
     int counterDplusHadron = 0;
     registry.fill(HIST("hMCEvtCount"), 0);
 
-    auto getTracksSize = [&mcParticles](aod::McCollision const& collision) {
+    auto getTracksSize = [&mcParticles](aod::McCollision const&) {
       int nTracks = 0;
       for (const auto& track : mcParticles) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
@@ -462,7 +462,7 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, MassDPlus);
+      double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -595,7 +595,7 @@ struct HfCorrelatorDplusHadrons {
           continue;
         }
 
-        double yD = RecoDecay::y(std::array{trigDplus.px(), trigDplus.py(), trigDplus.pz()}, MassDPlus);
+        double yD = RecoDecay::y(trigDplus.pVector(), MassDPlus);
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }
