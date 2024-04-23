@@ -150,7 +150,7 @@ struct HfCorrelatorD0HadronsSelection {
       if (std::abs(particle1.pdgCode()) != Pdg::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, MassD0);
+      double yD = RecoDecay::y(particle1.pVector(), MassD0);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -355,7 +355,7 @@ struct HfCorrelatorD0Hadrons {
         // ========== soft pion removal ===================================================
         double invMassDstar1 = 0., invMassDstar2 = 0.;
         bool isSoftPiD0 = false, isSoftPiD0bar = false;
-        auto pSum2 = RecoDecay::p2(candidate1.px() + track.px(), candidate1.py() + track.py(), candidate1.pz() + track.pz());
+        auto pSum2 = RecoDecay::p2(candidate1.pVector(), track.pVector());
         auto ePion = track.energy(massPi);
         invMassDstar1 = std::sqrt((ePiK + ePion) * (ePiK + ePion) - pSum2);
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
@@ -508,7 +508,7 @@ struct HfCorrelatorD0Hadrons {
         // ===== soft pion removal ===================================================
         double invMassDstar1 = 0, invMassDstar2 = 0;
         bool isSoftPiD0 = false, isSoftPiD0bar = false;
-        auto pSum2 = RecoDecay::p2(candidate1.px() + track.px(), candidate1.py() + track.py(), candidate1.pz() + track.pz());
+        auto pSum2 = RecoDecay::p2(candidate1.pVector(), track.pVector());
         auto ePion = track.energy(massPi);
         invMassDstar1 = std::sqrt((ePiK + ePion) * (ePiK + ePion) - pSum2);
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
@@ -576,7 +576,7 @@ struct HfCorrelatorD0Hadrons {
       if (std::abs(particle1.pdgCode()) != Pdg::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, MassD0);
+      double yD = RecoDecay::y(particle1.pVector(), MassD0);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -666,7 +666,7 @@ struct HfCorrelatorD0Hadrons {
         auto eKPi = RecoDecay::e(t1.pVectorProng0(), massK) + RecoDecay::e(t1.pVectorProng1(), massPi);
         double invMassDstar1 = 0., invMassDstar2 = 0.;
         bool isSoftPiD0 = false, isSoftPiD0bar = false;
-        auto pSum2 = RecoDecay::p2(t1.px() + t2.px(), t1.py() + t2.py(), t1.pz() + t2.pz());
+        auto pSum2 = RecoDecay::p2(t1.pVector(), t2.pVector());
         auto ePion = t2.energy(massPi);
         invMassDstar1 = std::sqrt((ePiK + ePion) * (ePiK + ePion) - pSum2);
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
@@ -730,7 +730,7 @@ struct HfCorrelatorD0Hadrons {
         auto eKPi = RecoDecay::e(t1.pVectorProng0(), massK) + RecoDecay::e(t1.pVectorProng1(), massPi);
         double invMassDstar1 = 0., invMassDstar2 = 0.;
         bool isSoftPiD0 = false, isSoftPiD0bar = false;
-        auto pSum2 = RecoDecay::p2(t1.px() + t2.px(), t1.py() + t2.py(), t1.pz() + t2.pz());
+        auto pSum2 = RecoDecay::p2(t1.pVector(), t2.pVector());
         auto ePion = t2.energy(massPi);
         invMassDstar1 = std::sqrt((ePiK + ePion) * (ePiK + ePion) - pSum2);
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
@@ -838,7 +838,7 @@ struct HfCorrelatorD0Hadrons {
           continue;
         }
 
-        double yD = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, MassD0);
+        double yD = RecoDecay::y(t1.pVector(), MassD0);
         if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
           continue;
         }

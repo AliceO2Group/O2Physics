@@ -245,7 +245,7 @@ struct HfTaskDplus {
   void fillHistoMCGen(const T2& particle)
   {
     auto ptGen = particle.pt();
-    auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
+    auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
     registry.fill(HIST("hPtGen"), ptGen);
     registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
     if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
@@ -322,7 +322,7 @@ struct HfTaskDplus {
     }
     // MC gen.
     for (const auto& particle : mcParticles) {
-      auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
+      auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
       if ((yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) || (std::abs(particle.flagMcMatchGen()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         continue;
       }

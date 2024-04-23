@@ -834,7 +834,7 @@ struct antidLambdaEbye {
           auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
           if (std::abs(mcTrack.pdgCode()) != partPdg[iP])
             continue;
-          if ((mcTrack.flags() & 0x8) || (mcTrack.flags() & 0x2) || (mcTrack.flags() & 0x1))
+          if (((mcTrack.flags() & 0x8) && doprocessMcRun2) || (mcTrack.flags() & 0x2) || (mcTrack.flags() & 0x1))
             continue;
           if (!mcTrack.isPhysicalPrimary())
             continue;
@@ -866,7 +866,7 @@ struct antidLambdaEbye {
                 continue;
               if (!posMother.isPhysicalPrimary() && !posMother.has_mothers())
                 continue;
-              if ((posMother.flags() & 0x8) || (posMother.flags() & 0x2) || (posMother.flags() & 0x1))
+              if (((posMother.flags() & 0x8) && doprocessMcRun2) || (posMother.flags() & 0x2) || (posMother.flags() & 0x1))
                 continue;
               if (posMother.pdgCode() > 0) {
                 histos.fill(HIST("recL"), centrality, candidateV0.pt, std::abs(candidateV0.eta));
@@ -927,7 +927,7 @@ struct antidLambdaEbye {
         if (std::abs(genEta) > etaMax) {
           continue;
         }
-        if ((mcPart.flags() & 0x8) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
+        if (((mcPart.flags() & 0x8) && doprocessMcRun2) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
           continue;
         auto pdgCode = mcPart.pdgCode();
         if (std::abs(pdgCode) == 3122) {
@@ -1042,7 +1042,7 @@ struct antidLambdaEbye {
         continue;
 
       auto centrality = collision.centRun2V0M();
-      if (!collision.alias_bit(kINT7) && (!kINT7Intervals || (kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
+      if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
         continue;
 
       auto centralityCl0 = collision.centRun2CL0();

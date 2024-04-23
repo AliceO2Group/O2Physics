@@ -192,9 +192,9 @@ struct HfCandidateCreatorBs {
         auto trackParCov1 = getTrackParCov(track1);
         auto trackParCov2 = getTrackParCov(track2);
 
-        std::array<float, 3> pVec0 = {track0.px(), track0.py(), track0.pz()};
-        std::array<float, 3> pVec1 = {track1.px(), track1.py(), track1.pz()};
-        std::array<float, 3> pVec2 = {track2.px(), track2.py(), track2.pz()};
+        std::array<float, 3> pVec0 = track0.pVector();
+        std::array<float, 3> pVec1 = track1.pVector();
+        std::array<float, 3> pVec2 = track2.pVector();
 
         auto dca0 = o2::dataformats::DCA(track0.dcaXY(), track0.dcaZ(), track0.cYY(), track0.cZY(), track0.cZZ());
         auto dca1 = o2::dataformats::DCA(track1.dcaXY(), track1.dcaZ(), track1.cYY(), track1.cZY(), track1.cZZ());
@@ -273,7 +273,7 @@ struct HfCandidateCreatorBs {
             continue;
           }
 
-          std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+          std::array<float, 3> pVecPion = trackPion.pVector();
           auto trackParCovPi = getTrackParCov(trackPion);
 
           // ---------------------------------

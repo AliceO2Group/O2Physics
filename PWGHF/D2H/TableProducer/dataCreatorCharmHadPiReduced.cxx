@@ -494,8 +494,8 @@ struct HfDataCreatorCharmHadPiReduced {
       o2::track::TrackParCov trackParCov1 = getTrackParCov(charmHadDauTracks[1]);
       o2::track::TrackParCov trackParCov2{};
 
-      std::array<float, 3> pVec0 = {charmHadDauTracks[0].px(), charmHadDauTracks[0].py(), charmHadDauTracks[0].pz()};
-      std::array<float, 3> pVec1 = {charmHadDauTracks[1].px(), charmHadDauTracks[1].py(), charmHadDauTracks[1].pz()};
+      std::array<float, 3> pVec0 = charmHadDauTracks[0].pVector();
+      std::array<float, 3> pVec1 = charmHadDauTracks[1].pVector();
       std::array<float, 3> pVec2{};
 
       auto dca0 = o2::dataformats::DCA(charmHadDauTracks[0].dcaXY(), charmHadDauTracks[0].dcaZ(), charmHadDauTracks[0].cYY(), charmHadDauTracks[0].cZY(), charmHadDauTracks[0].cZZ());
@@ -514,7 +514,7 @@ struct HfDataCreatorCharmHadPiReduced {
       if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
         charmHadDauTracks.push_back(candC.template prong2_as<TTracks>());
         trackParCov2 = getTrackParCov(charmHadDauTracks[2]);
-        pVec2 = std::array{charmHadDauTracks[2].px(), charmHadDauTracks[2].py(), charmHadDauTracks[2].pz()};
+        pVec2 = charmHadDauTracks[2].pVector();
         auto dca2 = o2::dataformats::DCA(charmHadDauTracks[2].dcaXY(), charmHadDauTracks[2].dcaZ(), charmHadDauTracks[2].cYY(), charmHadDauTracks[2].cZY(), charmHadDauTracks[2].cZZ());
 
         if (charmHadDauTracks[2].collisionId() != thisCollId) {
@@ -580,7 +580,7 @@ struct HfDataCreatorCharmHadPiReduced {
         // apply selections on pion tracks
         auto trackParCovPion = getTrackParCov(trackPion);
         o2::gpu::gpustd::array<float, 2> dcaPion{trackPion.dcaXY(), trackPion.dcaZ()};
-        std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+        std::array<float, 3> pVecPion = trackPion.pVector();
         if (trackPion.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovPion, 2.f, noMatCorr, &dcaPion);
           getPxPyPz(trackParCovPion, pVecPion);
@@ -723,7 +723,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massB);
+        auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
         std::array<float, 2> ptProngs;
@@ -733,7 +733,7 @@ struct HfDataCreatorCharmHadPiReduced {
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
         rowHfB0McGenReduced(flag, ptParticle, yParticle, etaParticle,
@@ -756,7 +756,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massB);
+        auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
         std::array<float, 2> ptProngs;
@@ -766,7 +766,7 @@ struct HfDataCreatorCharmHadPiReduced {
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
         rowHfBpMcGenReduced(flag, ptParticle, yParticle, etaParticle,

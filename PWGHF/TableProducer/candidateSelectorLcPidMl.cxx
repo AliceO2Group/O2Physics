@@ -250,9 +250,9 @@ struct HfCandidateSelectorLcPidMl {
         continue;
       }
 
-      std::array<float, 3> pVecPos1 = {trackPos1.px(), trackPos1.py(), trackPos1.pz()};
-      std::array<float, 3> pVecNeg = {trackNeg.px(), trackNeg.py(), trackNeg.pz()};
-      std::array<float, 3> pVecPos2 = {trackPos2.px(), trackPos2.py(), trackPos2.pz()};
+      std::array<float, 3> pVecPos1 = trackPos1.pVector();
+      std::array<float, 3> pVecNeg = trackNeg.pVector();
+      std::array<float, 3> pVecPos2 = trackPos2.pVector();
       const float massPi = o2::constants::physics::MassPiPlus;
       const float massK = o2::constants::physics::MassKPlus;
       const float massProton = o2::constants::physics::MassProton;
