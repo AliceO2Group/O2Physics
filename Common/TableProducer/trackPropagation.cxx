@@ -148,7 +148,7 @@ struct TrackPropagation {
 
   template <typename TTrack, typename TParticle, bool isMc, bool fillCovMat = false, bool useTrkPid = false>
   void fillTrackTables(TTrack const& tracks,
-                       TParticle const&,
+                       TParticle const& mcParticles,
                        aod::Collisions const&,
                        aod::BCsWithTimestamps const& bcs)
   {
@@ -234,6 +234,7 @@ struct TrackPropagation {
           trackType = aod::track::Track;
         }
 
+        // filling some QA histograms for track tuner test purpose
         if constexpr (isMc && fillCovMat) { /// track tuner ok only if cov. matrix is used
           if (track.has_mcParticle() && isPropagationOK) {
             auto mcParticle1 = track.mcParticle();

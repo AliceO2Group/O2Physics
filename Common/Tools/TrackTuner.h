@@ -282,8 +282,8 @@ struct TrackTuner {
     LOG(info) << "[TrackTuner]     nameFileQoverPt = " << nameFileQoverPt;
     // Configure usePvRefitCorrections
     setBoolFromString(usePvRefitCorrections, getValueString(UsePvRefitCorrections));
-    outputString += ", usePvRefitCorrections=" + usePvRefitCorrections;
-    LOG(info) << "[TrackTuner]     usePvRefitCorrections = " << std::to_string(usePvRefitCorrections);
+    outputString += ", usePvRefitCorrections=" + std::to_string(usePvRefitCorrections);
+    LOG(info) << "[TrackTuner]     usePvRefitCorrections = " << usePvRefitCorrections;
     // Configure qOverPtMC
     qOverPtMC = std::stof(getValueString(QOverPtMC));
     outputString += ", qOverPtMC=" + std::to_string(qOverPtMC);
@@ -460,13 +460,31 @@ struct TrackTuner {
 
     // for updating the Q/pT from the tracksIU.
     // This is placed before track propagation to production point, so that Q/pT can be updated before propagation
-    // Q/Pt is set modified and set before track propagation
+    // Q/Pt is modified and set before track propagation
 
     double deltaQpt = 0.0;
     double deltaQptTuned = 0.0;
     double trackParQPtTuned = 0.0;
 
-    if (updateCurvatureIU) { // For tests
+    // variables for track cov matrix elements update
+    double sigmaY2 = 0.0;
+    double sigmaZY = 0.0;
+    double sigmaZ2 = 0.0;
+    double sigmaSnpY = 0.0;
+    double sigmaSnpZ = 0.0;
+    double sigmaTglY = 0.0;
+    double sigmaTglZ = 0.0;
+    double sigma1PtY = 0.0;
+    double sigma1PtZ = 0.0;
+    double sigma1PtSnp = 0.0;
+    double sigma1PtTgl = 0.0;
+    double sigma1Pt2 = 0.0;
+
+    double sigmaY2orig = trackParCov.getSigmaY2();
+    double sigmaZYorig = trackParCov.getSigmaZY();
+    double sigmaZ2orig = trackParCov.getSigmaZ2();
+
+    if (updateCurvatureIU) {
       // double dpt1o =pt1o-pt1mc;
       deltaQpt = trackParQPtMCRec - trackParQPtMC;
       // double dpt1n =dpt1o *(spt1o >0. ? (spt1n /spt1o ) : 1.);
@@ -474,8 +492,43 @@ struct TrackTuner {
       // double pt1n  = pt1mc+dpt1n;
       trackParQPtTuned = trackParQPtMC + deltaQptTuned;
       trackParCov.setQ2Pt(trackParQPtTuned);
-    }
 
+      // updating track cov matrix elements for 1/Pt at innermost update point
+      //       if(sd0rpo>0. && spt1o>0.)covar[10]*=(sd0rpn/sd0rpo)*(spt1n/spt1o);//ypt
+      sigma1PtY = trackParCov.getSigma1PtY();
+      if (dcaXYResMC > 0. && qOverPtMC > 0.) {
+        sigma1PtY *= ((dcaXYResData / dcaXYResMC) * (qOverPtData / qOverPtMC));
+        trackParCov.setCov(sigma1PtY, 10);
+      }
+
+      //       if(sd0zo>0. && spt1o>0.) covar[11]*=(sd0zn/sd0zo)*(spt1n/spt1o);//zpt
+      sigma1PtZ = trackParCov.getSigma1PtZ();
+      if (dcaZResMC > 0. && qOverPtMC > 0.) {
+        sigma1PtZ *= ((dcaZResData / dcaZResMC) * (qOverPtData / qOverPtMC));
+        trackParCov.setCov(sigma1PtZ, 11);
+      }
+
+      //       if(spt1o>0.)             covar[12]*=(spt1n/spt1o);//sinPhipt
+      sigma1PtSnp = trackParCov.getSigma1PtSnp();
+      if (qOverPtMC > 0.) {
+        sigma1PtSnp *= (qOverPtData / qOverPtMC);
+        trackParCov.setCov(sigma1PtSnp, 12);
+      }
+
+      //       if(spt1o>0.)             covar[13]*=(spt1n/spt1o);//tanTpt
+      sigma1PtTgl = trackParCov.getSigma1PtTgl();
+      if (qOverPtMC > 0.) {
+        sigma1PtTgl *= (qOverPtData / qOverPtMC);
+        trackParCov.setCov(sigma1PtTgl, 13);
+      }
+
+      //       if(spt1o>0.)             covar[14]*=(spt1n/spt1o)*(spt1n/spt1o);//ptpt
+      sigma1Pt2 = trackParCov.getSigma1Pt2();
+      if (qOverPtMC > 0.) {
+        sigma1Pt2 *= (qOverPtData / qOverPtMC);
+        trackParCov.setCov(sigma1Pt2, 14);
+      }
+    }
     // propagate to DCA with respect to the Production point
     // if (!updateCurvatureIU) {
     //   o2::base::Propagator::Instance()->propagateToDCABxByBz(vtxMC, trackParCov, 2.f, matCorr, dcaInfoCov);
@@ -485,7 +538,6 @@ struct TrackTuner {
     double trackParDcaZoriginal = trackParCov.getZ();
 
     if (updateTrackDCAs) {
-
       // propagate to DCA with respect to the Production point
       o2::base::Propagator::Instance()->propagateToDCABxByBz(vtxMC, trackParCov, 2.f, matCorr, dcaInfoCov);
       // double d0zo  =param  [1];
@@ -557,33 +609,18 @@ struct TrackTuner {
       trackParCov.setZ(trackParDcaZTuned);
     } // ----> updateTrackDCAs block ends here
 
-    if ((updateCurvature) && (!updateCurvatureIU)) { // Default position for this block
-      // --------------------------------------
+    if ((updateCurvature) && (!updateCurvatureIU)) { // ...block begins here
+      if (!updateTrackDCAs) {
+        /// propagation to production point not done yet, doing it now
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(vtxMC, trackParCov, 2.f, matCorr, dcaInfoCov);
+      }
       deltaQpt = trackParQPtMCRec - trackParQPtMC;
       // double dpt1n =dpt1o *(spt1o >0. ? (spt1n /spt1o ) : 1.);
       deltaQptTuned = deltaQpt * (qOverPtMC > 0. ? (qOverPtData / qOverPtMC) : 1.);
       // double pt1n  = pt1mc+dpt1n;
       trackParQPtTuned = trackParQPtMC + deltaQptTuned;
       trackParCov.setQ2Pt(trackParQPtTuned);
-    }
-
-    // Updating Single Track Covariance matrices
-    double sigmaY2 = 0.0;
-    double sigmaZY = 0.0;
-    double sigmaZ2 = 0.0;
-    double sigmaSnpY = 0.0;
-    double sigmaSnpZ = 0.0;
-    double sigmaTglY = 0.0;
-    double sigmaTglZ = 0.0;
-    double sigma1PtY = 0.0;
-    double sigma1PtZ = 0.0;
-    double sigma1PtSnp = 0.0;
-    double sigma1PtTgl = 0.0;
-    double sigma1Pt2 = 0.0;
-
-    double sigmaY2orig = trackParCov.getSigmaY2();
-    double sigmaZYorig = trackParCov.getSigmaZY();
-    double sigmaZ2orig = trackParCov.getSigmaZ2();
+    } // ...block ends here
 
     if (updateTrackCovMat) {
       //       if(sd0rpo>0.)            covar[0]*=(sd0rpn/sd0rpo)*(sd0rpn/sd0rpo);//yy
@@ -636,41 +673,44 @@ struct TrackTuner {
         trackParCov.setCov(sigmaTglZ, 7);
       }
 
-      //       if(sd0rpo>0. && spt1o>0.)covar[10]*=(sd0rpn/sd0rpo)*(spt1n/spt1o);//ypt
-      sigma1PtY = trackParCov.getSigma1PtY();
-      if (dcaXYResMC > 0. && qOverPtMC > 0.) {
-        sigma1PtY *= ((dcaXYResData / dcaXYResMC) * (qOverPtData / qOverPtMC));
-        trackParCov.setCov(sigma1PtY, 10);
-      }
+      // checking and updating track cov matrix elements for 1/Pt begins
+      if ((updateCurvature) && (!updateCurvatureIU)) {
+        //       if(sd0rpo>0. && spt1o>0.)covar[10]*=(sd0rpn/sd0rpo)*(spt1n/spt1o);//ypt
+        sigma1PtY = trackParCov.getSigma1PtY();
+        if (dcaXYResMC > 0. && qOverPtMC > 0.) {
+          sigma1PtY *= ((dcaXYResData / dcaXYResMC) * (qOverPtData / qOverPtMC));
+          trackParCov.setCov(sigma1PtY, 10);
+        }
 
-      //       if(sd0zo>0. && spt1o>0.) covar[11]*=(sd0zn/sd0zo)*(spt1n/spt1o);//zpt
-      sigma1PtZ = trackParCov.getSigma1PtZ();
-      if (dcaZResMC > 0. && qOverPtMC > 0.) {
-        sigma1PtZ *= ((dcaZResData / dcaZResMC) * (qOverPtData / qOverPtMC));
-        trackParCov.setCov(sigma1PtZ, 11);
-      }
+        //       if(sd0zo>0. && spt1o>0.) covar[11]*=(sd0zn/sd0zo)*(spt1n/spt1o);//zpt
+        sigma1PtZ = trackParCov.getSigma1PtZ();
+        if (dcaZResMC > 0. && qOverPtMC > 0.) {
+          sigma1PtZ *= ((dcaZResData / dcaZResMC) * (qOverPtData / qOverPtMC));
+          trackParCov.setCov(sigma1PtZ, 11);
+        }
 
-      //       if(spt1o>0.)             covar[12]*=(spt1n/spt1o);//sinPhipt
-      sigma1PtSnp = trackParCov.getSigma1PtSnp();
-      if (qOverPtMC > 0.) {
-        sigma1PtSnp *= (qOverPtData / qOverPtMC);
-        trackParCov.setCov(sigma1PtSnp, 12);
-      }
+        //       if(spt1o>0.)             covar[12]*=(spt1n/spt1o);//sinPhipt
+        sigma1PtSnp = trackParCov.getSigma1PtSnp();
+        if (qOverPtMC > 0.) {
+          sigma1PtSnp *= (qOverPtData / qOverPtMC);
+          trackParCov.setCov(sigma1PtSnp, 12);
+        }
 
-      //       if(spt1o>0.)             covar[13]*=(spt1n/spt1o);//tanTpt
-      sigma1PtTgl = trackParCov.getSigma1PtTgl();
-      if (qOverPtMC > 0.) {
-        sigma1PtTgl *= (qOverPtData / qOverPtMC);
-        trackParCov.setCov(sigma1PtTgl, 13);
-      }
+        //       if(spt1o>0.)             covar[13]*=(spt1n/spt1o);//tanTpt
+        sigma1PtTgl = trackParCov.getSigma1PtTgl();
+        if (qOverPtMC > 0.) {
+          sigma1PtTgl *= (qOverPtData / qOverPtMC);
+          trackParCov.setCov(sigma1PtTgl, 13);
+        }
 
-      //       if(spt1o>0.)             covar[14]*=(spt1n/spt1o)*(spt1n/spt1o);//ptpt
-      sigma1Pt2 = trackParCov.getSigma1Pt2();
-      if (qOverPtMC > 0.) {
-        sigma1Pt2 *= (qOverPtData / qOverPtMC);
-        trackParCov.setCov(sigma1Pt2, 14);
-      }
-    } // ---> updateTrackCovMat block ends here
+        //       if(spt1o>0.)             covar[14]*=(spt1n/spt1o)*(spt1n/spt1o);//ptpt
+        sigma1Pt2 = trackParCov.getSigma1Pt2();
+        if (qOverPtMC > 0.) {
+          sigma1Pt2 *= (qOverPtData / qOverPtMC);
+          trackParCov.setCov(sigma1Pt2, 14);
+        }
+      } // ---> track cov matrix elements for 1/Pt ends here
+    }   // ---> updateTrackCovMat block ends here
 
     if (updatePulls) {
       double ratioDCAxyPulls = 1.0;
@@ -681,7 +721,6 @@ struct TrackTuner {
         ratioDCAxyPulls = dcaXYPullMC / dcaXYPullData;
 
       // covar[0]*=pullcorr*pullcorr;//yy
-
       sigmaY2 *= (ratioDCAxyPulls * ratioDCAxyPulls);
       trackParCov.setCov(sigmaY2, 0);
 
