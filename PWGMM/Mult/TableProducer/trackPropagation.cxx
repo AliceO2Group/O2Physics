@@ -129,10 +129,13 @@ struct AmbiguousTrackPropagation {
   using ExTracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
 
   void processCentral(ExTracksSel const& tracks,
-                      aod::Collisions const& collisions,
-                      ExtBCs const&)
+                      aod::Collisions const&,
+                      ExtBCs const& bcs)
   {
-    auto bc = collisions.begin().bc_as<ExtBCs>();
+    if (bcs.size() == 0) {
+      return;
+    }
+    auto bc = bcs.begin();
     initCCDB(bc);
 
     gpu::gpustd::array<float, 2> dcaInfo;
