@@ -62,6 +62,9 @@ struct femtoDreamDebugTrack {
   Configurable<int> ConfTempFitVarMomentum{"ConfTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
   ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis for inv mass"};
 
+  using FemtoMCCollisions = Join<aod::FDCollisions, aod::FDMCCollLabels>;
+  using FemtoMCCollision = FemtoMCCollisions::iterator;
+
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
   Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
@@ -90,15 +93,15 @@ struct femtoDreamDebugTrack {
 
   void init(InitContext&)
   {
-    eventHisto.init(&qaRegistry);
+    eventHisto.init(&qaRegistry, ConfIsMC);
     trackHisto.init(&qaRegistry, ConfBinmult, ConfBinmultPercentile, ConfBinpT, ConfBineta, ConfBinphi, ConfTempFitVarBins, ConfNsigmaTPCBins, ConfNsigmaTOFBins, ConfNsigmaTPCTOFBins, ConfTPCclustersBins, ConfDummy, ConfIsMC, ConfTrk1_PDGCode.value, true, ConfOptCorrelatedPlots);
   }
 
   /// Porduce QA plots for sigle track selection in FemtoDream framework
-  template <bool isMC, typename PartitionType>
-  void FillDebugHistos(o2::aod::FDCollision& col, PartitionType& groupPartsOne)
+  template <bool isMC, typename CollisionType, typename PartitionType>
+  void FillDebugHistos(CollisionType& col, PartitionType& groupPartsOne)
   {
-    eventHisto.fillQA(col);
+    eventHisto.fillQA<isMC>(col);
     for (auto& part : groupPartsOne) {
       trackHisto.fillQA<isMC, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value), col.multNtr(), col.multV0M(), ConfOptCorrelatedPlots);
     }
@@ -119,7 +122,7 @@ struct femtoDreamDebugTrack {
   /// \param col subscribe to FemtoDreamCollision table
   /// \param parts subscribe to the joined table of FemtoDreamParticles and FemtoDreamMCLabels table
   /// \param FemtoDramMCParticles subscribe to the table containing the Monte Carlo Truth information
-  void processMC(o2::aod::FDCollision& col, FemtoFullParticlesMC&, aod::FDMCParticles&, aod::FDExtMCParticles&)
+  void processMC(FemtoMCCollision& col, o2::aod::FDMCCollisions&, FemtoFullParticlesMC& parts, aod::FDMCParticles&, aod::FDExtMCParticles&)
   {
     auto groupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     FillDebugHistos<true>(col, groupPartsOne);
