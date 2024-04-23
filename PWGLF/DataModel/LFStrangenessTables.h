@@ -97,7 +97,7 @@ DECLARE_SOA_COLUMN(TPCCrossedRows, tpcCrossedRows, uint8_t);    //! N TPC cluste
 
 //______________________________________________________
 // Daughter track MC information
-DECLARE_SOA_COLUMN(ParticleMCId, particleMCId, int);          //! particle MC Id
+DECLARE_SOA_COLUMN(ParticleMCId, particleMCId, int); //! particle MC Id
 
 //______________________________________________________
 // for extras: replicated here to ensure ease of manipulating the ITS information
@@ -144,17 +144,17 @@ DECLARE_SOA_TABLE(DauTrackExtras_000, "AOD", "DAUTRACKEXTRA", //! detector prope
                   dautrack::HasTOF<dautrack::DetectorMap>);
 
 DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_001, "AOD", "DAUTRACKEXTRA", 1, //! detector properties of decay daughters
-                  dautrack::ITSChi2PerNcl,
-                  dautrack::DetectorMap, dautrack::ITSClusterSizes,
-                  dautrack::TPCClusters, dautrack::TPCCrossedRows,
+                            dautrack::ITSChi2PerNcl,
+                            dautrack::DetectorMap, dautrack::ITSClusterSizes,
+                            dautrack::TPCClusters, dautrack::TPCCrossedRows,
 
-                  // Dynamic columns for manipulating information
-                  dautrack::ITSClusterMap<dautrack::ITSClusterSizes>,
-                  dautrack::ITSNCls<dautrack::ITSClusterSizes>,
-                  dautrack::HasITS<dautrack::DetectorMap>,
-                  dautrack::HasTPC<dautrack::DetectorMap>,
-                  dautrack::HasTRD<dautrack::DetectorMap>,
-                  dautrack::HasTOF<dautrack::DetectorMap>);
+                            // Dynamic columns for manipulating information
+                            dautrack::ITSClusterMap<dautrack::ITSClusterSizes>,
+                            dautrack::ITSNCls<dautrack::ITSClusterSizes>,
+                            dautrack::HasITS<dautrack::DetectorMap>,
+                            dautrack::HasTPC<dautrack::DetectorMap>,
+                            dautrack::HasTRD<dautrack::DetectorMap>,
+                            dautrack::HasTOF<dautrack::DetectorMap>);
 
 DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
                   dautrack::ParticleMCId);
@@ -582,7 +582,7 @@ DECLARE_SOA_TABLE(V0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 
                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
 DECLARE_SOA_TABLE_VERSIONED(V0MCCores_001, "AOD", "V0MCCORE", 1, //! debug information
-                            v0data::ParticleIdMC, //! MC properties of the V0 for posterior analysis
+                            v0data::ParticleIdMC,                //! MC properties of the V0 for posterior analysis
                             v0data::PDGCode, v0data::PDGCodeMother, 
                             v0data::PDGCodePositive, v0data::PDGCodeNegative,
                             v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,

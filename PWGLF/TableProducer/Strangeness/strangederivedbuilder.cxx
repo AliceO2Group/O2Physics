@@ -86,7 +86,7 @@ struct strangederivedbuilder {
   //__________________________________________________
   // track extra references
   Produces<aod::DauTrackExtras> dauTrackExtras;   // daughter track detector properties
-  Produces<aod::DauTrackMCIds> dauTrackMCIds;      // daughter track MC Particle ID
+  Produces<aod::DauTrackMCIds> dauTrackMCIds;     // daughter track MC Particle ID
   Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID
   Produces<aod::DauTrackTOFPIDs> dauTrackTOFPIDs; // daughter track TOF PID
   Produces<aod::V0Extras> v0Extras;               // references DauTracks from V0s
@@ -546,9 +546,9 @@ struct strangederivedbuilder {
                        tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
 
         // if the table has MC info
-        if constexpr ( requires {tr.mcParticle();} ) {
-            // do your thing with the mcParticleIds only in case the table has the MC info
-            dauTrackMCIds( tr.mcParticleId() ); // joinable with dauTrackExtras
+        if constexpr (requires {tr.mcParticle();}) {
+          // do your thing with the mcParticleIds only in case the table has the MC info
+          dauTrackMCIds( tr.mcParticleId() ); // joinable with dauTrackExtras
         }
 
         // round if requested

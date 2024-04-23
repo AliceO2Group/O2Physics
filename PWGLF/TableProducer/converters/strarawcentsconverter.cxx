@@ -30,16 +30,16 @@ struct strarawcentsconverter {
     }
     for (auto& values : dauTrackExtras_000) {
       dauTrackExtras_001(0,
-                    values.detectorMap(),
-                    values.itsClusterSizes(),
-                    values.tpcNClsFound(),
-                    values.tpcNClsCrossedRows(),
-                    values.tpcSignal(),
-                    values.tpcNSigmaEl(),
-                    values.tpcNSigmaPi(),
-                    values.tpcNSigmaKa(),
-                    values.tpcNSigmaPr(),
-                    values.tpcNSigmaHe());
+                         values.detectorMap(),
+                         values.itsClusterSizes(),
+                         values.tpcNClsFound(),
+                         values.tpcNClsCrossedRows(),
+                         values.tpcSignal(),
+                         values.tpcNSigmaEl(),
+                         values.tpcNSigmaPi(),
+                         values.tpcNSigmaKa(),
+                         values.tpcNSigmaPr(),
+                         values.tpcNSigmaHe());
     }
     for (auto& values : v0MCCores_000) {
       v0MCCores_001(0,
@@ -79,16 +79,16 @@ struct strarawcentsconverter {
     }
     for (auto& values : dauTrackExtras_000) {
       dauTrackExtras_001(0,
-                    values.detectorMap(),
-                    values.itsClusterSizes(),
-                    values.tpcNClsFound(),
-                    values.tpcNClsCrossedRows(),
-                    values.tpcSignal(),
-                    values.tpcNSigmaEl(),
-                    values.tpcNSigmaPi(),
-                    values.tpcNSigmaKa(),
-                    values.tpcNSigmaPr(),
-                    values.tpcNSigmaHe());
+                         values.detectorMap(),
+                         values.itsClusterSizes(),
+                         values.tpcNClsFound(),
+                         values.tpcNClsCrossedRows(),
+                         values.tpcSignal(),
+                         values.tpcNSigmaEl(),
+                         values.tpcNSigmaPi(),
+                         values.tpcNSigmaKa(),
+                         values.tpcNSigmaPr(),
+                         values.tpcNSigmaHe());
     }
     for (auto& values : v0MCCores_000) {
       v0MCCores_001(0,
