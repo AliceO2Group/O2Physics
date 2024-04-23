@@ -583,7 +583,7 @@ DECLARE_SOA_TABLE(V0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 
 
 DECLARE_SOA_TABLE_VERSIONED(V0MCCores_001, "AOD", "V0MCCORE", 1, //! debug information
                             v0data::ParticleIdMC,                //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother, 
+                            v0data::PDGCode, v0data::PDGCodeMother,
                             v0data::PDGCodePositive, v0data::PDGCodeNegative,
                             v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
                             v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,

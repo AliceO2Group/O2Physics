@@ -546,9 +546,9 @@ struct strangederivedbuilder {
                        tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
 
         // if the table has MC info
-        if constexpr (requires {tr.mcParticle();}) {
+        if constexpr (requires { tr.mcParticle(); }) {
           // do your thing with the mcParticleIds only in case the table has the MC info
-          dauTrackMCIds( tr.mcParticleId() ); // joinable with dauTrackExtras
+          dauTrackMCIds(tr.mcParticleId()); // joinable with dauTrackExtras
         }
 
         // round if requested
