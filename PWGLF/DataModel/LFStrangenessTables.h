@@ -89,6 +89,7 @@ namespace dautrack
 {
 //______________________________________________________
 // Daughter track declarations for derived data analysis
+DECLARE_SOA_COLUMN(ITSChi2PerNcl, itsChi2PerNcl, float);        //! ITS chi2 per N cluster
 DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);          //! detector map for reference (see DetectorMapEnum)
 DECLARE_SOA_COLUMN(ITSClusterSizes, itsClusterSizes, uint32_t); //! ITS cluster sizes per layer
 DECLARE_SOA_COLUMN(TPCClusters, tpcClusters, uint8_t);          //! N TPC clusters
@@ -130,7 +131,20 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF 
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
 } // namespace dautrack
 
-DECLARE_SOA_TABLE(DauTrackExtras, "AOD", "DAUTRACKEXTRA", //! detector properties of decay daughters
+DECLARE_SOA_TABLE(DauTrackExtras_000, "AOD", "DAUTRACKEXTRA", //! detector properties of decay daughters
+                  dautrack::DetectorMap, dautrack::ITSClusterSizes,
+                  dautrack::TPCClusters, dautrack::TPCCrossedRows,
+
+                  // Dynamic columns for manipulating information
+                  dautrack::ITSClusterMap<dautrack::ITSClusterSizes>,
+                  dautrack::ITSNCls<dautrack::ITSClusterSizes>,
+                  dautrack::HasITS<dautrack::DetectorMap>,
+                  dautrack::HasTPC<dautrack::DetectorMap>,
+                  dautrack::HasTRD<dautrack::DetectorMap>,
+                  dautrack::HasTOF<dautrack::DetectorMap>);
+
+DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_001, "AOD", "DAUTRACKEXTRA", 1, //! detector properties of decay daughters
+                  dautrack::ITSChi2PerNcl,
                   dautrack::DetectorMap, dautrack::ITSClusterSizes,
                   dautrack::TPCClusters, dautrack::TPCCrossedRows,
 
@@ -145,6 +159,7 @@ DECLARE_SOA_TABLE(DauTrackExtras, "AOD", "DAUTRACKEXTRA", //! detector propertie
 DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
                   dautrack::ParticleMCId);
 
+using DauTrackExtras = DauTrackExtras_001;
 using DauTrackExtra = DauTrackExtras::iterator;
 
 namespace motherParticle

@@ -450,7 +450,8 @@ struct strangederivedbuilder {
     // circle back and populate actual DauTrackExtra table
     for (auto const& tr : tracksExtra) {
       if (trackMap[tr.globalIndex()] >= 0) {
-        dauTrackExtras(tr.detectorMap(), tr.itsClusterSizes(),
+        dauTrackExtras(tr.itsChi2NCl(), 
+                       tr.detectorMap(), tr.itsClusterSizes(),
                        tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
       }
     }
@@ -540,7 +541,8 @@ struct strangederivedbuilder {
     // circle back and populate actual DauTrackExtra table
     for (auto const& tr : tracksExtra) {
       if (trackMap[tr.globalIndex()] >= 0) {
-        dauTrackExtras(tr.detectorMap(), tr.itsClusterSizes(),
+        dauTrackExtras(tr.itsChi2NCl(),
+                       tr.detectorMap(), tr.itsClusterSizes(),
                        tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
 
         // if the table has MC info
