@@ -356,7 +356,7 @@ struct lnnRecoTask {
         lnnCand.mom3H[i] *= 2;
       }
 
- 
+
       // Definition of relativistic momentum and energy to triton and pion and total energy
       float h3P2 = lnnCand.mom3H[0] * lnnCand.mom3H[0] + lnnCand.mom3H[1] * lnnCand.mom3H[1] + lnnCand.mom3H[2] * lnnCand.mom3H[2];
       float piP2 = lnnCand.momPi[0] * lnnCand.momPi[0] + lnnCand.momPi[1] * lnnCand.momPi[1] + lnnCand.momPi[2] * lnnCand.momPi[2];
