@@ -259,7 +259,9 @@ struct femtoDreamPairTaskTrackTrack {
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       if (device.name.find("femto-dream-pair-task-track-track") != std::string::npos) {
-        if (containsNameValuePair(device.options, "Track1.CutBit", Track1.CutBit.value) &&
+        if (containsNameValuePair(device.options, "Option.DCACutPtDep", Option.DCACutPtDep.value) &&
+            containsNameValuePair(device.options, "Option.SameSpecies", Option.SameSpecies.value) &&
+            containsNameValuePair(device.options, "Track1.CutBit", Track1.CutBit.value) &&
             containsNameValuePair(device.options, "Track1.TPCBit", Track1.TPCBit.value) &&
             containsNameValuePair(device.options, "Track1.TPCTOFBit", Track1.TPCTOFBit.value) &&
             containsNameValuePair(device.options, "Track1.PIDThres", Track1.PIDThres.value) &&

@@ -45,8 +45,11 @@ struct femtoDreamDebugTrack {
   Configurable<float> ConfTrk1_maxPt{"ConfTrk1_maxPt", 999., "Maximum pT of partricle 1 (Track)"};
   Configurable<float> ConfTrk1_minEta{"ConfTrk1_minEta", -10., "Minimum eta of partricle 1 (Track)"};
   Configurable<float> ConfTrk1_maxEta{"ConfTrk1_maxEta", 10., "Maximum eta of partricle 1 (Track)"};
+  Configurable<float> ConfTrk1_TempFitVarMin{"ConfTrk1_TempFitVarMin", -10., "Minimum DCAxy of partricle 1 (Track)"};
+  Configurable<float> ConfTrk1_TempFitVarMax{"ConfTrk1_TempFitVarMax", 10., "Maximum DCAxy of partricle 1 (Track)"};
   Configurable<float> ConfTrk1_PIDThres{"ConfTrk1_PIDThres", 0.75, "Particle 1 - Read from cutCulator"};
 
+  Configurable<bool> ConfOptDCACutPtDep{"ConfOptDCACutPtDep", false, "Use pt dependent dca cut"};
   Configurable<bool> ConfOptCorrelatedPlots{"ConfOptCorrelatedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
   ConfigurableAxis ConfBinmult{"ConfBinmult", {1, 0, 1}, "multiplicity Binning"};
   ConfigurableAxis ConfBinmultPercentile{"ConfBinmultPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning"};
@@ -73,7 +76,11 @@ struct femtoDreamDebugTrack {
                                            (aod::femtodreamparticle::pt > ConfTrk1_minPt) &&
                                            (aod::femtodreamparticle::pt < ConfTrk1_maxPt) &&
                                            (aod::femtodreamparticle::eta > ConfTrk1_minEta) &&
-                                           (aod::femtodreamparticle::eta < ConfTrk1_maxEta);
+                                           (aod::femtodreamparticle::eta < ConfTrk1_maxEta) &&
+                                           ifnode(ConfOptDCACutPtDep, nabs(aod::femtodreamparticle::tempFitVar) < 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f)),
+                                                  (aod::femtodreamparticle::tempFitVar > ConfTrk1_TempFitVarMin) &&
+                                                    (aod::femtodreamparticle::tempFitVar < ConfTrk1_TempFitVarMax));
+
   Preslice<FemtoFullParticles> perColReco = aod::femtodreamparticle::fdCollisionId;
   // adsf
   using FemtoFullParticlesMC = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels>;
