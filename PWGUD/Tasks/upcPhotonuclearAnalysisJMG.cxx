@@ -30,7 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct upcPhotonuclearAnalysis {
+struct upcPhotonuclearAnalysisJMG {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -348,10 +348,10 @@ struct upcPhotonuclearAnalysis {
         break;
     }
   }
-  PROCESS_SWITCH(upcPhotonuclearAnalysis, processSG, "Process in UD tables", true);
+  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSG, "Process in UD tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<upcPhotonuclearAnalysis>(cfgc, TaskName{"upcphotonuclear"})};
+  return WorkflowSpec{adaptAnalysisTask<upcPhotonuclearAnalysisJMG>(cfgc, TaskName{"upcphotonuclear"})};
 }
