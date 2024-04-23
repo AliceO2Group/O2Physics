@@ -291,7 +291,13 @@ class FemtoUniverseDetaDphiStar
 
       bool pass = false;
       for (int i = 0; i < 2; i++) {
-        auto indexOfDaughter = part2.index() - 2 + i;
+        auto indexOfDaughter = 0;
+        if (ChosenEventType == femtoUniverseContainer::EventType::mixed) {
+          indexOfDaughter = part2.globalIndex() - 2 + i;
+        } else if (ChosenEventType == femtoUniverseContainer::EventType::same) {
+          indexOfDaughter = part2.index() - 2 + i;
+        }
+
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
         auto dphiAvg = AveragePhiStar(part1, *daughter, i); // CalculateDphiStar(part1, *daughter);
