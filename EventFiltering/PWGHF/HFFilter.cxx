@@ -129,7 +129,7 @@ struct HfFilter { // Main struct for HF triggers
   // array of BDT thresholds
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
 
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registry{"registry"};
   std::shared_ptr<TH1> hProcessedEvents;
 
   // QA histos
@@ -233,7 +233,7 @@ struct HfFilter { // Main struct for HF triggers
       if (activateQA > 1) {
         hProtonTPCPID = registry.add<TH2>("fProtonTPCPID", "#it{N}_{#sigma}^{TPC} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TPC}", HistType::kTH2F, {pAxis, nSigmaAxis});
         hProtonTOFPID = registry.add<TH2>("fProtonTOFPID", "#it{N}_{#sigma}^{TOF} vs. #it{p} for selected protons;#it{p} (GeV/#it{c});#it{N}_{#sigma}^{TOF}", HistType::kTH2F, {pAxis, nSigmaAxis});
-        hV0Selected = registry.add<TH2>("fV0Selected", "Selections for V0s;;counts", HistType::kTH2F, {{10, -0.5, 9.5}, {kNV0, -0.5, +kNV0 - 0.5}});
+        hV0Selected = registry.add<TH2>("fV0Selected", "Selections for V0s;;counts", HistType::kTH2F, {{9, -0.5, 8.5}, {kNV0, -0.5, +kNV0 - 0.5}});
 
         for (int iV0{kPhoton}; iV0 < kNV0; ++iV0) {
           hV0Selected->GetYaxis()->SetBinLabel(iV0 + 1, v0Labels[iV0].data());
@@ -242,12 +242,11 @@ struct HfFilter { // Main struct for HF triggers
         hV0Selected->GetXaxis()->SetBinLabel(2, "rej. |#eta|");
         hV0Selected->GetXaxis()->SetBinLabel(3, "rej. radius");
         hV0Selected->GetXaxis()->SetBinLabel(4, "rej. cos(#theta_{P})");
-        hV0Selected->GetXaxis()->SetBinLabel(5, "rej. AP / Mass");
+        hV0Selected->GetXaxis()->SetBinLabel(5, "rej. Mass");
         hV0Selected->GetXaxis()->SetBinLabel(6, "rej. DCA V0");
         hV0Selected->GetXaxis()->SetBinLabel(7, "rej. DCA V0 daughters");
-        hV0Selected->GetXaxis()->SetBinLabel(8, "rej. pair cut");
-        hV0Selected->GetXaxis()->SetBinLabel(9, "rej. PID");
-        hV0Selected->GetXaxis()->SetBinLabel(10, "selected");
+        hV0Selected->GetXaxis()->SetBinLabel(8, "rej. PID");
+        hV0Selected->GetXaxis()->SetBinLabel(9, "selected");
       }
     }
 
@@ -506,7 +505,7 @@ struct HfFilter { // Main struct for HF triggers
           for (const auto& photon : photonsThisCollision) {
             auto posTrack = photon.posTrack_as<aod::V0Legs>();
             auto negTrack = photon.negTrack_as<aod::V0Legs>();
-            if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod)) {
+            if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, activateQA, hV0Selected, hArmPod)) {
               continue;
             }
             gpu::gpustd::array<float, 2> dcaInfo;
@@ -987,7 +986,7 @@ struct HfFilter { // Main struct for HF triggers
           for (const auto& photon : photonsThisCollision) {
             auto posTrack = photon.posTrack_as<aod::V0Legs>();
             auto negTrack = photon.negTrack_as<aod::V0Legs>();
-            if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod)) {
+            if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, activateQA, hV0Selected, hArmPod)) {
               continue;
             }
             gpu::gpustd::array<float, 2> dcaInfo;

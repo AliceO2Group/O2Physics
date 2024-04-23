@@ -50,7 +50,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "EventFiltering/filterTables.h"
 
 namespace o2::aod
@@ -393,8 +392,8 @@ class HfFilterHelper
   int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const int8_t isSelected, const int& activateQA, H2 hMassVsPt);
   template <typename V0, typename Coll, typename T, typename H2>
   int8_t isSelectedV0(const V0& v0, const std::array<T, 2>& dauTracks, const Coll& collision, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
-  template <typename Photon, typename Coll, typename T, typename H2>
-  inline bool isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const Coll& collision, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
+  template <typename Photon, typename T, typename H2>
+  inline bool isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
   template <typename Casc, typename T, typename Coll>
   bool isSelectedCascade(const Casc& casc, const std::array<T, 3>& dauTracks, const Coll& collision);
   template <typename T, typename T2>
@@ -1122,13 +1121,13 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
   if (TESTBIT(isSelected, kLambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > mMaxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > mMaxNsigmaPrForLambda))) {
     CLRBIT(isSelected, kLambda);
     if (activateQA > 1) {
-      hV0Selected->Fill(8., kLambda);
+      hV0Selected->Fill(7., kLambda);
     }
   }
   if (TESTBIT(isSelected, kAntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > mMaxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > mMaxNsigmaPrForLambda))) {
     CLRBIT(isSelected, kAntiLambda);
     if (activateQA > 1) {
-      hV0Selected->Fill(8., kAntiLambda);
+      hV0Selected->Fill(7., kAntiLambda);
     }
   }
 
@@ -1137,7 +1136,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
       if (TESTBIT(isSelected, iV0)) {
         hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
         if (activateQA > 1) {
-          hV0Selected->Fill(9., iV0);
+          hV0Selected->Fill(8., iV0);
         }
       }
     }
@@ -1149,14 +1148,17 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
 /// Basic selection of photon candidates
 /// \param photon is the photon candidate
 /// \param dauTracks is a 2-element array with positive and negative V0 daughter tracks
-/// \param collision is the current collision
 /// \param activateQA flag to fill QA histos
 /// \param hV0Selected is the pointer to the QA histo for selected V0s
 /// \param hArmPod is the pointer to an array of QA histo AP plot after selection
 /// \return an integer passes all cuts
-template <typename Photon, typename Coll, typename T, typename H2>
-inline bool HfFilterHelper::isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const Coll&, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
+template <typename Photon, typename T, typename H2>
+inline bool HfFilterHelper::isSelectedPhoton(const Photon& photon, const std::array<T, 2>& dauTracks, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod)
 {
+
+  if (activateQA > 1) {
+    hV0Selected->Fill(0., kPhoton);
+  }
 
   // eta of daughters
   if (std::fabs(dauTracks[0].eta()) > 1. || std::fabs(dauTracks[1].eta()) > 1.) { // cut all V0 daughters with |eta| > 1.
@@ -1182,26 +1184,10 @@ inline bool HfFilterHelper::isSelectedPhoton(const Photon& photon, const std::ar
     return false;
   }
 
-  // armenteros-podolanski
-  if (std::pow(photon.alpha() / 0.95, 2) + std::pow(photon.qtarm() / 0.05, 2)) {
-    if (activateQA > 1) {
-      hV0Selected->Fill(4., kPhoton);
-    }
-    return false;
-  }
-
-  // psi pair
-  if (std::fabs(getPsiPair(dauTracks[0].px(), dauTracks[0].py(), dauTracks[0].pz(), dauTracks[1].px(), dauTracks[1].py(), dauTracks[1].pz())) > 0.1) {
-    if (activateQA > 1) {
-      hV0Selected->Fill(7., kPhoton);
-    }
-    return false;
-  }
-
   if (activateQA) {
     hArmPod[kPhoton]->Fill(photon.alpha(), photon.qtarm());
     if (activateQA > 1) {
-      hV0Selected->Fill(9., kPhoton);
+      hV0Selected->Fill(8., kPhoton);
     }
   }
 
