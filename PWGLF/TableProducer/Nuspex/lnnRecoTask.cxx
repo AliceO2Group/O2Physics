@@ -34,7 +34,7 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DCAFitter/DCAFitterN.h"
 
-                                  
+
 #include "PWGLF/DataModel/LFLnnTables.h"
 
 using namespace o2;
@@ -266,7 +266,7 @@ struct lnnRecoTask {
     fitter.setBz(d_bz);
     mRunNumber = bc.runNumber();
   }
-  
+
   // Template
   template <class Tcoll>
   void fillCandidateData(Tcoll const& collision, aod::V0s const& V0s)
@@ -295,7 +295,7 @@ struct lnnRecoTask {
       // Bethe-Bloch calcution for 3H
       double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity * 2 / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
       double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity * 2 / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
-      
+
 
       // nSigma calculation
       double expSigmaPos{expBethePos * mBBparams3H[5]};
@@ -310,7 +310,7 @@ struct lnnRecoTask {
       if (!is3H && !isAnti3H)
         continue;
 
-      
+
       // Describing lnn as matter candidate
       lnnCandidate lnnCand;
       lnnCand.isMatter = is3H && isAnti3H ? std::abs(nSigmaTPCpos) < std::abs(nSigmaTPCneg) : is3H;
@@ -356,7 +356,7 @@ struct lnnRecoTask {
         lnnCand.mom3H[i] *= 2;
       }
 
-      
+ 
       // Definition of relativistic momentum and energy to triton and pion and total energy
       float h3P2 = lnnCand.mom3H[0] * lnnCand.mom3H[0] + lnnCand.mom3H[1] * lnnCand.mom3H[1] + lnnCand.mom3H[2] * lnnCand.mom3H[2];
       float piP2 = lnnCand.momPi[0] * lnnCand.momPi[0] + lnnCand.momPi[1] * lnnCand.momPi[1] + lnnCand.momPi[2] * lnnCand.momPi[2];
@@ -376,7 +376,7 @@ struct lnnRecoTask {
       if (lnnPt < ptMin)
         continue;
 
-      
+
       // Definition of lnn mass
       float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
       bool isLNNMass = false;
@@ -433,7 +433,7 @@ struct lnnRecoTask {
       auto mcLabNeg = trackLabels.rawIteratorAt(lnnCand.negTrackID);
 
 
-      // Checking lnn, tritons and pions with MC simulations 
+      // Checking lnn, tritons and pions with MC simulations
       if (mcLabPos.has_mcParticle() && mcLabNeg.has_mcParticle()) {
         auto mcTrackPos = mcLabPos.mcParticle_as<aod::McParticles>();
         auto mcTrackNeg = mcLabNeg.mcParticle_as<aod::McParticles>();
@@ -465,8 +465,8 @@ struct lnnRecoTask {
       }
     }
   }
-  
-  
+
+
   void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
 
