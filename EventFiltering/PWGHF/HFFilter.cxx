@@ -129,7 +129,7 @@ struct HfFilter { // Main struct for HF triggers
   // array of BDT thresholds
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
 
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registry{"registry"};
   std::shared_ptr<TH1> hProcessedEvents;
 
   // QA histos
@@ -506,7 +506,7 @@ struct HfFilter { // Main struct for HF triggers
           for (const auto& photon : photonsThisCollision) {
             auto posTrack = photon.posTrack_as<aod::V0Legs>();
             auto negTrack = photon.negTrack_as<aod::V0Legs>();
-            if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod)) {
+            if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, activateQA, hV0Selected, hArmPod)) {
               continue;
             }
             gpu::gpustd::array<float, 2> dcaInfo;
@@ -987,7 +987,7 @@ struct HfFilter { // Main struct for HF triggers
           for (const auto& photon : photonsThisCollision) {
             auto posTrack = photon.posTrack_as<aod::V0Legs>();
             auto negTrack = photon.negTrack_as<aod::V0Legs>();
-            if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod)) {
+            if (!helper.isSelectedPhoton(photon, std::array{posTrack, negTrack}, activateQA, hV0Selected, hArmPod)) {
               continue;
             }
             gpu::gpustd::array<float, 2> dcaInfo;
