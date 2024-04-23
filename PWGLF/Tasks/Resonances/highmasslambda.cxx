@@ -114,6 +114,9 @@ struct highmasslambda {
   // Mixed event
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 1, "Number of mixed events per event"};
 
+  /// activate rotational background
+  Configurable<int> nBkgRotations{"nBkgRotations", 9, "Number of rotated copies (background) per each original candidate"};
+
   // THnsparse bining
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {60, 2.15, 2.45}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisPt{"configThnAxisPt", {30, 1.0, 31.}, "#it{p}_{T} (GeV/#it{c})"};
@@ -177,6 +180,10 @@ struct highmasslambda {
 
     histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
     histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
+    histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
+    histos.add("hSparseV2SASameEvent_V2_new", "hSparseV2SASameEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisCentrality});
+    histos.add("hSparseV2SASameEventRotational_V2_new", "hSparseV2SASameEventRotational_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisCentrality});
+    histos.add("hSparseV2SAMixedEvent_V2_new", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisCentrality});
 
     if (fillPolarization) {
       histos.add("hSparseV2SASameEventplus_SA", "hSparseV2SASameEventplus_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
@@ -221,7 +228,7 @@ struct highmasslambda {
     if (candidate.p() > 0.5 && candidate.p() <= 0.8 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
       return true;
     }
-    if (candidate.p() > 0.8 && candidate.hasTOF() && TMath::Sqrt(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < 2.0 * nsigmaCutTOF * nsigmaCutTOF) {
+    if (candidate.p() > 0.8 && candidate.hasTOF() && TMath::Sqrt(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < nsigmaCutTOF) {
       return true;
     }
     return false;
@@ -239,7 +246,7 @@ struct highmasslambda {
     if (candidate.p() > 0.8 && !candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.p() > 0.8 && candidate.hasTOF() && TMath::Sqrt(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < 2.0 * nsigmaCutTOF * nsigmaCutTOF) {
+    if (candidate.p() > 0.8 && candidate.hasTOF() && TMath::Sqrt(candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < nsigmaCutTOF) {
       return true;
     }
     return false;
@@ -254,7 +261,7 @@ struct highmasslambda {
     const float pT = candidate.pt();
     const std::vector<float> decVtx = {candidate.x(), candidate.y(), candidate.z()};
     const float tranRad = candidate.v0radius();
-    const double dcaDaughv0 = candidate.dcaV0daughters();
+    const double dcaDaughv0 = TMath::Abs(candidate.dcaV0daughters());
     const double cpav0 = candidate.v0cosPA();
 
     float CtauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass(); // FIXME: Get from the common header
@@ -331,7 +338,7 @@ struct highmasslambda {
   ConfigurableAxis axisEPAngle{"axisEPAngle", {1, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, aod::epcalibrationtable::PsiFT0C>;
-  ROOT::Math::PxPyPzMVector Lambdac, Proton, Kshort, fourVecDauCM;
+  ROOT::Math::PxPyPzMVector Lambdac, Proton, Kshort, LambdacRot, ProtonRot, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
   double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();   // FIXME: Get from the common header
   double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();   // FIXME: Get from the common header
@@ -418,8 +425,23 @@ struct highmasslambda {
         }
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
+        auto diffangle = Proton.Phi() - Lambdac.Phi();
+        auto decaylength = std::abs(track1.dcaXY() / TMath::Sin(diffangle));
         histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), std::abs(v0.dcav0topv()), centrality);
-
+        histos.fill(HIST("hSparseV2SASameEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, decaylength, centrality);
+        for (int nrotbkg = 1; nrotbkg < nBkgRotations; nrotbkg++) {
+          auto anglestep = nrotbkg * (2.0 * TMath::Pi() / nBkgRotations);
+          auto rotProtonPx = track1.px() * std::cos(anglestep) - track1.py() * std::sin(anglestep);
+          auto rotProtonPy = track1.px() * std::sin(anglestep) + track1.py() * std::cos(anglestep);
+          ProtonRot = ROOT::Math::PxPyPzMVector(rotProtonPx, rotProtonPy, track1.pz(), massPr);
+          LambdacRot = ProtonRot + Kshort;
+          auto phiminuspsiRot = GetPhiInRange(LambdacRot.Phi() - psiFT0C);
+          auto v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
+          auto diffangleRot = ProtonRot.Phi() - LambdacRot.Phi();
+          auto decaylengthRot = std::abs(track1.dcaXY() / TMath::Sin(diffangleRot));
+          histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, std::abs(track1.dcaXY()), std::abs(v0.dcav0topv()), centrality);
+          histos.fill(HIST("hSparseV2SASameEventRotational_V2_new"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, decaylengthRot, centrality);
+        }
         ROOT::Math::Boost boost{Lambdac.BoostToCM()};
         fourVecDauCM = boost(Kshort);
         threeVecDauCM = fourVecDauCM.Vect();
@@ -490,6 +512,9 @@ struct highmasslambda {
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), std::abs(v0.dcav0topv()), centrality);
+        auto diffangle = Proton.Phi() - Lambdac.Phi();
+        auto decaylength = std::abs(track1.dcaXY() / TMath::Sin(diffangle));
+        histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, decaylength, centrality);
 
         ROOT::Math::Boost boost{Lambdac.BoostToCM()};
         fourVecDauCM = boost(Kshort);
