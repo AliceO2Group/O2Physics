@@ -208,10 +208,8 @@ struct TableMaker {
     fCCDB->setURL(fConfigCcdbUrl);
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
-    if (fPropMuon) {
-      if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        fCCDB->get<TGeoManager>(geoPath);
-      }
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      fCCDB->get<TGeoManager>(geoPath);
     }
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
@@ -1540,7 +1538,7 @@ struct TableMaker {
 
   // Produce muon tables only based on track-collision association tables --------------------------------------------------------------------------------------
   void processAssociatedMuonOnly(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
-                                 soa::Filtered<MyMuonsColl> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd, aod::FwdTrackAssoc const& fwdtrackIndices)
+                                 soa::Filtered<MyMuonsColl> const& tracksMuon, aod::AmbiguousTracksFwd const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
@@ -1549,7 +1547,16 @@ struct TableMaker {
   }
 
   void processAssociatedMuonOnlyWithCov(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
-                                        soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd, aod::FwdTrackAssoc const& fwdtrackIndices)
+                                        soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousTracksFwd const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+  {
+    for (auto& collision : collisions) {
+      auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
+      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
+    }
+  }
+
+  void processAssociatedMuonOnlyWithCovAndCent(MyEventsWithCent const& collisions, aod::BCsWithTimestamps const& bcs,
+                                               soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousTracksFwd const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
@@ -1674,6 +1681,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processAmbiguousBarrelOnly, "Build barrel-only DQ skimmed data model with QA plots for ambiguous tracks", false);
   PROCESS_SWITCH(TableMaker, processAssociatedMuonOnly, "Build muon-only DQ skimmed data model using track-collision association tables", false);
   PROCESS_SWITCH(TableMaker, processAssociatedMuonOnlyWithCov, "Build muon-only with cov DQ skimmed data model using track-collision association tables", false);
+  PROCESS_SWITCH(TableMaker, processAssociatedMuonOnlyWithCovAndCent, "Build muon-only with cov DQ skimmed data model using track-collision association tables and centrality", false);
   PROCESS_SWITCH(TableMaker, processMuonsAndMFT, "Build MFT and muons DQ skimmed data model", false);
   PROCESS_SWITCH(TableMaker, processMuonsAndMFTWithFilter, "Build MFT and muons DQ skimmed data model, w/ event filter", false);
 };

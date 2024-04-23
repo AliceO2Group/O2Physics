@@ -124,7 +124,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
                Hf2ProngsWithMl const& cand2Prongs,
                Hf3ProngsWithMl const& cand3Prongs,
                aod::TrackAssoc const& trackIndices,
-               BigTracksPID const& tracks)
+               BigTracksPID const& /*tracks*/)
   {
     for (const auto& collision : collisions) {
       if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f || (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && applyTimeFrameBorderCut))) { // safety margin for Zvtx
@@ -161,8 +161,8 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
         auto trackParNeg = getTrackPar(trackNeg);
         o2::gpu::gpustd::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
-        std::array<float, 3> pVecPos{trackPos.px(), trackPos.py(), trackPos.pz()};
-        std::array<float, 3> pVecNeg{trackNeg.px(), trackNeg.py(), trackNeg.pz()};
+        std::array<float, 3> pVecPos{trackPos.pVector()};
+        std::array<float, 3> pVecNeg{trackNeg.pVector()};
         if (trackPos.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParPos, 2.f, noMatCorr, &dcaPos);
           getPxPyPz(trackParPos, pVecPos);
@@ -216,7 +216,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
 
           auto trackParThird = getTrackPar(track);
           o2::gpu::gpustd::array<float, 2> dcaThird{track.dcaXY(), track.dcaZ()};
-          std::array<float, 3> pVecThird = {track.px(), track.py(), track.pz()};
+          std::array<float, 3> pVecThird = track.pVector();
           if (track.collisionId() != thisCollId) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParThird, 2.f, noMatCorr, &dcaThird);
             getPxPyPz(trackParThird, pVecThird);
@@ -268,9 +268,9 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
         o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
-        std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
-        std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
-        std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
+        std::array<float, 3> pVecFirst = trackFirst.pVector();
+        std::array<float, 3> pVecSecond = trackSecond.pVector();
+        std::array<float, 3> pVecThird = trackThird.pVector();
         if (trackFirst.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFirst, 2.f, noMatCorr, &dcaFirst);
           getPxPyPz(trackParFirst, pVecFirst);

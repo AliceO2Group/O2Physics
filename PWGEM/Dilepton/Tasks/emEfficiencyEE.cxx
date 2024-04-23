@@ -135,7 +135,7 @@ struct AnalysisEventSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, typename TEvent, typename TEventsMC>
-  void runSelection(TEvent const& event, TEventsMC const& mcEvents)
+  void runSelection(TEvent const& event, TEventsMC const& /*mcEvents*/)
   {
     // Reset the values array
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -211,7 +211,7 @@ struct AnalysisEventQa {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackMCFillMap, typename TEvents, typename TEventsMC, typename TTracksMC>
-  void runSelection(TEvents const& events, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  void runSelection(TEvents const& events, TEventsMC const& /*eventsMC*/, TTracksMC const& tracksMC)
   {
 
     uint8_t eventFilter = 0;
@@ -616,7 +616,7 @@ struct AnalysisTrackSelection {
   Preslice<MyBarrelTracksNoSkimmed> perCollisionTracks = aod::track::collisionId;
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvents, typename TTracks, typename TEventsMC, typename TTracksMC>
-  void runSelection(TEvents const& events, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC, bool write)
+  void runSelection(TEvents const& events, TTracks const& tracks, TEventsMC const& /*eventsMC*/, TTracksMC const& tracksMC, bool write)
   {
 
     uint8_t eventFilter = 0;
@@ -985,7 +985,7 @@ struct AnalysisSameEventPairing {
 
   // QA: to be defined
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext&)
   {
 
     // Binning 2D histos
@@ -1063,7 +1063,7 @@ struct AnalysisSameEventPairing {
   Preslice<MyBarrelTracksNoSkimmed> perCollisionTracks = aod::track::collisionId;
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks, typename TEventsMC, typename TTracksMC>
-  void runPairing(TEvents const& events, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  void runPairing(TEvents const& events, TTracks const& tracks, TEventsMC const& /*eventsMC*/, TTracksMC const& tracksMC)
   {
 
     std::map<uint64_t, int> fMCEventLabels;
@@ -1122,7 +1122,7 @@ struct AnalysisSameEventPairing {
   }   // end loop pairing function
 
   template <uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEventMC, typename TTracksMC>
-  void runMCPairing(TEventMC const& eventMC, TTracksMC const& tracksMC)
+  void runMCPairing(TEventMC const& /*eventMC*/, TTracksMC const& tracksMC)
   {
 
     runMCGenPair<true>(tracksMC);
@@ -1237,7 +1237,7 @@ struct AnalysisSameEventPairing {
   }   // end runMCGen
 
   template <uint32_t TTrackFillMap, typename TTracks, typename TTracksMC>
-  void runRecPair(TTracks const& tracks, TTracksMC const& tracksMC)
+  void runRecPair(TTracks const& tracks, TTracksMC const& /*tracksMC*/)
   {
     //
     Double_t masse = 0.00051099895; // 0.5 MeV/c2 -> 0.0005 GeV/c2 , to be taken differently

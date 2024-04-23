@@ -27,11 +27,13 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_trkcandsel;
 
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0Reduced {
@@ -64,6 +66,7 @@ struct HfCandidateCreatorB0Reduced {
   Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov, aod::HfRed3ProngsMl>> candsDWithMlPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov>> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
 
+  std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -92,6 +95,10 @@ struct HfCandidateCreatorB0Reduced {
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
+
+    /// candidate monitoring
+    hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
+    setLabelHistoCands(hCandidates);
   }
 
   /// Main function to perform B0 candidate creation
@@ -117,7 +124,7 @@ struct HfCandidateCreatorB0Reduced {
 
     for (const auto& candD : candsDThisColl) {
       auto trackParCovD = getTrackParCov(candD);
-      std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
+      std::array<float, 3> pVecD = candD.pVector();
 
       for (const auto& trackPion : tracksPionThisCollision) {
         // this track is among daughters
@@ -126,7 +133,7 @@ struct HfCandidateCreatorB0Reduced {
         }
 
         auto trackParCovPi = getTrackParCov(trackPion);
-        std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+        std::array<float, 3> pVecPion = trackPion.pVector();
 
         // compute invariant mass square and apply selection
         auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
@@ -135,9 +142,18 @@ struct HfCandidateCreatorB0Reduced {
         }
         // ---------------------------------
         // reconstruct the 2-prong B0 vertex
-        if (df2.process(trackParCovD, trackParCovPi) == 0) {
+        hCandidates->Fill(SVFitting::BeforeFit);
+        try {
+          if (df2.process(trackParCovD, trackParCovPi) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+          hCandidates->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidates->Fill(SVFitting::FitOk);
+
         // DPi passed B0 reconstruction
 
         // calculate relevant properties

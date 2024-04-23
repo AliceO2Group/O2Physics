@@ -85,7 +85,7 @@ struct CFTutorialTask2 {
   }
 
   // process same event
-  void process(FilteredFDCollision const& col, FilteredFDParts const& parts)
+  void process(FilteredFDCollision const& col, FilteredFDParts const& /*parts*/)
   {
 
     /// event QA

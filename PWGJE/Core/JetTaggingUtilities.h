@@ -108,7 +108,7 @@ int getOriginalHFMotherIndex(const typename T::iterator& hfparticle)
  * @param hftrack track passed as reference which is then replaced by the first track that originated from an HF shower
  */
 template <typename T, typename U, typename V>
-int jetTrackFromHFShower(T const& jet, U const& tracks, V const& particles, typename U::iterator& hftrack)
+int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, typename U::iterator& hftrack)
 {
 
   bool hasMcParticle = false;
@@ -309,7 +309,7 @@ int getGeoSign(T const& collision, U const& jet, V const& track)
  * in a vector in descending order.
  */
 template <typename T, typename U, typename V, typename W, typename Vec = std::vector<float>>
-void orderForIPJetTracks(T const& collision, U const& jet, V const& jtracks, W const& tracks, Vec& vecSignImpSig)
+void orderForIPJetTracks(T const& collision, U const& jet, V const& /*jtracks*/, W const& /*tracks*/, Vec& vecSignImpSig)
 {
   for (auto& jtrack : jet.template tracks_as<V>()) {
     auto track = jtrack.template track_as<W>();

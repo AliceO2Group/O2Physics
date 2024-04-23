@@ -373,7 +373,7 @@ struct phipbpb {
   ROOT::Math::PxPyPzMVector PhiMesonMother, KaonPlus, KaonMinus, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
 
-  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
+  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::BCs const&)
   {
     if (!collision.sel8()) {
       return;
@@ -495,7 +495,7 @@ struct phipbpb {
     }
   }
   PROCESS_SWITCH(phipbpb, processSameEvent, "Process Same event", true);
-  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& /*tracks*/)
   {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
     for (auto const& [collision1, collision2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
@@ -677,7 +677,7 @@ struct phipbpb {
     }
   }
   PROCESS_SWITCH(phipbpb, processMixedEventOpti, "Process Mixed event new", true);
-  void processMC(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processMC(CollisionMCTrueTable::iterator const& /*TrueCollision*/, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
     histos.fill(HIST("hMC"), 0);
     if (RecCollisions.size() == 0) {

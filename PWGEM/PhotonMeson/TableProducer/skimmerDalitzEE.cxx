@@ -54,21 +54,31 @@ struct skimmerDalitzEE {
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
 
-  Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store ee pairs"};
+  Configurable<float> maxMee{"maxMee", 1e+10, "max. mee to store ee pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
-  Configurable<float> minpt{"minpt", 0.2, "min pt for track for loose track sample"};
+  Configurable<float> minpt{"minpt", 0.1, "min pt for track for loose track sample"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for loose track sample"};
-  Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
-  Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.0, "max. TPC n sigma for electron inclusion"};
+  Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.5, "min. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.5, "max. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 4.0, "max. TOF n sigma for electron inclusion"};
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 10, "min ncluster tpc"};
-  Configurable<int> mincrossedrows{"mincrossedrows", 100, "min. crossed rows"};
+  Configurable<int> mincrossedrows{"mincrossedrows", 40, "min. crossed rows"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
-  Configurable<int> minitsncls{"minitsncls", 5, "min. number of ITS clusters"};
-  Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max. chi2/NclsTPC"};
-  Configurable<float> maxchi2its{"maxchi2its", 5.0, "max. chi2/NclsITS"};
+  Configurable<int> minitsncls{"minitsncls", 4, "min. number of ITS clusters"};
+  Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
+  Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0f, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
-  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1.f, "max DCA 3D in sigma"};
+  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1e+10, "max DCA 3D in sigma"};
+  Configurable<float> max_mean_itsob_cluster_size{"max_mean_itsob_cluster_size", 16.f, "max. <ITSob cluster size> x cos(lambda)"}; // this is to suppress random combination. default 4 + 1 for skimming.
+
+  Configurable<bool> applyTPChadrejORTOFreq{"applyTPChadrejORTOFreq", false, "flag to apply TPChadrej-or-TOFreq at the skimming level"};
+  Configurable<bool> applyPiRej_TPC{"applyPiRej_TPC", false, "flag to apply Pion rejection in TPC at the skimming level"};
+  Configurable<bool> applyKaRej_TPC{"applyKaRej_TPC", false, "flag to apply Kaon rejection in TPC at the skimming level"};
+  Configurable<bool> applyPrRej_TPC{"applyPrRej_TPC", false, "flag to apply Proton rejection in TPC at the skimming level"};
+  Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.0, "max. TPC n sigma for pion exclusion"};
+  Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.0, "max. TPC n sigma for kaon exclusion"};
+  Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 2.0, "max. TPC n sigma for proton exclusion"};
 
   HistogramRegistry fRegistry{
     "fRegistry",
@@ -78,9 +88,10 @@ struct skimmerDalitzEE {
       {"hNpos", "hNpos;centrality FT0C;Number of positrons", {HistType::kTH2F, {{110, 0, 110}, {101, -0.5f, +100.5f}}}},
     },
   };
-  std::pair<int8_t, std::set<uint8_t>> itsRequirement = {1, {0, 1, 2}}; // any hits on 3 ITS ib layers.
 
   void init(InitContext const&) {}
+
+  std::pair<int8_t, std::set<uint8_t>> itsRequirement = {1, {0, 1, 2}}; // any hits on 3 ITS ib layers.
 
   template <typename TTrack>
   bool checkTrack(TTrack const& track)
@@ -94,6 +105,19 @@ struct skimmerDalitzEE {
 
     auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
     if (hits < itsRequirement.first) {
+      return false;
+    }
+
+    uint32_t itsClusterSizes = track.itsClusterSizes();
+    int total_cluster_size = 0, nl = 0;
+    for (unsigned int layer = 3; layer < 7; layer++) {
+      int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+      if (cluster_size_per_layer > 0) {
+        nl++;
+      }
+      total_cluster_size += cluster_size_per_layer;
+    }
+    if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_itsob_cluster_size) {
       return false;
     }
 
@@ -121,7 +145,50 @@ struct skimmerDalitzEE {
       return false;
     }
 
+    if (!isElectron(track)) {
+      return false;
+    }
+
     return true;
+  }
+
+  template <typename TTrack>
+  bool isElectron(TTrack const& track)
+  {
+    if (applyTPChadrejORTOFreq) {
+      return isElectron_TPChadrej(track) || isElectron_TOFrequire(track);
+    } else {
+      return true;
+    }
+    return true;
+  }
+
+  template <typename TTrack>
+  bool isElectron_TPChadrej(TTrack const& track)
+  {
+    if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
+      return false;
+    }
+    if (applyPiRej_TPC && abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi) {
+      return false;
+    }
+    if (applyKaRej_TPC && abs(track.tpcNSigmaKa()) < maxTPCNsigmaKa) {
+      return false;
+    }
+    if (applyPrRej_TPC && abs(track.tpcNSigmaPr()) < maxTPCNsigmaPr) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename TTrack>
+  bool isElectron_TOFrequire(TTrack const& track)
+  {
+    if (applyPiRej_TPC && abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi) {
+      return false;
+    }
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
   }
 
   template <EM_EEPairType pairtype, bool isCEFP, typename TCollision, typename TTracks1, typename TTracks2>
@@ -187,9 +254,9 @@ struct skimmerDalitzEE {
     return npair;
   }
 
-  Partition<MyTracks> posTracks = o2::aod::emprimaryelectron::sign > 0 && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
-  Partition<MyTracks> negTracks = o2::aod::emprimaryelectron::sign < 0 && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
-  void processAnalysis(MyCollisions const& collisions, MyTracks const& tracks)
+  Partition<MyTracks> posTracks = o2::aod::emprimaryelectron::sign > int8_t(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
+  Partition<MyTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
+  void processAnalysis(MyCollisions const& collisions, MyTracks const&)
   {
     for (auto& collision : collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
@@ -215,9 +282,9 @@ struct skimmerDalitzEE {
   }
   PROCESS_SWITCH(skimmerDalitzEE, processAnalysis, "Process dalitz ee for analysis", true);
 
-  Partition<aod::EMPrimaryElectrons> posTracks_cefp = o2::aod::emprimaryelectron::sign > 0 && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
-  Partition<aod::EMPrimaryElectrons> negTracks_cefp = o2::aod::emprimaryelectron::sign < 0 && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
-  void processCEFP(soa::Join<aod::Collisions, aod::EMEventsBz> const& collisions, aod::EMPrimaryElectrons const& tracks)
+  Partition<aod::EMPrimaryElectrons> posTracks_cefp = o2::aod::emprimaryelectron::sign > int8_t(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
+  Partition<aod::EMPrimaryElectrons> negTracks_cefp = o2::aod::emprimaryelectron::sign < int8_t(0) && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
+  void processCEFP(soa::Join<aod::Collisions, aod::EMEventsBz> const& collisions, aod::EMPrimaryElectrons const&)
   {
     for (auto& collision : collisions) {
       auto posTracks_per_coll = posTracks_cefp->sliceByCachedUnsorted(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);

@@ -138,7 +138,7 @@ struct PCMQCMC {
     LOGF(info, "Number of PCM cuts = %d", fPCMCuts.size());
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     DefineCuts();
     addhistograms(); // please call this after DefinCuts();
@@ -154,7 +154,7 @@ struct PCMQCMC {
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
-  void processQCMC(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
+  void processQCMC(MyCollisions const&, MyV0Photons const& v0photons, MyMCV0Legs const&, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
@@ -264,7 +264,7 @@ struct PCMQCMC {
   }     // end of process
 
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
-  void processGen(MyCollisions const& collisions, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
+  void processGen(MyCollisions const&, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -331,7 +331,7 @@ struct PCMQCMC {
     }   // end of collision loop
   }
 
-  void processDummy(MyCollisions const& collisions)
+  void processDummy(MyCollisions const&)
   {
     // do nothing
   }

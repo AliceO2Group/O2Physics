@@ -17,6 +17,7 @@
 
 #include <experimental/type_traits>
 #include "JHistManager.h"
+#include "JQVectors.h"
 #include <TComplex.h>
 #include <tuple>
 
@@ -82,25 +83,33 @@ class JFFlucAnalysis
     flags |= _flags;
   }
 
+  enum { kH0,
+         kH1,
+         kH2,
+         kH3,
+         kH4,
+         kH5,
+         kH6,
+         kH7,
+         kH8,
+         kH9,
+         kH10,
+         kH11,
+         kH12,
+         kNH }; // harmonics
+  enum { kK0,
+         kK1,
+         kK2,
+         kK3,
+         kK4,
+         nKL }; // order
+  using JQVectorsT = JQVectors<TComplex, kNH, nKL, true>;
+  inline void SetJQVectors(const JQVectorsT* _pqvecs) { pqvecs = _pqvecs; }
+
   template <class T>
   using hasWeightNUA = decltype(std::declval<T&>().weightNUA());
   template <class T>
   using hasWeightEff = decltype(std::declval<T&>().weightEff());
-
-  template <class JInputClassIter>
-  inline std::tuple<double, double> GetWeights(const JInputClassIter& track)
-  {
-    Double_t phiNUACorr, effCorr;
-    if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
-      phiNUACorr = track.weightNUA();
-    else
-      phiNUACorr = 1.0;
-    if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
-      effCorr = track.weightEff();
-    else
-      effCorr = 1.0;
-    return {phiNUACorr, effCorr};
-  }
 
   template <class JInputClass>
   inline void FillQA(JInputClass& inputInst)
@@ -122,76 +131,24 @@ class JFFlucAnalysis
       if (TMath::Abs(track.eta()) < fEta_min || TMath::Abs(track.eta()) > fEta_max)
         continue;
 
-      auto [phiNUACorr, effCorr] = GetWeights<const typename JInputClass::iterator>(track);
-      Double_t effCorrInv = 1.0 / effCorr;
-      fh_eta[fCBin]->Fill(track.eta(), effCorrInv);
-      fh_pt[fCBin]->Fill(track.pt(), effCorrInv);
-      fh_phi[fCBin][(UInt_t)(track.eta() > 0.0)]->Fill(track.phi(), effCorrInv / phiNUACorr);
+      Double_t corrInv = 1.0;
+      using JInputClassIter = typename JInputClass::iterator;
+      if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
+        corrInv /= track.weightEff();
+      fh_eta[fCBin]->Fill(track.eta(), corrInv);
+      fh_pt[fCBin]->Fill(track.pt(), corrInv);
+      if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
+        corrInv /= track.weightNUA();
+      fh_phi[fCBin][(UInt_t)(track.eta() > 0.0)]->Fill(track.phi(), corrInv);
     }
 
     for (UInt_t iaxis = 0; iaxis < 3; iaxis++)
       fh_vertex[iaxis]->Fill(fVertex[iaxis]);
-  };
-
-#define NK nKL // avoid cpplint "variable size array" error when in reality it is fixed size TComplex q[nKL]
-  template <class JInputClass>
-  inline void CalculateQvectorsQC(JInputClass& inputInst)
-  {
-    // calculate Q-vector for QC method ( no subgroup )
-    for (UInt_t ih = 0; ih < kNH; ih++) {
-      for (UInt_t ik = 0; ik < nKL; ++ik) {
-        QvectorQC[ih][ik] = TComplex(0, 0);
-        for (UInt_t isub = 0; isub < 2; isub++)
-          QvectorQCgap[isub][ih][ik] = TComplex(0, 0);
-      }
-    } // for max harmonics
-    for (auto& track : inputInst) {
-      // pt cuts already applied in task.
-      if (track.eta() < -fEta_max || track.eta() > fEta_max)
-        continue;
-
-      auto [phiNUACorr, effCorr] = GetWeights<const typename JInputClass::iterator>(track);
-
-      UInt_t isub = (UInt_t)(track.eta() > 0.0);
-      for (UInt_t ih = 0; ih < kNH; ih++) {
-        Double_t tf = 1.0;
-        TComplex q[NK];
-        for (UInt_t ik = 0; ik < nKL; ik++) {
-          q[ik] = TComplex(tf * TMath::Cos(ih * track.phi()), tf * TMath::Sin(ih * track.phi()));
-          QvectorQC[ih][ik] += q[ik];
-
-          if (TMath::Abs(track.eta()) > fEta_min)
-            QvectorQCgap[isub][ih][ik] += q[ik];
-
-          tf *= 1.0 / (phiNUACorr * effCorr);
-        }
-      }
-    }
-  };
+  }
 
   static Double_t pttJacek[74];
   static UInt_t NpttJacek;
 
-  enum { kH0,
-         kH1,
-         kH2,
-         kH3,
-         kH4,
-         kH5,
-         kH6,
-         kH7,
-         kH8,
-         kH9,
-         kH10,
-         kH11,
-         kH12,
-         kNH }; // harmonics
-  enum { kK0,
-         kK1,
-         kK2,
-         kK3,
-         kK4,
-         nKL };  // order
 #define kcNH kH6 // max second dimension + 1
  private:
   const Double_t* fVertex; //!
@@ -209,8 +166,7 @@ class JFFlucAnalysis
   Double_t fEta_min;
   Double_t fEta_max;
 
-  TComplex QvectorQC[kNH][nKL];
-  TComplex QvectorQCgap[2][kNH][nKL]; // ksub
+  const JQVectorsT* pqvecs;
 
   JHistManager* fHMG; //!
 

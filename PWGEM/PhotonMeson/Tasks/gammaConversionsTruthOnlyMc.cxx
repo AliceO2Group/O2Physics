@@ -122,7 +122,7 @@ struct gammaConversionsTruthOnlyMc {
                soa::SmallGroups<soa::Join<aod::McCollisionLabels,
                                           aod::Collisions>> const& theCollisions,
                aod::McGammasTrue const& theMcGammas,
-               aod::McDaughterTrue const& theMcDaughters)
+               aod::McDaughterTrue const&)
   {
     registry.fill(HIST("hCollisionZ_all_MCTrue"), theMcCollision.posZ());
     if (theCollisions.size() == 0) {
