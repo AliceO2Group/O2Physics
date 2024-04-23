@@ -34,6 +34,7 @@ struct UpcCandProducer {
 
   Produces<o2::aod::UDFwdTracks> udFwdTracks;
   Produces<o2::aod::UDFwdTracksExtra> udFwdTracksExtra;
+  Produces<o2::aod::UDFwdTracksCls> udFwdTrkClusters;
   Produces<o2::aod::UDMcFwdTrackLabels> udFwdTrackLabels;
 
   Produces<o2::aod::UDTracks> udTracks;
@@ -375,6 +376,22 @@ struct UpcCandProducer {
         // background tracks have label == -1
         int32_t newPartID = it != fNewPartIDs.end() ? it->second : -1;
         udFwdTrackLabels(newPartID, mcMask);
+      }
+    }
+  }
+
+  void fillFwdClusters(const std::vector<int>& trackIds,
+                       o2::aod::FwdTrkCls const& fwdTrkCls)
+  {
+    std::map<int, std::vector<int>> clustersPerTrack;
+    for (const auto& cls : fwdTrkCls) {
+      clustersPerTrack[cls.fwdtrackId()].push_back(cls.globalIndex());
+    }
+    for (auto trackId : trackIds) {
+      const auto& clusters = clustersPerTrack.at(trackId);
+      for (auto clsId : clusters) {
+        const auto& clsInfo = fwdTrkCls.iteratorAt(clsId);
+        udFwdTrkClusters(trackId, clsInfo.x(), clsInfo.y(), clsInfo.z(), clsInfo.clInfo());
       }
     }
   }
@@ -978,6 +995,7 @@ struct UpcCandProducer {
   void createCandidatesSemiFwd(BarrelTracks const& barrelTracks,
                                o2::aod::AmbiguousTracks const& ambBarrelTracks,
                                ForwardTracks const& fwdTracks,
+                               o2::aod::FwdTrkCls const& fwdTrkClusters,
                                o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                                BCsWithBcSels const& bcs,
                                o2::aod::Collisions const& collisions,
@@ -1180,6 +1198,7 @@ struct UpcCandProducer {
   }
 
   void createCandidatesFwd(ForwardTracks const& fwdTracks,
+                           o2::aod::FwdTrkCls const& fwdTrkClusters,
                            o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                            o2::aod::BCs const& bcs,
                            o2::aod::Collisions const& collisions,
@@ -1259,6 +1278,8 @@ struct UpcCandProducer {
     float dummyZ = 0.;
 
     int32_t runNumber = bcs.iteratorAt(0).runNumber();
+
+    std::vector<int> selTrackIds{};
 
     // storing n-prong matches
     int32_t candID = 0;
@@ -1343,6 +1364,7 @@ struct UpcCandProducer {
       for (auto id : trkCandIDs) {
         auto tr = fwdTracks.iteratorAt(id);
         netCharge += tr.sign();
+        selTrackIds.push_back(id);
       }
       // store used tracks
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
@@ -1363,6 +1385,9 @@ struct UpcCandProducer {
       trkCandIDs.clear();
     }
 
+    fillFwdClusters(selTrackIds, fwdTrkClusters);
+
+    selTrackIds.clear();
     ambFwdTrBCs.clear();
     bcsMatchedTrIdsMID.clear();
     bcsMatchedTrIdsMCH.clear();
@@ -1377,6 +1402,7 @@ struct UpcCandProducer {
   // forward:     n fwd tracks + 0 barrel tracks
   // semiforward: n fwd tracks + m barrel tracks
   void processSemiFwd(ForwardTracks const& fwdTracks,
+                      o2::aod::FwdTrkCls const& fwdTrkClusters,
                       o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                       BarrelTracks const& barrelTracks,
                       o2::aod::AmbiguousTracks const& ambTracks,
@@ -1388,7 +1414,7 @@ struct UpcCandProducer {
   {
     fDoMC = false;
     createCandidatesSemiFwd(barrelTracks, ambTracks,
-                            fwdTracks, ambFwdTracks,
+                            fwdTracks, fwdTrkClusters, ambFwdTracks,
                             bcs, collisions,
                             ft0s, fdds, fv0as,
                             (o2::aod::McTrackLabels*)nullptr, (o2::aod::McFwdTrackLabels*)nullptr);
@@ -1418,6 +1444,7 @@ struct UpcCandProducer {
   // forward:     n fwd tracks + 0 barrel tracks
   // semiforward: n fwd tracks + m barrel tracks
   void processSemiFwdMC(ForwardTracks const& fwdTracks,
+                        o2::aod::FwdTrkCls const& fwdTrkClusters,
                         o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                         BarrelTracks const& barrelTracks,
                         o2::aod::AmbiguousTracks const& ambTracks,
@@ -1432,7 +1459,7 @@ struct UpcCandProducer {
     fDoMC = true;
     skimMCInfo(mcCollisions, mcParticles, bcs);
     createCandidatesSemiFwd(barrelTracks, ambTracks,
-                            fwdTracks, ambFwdTracks,
+                            fwdTracks, fwdTrkClusters, ambFwdTracks,
                             bcs, collisions,
                             ft0s, fdds, fv0as,
                             &mcBarrelTrackLabels, &mcFwdTrackLabels);
@@ -1463,6 +1490,7 @@ struct UpcCandProducer {
   // create candidates for forward region
   // forward: n fwd tracks
   void processForward(ForwardTracks const& fwdTracks,
+                      o2::aod::FwdTrkCls const& fwdTrkClusters,
                       o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                       o2::aod::BCs const& bcs,
                       o2::aod::Collisions const& collisions,
@@ -1472,13 +1500,14 @@ struct UpcCandProducer {
                       o2::aod::Zdcs const& zdcs)
   {
     fDoMC = false;
-    createCandidatesFwd(fwdTracks, ambFwdTracks,
+    createCandidatesFwd(fwdTracks, fwdTrkClusters, ambFwdTracks,
                         bcs, collisions,
                         ft0s, fdds, fv0as, zdcs,
                         (o2::aod::McFwdTrackLabels*)nullptr);
   }
 
   void processForwardMC(ForwardTracks const& fwdTracks,
+                        o2::aod::FwdTrkCls const& fwdTrkClusters,
                         o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                         o2::aod::BCs const& bcs,
                         o2::aod::Collisions const& collisions,
@@ -1491,7 +1520,7 @@ struct UpcCandProducer {
   {
     fDoMC = true;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidatesFwd(fwdTracks, ambFwdTracks,
+    createCandidatesFwd(fwdTracks, fwdTrkClusters, ambFwdTracks,
                         bcs, collisions,
                         ft0s, fdds, fv0as, zdcs,
                         &mcFwdTrackLabels);
