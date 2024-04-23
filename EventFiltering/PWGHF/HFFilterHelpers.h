@@ -1121,13 +1121,13 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
   if (TESTBIT(isSelected, kLambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > mMaxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > mMaxNsigmaPrForLambda))) {
     CLRBIT(isSelected, kLambda);
     if (activateQA > 1) {
-      hV0Selected->Fill(8., kLambda);
+      hV0Selected->Fill(7., kLambda);
     }
   }
   if (TESTBIT(isSelected, kAntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > mMaxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > mMaxNsigmaPrForLambda))) {
     CLRBIT(isSelected, kAntiLambda);
     if (activateQA > 1) {
-      hV0Selected->Fill(8., kAntiLambda);
+      hV0Selected->Fill(7., kAntiLambda);
     }
   }
 
@@ -1136,7 +1136,7 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
       if (TESTBIT(isSelected, iV0)) {
         hArmPod[iV0]->Fill(v0.alpha(), v0.qtarm());
         if (activateQA > 1) {
-          hV0Selected->Fill(9., iV0);
+          hV0Selected->Fill(8., iV0);
         }
       }
     }
@@ -1187,7 +1187,7 @@ inline bool HfFilterHelper::isSelectedPhoton(const Photon& photon, const std::ar
   if (activateQA) {
     hArmPod[kPhoton]->Fill(photon.alpha(), photon.qtarm());
     if (activateQA > 1) {
-      hV0Selected->Fill(9., kPhoton);
+      hV0Selected->Fill(8., kPhoton);
     }
   }
 
