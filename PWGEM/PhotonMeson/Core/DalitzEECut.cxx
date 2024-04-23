@@ -18,7 +18,7 @@
 
 ClassImp(DalitzEECut);
 
-const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairEtaRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF"};
+const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairEtaRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "ITSClusterSize", "Prefilter"};
 
 void DalitzEECut::SetPairPtRange(float minPt, float maxPt)
 {
@@ -99,6 +99,12 @@ void DalitzEECut::SetChi2PerClusterITS(float min, float max)
   mMinChi2PerClusterITS = min;
   mMaxChi2PerClusterITS = max;
   LOG(info) << "DalitzEE Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
+}
+void DalitzEECut::SetMeanClusterSizeITSob(float min, float max)
+{
+  mMinMeanClusterSizeITS = min;
+  mMaxMeanClusterSizeITS = max;
+  LOG(info) << "DalitzEE Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
 void DalitzEECut::SetDca3DRange(float min, float max)
 {

@@ -78,7 +78,7 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processChargedCollisions, "Fill rho tables for collisions using charged tracks", true);
 
-  void processD0Collisions(JetCollision const& collision, soa::Filtered<JetTracks> const& tracks, CandidatesD0Data const& candidates)
+  void processD0Collisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesD0Data const& candidates)
   {
     inputParticles.clear();
     for (auto& candidate : candidates) {
@@ -91,7 +91,7 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processD0Collisions, "Fill rho tables for collisions with D0 candidates", false);
 
-  void processLcCollisions(JetCollision const& collision, soa::Filtered<JetTracks> const& tracks, CandidatesLcData const& candidates)
+  void processLcCollisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesLcData const& candidates)
   {
     inputParticles.clear();
     for (auto& candidate : candidates) {
@@ -104,7 +104,7 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processLcCollisions, "Fill rho tables for collisions with Lc candidates", false);
 
-  void processBplusCollisions(JetCollision const& collision, soa::Filtered<JetTracks> const& tracks, CandidatesBplusData const& candidates)
+  void processBplusCollisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesBplusData const& candidates)
   {
     inputParticles.clear();
     for (auto& candidate : candidates) {

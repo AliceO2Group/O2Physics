@@ -217,7 +217,7 @@ struct PolarisationRho {
 
   //__________________________________________________________________________
   // Main process
-  void process(UDCollisions::iterator const& collision, udtracksfull const& tracks)
+  void process(UDCollisions::iterator const& /*collision*/, udtracksfull const& tracks)
   {
     registry.fill(HIST("hSelectionCounter"), 0);
 

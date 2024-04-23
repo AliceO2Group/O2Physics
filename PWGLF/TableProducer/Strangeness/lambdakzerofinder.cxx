@@ -79,7 +79,7 @@ struct lambdakzeroprefilter {
 
   Produces<aod::VFinderTracks> VFinderTracks;
 
-  void processAll(aod::Collision const& collision,
+  void processAll(aod::Collision const& /*collision*/,
                   soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA> const& tracks)
   {
     for (auto& t0 : tracks) {
@@ -95,7 +95,7 @@ struct lambdakzeroprefilter {
   }
   PROCESS_SWITCH(lambdakzeroprefilter, processAll, "Take all tracks, select only on crossed rows + TPC refit", false);
 
-  void processWithdEdx(aod::Collision const& collision,
+  void processWithdEdx(aod::Collision const& /*collision*/,
                        TracksExtraWithDCAnPID const& tracks)
   {
     for (auto& t0 : tracks) {
@@ -166,7 +166,7 @@ struct lambdakzerofinder {
   int mRunNumber;
   float d_bz;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -294,8 +294,8 @@ struct lambdakzerofinder {
     return 1;
   }
 
-  void process(aod::Collisions const& collisions, FullTracksExtIU const& tracks,
-               aod::VFinderTracks const& v0findertracks, aod::BCsWithTimestamps const&)
+  void process(aod::Collisions const& collisions, FullTracksExtIU const& /*tracks*/,
+               aod::VFinderTracks const& /*v0findertracks*/, aod::BCsWithTimestamps const&)
   {
     auto firstcollision = collisions.begin();
     auto bc = firstcollision.bc_as<aod::BCsWithTimestamps>();

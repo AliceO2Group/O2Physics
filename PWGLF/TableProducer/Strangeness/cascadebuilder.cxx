@@ -61,6 +61,8 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "Tools/ML/MlResponse.h"
+#include "Tools/ML/model.h"
 
 #ifndef HomogeneousField
 #define HomogeneousField
@@ -104,6 +106,13 @@ using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 // Builder task: rebuilds multi-strange candidates
 struct cascadeBuilder {
+  o2::ml::OnnxModel mlModelXiMinus;
+  o2::ml::OnnxModel mlModelXiPlus;
+  o2::ml::OnnxModel mlModelOmegaMinus;
+  o2::ml::OnnxModel mlModelOmegaPlus;
+
+  std::map<std::string, std::string> metadata;
+
   Produces<aod::CascIndices> cascidx;
   Produces<aod::KFCascIndices> kfcascidx;
   Produces<aod::TraCascIndices> trackedcascidx;
@@ -114,6 +123,8 @@ struct cascadeBuilder {
   Produces<aod::CascBBs> cascbb;          // if enabled
   Produces<aod::CascCovs> casccovs;       // if requested by someone
   Produces<aod::KFCascCovs> kfcasccovs;   // if requested by someone
+
+  o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
@@ -149,26 +160,30 @@ struct cascadeBuilder {
   Configurable<bool> calculateBachBaryonVars{"calculateBachBaryonVars", false, "calculate variables for removing cascade inv mass bump"};
 
   // CCDB options
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+    Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+    Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  } ccdbConfigurations;
 
   // generate and fill extra QA histograms if requested
-  Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
-  Configurable<int> dQANBinsRadius{"dQANBinsRadius", 500, "Number of radius bins in QA histo"};
-  Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
-  Configurable<int> dQANBinsMass{"dQANBinsMass", 400, "Number of mass bins for QA histograms"};
-  Configurable<int> dQANBinsDCAxy{"dQANBinsDCAxy", 200, "DCAxy of cascade to PV Nbins"};
-  Configurable<int> dQANBinsChi2{"dQANBinsChi2", 200, "Chi2 Nbins"};
-  Configurable<int> dQANBinsCluSize{"dQANBinsCluSize", 200, "Cluster size Nbins"};
-  Configurable<float> dQAMaxPt{"dQAMaxPt", 5, "max pT in QA histo"};
-  Configurable<float> dQAMaxDCA{"dQAMaxDCA", 1, "max DCAxy QA histo"};
-  Configurable<float> dQAMaxChi2{"dQAMaxChi2", 20, "max chi2"};
-  Configurable<float> dQAMaxCluSize{"dQAMaxCluSize", 10, "max ITS clu size"};
-  Configurable<float> dQAXiMassWindow{"dQAXiMassWindow", 0.005, "Xi mass window for ITS cluster map QA"};
-  Configurable<float> dQAOmegaMassWindow{"dQAOmegaMassWindow", 0.005, "Omega mass window for ITS cluster map QA"};
+  struct : ConfigurableGroup {
+    Configurable<bool> d_doQA{"qaConfigurations.d_doQA", false, "Do basic QA"};
+    Configurable<int> dQANBinsRadius{"qaConfigurations.dQANBinsRadius", 500, "Number of radius bins in QA histo"};
+    Configurable<int> dQANBinsPtCoarse{"qaConfigurations.dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
+    Configurable<int> dQANBinsMass{"qaConfigurations.dQANBinsMass", 400, "Number of mass bins for QA histograms"};
+    Configurable<int> dQANBinsDCAxy{"qaConfigurations.dQANBinsDCAxy", 200, "DCAxy of cascade to PV Nbins"};
+    Configurable<int> dQANBinsChi2{"qaConfigurations.dQANBinsChi2", 200, "Chi2 Nbins"};
+    Configurable<int> dQANBinsCluSize{"qaConfigurations.dQANBinsCluSize", 200, "Cluster size Nbins"};
+    Configurable<float> dQAMaxPt{"qaConfigurations.dQAMaxPt", 5, "max pT in QA histo"};
+    Configurable<float> dQAMaxDCA{"qaConfigurations.dQAMaxDCA", 1, "max DCAxy QA histo"};
+    Configurable<float> dQAMaxChi2{"qaConfigurations.dQAMaxChi2", 20, "max chi2"};
+    Configurable<float> dQAMaxCluSize{"qaConfigurations.dQAMaxCluSize", 10, "max ITS clu size"};
+    Configurable<float> dQAXiMassWindow{"qaConfigurations.dQAXiMassWindow", 0.005, "Xi mass window for ITS cluster map QA"};
+    Configurable<float> dQAOmegaMassWindow{"qaConfigurations.dQAOmegaMassWindow", 0.005, "Omega mass window for ITS cluster map QA"};
+  } qaConfigurations;
 
   // for KF particle operation
   Configurable<bool> kfTuneForOmega{"kfTuneForOmega", false, "if enabled, take main cascade properties from Omega fit instead of Xi fit (= default)"};
@@ -178,15 +193,43 @@ struct cascadeBuilder {
   Configurable<bool> kfDoDCAFitterPreMinimV0{"kfDoDCAFitterPreMinimV0", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for V0"};
   Configurable<bool> kfDoDCAFitterPreMinimCasc{"kfDoDCAFitterPreMinimCasc", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for Xi"};
 
-  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
-
   // for topo var QA
-  ConfigurableAxis axisTopoVarPointingAngle{"axisTopoVarPointingAngle", {50, 0.0, 1.0}, "pointing angle"};
-  ConfigurableAxis axisTopoVarRAP{"axisTopoVarRAP", {50, 0.0, 1.0}, "radius x pointing angle axis"};
-  ConfigurableAxis axisTopoVarV0Radius{"axisTopoVarV0Radius", {500, 0.0, 100.0}, "V0 decay radius (cm)"};
-  ConfigurableAxis axisTopoVarDCAV0Dau{"axisTopoVarDCAV0Dau", {200, 0.0, 2.0}, "DCA between V0 daughters (cm)"};
-  ConfigurableAxis axisTopoVarDCAToPV{"axisTopoVarDCAToPV", {200, -1, 1.0}, "single track DCA to PV (cm)"};
-  ConfigurableAxis axisTopoVarDCAV0ToPV{"axisTopoVarDCAV0ToPV", {200, 0, 5.0}, "V0 DCA to PV (cm)"};
+  struct : ConfigurableGroup {
+    ConfigurableAxis axisTopoVarPointingAngle{"axisConfigurations.axisTopoVarPointingAngle", {50, 0.0, 1.0}, "pointing angle"};
+    ConfigurableAxis axisTopoVarRAP{"axisConfigurations.axisTopoVarRAP", {50, 0.0, 1.0}, "radius x pointing angle axis"};
+    ConfigurableAxis axisTopoVarV0Radius{"axisConfigurations.axisTopoVarV0Radius", {500, 0.0, 100.0}, "V0 decay radius (cm)"};
+    ConfigurableAxis axisTopoVarDCAV0Dau{"axisConfigurations.axisTopoVarDCAV0Dau", {200, 0.0, 2.0}, "DCA between V0 daughters (cm)"};
+    ConfigurableAxis axisTopoVarDCAToPV{"axisConfigurations.axisTopoVarDCAToPV", {200, -1, 1.0}, "single track DCA to PV (cm)"};
+    ConfigurableAxis axisTopoVarDCAV0ToPV{"axisConfigurations.axisTopoVarDCAV0ToPV", {200, 0, 5.0}, "V0 DCA to PV (cm)"};
+    ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
+  } axisConfigurations;
+
+  // Machine learning evaluation for pre-selection and corresponding information generation
+  struct : ConfigurableGroup {
+    // ML classifiers: master flags to populate ML Selection tables
+    Configurable<bool> calculateXiMinusScores{"mlConfigurations.calculateXiMinusScores", false, "calculate XiMinus ML scores"};
+    Configurable<bool> calculateXiPlusScores{"mlConfigurations.calculateXiPlusScores", false, "calculate XiPlus ML scores"};
+    Configurable<bool> calculateOmegaMinusScores{"mlConfigurations.calculateOmegaMinusScores", false, "calculate OmegaMinus ML scores"};
+    Configurable<bool> calculateOmegaPlusScores{"mlConfigurations.calculateOmegaPlusScores", false, "calculate OmegaPlus ML scores"};
+
+    // ML input for ML calculation
+    Configurable<std::string> modelPathCCDB{"mlConfigurations.modelPathCCDB", "", "ML Model path in CCDB"};
+    Configurable<int64_t> timestampCCDB{"mlConfigurations.timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+    Configurable<bool> loadModelsFromCCDB{"mlConfigurations.loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+    Configurable<bool> enableOptimizations{"mlConfigurations.enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+
+    // Local paths for test purposes
+    Configurable<std::string> localModelPathXiMinus{"mlConfigurations.localModelPathXiMinus", "XiMinus_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    Configurable<std::string> localModelPathXiPlus{"mlConfigurations.localModelPathXiPlus", "XiPlus_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    Configurable<std::string> localModelPathOmegaMinus{"mlConfigurations.localModelPathOmegaMinus", "OmegaMinus_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+    Configurable<std::string> localModelPathOmegaPlus{"mlConfigurations.localModelPathOmegaPlus", "OmegaPlus_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
+
+    // Thresholds for choosing to populate V0Cores tables with pre-selections
+    Configurable<float> thresholdXiMinus{"mlConfigurations.thresholdXiMinus", -1.0f, "Threshold to keep XiMinus candidates"};
+    Configurable<float> thresholdXiPlus{"mlConfigurations.thresholdXiPlus", -1.0f, "Threshold to keep XiPlus candidates"};
+    Configurable<float> thresholdOmegaMinus{"mlConfigurations.thresholdOmegaMinus", -1.0f, "Threshold to keep OmegaMinus candidates"};
+    Configurable<float> thresholdOmegaPlus{"mlConfigurations.thresholdOmegaPlus", -1.0f, "Threshold to keep OmegaPlus candidates"};
+  } mlConfigurations;
 
   // round some V0 core variables up to a certain level of precision if requested
   // useful to keep derived data sizes under control
@@ -265,6 +308,10 @@ struct cascadeBuilder {
     std::array<float, 21> kfV0Cov;
     std::array<float, 21> kfV0DauPosCov;
     std::array<float, 21> kfV0DauNegCov;
+    float mlXiMinusScore;
+    float mlXiPlusScore;
+    float mlOmegaMinusScore;
+    float mlOmegaPlusScore;
   } cascadecandidate;
 
   o2::track::TrackParCov lBachelorTrack;
@@ -354,27 +401,27 @@ struct cascadeBuilder {
     h->GetXaxis()->SetBinLabel(10, "Tracked");
 
     // Optionally, add extra QA histograms to processing chain
-    if (d_doQA) {
+    if (qaConfigurations.d_doQA) {
       // Basic histograms containing invariant masses of all built candidates
-      const AxisSpec axisVsPtCoarse{static_cast<int>(dQANBinsPtCoarse), 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
-      const AxisSpec axisLamMass{static_cast<int>(dQANBinsMass), 1.075f, 1.275f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisXiMass{static_cast<int>(dQANBinsMass), 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisOmegaMass{static_cast<int>(dQANBinsMass), 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisCascadeDCAtoPV{static_cast<int>(dQANBinsDCAxy), -dQAMaxDCA, dQAMaxDCA, "DCA_{xy} (cm)"};
+      const AxisSpec axisVsPtCoarse{static_cast<int>(qaConfigurations.dQANBinsPtCoarse), 0, qaConfigurations.dQAMaxPt, "#it{p}_{T} (GeV/c)"};
+      const AxisSpec axisLamMass{static_cast<int>(qaConfigurations.dQANBinsMass), 1.075f, 1.275f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisXiMass{static_cast<int>(qaConfigurations.dQANBinsMass), 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisOmegaMass{static_cast<int>(qaConfigurations.dQANBinsMass), 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisCascadeDCAtoPV{static_cast<int>(qaConfigurations.dQANBinsDCAxy), -qaConfigurations.dQAMaxDCA, qaConfigurations.dQAMaxDCA, "DCA_{xy} (cm)"};
 
-      registry.add("h2dLambdaMass", "h2dLambdaMass", kTH2F, {axisPtQA, axisLamMass});
-      registry.add("h2dAntiLambdaMass", "h2dAntiLambdaMass", kTH2F, {axisPtQA, axisLamMass});
-      registry.add("MassHistograms/h2dXiMinusMass", "h2dXiMinusMass", kTH2F, {axisPtQA, axisXiMass});
-      registry.add("MassHistograms/h2dXiPlusMass", "h2dXiPlusMass", kTH2F, {axisPtQA, axisXiMass});
-      registry.add("MassHistograms/h2dOmegaMinusMass", "h2dOmegaMinusMass", kTH2F, {axisPtQA, axisOmegaMass});
-      registry.add("MassHistograms/h2dOmegaPlusMass", "h2dOmegaPlusMass", kTH2F, {axisPtQA, axisOmegaMass});
+      registry.add("h2dLambdaMass", "h2dLambdaMass", kTH2F, {axisConfigurations.axisPtQA, axisLamMass});
+      registry.add("h2dAntiLambdaMass", "h2dAntiLambdaMass", kTH2F, {axisConfigurations.axisPtQA, axisLamMass});
+      registry.add("MassHistograms/h2dXiMinusMass", "h2dXiMinusMass", kTH2F, {axisConfigurations.axisPtQA, axisXiMass});
+      registry.add("MassHistograms/h2dXiPlusMass", "h2dXiPlusMass", kTH2F, {axisConfigurations.axisPtQA, axisXiMass});
+      registry.add("MassHistograms/h2dOmegaMinusMass", "h2dOmegaMinusMass", kTH2F, {axisConfigurations.axisPtQA, axisOmegaMass});
+      registry.add("MassHistograms/h2dOmegaPlusMass", "h2dOmegaPlusMass", kTH2F, {axisConfigurations.axisPtQA, axisOmegaMass});
 
       if (d_doPtDep_CosPaCut)
         registry.addClone("MassHistograms/", "MassHistograms_BefPAcut/");
 
       // bit packed ITS cluster map
       const AxisSpec axisITSCluMap{static_cast<int>(128), -0.5f, +127.5f, "Packed ITS map"};
-      const AxisSpec axisRadius{static_cast<int>(dQANBinsRadius), 0.0f, +50.0f, "Radius (cm)"};
+      const AxisSpec axisRadius{static_cast<int>(qaConfigurations.dQANBinsRadius), 0.0f, +50.0f, "Radius (cm)"};
 
       // Histogram to bookkeep cluster maps
       registry.add("h2dITSCluMap_XiMinusPositive", "h2dITSCluMap_XiMinusPositive", kTH2D, {axisITSCluMap, axisRadius});
@@ -391,9 +438,9 @@ struct cascadeBuilder {
       registry.add("h2dITSCluMap_OmegaPlusBachelor", "h2dITSCluMap_OmegaPlusBachelor", kTH2D, {axisITSCluMap, axisRadius});
 
       // QA plots of topological variables using axisPtQA
-      registry.add("h2dTopoVarCascPointingAngle", "h2dTopoVarCascPointingAngle", kTH2D, {axisPtQA, axisTopoVarPointingAngle});
-      registry.add("h2dTopoVarCascRAP", "h2dTopoVarCascRAP", kTH2D, {axisPtQA, axisTopoVarRAP});
-      registry.add("h2dTopoVarCascRadius", "h2dTopoVarCascRadius", kTH2D, {axisPtQA, axisTopoVarV0Radius});
+      registry.add("h2dTopoVarCascPointingAngle", "h2dTopoVarCascPointingAngle", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisTopoVarPointingAngle});
+      registry.add("h2dTopoVarCascRAP", "h2dTopoVarCascRAP", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisTopoVarRAP});
+      registry.add("h2dTopoVarCascRadius", "h2dTopoVarCascRadius", kTH2D, {axisConfigurations.axisPtQA, axisConfigurations.axisTopoVarV0Radius});
 
       // if basic strangeness tracking QA is desired, do it here
       // convenience: equivalence between regular cascade and tracked cascade is easy to check here
@@ -448,8 +495,8 @@ struct cascadeBuilder {
         registry.add("hDCAzTrackedCascadeToPVOmegaPlus", "hDCAzTrackedCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
 
         // specific variables associated to strangeness tracking
-        const AxisSpec axisChi2{static_cast<int>(dQANBinsChi2), 0.0f, dQAMaxChi2, "#chi^{2}"};
-        const AxisSpec axisCluSize{static_cast<int>(dQANBinsCluSize), 0.0f, dQAMaxCluSize, "Mean ITS cluster size"};
+        const AxisSpec axisChi2{static_cast<int>(qaConfigurations.dQANBinsChi2), 0.0f, qaConfigurations.dQAMaxChi2, "#chi^{2}"};
+        const AxisSpec axisCluSize{static_cast<int>(qaConfigurations.dQANBinsCluSize), 0.0f, qaConfigurations.dQAMaxCluSize, "Mean ITS cluster size"};
         registry.add("hMatchingChi2_XiMinus", "hMatchingChi2_XiMinus", kTH1D, {axisChi2});
         registry.add("hMatchingChi2_XiPlus", "hMatchingChi2_XiPlus", kTH1D, {axisChi2});
         registry.add("hMatchingChi2_OmegaMinus", "hMatchingChi2_OmegaMinus", kTH1D, {axisChi2});
@@ -470,7 +517,7 @@ struct cascadeBuilder {
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
 
-    ccdb->setURL(ccdburl);
+    ccdb->setURL(ccdbConfigurations.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
@@ -478,12 +525,12 @@ struct cascadeBuilder {
     if (useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        ccdb->get<TGeoManager>(geoPath);
+        ccdb->get<TGeoManager>(ccdbConfigurations.geoPath);
       }
     }
     if (useMatCorrType == 2) {
       LOGF(info, "LUT correction requested, loading LUT");
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath));
     }
 
     if (doprocessRun2 == false && doprocessRun3 == false && doprocessRun3withStrangenessTracking == false && doprocessRun3withKFParticle == false) {
@@ -646,6 +693,17 @@ struct cascadeBuilder {
       return;
     }
 
+    // machine learning initialization if requested
+    if (mlConfigurations.calculateXiMinusScores ||
+        mlConfigurations.calculateXiPlusScores ||
+        mlConfigurations.calculateOmegaMinusScores ||
+        mlConfigurations.calculateOmegaPlusScores) {
+      int64_t timeStampML = bc.timestamp();
+      if (mlConfigurations.timestampCCDB.value != -1)
+        timeStampML = mlConfigurations.timestampCCDB.value;
+      LoadMachines(timeStampML);
+    }
+
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
@@ -663,15 +721,15 @@ struct cascadeBuilder {
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (doprocessRun2) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp);
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(ccdbConfigurations.grpPath, timestamp);
       if (!grpo) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpPath << " of object GRPObject for timestamp " << timestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpPath << " of object GRPObject for timestamp " << timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpo);
     } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, timestamp);
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, timestamp);
       if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField for timestamp " << timestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField for timestamp " << timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
     }
@@ -690,6 +748,62 @@ struct cascadeBuilder {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
+
+  // function to load models for ML-based classifiers
+  void LoadMachines(int64_t timeStampML)
+  {
+    if (mlConfigurations.loadModelsFromCCDB) {
+      ccdbApi.init(ccdbConfigurations.ccdburl);
+      LOG(info) << "Fetching cascade models for timestamp: " << timeStampML;
+
+      if (mlConfigurations.calculateXiMinusScores) {
+        bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathXiMinus.value);
+        if (retrieveSuccess) {
+          mlModelXiMinus.initModel(mlConfigurations.localModelPathXiMinus.value, mlConfigurations.enableOptimizations.value);
+        } else {
+          LOG(fatal) << "Error encountered while fetching/loading the XiMinus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
+        }
+      }
+
+      if (mlConfigurations.calculateXiPlusScores) {
+        bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathXiPlus.value);
+        if (retrieveSuccess) {
+          mlModelXiPlus.initModel(mlConfigurations.localModelPathXiPlus.value, mlConfigurations.enableOptimizations.value);
+        } else {
+          LOG(fatal) << "Error encountered while fetching/loading the XiPlus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
+        }
+      }
+
+      if (mlConfigurations.calculateOmegaMinusScores) {
+        bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathOmegaMinus.value);
+        if (retrieveSuccess) {
+          mlModelOmegaMinus.initModel(mlConfigurations.localModelPathOmegaMinus.value, mlConfigurations.enableOptimizations.value);
+        } else {
+          LOG(fatal) << "Error encountered while fetching/loading the OmegaMinus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
+        }
+      }
+
+      if (mlConfigurations.calculateOmegaPlusScores) {
+        bool retrieveSuccess = ccdbApi.retrieveBlob(mlConfigurations.modelPathCCDB, ".", metadata, timeStampML, false, mlConfigurations.localModelPathOmegaPlus.value);
+        if (retrieveSuccess) {
+          mlModelOmegaPlus.initModel(mlConfigurations.localModelPathOmegaPlus.value, mlConfigurations.enableOptimizations.value);
+        } else {
+          LOG(fatal) << "Error encountered while fetching/loading the OmegaPlus model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
+        }
+      }
+    } else {
+      if (mlConfigurations.calculateXiMinusScores)
+        mlModelXiMinus.initModel(mlConfigurations.localModelPathXiMinus.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateXiPlusScores)
+        mlModelXiPlus.initModel(mlConfigurations.localModelPathXiPlus.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateOmegaMinusScores)
+        mlModelOmegaMinus.initModel(mlConfigurations.localModelPathOmegaMinus.value, mlConfigurations.enableOptimizations.value);
+      if (mlConfigurations.calculateOmegaPlusScores)
+        mlModelOmegaPlus.initModel(mlConfigurations.localModelPathOmegaPlus.value, mlConfigurations.enableOptimizations.value);
+    }
+    LOG(info) << "Cascade ML Models loaded.";
+  }
+
   // TrackParCov to KF converter
   // FIXME: could be an utility somewhere else
   // from Carolina Reetz (thank you!)
@@ -836,7 +950,7 @@ struct cascadeBuilder {
     // Overall cascade charge
     cascadecandidate.charge = bachTrack.signed1Pt() > 0 ? +1 : -1;
 
-    if (d_doQA) {
+    if (qaConfigurations.d_doQA) {
       // produce a plot that showcases the mass of the received lambdas
       if (cascadecandidate.charge < 0)
         registry.fill(HIST("h2dLambdaMass"), v0.pt(), v0.mLambda());
@@ -916,7 +1030,7 @@ struct cascadeBuilder {
       cascadecandidate.pos[i] = vtx[i];
     }
 
-    if (d_doQA && d_doPtDep_CosPaCut) {
+    if (qaConfigurations.d_doQA && d_doPtDep_CosPaCut) {
       bool mcUnchecked = !d_QA_checkMC;
       bool dEdxUnchecked = !d_QA_checkdEdx;
 
@@ -1011,7 +1125,7 @@ struct cascadeBuilder {
         statisticsRegistry.bachITSclu[bachTrack.itsNCls()]++;
     }
 
-    if (d_doQA) {
+    if (qaConfigurations.d_doQA) {
       bool mcUnchecked = !d_QA_checkMC;
       bool dEdxUnchecked = !d_QA_checkdEdx;
 
@@ -1030,22 +1144,22 @@ struct cascadeBuilder {
         registry.fill(HIST("MassHistograms/h2dOmegaPlusMass"), lPt, cascadecandidate.mOmega);
 
       // Fill ITS cluster maps with specific mass cuts
-      if (TMath::Abs(cascadecandidate.mXi - 1.322) < dQAXiMassWindow && ((cascade.isdEdxXiMinus() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked)) && cascadecandidate.charge < 0) {
+      if (TMath::Abs(cascadecandidate.mXi - 1.322) < qaConfigurations.dQAXiMassWindow && ((cascade.isdEdxXiMinus() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked)) && cascadecandidate.charge < 0) {
         registry.fill(HIST("h2dITSCluMap_XiMinusPositive"), static_cast<float>(posTrack.itsClusterMap()), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiMinusNegative"), static_cast<float>(negTrack.itsClusterMap()), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiMinusBachelor"), static_cast<float>(bachTrack.itsClusterMap()), cascadecandidate.cascradius);
       }
-      if (TMath::Abs(cascadecandidate.mXi - 1.322) < dQAXiMassWindow && ((cascade.isdEdxXiPlus() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked)) && cascadecandidate.charge > 0) {
+      if (TMath::Abs(cascadecandidate.mXi - 1.322) < qaConfigurations.dQAXiMassWindow && ((cascade.isdEdxXiPlus() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked)) && cascadecandidate.charge > 0) {
         registry.fill(HIST("h2dITSCluMap_XiPlusPositive"), static_cast<float>(posTrack.itsClusterMap()), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiPlusNegative"), static_cast<float>(negTrack.itsClusterMap()), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_XiPlusBachelor"), static_cast<float>(bachTrack.itsClusterMap()), cascadecandidate.cascradius);
       }
-      if (TMath::Abs(cascadecandidate.mOmega - 1.672) < dQAOmegaMassWindow && ((cascade.isdEdxOmegaMinus() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked)) && cascadecandidate.charge < 0) {
+      if (TMath::Abs(cascadecandidate.mOmega - 1.672) < qaConfigurations.dQAOmegaMassWindow && ((cascade.isdEdxOmegaMinus() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked)) && cascadecandidate.charge < 0) {
         registry.fill(HIST("h2dITSCluMap_OmegaMinusPositive"), static_cast<float>(posTrack.itsClusterMap()), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaMinusNegative"), static_cast<float>(negTrack.itsClusterMap()), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaMinusBachelor"), static_cast<float>(bachTrack.itsClusterMap()), cascadecandidate.cascradius);
       }
-      if (TMath::Abs(cascadecandidate.mOmega - 1.672) < dQAOmegaMassWindow && ((cascade.isdEdxOmegaPlus() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked)) && cascadecandidate.charge > 0) {
+      if (TMath::Abs(cascadecandidate.mOmega - 1.672) < qaConfigurations.dQAOmegaMassWindow && ((cascade.isdEdxOmegaPlus() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked)) && cascadecandidate.charge > 0) {
         registry.fill(HIST("h2dITSCluMap_OmegaPlusPositive"), static_cast<float>(posTrack.itsClusterMap()), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaPlusNegative"), static_cast<float>(negTrack.itsClusterMap()), v0.v0radius());
         registry.fill(HIST("h2dITSCluMap_OmegaPlusBachelor"), static_cast<float>(bachTrack.itsClusterMap()), cascadecandidate.cascradius);
@@ -1056,6 +1170,50 @@ struct cascadeBuilder {
       registry.fill(HIST("h2dTopoVarCascRAP"), lPt, TMath::ACos(cascadecandidate.cosPA) * cascadecandidate.cascradius);
       registry.fill(HIST("h2dTopoVarCascRadius"), lPt, cascadecandidate.cascradius);
     }
+
+    // calculate machine learning scores, compare against thresholds
+    cascadecandidate.mlXiMinusScore = -1.0f;
+    cascadecandidate.mlXiPlusScore = -1.0f;
+    cascadecandidate.mlOmegaMinusScore = -1.0f;
+    cascadecandidate.mlOmegaPlusScore = -1.0f;
+
+    if (mlConfigurations.calculateXiMinusScores ||
+        mlConfigurations.calculateXiPlusScores ||
+        mlConfigurations.calculateOmegaMinusScores ||
+        mlConfigurations.calculateOmegaPlusScores) {
+      // machine learning is on, go for calculation of thresholds
+      // FIXME THIS NEEDS ADJUSTING
+      std::vector<float> inputFeatures{0.0f, 0.0f,
+                                       0.0f, 0.0f};
+
+      // calculate scores
+      if (mlConfigurations.calculateXiMinusScores) {
+        float* xiMinusProbability = mlModelXiMinus.evalModel(inputFeatures);
+        cascadecandidate.mlXiMinusScore = xiMinusProbability[1];
+      }
+      if (mlConfigurations.calculateXiPlusScores) {
+        float* xiPlusProbability = mlModelXiPlus.evalModel(inputFeatures);
+        cascadecandidate.mlXiPlusScore = xiPlusProbability[1];
+      }
+      if (mlConfigurations.calculateOmegaMinusScores) {
+        float* omegaMinusProbability = mlModelOmegaMinus.evalModel(inputFeatures);
+        cascadecandidate.mlOmegaMinusScore = omegaMinusProbability[1];
+      }
+      if (mlConfigurations.calculateOmegaPlusScores) {
+        float* omegaPlusProbability = mlModelOmegaPlus.evalModel(inputFeatures);
+        cascadecandidate.mlOmegaPlusScore = omegaPlusProbability[1];
+      }
+
+      // Skip anything that doesn't fulfull any of the desired conditions
+      if (cascadecandidate.mlXiMinusScore < mlConfigurations.thresholdXiMinus.value &&
+          cascadecandidate.mlXiPlusScore < mlConfigurations.thresholdXiPlus.value &&
+          cascadecandidate.mlOmegaMinusScore < mlConfigurations.thresholdOmegaMinus.value &&
+          cascadecandidate.mlOmegaPlusScore < mlConfigurations.thresholdOmegaPlus.value) {
+        return false; // skipped as uninteresting in any hypothesis considered
+      }
+    }
+
+    // Final outcome is YES if I got here!
     return true;
   }
 
@@ -2046,7 +2204,7 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const& v0table, LabeledTracksExtra const&, aod::McParticles const&)
+  void processBuildMCAssociated(aod::Collisions const& /*collisions*/, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const& /*v0table*/, LabeledTracksExtra const&, aod::McParticles const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
@@ -2057,7 +2215,7 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const&, TracksExtraWithPID const&)
+  void processBuildValiddEdx(aod::Collisions const& /*collisions*/, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const&, TracksExtraWithPID const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
@@ -2068,7 +2226,7 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
+  void processBuildValiddEdxMCAssociated(aod::Collisions const& /*collisions*/, aod::Cascades const& cascades, aod::V0s const&, aod::V0Datas const&, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
   {
     initializeMasks(cascades.size());
     for (auto& casc : cascades) {
@@ -2083,7 +2241,7 @@ struct cascadePreselector {
   /// This process function checks for the use of Cascades in strangeness tracked cascades
   /// They are then marked appropriately; the user could then operate
   /// the cascadebuilder to construct only those Cascades.
-  void processSkipCascadesNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& casctable)
+  void processSkipCascadesNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& /*casctable*/)
   {
     for (auto const& tracasc : tracasctable) {
       bitset(selectionMask[tracasc.cascadeId()], bitUsedInTrackedCascade); // tag V0s needed by tracked cascades

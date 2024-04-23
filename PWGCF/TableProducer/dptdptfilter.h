@@ -891,7 +891,7 @@ inline float getCharge(ParticleObject& particle)
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
-inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
+inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
 {
   /* overall momentum cut */
   if (!(overallminp < particle.p())) {
@@ -1152,6 +1152,36 @@ struct PIDSpeciesSelection {
   int8_t whichTruthPrimarySpecies(ParticleObject part)
   {
     if (part.isPhysicalPrimary()) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
+  template <typename ParticleObject>
+  int8_t whichTruthSecondarySpecies(ParticleObject part)
+  {
+    if (!(part.isPhysicalPrimary())) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
+  template <typename ParticleObject>
+  int8_t whichTruthSecFromDecaySpecies(ParticleObject part)
+  {
+    if (!(part.isPhysicalPrimary()) && (part.getProcess() == 4)) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
+  template <typename ParticleObject>
+  int8_t whichTruthSecFromMaterialSpecies(ParticleObject part)
+  {
+    if (!(part.isPhysicalPrimary()) && (part.getProcess() != 4)) {
       return whichTruthSpecies(part);
     } else {
       return -127;

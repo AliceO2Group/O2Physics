@@ -502,7 +502,7 @@ struct threebodyRecoTask {
 
   //------------------------------------------------------------------
   // process real data analysis
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& tracks)
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& /*tracks*/)
   {
     Candidates3body.clear();
     registry.fill(HIST("hEventCounter"), 0.5);
@@ -544,7 +544,7 @@ struct threebodyRecoTask {
 
   //------------------------------------------------------------------
   // process mc analysis
-  void processMC(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& tracks, aod::McCollisions const& mcCollisions)
+  void processMC(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& /*tracks*/, aod::McCollisions const& mcCollisions)
   {
     Candidates3body.clear();
     filledMothers.clear();

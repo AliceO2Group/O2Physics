@@ -165,7 +165,7 @@ struct UpcCandProducerQa {
     histRegistry.fill(HIST("TracksQA/Muon/Pt/MCH_MID"), fwdtrack.pt());
   }
 
-  void process(o2::aod::Collisions const& collisions,
+  void process(o2::aod::Collisions const&,
                BarrelTracks const& tracks, o2::aod::AmbiguousTracks const& ambTracks,
                FwdTracks const& fwdtracks)
   {

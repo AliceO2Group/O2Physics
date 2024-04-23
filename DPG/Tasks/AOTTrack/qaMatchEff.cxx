@@ -71,15 +71,15 @@ struct qaMatchEff {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   //
   // Track selections
-  Configurable<bool> b_useTrackSelections{"b_useTrackSelections", false, "Boolean to switch the track selections on/off."};
-  Configurable<int> filterbitTrackSelections{"filterbitTrackSelections", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<bool> isUseTrackSelections{"isUseTrackSelections", false, "Boolean to switch the track selections on/off."};
+  Configurable<bool> isUseAnalysisTrackSelections{"isUseAnalysisTrackSelections", false, "Boolean to switch if the analysis track selections are used. If true, all the Explicit track cuts are ignored."};
   // kinematics
   Configurable<float> ptMinCutInnerWallTPC{"ptMinCutInnerWallTPC", 0.1f, "Minimum transverse momentum calculated at the inner wall of TPC (GeV/c)"};
   Configurable<float> ptMinCut{"ptMinCut", 0.1f, "Minimum transverse momentum (GeV/c)"};
   Configurable<float> ptMaxCut{"ptMaxCut", 100.f, "Maximum transverse momentum (GeV/c)"};
   Configurable<float> etaMinCut{"etaMinCut", -2.0f, "Minimum pseudorapidity"};
   Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
-  Configurable<bool> b_useTPCinnerWallPt{"b_useTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
+  Configurable<bool> isUseTPCinnerWallPt{"isUseTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
   // DCA and PID cuts
   Configurable<LabeledArray<float>> dcaMaxCut{"dcaMaxCut", {parTableDCA[0], nParDCA, nParVaDCA, parClassDCA, parNameDCA}, "Track DCA cuts"};
   Configurable<LabeledArray<float>> nSigmaPID{"nSigmaPID", {parTablePID[0], nParPID, nParVaPID, parClassPID, parNamePID}, "PID nSigma cuts TPC and TOF"};
@@ -186,12 +186,6 @@ struct qaMatchEff {
   //      ******     BE VERY CAREFUL!   --  FILTERS !!!  *****
   //
   Filter zPrimVtxLim = nabs(aod::collision::posZ) < zPrimVtxMax;
-  Filter trackFilter = (filterbitTrackSelections.node() == 0) ||
-                       ((filterbitTrackSelections.node() == 1) && requireGlobalTrackInFilter()) || /// filterbit 4 track selections + tight DCA cuts
-                       ((filterbitTrackSelections.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
-                       ((filterbitTrackSelections.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
-                       ((filterbitTrackSelections.node() == 4) && requireQualityTracksInFilter()) ||
-                       ((filterbitTrackSelections.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   //
   //
   //
@@ -208,9 +202,9 @@ struct qaMatchEff {
     else
       initData();
 
-    if ((!isitMC && (doprocessMCFilteredTracks || doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) || (isitMC && (doprocessDataFilteredTracks || doprocessData || doprocessDataNoColl || doprocessTrkIUMC)))
+    if ((!isitMC && (doprocessMC || doprocessMCNoColl || doprocessTrkIUMC)) || (isitMC && (doprocessData || doprocessDataNoColl || doprocessTrkIUMC)))
       LOGF(fatal, "Initialization set for MC and processData function flagged  (or viceversa)! Fix the configuration.");
-    if ((doprocessMCFilteredTracks && doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) || (doprocessDataFilteredTracks && doprocessData && doprocessDataNoColl && doprocessTrkIUData))
+    if ((doprocessMC && doprocessMCNoColl && doprocessTrkIUMC) || (doprocessData && doprocessDataNoColl && doprocessTrkIUData))
       LOGF(fatal, "Cannot process for both without collision tag and with collision tag at the same time! Fix the configuration.");
     if (doprocessTrkIUMC && makethn) {
       LOGF(fatal, "No DCA for IU tracks. Put makethn = false.");
@@ -220,7 +214,7 @@ struct qaMatchEff {
     }
     //
     /// initialize the track selections
-    if (b_useTrackSelections) {
+    if (isUseTrackSelections) {
       // kinematics
       cutObject.SetEtaRange(etaMinCut, etaMaxCut);
       cutObject.SetPtRange(ptMinCut, ptMaxCut);
@@ -249,6 +243,12 @@ struct qaMatchEff {
       }
       LOG(info) << "############";
       cutObject.SetRequireHitsInITSLayers(customMinITShits, set_customITShitmap);
+
+      if (isUseAnalysisTrackSelections) {
+        LOG(info) << "### Using analysis track selections";
+        cutObject = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, 0);
+        LOG(info) << "### Analysis track selections set";
+      }
     }
   }
   // end Init function
@@ -1251,11 +1251,11 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedKineCuts(T& track)
   {
-    if (!b_useTrackSelections)
+    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
       return false;
-    if (b_useTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
+    if (isUseTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
       return false; // pt selection active only if the required pt is that calculated at the inner wall of TPC
     }
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kEtaRange))
@@ -1271,7 +1271,7 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedTPCCuts(T& track)
   {
-    if (!b_useTrackSelections)
+    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kTPCNCls))
       return false;
@@ -1287,7 +1287,7 @@ struct qaMatchEff {
   template <typename T>
   bool isTrackSelectedITSCuts(T& track)
   {
-    if (!b_useTrackSelections)
+    if (!isUseTrackSelections && !isUseAnalysisTrackSelections)
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kITSChi2NDF))
       return false;
@@ -1334,7 +1334,7 @@ struct qaMatchEff {
   ///   Template function to perform the analysis   ///
   /////////////////////////////////////////////////////
   template <bool IS_MC, typename T, typename P, typename B>
-  void fillHistograms(T& tracks, P& mcParticles, B const& bcs)
+  void fillHistograms(T& tracks, P& /*mcParticles*/, B const& /*bcs*/)
   {
     //
     float trackPt = 0; //, ITStrackPt = 0;
@@ -1377,7 +1377,7 @@ struct qaMatchEff {
       /// Using pt calculated at the inner wall of TPC
       /// Caveat: tgl still from tracking: this is not the value of tgl at the
       /// inner wall of TPC
-      if (b_useTPCinnerWallPt)
+      if (isUseTPCinnerWallPt)
         trackPt = tpcinner_pt;
       else
         trackPt = reco_pt;
@@ -1394,7 +1394,7 @@ struct qaMatchEff {
       // Using pt calculated at the inner wall of TPC
       // Caveat: tgl still from tracking: this is not the value of tgl at the
       // inner wall of TPC
-      // if (b_useTPCinnerWallPtForITS)
+      // if (isUseTPCinnerWallPtForITS)
       //   ITStrackPt = tpcinner_pt;
       // else
       //   ITStrackPt = reco_pt;
@@ -3018,13 +3018,6 @@ struct qaMatchEff {
   }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
 
-  void processMCFilteredTracks(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const& mcParticles)
-  {
-    fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
-    fillGeneralHistos<true>(collision);
-  }
-  PROCESS_SWITCH(qaMatchEff, processMCFilteredTracks, "process MC with filtered tracks with filterbit selections", false);
-
   ////////////////////////////////////////////////////////////
   ///   Process MC with collision grouping and IU tracks   ///
   ////////////////////////////////////////////////////////////
@@ -3057,17 +3050,6 @@ struct qaMatchEff {
     fillGeneralHistos<false>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
-
-  void processDataFilteredTracks(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>> const& tracks, BCsWithTimeStamp const& bcs)
-  {
-    if (enableMonitorVsTime) {
-      // tracks.rawIteratorAt(0).collision().bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
-      setUpTimeMonitoring(bcs);
-    }
-    fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
-    fillGeneralHistos<false>(collision);
-  }
-  PROCESS_SWITCH(qaMatchEff, processDataFilteredTracks, "process data with filtered tracks with filterbit selections", false);
 
   /////////////////////////////////////////////////////////////
   ///   Process data with collision grouping and IU tracks  ///

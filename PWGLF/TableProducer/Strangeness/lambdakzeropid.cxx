@@ -255,7 +255,7 @@ struct lambdakzeropid {
     return length;
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     nSigmaCalibLoaded = false;
     nSigmaCalibObjects = nullptr;
@@ -580,7 +580,7 @@ struct lambdakzeropid {
     }
   }
 
-  void processStandardData(aod::Collisions const& collisions, V0OriginalDatas const& V0s, TracksWithAllExtras const&, aod::BCsWithTimestamps const& bcs)
+  void processStandardData(aod::Collisions const& collisions, V0OriginalDatas const& V0s, TracksWithAllExtras const&, aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto collision = collisions.begin();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();

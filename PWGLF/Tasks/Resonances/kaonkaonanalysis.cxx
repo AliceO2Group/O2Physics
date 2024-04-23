@@ -104,24 +104,24 @@ struct phianalysisrun3 {
     histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
     histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
     if (!isMC) {
-      histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {axisMult, axisPt, axisMass});
-      histos.add("h3PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTH3F, {axisMult, axisPt, axisMass});
-      histos.add("h3PhiInvMassLikeSignMM", "Invariant mass of Phi meson Like Sign negative", kTH3F, {axisMult, axisPt, axisMass});
-      histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTH3F, {axisMult, axisPt, axisMass});
-      histos.add("h3PhiInvMassRotation", "Invariant mass of Phi meson Rotation", kTH3F, {axisMult, axisPt, axisMass});
+      histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
+      histos.add("h3PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
+      histos.add("h3PhiInvMassLikeSignMM", "Invariant mass of Phi meson Like Sign negative", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
+      histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Mixed", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
+      histos.add("h3PhiInvMassRotation", "Invariant mass of Phi meson Rotation", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
       if (isEtaAssym) {
-        histos.add("h3PhiInvMassUnlikeSignAside", "Invariant mass of Phi meson Unlike Sign A side", kTH3F, {axisMult, axisPt, axisMass});
-        histos.add("h3PhiInvMassLikeSignAside", "Invariant mass of Phi meson Like Sign A side", kTH3F, {axisMult, axisPt, axisMass});
-        histos.add("h3PhiInvMassMixedAside", "Invariant mass of Phi meson Mixed A side", kTH3F, {axisMult, axisPt, axisMass});
-        histos.add("h3PhiInvMassUnlikeSignCside", "Invariant mass of Phi meson Unlike Sign C side", kTH3F, {axisMult, axisPt, axisMass});
-        histos.add("h3PhiInvMassLikeSignCside", "Invariant mass of Phi meson Like Sign C side", kTH3F, {axisMult, axisPt, axisMass});
-        histos.add("h3PhiInvMassMixedCside", "Invariant mass of Phi meson Mixed C side", kTH3F, {axisMult, axisPt, axisMass});
+        histos.add("h3PhiInvMassUnlikeSignAside", "Invariant mass of Phi meson Unlike Sign A side", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
+        histos.add("h3PhiInvMassLikeSignAside", "Invariant mass of Phi meson Like Sign A side", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
+        histos.add("h3PhiInvMassMixedAside", "Invariant mass of Phi meson Mixed A side", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
+        histos.add("h3PhiInvMassUnlikeSignCside", "Invariant mass of Phi meson Unlike Sign C side", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
+        histos.add("h3PhiInvMassLikeSignCside", "Invariant mass of Phi meson Like Sign C side", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
+        histos.add("h3PhiInvMassMixedCside", "Invariant mass of Phi meson Mixed C side", kTHnSparseF, {axisMult, axisPt, axisMass}, true);
       }
     } else if (isMC) {
       histos.add("hMC", "MC Event statistics", kTH1F, {{6, 0.0f, 6.0f}});
       histos.add("h1PhiGen", "Phi meson Gen", kTH1F, {axisPt});
       histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {axisPt});
-      histos.add("h3PhiRec", "Phi meson Rec", kTH3F, {axisPt, axisPt, {200, -0.1, 0.1}});
+      histos.add("h3PhiRec", "Phi meson Rec", kTHnSparseF, {axisPt, axisPt, {200, -0.1, 0.1}}, true);
     }
   }
 
@@ -425,7 +425,7 @@ struct phianalysisrun3 {
   }
 
   PROCESS_SWITCH(phianalysisrun3, processGen, "Process Generated", false);
-  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     if (!collision.has_mcCollision()) {
       return;

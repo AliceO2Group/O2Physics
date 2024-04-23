@@ -548,7 +548,7 @@ struct Alice3Dilepton {
   void processRec(
     const o2::aod::Collisions& collisions,
     MyFilteredTracksMC const& tracks,
-    const o2::aod::McCollisions& mccollisions,
+    const o2::aod::McCollisions&,
     const aod::McParticles& mcParticles)
   {
     for (const auto& collision : collisions) {

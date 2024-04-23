@@ -181,7 +181,7 @@ struct preProcessMCcollisions {
     histos.add("h2dNContribSpecialCorr2b", "h2dNContribSpecialCorr2b", kTH2D, {axisContributorsTRD, axisContributorsTOF});
   }
 
-  void processData(aod::Collisions const& colls)
+  void processData(aod::Collisions const&)
   {
     // Dummy process
   }
@@ -467,7 +467,7 @@ struct straRecoStudy {
     histos.add("hDCAzVsPt", "hDCAzVsPt", kTH2F, {{20, 0.0f, 10.0f}, {10000, -0.5f, 0.5f}});
   }
 
-  void processV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<V0DataLabeled> const& fullV0s, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
+  void processV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<V0DataLabeled> const& fullV0s, soa::Filtered<CascMC> const&, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
   {
     evselstats[kEvSelAll]++;
     if (event_sel8_selection && !collision.sel8()) {
@@ -554,7 +554,7 @@ struct straRecoStudy {
   }
   PROCESS_SWITCH(straRecoStudy, processV0, "Regular V0 analysis", true);
 
-  void processV0RealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& v0tables, aod::CascDataExt const& Cascades, TracksCompleteIU const& tracks, aod::V0sLinked const&)
+  void processV0RealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& v0tables, aod::CascDataExt const&, TracksCompleteIU const&, aod::V0sLinked const&)
   {
     evselstats[kEvSelAll]++;
     if (event_sel8_selection && !collision.sel8()) {
@@ -692,14 +692,14 @@ struct straRecoStudy {
     }
   }
 
-  void processCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&)
+  void processCascade(CollisionsWithEvSels const&, aod::V0Datas const&, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const&, aod::McParticles const&)
   {
     for (auto& casc : Cascades) {
       processCascadeCandidate(casc);
     }
   }
   PROCESS_SWITCH(straRecoStudy, processCascade, "Regular cascade analysis", true);
-  void processTrackedCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, TraCascMC const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&)
+  void processTrackedCascade(CollisionsWithEvSels const&, aod::V0Datas const&, TraCascMC const& Cascades, TracksCompleteIUMC const&, aod::McParticles const&)
   {
     for (auto& casc : Cascades) {
       processCascadeCandidate(casc);
@@ -707,7 +707,7 @@ struct straRecoStudy {
   }
   PROCESS_SWITCH(straRecoStudy, processTrackedCascade, "Tracked cascade analysis", true);
 
-  void processCascadeRealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const&, aod::CascDataExt const& Cascades, TracksCompleteIU const& tracks, aod::V0sLinked const&)
+  void processCascadeRealData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const&, aod::CascDataExt const& Cascades, TracksCompleteIU const&, aod::V0sLinked const&)
   {
     if (event_sel8_selection && !collision.sel8()) {
       return;
@@ -765,7 +765,7 @@ struct straRecoStudy {
   }
   PROCESS_SWITCH(straRecoStudy, processCascadeRealData, "Regular cascade analysis, real data", false);
 
-  void processGeneratedReconstructible(soa::Filtered<RecoedMCCollisions>::iterator const& collision, aod::McParticles const& mcParticles)
+  void processGeneratedReconstructible(soa::Filtered<RecoedMCCollisions>::iterator const&, aod::McParticles const& mcParticles)
   {
     // check if collision successfully reconstructed
     for (auto& mcp : mcParticles) {

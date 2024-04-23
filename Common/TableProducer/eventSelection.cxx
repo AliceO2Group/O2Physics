@@ -206,7 +206,7 @@ struct BcSelectionTask {
   PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", true);
 
   void processRun3(BCsWithRun3Matchings const& bcs,
-                   aod::Zdcs const& zdcs,
+                   aod::Zdcs const&,
                    aod::FV0As const&,
                    aod::FT0s const&,
                    aod::FDDs const&)
@@ -240,9 +240,9 @@ struct BcSelectionTask {
         // access orbitShift, ITSROF and TF border margins
         EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
         mITSROFrameStartBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
-        mITSROFrameEndBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
-        mTimeFrameStartBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
-        mTimeFrameEndBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
+        mITSROFrameEndBorderMargin = confITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : confITSROFrameEndBorderMargin;
+        mTimeFrameStartBorderMargin = confTimeFrameStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : confTimeFrameStartBorderMargin;
+        mTimeFrameEndBorderMargin = confTimeFrameEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : confTimeFrameEndBorderMargin;
         // access orbit-reset timestamp
         auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
         int64_t tsOrbitReset = (*ctpx)[0]; // us
@@ -463,7 +463,7 @@ struct EventSelectionTask {
     evsel.reserve(collisions.size());
   }
 
-  void processRun2(aod::Collision const& col, BCsWithBcSelsRun2 const& bcs, aod::Tracks const& tracks, aod::FV0Cs const&)
+  void processRun2(aod::Collision const& col, BCsWithBcSelsRun2 const&, aod::Tracks const&, aod::FV0Cs const&)
   {
     auto bc = col.bc_as<BCsWithBcSelsRun2>();
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());

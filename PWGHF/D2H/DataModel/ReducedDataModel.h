@@ -129,7 +129,8 @@ DECLARE_SOA_TABLE(HfRedTrackBases, "AOD", "HFREDTRACKBASE", //! Table with track
                   HFTRACKPAR_COLUMNS,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
-                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>);
+                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
+                  aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>);
 
 DECLARE_SOA_TABLE(HfRedTracksCov, "AOD", "HFREDTRACKCOV", //! Table with track covariance information for reduced workflow
                   soa::Index<>,
@@ -172,7 +173,8 @@ DECLARE_SOA_TABLE(HfRed2Prongs, "AOD", "HFRED2PRONG", //! Table with 2prong cand
                   hf_charm_cand_reduced::InvMassD0, hf_charm_cand_reduced::InvMassD0Bar,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
-                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>);
+                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
+                  aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>);
 
 DECLARE_SOA_TABLE(HfRed2ProngsCov, "AOD", "HFRED2PRONGSCOV", //! Table with 2prong candidate covariance for reduced workflow
                   o2::soa::Index<>,
@@ -198,7 +200,8 @@ DECLARE_SOA_TABLE(HfRed3Prongs, "AOD", "HFRED3PRONG", //! Table with 3prong cand
                   hf_charm_cand_reduced::InvMass,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
-                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>);
+                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
+                  aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>);
 
 DECLARE_SOA_TABLE(HfRed3ProngsCov, "AOD", "HFRED3PRONGSCOV", //! Table with 3prong candidate covariance for reduced workflow
                   o2::soa::Index<>,
@@ -399,7 +402,9 @@ DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);           //! Pt of D daughter in
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);           //! Pt of V0 daughter in GeV/c
 DECLARE_SOA_COLUMN(InvMassProng0, invMassProng0, float); //! Invariant Mass of D daughter in GeV/c
 DECLARE_SOA_COLUMN(InvMassProng1, invMassProng1, float); //! Invariant Mass of V0 daughter in GeV/c
-
+DECLARE_SOA_COLUMN(MlScoreBkgProng0, mlScoreBkgProng0, float);             //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(MlScorePromptProng0, mlScorePromptProng0, float);       //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(MlScoreNonpromptProng0, mlScoreNonpromptProng0, float); //! Nonprompt ML score of the D daughter
 } // namespace hf_reso_cand_reduced
 
 DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate information for resonances reduced workflow
@@ -414,7 +419,8 @@ DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate 
                   hf_reso_cand_reduced::Cpa,
                   hf_reso_cand_reduced::Dca,
                   hf_reso_cand_reduced::Radius,
-                  hf_reso_cand_reduced::V0Type);
+                  hf_reso_cand_reduced::V0Type,
+                  mcparticle::PVector<hf_reso_cand_reduced::Px, hf_reso_cand_reduced::Py, hf_reso_cand_reduced::Pz>);
 
 DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong candidate information for resonances reduced workflow
                   o2::soa::Index<>,
@@ -425,7 +431,8 @@ DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong
                   hf_reso_cand_reduced::Px,
                   hf_reso_cand_reduced::Py,
                   hf_reso_cand_reduced::Pz,
-                  hf_reso_cand_reduced::DType);
+                  hf_reso_cand_reduced::DType,
+                  mcparticle::PVector<hf_reso_cand_reduced::Px, hf_reso_cand_reduced::Py, hf_reso_cand_reduced::Pz>);
 
 DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Resonance candidate information for resonances reduced workflow
                   o2::soa::Index<>,
@@ -439,6 +446,12 @@ DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Reso
                   hf_reso_cand_reduced::Cpa,
                   hf_reso_cand_reduced::Dca,
                   hf_reso_cand_reduced::Radius);
+
+DECLARE_SOA_TABLE(HfCharmResoMLs, "AOD", "HFCHARMRESOML", //! Table with ML scores for the D daughter
+                  hf_reso_cand_reduced::MlScoreBkgProng0,
+                  hf_reso_cand_reduced::MlScorePromptProng0,
+                  hf_reso_cand_reduced::MlScoreNonpromptProng0,
+                  o2::soa::Marker<1>);
 } // namespace aod
 
 namespace soa

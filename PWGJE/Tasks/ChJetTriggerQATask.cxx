@@ -73,7 +73,8 @@ struct ChJetTriggerQATask {
 
   Configurable<bool> bLowPtTrigger{"bLowPtTrigger", false, "charged jet low pT trigger selection"};
   Configurable<bool> bHighPtTrigger{"bHighPtTrigger", false, "charged jet high pT trigger selection"};
-  Configurable<bool> bTrackPtTrigger{"bTrackPtTrigger", false, "track pT trigger selection"};
+  Configurable<bool> bTrackLowPtTrigger{"bTrackLowPtTrigger", false, "track low pT trigger selection"};
+  Configurable<bool> bTrackHighPtTrigger{"bTrackHighPtTrigger", false, "track high pT trigger selection"};
 
   Configurable<bool> bAddSupplementHistosToOutput{"bAddAdditionalHistosToOutput", false, "add supplementary histos to the output"};
 
@@ -144,12 +145,19 @@ struct ChJetTriggerQATask {
       return;
     }
 
-    if ((bLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow)) || (bHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) || (bTrackPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::trackPt)) || ((!bLowPtTrigger) && (!bHighPtTrigger) && (!bTrackPtTrigger))) {
+    bool bLowPtJet = (bLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow));
+    bool bHighPtJet = (bHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh));
+    bool bLowPtTrack = (bTrackLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::trackLowPt));
+    bool bHighPtTrack = (bTrackHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::trackHighPt));
+    bool bMinimumBias = ((!bLowPtTrigger) && (!bHighPtTrigger) && (!bTrackLowPtTrigger) && (!bTrackHighPtTrigger));
+
+    if (bLowPtJet || bHighPtJet || bLowPtTrack || bHighPtTrack || bMinimumBias) {
       // bLowPtTrigger=1  and bHighPtTrigger=0 --> fill histos with low trigger only
       // bLowPtTrigger=0  and bHighPtTrigger=1 --> fill histos with high trigger only
       // bLowPtTrigger=1  and bHighPtTrigger=1 --> fill histos with mixture of low and high trigger
-      // bTrackPtTrigger=1 --> fill histos for high pt track trigger
-      // bLowPtTrigger=0  and bHighPtTrigger=0 and bTrackPtTrigger=0 --> fill histos with minimum bias ie. ignore trigger decision
+      // bTrackLowPtTrigger=1 --> fill histos for low pt track trigger
+      // bTrackHighPtTrigger=1 --> fill histos for high pt track trigger
+      // bLowPtTrigger=0 and bHighPtTrigger=0 and bTrackLowPtTrigger=0 and bTrackHighPtTrigger=0 --> fill histos with minimum bias ie. ignore trigger decision
 
       float leadingJetPt = -1.0;
       float leadingJetEta = -2.0;

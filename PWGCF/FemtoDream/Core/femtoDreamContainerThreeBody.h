@@ -143,7 +143,7 @@ class FemtoDreamContainerThreeBody
   /// \param part3 Particle three
   /// \param mult Multiplicity of the event
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void setTriplet_base(const float femtoObs, T const& part1, T const& part2, T const& part3, const int mult)
+  void setTriplet_base(const float femtoObs, T const& /*part1*/, T const& /*part2*/, T const& /*part3*/, const int mult)
   {
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relTripletDist"), femtoObs);
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relTripletQ3Mult"), femtoObs, mult);
@@ -177,13 +177,9 @@ class FemtoDreamContainerThreeBody
   /// \param part3 Particle three
   /// \param mult Multiplicity of the event
   template <bool isMC, typename T>
-  void setTriplet(T const& part1, T const& part2, T const& part3, const int mult)
+  void setTriplet(T const& part1, T const& part2, T const& part3, const int mult, const float femtoObs)
   {
-    float femtoObs, femtoObsMC;
-    // Calculate femto observable and the mT with reconstructed information
-    if constexpr (mFemtoObs == femtoDreamContainerThreeBody::Observable::Q3) {
-      femtoObs = FemtoDreamMath::getQ3(part1, mMassOne, part2, mMassTwo, part3, mMassThree);
-    }
+    float femtoObsMC;
 
     if (mHistogramRegistry) {
       setTriplet_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(femtoObs, part1, part2, part3, mult);

@@ -97,13 +97,13 @@ struct HfFragmentationFunctionTask {
     registry.add("h_d0_phi", ";#phi_{D^{0}} (GeV/c^{2});dN/d#phi_{D^{0}}", {HistType::kTH1F, {{250, -10., 10.}}});
   }
 
-  void processDummy(aod::TracksIU const& tracks) {}
+  void processDummy(aod::TracksIU const&) {}
   PROCESS_SWITCH(HfFragmentationFunctionTask, processDummy, "Dummy process function turned on by default", false);
 
-  void processDataChargedSubstructure(JetCollision const& collision,
+  void processDataChargedSubstructure(JetCollision const&,
                                       soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
-                                      JetTracks const& tracks,
-                                      CandidatesD0Data const& d0cands)
+                                      JetTracks const&,
+                                      CandidatesD0Data const&)
   {
     // CandidatesLcData const& lccands) {
 

@@ -61,19 +61,21 @@ struct LfTreeCreatorNuclei {
       LOGF(fatal, "Cannot enable processData and processMC at the same time. Please choose one.");
     }
 
-    hEvents.add("eventSelection", "eventSelection", kTH1D, {{6, -0.5, 5.5}});
+    hEvents.add("eventSelection", "eventSelection", kTH1D, {{9, -0.5, 8.5}});
     auto h = hEvents.get<TH1>(HIST("eventSelection"));
-    h->GetXaxis()->SetBinLabel(1, "z-vertex cut");
-    h->GetXaxis()->SetBinLabel(2, "sel8");
-    h->GetXaxis()->SetBinLabel(3, "TFborder");
-    h->GetXaxis()->SetBinLabel(4, "not empty");
-    h->GetXaxis()->SetBinLabel(5, "|z|<10 normalization");
-    h->GetXaxis()->SetBinLabel(6, "With a good track");
+    h->GetXaxis()->SetBinLabel(1, "Custom z-vertex cut");
+    h->GetXaxis()->SetBinLabel(2, "TVX trigger cut");
+    h->GetXaxis()->SetBinLabel(3, "TF border cut");
+    h->GetXaxis()->SetBinLabel(4, "ITS ROF cut");
+    h->GetXaxis()->SetBinLabel(5, "TVX + TF + ITS ROF");
+    h->GetXaxis()->SetBinLabel(6, "Sel8 cut");
+    h->GetXaxis()->SetBinLabel(7, "Not empty events");
+    h->GetXaxis()->SetBinLabel(8, "|z|<10 norm");
+    h->GetXaxis()->SetBinLabel(9, "With a good track");
     customTrackSelection = myTrackSelection();
   }
 
   // track
-  // Configurable<float> yCut{"yCut", 1.f, "Rapidity cut"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
@@ -89,8 +91,11 @@ struct LfTreeCreatorNuclei {
   // events
   Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f, "Accepted z-vertex range"};
-  Configurable<bool> useEvsel{"useEvsel", true, "Use sel8 for run3 Event Selection"};
-  Configurable<bool> removeTFBorder{"removeTFBorder", true, "Remove TimeFrame border"};
+  Configurable<bool> useSel8{"useSel8", true, "Use Sel8 for run3 Event Selection"};
+  Configurable<bool> TVXtrigger{"TVXtrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
+  Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TimeFrame border (default w/ Sel8)"};
+  Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border (default w/ Sel8)"};
+
   Configurable<bool> doSkim{"doSkim", false, "Save events that contains only selected tracks (for filtered mode)"};
 
   // custom track cut
@@ -125,7 +130,7 @@ struct LfTreeCreatorNuclei {
                                     aod::pidTPCLfFullAl, aod::pidTOFFullAl>;
 
   template <bool isMC, typename TrackType, typename CollisionType>
-  bool checkQuality(CollisionType const& collision, TrackType const& tracks)
+  bool checkQuality(CollisionType const& /*collision*/, TrackType const& tracks)
   {
     bool out = kFALSE;
     for (auto& track : tracks) {
@@ -302,29 +307,51 @@ struct LfTreeCreatorNuclei {
     for (const auto& collision : collisions) {
       hEvents.fill(HIST("eventSelection"), 0);
 
-      if (useEvsel && !collision.sel8()) {
-        continue;
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+        if (TVXtrigger)
+          continue;
+      } else {
+        hEvents.fill(HIST("eventSelection"), 1);
       }
-      hEvents.fill(HIST("eventSelection"), 1);
 
-      if (removeTFBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        if (removeTFBorder)
+          continue;
+      } else {
+        hEvents.fill(HIST("eventSelection"), 2);
+      }
+
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        if (removeITSROFBorder)
+          continue;
+      } else {
+        hEvents.fill(HIST("eventSelection"), 3);
+      }
+
+      if ((collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
+          (collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+          (collision.selection_bit(aod::evsel::kIsTriggerTVX))) {
+        hEvents.fill(HIST("eventSelection"), 4);
+      }
+
+      if (useSel8 && !collision.sel8())
         continue;
-      hEvents.fill(HIST("eventSelection"), 2);
+      hEvents.fill(HIST("eventSelection"), 5);
 
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
       if (doSkim && tracksInCollision.size() == 0)
         continue;
-      hEvents.fill(HIST("eventSelection"), 3);
+      hEvents.fill(HIST("eventSelection"), 6);
 
       // Fill the norm. column with good events with |z| < 10 cm before skimming
       if (collision.posZ() < 10 && collision.posZ() > -10) {
-        hEvents.fill(HIST("eventSelection"), 4);
+        hEvents.fill(HIST("eventSelection"), 7);
       }
 
       if (doSkim && (trackSelType.value == 3) && !checkQuality<false>(collision, tracksInCollision))
         continue;
       fillForOneEvent<false>(collision, tracksInCollision);
-      hEvents.fill(HIST("eventSelection"), 5);
+      hEvents.fill(HIST("eventSelection"), 8);
     }
   }
 
@@ -332,28 +359,51 @@ struct LfTreeCreatorNuclei {
 
   void processMC(soa::Filtered<soa::Join<EventCandidates, aod::McCollisionLabels>> const& collisions,
                  soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>> const& tracks,
-                 aod::BCs const&, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+                 aod::BCs const&, aod::McCollisions const&, aod::McParticles const&)
   {
     for (const auto& collision : collisions) {
+
       hEvents.fill(HIST("eventSelection"), 0);
 
-      if (useEvsel && !collision.sel8()) {
-        continue;
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+        if (TVXtrigger)
+          continue;
+      } else {
+        hEvents.fill(HIST("eventSelection"), 1);
       }
-      hEvents.fill(HIST("eventSelection"), 1);
 
-      if (removeTFBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        if (removeTFBorder)
+          continue;
+      } else {
+        hEvents.fill(HIST("eventSelection"), 2);
+      }
+
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        if (removeITSROFBorder)
+          continue;
+      } else {
+        hEvents.fill(HIST("eventSelection"), 3);
+      }
+
+      if ((collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
+          (collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+          (collision.selection_bit(aod::evsel::kIsTriggerTVX))) {
+        hEvents.fill(HIST("eventSelection"), 4);
+      }
+
+      if (useSel8 && !collision.sel8())
         continue;
-      hEvents.fill(HIST("eventSelection"), 2);
+      hEvents.fill(HIST("eventSelection"), 5);
 
       // Fill the norm. column with good events with |z| < 10 cm before skimming
       if (collision.posZ() < 10 && collision.posZ() > -10) {
-        hEvents.fill(HIST("eventSelection"), 4);
+        hEvents.fill(HIST("eventSelection"), 7);
       }
 
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
       fillForOneEvent<true>(collision, tracksInCollision);
-      hEvents.fill(HIST("eventSelection"), 5);
+      hEvents.fill(HIST("eventSelection"), 8);
     }
   }
 
