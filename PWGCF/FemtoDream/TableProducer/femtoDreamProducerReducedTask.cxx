@@ -321,7 +321,7 @@ struct femtoDreamProducerReducedTask {
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                 aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+                 aod::McCollisions const&, aod::McParticles const&)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -333,7 +333,7 @@ struct femtoDreamProducerReducedTask {
   void processMC_noCentrality(aod::FemtoFullCollision_noCent_MC const& col,
                               aod::BCsWithTimestamps const&,
                               soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                              aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+                              aod::McCollisions const&, aod::McParticles const&)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());

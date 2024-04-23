@@ -70,7 +70,7 @@ struct hyhefouranalysis {
   // storing output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     const AxisSpec axisMassHyHe4{(int)400, 3.7f, 4.1f, "Hyperhelium4 Mass Distribution (GeV/c^{2})"};
     const AxisSpec axisNCandidates{(int)100, -0.5f, 99.5f, "Number of 3-body candidates"};
@@ -111,7 +111,7 @@ struct hyhefouranalysis {
     histos.add("hMassVsPtAntiHyHe4", "hMassVsPtAntiHyHe4", kTH2F, {axisPt, axisMassHyHe4});
   }
 
-  void process(aod::Collision const& collision, aod::HyHe4Datas const& hyhe4candidates, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void process(aod::Collision const& /*collision*/, aod::HyHe4Datas const& hyhe4candidates, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
     histos.fill(HIST("hNEvents"), 0.5);
     histos.fill(HIST("hNCandidates"), hyhe4candidates.size());

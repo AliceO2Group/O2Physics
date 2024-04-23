@@ -50,7 +50,8 @@ using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0
 struct HfCorrelatorDsHadronsSelCollision {
   Produces<aod::DmesonSelection> collisionsWithSelDs;
 
-  Configurable<bool> doSelCollision{"doSelCollision", true, "Select collisions with at least one Ds"};
+  Configurable<bool> useSel8{"useSel8", true, "Flag for applying sel8 for collision selection"};
+  Configurable<bool> doSelDsCollision{"doSelDsCollision", true, "Select collisions with at least one Ds"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
@@ -58,6 +59,7 @@ struct HfCorrelatorDsHadronsSelCollision {
   SliceCache cache;
   HfHelper hfHelper;
 
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
@@ -65,60 +67,66 @@ struct HfCorrelatorDsHadronsSelCollision {
   Filter dsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
 
   /// Code to select collisions with at least one Ds meson - for real data and data-like analysis
-  void processDsSelCollisionsData(aod::Collision const& collision,
+  void processDsSelCollisionsData(SelCollisions::iterator const& collision,
                                   CandDsData const& candidates)
   {
     bool isDsFound = false;
-    if (doSelCollision) {
-      if (candidates.size() > 0) {
-        for (const auto& candidate : candidates) {
-          if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
-            continue;
-          }
-          isDsFound = true;
-          break;
+    bool isSel8 = false;
+    if (doSelDsCollision) {
+      for (const auto& candidate : candidates) {
+        if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
+          continue;
         }
+        isDsFound = true;
+        break;
       }
     } else {
       isDsFound = true;
+    }
+    if (useSel8) {
+      isSel8 = collision.sel8();
+      isDsFound = isDsFound && isSel8;
     }
     collisionsWithSelDs(isDsFound);
   }
   PROCESS_SWITCH(HfCorrelatorDsHadronsSelCollision, processDsSelCollisionsData, "Process Ds Collision Selection Data", true);
 
   /// Code to select collisions with at least one Ds meson - for MC reco-level analysis
-  void processDsSelCollisionsMcRec(aod::Collision const& collision,
+  void processDsSelCollisionsMcRec(SelCollisions::iterator const& collision,
                                    CandDsMcReco const& candidates)
   {
     bool isDsFound = false;
-    if (doSelCollision) {
-      if (candidates.size() > 0) {
-        for (const auto& candidate : candidates) {
-          if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
-            continue;
-          }
-          isDsFound = true;
-          break;
+    bool isSel8 = false;
+    if (doSelDsCollision) {
+      for (const auto& candidate : candidates) {
+        if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
+          continue;
         }
+        isDsFound = true;
+        break;
       }
     } else {
       isDsFound = true;
+    }
+    if (useSel8) {
+      isSel8 = collision.sel8();
+      isDsFound = isDsFound && isSel8;
     }
     collisionsWithSelDs(isDsFound);
   }
   PROCESS_SWITCH(HfCorrelatorDsHadronsSelCollision, processDsSelCollisionsMcRec, "Process Ds Collision Selection MCRec", false);
 
   /// Code to select collisions with at least one Ds meson - for MC gen-level analysis
-  void processDsSelCollisionsMcGen(aod::McCollision const& mcCollision,
+  void processDsSelCollisionsMcGen(aod::McCollision const&,
                                    CandDsMcGen const& mcParticles)
   {
     bool isDsFound = false;
-    if (doSelCollision) {
+    if (doSelDsCollision) {
       for (const auto& particle : mcParticles) {
         if (std::abs(particle.pdgCode()) != Pdg::kDS) {
           continue;
         }
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassDS);
+        double yD = RecoDecay::y(particle.pVector(), MassDS);
         if (std::abs(yD) > yCandMax || particle.pt() < ptCandMin) {
           continue;
         }
@@ -138,11 +146,13 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsHadronPair> entryDsHadronPair;
   Produces<aod::DsHadronRecoInfo> entryDsHadronRecoInfo;
   Produces<aod::DsHadronGenInfo> entryDsHadronGenInfo;
+  Produces<aod::DsHadronMlInfo> entryDsHadronMlInfo;
+  Produces<aod::DsCandRecoInfo> entryDsCandRecoInfo;
 
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
+  Configurable<bool> useSel8ForTrackEff{"useSel8ForTrackEff", true, "Flag for applying sel8 for collision selection"};
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying D-meson efficiency weights"};
-  Configurable<bool> fillSystematics{"fillSystematics", false, "Flag for filling THnSparse for systematics"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
@@ -188,15 +198,15 @@ struct HfCorrelatorDsHadrons {
                         kAssocTrackStepFake,
                         kAssocTrackNSteps };
 
-  using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>; // collisionFilter applied
-  using SelCollisionsWithDsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;                      // collisionFilter applied
-  using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;                // flagDsFilter applied
-  using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;         // flagDsFilter applied
-  using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                              // flagDsFilter applied
-  using MyTracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;                                  // trackFilter applied
-  using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, o2::aod::McTrackLabels>>;          // trackFilter applied
+  using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;            // collisionFilter applied
+  using SelCollisionsWithDsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;                                 // collisionFilter applied
+  using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;                           // flagDsFilter applied
+  using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi, aod::HfCand3ProngMcRec>>; // flagDsFilter applied
+  using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                                         // flagDsFilter applied
+  using MyTracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;                                             // trackFilter applied
+  using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, o2::aod::McTrackLabels>>;                     // trackFilter applied
 
-  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true && o2::aod::evsel::sel8 == true;
+  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
@@ -377,17 +387,24 @@ struct HfCorrelatorDsHadrons {
       if (applyEfficiency) {
         efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()));
       }
+      std::vector<float> outputMl = {-1., -1., -1.};
       fillHisto(candidate);
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
         fillHistoKKPi(candidate, efficiencyWeightD);
-      }
-      if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
+        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+          outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
+        }
+        entryDsCandRecoInfo(hfHelper.invMassDsToKKPi(candidate), candidate.pt(), outputMl[0], outputMl[2]);
+      } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
         fillHistoPiKK(candidate, efficiencyWeightD);
+        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+          outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
+        }
+        entryDsCandRecoInfo(hfHelper.invMassDsToPiKK(candidate), candidate.pt(), outputMl[0], outputMl[2]);
       }
       if (candidate.isSelDsToKKPi() >= selectionFlagDs && candidate.isSelDsToPiKK() >= selectionFlagDs) {
         registry.fill(HIST("hCountSelectionStatusDsToKKPiAndToPiKK"), 0.);
       }
-      std::vector<float> outputMl = {-1., -1., -1.};
 
       // Ds-Hadron correlation dedicated section
       for (const auto& track : tracks) {
@@ -409,12 +426,7 @@ struct HfCorrelatorDsHadrons {
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(candidate), false);
           entryDsHadronGenInfo(false, false);
-          if (fillSystematics) {
-            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-              outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
-            }
-            registry.fill(HIST("hCorrelSystematics"), getDeltaPhi(track.phi(), candidate.phi()), track.eta() - candidate.eta(), candidate.pt(), track.pt(), hfHelper.invMassDsToKKPi(candidate), outputMl[0], outputMl[2]);
-          }
+          entryDsHadronMlInfo(outputMl[0], outputMl[2]);
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
@@ -423,12 +435,7 @@ struct HfCorrelatorDsHadrons {
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(candidate), false);
           entryDsHadronGenInfo(false, false);
-          if (fillSystematics) {
-            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-              outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
-            }
-            registry.fill(HIST("hCorrelSystematics"), getDeltaPhi(track.phi(), candidate.phi()), track.eta() - candidate.eta(), candidate.pt(), track.pt(), hfHelper.invMassDsToPiKK(candidate), outputMl[0], outputMl[2]);
-          }
+          entryDsHadronMlInfo(outputMl[0], outputMl[2]);
         }
       } // end track loop
     }   // end candidate loop
@@ -470,15 +477,15 @@ struct HfCorrelatorDsHadrons {
         fillHistoMcRecSig(candidate, multiplicityFT0M);
         // DsToKKPi and DsToPiKK division
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToKKPi(candidate), efficiencyWeightD);
-          registry.fill(HIST("hMassDsMCRecSig"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
-          registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hMassDsMcRec"), hfHelper.invMassDsToKKPi(candidate), efficiencyWeightD);
+          registry.fill(HIST("hMassDsMcRecSig"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hMassDsVsPtMcRec"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
           registry.fill(HIST("hSelectionStatusDsToKKPi"), candidate.isSelDsToKKPi());
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToPiKK(candidate), efficiencyWeightD);
-          registry.fill(HIST("hMassDsMCRecSig"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
-          registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hMassDsMcRec"), hfHelper.invMassDsToPiKK(candidate), efficiencyWeightD);
+          registry.fill(HIST("hMassDsMcRecSig"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hMassDsVsPtMcRec"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
           registry.fill(HIST("hSelectionStatusDsToPiKK"), candidate.isSelDsToPiKK());
         }
         if (candidate.isSelDsToKKPi() >= selectionFlagDs && candidate.isSelDsToPiKK() >= selectionFlagDs) {
@@ -488,17 +495,18 @@ struct HfCorrelatorDsHadrons {
         fillHistoMcRecBkg(candidate);
         // DsToKKPi and DsToPiKK division
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToKKPi(candidate), efficiencyWeightD);
-          registry.fill(HIST("hMassDsMCRecBkg"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
-          registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
-          registry.fill(HIST("hSelectionStatusDsToKKPiMcRec"), candidate.isSelDsToKKPi());
+          registry.fill(HIST("hMassDsMcRec"), hfHelper.invMassDsToKKPi(candidate), efficiencyWeightD);
+          registry.fill(HIST("hMassDsMcRecBkg"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hMassDsVsPtMcRec"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hSelectionStatusDsToKKPi"), candidate.isSelDsToKKPi());
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToPiKK(candidate), efficiencyWeightD);
-          registry.fill(HIST("hMassDsMCRecBkg"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
-          registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
-          registry.fill(HIST("hSelectionStatusDsToPiKKMcRec"), candidate.isSelDsToPiKK());
+          registry.fill(HIST("hMassDsMcRec"), hfHelper.invMassDsToPiKK(candidate), efficiencyWeightD);
+          registry.fill(HIST("hMassDsMcRecBkg"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hMassDsVsPtMcRec"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hSelectionStatusDsToPiKK"), candidate.isSelDsToPiKK());
         }
       }
+      std::vector<float> outputMl = {-1., -1., -1.};
 
       // Ds-Hadron correlation dedicated section
       // if the candidate is selected as Ds, search for Hadron and evaluate correlations
@@ -519,6 +527,10 @@ struct HfCorrelatorDsHadrons {
                             track.pt(),
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(candidate), isDsSignal);
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
+          }
+          entryDsHadronMlInfo(outputMl[0], outputMl[2]);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
             isPhysicalPrimary = mcParticle.isPhysicalPrimary();
@@ -541,6 +553,10 @@ struct HfCorrelatorDsHadrons {
                             track.pt(),
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(candidate), isDsSignal);
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
+          }
+          entryDsHadronMlInfo(outputMl[0], outputMl[2]);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
             isPhysicalPrimary = mcParticle.isPhysicalPrimary();
@@ -582,7 +598,7 @@ struct HfCorrelatorDsHadrons {
         hCandidates->Fill(kCandidateStepMcGenAll, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
         if (std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
           hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
-          auto yDs = RecoDecay::y(std::array{mcParticle.px(), mcParticle.py(), mcParticle.pz()}, o2::constants::physics::MassDS);
+          auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
           if (std::abs(yDs) <= yCandGenMax) {
             hCandidates->Fill(kCandidateStepMcCandInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
           }
@@ -622,7 +638,7 @@ struct HfCorrelatorDsHadrons {
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcCandEfficiency, "Process MC for calculating candidate reconstruction efficiency", false);
 
   /// Ds-Hadron correlation - for calculating associated particle tracking efficiency using MC reco-level analysis
-  void processMcTrackEfficiency(soa::Join<aod::Collisions, aod::FT0Mults> const&,
+  void processMcTrackEfficiency(soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels> const&,
                                 soa::Join<aod::McCollisions, aod::MultsExtraMC> const&,
                                 CandDsMcGen const& mcParticles,
                                 TracksWithMc const& tracksData)
@@ -652,7 +668,10 @@ struct HfCorrelatorDsHadrons {
         if (!track.isGlobalTrackWoDCA()) {
           continue;
         }
-        auto collision = track.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults>>();
+        auto collision = track.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels>>();
+        if (useSel8ForTrackEff && !collision.sel8()) {
+          continue;
+        }
         multiplicity = collision.multFT0M();
         posZ = collision.posZ();
         registry.fill(HIST("hZVtx"), posZ);
@@ -678,7 +697,7 @@ struct HfCorrelatorDsHadrons {
   void processMcGen(SelCollisionsWithDsMc::iterator const& mcCollision,
                     CandDsMcGen const& mcParticles)
   {
-    auto getTracksSize = [&mcParticles](SelCollisionsWithDsMc::iterator const& mcCollision) {
+    auto getTracksSize = [&mcParticles](SelCollisionsWithDsMc::iterator const&) {
       int nTracks = 0;
       for (const auto& track : mcParticles) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
@@ -700,7 +719,7 @@ struct HfCorrelatorDsHadrons {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassDS); // TODO
+        double yD = RecoDecay::y(particle.pVector(), MassDS); // TODO
         if (yCandGenMax >= 0. && std::abs(yD) > yCandGenMax) {
           continue;
         }
@@ -746,12 +765,7 @@ struct HfCorrelatorDsHadrons {
       registry.fill(HIST("hMultFT0M"), collision.multFT0M());
       registry.fill(HIST("hZVtx"), collision.posZ());
     }
-    for (const auto& candidate : candidates) {
-      if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
-        continue;
-      }
-      fillHisto(candidate);
-    }
+
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<SelCollisionsWithDs, CandDsData, MyTracksData, BinningType> pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
@@ -759,6 +773,7 @@ struct HfCorrelatorDsHadrons {
       if (tracks1.size() == 0) {
         continue;
       }
+
       // LOGF(info, "Mixed event collisions: Index = (%d, %d), tracks Size: (%d, %d), Z Vertex: (%f, %f), Pool Bin: (%d, %d)", c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), c1.posZ(), c2.posZ(), corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M())), corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M())));
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
       int poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
@@ -785,12 +800,10 @@ struct HfCorrelatorDsHadrons {
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(cand), false);
           entryDsHadronGenInfo(false, false);
-          if (fillSystematics) {
-            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-              outputMl[iclass] = cand.mlProbDsToKKPi()[classMl->at(iclass)];
-            }
-            registry.fill(HIST("hCorrelSystematics"), getDeltaPhi(pAssoc.phi(), cand.phi()), pAssoc.eta() - cand.eta(), cand.pt(), pAssoc.pt(), hfHelper.invMassDsToKKPi(cand), outputMl[0], outputMl[2]);
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = cand.mlProbDsToKKPi()[classMl->at(iclass)];
           }
+          entryDsHadronMlInfo(outputMl[0], outputMl[2]);
         } else if (cand.isSelDsToPiKK() >= selectionFlagDs) {
           // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d), PiKK", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.collision().index(), pAssoc.collision().index());
           entryDsHadronPair(getDeltaPhi(pAssoc.phi(), cand.phi()),
@@ -800,12 +813,10 @@ struct HfCorrelatorDsHadrons {
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(cand), false);
           entryDsHadronGenInfo(false, false);
-          if (fillSystematics) {
-            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-              outputMl[iclass] = cand.mlProbDsToPiKK()[classMl->at(iclass)];
-            }
-            registry.fill(HIST("hCorrelSystematics"), getDeltaPhi(pAssoc.phi(), cand.phi()), pAssoc.eta() - cand.eta(), cand.pt(), pAssoc.pt(), hfHelper.invMassDsToPiKK(cand), outputMl[0], outputMl[2]);
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = cand.mlProbDsToPiKK()[classMl->at(iclass)];
           }
+          entryDsHadronMlInfo(outputMl[0], outputMl[2]);
         }
       }
     }
@@ -853,6 +864,7 @@ struct HfCorrelatorDsHadrons {
         if (!pAssoc.isGlobalTrackWoDCA()) {
           continue;
         }
+        std::vector<float> outputMl = {-1., -1., -1.};
         // prompt and non-prompt division
         isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         // Ds Signal
@@ -866,6 +878,10 @@ struct HfCorrelatorDsHadrons {
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(candidate), isDsSignal);
           entryDsHadronGenInfo(isDsPrompt, false);
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
+          }
+          entryDsHadronMlInfo(outputMl[0], outputMl[2]);
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           entryDsHadronPair(getDeltaPhi(pAssoc.phi(), candidate.phi()),
                             pAssoc.eta() - candidate.eta(),
@@ -874,6 +890,10 @@ struct HfCorrelatorDsHadrons {
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(candidate), isDsSignal);
           entryDsHadronGenInfo(isDsPrompt, false);
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
+          }
+          entryDsHadronMlInfo(outputMl[0], outputMl[2]);
         }
       }
     }

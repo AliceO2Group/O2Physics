@@ -1547,7 +1547,7 @@ struct lambdakzeroPreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collisions const& collisions, aod::V0s const& v0table, LabeledTracksExtra const&, aod::McParticles const& particlesMC)
+  void processBuildMCAssociated(aod::Collisions const& /*collisions*/, aod::V0s const& v0table, LabeledTracksExtra const&, aod::McParticles const& /*particlesMC*/)
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
@@ -1558,7 +1558,7 @@ struct lambdakzeroPreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdx(aod::Collisions const& collisions, aod::V0s const& v0table, TracksExtraWithPID const&)
+  void processBuildValiddEdx(aod::Collisions const& /*collisions*/, aod::V0s const& v0table, TracksExtraWithPID const&)
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
@@ -1569,7 +1569,7 @@ struct lambdakzeroPreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildValiddEdxMCAssociated(aod::Collisions const& collisions, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
+  void processBuildValiddEdxMCAssociated(aod::Collisions const& /*collisions*/, aod::V0s const& v0table, TracksExtraWithPIDandLabels const&, aod::McParticles const&)
   {
     initializeMasks(v0table.size());
     for (auto const& v0 : v0table) {
@@ -1595,7 +1595,7 @@ struct lambdakzeroPreselector {
   /// This process function checks for the use of V0s in strangeness tracked cascades
   /// They are then marked appropriately; the user could then operate
   /// the lambdakzerobuilder to construct only those V0s.
-  void processSkipV0sNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& casctable)
+  void processSkipV0sNotUsedInTrackedCascades(aod::TrackedCascades const& tracasctable, aod::Cascades const& /*casctable*/)
   {
     for (auto const& tracasc : tracasctable) {
       auto casc = tracasc.cascade();

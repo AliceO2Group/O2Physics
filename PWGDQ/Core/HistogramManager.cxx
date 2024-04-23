@@ -67,6 +67,9 @@ HistogramManager::HistogramManager(const char* name, const char* title, const in
   fMainList->SetOwner(kTRUE);
   fMainList->SetName(name);
   fUsedVars = new bool[maxNVars];
+  for (int i = 0; i < maxNVars; ++i) {
+    fUsedVars[i] = false;
+  }
   fVariableNames = new TString[maxNVars];
   fVariableUnits = new TString[maxNVars];
 }

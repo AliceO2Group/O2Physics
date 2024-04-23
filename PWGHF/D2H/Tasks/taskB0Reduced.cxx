@@ -330,7 +330,7 @@ struct HfTaskB0Reduced {
   /// \param candidatesD is the table with D- candidates
   template <bool doMc, bool withDecayTypeCheck, bool withDmesMl, bool withB0Ml, typename Cand>
   void fillCand(Cand const& candidate,
-                aod::HfRed3Prongs const& candidatesD)
+                aod::HfRed3Prongs const&)
   {
     auto ptCandB0 = candidate.pt();
     auto invMassB0 = hfHelper.invMassB0ToDPi(candidate);
@@ -339,7 +339,7 @@ struct HfTaskB0Reduced {
     auto invMassD = candD.invMass();
     std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
     std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
-    std::array<float, 3> momD{candD.px(), candD.py(), candD.pz()};
+    std::array<float, 3> momD{candD.pVector()};
     auto cospD = RecoDecay::cpa(posPv, posSvD, momD);
     auto cospXyD = RecoDecay::cpaXY(posPv, posSvD, momD);
     auto decLenD = RecoDecay::distance(posPv, posSvD);

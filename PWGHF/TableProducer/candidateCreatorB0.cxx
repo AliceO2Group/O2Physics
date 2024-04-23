@@ -29,6 +29,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -36,10 +37,11 @@ using namespace o2::aod;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_trkcandsel;
 
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0 {
-  Produces<aod::HfCandB0Base> rowCandidateBase; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandB0Base> rowCandidateBase;     // table defined in CandidateReconstructionTables.h
   Produces<aod::HfCandB0Prongs> rowCandidateProngs; // table defined in CandidateReconstructionTables.h
 
   // vertexing
@@ -99,6 +101,9 @@ struct HfCandidateCreatorB0 {
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
 
+  std::shared_ptr<TH1> hCandidatesD, hCandidatesB;
+  HistogramRegistry registry{"registry"};
+
   void init(InitContext const&)
   {
     // invariant-mass window cut
@@ -132,6 +137,12 @@ struct HfCandidateCreatorB0 {
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
+
+    /// candidate monitoring
+    hCandidatesD = registry.add<TH1>("hCandidatesD", "D candidate counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesB = registry.add<TH1>("hCandidatesB", "B candidate counter", {HistType::kTH1D, {axisCands}});
+    setLabelHistoCands(hCandidatesD);
+    setLabelHistoCands(hCandidatesB);
   }
 
   /// Single-track cuts for pions on dcaXY
@@ -201,9 +212,9 @@ struct HfCandidateCreatorB0 {
         auto trackParCov1 = getTrackParCov(track1);
         auto trackParCov2 = getTrackParCov(track2);
 
-        std::array<float, 3> pVec0 = {track0.px(), track0.py(), track0.pz()};
-        std::array<float, 3> pVec1 = {track1.px(), track1.py(), track1.pz()};
-        std::array<float, 3> pVec2 = {track2.px(), track2.py(), track2.pz()};
+        std::array<float, 3> pVec0 = track0.pVector();
+        std::array<float, 3> pVec1 = track1.pVector();
+        std::array<float, 3> pVec2 = track2.pVector();
 
         auto dca0 = o2::dataformats::DCA(track0.dcaXY(), track0.dcaZ(), track0.cYY(), track0.cZY(), track0.cZZ());
         auto dca1 = o2::dataformats::DCA(track1.dcaXY(), track1.dcaZ(), track1.cYY(), track1.cZY(), track1.cZZ());
@@ -224,9 +235,17 @@ struct HfCandidateCreatorB0 {
 
         // ---------------------------------
         // reconstruct 3-prong secondary vertex (D±)
-        if (df3.process(trackParCov0, trackParCov1, trackParCov2) == 0) {
+        hCandidatesD->Fill(SVFitting::BeforeFit);
+        try {
+          if (df3.process(trackParCov0, trackParCov1, trackParCov2) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for D cannot work, skipping the candidate.";
+          hCandidatesD->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidatesD->Fill(SVFitting::FitOk);
 
         const auto& secondaryVertexD = df3.getPCACandidate();
         // propagate the 3 prongs to the secondary vertex
@@ -273,14 +292,22 @@ struct HfCandidateCreatorB0 {
           }
 
           hPtPion->Fill(trackPion.pt());
-          std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+          std::array<float, 3> pVecPion = trackPion.pVector();
           auto trackParCovPi = getTrackParCov(trackPion);
 
           // ---------------------------------
           // reconstruct the 2-prong B0 vertex
-          if (df2.process(trackParCovD, trackParCovPi) == 0) {
+          hCandidatesB->Fill(SVFitting::BeforeFit);
+          try {
+            if (df2.process(trackParCovD, trackParCovPi) == 0) {
+              continue;
+            }
+          } catch (const std::runtime_error& error) {
+            LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for B cannot work, skipping the candidate.";
+            hCandidatesB->Fill(SVFitting::Fail);
             continue;
           }
+          hCandidatesB->Fill(SVFitting::FitOk);
 
           // calculate relevant properties
           const auto& secondaryVertexB0 = df2.getPCACandidate();
@@ -344,8 +371,8 @@ struct HfCandidateCreatorB0Expressions {
 
   void init(InitContext const&) {}
 
-  void processMc(aod::HfCand3Prong const& dplus,
-                 aod::TracksWMc const& tracks,
+  void processMc(aod::HfCand3Prong const&,
+                 aod::TracksWMc const&,
                  aod::McParticles const& mcParticles,
                  aod::HfCandB0Prongs const& candsB0)
   {

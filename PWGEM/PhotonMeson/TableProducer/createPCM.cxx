@@ -109,7 +109,7 @@ struct createPCM {
     return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -520,7 +520,7 @@ struct createPCM {
   PROCESS_SWITCH(createPCM, processSA, "create V0s with stand-alone way", true);
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  void processTrkCollAsso(aod::TrackAssoc const& trackIndices, FullTracksExtIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
+  void processTrkCollAsso(aod::TrackAssoc const& trackIndices, FullTracksExtIU const&, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);

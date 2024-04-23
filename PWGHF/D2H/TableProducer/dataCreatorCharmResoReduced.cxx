@@ -69,12 +69,15 @@ enum DType : uint8_t {
 
 /// Creation of D-V0 pairs
 struct HfDataCreatorCharmResoReduced {
+
   // Produces AOD tables to store track information
   Produces<aod::HfRedCollisions> hfReducedCollision; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfOrigColCounts> hfCollisionCounter; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
-
+  // V0 and D candidates reduced tables
   Produces<aod::HfRedVzeros> hfCandV0;   // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfRed3PrNoTrks> hfCandD; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  // ML optional Tables
+  Produces<aod::HfRed3ProngsMl> hfCandDMl; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
 
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
@@ -106,14 +109,18 @@ struct HfDataCreatorCharmResoReduced {
   bool isHfCandResoConfigFilled = false;
 
   using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
+  using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDstarFiltered = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
+  using CandDstarFilteredWithMl = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>>;
   using BigTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
   Filter filterSelectDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus);
   Filter filterSelectedCandDstar = (aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi);
 
   Preslice<CandsDplusFiltered> candsDplusPerCollision = aod::track_association::collisionId;
+  Preslice<CandsDplusFilteredWithMl> candsDplusPerCollisionWithMl = aod::track_association::collisionId;
   Preslice<CandDstarFiltered> candsDstarPerCollision = aod::track_association::collisionId;
+  Preslice<CandDstarFilteredWithMl> candsDstarPerCollisionWithMl = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> candsV0PerCollision = aod::track_association::collisionId;
 
@@ -160,7 +167,7 @@ struct HfDataCreatorCharmResoReduced {
   /// \param dDaughtersIDs are the IDs of the D meson daughter tracks
   /// \return a bitmap with mass hypotesis if passes all cuts
   template <typename V0, typename Coll, typename Tr>
-  inline uint8_t getSelectionMapV0(const V0& v0, const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
+  inline uint8_t getSelectionMapV0(const V0& v0, const Coll& /*collision*/, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
   {
     uint8_t selMap{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
     // reject VOs that share daughters with D
@@ -206,12 +213,12 @@ struct HfDataCreatorCharmResoReduced {
     return selMap;
   }
 
-  template <uint8_t DecayChannel, typename CCands>
+  template <bool withMl, uint8_t DecayChannel, typename CCands>
   void runDataCreation(aod::Collision const& collision,
                        CCands const& candsD,
                        aod::V0Datas const& V0s,
-                       BigTracksPID const& tracks,
-                       aod::BCsWithTimestamps const& bcs)
+                       BigTracksPID const&,
+                       aod::BCsWithTimestamps const&)
   {
     // helpers for ReducedTables filling
     int indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
@@ -233,7 +240,8 @@ struct HfDataCreatorCharmResoReduced {
       std::array<int, 3> prongIdsD;
       uint8_t v0type;
       int8_t dtype;
-      if constexpr (std::is_same<CCands, CandDstarFiltered>::value) {
+      std::array<float, 3> bdtScores;
+      if constexpr (DecayChannel == DecayChannel::DstarV0) {
         if (candD.signSoftPi() > 0)
           invMassD = candD.invMassDstar();
         else
@@ -247,7 +255,10 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
         dtype = candD.signSoftPi() * DType::Dstar;
-      } else if constexpr (std::is_same<CCands, CandsDplusFiltered>::value) {
+        if constexpr (withMl) {
+          std::copy(candD.mlProbDstarToD0Pi().begin(), candD.mlProbDstarToD0Pi().end(), bdtScores.begin());
+        }
+      } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
         auto prong0 = candD.template prong0_as<BigTracksPID>();
         invMassD = hfHelper.invMassDplusToPiKPi(candD);
         massD = MassDPlus;
@@ -259,6 +270,9 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
         dtype = static_cast<int8_t>(prong0.sign() * DType::Dplus);
+        if constexpr (withMl) {
+          std::copy(candD.mlProbDplusToPiKPi().begin(), candD.mlProbDplusToPiKPi().end(), bdtScores.begin());
+        }
       } // else if
 
       // Loop on V0 candidates
@@ -340,6 +354,9 @@ struct HfDataCreatorCharmResoReduced {
                 invMassD,
                 pVecD[0], pVecD[1], pVecD[2],
                 dtype);
+        if constexpr (withMl) {
+          hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2]);
+        }
         fillHfReducedCollision = true;
         switch (DecayChannel) {
           case DecayChannel::DstarV0:
@@ -368,7 +385,7 @@ struct HfDataCreatorCharmResoReduced {
 
   void processDplusV0(aod::Collisions const& collisions,
                       CandsDplusFiltered const& candsDplus,
-                      aod::TrackAssoc const& trackIndices,
+                      aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
                       BigTracksPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
@@ -380,14 +397,33 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<DecayChannel::DplusV0, CandsDplusFiltered>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
+      runDataCreation<false, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
 
+  void processDplusV0WithMl(aod::Collisions const& collisions,
+                            CandsDplusFilteredWithMl const& candsDplus,
+                            aod::TrackAssoc const& trackIndices,
+                            aod::V0Datas const& V0s,
+                            BigTracksPID const& tracks,
+                            aod::BCsWithTimestamps const& bcs)
+  {
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize());
+
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<true, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
+    }
+  }
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0WithMl, "Process Dplus candidates with ML info", false);
+
   void processDstarV0(aod::Collisions const& collisions,
                       CandDstarFiltered const& candsDstar,
-                      aod::TrackAssoc const& trackIndices,
+                      aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
                       BigTracksPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
@@ -399,10 +435,29 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<DecayChannel::DstarV0, CandDstarFiltered>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
+      runDataCreation<false, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
+
+  void processDstarV0WithMl(aod::Collisions const& collisions,
+                            CandDstarFilteredWithMl const& candsDstar,
+                            aod::TrackAssoc const& trackIndices,
+                            aod::V0Datas const& V0s,
+                            BigTracksPID const& tracks,
+                            aod::BCsWithTimestamps const& bcs)
+  {
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize());
+
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<true, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
+    }
+  }
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0WithMl, "Process DStar candidates with ML info", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

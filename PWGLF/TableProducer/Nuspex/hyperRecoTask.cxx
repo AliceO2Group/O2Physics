@@ -60,6 +60,10 @@ std::shared_ptr<TH1> hCentFV0A;
 std::shared_ptr<TH2> hNsigma3HeSel;
 std::shared_ptr<TH2> hDeDx3HeSel;
 std::shared_ptr<TH2> hDeDxTot;
+std::shared_ptr<TH1> hH3LMassBefSel;
+std::shared_ptr<TH1> hH3LMassTracked;
+std::shared_ptr<TH1> hH4LMassBefSel;
+std::shared_ptr<TH1> hH4LMassTracked;
 std::shared_ptr<TH1> hDecayChannel;
 std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
@@ -205,6 +209,11 @@ struct hyperRecoTask {
     hNsigma3HeSel = qaRegistry.add<TH2>("hNsigma3HeSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}He)", HistType::kTH2F, {rigidityAxis, nSigma3HeAxis});
     hDeDx3HeSel = qaRegistry.add<TH2>("hDeDx3HeSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
     hDeDxTot = qaRegistry.add<TH2>("hDeDxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
+    hH3LMassBefSel = qaRegistry.add<TH1>("hH3LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.96, 3.04}});
+    hH3LMassTracked = qaRegistry.add<TH1>("hH3LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.96, 3.04}});
+    hH4LMassBefSel = qaRegistry.add<TH1>("hH4LMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
+    hH4LMassTracked = qaRegistry.add<TH1>("hH4LMassTracked", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 3.76, 3.84}});
+
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "Selected");
@@ -309,6 +318,7 @@ struct hyperRecoTask {
         continue;
 
       hyperCandidate hypCand;
+      hypCand.v0ID = v0.globalIndex();
       hypCand.isMatter = isHe && isAntiHe ? std::abs(nSigmaTPCpos) < std::abs(nSigmaTPCneg) : isHe;
       auto& he3track = hypCand.isMatter ? posTrack : negTrack;
       auto& he3Rigidity = hypCand.isMatter ? posRigidity : negRigidity;
@@ -381,6 +391,13 @@ struct hyperRecoTask {
       if (!isHypMass)
         continue;
 
+      hH3LMassBefSel->Fill(massH3L);
+      hH4LMassBefSel->Fill(massH4L);
+      if (!isTracked.empty() && isTracked[hypCand.v0ID]) {
+        hH3LMassTracked->Fill(massH3L);
+        hH4LMassTracked->Fill(massH4L);
+      }
+
       hypCand.dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
       if (hypCand.dcaV0dau > dcav0dau) {
         continue;
@@ -414,13 +431,11 @@ struct hyperRecoTask {
       int chargeFactor = -1 + 2 * hypCand.isMatter;
       hDeDx3HeSel->Fill(chargeFactor * hypCand.momHe3TPC, he3track.tpcSignal());
       hNsigma3HeSel->Fill(chargeFactor * hypCand.momHe3TPC, hypCand.nSigmaHe3);
-
-      hypCand.v0ID = v0.globalIndex();
       hyperCandidates.push_back(hypCand);
     }
   }
 
-  void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const& particlesMC)
+  void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const&)
   {
     for (auto& hypCand : hyperCandidates) {
       auto mcLabPos = trackLabels.rawIteratorAt(hypCand.posTrackID);
@@ -478,7 +493,7 @@ struct hyperRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10)
         continue;
       hEvents->Fill(1.);
       hZvtx->Fill(collision.posZ());
@@ -519,7 +534,7 @@ struct hyperRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10)
         continue;
       hEvents->Fill(1.);
       hZvtx->Fill(collision.posZ());

@@ -29,6 +29,7 @@
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -37,6 +38,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
+using namespace o2::aod::pwgem::dilepton::mcutil;
 using std::array;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsNee, aod::EMMCEventLabels>;
@@ -131,7 +133,7 @@ struct DalitzEEQCMC {
     LOGF(info, "Number of Dalitz cuts = %d", fDalitzEECuts.size());
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     DefineCuts();
     addhistograms(); // please call this after DefinCuts();
@@ -148,27 +150,27 @@ struct DalitzEEQCMC {
   int FindLF(TTrack const& posmc, TTrack const& elemc, TMCTracks const& mcparticles)
   {
     int arr[] = {
-      FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 111, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 221, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 331, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 113, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 223, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 333, mcparticles)};
+      FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 111, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 221, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 331, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 113, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 223, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 333, mcparticles), FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 443, mcparticles)};
     int size = sizeof(arr) / sizeof(*arr);
     int max = *std::max_element(arr, arr + size);
     return max;
   }
 
   Partition<MyDalitzEEs> uls_pairs = o2::aod::dalitzee::sign == 0;
+  Partition<MyDalitzEEs> lspp_pairs = o2::aod::dalitzee::sign == +1;
+  Partition<MyDalitzEEs> lsmm_pairs = o2::aod::dalitzee::sign == -1;
 
   SliceCache cache;
   Preslice<MyDalitzEEs> perCollision = aod::dalitzee::emeventId;
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
-  std::vector<uint64_t> used_trackIds;
-
-  void processQCMC(MyCollisions const& collisions, MyDalitzEEs const& dileptons, MyMCTracks const& tracks, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
+  void processQCMC(MyCollisions const&, MyDalitzEEs const&, MyMCTracks const&, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     double values_single[4] = {0, 0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
@@ -187,10 +189,13 @@ struct DalitzEEQCMC {
       reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
       auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzee::emeventId, collision.globalIndex(), cache);
+      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emeventId, collision.globalIndex(), cache);
+      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzee::emeventId, collision.globalIndex(), cache);
 
       for (const auto& cut : fDalitzEECuts) {
         THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
         THashList* list_track_cut = static_cast<THashList*>(list_track->FindObject(cut.GetName()));
+        std::vector<uint64_t> used_trackIds;
         used_trackIds.reserve(uls_pairs_per_coll.size() * 2);
 
         int nuls = 0;
@@ -204,17 +209,28 @@ struct DalitzEEQCMC {
 
           auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
           auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
-          int mother_id = FindLF(posmc, elemc, mcparticles);
-          int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
-          if (mother_id < 0 && photonid < 0) {
+
+          if (posmc.pdgCode() != -11 || elemc.pdgCode() != 11) {
             continue;
           }
-          if (mother_id > 0) {
+
+          int mother_id = FindLF(posmc, elemc, mcparticles);
+          int hfee_type = IsHF(posmc, elemc, mcparticles);
+          int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
+          if (mother_id < 0 && hfee_type < 0 && photonid < 0) {
+            continue;
+          }
+
+          dca_pos_3d = pos.dca3DinSigma();
+          dca_ele_3d = ele.dca3DinSigma();
+          dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+          values[0] = uls_pair.mass();
+          values[1] = uls_pair.pt();
+          values[2] = dca_ee_3d;
+
+          if (mother_id > -1) {
             auto mcmother = mcparticles.iteratorAt(mother_id);
             if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
-              dca_pos_3d = pos.dca3DinSigma();
-              dca_ele_3d = ele.dca3DinSigma();
-              dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
 
               if (cfgDoDCAstudy) {
                 values_single[0] = uls_pair.mass();
@@ -224,10 +240,6 @@ struct DalitzEEQCMC {
                 reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_dca_same"))->Fill(values_single);
               }
 
-              values[0] = uls_pair.mass();
-              values[1] = uls_pair.pt();
-              values[2] = dca_ee_3d;
-              values[3] = uls_pair.phiv();
               reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
 
               if (mcmother.pdgCode() == 111) {
@@ -236,6 +248,37 @@ struct DalitzEEQCMC {
               } else if (mcmother.pdgCode() == 221) {
                 reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_Eta"))->Fill(uls_pair.phiv(), uls_pair.mass());
                 reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsOPA_Eta"))->Fill(uls_pair.opangle(), uls_pair.mass());
+              }
+
+              switch (abs(mcmother.pdgCode())) {
+                case 111:
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_Pi0"))->Fill(values);
+                  break;
+                case 221:
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_Eta"))->Fill(values);
+                  break;
+                case 331:
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_EtaPrime"))->Fill(values);
+                  break;
+                case 113:
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_Rho"))->Fill(values);
+                  break;
+                case 223:
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_Omega"))->Fill(values);
+                  break;
+                case 333:
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_Phi"))->Fill(values);
+                  break;
+                case 443: {
+                  if (IsFromBeauty(mcmother, mcparticles) > 0) {
+                    reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_NonPromptJpsi"))->Fill(values);
+                  } else {
+                    reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_PromptJpsi"))->Fill(values);
+                  }
+                  break;
+                }
+                default:
+                  break;
               }
 
               nuls++;
@@ -250,7 +293,30 @@ struct DalitzEEQCMC {
                 }
               }
             } // end of LF
-          } else if (photonid > 0) {
+          } else if (hfee_type > -1) {
+            if ((posmc.isPhysicalPrimary() || posmc.producedByGenerator()) && (elemc.isPhysicalPrimary() || elemc.producedByGenerator())) {
+              switch (hfee_type) {
+                case static_cast<int>(EM_HFeeType::kCe_Ce):
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_Ce_Ce"))->Fill(values);
+                  break;
+                case static_cast<int>(EM_HFeeType::kBe_Be):
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_Be_Be"))->Fill(values);
+                  break;
+                case static_cast<int>(EM_HFeeType::kBCe_BCe):
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_BCe_BCe"))->Fill(values);
+                  break;
+                case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): // ULS
+                  reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_BCe_Be_SameB"))->Fill(values);
+                  break;
+                case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): // LS
+                  LOGF(info, "You should not see kBCe_Be_DiffB in ULS. Good luck.");
+                  break;
+                default:
+                  break;
+              }
+              nuls++;
+            }
+          } else if (photonid > -1) {
             auto mcphoton = mcparticles.iteratorAt(photonid);
             if ((mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) && IsEleFromPC(elemc, mcparticles) && IsEleFromPC(posmc, mcparticles)) {
               reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_Photon"))->Fill(uls_pair.phiv(), uls_pair.mass());
@@ -259,6 +325,132 @@ struct DalitzEEQCMC {
           }
         } // end of uls pair loop
         reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_uls"))->Fill(nuls);
+
+        int nlspp = 0;
+        for (auto& lspp_pair : lspp_pairs_per_coll) {
+          auto pos = lspp_pair.template posTrack_as<MyMCTracks>();
+          auto ele = lspp_pair.template negTrack_as<MyMCTracks>();
+
+          if (!cut.IsSelected<MyMCTracks>(lspp_pair)) {
+            continue;
+          }
+
+          auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
+          auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
+
+          if (posmc.pdgCode() != -11 || elemc.pdgCode() != -11) {
+            continue;
+          }
+
+          int hfee_type = IsHF(posmc, elemc, mcparticles);
+          if (hfee_type < 0) {
+            continue;
+          }
+
+          dca_pos_3d = pos.dca3DinSigma();
+          dca_ele_3d = ele.dca3DinSigma();
+          dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+          values[0] = lspp_pair.mass();
+          values[1] = lspp_pair.pt();
+          values[2] = dca_ee_3d;
+
+          if ((posmc.isPhysicalPrimary() || posmc.producedByGenerator()) && (elemc.isPhysicalPrimary() || elemc.producedByGenerator())) {
+            switch (hfee_type) {
+              case static_cast<int>(EM_HFeeType::kCe_Ce):
+                LOGF(info, "You should not see kCe_Ce in LS++. Good luck.");
+                break;
+              case static_cast<int>(EM_HFeeType::kBe_Be):
+                LOGF(info, "You should not see kBe_Be in LS++. Good luck.");
+                break;
+              case static_cast<int>(EM_HFeeType::kBCe_BCe):
+                LOGF(info, "You should not see kBCe_BCe in LS++. Good luck.");
+                break;
+              case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): // ULS
+                LOGF(info, "You should not see kBCe_Be_SameB in LS++. Good luck.");
+                break;
+              case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): // LS
+                reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_BCe_Be_DiffB"))->Fill(values);
+                break;
+              default:
+                break;
+            }
+          }
+          nlspp++;
+          for (auto& track : {pos, ele}) {
+            if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
+              o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
+              used_trackIds.emplace_back(track.globalIndex());
+              auto mctrack = track.template emmcparticle_as<aod::EMMCParticles>();
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPtOverPtGen"))->Fill(mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaEta"))->Fill(mctrack.pt(), track.eta() - mctrack.eta());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPhi"))->Fill(mctrack.pt(), track.phi() - mctrack.phi());
+            }
+          }
+        } // end of lspp pair loop
+        reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lspp"))->Fill(nlspp);
+
+        int nlsmm = 0;
+        for (auto& lsmm_pair : lsmm_pairs_per_coll) {
+          auto pos = lsmm_pair.template posTrack_as<MyMCTracks>();
+          auto ele = lsmm_pair.template negTrack_as<MyMCTracks>();
+
+          if (!cut.IsSelected<MyMCTracks>(lsmm_pair)) {
+            continue;
+          }
+
+          auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
+          auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
+
+          if (posmc.pdgCode() != 11 || elemc.pdgCode() != 11) {
+            continue;
+          }
+
+          int hfee_type = IsHF(posmc, elemc, mcparticles);
+          if (hfee_type < 0) {
+            continue;
+          }
+
+          dca_pos_3d = pos.dca3DinSigma();
+          dca_ele_3d = ele.dca3DinSigma();
+          dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+          values[0] = lsmm_pair.mass();
+          values[1] = lsmm_pair.pt();
+          values[2] = dca_ee_3d;
+
+          if ((posmc.isPhysicalPrimary() || posmc.producedByGenerator()) && (elemc.isPhysicalPrimary() || elemc.producedByGenerator())) {
+            switch (hfee_type) {
+              case static_cast<int>(EM_HFeeType::kCe_Ce):
+                LOGF(info, "You should not see kCe_Ce in LS--. Good luck.");
+                break;
+              case static_cast<int>(EM_HFeeType::kBe_Be):
+                LOGF(info, "You should not see kBe_Be in LS--. Good luck.");
+                break;
+              case static_cast<int>(EM_HFeeType::kBCe_BCe):
+                LOGF(info, "You should not see kBCe_BCe in LS--. Good luck.");
+                break;
+              case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): // ULS
+                LOGF(info, "You should not see kBCe_Be_SameB in LS--. Good luck.");
+                break;
+              case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): // LS
+                reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_mc_rec_BCe_Be_DiffB"))->Fill(values);
+                break;
+              default:
+                break;
+            }
+          }
+          nlsmm++;
+          for (auto& track : {pos, ele}) {
+            if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
+              o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
+              used_trackIds.emplace_back(track.globalIndex());
+              auto mctrack = track.template emmcparticle_as<aod::EMMCParticles>();
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPtOverPtGen"))->Fill(mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaEta"))->Fill(mctrack.pt(), track.eta() - mctrack.eta());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPhi"))->Fill(mctrack.pt(), track.phi() - mctrack.phi());
+            }
+          }
+        } // end of lsmm pair loop
+        reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lsmm"))->Fill(nlsmm);
 
         used_trackIds.clear();
         used_trackIds.shrink_to_fit();
@@ -273,7 +465,7 @@ struct DalitzEEQCMC {
   Partition<aod::EMMCParticles> posTracks = o2::aod::mcparticle::pdgCode == -11; // e+
   Partition<aod::EMMCParticles> negTracks = o2::aod::mcparticle::pdgCode == +11; // e-
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
-  void processGen(MyCollisions const& collisions, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
+  void processGen(MyCollisions const&, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -288,19 +480,6 @@ struct DalitzEEQCMC {
 
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
-      if (!collision.sel8()) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(2.0);
-
-      if (collision.numContrib() < 0.5) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(3.0);
-
-      if (abs(collision.posZ()) > 10.0) {
-        continue;
-      }
 
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
@@ -320,23 +499,180 @@ struct DalitzEEQCMC {
           continue;
         }
 
-        int mother_id = FindLF(t1, t2, mcparticles);
-        if (mother_id < 0) {
+        if (!t1.isPhysicalPrimary() && !t1.producedByGenerator()) {
           continue;
         }
-        auto mcmother = mcparticles.iteratorAt(mother_id);
-        if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
-          ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-          ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt"))->Fill(v12.M(), v12.Pt());
-        } // end of LF
-      }   // end of true ULS pair loop
-    }     // end of collision loop
+        if (!t2.isPhysicalPrimary() && !t2.producedByGenerator()) {
+          continue;
+        }
+
+        int mother_id = FindLF(t1, t2, mcparticles);
+        int hfee_type = IsHF(t1, t2, mcparticles);
+        if (mother_id < 0 && hfee_type < 0) {
+          continue;
+        }
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+        if (mother_id > -1) {
+          auto mcmother = mcparticles.iteratorAt(mother_id);
+          if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
+            reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt"))->Fill(v12.M(), v12.Pt());
+
+            switch (abs(mcmother.pdgCode())) {
+              case 111:
+                reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_Pi0"))->Fill(v12.M(), v12.Pt());
+                break;
+              case 221:
+                reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_Eta"))->Fill(v12.M(), v12.Pt());
+                break;
+              case 331:
+                reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_EtaPrime"))->Fill(v12.M(), v12.Pt());
+                break;
+              case 113:
+                reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_Rho"))->Fill(v12.M(), v12.Pt());
+                break;
+              case 223:
+                reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_Omega"))->Fill(v12.M(), v12.Pt());
+                break;
+              case 333:
+                reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_Phi"))->Fill(v12.M(), v12.Pt());
+                break;
+              case 443: {
+                if (IsFromBeauty(mcmother, mcparticles) > 0) {
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_NonPromptJpsi"))->Fill(v12.M(), v12.Pt());
+                } else {
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_PromptJpsi"))->Fill(v12.M(), v12.Pt());
+                }
+                break;
+              }
+              default:
+                break;
+            }
+          }
+        } else if (hfee_type > -1) {
+          switch (hfee_type) {
+            case static_cast<int>(EM_HFeeType::kCe_Ce):
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_Ce_Ce"))->Fill(v12.M(), v12.Pt());
+              break;
+            case static_cast<int>(EM_HFeeType::kBe_Be):
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_Be_Be"))->Fill(v12.M(), v12.Pt());
+              break;
+            case static_cast<int>(EM_HFeeType::kBCe_BCe):
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_BCe_BCe"))->Fill(v12.M(), v12.Pt());
+              break;
+            case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): // ULS
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_BCe_Be_SameB"))->Fill(v12.M(), v12.Pt());
+              break;
+            case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): // LS
+              LOGF(info, "You should not see kBCe_Be_DiffB in ULS. Good luck.");
+              break;
+            default:
+              break;
+          }
+        }
+      } // end of true ULS pair loop
+
+      for (auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) {
+        // LOGF(info, "pdg1 = %d, pdg2 = %d", t1.pdgCode(), t2.pdgCode());
+
+        if (t1.pt() < min_mcPt || max_mcPt < t1.pt() || abs(t1.eta()) > max_mcEta) {
+          continue;
+        }
+        if (t2.pt() < min_mcPt || max_mcPt < t2.pt() || abs(t2.eta()) > max_mcEta) {
+          continue;
+        }
+
+        if (!t1.isPhysicalPrimary() && !t1.producedByGenerator()) {
+          continue;
+        }
+        if (!t2.isPhysicalPrimary() && !t2.producedByGenerator()) {
+          continue;
+        }
+
+        int hfee_type = IsHF(t1, t2, mcparticles);
+        if (hfee_type < 0) {
+          continue;
+        }
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        if (hfee_type > -1) {
+          switch (hfee_type) {
+            case static_cast<int>(EM_HFeeType::kCe_Ce):
+              LOGF(info, "You should not see kCe_Ce in LS++. Good luck.");
+              break;
+            case static_cast<int>(EM_HFeeType::kBe_Be):
+              LOGF(info, "You should not see kBe_Be in LS++. Good luck.");
+              break;
+            case static_cast<int>(EM_HFeeType::kBCe_BCe):
+              LOGF(info, "You should not see kBCe_BCe in LS++. Good luck.");
+              break;
+            case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): // ULS
+              LOGF(info, "You should not see kBCe_Be_SameB in LS++. Good luck.");
+              break;
+            case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): // LS
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_BCe_Be_DiffB"))->Fill(v12.M(), v12.Pt());
+              break;
+            default:
+              break;
+          }
+        }
+      } // end of true LS++ pair loop
+
+      for (auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) {
+        // LOGF(info, "pdg1 = %d, pdg2 = %d", t1.pdgCode(), t2.pdgCode());
+
+        if (t1.pt() < min_mcPt || max_mcPt < t1.pt() || abs(t1.eta()) > max_mcEta) {
+          continue;
+        }
+        if (t2.pt() < min_mcPt || max_mcPt < t2.pt() || abs(t2.eta()) > max_mcEta) {
+          continue;
+        }
+
+        if (!t1.isPhysicalPrimary() && !t1.producedByGenerator()) {
+          continue;
+        }
+        if (!t2.isPhysicalPrimary() && !t2.producedByGenerator()) {
+          continue;
+        }
+
+        int hfee_type = IsHF(t1, t2, mcparticles);
+        if (hfee_type < 0) {
+          continue;
+        }
+        ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        if (hfee_type > -1) {
+          switch (hfee_type) {
+            case static_cast<int>(EM_HFeeType::kCe_Ce):
+              LOGF(info, "You should not see kCe_Ce in LS--. Good luck.");
+              break;
+            case static_cast<int>(EM_HFeeType::kBe_Be):
+              LOGF(info, "You should not see kBe_Be in LS--. Good luck.");
+              break;
+            case static_cast<int>(EM_HFeeType::kBCe_BCe):
+              LOGF(info, "You should not see kBCe_BCe in LS--. Good luck.");
+              break;
+            case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): // ULS
+              LOGF(info, "You should not see kBCe_Be_SameB in LS--. Good luck.");
+              break;
+            case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): // LS
+              reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hMvsPt_BCe_Be_DiffB"))->Fill(v12.M(), v12.Pt());
+              break;
+            default:
+              break;
+          }
+        }
+      } // end of true LS++ pair loop
+
+    } // end of collision loop
   }
   PROCESS_SWITCH(DalitzEEQCMC, processGen, "run genrated info", true);
 
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DalitzEEQCMC, processDummy, "Dummy function", false);
 };
 
