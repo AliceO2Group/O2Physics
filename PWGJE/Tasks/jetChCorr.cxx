@@ -339,7 +339,6 @@ struct JetChCorr {
     if (jet.pt() > jetPtTh) {
       jetConstituents.clear();
 
-<<<<<<< HEAD
       int nn = 0;
       int iord[50];
       float ptc[50];
@@ -347,28 +346,6 @@ struct JetChCorr {
         fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
         ptc[nn] = jetConstituent.pt();
         nn++;
-=======
-      int nn = 0;
-      int iord[50];
-      float ptc[50];
-      for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
-        fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
-        ptc[nn] = jetConstituent.pt();
-        nn++;
-      }
-      TMath::Sort(nn, ptc, iord);
-
-      nn = 0;
-      ch_mult = jet.tracksIds().size();
-      for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
-        if (iord[nn] > 1)
-          continue;
-
-        if (iord[nn] == 0) {
-          trackL = jetConstituent.globalIndex();
-          ch_l = jetConstituent.sign();
-          v1.SetXYZ(jetConstituent.pt(), jetConstituent.py(), jetConstituent.pz());
->>>>>>> refs/remotes/origin/master
       }
       TMath::Sort(nn, ptc, iord);
 
