@@ -176,6 +176,10 @@ struct k892analysis {
       histos.add("QAMCTrue/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
       histos.add("QAMCTrue/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
       histos.add("QAMCTrue/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
+      histos.add("QAMCTrue/TOF_Nsigma_pi_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
+      histos.add("QAMCTrue/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
+      histos.add("QAMCTrue/TOF_Nsigma_ka_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
+      histos.add("QAMCTrue/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2D, {ptAxisQA, pidQAAxis}});
       histos.add("h3Reck892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
       histos.add("h3Reck892invmassAnti", "Invariant mass of Reconstructed MC Anti-K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
       histos.add("k892Gen", "pT distribution of True MC K(892)0", kTH2D, {ptAxis, centAxis});
@@ -460,6 +464,14 @@ struct k892analysis {
           histos.fill(HIST("QAMCTrue/trkDCAxy_ka"), trk2.dcaXY());
           histos.fill(HIST("QAMCTrue/trkDCAz_pi"), trk1.dcaZ());
           histos.fill(HIST("QAMCTrue/trkDCAz_ka"), trk2.dcaZ());
+          histos.fill(HIST("QAMCTrue/TPC_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTPC);
+          if (isTrk1hasTOF) {
+            histos.fill(HIST("QAMCTrue/TOF_Nsigma_pi_all"), trk1ptPi, trk1NSigmaPiTOF);
+          }
+          histos.fill(HIST("QAMCTrue/TPC_Nsigmaka_all"), trk2ptKa, trk2NSigmaKaTPC);
+          if (isTrk2hasTOF) {
+            histos.fill(HIST("QAMCTrue/TOF_Nsigma_ka_all"), trk2ptKa, trk2NSigmaKaTOF);
+          }
 
           // MC histograms
           if (trk1.motherPDG() < 0) {
