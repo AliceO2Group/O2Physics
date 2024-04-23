@@ -84,8 +84,8 @@ class FemtoDreamContainerThreeBody
   template <typename T>
   void init_MC(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis)
   {
-    mHistogramRegistry->add((folderName + "/relPairDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    mHistogramRegistry->add((folderName + "/relPairQ3Mult_ReconNoFake").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
+    mHistogramRegistry->add((folderName + "/relTripletDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/relTripletQ3Mult_ReconNoFake").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
     mHistogramRegistry->add((folderName + "/hNoMCtruthTripletCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
     mHistogramRegistry->add((folderName + "/hFakeTripletCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
     mHistogramRegistry->add((folderName + "/Q3_resolution").c_str(), "; #it{Q}_{3} reconstructed (GeV/#it{c}); #it{Q}_{3} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis});
@@ -162,9 +162,9 @@ class FemtoDreamContainerThreeBody
   {
     if (mHistogramRegistry) {
       // Fill the Q3 distributions with the reconstructed information but only for particles with the right PDG code
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/relPairDist_ReconNoFake"), femtoObs);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/relPairkstarMult_ReconNoFake"), femtoObs, mult);
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/kstar_resolution"), femtoObsMC, femtoObs);
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/relTripletDist_ReconNoFake"), femtoObs);
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/relTripletQ3Mult_ReconNoFake"), femtoObs, mult);
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/Q3_resolution"), femtoObsMC, femtoObs);
     }
   }
 
