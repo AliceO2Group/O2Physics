@@ -76,10 +76,6 @@ DECLARE_SOA_COLUMN(S11A, s11a, float);         //! Weighted multiplicity (p = 1,
 DECLARE_SOA_COLUMN(S12A, s12a, float);         //! Weighted multiplicity (p = 1, k = 2)
 DECLARE_SOA_COLUMN(S13A, s13a, float);         //! Weighted multiplicity (p = 1, k = 3)
 DECLARE_SOA_COLUMN(S31A, s31a, float);         //! Weighted multiplicity (p = 3, k = 1)
-DECLARE_SOA_COLUMN(S21A, s21a, float);         //! Weighted multiplicity (p = 2, k = 1)
-DECLARE_SOA_COLUMN(S22A, s22a, float);         //! Weighted multiplicity (p = 2, k = 2)
-DECLARE_SOA_COLUMN(S41A, s41a, float);         //! Weighted multiplicity (p = 4, k = 1)
-DECLARE_SOA_COLUMN(S14A, s14a, float);         //! Weighted multiplicity (p = 1, k = 4)
 DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float); //!  Ref Flow correlator <2>
 DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float); //!  Ref Flow correlator <4>
 DECLARE_SOA_COLUMN(M11REF, m11ref, float);     //!  Weighted multiplicity of <<2>> for reference flow
@@ -541,11 +537,6 @@ DECLARE_SOA_COLUMN(R2EP_BC, r2epbc, float);                              //! Eve
 DECLARE_SOA_COLUMN(R3EP, r3ep, float);                                   //! Event plane resolution for EP method n=3
 DECLARE_SOA_COLUMN(CORR2POI, corr2poi, float);                           //! POI FLOW CORRELATOR <2'>
 DECLARE_SOA_COLUMN(CORR4POI, corr4poi, float);                           //! POI FLOW CORRELATOR <4'>
-DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float);                           //! POI FLOW CORRELATOR <2> (by dimuons)
-DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float);                           //! POI FLOW CORRELATOR <4> (by dimuons)
-DECLARE_SOA_COLUMN(M11REF, m11ref, float);                               //!  Weighted multiplicity of <<2>> for reference flow (by dimuons)
-DECLARE_SOA_COLUMN(M1111REF, m1111ref, float);                           //!  Weighted multiplicity of <<4>> for reference flow (by dimuons)
-DECLARE_SOA_COLUMN(MultA, multa, float);                                 //!  Multiplicity A of reference flow (by dimuons)
 DECLARE_SOA_COLUMN(M01POI, m01poi, float);                               //! POI event weight for <2'>
 DECLARE_SOA_COLUMN(M0111POI, m0111poi, float);                           //! POI event weight for <4'>
 DECLARE_SOA_COLUMN(MultDimuons, multdimuons, int);                       //! Dimuon multiplicity
@@ -609,12 +600,11 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::MultDimuons);
 
 DECLARE_SOA_TABLE(RefFlowDimuons, "AOD", "RTREFFLOWDIMUON", //!
-                  reducedpair::CORR2REF,
-                  reducedpair::CORR4REF,
-                  reducedpair::M11REF,
-                  reducedpair::M1111REF,
-                  reducedpair::CentFT0C,
-                  reducedpair::MultA);
+                  reducedevent::CORR2REF,
+                  reducedevent::CORR4REF,
+                  reducedevent::M11REF,
+                  reducedevent::M1111REF,
+                  reducedevent::MultA);
 
 // Dilepton collision information (joined with DileptonsExtra) allowing to connect different tables (cross PWGs)
 DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",

@@ -94,6 +94,7 @@ class VarManager : public TObject
     EventFilter = BIT(12),
     CollisionQvect = BIT(13),
     ReducedEventQvectorExtra = BIT(14),
+    ReducedEventRefFlow = BIT(15),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -532,12 +533,8 @@ class VarManager : public TObject
     kQ23YA,
     kS11A,
     kS12A,
-    kS21A,
     kS13A,
     kS31A,
-    kS22A,
-    kS41A,
-    kS14A,
     kM11REF,
     kM01POI,
     kM1111REF,
@@ -1373,6 +1370,14 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kS12A] = event.s12a();
       values[kS13A] = event.s13a();
       values[kS31A] = event.s31a();
+    }
+
+    if constexpr ((fillMap & ReducedEventRefFlow) > 0) {
+      values[kM1111REF] = event.m1111ref();
+      values[kM11REF] = event.m11ref();
+      values[kCORR4REF] = event.corr4ref();
+      values[kCORR2REF] = event.corr2ref();
+      values[kMultA] = event.multa();
     }
   }
 
@@ -3123,12 +3128,8 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kQ23YA] = compA23.imag(); // Only being used by cumulants, no need for normalization
   values[kS11A] = S11A;
   values[kS12A] = S12A;
-  values[kS21A] = S21A;
   values[kS13A] = S13A;
   values[kS31A] = S31A;
-  values[kS22A] = S22A;
-  values[kS14A] = S14A;
-  values[kS41A] = S41A;
 
   // Q-vectors components correlation (A, B, C)
   values[kQ2YYAB] = values[kQ2Y0A] * values[kQ2Y0B];
@@ -3360,10 +3361,6 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kM0111POI] = values[kMultDimuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
     values[kCORR2POI] = (P2 * conj(Q21)).real() / values[kM01POI];
     values[kCORR4POI] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POI];
-    values[kM11REF] = values[kS21A] - values[kS12A];
-    values[kM1111REF] = values[kS41A] - 6. * values[kS12A] * values[kS21A] + 8. * values[kS13A] * values[kS11A] + 3. * values[kS22A] - 6. * values[kS14A];
-    values[kCORR2REF] = (norm(Q21) - values[kS12A]) / values[kM11REF];
-    values[kCORR4REF] = (pow(norm(Q21), 2) + norm(Q42) - 2. * (Q42 * conj(Q21) * conj(Q21)).real() + 8. * (Q23 * conj(Q21)).real() - 4. * values[kS12A] * norm(Q21) - 6. * values[kS14A] - 2. * values[kS22A]) / values[kM1111REF];
   }
 }
 
