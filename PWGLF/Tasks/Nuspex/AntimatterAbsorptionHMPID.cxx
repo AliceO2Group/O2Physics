@@ -12,12 +12,19 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch)
 /// \since June 27, 2023
 
+#include <TMath.h>
+#include <TPDGCode.h>
+#include <TRandom.h>
+#include <TDatabasePDG.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/DataTypes.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -269,18 +276,8 @@ struct AntimatterAbsorptionHMPID {
     return true;
   }
 
-  // Info for TPC PID
-  using PidInfoTPC = soa::Join<aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                               aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe>;
-
-  // Info for TOF PID
-  using PidInfoTOF = soa::Join<aod::pidTOFFullPi, aod::pidTOFFullKa,
-                               aod::pidTOFFullPr, aod::pidTOFFullDe,
-                               aod::pidTOFFullTr, aod::pidTOFFullHe,
-                               aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
-
   // Full Tracks
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, PidInfoTPC, PidInfoTOF>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 
   // Process Data
   void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& event, o2::aod::HMPIDs const& hmpids)
