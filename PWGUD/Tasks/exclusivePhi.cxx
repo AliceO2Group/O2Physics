@@ -32,7 +32,7 @@ using namespace o2::framework::expressions;
 /// \author Anisa Khatun, Kansas University
 /// \date 14/2/2024
 
-struct ExclusivePhi {
+struct exclusivePhi {
   SGSelector sgSelector;
   Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
@@ -584,5 +584,5 @@ struct ExclusivePhi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ExclusivePhi>(cfgc)};
+    adaptAnalysisTask<exclusivePhi>(cfgc)};
 }
