@@ -360,15 +360,15 @@ struct lambdaAnalysis {
     float p = RecoDecay::p(track.px(), track.py(), track.pz());
 
     // fill before QA first
-    histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaPr());
-    if (trkPr.hasTOF()) {
-      histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tof_p"), p_ptot, trkPr.tofNSigmaPr());
-      histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tof_vs_tpc"), trkPr.tpcNSigmaPr(), trkPr.tofNSigmaPr());
+    histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tpc_p"), p, track.tpcNSigmaPr());
+    if (track.hasTOF()) {
+      histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tof_p"), p, track.tofNSigmaPr());
+      histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tof_vs_tpc"), track.tpcNSigmaPr(), track.tofNSigmaPr());
     }
-    histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaKa());
-    if (trkKa.hasTOF()) {
-      histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tof_p"), k_ptot, trkKa.tofNSigmaKa());
-      histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tof_vs_tpc"), trkKa.tpcNSigmaKa(), trkKa.tofNSigmaKa());
+    histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tpc_p"), p, track.tpcNSigmaKa());
+    if (track.hasTOF()) {
+      histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tof_p"), p, track.tofNSigmaKa());
+      histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tof_vs_tpc"), track.tpcNSigmaKa(), track.tofNSigmaKa());
     }
 
     // select particle (Proton/Kaon)
@@ -377,11 +377,11 @@ struct lambdaAnalysis {
       histos.fill(HIST("QAChecks/h1d_ka_pt"), track.pt());
       histos.fill(HIST("QAafter/Proton/h2d_pr_dca_z"), track.pt(), track.dcaZ());
       histos.fill(HIST("QAafter/Proton/h2d_pr_dca_xy"), track.pt(), track.dcaXY());
-      histos.fill(HIST("QAafter/Proton/h2d_pr_dEdx_p"), p_ptot, track.tpcSignal());
-      histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, track.tpcNSigmaPr());
+      histos.fill(HIST("QAafter/Proton/h2d_pr_dEdx_p"), p, track.tpcSignal());
+      histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_p"), p, track.tpcNSigmaPr());
       histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_pt"), track.pt(), track.tpcNSigmaPr());
       if (!cUseTpcOnly && track.hasTOF()) {
-        histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_p"), p_ptot, track.tofNSigmaPr());
+        histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_p"), p, track.tofNSigmaPr());
         histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_pt"), track.pt(), track.tofNSigmaPr());
         histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_vs_tpc"), track.tpcNSigmaPr(), track.tofNSigmaPr());
       }
@@ -391,11 +391,11 @@ struct lambdaAnalysis {
       histos.fill(HIST("QAChecks/h1d_ka_pt"), track.pt());
       histos.fill(HIST("QAafter/Kaon/h2d_ka_dca_z"), track.pt(), track.dcaZ());
       histos.fill(HIST("QAafter/Kaon/h2d_ka_dca_xy"), track.pt(), track.dcaXY());
-      histos.fill(HIST("QAafter/Kaon/h2d_ka_dEdx_p"), k_ptot, track.tpcSignal());
-      histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_p"), k_ptot, track.tpcNSigmaKa());
+      histos.fill(HIST("QAafter/Kaon/h2d_ka_dEdx_p"), p, track.tpcSignal());
+      histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_p"), p, track.tpcNSigmaKa());
       histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_pt"), track.pt(), track.tpcNSigmaKa());
       if (!cUseTpcOnly && track.hasTOF()) {
-        histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_p"), k_ptot, track.tofNSigmaKa());
+        histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_p"), p, track.tofNSigmaKa());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_pt"), track.pt(), track.tofNSigmaKa());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_vs_tpc"), track.tpcNSigmaKa(), track.tofNSigmaKa());
       }
