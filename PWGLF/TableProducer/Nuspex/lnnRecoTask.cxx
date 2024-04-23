@@ -49,6 +49,7 @@ namespace
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNames{"3H"};
+
 constexpr int h3DauPdg{1000010030};
 constexpr int lnnPdg{1010000030};
 
@@ -288,7 +289,6 @@ struct lnnRecoTask {
       hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
       hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
 
-
       // Bethe-Bloch calcution for 3H
       double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity * 2 / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
       double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity * 2 / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
@@ -370,7 +370,6 @@ struct lnnRecoTask {
       if (lnnPt < ptMin)
         continue;
 
-
       // Definition of lnn mass
       float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
       bool isLNNMass = false;
@@ -420,6 +419,7 @@ struct lnnRecoTask {
 
   // Monte Carlo information
   void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const&)
+
   {
     for (auto& lnnCand : lnnCandidates) {
       auto mcLabPos = trackLabels.rawIteratorAt(lnnCand.posTrackID);
@@ -559,13 +559,17 @@ struct lnnRecoTask {
         continue;
       std::array<float, 3> secVtx;
       std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
+
       std::array<float, 3> momMother = mcPart.pVector();
+
       std::array<float, 3> mom3H;
       bool is3HFound = false;
       for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
         if (std::abs(mcDaught.pdgCode()) == h3DauPdg) {
           secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
+
           mom3H = mcDaught.pVector();
+
           is3HFound = true;
           break;
         }
