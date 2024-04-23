@@ -44,8 +44,6 @@ using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 
-// using CollisionsFullWithFlow = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables>;
-
 namespace
 {
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
@@ -266,6 +264,7 @@ struct lnnRecoTask {
     fitter.setBz(d_bz);
     mRunNumber = bc.runNumber();
   }
+
   // Template
   template <class Tcoll>
   void fillCandidateData(Tcoll const& collision, aod::V0s const& V0s)
@@ -419,7 +418,8 @@ struct lnnRecoTask {
   }
 
   // Monte Carlo information
-  void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const& particlesMC)
+  void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const&)
+
   {
     for (auto& lnnCand : lnnCandidates) {
       auto mcLabPos = trackLabels.rawIteratorAt(lnnCand.posTrackID);
@@ -442,8 +442,10 @@ struct lnnRecoTask {
               // Checking primary and second vertex with MC simulations
               auto posPrimVtx = array{posMother.vx(), posMother.vy(), posMother.vz()};
               auto secVtx = array{mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
-              lnnCand.gMom = array{posMother.px(), posMother.py(), posMother.pz()};
-              lnnCand.gMom3H = mcTrackPos.pdgCode() == h3DauPdg ? array{mcTrackPos.px(), mcTrackPos.py(), mcTrackPos.pz()} : array{mcTrackNeg.px(), mcTrackNeg.py(), mcTrackNeg.pz()};
+
+              lnnCand.gMom = posMother.pVector();
+              lnnCand.gMom3H = mcTrackPos.pdgCode() == h3DauPdg ? mcTrackPos.pVector() : mcTrackNeg.pVector();
+
               for (int i = 0; i < 3; i++) {
                 lnnCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
               }
@@ -557,13 +559,17 @@ struct lnnRecoTask {
         continue;
       std::array<float, 3> secVtx;
       std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
-      std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
+
+      std::array<float, 3> momMother = mcPart.pVector();
+
       std::array<float, 3> mom3H;
       bool is3HFound = false;
       for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
         if (std::abs(mcDaught.pdgCode()) == h3DauPdg) {
           secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
-          mom3H = {mcDaught.px(), mcDaught.py(), mcDaught.pz()};
+
+          mom3H = mcDaught.pVector();
+
           is3HFound = true;
           break;
         }
