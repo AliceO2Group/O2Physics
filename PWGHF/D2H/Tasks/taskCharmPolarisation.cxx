@@ -149,7 +149,7 @@ struct TaskPolarisationCharmHadrons {
     massKaon = o2::constants::physics::MassKaonCharged;
     massDstar = o2::constants::physics::MassDStar;
     massLc = o2::constants::physics::MassLambdaCPlus;
-    bkgRotationAngleStep = (maxRotAngleMultByPi - minRotAngleMultByPi) * constants::math::PI / (nBkgRotations - 1);
+    bkgRotationAngleStep = (nBkgRotations > 1) ? (maxRotAngleMultByPi - minRotAngleMultByPi) * constants::math::PI / (nBkgRotations - 1) : 0.;
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisInvMassD0{configThnAxisInvMassD0, "#it{M}(D^{0}) (GeV/#it{c}^{2})"};
