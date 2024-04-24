@@ -3567,8 +3567,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
           // primary pion track to be processed with DCAFitter
           auto trackParVarCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
+          auto trackParVarCharmBachelor1KaonHyp = trackParVarCharmBachelor1;
+          trackParVarCharmBachelor1KaonHyp.setPID(o2::track::PID::Kaon);
 
-          // find charm baryon decay using xi PID hypothesis
+          // find charm baryon decay using xi PID hypothesis (xi pi channel)
           int nVtxFrom2ProngFitterXiHyp = 0;
           try {
             nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi, trackParVarCharmBachelor1);
@@ -3608,7 +3610,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
             }
           }
 
-          // find charm baryon decay using omega PID hypothesis to be combined with a pion
+          // find charm baryon decay using omega PID hypothesis to be combined with a pion (omega pi channel)
           int nVtxFrom2ProngFitterOmegaHypWithPi = 0;
           try {
             nVtxFrom2ProngFitterOmegaHypWithPi = df2.process(trackCascOmega, trackParVarCharmBachelor1);
@@ -3649,10 +3651,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
             }
           }
 
-          // find charm baryon decay using omega PID hypothesis to be combined with a kaon
+          // find charm baryon decay using omega PID hypothesis to be combined with a kaon (omega kaon channel)
           int nVtxFrom2ProngFitterOmegaHypWithK = 0;
           try {
-            nVtxFrom2ProngFitterOmegaHypWithK = df2.process(trackCascOmega, trackParVarCharmBachelor1);
+            nVtxFrom2ProngFitterOmegaHypWithK = df2.process(trackCascOmega, trackParVarCharmBachelor1KaonHyp);
           } catch (...) {
             if (fillHistograms) {
               registry.fill(HIST("hFitterStatusOmegaK2Prong"), 1);
