@@ -48,12 +48,12 @@ int trackselector(const T& track, const std::vector<float>& params)
     return 0;
   if (std::abs(track.dcaZ()) > params[1])
     return 0;
-  if (!params[2]){
-      if (std::abs(track.dcaXY()) > .0105 + .035 / pow(a.Pt(), 1.1))
-        return 0;
+  if (!params[2]) {
+    if (std::abs(track.dcaXY()) > .0105 + .035 / pow(a.Pt(), 1.1))
+      return 0;
   } else {
-      if (std::abs(track.dcaXY()) > params[2])
-         return 0
+    if (std::abs(track.dcaXY()) > params[2])
+      return 0
   }
   if (track.tpcChi2NCl() > params[3])
     return 0;
