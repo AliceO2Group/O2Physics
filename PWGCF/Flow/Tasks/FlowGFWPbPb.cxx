@@ -73,7 +73,7 @@ struct FlowGFWPbPb
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;  // collisions filter
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;  // tracks filter
 
-  
+
 
   void init(InitContext const&)  // Initialization
   {
@@ -100,14 +100,14 @@ struct FlowGFWPbPb
     //fGFW->AddRegion("refN", -0.8, -0.5, 1, 1);
     //fGFW->AddRegion("refP", 0.8, 0.5, 1, 1);
     //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "ChGap22", kFALSE));
-      
+
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 -2 -2 -2}", "ChFull26", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 2  -2 -2 -2 -2}", "ChFull28", kFALSE));
 
     fGFW->CreateRegions();  // finalize the initialization
-    
+
   }
 
   template <char... chars>
@@ -130,7 +130,7 @@ struct FlowGFWPbPb
   {
     registry.fill(HIST("hEventCount"), 0.5);
     if (!collision.sel8()) return;
-      
+
     int Ntot = tracks.size();
     if (Ntot < 1)  return;
 
@@ -156,7 +156,6 @@ struct FlowGFWPbPb
     FillProfile(corrconfigs.at(1), HIST("c24"), cent);
     FillProfile(corrconfigs.at(2), HIST("c26"), cent);
     FillProfile(corrconfigs.at(3), HIST("c28"), cent);
-      
   }
 };
 
