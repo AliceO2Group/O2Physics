@@ -119,8 +119,8 @@ struct phianalysis {
       histos.add("QAMCTrue/trkDCAxy", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
       histos.add("QAMCTrue/trkDCAz", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
       histos.add("h3Recphiinvmass", "Invariant mass of Reconstructed MC phi", kTH3F, {centAxis, ptAxis, invMassAxis});
-      histos.add("phiGen", "pT distribution of True MC phi", kTH1F, {ptAxis});
-      histos.add("phiRec", "pT distribution of Reconstructed MC phi", kTH1F, {ptAxis});
+      histos.add("phiGen", "pT distribution of True MC phi", kTH2F, {ptAxis, centAxis});
+      histos.add("phiRec", "pT distribution of Reconstructed MC phi", kTH2F, {ptAxis, centAxis});
       histos.add("phiRecinvmass", "Inv mass distribution of Reconstructed MC Phi", kTH1F, {invMassAxis});
     }
     // Print output histograms statistics
@@ -183,6 +183,7 @@ struct phianalysis {
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
+    auto multiplicity = collision.cent();
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
     for (auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
@@ -247,12 +248,12 @@ struct phianalysis {
         if constexpr (!IsMix) {
           if (trk1.sign() > 0) {
             histos.fill(HIST("phiinvmassDS"), lResonance.M());
-            histos.fill(HIST("h3phiinvmassDS"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3phiinvmassDS"), multiplicity, lResonance.Pt(), lResonance.M());
           } else {
           }
         } else {
           histos.fill(HIST("phiinvmassME"), lResonance.M());
-          histos.fill(HIST("h3phiinvmassME"), collision.cent(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3phiinvmassME"), multiplicity, lResonance.Pt(), lResonance.M());
         }
 
         // MC
@@ -269,16 +270,16 @@ struct phianalysis {
           histos.fill(HIST("QAMCTrue/trkDCAz"), trk2.dcaZ());
 
           // MC histograms
-          histos.fill(HIST("phiRec"), lResonance.Pt());
+          histos.fill(HIST("phiRec"), lResonance.Pt(), multiplicity;
           histos.fill(HIST("phiRecinvmass"), lResonance.M());
-          histos.fill(HIST("h3Recphiinvmass"), collision.cent(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3Recphiinvmass"), multiplicity, lResonance.Pt(), lResonance.M());
         }
       } else {
         if constexpr (!IsMix)
           continue;
         if (trk1.sign() > 0) {
           histos.fill(HIST("phiinvmassLS"), lResonance.M());
-          histos.fill(HIST("h3phiinvmassLS"), collision.cent(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3phiinvmassLS"), multiplicity, lResonance.Pt(), lResonance.M());
         } else {
         }
       }
@@ -302,6 +303,7 @@ struct phianalysis {
 
   void processMCTrue(aod::ResoCollision& collision, aod::ResoMCParents& resoParents)
   {
+    auto multiplicity = collision.cent();
     for (auto& part : resoParents) {  // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 333) // phi(0)
         continue;
@@ -311,7 +313,7 @@ struct phianalysis {
       if (abs(part.daughterPDG1()) != 321 || abs(part.daughterPDG2()) != 321) { // At least one decay to Kaon
         continue;
       }
-      histos.fill(HIST("phiGen"), part.pt());
+      histos.fill(HIST("phiGen"), part.pt(), multiplicity);
     }
   }
   PROCESS_SWITCH(phianalysis, processMCTrue, "Process Event for MC", false);
