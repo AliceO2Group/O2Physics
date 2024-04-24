@@ -42,7 +42,7 @@ struct SGSpectraAnalyzer {
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   Configurable<float> eta_cut{"Eta", 0.9, "Eta cut"};
   Configurable<bool> use_tof{"Use_TOF", true, "TOF PID"};
-  // Track Selections
+  //Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -199,7 +199,7 @@ struct SGSpectraAnalyzer {
     sum.SetXYZM(0, 0, 0, 0);
     int gapSide = collision.gapSide();
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
-    std::vector<float> parameters = {pv_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut};
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
     gapSide = truegapSide;
     if (gapSide < 0 || gapSide > 2)
