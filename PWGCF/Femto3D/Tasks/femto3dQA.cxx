@@ -40,6 +40,10 @@ struct QAHistograms {
   /// Construct a registry object with direct declaration
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Configurable<bool> _removeSameBunchPileup{"removeSameBunchPileup", false, ""};
+  Configurable<bool> _requestGoodZvtxFT0vsPV{"requestGoodZvtxFT0vsPV", false, ""};
+  Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
+
   Configurable<int> _sign{"sign", 1, "sign of a track"};
   Configurable<float> _vertexZ{"VertexZ", 10.0, "abs vertexZ value limit"};
   Configurable<float> _min_P{"min_P", 0.0, "lower mometum limit"};
@@ -50,7 +54,7 @@ struct QAHistograms {
   Configurable<int16_t> _tpcNClsFound{"minTpcNClsFound", 0, "minimum allowed number of TPC clasters"};
   Configurable<float> _tpcChi2NCl{"tpcChi2NCl", 100.0, "upper limit for chi2 value of a fit over TPC clasters"};
   Configurable<float> _tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0, "lower limit of TPC CrossedRows/FindableCls value"};
-  Configurable<int> _tpcNClsShared{"maxTpcNClsShared", 0, "maximum allowed number of TPC shared clasters"};
+  Configurable<float> _tpcFractionSharedCls{"maxTpcFractionSharedCls", 0.4, "maximum fraction of TPC shared clasters"};
   Configurable<int> _itsNCls{"minItsNCls", 0, "minimum allowed number of ITS clasters for a track"};
   Configurable<float> _itsChi2NCl{"itsChi2NCl", 100.0, "upper limit for chi2 value of a fit over ITS clasters for a track"};
   Configurable<int> _particlePDG{"particlePDG", 2212, "PDG code of a particle to perform PID for (only pion, kaon, proton and deurton are supported now)"};
@@ -61,6 +65,8 @@ struct QAHistograms {
 
   Configurable<int> _particlePDGtoReject{"particlePDGtoReject", 211, "PDG codes of perticles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> _rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-0.0f, 0.0f}, "TOF rejection Nsigma range for particles specified with PDG to be rejected"};
+
+  Configurable<std::pair<float, float>> _centCut{"centCut", std::pair<float, float>{0.f, 100.f}, "[min., max.] centrality range to keep tracks within"};
 
   std::pair<int, std::vector<float>> TPCcuts;
   std::pair<int, std::vector<float>> TOFcuts;
@@ -102,7 +108,7 @@ struct QAHistograms {
     registry.add("dcaz_to_pt", "dcaz_to_pt", kTH2F, {{100, 0., 5., "pt"}, {200, -1., 1., "dcaz"}});
     registry.add("TPCClusters", "TPCClusters", kTH1F, {{163, -0.5, 162.5, "NTPCClust"}});
     registry.add("TPCCrossedRowsOverFindableCls", "TPCCrossedRowsOverFindableCls", kTH1F, {{100, 0.0, 10.0, "NcrossedRowsOverFindable"}});
-    registry.add("TPCNClsShared", "TPCNClsShared", kTH1F, {{160, -0.5, 159.5, "TPCNshared"}});
+    registry.add("TPCFractionSharedCls", "TPCFractionSharedCls", kTH1F, {{100, 0.0, 1.0, "TPCsharedFraction"}});
     registry.add("ITSClusters", "ITSClusters", kTH1F, {{10, -0.5, 9.5, "NITSClust"}});
     registry.add("ITSchi2", "ITSchi2", kTH1F, {{100, 0.0, 40., "ITSchi2"}});
     registry.add("TPCchi2", "TPCchi2", kTH1F, {{100, 0.0, 6., "TPCchi2"}});
@@ -132,21 +138,40 @@ struct QAHistograms {
     }
 
     registry.add("posZ", "posZ", kTH1F, {{300, -16., 16., "posZ"}});
-    registry.add("mult", "mult", kTH1F, {{500, 0., 500., "mult"}});
+    registry.add("mult", "mult", kTH1F, {{5001, -0.5, 5000.5, "mult."}});
   }
 
   template <bool FillExtra, typename ColsType, typename TracksType>
   void fillHistograms(ColsType const& collisions, TracksType const& tracks)
   {
     for (auto& collision : collisions) {
+      if (_removeSameBunchPileup && !collision.isNoSameBunchPileup())
+        continue;
+      if (_requestGoodZvtxFT0vsPV && !collision.isGoodZvtxFT0vsPV())
+        continue;
+      if (_requestVertexITSTPC && !collision.isVertexITSTPC())
+        continue;
+      if (collision.multPerc() < _centCut.value.first || collision.multPerc() >= _centCut.value.second)
+        continue;
+
       registry.fill(HIST("posZ"), collision.posZ());
       registry.fill(HIST("mult"), collision.mult());
     }
 
     for (auto& track : tracks) {
+
+      if (_removeSameBunchPileup && !track.template singleCollSel_as<ColsType>().isNoSameBunchPileup())
+        continue;
+      if (_requestGoodZvtxFT0vsPV && !track.template singleCollSel_as<ColsType>().isGoodZvtxFT0vsPV())
+        continue;
+      if (_requestVertexITSTPC && !track.template singleCollSel_as<ColsType>().isVertexITSTPC())
+        continue;
+
       if (abs(track.template singleCollSel_as<ColsType>().posZ()) > _vertexZ)
         continue;
-      if ((track.tpcNClsShared()) > _tpcNClsShared || (track.itsNCls()) < _itsNCls)
+      if (track.template singleCollSel_as<ColsType>().multPerc() < _centCut.value.first || track.template singleCollSel_as<ColsType>().multPerc() >= _centCut.value.second)
+        continue;
+      if ((track.tpcFractionSharedCls()) > _tpcFractionSharedCls || (track.itsNCls()) < _itsNCls)
         continue;
 
       if constexpr (FillExtra) {
@@ -169,7 +194,7 @@ struct QAHistograms {
         registry.fill(HIST("dcaz_to_pt"), track.pt(), track.dcaZ());
         registry.fill(HIST("TPCClusters"), track.tpcNClsFound());
         registry.fill(HIST("TPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-        registry.fill(HIST("TPCNClsShared"), track.tpcNClsShared());
+        registry.fill(HIST("TPCFractionSharedCls"), track.tpcFractionSharedCls());
         registry.fill(HIST("ITSClusters"), track.itsNCls());
         registry.fill(HIST("ITSchi2"), track.itsChi2NCl());
         registry.fill(HIST("TPCchi2"), track.tpcChi2NCl());
@@ -203,13 +228,13 @@ struct QAHistograms {
     }
   }
 
-  void processDefault(soa::Filtered<aod::SingleCollSels> const& collisions, soa::Filtered<aod::SingleTrackSels> const& tracks)
+  void processDefault(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<aod::SingleTrackSels> const& tracks)
   {
     fillHistograms<false>(collisions, tracks);
   }
   PROCESS_SWITCH(QAHistograms, processDefault, "process default", true);
 
-  void processExtra(soa::Filtered<aod::SingleCollSels> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras>> const& tracks)
+  void processExtra(soa::Filtered<soa::Join<aod::SingleCollSels, aod::SingleCollExtras>> const& collisions, soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras>> const& tracks)
   {
     fillHistograms<true>(collisions, tracks);
   }

@@ -177,7 +177,7 @@ struct TableMaker {
 
   // CCDB connection configurables
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/Postcalib/pass4/apass3BB", "base path to the ccdb object"};
+  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -186,7 +186,6 @@ struct TableMaker {
   // TPC postcalibration related options
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
   Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
-  Configurable<std::string> fConfigRunPeriods{"cfgRunPeriods", "LHC22f", "run periods for used data"};
   Configurable<bool> fConfigIsOnlyforMaps{"cfgIsforMaps", false, "If true, run for postcalibration maps only"};
   Configurable<bool> fConfigSaveElectronSample{"cfgSaveElectronSample", false, "If true, only save electron sample"};
   Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
@@ -289,11 +288,8 @@ struct TableMaker {
       }
     }
 
-    VarManager::SetRunlist((TString)fConfigRunPeriods);
     if (fConfigDummyRunlist) {
       VarManager::SetDummyRunlist(fConfigInitRunNumber);
-    } else {
-      VarManager::SetRunlist((TString)fConfigRunPeriods);
     }
 
     DefineHistograms(histClasses);                   // define all histograms
@@ -424,7 +420,7 @@ struct TableMaker {
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
-  void skimCollisions(TEvents const& collisions, BCsWithTimestamps const& bcs)
+  void skimCollisions(TEvents const& collisions, BCsWithTimestamps const& /*bcs*/)
   {
     // Skim collisions
     // NOTE: So far, collisions are filtered based on the user specified analysis cuts and the filterPP event filter.
@@ -535,7 +531,7 @@ struct TableMaker {
   }
 
   template <uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void skimTracks(TEvent const& collision, BCsWithTimestamps const& bcs, TTracks const& tracks, TrackAssoc const& assocs)
+  void skimTracks(TEvent const& collision, BCsWithTimestamps const& /*bcs*/, TTracks const& /*tracks*/, TrackAssoc const& assocs)
   {
     // Skim the barrel tracks
     // Loop over the collision-track associations, retrieve the track, and apply track cuts for selection
@@ -652,7 +648,7 @@ struct TableMaker {
   }   // end skimTracks
 
   template <uint32_t TMFTFillMap, typename TEvent>
-  void skimMFT(TEvent const& collision, BCsWithTimestamps const& bcs, MFTTracks const& mfts, MFTTrackAssoc const& mftAssocs)
+  void skimMFT(TEvent const& collision, BCsWithTimestamps const& /*bcs*/, MFTTracks const& /*mfts*/, MFTTrackAssoc const& mftAssocs)
   {
     // Skim MFT tracks
     // So far no cuts are applied here
@@ -679,7 +675,7 @@ struct TableMaker {
   }
 
   template <uint32_t TMuonFillMap, typename TEvent, typename TMuons>
-  void skimMuons(TEvent const& collision, BCsWithTimestamps const& bcs, TMuons const& muons, FwdTrackAssoc const& muonAssocs)
+  void skimMuons(TEvent const& collision, BCsWithTimestamps const& /*bcs*/, TMuons const& muons, FwdTrackAssoc const& muonAssocs)
   {
     // Skim the fwd-tracks (muons)
     // Loop over the collision-track associations, recompute track properties depending on the collision assigned, and apply track cuts for selection

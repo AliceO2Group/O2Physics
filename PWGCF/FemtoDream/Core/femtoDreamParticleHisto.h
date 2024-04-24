@@ -48,7 +48,7 @@ class FemtoDreamParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& pTAxis, T& tempFitVarAxis, T& InvMassAxis, T& multAxis)
+  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& pTAxis, T& tempFitVarAxis, T& InvMassAxis, T& /*multAxis*/)
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str();
     /// Histograms of the kinematic properties
@@ -71,7 +71,7 @@ class FemtoDreamParticleHisto
 
   // comment
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void init_debug(std::string folderName, T& multAxis, T& multPercentileAxis, T& pTAxis, T& etaAxis, T& phiAxis, T& tempFitVarAxis, T& dcazAxis, T& NsigmaTPCAxis, T& NsigmaTOFAxis, T& NsigmaTPCTOFAxis, T& TPCclustersAxis, bool correlatedPlots)
+  void init_debug(std::string folderName, T& multAxis, T& multPercentileAxis, T& pTAxis, T& etaAxis, T& phiAxis, T& tempFitVarAxis, T& dcazAxis, T& NsigmaTPCAxis, T& NsigmaTOFAxis, T& NsigmaTPCTOFAxis, T& /*TPCclustersAxis*/, bool correlatedPlots)
   {
 
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str();
@@ -130,7 +130,7 @@ class FemtoDreamParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <typename T>
-  void init_MC(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis, T& dcazAxis, T& multAxis, bool isDebug)
+  void init_MC(std::string folderName, std::string /*tempFitVarAxisTitle*/, T& tempFitVarpTAxis, T& tempFitVarAxis, T& dcazAxis, T& multAxis, bool isDebug)
   {
     /// Particle-type specific histograms
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]).c_str();
@@ -259,7 +259,7 @@ class FemtoDreamParticleHisto
   /// \tparam T Data type of the particle
   /// \param part Particle
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void fillQA_base(T const& part, const int mult)
+  void fillQA_base(T const& part, const int /*mult*/)
   {
     /// Histograms of the kinematic properties
     mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hPt"), part.pt());
@@ -582,11 +582,11 @@ class FemtoDreamParticleHisto
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry;                                                     ///< For QA output
-  static constexpr o2::aod::femtodreamparticle::ParticleType mParticleType = particleType;   ///< Type of the particle under analysis
-  static constexpr int mFolderSuffixType = suffixType;                                       ///< Counter for the folder suffix specified below
-  static constexpr std::string_view mFolderSuffix[5] = {"", "_one", "_two", "_pos", "_neg"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
-  int mPDG = 0;                                                                              ///< PDG code of the selected particle
+  HistogramRegistry* mHistogramRegistry;                                                                                                             ///< For QA output
+  static constexpr o2::aod::femtodreamparticle::ParticleType mParticleType = particleType;                                                           ///< Type of the particle under analysis
+  static constexpr int mFolderSuffixType = suffixType;                                                                                               ///< Counter for the folder suffix specified below
+  static constexpr std::string_view mFolderSuffix[8] = {"", "_one", "_two", "_pos", "_neg", "_allSelected", "_allSelected_pos", "_allSelected_neg"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
+  int mPDG = 0;                                                                                                                                      ///< PDG code of the selected particle
 };
 } // namespace o2::analysis::femtoDream
 

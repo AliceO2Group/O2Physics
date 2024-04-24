@@ -62,6 +62,7 @@ class DalitzEECut : public TNamed
     kDCAz,
     kITSNCls,
     kITSChi2NDF,
+    kITSCluserSize,
     kPrefilter,
     kNCuts
   };
@@ -69,18 +70,11 @@ class DalitzEECut : public TNamed
 
   enum class PIDSchemes : int {
     kUnDef = -1,
-    // for nominal B analysis
     kTOFreq = 0,
     kTPChadrej = 1,
     kTPChadrejORTOFreq = 2,
     kTPConly = 3,
-
-    // for low B analysis
-    kTOFreq_lowB = 4,
-    kTPChadrej_lowB = 5,
-    kTPChadrejORTOFreq_lowB = 6,
-    kTPConly_lowB = 7,
-    kMuon_lowB = 8,
+    kMuon_lowB = 4,
   };
 
   template <class TLeg, typename TPair>
@@ -176,6 +170,9 @@ class DalitzEECut : public TNamed
     if (!IsSelectedTrack(track, DalitzEECuts::kITSChi2NDF)) {
       return false;
     }
+    if (!IsSelectedTrack(track, DalitzEECuts::kITSCluserSize)) {
+      return false;
+    }
 
     // TPC cuts
     if (!IsSelectedTrack(track, DalitzEECuts::kTPCNCls)) {
@@ -223,18 +220,6 @@ class DalitzEECut : public TNamed
       case PIDSchemes::kTPConly:
         return PassTPConly(track);
 
-      case PIDSchemes::kTOFreq_lowB:
-        return PassTOFreq(track);
-
-      case PIDSchemes::kTPChadrej_lowB:
-        return PassTPChadrej_lowB(track);
-
-      case PIDSchemes::kTPChadrejORTOFreq_lowB:
-        return PassTPChadrej_lowB(track) || PassTOFreq_lowB(track);
-
-      case PIDSchemes::kTPConly_lowB:
-        return PassTPConly_lowB(track);
-
       case PIDSchemes::kMuon_lowB:
         return PassMuon_lowB(track);
 
@@ -271,34 +256,6 @@ class DalitzEECut : public TNamed
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi();
-    return is_el_included_TPC && is_pi_excluded_TPC;
-  }
-
-  template <typename T>
-  bool PassTOFreq_lowB(T const& track) const
-  {
-    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    bool is_pi_excluded_TPC = track.tpcInnerParam() < 0.4 ? true : (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi());
-    bool is_el_included_TOF = mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
-    return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
-  }
-
-  template <typename T>
-  bool PassTPChadrej_lowB(T const& track) const
-  {
-    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    bool is_mu_excluded_TPC = mMuonExclusionTPC ? track.tpcNSigmaMu() < mMinTPCNsigmaMu || mMaxTPCNsigmaMu < track.tpcNSigmaMu() : true;
-    bool is_pi_excluded_TPC = track.tpcInnerParam() < 0.4 ? true : (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi());
-    bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
-    bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
-    return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
-  }
-
-  template <typename T>
-  bool PassTPConly_lowB(T const& track) const
-  {
-    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    bool is_pi_excluded_TPC = track.tpcInnerParam() < 0.4 ? true : (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi());
     return is_el_included_TPC && is_pi_excluded_TPC;
   }
 
@@ -385,6 +342,9 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kITSChi2NDF:
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
+      case DalitzEECuts::kITSCluserSize:
+        return mMinMeanClusterSizeITS < track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
+
       case DalitzEECuts::kPrefilter:
         return track.pfb() <= 0;
 
@@ -409,6 +369,7 @@ class DalitzEECut : public TNamed
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
+  void SetMeanClusterSizeITSob(float min, float max);
 
   void SetPIDScheme(PIDSchemes scheme);
   void SetMinPinTOF(float min);
@@ -469,6 +430,7 @@ class DalitzEECut : public TNamed
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
   bool mApplyPhiV{true};
   bool mApplyPF{false};
+  float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // max <its cluster size> x cos(Lmabda)
 
   // pid cuts
   PIDSchemes mPIDScheme{PIDSchemes::kUnDef};

@@ -170,7 +170,7 @@ struct TreeCreatorElectronML {
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -703,7 +703,7 @@ struct TreeCreatorElectronML {
   } // end of process
   PROCESS_SWITCH(TreeCreatorElectronML, processPair, "produce ML input for pair level", false);
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions) {}
+  void processDummy(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const&) {}
   PROCESS_SWITCH(TreeCreatorElectronML, processDummy, "process dummy", true);
 };
 

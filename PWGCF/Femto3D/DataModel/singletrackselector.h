@@ -104,6 +104,10 @@ DECLARE_SOA_COLUMN(MultPercentile, multPerc, float); // Percentiles of multiplic
 DECLARE_SOA_COLUMN(PosZ, posZ, float);               // Vertex of the collision
 DECLARE_SOA_COLUMN(MagField, magField, float);       // Magnetic field corresponding to a collision (in T)
 
+DECLARE_SOA_COLUMN(IsNoSameBunchPileup, isNoSameBunchPileup, bool);
+DECLARE_SOA_COLUMN(IsGoodZvtxFT0vsPV, isGoodZvtxFT0vsPV, bool);
+DECLARE_SOA_COLUMN(IsVertexITSTPC, isVertexITSTPC, bool);
+
 } // namespace singletrackselector
 
 DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SINGLECOLLSEL", // Table of the variables for single track selection.
@@ -112,6 +116,11 @@ DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SINGLECOLLSEL", // Table of the variab
                   singletrackselector::MultPercentile,
                   singletrackselector::PosZ,
                   singletrackselector::MagField);
+
+DECLARE_SOA_TABLE(SingleCollExtras, "AOD", "SINGLECOLLEXTRA", // Joinable collision table with Pile-Up flags
+                  singletrackselector::IsNoSameBunchPileup,
+                  singletrackselector::IsGoodZvtxFT0vsPV,
+                  singletrackselector::IsVertexITSTPC);
 
 namespace singletrackselector
 {
@@ -164,6 +173,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(ITSChi2NCl, itsChi2NCl,
 
 DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls,
                            [](binning::rowsOverFindable::binned_t rowsOverFindable_binned) -> float { return singletrackselector::unPack<binning::rowsOverFindable>(rowsOverFindable_binned); });
+
+DECLARE_SOA_DYNAMIC_COLUMN(TPCFractionSharedCls, tpcFractionSharedCls, //! Fraction of shared TPC clusters
+                           [](uint8_t tpcNClsShared, int16_t tpcNClsFound) -> float { return (float)tpcNClsShared / (float)tpcNClsFound; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPi, tofNSigmaPi,
                            [](binning::nsigma::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma>(nsigma_binned); });
@@ -226,6 +238,7 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL", //
                        singletrackselector::TPCChi2NCl<singletrackselector::StoredTPCChi2NCl>,
                        singletrackselector::ITSChi2NCl<singletrackselector::StoredITSChi2NCl>,
                        singletrackselector::TPCCrossedRowsOverFindableCls<singletrackselector::StoredTPCCrossedRowsOverFindableCls>,
+                       singletrackselector::TPCFractionSharedCls<singletrackselector::TPCNClsShared, singletrackselector::TPCNClsFound>,
 
                        singletrackselector::TOFNSigmaPi<singletrackselector::StoredTOFNSigmaPi>,
                        singletrackselector::TPCNSigmaPi<singletrackselector::StoredTPCNSigmaPi>,

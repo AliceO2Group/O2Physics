@@ -12,7 +12,7 @@
 /// \file FemtoUniverseCollisionSelection.h
 /// \brief FemtoUniverseCollisionSelection - event selection within the o2femtouniverse framework
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
@@ -158,7 +158,7 @@ class FemtoUniverseCollisionSelection
   /// \param tracks All tracks
   /// \return value of the sphericity of the event
   template <typename T1, typename T2>
-  float computeSphericity(T1 const& col, T2 const& tracks)
+  float computeSphericity(T1 const& /*col*/, T2 const& tracks)
   {
     double S00 = 0;
     double S11 = 0;

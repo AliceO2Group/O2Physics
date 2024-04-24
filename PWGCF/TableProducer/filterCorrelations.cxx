@@ -256,7 +256,7 @@ struct MultiplicitySelector {
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
   Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     int enabledFunctions = 0;
     if (doprocessRun2V0M) {

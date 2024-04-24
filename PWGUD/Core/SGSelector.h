@@ -50,6 +50,12 @@ class SGSelector
       return result;
     }
     auto newbc = oldbc;
+    auto newdgabc = oldbc;
+    auto newdgcbc = oldbc;
+    float tempampa = 0;
+    float tempampc = 0;
+    float ampc = 0;
+    float ampa = 0;
     bool gA = true, gC = true;
     for (auto const& bc : bcRange) {
       if (!udhelpers::cleanFITA(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
@@ -67,12 +73,34 @@ class SGSelector
         gC = false;
       }
     }
-    result.bc = &newbc;
     if (!gA && !gC) {
       result.value = 3;
       return result;
     }
+    if (gA && gC) { // loop once again for so-called DG events to get the most active FT0 BC
+      for (auto const& bc : bcRange) {
+        if (bc.has_foundFT0()) {
+          tempampa = udhelpers::FT0AmplitudeA(bc.foundFT0());
+          tempampc = udhelpers::FT0AmplitudeC(bc.foundFT0());
+          if (tempampa > ampa) {
+            ampa = tempampa;
+            newdgabc = bc;
+          }
+          if (tempampc > ampc) {
+            ampc = tempampc;
+            newdgcbc = bc;
+          }
+        }
+      }
+      if (newdgabc != newdgcbc) {
+        if (ampc / diffCuts.FITAmpLimits()[2] > ampa / diffCuts.FITAmpLimits()[2])
+          newdgabc = newdgcbc;
+      }
+      newbc = newdgabc;
+    }
+    result.bc = &newbc;
     // LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
+    result.bc = &newbc;
     result.value = gA && gC ? 2 : (gA ? 0 : 1);
     return result;
   }
@@ -83,6 +111,29 @@ class SGSelector
       return 1;
     else
       return 0;
+  }
+
+  template <typename CC>
+  int trueGap(CC& collision, float fv0, float ft0a, float ft0c, float zdc_cut)
+  {
+    float fit_cut[3] = {fv0, ft0a, ft0c};
+    int gap = collision.gapSide();
+    int true_gap = gap;
+    if (gap == 0) {
+      if (collision.totalFV0AmplitudeA() > fit_cut[0] || collision.totalFT0AmplitudeA() > fit_cut[1] || collision.energyCommonZNA() > zdc_cut)
+        true_gap = -1;
+    } else if (gap == 1) {
+      if (collision.totalFT0AmplitudeC() > fit_cut[2] || collision.energyCommonZNC() > zdc_cut)
+        true_gap = -1;
+    } else if (gap == 2) {
+      if ((collision.totalFV0AmplitudeA() > fit_cut[0] || collision.totalFT0AmplitudeA() > fit_cut[1] || collision.energyCommonZNA() > zdc_cut) && (collision.totalFT0AmplitudeC() > fit_cut[2] || collision.energyCommonZNC() > zdc_cut))
+        true_gap = -1;
+      else if (collision.totalFV0AmplitudeA() > fit_cut[0] || collision.totalFT0AmplitudeA() > fit_cut[1] || collision.energyCommonZNA() > zdc_cut)
+        true_gap = 1;
+      else if (collision.totalFT0AmplitudeC() > fit_cut[2] || collision.energyCommonZNC() > zdc_cut)
+        true_gap = 0;
+    }
+    return true_gap;
   }
 
  private:

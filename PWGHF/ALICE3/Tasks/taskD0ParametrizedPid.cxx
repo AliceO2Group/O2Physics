@@ -60,7 +60,7 @@ struct HfTaskD0ParametrizedPid {
 
   void process(soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates,
                McParticlesHf const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   // void process(const o2::aod::Collision& collision, soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0ParametrizedPid, aod::HfCand2ProngMcRec>> const& candidates, soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles, aod::TracksWMc const& tracks)
   {
     // float ncontributor = collision.numContrib();
@@ -118,11 +118,11 @@ struct HfTaskD0ParametrizedPid {
       float maxFiducialY = 0.8;
       float minFiducialY = -0.8;
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
-        if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0)) > 4.0) {
+        if (std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > 4.0) {
           continue;
         }
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0);
+        auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0);
         registry.fill(HIST("hGenPtVsY"), ptGen, std::abs(yGen));
         if (ptGen < 5.0) {
           maxFiducialY = -0.2 / 15 * ptGen * ptGen + 1.9 / 15 * ptGen + 0.5;

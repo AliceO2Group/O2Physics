@@ -18,8 +18,10 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATERECONSTRUCTIONTABLES_H_
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
+#include <vector>
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector4D.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
@@ -202,7 +204,7 @@ DECLARE_SOA_TABLE(PidTpcTofTinyPr, "AOD", "PIDTPCTOFTINYPR", //! Table of the TP
 
 namespace hf_sel_collision
 {
-DECLARE_SOA_COLUMN(WhyRejectColl, whyRejectColl, int); //!
+DECLARE_SOA_COLUMN(WhyRejectColl, whyRejectColl, uint16_t); //!
 } // namespace hf_sel_collision
 
 DECLARE_SOA_TABLE(HfSelCollision, "AOD", "HFSELCOLLISION", //!
@@ -268,6 +270,12 @@ DECLARE_SOA_COLUMN(FlagDsToKKPi, flagDsToKKPi, uint8_t);         //!
 DECLARE_SOA_COLUMN(FlagXicToPKPi, flagXicToPKPi, uint8_t);       //!
 
 DECLARE_SOA_COLUMN(FlagDstarToD0Pi, flagDstarToD0Pi, uint8_t); //!
+
+DECLARE_SOA_COLUMN(MlProbSkimD0ToKPi, mlProbSkimD0ToKPi, std::vector<float>);           //! ML probabilities (background, prompt, non-prompt) for D0->Kpi
+DECLARE_SOA_COLUMN(MlProbSkimDplusToPiKPi, mlProbSkimDplusToPiKPi, std::vector<float>); //! ML probabilities (background, prompt, non-prompt) for D+->Kpipi
+DECLARE_SOA_COLUMN(MlProbSkimDsToKKPi, mlProbSkimDsToKKPi, std::vector<float>);         //! ML probabilities (background, prompt, non-prompt) for Ds->KKpi
+DECLARE_SOA_COLUMN(MlProbSkimLcToPKPi, mlProbSkimLcToPKPi, std::vector<float>);         //! ML probabilities (background, prompt, non-prompt) for Lc->pKpi
+DECLARE_SOA_COLUMN(MlProbSkimXicToPKPi, mlProbSkimXicToPKPi, std::vector<float>);       //! ML probabilities (background, prompt, non-prompt) for Xic->pKpi
 } // namespace hf_track_index
 
 DECLARE_SOA_TABLE(Hf2Prongs_000, "AOD", "HF2PRONG", //! Table for HF 2 prong candidates (Run 2 converted format)
@@ -367,6 +375,15 @@ DECLARE_SOA_TABLE(HfCutStatus3Prong, "AOD", "HFCUTSTATUS3P", //!
 DECLARE_SOA_TABLE(HfCutStatusDstar, "AOD", "HFCUTSTATUSDST", //!
                   hf_track_index::FlagDstarToD0Pi);
 
+DECLARE_SOA_TABLE(Hf2ProngMlProbs, "AOD", "HF2PRONGMLPROB", //! Table for ML scores of HF 2 prong candidates
+                  hf_track_index::MlProbSkimD0ToKPi);
+
+DECLARE_SOA_TABLE(Hf3ProngMlProbs, "AOD", "HF3PRONGMLPROB", //! Table for ML scores of HF 3 prong candidates
+                  hf_track_index::MlProbSkimDplusToPiKPi,
+                  hf_track_index::MlProbSkimLcToPKPi,
+                  hf_track_index::MlProbSkimDsToKKPi,
+                  hf_track_index::MlProbSkimXicToPKPi);
+
 namespace hf_pv_refit
 {
 DECLARE_SOA_COLUMN(PvRefitX, pvRefitX, float);             //!
@@ -441,6 +458,10 @@ DECLARE_SOA_COLUMN(ImpactParameter0, impactParameter0, float);                  
 DECLARE_SOA_COLUMN(ErrorImpactParameter0, errorImpactParameter0, float);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, //!
                            [](float dca, float err) -> float { return dca / err; });
+DECLARE_SOA_COLUMN(ImpactParameterZ0, impactParameterZ0, float);                     //!
+DECLARE_SOA_COLUMN(ErrorImpactParameterZ0, errorImpactParameterZ0, float);           //!
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised0, impactParameterZNormalised0, //!
+                           [](float dca, float err) -> float { return dca / err; });
 DECLARE_SOA_COLUMN(PxProng1, pxProng1, float); //!
 DECLARE_SOA_COLUMN(PyProng1, pyProng1, float); //!
 DECLARE_SOA_COLUMN(PzProng1, pzProng1, float); //!
@@ -453,6 +474,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(PVectorProng1, pVectorProng1, //!
 DECLARE_SOA_COLUMN(ImpactParameter1, impactParameter1, float);                     //!
 DECLARE_SOA_COLUMN(ErrorImpactParameter1, errorImpactParameter1, float);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, //!
+                           [](float dca, float err) -> float { return dca / err; });
+DECLARE_SOA_COLUMN(ImpactParameterZ1, impactParameterZ1, float);                     //!
+DECLARE_SOA_COLUMN(ErrorImpactParameterZ1, errorImpactParameterZ1, float);           //!
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised1, impactParameterZNormalised1, //!
                            [](float dca, float err) -> float { return dca / err; });
 DECLARE_SOA_COLUMN(PxProng2, pxProng2, float); //!
 DECLARE_SOA_COLUMN(PyProng2, pyProng2, float); //!
@@ -467,7 +492,11 @@ DECLARE_SOA_COLUMN(ImpactParameter2, impactParameter2, float);                  
 DECLARE_SOA_COLUMN(ErrorImpactParameter2, errorImpactParameter2, float);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, //!
                            [](float dca, float err) -> float { return dca / err; });
-DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, uint8_t); //!
+DECLARE_SOA_COLUMN(ImpactParameterZ2, impactParameterZ2, float);                     //!
+DECLARE_SOA_COLUMN(ErrorImpactParameterZ2, errorImpactParameterZ2, float);           //!
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised2, impactParameterZNormalised2, //!
+                           [](float dca, float err) -> float { return dca / err; });
+DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, uint8_t); //! number of prongs contributing to the primary-vertex reconstruction
 // candidate properties
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
@@ -583,6 +612,8 @@ DECLARE_SOA_TABLE(HfCand2ProngBase, "AOD", "HFCAND2PBASE", //!
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
+                  hf_cand::ImpactParameterZ0, hf_cand::ImpactParameterZ1,
+                  hf_cand::ErrorImpactParameterZ0, hf_cand::ErrorImpactParameterZ1,
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_cand::NProngsContributorsPV,
                   hf_track_index::HFflag,
                   /* dynamic columns */
@@ -846,6 +877,8 @@ DECLARE_SOA_TABLE(HfCand3ProngBase, "AOD", "HFCAND3PBASE", //!
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
+                  hf_cand::ImpactParameterZ0, hf_cand::ImpactParameterZ1, hf_cand::ImpactParameterZ2,
+                  hf_cand::ErrorImpactParameterZ0, hf_cand::ErrorImpactParameterZ1, hf_cand::ErrorImpactParameterZ2,
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id, hf_cand::NProngsContributorsPV,
                   hf_track_index::HFflag,
                   /* dynamic columns */
@@ -1667,13 +1700,7 @@ DECLARE_SOA_TABLE(HfD0FromDstarBase, "AOD", "HFD0FRMDSTR",
                   hf_cand_dstar::DecayLengthNormalisedD0<collision::PosX, collision::PosY, collision::PosZ, hf_cand_dstar::XSecondaryVertexD0, hf_cand_dstar::YSecondaryVertexD0, hf_cand_dstar::ZSecondaryVertexD0, hf_cand_dstar::ErrorDecayLengthD0>,
                   hf_cand_dstar::DecayLengthXYNormalisedD0<collision::PosX, collision::PosY, hf_cand_dstar::XSecondaryVertexD0, hf_cand_dstar::YSecondaryVertexD0, hf_cand_dstar::ErrorDecayLengthXYD0>,
                   /* prong 0 */ hf_cand::ImpactParameterNormalised0<hf_cand::ImpactParameter0, hf_cand::ErrorImpactParameter0>,
-                  hf_cand::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,
-                  hf_cand::Pt2Prong0<hf_cand::PxProng0, hf_cand::PyProng0>,
-                  hf_cand::PVectorProng0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
                   /* prong 1 */ hf_cand::ImpactParameterNormalised1<hf_cand::ImpactParameter1, hf_cand::ErrorImpactParameter1>,
-                  hf_cand::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
-                  hf_cand::Pt2Prong1<hf_cand::PxProng1, hf_cand::PyProng1>,
-                  hf_cand::PVectorProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
 
                   // HFCAND_COLUMNS,
                   // 2-prong specific columns
@@ -1684,13 +1711,7 @@ DECLARE_SOA_TABLE(HfD0FromDstarBase, "AOD", "HFD0FRMDSTR",
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
-                  hf_cand_dstar::InvMassD0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_cand_dstar::InvMassD0Bar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_cand_dstar::InvMass2D0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_cand_dstar::InvMass2D0Bar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_dstar::ImpactParameterProductD0<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
-                  hf_cand_dstar::CosThetaStarD0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_cand_dstar::CosThetaStarD0Bar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_dstar::ImpactParameterProngSqSumD0<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
                   /* dynamic columns that use candidate momentum components */
                   hf_cand_dstar::PtD0<hf_cand_dstar::PxD0, hf_cand_dstar::PyD0>,
@@ -1729,6 +1750,7 @@ DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFCANDDSTRBASE",
                   // Two pronges of D0
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
+                  hf_track_index::Prong0Id, hf_track_index::Prong1Id,
                   // Dynamic
                   hf_cand_dstar::PtSoftPi<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi>,
                   hf_cand_dstar::PVecSoftPi<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi, hf_cand_dstar::PzSoftPi>,
@@ -1740,16 +1762,27 @@ DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFCANDDSTRBASE",
                   hf_cand::Phi<hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar>,
                   hf_cand::Y<hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar, hf_cand_dstar::PzDstar>,
                   hf_cand::E<hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar, hf_cand_dstar::PzDstar>,
+                  hf_cand::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,
+                  hf_cand::Pt2Prong0<hf_cand::PxProng0, hf_cand::PyProng0>,
+                  hf_cand::PVectorProng0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
+                  hf_cand::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
+                  hf_cand::Pt2Prong1<hf_cand::PxProng1, hf_cand::PyProng1>,
+                  hf_cand::PVectorProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_dstar::InvMassDstar<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi, hf_cand_dstar::PzSoftPi, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_dstar::InvMassAntiDstar<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi, hf_cand_dstar::PzSoftPi, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_dstar::InvMassD0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_cand_dstar::InvMassD0Bar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>);
+                  hf_cand_dstar::InvMassD0Bar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_dstar::InvMass2D0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_dstar::InvMass2D0Bar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_dstar::CosThetaStarD0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_dstar::CosThetaStarD0Bar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCandDstarExt, HfCandDstarBase, "HFCANDDSTREXT",
                                 hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar, hf_cand_dstar::PzDstar);
 
-using HfCandDstar = HfCandDstarExt;
+using HfCandDstars = HfCandDstarExt;
+using HfCandDstar = HfCandDstars::iterator;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",

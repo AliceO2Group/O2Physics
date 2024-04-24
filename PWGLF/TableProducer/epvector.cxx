@@ -19,6 +19,7 @@
 ///
 
 // C++/ROOT includes.
+#include <TH1F.h>
 #include <chrono>
 #include <string>
 #include <vector>
@@ -45,6 +46,7 @@
 #include "FT0Base/Geometry.h"
 #include "FV0Base/Geometry.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "TF1.h"
 
 // #include "Common/Core/EventPlaneHelper.h"
 // #include "Common/DataModel/Qvectors.h"
@@ -64,7 +66,7 @@ struct epvector {
   // Configurables.
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+    Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
   // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
@@ -78,29 +80,45 @@ struct epvector {
   std::vector<float> qvecIm;
   std::vector<float> qvecAmp;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  // Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
+  // Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Centrality cut"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.15, "PT cut on daughter track"};
   Configurable<float> cfgCutPTMax{"cfgCutPTMax", 3.0, "Max PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
+  Configurable<float> cfgMinEta{"cfgMinEta", 0.1, "Min Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 4, "Number of ITS cluster"};
+  // Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> useGainCallib{"useGainCallib", true, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", true, "use Recentering"};
+  Configurable<bool> useShift{"useShift", false, "use Shift"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for recentere"};
+  Configurable<std::string> ConfShift{"ConfShift", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift"};
+
+  // Event selection cuts - Alex
+  TF1* fMultPVCutLow = nullptr;
+  TF1* fMultPVCutHigh = nullptr;
+  TF1* fMultCutLow = nullptr;
+  TF1* fMultCutHigh = nullptr;
+  TF1* fMultMultPVCut = nullptr;
+
   void init(o2::framework::InitContext&)
   {
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec multiplicity = {5000, -500, 500, "TPC Multiplicity"};
     AxisSpec amplitudeFT0 = {5000, 0, 10000, "FT0 amplitude"};
     AxisSpec channelFT0Axis = {220, 0.0, 220.0, "FT0 channel"};
-    AxisSpec qxFT0Axis = {2000, -100.0, 100.0, "Qx"};
-    AxisSpec qyFT0Axis = {2000, -100.0, 100.0, "Qy"};
+    AxisSpec qxFT0Axis = {80000, -10000.0, 10000.0, "Qx"};
+    AxisSpec qyFT0Axis = {80000, -10000.0, 10000.0, "Qy"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {400, -20, 20, "vz"};
     AxisSpec resAxis = {400, -2, 2, "vz"};
+    AxisSpec shiftAxis = {10, 0, 10, "shift"};
+    AxisSpec basisAxis = {2, 0, 2, "basis"};
 
     histos.add("hCentrality", "hCentrality", kTH1F, {{8, 0, 80.0}});
     histos.add("Vz", "Vz", kTH1F, {{400, -20.0, 20.0}});
@@ -124,6 +142,22 @@ struct epvector {
     histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
     histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
 
+    histos.add("ShiftFT0C", "ShiftFT0C", kTProfile3D, {centAxis, basisAxis, shiftAxis});
+
+    // Event selection cut additional - Alex
+    // if (additionalEvsel) {
+    fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+    fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+    fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
+    fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+    fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
+    fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+    fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
+    fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
+    // }
+
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -136,6 +170,21 @@ struct epvector {
     printf("Offset for FT0C: x = %.3f y = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY());
     printf("Offset for FV0-left: x = %.3f y = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY());
     printf("Offset for FV0-right: x = %.3f y = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY());
+  }
+
+  template <typename TCollision>
+  bool eventSelected(TCollision collision, const float& centrality)
+  {
+    if (collision.alias_bit(kTVXinTRD)) {
+      // TRD triggered                                                                                                                                                                                                                                                                                                               // return 0;
+    }
+    auto multNTracksPV = collision.multNTracksPV();
+    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      return 0;
+    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      return 0;
+
+    return 1;
   }
 
   double GetPhiFT0(int chno, double offsetX, double offsetY)
@@ -172,7 +221,7 @@ struct epvector {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
+    if (!(candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     return true;
@@ -181,6 +230,7 @@ struct epvector {
   int lastRunNumber = -999;
   TProfile* gainprofile;
   TH2D* hrecentere;
+  TProfile3D* shiftprofile;
 
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
@@ -188,7 +238,7 @@ struct epvector {
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
   using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>>;
 
-  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const&, MyTracks const& tracks)
+  void process(MyCollisions::iterator const& coll, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, aod::BCsWithTimestamps const&, MyTracks const& tracks)
   {
     auto centrality = coll.centFT0C();
     auto bc = coll.bc_as<aod::BCsWithTimestamps>();
@@ -200,7 +250,17 @@ struct epvector {
     float psiTPC = -99;
     float psiTPCL = -99;
     float psiTPCR = -99;
-    if (coll.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && coll.has_foundFT0()) {
+    auto qxFT0A = 0.0;
+    auto qxFT0C = 0.0;
+    auto qyFT0A = 0.0;
+    auto qyFT0C = 0.0;
+    auto qxTPC = 0.0;
+    auto qyTPC = 0.0;
+    auto qxTPCL = 0.0;
+    auto qyTPCL = 0.0;
+    auto qxTPCR = 0.0;
+    auto qyTPCR = 0.0;
+    if (coll.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && coll.has_foundFT0() && eventSelected(coll, centrality) && coll.selection_bit(aod::evsel::kNoTimeFrameBorder) && coll.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       triggerevent = true;
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
         gainprofile = ccdb->getForTimeStamp<TProfile>(ConfGainPath.value, bc.timestamp());
@@ -208,10 +268,6 @@ struct epvector {
 
       histos.fill(HIST("hCentrality"), centrality);
       histos.fill(HIST("Vz"), vz);
-      auto qxFT0A = 0.0;
-      auto qxFT0C = 0.0;
-      auto qyFT0A = 0.0;
-      auto qyFT0C = 0.0;
 
       auto ft0 = coll.foundFT0();
       auto offsetFT0Ax = (*offsetFT0)[0].getX();
@@ -244,15 +300,8 @@ struct epvector {
         qyFT0C = qyFT0C + ampl * TMath::Sin(2.0 * phiC);
       }
 
-      auto qxTPC = 0.0;
-      auto qyTPC = 0.0;
-      auto qxTPCL = 0.0;
-      auto qyTPCL = 0.0;
-      auto qxTPCR = 0.0;
-      auto qyTPCR = 0.0;
-
       for (auto& trk : tracks) {
-        if (!selectionTrack(trk) || abs(trk.eta()) > 0.8 || trk.pt() > cfgCutPTMax) {
+        if (!selectionTrack(trk) || abs(trk.eta()) > 0.8 || trk.pt() > cfgCutPTMax || abs(trk.eta()) < cfgMinEta) {
           continue;
         }
         qxTPC = qxTPC + trk.pt() * TMath::Cos(2.0 * trk.phi());
@@ -286,6 +335,19 @@ struct epvector {
       psiTPC = 0.5 * TMath::ATan2(qyTPC, qxTPC);
       psiTPCL = 0.5 * TMath::ATan2(qyTPCL, qxTPCL);
       psiTPCR = 0.5 * TMath::ATan2(qyTPCR, qxTPCR);
+
+      if (useShift && (currentRunNumber != lastRunNumber)) {
+        shiftprofile = ccdb->getForTimeStamp<TProfile3D>(ConfShift.value, bc.timestamp());
+      }
+      if (useShift) {
+        auto deltapsiFT0C = 0.0;
+        for (int ishift = 1; ishift <= 10; ishift++) {
+          auto coeffshiftxFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 0.5, ishift - 0.5));
+          auto coeffshiftyFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 1.5, ishift - 0.5));
+          deltapsiFT0C = deltapsiFT0C + ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * 2.0 * psiFT0C) + coeffshiftyFT0C * TMath::Sin(ishift * 2.0 * psiFT0C)));
+        }
+        psiFT0C = psiFT0C + deltapsiFT0C;
+      }
       histos.fill(HIST("QxFT0C"), centrality, qxFT0C);
       histos.fill(HIST("QyFT0C"), centrality, qyFT0C);
       histos.fill(HIST("QxFT0A"), centrality, qxFT0A);
@@ -305,9 +367,14 @@ struct epvector {
       histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
       histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
       histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
+
+      for (int ishift = 1; ishift <= 10; ishift++) {
+        histos.fill(HIST("ShiftFT0C"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * psiFT0C));
+        histos.fill(HIST("ShiftFT0C"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * psiFT0C));
+      }
       lastRunNumber = currentRunNumber;
     }
-    epcalibrationtable(triggerevent, centrality, psiFT0C, psiFT0A, psiTPC, psiTPCL, psiTPCR);
+    epcalibrationtable(triggerevent, centrality, psiFT0C, psiFT0A, psiTPC, psiTPCL, psiTPCR, TMath::Sqrt(qxFT0C * qxFT0C + qyFT0C * qyFT0C), TMath::Sqrt(qxFT0A * qxFT0A + qyFT0A * qyFT0A), TMath::Sqrt(qxTPC * qxTPC + qyTPC * qyTPC), TMath::Sqrt(qxTPCL * qxTPCL + qyTPCL * qyTPCL), TMath::Sqrt(qxTPCR * qxTPCR + qyTPCR * qyTPCR));
   }
 };
 

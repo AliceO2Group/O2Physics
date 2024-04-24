@@ -143,12 +143,20 @@ struct AnalysisEventSelection {
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
 
+  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
   AnalysisCompositeCut* fEventCut;
 
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  o2::ccdb::CcdbApi fCCDBApi;
+
   std::map<int64_t, bool> fSelMap;                     // key: reduced event global index, value: event selection decision
   std::map<uint64_t, std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
+  std::map<string, string> fMetadataRCT, fHeader;
+  int fCurrentRun;
 
   void init(o2::framework::InitContext&)
   {
@@ -176,11 +184,25 @@ struct AnalysisEventSelection {
         dqmixing::SetUpMixing(fMixHandler, objArray->At(iVar)->GetName());
       }
     }
+
+    fCurrentRun = -1;
+    fCCDB->setURL(fConfigCcdbUrl.value);
+    fCCDB->setCaching(true);
+    fCCDB->setLocalObjectValidityChecking();
+    fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
+    fCCDBApi.init(fConfigCcdbUrl.value);
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
   void runEventSelection(TEvents const& events)
   {
+    if (events.size() > 0 && events.begin().runNumber() != fCurrentRun) {
+      fHeader = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", events.begin().runNumber()), fMetadataRCT, -1);
+      uint64_t sor = std::atol(fHeader["SOR"].c_str());
+      uint64_t eor = std::atol(fHeader["EOR"].c_str());
+      cout << "=========================== SOR / EOR is " << sor << " / " << eor << endl;
+    }
+
     fSelMap.clear();
     fBCCollMap.clear();
 
@@ -292,11 +314,10 @@ struct AnalysisTrackSelection {
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
+  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> fConfigRunPeriods{"cfgRunPeriods", "LHC22f", "run periods for used data"};
   Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
   Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
 
@@ -337,15 +358,12 @@ struct AnalysisTrackSelection {
       }
       histDirNames += "TrackBarrel_AmbiguityInBunch;TrackBarrel_AmbiguityOutOfBunch;";
 
-      VarManager::SetRunlist((TString)fConfigRunPeriods);
       DefineHistograms(fHistMan, histDirNames.Data(), fConfigAddTrackHistogram.value.data()); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                        // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
     if (fConfigDummyRunlist) {
       VarManager::SetDummyRunlist(fConfigInitRunNumber);
-    } else {
-      VarManager::SetRunlist((TString)fConfigRunPeriods);
     }
     if (fConfigComputeTPCpostCalib) {
       fCCDB->setURL(fConfigCcdbUrl.value);
@@ -445,7 +463,7 @@ struct AnalysisTrackSelection {
       auto track = tracks.rawIteratorAt(trackIdx);
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       VarManager::FillTrack<TTrackFillMap>(track);
-      VarManager::fgValues[VarManager::kBarrelNAssocsInBunch] = float(evIndices.size());
+      VarManager::fgValues[VarManager::kBarrelNAssocsInBunch] = static_cast<float>(evIndices.size());
       fHistMan->FillHistClass("TrackBarrel_AmbiguityInBunch", VarManager::fgValues);
     } // end loop over in-bunch ambiguous tracks
 
@@ -456,7 +474,7 @@ struct AnalysisTrackSelection {
       auto track = tracks.rawIteratorAt(trackIdx);
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       VarManager::FillTrack<TTrackFillMap>(track);
-      VarManager::fgValues[VarManager::kBarrelNAssocsOutOfBunch] = float(evIndices.size());
+      VarManager::fgValues[VarManager::kBarrelNAssocsOutOfBunch] = static_cast<float>(evIndices.size());
       fHistMan->FillHistClass("TrackBarrel_AmbiguityOutOfBunch", VarManager::fgValues);
     } // end loop over out-of-bunch ambiguous tracks
 
@@ -553,7 +571,7 @@ struct AnalysisMuonSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvents, typename TMuons>
-  void runMuonSelection(ReducedMuonsAssoc const& assocs, TEvents const& events, TMuons const& muons)
+  void runMuonSelection(ReducedMuonsAssoc const& assocs, TEvents const& events, TMuons const& /*muons*/)
   {
     if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
       o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
@@ -690,7 +708,7 @@ struct AnalysisPrefilterSelection {
   }
 
   template <uint32_t TTrackFillMap, typename TTracks>
-  void runPrefilter(soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, TTracks const& tracks)
+  void runPrefilter(soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, TTracks const& /*tracks*/)
   {
 
     for (auto& [assoc1, assoc2] : o2::soa::combinations(assocs, assocs)) {
@@ -772,6 +790,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsExtra> dimuonsExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
+  Produces<aod::RefFlowDimuon> refFlowDimuonList;
   Produces<aod::DileptonsInfo> dileptonInfoList;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
@@ -1068,7 +1087,7 @@ struct AnalysisSameEventPairing {
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& tracks)
+  void runSameEventPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/)
   {
     if (fCurrentRun != events.begin().runNumber()) {
       initParamsFromCCDB(events.begin().timestamp(), TTwoProngFitter);
@@ -1164,7 +1183,7 @@ struct AnalysisSameEventPairing {
             dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
           }
           if constexpr (trackHasCov && TTwoProngFitter) {
-            dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+            dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
           }
         }
 
@@ -1219,9 +1238,9 @@ struct AnalysisSameEventPairing {
                             t1.isAmbiguous(), t2.isAmbiguous(),
                             VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3],
                             VarManager::fgValues[VarManager::kR2EP], VarManager::fgValues[VarManager::kR2SP], VarManager::fgValues[VarManager::kCentFT0C],
-                            VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR2POI],
-                            VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kC4REF], VarManager::fgValues[VarManager::kC4POI], VarManager::fgValues[VarManager::kV4], VarManager::fgValues[VarManager::kVertexingPz],
-                            VarManager::fgValues[VarManager::kVertexingSV]);
+                            VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi],
+                            VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI], VarManager::fgValues[VarManager::kMultDimuons],
+                            VarManager::fgValues[VarManager::kVertexingPz], VarManager::fgValues[VarManager::kVertexingSV]);
             }
           }
         }
@@ -1232,6 +1251,7 @@ struct AnalysisSameEventPairing {
 
         if constexpr (eventHasQvector) {
           dileptonFlowList(VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi]);
+          refFlowDimuonList(VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kMultA]);
         }
 
         // Fill histograms
@@ -1289,7 +1309,7 @@ struct AnalysisSameEventPairing {
   }
 
   template <int TPairType, uint32_t TEventFillMap, typename TAssoc1, typename TAssoc2, typename TTracks1, typename TTracks2>
-  void runMixedPairing(TAssoc1 const& assocs1, TAssoc2 const& assocs2, TTracks1 const& tracks1, TTracks2 const& tracks2)
+  void runMixedPairing(TAssoc1 const& assocs1, TAssoc2 const& assocs2, TTracks1 const& /*tracks1*/, TTracks2 const& /*tracks2*/)
   {
     std::map<int, std::vector<TString>> histNames = fTrackHistNames;
     int pairSign = 0;
@@ -1420,6 +1440,7 @@ struct AnalysisDileptonTrack {
   Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
   Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.2, "High mass cut for the dileptons used in analysis"};
   Configurable<float> fConfigDileptonpTCut{"cfgDileptonpTCut", 0.0, "pT cut for dileptons used in the triplet vertexing"};
+  Configurable<float> fConfigDileptonLxyCut{"cfgDileptonLxyCut", 0.0, "Lxy cut for dileptons used in the triplet vertexing"};
   Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
 
   Configurable<std::string> fConfigHistogramSubgroups{"cfgDileptonTrackHistogramsSubgroups", "invmass,vertexing", "Comma separated list of dilepton-track histogram subgroups"};
@@ -1440,7 +1461,7 @@ struct AnalysisDileptonTrack {
 
   // TODO: The filter expressions seem to always use the default value of configurables, not the values from the actual configuration file
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == uint32_t(1);
-  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut&& aod::reducedpair::mass > fConfigDileptonLowMass&& aod::reducedpair::mass < fConfigDileptonHighMass&& aod::reducedpair::sign == 0;
+  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut&& aod::reducedpair::mass > fConfigDileptonLowMass&& aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy> fConfigDileptonLxyCut;
   Filter filterBarrel = aod::dqanalysisflags::isBarrelSelected > uint32_t(0);
   Filter filterMuon = aod::dqanalysisflags::isMuonSelected > uint32_t(0);
 
@@ -1515,7 +1536,7 @@ struct AnalysisDileptonTrack {
             fHistNamesDileptonTrack[icut] = Form("DileptonTrack_%s_%s", tempStr.Data(), fConfigTrackCut.value.data());
             fHistNamesDileptons[icut] = Form("DileptonsSelected_%s", tempStr.Data());
             DefineHistograms(fHistMan, fHistNamesDileptonTrack[icut], fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
-            DefineHistograms(fHistMan, fHistNamesDileptons[icut], "empty");                                    // define dilepton histograms
+            DefineHistograms(fHistMan, fHistNamesDileptons[icut], "barrel,vertexing");                         // define dilepton histograms
             if (isBarrelME || isMuonME) {
               fHistNamesME[icut] = Form("DileptonTrackME_%s", tempStr.Data());
               DefineHistograms(fHistMan, fHistNamesME[icut], "mixedevent"); // define ME histograms
@@ -1672,7 +1693,7 @@ struct AnalysisDileptonTrack {
 
   void processBarrelMixedEvent(soa::Filtered<MyEventsHashSelected>& events,
                                soa::Filtered<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> const& assocs,
-                               MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
+                               MyBarrelTracksWithCov const&, soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
     if (events.size() == 0) {
       return;
@@ -1710,7 +1731,7 @@ struct AnalysisDileptonTrack {
 
   void processMuonMixedEvent(soa::Filtered<MyEventsHashSelected>& events,
                              soa::Filtered<soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>> const& assocs,
-                             MyMuonTracksWithCov const& tracks, soa::Filtered<MyDimuonCandidates> const& dileptons)
+                             MyMuonTracksWithCov const&, soa::Filtered<MyDimuonCandidates> const& dileptons)
   {
     if (events.size() == 0) {
       return;
@@ -1818,7 +1839,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     }
 
     if (classStr.Contains("DileptonsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,vertexing");
     }
 
     if (classStr.Contains("DileptonTrack") && !classStr.Contains("ME")) {

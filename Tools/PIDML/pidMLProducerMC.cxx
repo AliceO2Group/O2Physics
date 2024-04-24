@@ -45,7 +45,7 @@ struct PidMlProducerMc {
      {"hTOFBetavsPt", "TOF beta vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF beta", {HistType::kTH2F, {{500, 0., 10.}, {500, 0., 2.}}}},
      {"hTRDSigvsPt", "TRD signal vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TRD signal", {HistType::kTH2F, {{500, 0., 10.}, {2500, 0., 100.}}}}}};
 
-  void processML(MyCollisionML const& collision, BigTracksML const& tracks, aod::McParticles const& mctracks)
+  void processML(MyCollisionML const& /*collision*/, BigTracksML const& tracks, aod::McParticles const& /*mctracks*/)
   {
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) {
@@ -72,7 +72,7 @@ struct PidMlProducerMc {
   }
   PROCESS_SWITCH(PidMlProducerMc, processML, "Produce only ML MC essential data", true);
 
-  void processAll(MyCollision const& collision, BigTracks const& tracks, aod::McParticles const& mctracks)
+  void processAll(MyCollision const& collision, BigTracks const& tracks, aod::McParticles const& /*mctracks*/)
   {
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) {

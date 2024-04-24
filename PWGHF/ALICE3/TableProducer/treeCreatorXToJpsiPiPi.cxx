@@ -153,10 +153,10 @@ struct HfTreeCreatorXToJpsiPiPi {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mcCollisions,
+               aod::McCollisions const&,
                soa::Join<aod::HfCandX, aod::HfCandXMcRec, aod::HfSelXToJpsiPiPi> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandXMcGen> const& particles,
-               TracksWPid const& tracks)
+               TracksWPid const&)
   {
 
     // Filling event properties
@@ -173,13 +173,13 @@ struct HfTreeCreatorXToJpsiPiPi {
     }
 
     // Filling candidate properties
-    int indexCand = 0;
+    // int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       if (!candidate.isSelXToJpsiToMuMuPiPi()) {
         continue;
       }
-      indexCand++;
+      // indexCand++;
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
@@ -249,7 +249,7 @@ struct HfTreeCreatorXToJpsiPiPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massX),
+          RecoDecay::y(particle.pVector(), massX),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

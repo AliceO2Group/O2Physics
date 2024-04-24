@@ -56,12 +56,12 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFs, aod::V0TOFPIDs>;
-using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFs, aod::V0TOFPIDs, aod::V0MCMothers, aod::V0MCCollRefs>;
+using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0MCCollRefs>;
 
-// simple checkers
-#define bitset(var, nbit) ((var) |= (1 << (nbit)))
-#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+// simple checkers, but ensure 64 bit integers
+#define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
+#define bitcheck(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
 struct derivedlambdakzeroanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -84,6 +84,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<float> dcanegtopv{"dcanegtopv", .05, "min DCA Neg To PV (cm)"};
   Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"};
   Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
+  Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
 
   // Additional selection on the AP plot (exclusive for K0Short)
   // original equation: lArmPt*5>TMath::Abs(lArmAlpha)
@@ -91,15 +92,23 @@ struct derivedlambdakzeroanalysis {
 
   // Track quality
   Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
+  Configurable<int> minITSclusters{"minITSclusters", -1, "minimum ITS clusters"};
+  Configurable<bool> skipTPConly{"skipTPConly", false, "skip V0s comprised of at least one TPC only prong"};
   Configurable<bool> requirePosITSonly{"requirePosITSonly", false, "require that positive track is ITSonly (overrides TPC quality)"};
   Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
 
-  // PID (TPC)
+  // PID (TPC/TOF)
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
+  Configurable<float> TofPidNsigmaCutLaPr{"TofPidNsigmaCutLaPr", 1e+6, "TofPidNsigmaCutLaPr"};
+  Configurable<float> TofPidNsigmaCutLaPi{"TofPidNsigmaCutLaPi", 1e+6, "TofPidNsigmaCutLaPi"};
+  Configurable<float> TofPidNsigmaCutK0Pi{"TofPidNsigmaCutK0Pi", 1e+6, "TofPidNsigmaCutK0Pi"};
 
-  Configurable<bool> doCompleteQA{"doCompleteQA", false, "do topological variable QA histograms"};
+  Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variable QA histograms"};
   Configurable<bool> doTPCQA{"doTPCQA", false, "do TPC QA histograms"};
-  Configurable<bool> doPlainQA{"doPlainQA", true, "do simple 1D QA of candidates"};
+  Configurable<bool> doTOFQA{"doTOFQA", false, "do TOF QA histograms"};
+  Configurable<int> doDetectPropQA{"doDetectPropQA", 0, "do Detector/ITS map QA: 0: no, 1: 4D, 2: 5D with mass"};
+
+  Configurable<bool> doPlainTopoQA{"doPlainTopoQA", true, "do simple 1D QA of candidates"};
   Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
   Configurable<float> qaMaxPt{"qaMaxPt", 1000.0f, "maximum pT for QA plots"};
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
@@ -131,6 +140,7 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisV0Radius{"axisV0Radius", {20, 0.0f, 60.0f}, "V0 2D radius (cm)"};
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {200, 0.0f, 200.0f}, "TPC signal"};
+  ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
 
   // AP plot axes
   ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
@@ -139,101 +149,139 @@ struct derivedlambdakzeroanalysis {
   // Track quality axes
   ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
   ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
+  ConfigurableAxis axisITScluMap{"axisITSMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
+  ConfigurableAxis axisDetMap{"axisDetMap", {16, -0.5f, 15.5f}, "Detector use map"};
+  ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {13, -0.5f, 12.5f}, "ITS Coarse cluster map"};
+  ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {4, -0.5f, 3.5f}, "Detector Coarse user map"};
 
   // MC coll assoc QA axis
   ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
 
-  enum selection { selCosPA = 0,
-                   selRadius,
-                   selDCANegToPV,
-                   selDCAPosToPV,
-                   selDCAV0Dau,
-                   selK0ShortRapidity,
-                   selLambdaRapidity,
-                   selTPCPIDPositivePion,
-                   selTPCPIDNegativePion,
-                   selTPCPIDPositiveProton,
-                   selTPCPIDNegativeProton,
-                   selTOFDeltaTPositiveProtonLambda,
-                   selTOFDeltaTPositivePionLambda,
-                   selTOFDeltaTPositivePionK0Short,
-                   selTOFDeltaTNegativeProtonLambda,
-                   selTOFDeltaTNegativePionLambda,
-                   selTOFDeltaTNegativePionK0Short,
-                   selK0ShortCTau,
-                   selLambdaCTau,
-                   selK0ShortArmenteros,
-                   selPosGoodTPCTrack,
-                   selNegGoodTPCTrack,
-                   selPosItsOnly,
-                   selNegItsOnly,
-                   selConsiderK0Short,    // for mc tagging
-                   selConsiderLambda,     // for mc tagging
-                   selConsiderAntiLambda, // for mc tagging
-                   selPhysPrimK0Short,    // for mc tagging
-                   selPhysPrimLambda,     // for mc tagging
-                   selPhysPrimAntiLambda  // for mc tagging
+  enum selection : uint64_t { selCosPA = 0,
+                              selRadius,
+                              selRadiusMax,
+                              selDCANegToPV,
+                              selDCAPosToPV,
+                              selDCAV0Dau,
+                              selK0ShortRapidity,
+                              selLambdaRapidity,
+                              selTPCPIDPositivePion,
+                              selTPCPIDNegativePion,
+                              selTPCPIDPositiveProton,
+                              selTPCPIDNegativeProton,
+                              selTOFDeltaTPositiveProtonLambda,
+                              selTOFDeltaTPositivePionLambda,
+                              selTOFDeltaTPositivePionK0Short,
+                              selTOFDeltaTNegativeProtonLambda,
+                              selTOFDeltaTNegativePionLambda,
+                              selTOFDeltaTNegativePionK0Short,
+                              selTOFNSigmaPositiveProtonLambda, // Nsigma
+                              selTOFNSigmaPositivePionLambda,   // Nsigma
+                              selTOFNSigmaPositivePionK0Short,  // Nsigma
+                              selTOFNSigmaNegativeProtonLambda, // Nsigma
+                              selTOFNSigmaNegativePionLambda,   // Nsigma
+                              selTOFNSigmaNegativePionK0Short,  // Nsigma
+                              selK0ShortCTau,
+                              selLambdaCTau,
+                              selK0ShortArmenteros,
+                              selPosGoodTPCTrack, // at least min # TPC rows
+                              selNegGoodTPCTrack, // at least min # TPC rows
+                              selPosGoodITSTrack, // at least min # ITS clusters
+                              selNegGoodITSTrack, // at least min # ITS clusters
+                              selPosItsOnly,
+                              selNegItsOnly,
+                              selPosNotTPCOnly,
+                              selNegNotTPCOnly,
+                              selConsiderK0Short,    // for mc tagging
+                              selConsiderLambda,     // for mc tagging
+                              selConsiderAntiLambda, // for mc tagging
+                              selPhysPrimK0Short,    // for mc tagging
+                              selPhysPrimLambda,     // for mc tagging
+                              selPhysPrimAntiLambda, // for mc tagging
   };
 
-  uint32_t maskTopological;
-  uint32_t maskTopoNoV0Radius;
-  uint32_t maskTopoNoDCANegToPV;
-  uint32_t maskTopoNoDCAPosToPV;
-  uint32_t maskTopoNoCosPA;
-  uint32_t maskTopoNoDCAV0Dau;
-  uint32_t maskTrackProperties;
+  uint64_t maskTopological;
+  uint64_t maskTopoNoV0Radius;
+  uint64_t maskTopoNoDCANegToPV;
+  uint64_t maskTopoNoDCAPosToPV;
+  uint64_t maskTopoNoCosPA;
+  uint64_t maskTopoNoDCAV0Dau;
+  uint64_t maskTrackProperties;
 
-  uint32_t maskK0ShortSpecific;
-  uint32_t maskLambdaSpecific;
-  uint32_t maskAntiLambdaSpecific;
+  uint64_t maskK0ShortSpecific;
+  uint64_t maskLambdaSpecific;
+  uint64_t maskAntiLambdaSpecific;
 
-  uint32_t maskSelectionK0Short;
-  uint32_t maskSelectionLambda;
-  uint32_t maskSelectionAntiLambda;
+  uint64_t maskSelectionK0Short;
+  uint64_t maskSelectionLambda;
+  uint64_t maskSelectionAntiLambda;
 
-  uint32_t secondaryMaskSelectionLambda;
-  uint32_t secondaryMaskSelectionAntiLambda;
+  uint64_t secondaryMaskSelectionLambda;
+  uint64_t secondaryMaskSelectionAntiLambda;
 
   void init(InitContext const&)
   {
     // initialise bit masks
-    maskTopological = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
-    maskTopoNoV0Radius = (1 << selCosPA) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
-    maskTopoNoDCANegToPV = (1 << selCosPA) | (1 << selRadius) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
-    maskTopoNoDCAPosToPV = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAV0Dau);
-    maskTopoNoCosPA = (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
-    maskTopoNoDCAV0Dau = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV);
+    maskTopological = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
+    maskTopoNoV0Radius = (uint64_t(1) << selCosPA) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
+    maskTopoNoDCANegToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
+    maskTopoNoDCAPosToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
+    maskTopoNoCosPA = (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
+    maskTopoNoDCAV0Dau = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selRadiusMax);
 
-    maskK0ShortSpecific = (1 << selK0ShortRapidity) | (1 << selK0ShortCTau) | (1 << selK0ShortArmenteros) | (1 << selConsiderK0Short);
-    maskLambdaSpecific = (1 << selLambdaRapidity) | (1 << selLambdaCTau) | (1 << selConsiderLambda);
-    maskAntiLambdaSpecific = (1 << selLambdaRapidity) | (1 << selLambdaCTau) | (1 << selConsiderAntiLambda);
+    maskK0ShortSpecific = (uint64_t(1) << selK0ShortRapidity) | (uint64_t(1) << selK0ShortCTau) | (uint64_t(1) << selK0ShortArmenteros) | (uint64_t(1) << selConsiderK0Short);
+    maskLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderLambda);
+    maskAntiLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderAntiLambda);
 
-    // ask for specific TPC PID selections
-
+    // ask for specific TPC/TOF PID selections
     maskTrackProperties = 0;
     if (requirePosITSonly) {
-      maskTrackProperties = maskTrackProperties | (1 << selPosItsOnly);
+      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosItsOnly) | (uint64_t(1) << selPosGoodITSTrack);
     } else {
-      maskTrackProperties = maskTrackProperties | (1 << selPosGoodTPCTrack);
+      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosGoodTPCTrack) | (uint64_t(1) << selPosGoodITSTrack);
       // TPC signal is available: ask for positive track PID
-      maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDPositivePion) | (1 << selTOFDeltaTPositivePionK0Short);
-      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDPositiveProton) | (1 << selTOFDeltaTPositiveProtonLambda);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDPositivePion) | (1 << selTOFDeltaTPositivePionLambda);
+      if (TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDPositivePion);
+        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDPositiveProton);
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDPositivePion);
+      }
+      // TOF PID
+      if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
+        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaPositivePionK0Short) | (uint64_t(1) << selTOFDeltaTPositivePionK0Short);
+      if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
+        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositiveProtonLambda) | (uint64_t(1) << selTOFDeltaTPositiveProtonLambda);
+      if (TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositivePionLambda) | (uint64_t(1) << selTOFDeltaTPositivePionLambda);
     }
     if (requireNegITSonly) {
-      maskTrackProperties = maskTrackProperties | (1 << selNegItsOnly);
+      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegItsOnly) | (uint64_t(1) << selNegGoodITSTrack);
     } else {
-      maskTrackProperties = maskTrackProperties | (1 << selNegGoodTPCTrack);
+      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegGoodTPCTrack) | (uint64_t(1) << selNegGoodITSTrack);
       // TPC signal is available: ask for negative track PID
-      maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDNegativePion) | (1 << selTOFDeltaTNegativePionK0Short);
-      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativePion) | (1 << selTOFDeltaTNegativePionLambda);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDNegativeProton) | (1 << selTOFDeltaTNegativeProtonLambda);
+      if (TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDNegativePion);
+        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDNegativePion);
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDNegativeProton);
+      }
+      // TOF PID
+      if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
+        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << selTOFDeltaTNegativePionK0Short);
+      if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
+        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
+      if (TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << selTOFDeltaTNegativeProtonLambda);
+    }
+
+    if (skipTPConly) {
+      maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
+      maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
     }
 
     // Primary particle selection, central to analysis
-    maskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific | (1 << selPhysPrimK0Short);
-    maskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific | (1 << selPhysPrimLambda);
-    maskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific | (1 << selPhysPrimAntiLambda);
+    maskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific | (uint64_t(1) << selPhysPrimK0Short);
+    maskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific | (uint64_t(1) << selPhysPrimLambda);
+    maskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific | (uint64_t(1) << selPhysPrimAntiLambda);
 
     // No primary requirement for feeddown matrix
     secondaryMaskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific;
@@ -259,12 +307,123 @@ struct derivedlambdakzeroanalysis {
     }
 
     // histograms versus mass
-    if (analyseK0Short)
+    if (analyseK0Short) {
       histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisCentrality, axisPt, axisK0Mass});
-    if (analyseLambda)
+      if (doTPCQA) {
+        histos.add("K0Short/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+      }
+      if (doTOFQA) {
+        histos.add("K0Short/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+      }
+      if (doCollisionAssociationQA) {
+        histos.add("K0Short/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
+        histos.add("K0Short/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
+      }
+      if (doDetectPropQA == 1) {
+        histos.add("K0Short/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        histos.add("K0Short/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("K0Short/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+      }
+      if (doDetectPropQA == 2) {
+        histos.add("K0Short/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisK0Mass});
+        histos.add("K0Short/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisK0Mass});
+        histos.add("K0Short/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisK0Mass});
+      }
+    }
+    if (analyseLambda) {
       histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
-    if (analyseAntiLambda)
+      if (doTPCQA) {
+        histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+      }
+      if (doTOFQA) {
+        histos.add("Lambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+      }
+      if (doCollisionAssociationQA) {
+        histos.add("Lambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
+        histos.add("Lambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
+      }
+      if (doDetectPropQA == 1) {
+        histos.add("Lambda/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        histos.add("Lambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("Lambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+      }
+      if (doDetectPropQA == 2) {
+        histos.add("Lambda/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisLambdaMass});
+        histos.add("Lambda/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
+        histos.add("Lambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
+      }
+    }
+    if (analyseAntiLambda) {
       histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      if (doTPCQA) {
+        histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+      }
+      if (doTOFQA) {
+        histos.add("AntiLambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+      }
+      if (doCollisionAssociationQA) {
+        histos.add("AntiLambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
+        histos.add("AntiLambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
+      }
+      if (doDetectPropQA == 1) {
+        histos.add("AntiLambda/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        histos.add("AntiLambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("AntiLambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+      }
+      if (doDetectPropQA == 2) {
+        histos.add("AntiLambda/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisLambdaMass});
+        histos.add("AntiLambda/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
+        histos.add("AntiLambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
+      }
+    }
 
     if (analyseLambda && calculateFeeddownMatrix && doprocessMonteCarlo)
       histos.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3F, {axisCentrality, axisPt, axisPtXi});
@@ -275,7 +434,7 @@ struct derivedlambdakzeroanalysis {
     histos.add("hMassK0Short", "hMassK0Short", kTH1F, {axisK0Mass});
 
     // QA histograms if requested
-    if (doCompleteQA) {
+    if (doCompleteTopoQA) {
       // initialize for K0short...
       if (analyseK0Short) {
         histos.add("K0Short/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
@@ -283,20 +442,6 @@ struct derivedlambdakzeroanalysis {
         histos.add("K0Short/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAdau});
         histos.add("K0Short/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisPointingAngle});
         histos.add("K0Short/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisV0Radius});
-        if (doTPCQA) {
-          histos.add("K0Short/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("K0Short/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("K0Short/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("K0Short/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("K0Short/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("K0Short/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("K0Short/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("K0Short/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("K0Short/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("K0Short/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("K0Short/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("K0Short/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        }
       }
       if (analyseLambda) {
         histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
@@ -304,20 +449,6 @@ struct derivedlambdakzeroanalysis {
         histos.add("Lambda/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
         histos.add("Lambda/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
         histos.add("Lambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
-        if (doTPCQA) {
-          histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("Lambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("Lambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("Lambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("Lambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("Lambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("Lambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("Lambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("Lambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("Lambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("Lambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        }
       }
       if (analyseAntiLambda) {
         histos.add("AntiLambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
@@ -325,24 +456,10 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
         histos.add("AntiLambda/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
         histos.add("AntiLambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
-        if (doTPCQA) {
-          histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("AntiLambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("AntiLambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("AntiLambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("AntiLambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-          histos.add("AntiLambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-          histos.add("AntiLambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        }
       }
     }
 
-    if (doPlainQA) {
+    if (doPlainTopoQA) {
       // All candidates received
       histos.add("hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
       histos.add("hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
@@ -351,7 +468,6 @@ struct derivedlambdakzeroanalysis {
       histos.add("hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
       histos.add("h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
       histos.add("h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-
       if (analyseK0Short) {
         histos.add("K0Short/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
         histos.add("K0Short/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
@@ -360,10 +476,6 @@ struct derivedlambdakzeroanalysis {
         histos.add("K0Short/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("K0Short/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
         histos.add("K0Short/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        if (doCollisionAssociationQA) {
-          histos.add("K0Short/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
-          histos.add("K0Short/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
-        }
       }
       if (analyseLambda) {
         histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
@@ -373,10 +485,6 @@ struct derivedlambdakzeroanalysis {
         histos.add("Lambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
         histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        if (doCollisionAssociationQA) {
-          histos.add("Lambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
-          histos.add("Lambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
-        }
       }
       if (analyseAntiLambda) {
         histos.add("AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
@@ -386,10 +494,6 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
         histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        if (doCollisionAssociationQA) {
-          histos.add("AntiLambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
-          histos.add("AntiLambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
-        }
       }
     }
 
@@ -407,16 +511,21 @@ struct derivedlambdakzeroanalysis {
       histos.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", kTH2D, {axisCentrality, axisPt});
     }
+
+    // inspect histogram sizes, please
+    histos.print();
   }
 
   template <typename TV0, typename TCollision>
-  uint32_t computeReconstructionBitmap(TV0 v0, TCollision collision)
+  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision, float rapidityLambda, float rapidityK0Short, float /*pT*/)
   // precalculate this information so that a check is one mask operation, not many
   {
-    uint32_t bitMap = 0;
+    uint64_t bitMap = 0;
     // Base topological variables
     if (v0.v0radius() > v0radius)
       bitset(bitMap, selRadius);
+    if (v0.v0radius() < v0radiusMax)
+      bitset(bitMap, selRadiusMax);
     if (TMath::Abs(v0.dcapostopv()) > dcapostopv)
       bitset(bitMap, selDCAPosToPV);
     if (TMath::Abs(v0.dcanegtopv()) > dcanegtopv)
@@ -427,13 +536,19 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selDCAV0Dau);
 
     // rapidity
-    if (TMath::Abs(v0.yLambda()) < rapidityCut)
+    if (TMath::Abs(rapidityLambda) < rapidityCut)
       bitset(bitMap, selLambdaRapidity);
-    if (TMath::Abs(v0.yK0Short()) < rapidityCut)
+    if (TMath::Abs(rapidityK0Short) < rapidityCut)
       bitset(bitMap, selK0ShortRapidity);
 
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+
+    // ITS quality flags
+    if (posTrackExtra.itsNCls() >= minITSclusters)
+      bitset(bitMap, selPosGoodITSTrack);
+    if (negTrackExtra.itsNCls() >= minITSclusters)
+      bitset(bitMap, selNegGoodITSTrack);
 
     // TPC quality flags
     if (posTrackExtra.tpcCrossedRows() >= minTPCrows)
@@ -451,7 +566,7 @@ struct derivedlambdakzeroanalysis {
     if (fabs(negTrackExtra.tpcNSigmaPr()) < TpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDNegativeProton);
 
-    // TOF PID
+    // TOF PID in DeltaT
     // Positive track
     if (fabs(v0.posTOFDeltaTLaPr()) < maxDeltaTimeProton)
       bitset(bitMap, selTOFDeltaTPositiveProtonLambda);
@@ -467,11 +582,33 @@ struct derivedlambdakzeroanalysis {
     if (fabs(v0.negTOFDeltaTK0Pi()) < maxDeltaTimePion)
       bitset(bitMap, selTOFDeltaTNegativePionK0Short);
 
+    // TOF PID in NSigma
+    // Positive track
+    if (fabs(v0.tofNSigmaLaPr()) < TofPidNsigmaCutLaPr)
+      bitset(bitMap, selTOFNSigmaPositiveProtonLambda);
+    if (fabs(v0.tofNSigmaALaPi()) < TofPidNsigmaCutLaPi)
+      bitset(bitMap, selTOFNSigmaPositivePionLambda);
+    if (fabs(v0.tofNSigmaK0PiPlus()) < TofPidNsigmaCutK0Pi)
+      bitset(bitMap, selTOFNSigmaPositivePionK0Short);
+    // Negative track
+    if (fabs(v0.tofNSigmaALaPr()) < TofPidNsigmaCutLaPr)
+      bitset(bitMap, selTOFNSigmaNegativeProtonLambda);
+    if (fabs(v0.tofNSigmaLaPi()) < TofPidNsigmaCutLaPi)
+      bitset(bitMap, selTOFNSigmaNegativePionLambda);
+    if (fabs(v0.tofNSigmaK0PiMinus()) < TofPidNsigmaCutK0Pi)
+      bitset(bitMap, selTOFNSigmaNegativePionK0Short);
+
     // ITS only tag
     if (posTrackExtra.tpcCrossedRows() < 1)
       bitset(bitMap, selPosItsOnly);
     if (negTrackExtra.tpcCrossedRows() < 1)
       bitset(bitMap, selNegItsOnly);
+
+    // TPC only tag
+    if (posTrackExtra.detectorMap() != o2::aod::track::TPC)
+      bitset(bitMap, selPosNotTPCOnly);
+    if (negTrackExtra.detectorMap() != o2::aod::track::TPC)
+      bitset(bitMap, selNegNotTPCOnly);
 
     // proper lifetime
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda"))
@@ -487,10 +624,10 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  uint32_t computeMCAssociation(TV0 v0)
+  uint64_t computeMCAssociation(TV0 v0)
   // precalculate this information so that a check is one mask operation, not many
   {
-    uint32_t bitMap = 0;
+    uint64_t bitMap = 0;
     // check for specific particle species
 
     if (v0.pdgCode() == 310 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -211) {
@@ -511,21 +648,125 @@ struct derivedlambdakzeroanalysis {
     return bitMap;
   }
 
-  bool verifyMask(uint32_t bitmap, uint32_t mask)
+  bool verifyMask(uint64_t bitmap, uint64_t mask)
   {
     return (bitmap & mask) == mask;
   }
 
+  uint computeITSclusBitmap(uint8_t itsClusMap)
+  // Focus on the 12 dominant ITS cluster configurations
+  {
+    uint bitMap = 0;
+
+    if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS : x  x  x  x  x  x  x
+      bitMap = 12;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :    x  x  x  x  x  x
+      bitMap = 11;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :       x  x  x  x  x
+      bitMap = 10;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :          x  x  x  x
+      bitMap = 9;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :             x  x  x
+      bitMap = 8;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :                x  x
+      bitMap = 7;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS : x  x  x  x  x  x
+      bitMap = 6;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :    x  x  x  x  x
+      bitMap = 5;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :       x  x  x  x
+      bitMap = 4;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS : x  x  x  x  x
+      bitMap = 3;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :    x  x  x  x
+      bitMap = 2;
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3)))) {
+      // ITS :    IB         OB
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS : x  x  x  x
+      bitMap = 1;
+    } else {
+      // ITS : other configurations
+      bitMap = 0;
+    }
+
+    return bitMap;
+  }
+
+  uint computeDetBitmap(uint8_t detMap)
+  // Focus on the 4 dominant track configurations :
+  //  ITS-TPC
+  //  ITS-TPC-TRD
+  //  ITS-TPC-TOF
+  //  ITS-TPC-TRD-TOF
+  {
+    uint bitMap = 0;
+
+    if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF))) {
+      // ITS-TPC-TRD-TOF
+      bitMap = 3;
+    } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF))) {
+      // ITS-TPC-TOF
+      bitMap = 2;
+    } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD))) {
+      // ITS-TPC-TRD
+      bitMap = 1;
+    } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC))) {
+      // ITS-TPC
+      bitMap = 0;
+    }
+
+    return bitMap;
+  }
+
   template <typename TV0>
-  void analyseCandidate(TV0 v0, float centrality, uint32_t selMap)
+  void analyseCandidate(TV0 v0, float pt, float centrality, uint64_t selMap)
   // precalculate this information so that a check is one mask operation, not many
   {
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
 
+    uint posDetMap = computeDetBitmap(posTrackExtra.detectorMap());
+    uint posITSclusMap = computeITSclusBitmap(posTrackExtra.itsClusterMap());
+    uint negDetMap = computeDetBitmap(negTrackExtra.detectorMap());
+    uint negITSclusMap = computeITSclusBitmap(negTrackExtra.itsClusterMap());
+
     // __________________________________________
     // fill with no selection if plain QA requested
-    if (doPlainQA) {
+    if (doPlainTopoQA) {
       histos.fill(HIST("hPosDCAToPV"), v0.dcapostopv());
       histos.fill(HIST("hNegDCAToPV"), v0.dcanegtopv());
       histos.fill(HIST("hDCADaughters"), v0.dcaV0daughters());
@@ -539,9 +780,9 @@ struct derivedlambdakzeroanalysis {
     // main analysis
     if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
-      histos.fill(HIST("h3dMassK0Short"), centrality, v0.pt(), v0.mK0Short());
+      histos.fill(HIST("h3dMassK0Short"), centrality, pt, v0.mK0Short());
       histos.fill(HIST("hMassK0Short"), v0.mK0Short());
-      if (doPlainQA) {
+      if (doPlainTopoQA) {
         histos.fill(HIST("K0Short/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("K0Short/hNegDCAToPV"), v0.dcanegtopv());
         histos.fill(HIST("K0Short/hDCADaughters"), v0.dcaV0daughters());
@@ -550,10 +791,42 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("K0Short/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
         histos.fill(HIST("K0Short/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
       }
+      if (doDetectPropQA == 1) {
+        histos.fill(HIST("K0Short/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt);
+        histos.fill(HIST("K0Short/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pt);
+        histos.fill(HIST("K0Short/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt);
+      }
+      if (doDetectPropQA == 2) {
+        histos.fill(HIST("K0Short/h7dPosDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt, v0.mK0Short());
+        histos.fill(HIST("K0Short/h5dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pt, v0.mK0Short());
+        histos.fill(HIST("K0Short/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt, v0.mK0Short());
+      }
+      if (doTPCQA) {
+        histos.fill(HIST("K0Short/h3dPosNsigmaTPC"), centrality, pt, posTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("K0Short/h3dNegNsigmaTPC"), centrality, pt, negTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("K0Short/h3dPosTPCsignal"), centrality, pt, posTrackExtra.tpcSignal());
+        histos.fill(HIST("K0Short/h3dNegTPCsignal"), centrality, pt, negTrackExtra.tpcSignal());
+        histos.fill(HIST("K0Short/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("K0Short/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("K0Short/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
+        histos.fill(HIST("K0Short/h3dNegTPCsignalVsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcSignal());
+        histos.fill(HIST("K0Short/h3dPosNsigmaTPCvsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("K0Short/h3dNegNsigmaTPCvsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("K0Short/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
+        histos.fill(HIST("K0Short/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
+      }
+      if (doTOFQA) {
+        histos.fill(HIST("K0Short/h3dPosTOFdeltaT"), centrality, pt, v0.posTOFDeltaTK0Pi());
+        histos.fill(HIST("K0Short/h3dNegTOFdeltaT"), centrality, pt, v0.negTOFDeltaTK0Pi());
+        histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTK0Pi());
+        histos.fill(HIST("K0Short/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTK0Pi());
+        histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTK0Pi());
+        histos.fill(HIST("K0Short/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTK0Pi());
+      }
     }
     if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
-      histos.fill(HIST("h3dMassLambda"), centrality, v0.pt(), v0.mLambda());
-      if (doPlainQA) {
+      histos.fill(HIST("h3dMassLambda"), centrality, pt, v0.mLambda());
+      if (doPlainTopoQA) {
         histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("Lambda/hNegDCAToPV"), v0.dcanegtopv());
         histos.fill(HIST("Lambda/hDCADaughters"), v0.dcaV0daughters());
@@ -562,10 +835,42 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("Lambda/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
         histos.fill(HIST("Lambda/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
       }
+      if (doDetectPropQA == 1) {
+        histos.fill(HIST("Lambda/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt);
+        histos.fill(HIST("Lambda/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pt);
+        histos.fill(HIST("Lambda/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt);
+      }
+      if (doDetectPropQA == 2) {
+        histos.fill(HIST("Lambda/h7dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt, v0.mLambda());
+        histos.fill(HIST("Lambda/h5dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pt, v0.mLambda());
+        histos.fill(HIST("Lambda/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt, v0.mLambda());
+      }
+      if (doTPCQA) {
+        histos.fill(HIST("Lambda/h3dPosNsigmaTPC"), centrality, pt, posTrackExtra.tpcNSigmaPr());
+        histos.fill(HIST("Lambda/h3dNegNsigmaTPC"), centrality, pt, negTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("Lambda/h3dPosTPCsignal"), centrality, pt, posTrackExtra.tpcSignal());
+        histos.fill(HIST("Lambda/h3dNegTPCsignal"), centrality, pt, negTrackExtra.tpcSignal());
+        histos.fill(HIST("Lambda/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPr());
+        histos.fill(HIST("Lambda/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
+        histos.fill(HIST("Lambda/h3dNegTPCsignalVsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcSignal());
+        histos.fill(HIST("Lambda/h3dPosNsigmaTPCvsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcNSigmaPr());
+        histos.fill(HIST("Lambda/h3dNegNsigmaTPCvsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
+        histos.fill(HIST("Lambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
+      }
+      if (doTOFQA) {
+        histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, pt, v0.posTOFDeltaTLaPr());
+        histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, pt, v0.negTOFDeltaTLaPi());
+        histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTLaPr());
+        histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTLaPi());
+        histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
+        histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
+      }
     }
     if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
-      histos.fill(HIST("h3dMassAntiLambda"), centrality, v0.pt(), v0.mAntiLambda());
-      if (doPlainQA) {
+      histos.fill(HIST("h3dMassAntiLambda"), centrality, pt, v0.mAntiLambda());
+      if (doPlainTopoQA) {
         histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("AntiLambda/hNegDCAToPV"), v0.dcanegtopv());
         histos.fill(HIST("AntiLambda/hDCADaughters"), v0.dcaV0daughters());
@@ -574,124 +879,108 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
         histos.fill(HIST("AntiLambda/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
       }
+      if (doDetectPropQA == 1) {
+        histos.fill(HIST("AntiLambda/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt);
+        histos.fill(HIST("AntiLambda/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pt);
+        histos.fill(HIST("AntiLambda/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt);
+      }
+      if (doDetectPropQA == 2) {
+        histos.fill(HIST("AntiLambda/h7dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt, v0.mAntiLambda());
+        histos.fill(HIST("AntiLambda/h5dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pt, v0.mAntiLambda());
+        histos.fill(HIST("AntiLambda/h5dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt, v0.mAntiLambda());
+      }
+      if (doTPCQA) {
+        histos.fill(HIST("AntiLambda/h3dPosNsigmaTPC"), centrality, pt, posTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("AntiLambda/h3dNegNsigmaTPC"), centrality, pt, negTrackExtra.tpcNSigmaPr());
+        histos.fill(HIST("AntiLambda/h3dPosTPCsignal"), centrality, pt, posTrackExtra.tpcSignal());
+        histos.fill(HIST("AntiLambda/h3dNegTPCsignal"), centrality, pt, negTrackExtra.tpcSignal());
+        histos.fill(HIST("AntiLambda/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("AntiLambda/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPr());
+        histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
+        histos.fill(HIST("AntiLambda/h3dNegTPCsignalVsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcSignal());
+        histos.fill(HIST("AntiLambda/h3dPosNsigmaTPCvsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcNSigmaPi());
+        histos.fill(HIST("AntiLambda/h3dNegNsigmaTPCvsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcNSigmaPr());
+        histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
+        histos.fill(HIST("AntiLambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
+      }
+      if (doTOFQA) {
+        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, pt, v0.posTOFDeltaTLaPi());
+        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, pt, v0.negTOFDeltaTLaPr());
+        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTLaPi());
+        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTLaPr());
+        histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
+        histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
+      }
     }
 
     // __________________________________________
     // do systematics / qa plots
-    if (doCompleteQA) {
+    if (doCompleteTopoQA) {
       if (analyseK0Short) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dV0Radius"), centrality, v0.pt(), v0.mK0Short(), v0.v0radius());
+          histos.fill(HIST("K0Short/h4dV0Radius"), centrality, pt, v0.mK0Short(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dPosDCAToPV"), centrality, v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("K0Short/h4dPosDCAToPV"), centrality, pt, v0.mK0Short(), TMath::Abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dNegDCAToPV"), centrality, v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("K0Short/h4dNegDCAToPV"), centrality, pt, v0.mK0Short(), TMath::Abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dPointingAngle"), centrality, v0.pt(), v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("K0Short/h4dPointingAngle"), centrality, pt, v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dDCADaughters"), centrality, v0.pt(), v0.mK0Short(), v0.dcaV0daughters());
-        if (doTPCQA) {
-          if (verifyMask(selMap, maskTopological | maskK0ShortSpecific)) {
-            histos.fill(HIST("K0Short/h3dPosNsigmaTPC"), centrality, v0.pt(), posTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("K0Short/h3dNegNsigmaTPC"), centrality, v0.pt(), negTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("K0Short/h3dPosTPCsignal"), centrality, v0.pt(), posTrackExtra.tpcSignal());
-            histos.fill(HIST("K0Short/h3dNegTPCsignal"), centrality, v0.pt(), negTrackExtra.tpcSignal());
-            histos.fill(HIST("K0Short/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("K0Short/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("K0Short/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
-            histos.fill(HIST("K0Short/h3dNegTPCsignalVsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcSignal());
-            histos.fill(HIST("K0Short/h3dPosNsigmaTPCvsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("K0Short/h3dNegNsigmaTPCvsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("K0Short/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
-            histos.fill(HIST("K0Short/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
-          }
-        }
+          histos.fill(HIST("K0Short/h4dDCADaughters"), centrality, pt, v0.mK0Short(), v0.dcaV0daughters());
       }
 
       if (analyseLambda) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dV0Radius"), centrality, v0.pt(), v0.mLambda(), v0.v0radius());
+          histos.fill(HIST("Lambda/h4dV0Radius"), centrality, pt, v0.mLambda(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dPosDCAToPV"), centrality, v0.pt(), v0.mLambda(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("Lambda/h4dPosDCAToPV"), centrality, pt, v0.mLambda(), TMath::Abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dNegDCAToPV"), centrality, v0.pt(), v0.mLambda(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("Lambda/h4dNegDCAToPV"), centrality, pt, v0.mLambda(), TMath::Abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dPointingAngle"), centrality, v0.pt(), v0.mLambda(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("Lambda/h4dPointingAngle"), centrality, pt, v0.mLambda(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dDCADaughters"), centrality, v0.pt(), v0.mLambda(), v0.dcaV0daughters());
-        if (doTPCQA) {
-          if (verifyMask(selMap, maskTopological | maskLambdaSpecific)) {
-            histos.fill(HIST("Lambda/h3dPosNsigmaTPC"), centrality, v0.pt(), posTrackExtra.tpcNSigmaPr());
-            histos.fill(HIST("Lambda/h3dNegNsigmaTPC"), centrality, v0.pt(), negTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("Lambda/h3dPosTPCsignal"), centrality, v0.pt(), posTrackExtra.tpcSignal());
-            histos.fill(HIST("Lambda/h3dNegTPCsignal"), centrality, v0.pt(), negTrackExtra.tpcSignal());
-            histos.fill(HIST("Lambda/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPr());
-            histos.fill(HIST("Lambda/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
-            histos.fill(HIST("Lambda/h3dNegTPCsignalVsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcSignal());
-            histos.fill(HIST("Lambda/h3dPosNsigmaTPCvsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcNSigmaPr());
-            histos.fill(HIST("Lambda/h3dNegNsigmaTPCvsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
-            histos.fill(HIST("Lambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
-          }
-        }
+          histos.fill(HIST("Lambda/h4dDCADaughters"), centrality, pt, v0.mLambda(), v0.dcaV0daughters());
       }
       if (analyseAntiLambda) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dV0Radius"), centrality, v0.pt(), v0.mAntiLambda(), v0.v0radius());
+          histos.fill(HIST("AntiLambda/h4dV0Radius"), centrality, pt, v0.mAntiLambda(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), centrality, v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), centrality, pt, v0.mAntiLambda(), TMath::Abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), centrality, v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), centrality, pt, v0.mAntiLambda(), TMath::Abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dPointingAngle"), centrality, v0.pt(), v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("AntiLambda/h4dPointingAngle"), centrality, pt, v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dDCADaughters"), centrality, v0.pt(), v0.mAntiLambda(), v0.dcaV0daughters());
-        if (doTPCQA) {
-          if (verifyMask(selMap, maskTopological | maskAntiLambdaSpecific)) {
-            histos.fill(HIST("AntiLambda/h3dPosNsigmaTPC"), centrality, v0.pt(), posTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("AntiLambda/h3dNegNsigmaTPC"), centrality, v0.pt(), negTrackExtra.tpcNSigmaPr());
-            histos.fill(HIST("AntiLambda/h3dPosTPCsignal"), centrality, v0.pt(), posTrackExtra.tpcSignal());
-            histos.fill(HIST("AntiLambda/h3dNegTPCsignal"), centrality, v0.pt(), negTrackExtra.tpcSignal());
-            histos.fill(HIST("AntiLambda/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("AntiLambda/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPr());
-            histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
-            histos.fill(HIST("AntiLambda/h3dNegTPCsignalVsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcSignal());
-            histos.fill(HIST("AntiLambda/h3dPosNsigmaTPCvsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("AntiLambda/h3dNegNsigmaTPCvsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcNSigmaPr());
-            histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
-            histos.fill(HIST("AntiLambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
-          }
-        }
+          histos.fill(HIST("AntiLambda/h4dDCADaughters"), centrality, pt, v0.mAntiLambda(), v0.dcaV0daughters());
       }
     } // end systematics / qa
   }
 
   template <typename TV0>
-  void analyseCollisionAssociation(TV0 v0, int mcNch, bool correctAssociation, uint32_t selMap)
+  void analyseCollisionAssociation(TV0 /*v0*/, float pt, int mcNch, bool correctAssociation, uint64_t selMap)
   // analyse collision association
   {
     // __________________________________________
     // main analysis
     if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
-      histos.fill(HIST("K0Short/h2dPtVsNch"), mcNch, v0.pt());
+      histos.fill(HIST("K0Short/h2dPtVsNch"), mcNch, pt);
       if (!correctAssociation)
-        histos.fill(HIST("K0Short/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
+        histos.fill(HIST("K0Short/h2dPtVsNch_BadCollAssig"), mcNch, pt);
     }
     if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
-      histos.fill(HIST("Lambda/h2dPtVsNch"), mcNch, v0.pt());
+      histos.fill(HIST("Lambda/h2dPtVsNch"), mcNch, pt);
       if (!correctAssociation)
-        histos.fill(HIST("Lambda/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
+        histos.fill(HIST("Lambda/h2dPtVsNch_BadCollAssig"), mcNch, pt);
     }
     if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
-      histos.fill(HIST("AntiLambda/h2dPtVsNch"), mcNch, v0.pt());
+      histos.fill(HIST("AntiLambda/h2dPtVsNch"), mcNch, pt);
       if (!correctAssociation)
-        histos.fill(HIST("AntiLambda/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
+        histos.fill(HIST("AntiLambda/h2dPtVsNch_BadCollAssig"), mcNch, pt);
     }
   }
 
   template <typename TV0>
-  void fillFeeddownMatrix(TV0 v0, float centrality, uint32_t selMap)
+  void fillFeeddownMatrix(TV0 v0, float pt, float centrality, uint64_t selMap)
   // fill feeddown matrix for Lambdas or AntiLambdas
   // fixme: a potential improvement would be to consider mass windows for the l/al
   {
@@ -706,11 +995,11 @@ struct derivedlambdakzeroanalysis {
     // __________________________________________
     if (verifyMask(selMap, secondaryMaskSelectionLambda) && analyseLambda) {
       if (v0mother.pdgCode() == 3312 && v0mother.isPhysicalPrimary())
-        histos.fill(HIST("h3dLambdaFeeddown"), centrality, v0.pt(), std::hypot(v0mother.px(), v0mother.py()));
+        histos.fill(HIST("h3dLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
     }
     if (verifyMask(selMap, secondaryMaskSelectionAntiLambda) && analyseAntiLambda) {
       if (v0mother.pdgCode() == -3312 && v0mother.isPhysicalPrimary())
-        histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, v0.pt(), std::hypot(v0mother.px(), v0mother.py()));
+        histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
     }
   }
 
@@ -758,19 +1047,19 @@ struct derivedlambdakzeroanalysis {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      uint32_t selMap = computeReconstructionBitmap(v0, collision);
+      uint64_t selMap = computeReconstructionBitmap(v0, collision, v0.yLambda(), v0.yK0Short(), v0.pt());
 
       // consider for histograms for all species
-      selMap = selMap | (1 << selConsiderK0Short) | (1 << selConsiderLambda) | (1 << selConsiderAntiLambda);
-      selMap = selMap | (1 << selPhysPrimK0Short) | (1 << selPhysPrimLambda) | (1 << selPhysPrimAntiLambda);
+      selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
+      selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
 
-      analyseCandidate(v0, centrality, selMap);
+      analyseCandidate(v0, v0.pt(), centrality, selMap);
     } // end v0 loop
   }
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mccollisions)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/)
   {
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
     if (!collision.sel8()) {
@@ -812,20 +1101,27 @@ struct derivedlambdakzeroanalysis {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      uint32_t selMap = computeReconstructionBitmap(v0, collision);
+      float ptmc = RecoDecay::sqrtSumOfSquares(v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC());
+      float ymc = 1e-3;
+      if (v0.pdgCode() == 310)
+        ymc = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
+      else if (TMath::Abs(v0.pdgCode()) == 3122)
+        ymc = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassLambda);
+
+      uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
       selMap = selMap | computeMCAssociation(v0);
 
       // feeddown matrix always with association
       if (calculateFeeddownMatrix)
-        fillFeeddownMatrix(v0, centrality, selMap);
+        fillFeeddownMatrix(v0, ptmc, centrality, selMap);
 
       // consider only associated candidates if asked to do so, disregard association
       if (!doMCAssociation) {
-        selMap = selMap | (1 << selConsiderK0Short) | (1 << selConsiderLambda) | (1 << selConsiderAntiLambda);
-        selMap = selMap | (1 << selPhysPrimK0Short) | (1 << selPhysPrimLambda) | (1 << selPhysPrimAntiLambda);
+        selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
+        selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
       }
 
-      analyseCandidate(v0, centrality, selMap);
+      analyseCandidate(v0, ptmc, centrality, selMap);
 
       if (doCollisionAssociationQA) {
         // check collision association explicitly
@@ -836,7 +1132,7 @@ struct derivedlambdakzeroanalysis {
           mcNch = mcCollision.multMCNParticlesEta05();
           correctCollision = (v0.straMCCollisionId() == mcCollision.globalIndex());
         }
-        analyseCollisionAssociation(v0, mcNch, correctCollision, selMap);
+        analyseCollisionAssociation(v0, ptmc, mcNch, correctCollision, selMap);
       }
 
     } // end v0 loop
@@ -857,51 +1153,51 @@ struct derivedlambdakzeroanalysis {
     auto hOmegaMinus = histos.get<TH2>(HIST("h2dGenOmegaMinus"));
     auto hOmegaPlus = histos.get<TH2>(HIST("h2dGenOmegaPlus"));
     for (auto& gVec : geK0Short) {
-      if (gVec.size() != hK0Short->GetNcells())
-        LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ!");
-      for (uint32_t iv = 0; iv < hK0Short->GetNcells(); iv++) {
-        hK0Short->SetBinContent(iv + 1, hK0Short->GetBinContent(iv + 1) + gVec.generatedK0Short()[iv]);
+      if (gVec.generatedK0Short().size() != hK0Short->GetNcells())
+        LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedK0Short().size(), hK0Short->GetNcells());
+      for (uint64_t iv = 0; iv < hK0Short->GetNcells(); iv++) {
+        hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv) + gVec.generatedK0Short()[iv]);
       }
     }
     for (auto& gVec : geLambda) {
-      if (gVec.size() != hLambda->GetNcells())
-        LOGF(fatal, "Lambda: Number of elements in generated array and number of cells in receiving histogram differ!");
-      for (uint32_t iv = 0; iv < hLambda->GetNcells(); iv++) {
+      if (gVec.generatedLambda().size() != hLambda->GetNcells())
+        LOGF(fatal, "Lambda: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedLambda().size(), hLambda->GetNcells());
+      for (uint64_t iv = 0; iv < hLambda->GetNcells(); iv++) {
         hLambda->SetBinContent(iv, hLambda->GetBinContent(iv) + gVec.generatedLambda()[iv]);
       }
     }
     for (auto& gVec : geAntiLambda) {
-      if (gVec.size() != hAntiLambda->GetNcells())
-        LOGF(fatal, "AntiLambda: Number of elements in generated array and number of cells in receiving histogram differ!");
-      for (uint32_t iv = 0; iv < hAntiLambda->GetNcells(); iv++) {
+      if (gVec.generatedAntiLambda().size() != hAntiLambda->GetNcells())
+        LOGF(fatal, "AntiLambda: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedAntiLambda().size(), hAntiLambda->GetNcells());
+      for (uint64_t iv = 0; iv < hAntiLambda->GetNcells(); iv++) {
         hAntiLambda->SetBinContent(iv, hAntiLambda->GetBinContent(iv) + gVec.generatedAntiLambda()[iv]);
       }
     }
     for (auto& gVec : geXiMinus) {
-      if (gVec.size() != hXiMinus->GetNcells())
-        LOGF(fatal, "XiMinus: Number of elements in generated array and number of cells in receiving histogram differ!");
-      for (uint32_t iv = 0; iv < hXiMinus->GetNcells(); iv++) {
+      if (gVec.generatedXiMinus().size() != hXiMinus->GetNcells())
+        LOGF(fatal, "XiMinus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedXiMinus().size(), hXiMinus->GetNcells());
+      for (uint64_t iv = 0; iv < hXiMinus->GetNcells(); iv++) {
         hXiMinus->SetBinContent(iv, hXiMinus->GetBinContent(iv) + gVec.generatedXiMinus()[iv]);
       }
     }
     for (auto& gVec : geXiPlus) {
-      if (gVec.size() != hXiPlus->GetNcells())
-        LOGF(fatal, "XiPlus: Number of elements in generated array and number of cells in receiving histogram differ!");
-      for (uint32_t iv = 0; iv < hXiPlus->GetNcells(); iv++) {
+      if (gVec.generatedXiPlus().size() != hXiPlus->GetNcells())
+        LOGF(fatal, "XiPlus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedXiPlus().size(), hXiPlus->GetNcells());
+      for (uint64_t iv = 0; iv < hXiPlus->GetNcells(); iv++) {
         hXiPlus->SetBinContent(iv, hXiPlus->GetBinContent(iv) + gVec.generatedXiPlus()[iv]);
       }
     }
     for (auto& gVec : geOmegaMinus) {
-      if (gVec.size() != hOmegaMinus->GetNcells())
-        LOGF(fatal, "OmegaMinus: Number of elements in generated array and number of cells in receiving histogram differ!");
-      for (uint32_t iv = 0; iv < hOmegaMinus->GetNcells(); iv++) {
+      if (gVec.generatedOmegaMinus().size() != hOmegaMinus->GetNcells())
+        LOGF(fatal, "OmegaMinus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedOmegaMinus().size(), hOmegaMinus->GetNcells());
+      for (uint64_t iv = 0; iv < hOmegaMinus->GetNcells(); iv++) {
         hOmegaMinus->SetBinContent(iv, hOmegaMinus->GetBinContent(iv) + gVec.generatedOmegaMinus()[iv]);
       }
     }
     for (auto& gVec : geOmegaPlus) {
-      if (gVec.size() != hOmegaPlus->GetNcells())
-        LOGF(fatal, "OmegaPlus: Number of elements in generated array and number of cells in receiving histogram differ!");
-      for (uint32_t iv = 0; iv < hOmegaPlus->GetNcells(); iv++) {
+      if (gVec.generatedOmegaPlus().size() != hOmegaPlus->GetNcells())
+        LOGF(fatal, "OmegaPlus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedOmegaPlus().size(), hOmegaPlus->GetNcells());
+      for (uint64_t iv = 0; iv < hOmegaPlus->GetNcells(); iv++) {
         hOmegaPlus->SetBinContent(iv, hOmegaPlus->GetBinContent(iv) + gVec.generatedOmegaPlus()[iv]);
       }
     }

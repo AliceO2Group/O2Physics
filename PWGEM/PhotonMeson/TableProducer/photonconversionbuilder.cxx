@@ -152,7 +152,7 @@ struct PhotonConversionBuilder {
       {"V0Leg/hTPCNsigmaEl", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
     }};
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -621,7 +621,7 @@ struct PhotonConversionBuilder {
   std::vector<std::pair<int64_t, int64_t>> stored_v0Ids;                     //(pos.globalIndex(), ele.globalIndex())
 
   template <bool isMC, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
-  void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TBCs const&)
+  void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& /*tracks*/, TBCs const&)
   {
     for (auto& collision : collisions) {
       if constexpr (isMC) {

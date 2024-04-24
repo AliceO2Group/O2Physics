@@ -43,13 +43,6 @@
 using namespace o2;
 using namespace o2::framework;
 
-namespace qV
-{
-static constexpr std::string_view centClasses[8] = {
-  "Centrality_0-5/", "Centrality_5-10/", "Centrality_10-20/", "Centrality_20-30/",
-  "Centrality_30-40/", "Centrality_40-50/", "Centrality_50-60/", "Centrality_60-80/"};
-} // namespace qV
-
 struct qVectorsCorrection {
   // No correction = recenter, recentered Qvectors = twist, twisted Qvectors = rescale.
   // NOTE: As of no, the twist gets both twist and rescale correction constants.
@@ -64,6 +57,10 @@ struct qVectorsCorrection {
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgRefAName{"cfgRefAName", "BPos", "The name of detector for reference A"};
   Configurable<std::string> cfgRefBName{"cfgRefBName", "BNeg", "The name of detector for reference B"};
+
+  ConfigurableAxis cfgaxisQvecF{"cfgaxisQvecF", {100, -1, 1}, ""};
+  ConfigurableAxis cfgaxisQvec{"cfgaxisQvec", {100, -3, 3}, ""};
+  ConfigurableAxis cfgaxisCent{"cfgaxisCent", {90, 0, 90}, ""};
 
   // Helper variables.
   EventPlaneHelper helperEP;
@@ -106,147 +103,102 @@ struct qVectorsCorrection {
     }
 
     // Fill the registry with the needed objects.
-    const AxisSpec axisCent{110, 0., 110.};
-    const AxisSpec axisQvec{1000, -3, 3};
-    const AxisSpec axisQvecF{1000, -0.3, 0.3};
-    const AxisSpec axisConst{12, 0., 12.}; // 4 constants x 3 detectors.
-    const AxisSpec axisEvtPl{360, -constants::math::PI, constants::math::PI};
+    AxisSpec axisCent{cfgaxisCent, "centrality"};
+    AxisSpec axisQvec{cfgaxisQvec, "Q"};
+    AxisSpec axisQvecF{cfgaxisQvecF, "Q"};
+    AxisSpec axisEvtPl{360, -constants::math::PI, constants::math::PI};
 
     histosQA.add("histCentFull", "Centrality distribution for valid events",
                  HistType::kTH1F, {axisCent});
 
-    histosQA.add("Centrality_0-5/histCent", "Centrality distribution",
-                 HistType::kTH1F, {axisCent});
+    histosQA.add("histQvecUncor", "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
+    histosQA.add("histQvecRectr", "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
+    histosQA.add("histQvecTwist", "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
+    histosQA.add("histQvecFinal", "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
 
-    histosQA.add("Centrality_0-5/histQvecUncor", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
-    histosQA.add("Centrality_0-5/histQvecRectr", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
-    histosQA.add("Centrality_0-5/histQvecTwist", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
-    histosQA.add("Centrality_0-5/histQvecFinal", "", {HistType::kTH2F, {axisQvec, axisQvec}});
+    histosQA.add("histQvecRefAUncor", "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
+    histosQA.add("histQvecRefARectr", "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
+    histosQA.add("histQvecRefATwist", "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
+    histosQA.add("histQvecRefAFinal", "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
 
-    histosQA.add("Centrality_0-5/histQvecRefAUncor", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
-    histosQA.add("Centrality_0-5/histQvecRefARectr", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
-    histosQA.add("Centrality_0-5/histQvecRefATwist", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
-    histosQA.add("Centrality_0-5/histQvecRefAFinal", "", {HistType::kTH2F, {axisQvec, axisQvec}});
+    histosQA.add("histQvecRefBUncor", "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
+    histosQA.add("histQvecRefBRectr", "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
+    histosQA.add("histQvecRefBTwist", "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
+    histosQA.add("histQvecRefBFinal", "", {HistType::kTH3F, {axisQvec, axisQvec, axisCent}});
 
-    histosQA.add("Centrality_0-5/histQvecRefBUncor", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
-    histosQA.add("Centrality_0-5/histQvecRefBRectr", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
-    histosQA.add("Centrality_0-5/histQvecRefBTwist", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
-    histosQA.add("Centrality_0-5/histQvecRefBFinal", "", {HistType::kTH2F, {axisQvec, axisQvec}});
+    histosQA.add("histEvtPlUncor", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlRectr", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlTwist", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlFinal", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
 
-    histosQA.add("Centrality_0-5/histEvtPlUncor", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlRectr", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlTwist", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlFinal", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("histEvtPlRefAUncor", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlRefARectr", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlRefATwist", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlRefAFinal", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
 
-    histosQA.add("Centrality_0-5/histEvtPlRefAUncor", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlRefARectr", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlRefATwist", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlRefAFinal", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("histEvtPlRefBUncor", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlRefBRectr", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlRefBTwist", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlRefBFinal", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
 
-    histosQA.add("Centrality_0-5/histEvtPlRefBUncor", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlRefBRectr", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlRefBTwist", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlRefBFinal", "", {HistType::kTH1F, {axisEvtPl}});
-
-    histosQA.add("Centrality_0-5/histEvtPlRes_SigRefA", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlRes_SigRefB", "", {HistType::kTH1F, {axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPlRes_RefARefB", "", {HistType::kTH1F, {axisEvtPl}});
-
-    histosQA.add("Centrality_0-5/histEvtPl_SigRefA", "", {HistType::kTH2F, {axisEvtPl, axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPl_SigRefB", "", {HistType::kTH2F, {axisEvtPl, axisEvtPl}});
-    histosQA.add("Centrality_0-5/histEvtPl_RefARefB", "", {HistType::kTH2F, {axisEvtPl, axisEvtPl}});
-
-    for (int iBin = 1; iBin < 8; iBin++) {
-      histosQA.addClone("Centrality_0-5/", qV::centClasses[iBin].data());
-    }
+    histosQA.add("histEvtPlRes_SigRefA", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlRes_SigRefB", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
+    histosQA.add("histEvtPlRes_RefARefB", "", {HistType::kTH2F, {axisEvtPl, axisCent}});
 
   } // End void init(InitContext const&)
 
   // Definition of all the needed template functions.
-  template <int cBin, typename T>
+  template <typename T>
   void fillHistosQvec(const T& vec)
   {
-    histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histCent"), vec.cent());
-
     if (vec.qvecAmp()[DetId] > 1e-8) {
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecUncor"), vec.qvecRe()[DetId * 4], vec.qvecIm()[DetId * 4]);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRectr"), vec.qvecRe()[DetId * 4 + 1], vec.qvecIm()[DetId * 4 + 1]);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecTwist"), vec.qvecRe()[DetId * 4 + 2], vec.qvecIm()[DetId * 4 + 2]);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecFinal"), vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3]);
+      histosQA.fill(HIST("histQvecUncor"), vec.qvecRe()[DetId * 4], vec.qvecIm()[DetId * 4], vec.cent());
+      histosQA.fill(HIST("histQvecRectr"), vec.qvecRe()[DetId * 4 + 1], vec.qvecIm()[DetId * 4 + 1], vec.cent());
+      histosQA.fill(HIST("histQvecTwist"), vec.qvecRe()[DetId * 4 + 2], vec.qvecIm()[DetId * 4 + 2], vec.cent());
+      histosQA.fill(HIST("histQvecFinal"), vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], vec.cent());
 
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlUncor"), helperEP.GetEventPlane(vec.qvecRe()[DetId * 4], vec.qvecIm()[DetId * 4], cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRectr"), helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 1], vec.qvecIm()[DetId * 4 + 1], cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlTwist"), helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 2], vec.qvecIm()[DetId * 4 + 2], cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlFinal"), helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod));
+      histosQA.fill(HIST("histEvtPlUncor"), helperEP.GetEventPlane(vec.qvecRe()[DetId * 4], vec.qvecIm()[DetId * 4], cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlRectr"), helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 1], vec.qvecIm()[DetId * 4 + 1], cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlTwist"), helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 2], vec.qvecIm()[DetId * 4 + 2], cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlFinal"), helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod), vec.cent());
     }
 
     if (vec.qvecAmp()[RefAId] > 1e-8) {
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefAUncor"), vec.qvecRe()[RefAId * 4], vec.qvecIm()[RefAId * 4]);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefARectr"), vec.qvecRe()[RefAId * 4 + 1], vec.qvecIm()[RefAId * 4 + 1]);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefATwist"), vec.qvecRe()[RefAId * 4 + 2], vec.qvecIm()[RefAId * 4 + 2]);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefAFinal"), vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3]);
+      histosQA.fill(HIST("histQvecRefAUncor"), vec.qvecRe()[RefAId * 4], vec.qvecIm()[RefAId * 4], vec.cent());
+      histosQA.fill(HIST("histQvecRefARectr"), vec.qvecRe()[RefAId * 4 + 1], vec.qvecIm()[RefAId * 4 + 1], vec.cent());
+      histosQA.fill(HIST("histQvecRefATwist"), vec.qvecRe()[RefAId * 4 + 2], vec.qvecIm()[RefAId * 4 + 2], vec.cent());
+      histosQA.fill(HIST("histQvecRefAFinal"), vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], vec.cent());
 
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRefAUncor"), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4], vec.qvecIm()[RefAId * 4], cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRefARectr"), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 1], vec.qvecIm()[RefAId * 4 + 1], cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRefATwist"), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 2], vec.qvecIm()[RefAId * 4 + 2], cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRefAFinal"), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod));
+      histosQA.fill(HIST("histEvtPlRefAUncor"), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4], vec.qvecIm()[RefAId * 4], cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlRefARectr"), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 1], vec.qvecIm()[RefAId * 4 + 1], cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlRefATwist"), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 2], vec.qvecIm()[RefAId * 4 + 2], cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlRefAFinal"), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod), vec.cent());
     }
 
     if (vec.qvecAmp()[RefBId] > 1e-8) {
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefBUncor"), vec.qvecRe()[RefBId * 4], vec.qvecIm()[RefBId * 4]);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefBRectr"), vec.qvecRe()[RefBId * 4 + 1], vec.qvecIm()[RefBId * 4 + 1]);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefBTwist"), vec.qvecRe()[RefBId * 4 + 2], vec.qvecIm()[RefBId * 4 + 2]);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histQvecRefBFinal"), vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3]);
+      histosQA.fill(HIST("histQvecRefBUncor"), vec.qvecRe()[RefBId * 4], vec.qvecIm()[RefBId * 4], vec.cent());
+      histosQA.fill(HIST("histQvecRefBRectr"), vec.qvecRe()[RefBId * 4 + 1], vec.qvecIm()[RefBId * 4 + 1], vec.cent());
+      histosQA.fill(HIST("histQvecRefBTwist"), vec.qvecRe()[RefBId * 4 + 2], vec.qvecIm()[RefBId * 4 + 2], vec.cent());
+      histosQA.fill(HIST("histQvecRefBFinal"), vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], vec.cent());
 
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRefBUncor"), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4], vec.qvecIm()[RefBId * 4], cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRefBRectr"), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 1], vec.qvecIm()[RefBId * 4 + 1], cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRefBTwist"), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 2], vec.qvecIm()[RefBId * 4 + 2], cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRefBFinal"), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod));
+      histosQA.fill(HIST("histEvtPlRefBUncor"), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4], vec.qvecIm()[RefBId * 4], cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlRefBRectr"), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 1], vec.qvecIm()[RefBId * 4 + 1], cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlRefBTwist"), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 2], vec.qvecIm()[RefBId * 4 + 2], cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlRefBFinal"), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod), vec.cent());
     }
 
     if (vec.qvecAmp()[DetId] > 1e-8 && vec.qvecAmp()[RefAId] > 1e-8 && vec.qvecAmp()[RefBId] > 1e-8) {
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPl_SigRefA"), helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod) * cfgnMod, helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod) * cfgnMod);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPl_SigRefB"), helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod) * cfgnMod, helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod) * cfgnMod);
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPl_RefARefB"), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod) * cfgnMod, helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod) * cfgnMod);
-
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRes_SigRefA"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod), cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRes_SigRefB"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod), cfgnMod));
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRes_RefARefB"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod), cfgnMod));
+      histosQA.fill(HIST("histEvtPlRes_SigRefA"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod), cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlRes_SigRefB"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod), cfgnMod), vec.cent());
+      histosQA.fill(HIST("histEvtPlRes_RefARefB"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod), cfgnMod), vec.cent());
     }
   }
 
   void process(aod::Qvector const& qVec)
   {
-    // Get the centrality bin, and fill the centrality QA histograms.
-    int centBin = helperEP.GetCentBin(qVec.cent());
     histosQA.fill(HIST("histCentFull"), qVec.cent());
-    switch (centBin) { // LOKI: See if we can replace that with a const something like below.
-      case 0:
-        fillHistosQvec<0>(qVec);
-        break;
-      case 1:
-        fillHistosQvec<1>(qVec);
-        break;
-      case 2:
-        fillHistosQvec<2>(qVec);
-        break;
-      case 3:
-        fillHistosQvec<3>(qVec);
-        break;
-      case 4:
-        fillHistosQvec<4>(qVec);
-        break;
-      case 5:
-        fillHistosQvec<5>(qVec);
-        break;
-      case 6:
-        fillHistosQvec<6>(qVec);
-        break;
-      case 7:
-        fillHistosQvec<7>(qVec);
-        break;
-    } // End switch(centBin)
-  }   // End void process(...)
+    fillHistosQvec(qVec);
+  } // End void process(...)
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

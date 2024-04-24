@@ -124,4 +124,16 @@ if(FastJet_FOUND)
                         SOURCES jetLundReclustering.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-hf-fragmentation
+                        SOURCES hffragmentationfunction.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-planarflow
+                        SOURCES jetplanarflow.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-ch-corr
+                        SOURCES jetChCorr.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
 endif()

@@ -307,11 +307,11 @@ struct HfTreeCreatorDsToKKPi {
     if constexpr (massHypo == 0) {
       invMassDs = hfHelper.invMassDsToKKPi(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToKKPi(candidate);
-      absCos3PiKDs = std::abs(hfHelper.cos3PiKDsToKKPi(candidate));
+      absCos3PiKDs = hfHelper.absCos3PiKDsToKKPi(candidate);
     } else if constexpr (massHypo == 1) {
       invMassDs = hfHelper.invMassDsToPiKK(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToPiKK(candidate);
-      absCos3PiKDs = std::abs(hfHelper.cos3PiKDsToPiKK(candidate));
+      absCos3PiKDs = hfHelper.absCos3PiKDsToPiKK(candidate);
     }
 
     auto prong0 = candidate.template prong0_as<TracksWPid>();
@@ -441,7 +441,7 @@ struct HfTreeCreatorDsToKKPi {
   }
 
   void processData(aod::Collisions const& collisions,
-                   CandDsData const& candidates,
+                   CandDsData const&,
                    TracksWPid const&)
   {
     // Filling event properties
@@ -482,7 +482,7 @@ struct HfTreeCreatorDsToKKPi {
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
-                 CandDsMcReco const& candidates,
+                 CandDsMcReco const&,
                  CandDsMcGen const& mcParticles,
                  TracksWPid const&)
   {
@@ -565,7 +565,7 @@ struct HfTreeCreatorDsToKKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS),
+        RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }

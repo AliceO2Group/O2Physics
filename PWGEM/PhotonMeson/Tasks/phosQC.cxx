@@ -42,7 +42,7 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
 struct phosQC {
@@ -95,7 +95,7 @@ struct phosQC {
     LOGF(info, "Number of PHOS cuts = %d", fPHOSCuts.size());
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     DefineCuts();
     addhistograms(); // please call this after DefinCuts();
@@ -104,16 +104,19 @@ struct phosQC {
     fOutputCluster.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Cluster")));
   }
 
-  Filter collisionFilter = o2::aod::emreducedevent::isPHOSCPVreadout == true;
-  using MyFilteredCollisions = soa::Filtered<MyCollisions>;
   Preslice<aod::PHOSClusters> perCollision = aod::skimmedcluster::collisionId;
 
-  void processQC(MyFilteredCollisions const& collisions, aod::PHOSClusters const& clusters)
+  void processQC(MyCollisions const& collisions, aod::PHOSClusters const& clusters)
   {
     THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
     THashList* list_cluster = static_cast<THashList*>(fMainList->FindObject("Cluster"));
 
     for (auto& collision : collisions) {
+
+      if (!collision.alias_bit(triggerAliases::kTVXinPHOS)) {
+        continue;
+      }
+
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
       if (!collision.sel8()) {
         continue;
@@ -148,7 +151,7 @@ struct phosQC {
     }   // end of collision loop
   }     // end of process
 
-  void processDummy(MyFilteredCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
 
   PROCESS_SWITCH(phosQC, processQC, "run PHOS QC", false);
   PROCESS_SWITCH(phosQC, processDummy, "Dummy function", true);

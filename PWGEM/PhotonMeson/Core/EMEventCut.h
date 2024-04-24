@@ -29,10 +29,14 @@ class EMEventCut : public TNamed
   EMEventCut(const char* name, const char* title) : TNamed(name, title) {}
 
   enum class EMEventCuts : int {
-    kFT0AND = 0, // i.e. sel8
+    kSel8 = 0,
+    kFT0AND,
     kZvtx,
     kNoTFB,     // no time frame border
     kNoITSROFB, // no ITS read out frame border
+    kNoSameBunchPileup,
+    kIsVertexITSTPC,
+    kIsGoodZvtxFT0vsPV,
     kNCuts
   };
 
@@ -41,16 +45,28 @@ class EMEventCut : public TNamed
   template <typename T>
   bool IsSelected(T const& collision) const
   {
-    if (!IsSelected(collision, EMEventCuts::kFT0AND)) {
+    if (mRequireSel8 && !IsSelected(collision, EMEventCuts::kSel8)) {
+      return false;
+    }
+    if (mRequireFT0AND && !IsSelected(collision, EMEventCuts::kFT0AND)) {
       return false;
     }
     if (!IsSelected(collision, EMEventCuts::kZvtx)) {
       return false;
     }
-    if (!IsSelected(collision, EMEventCuts::kNoTFB)) {
+    if (mRequireNoTFB && !IsSelected(collision, EMEventCuts::kNoTFB)) {
       return false;
     }
-    if (!IsSelected(collision, EMEventCuts::kNoITSROFB)) {
+    if (mRequireNoITSROFB && !IsSelected(collision, EMEventCuts::kNoITSROFB)) {
+      return false;
+    }
+    if (mRequireNoSameBunchPileup && !IsSelected(collision, EMEventCuts::kNoSameBunchPileup)) {
+      return false;
+    }
+    if (mRequireVertexITSTPC && !IsSelected(collision, EMEventCuts::kIsVertexITSTPC)) {
+      return false;
+    }
+    if (mRequireGoodZvtxFT0vsPV && !IsSelected(collision, EMEventCuts::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     return true;
@@ -60,9 +76,11 @@ class EMEventCut : public TNamed
   bool IsSelected(T const& collision, const EMEventCuts& cut) const
   {
     switch (cut) {
-      case EMEventCuts::kFT0AND:
+      case EMEventCuts::kSel8:
         return collision.sel8();
-        // return collision.selection_bit(o2::aod::evsel::kIsTriggerTVX); // alternative way.
+
+      case EMEventCuts::kFT0AND:
+        return collision.selection_bit(o2::aod::evsel::kIsTriggerTVX);
 
       case EMEventCuts::kZvtx:
         return mMinZvtx < collision.posZ() && collision.posZ() < mMaxZvtx;
@@ -73,25 +91,42 @@ class EMEventCut : public TNamed
       case EMEventCuts::kNoITSROFB:
         return collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
 
+      case EMEventCuts::kNoSameBunchPileup:
+        return collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+
+      case EMEventCuts::kIsVertexITSTPC:
+        return collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
+
+      case EMEventCuts::kIsGoodZvtxFT0vsPV:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+
       default:
         return false;
     }
   }
 
   // Setters
+  void SetRequireSel8(bool flag);
   void SetRequireFT0AND(bool flag);
   void SetZvtxRange(float min, float max);
   void SetRequireNoTFB(bool flag);
   void SetRequireNoITSROFB(bool flag);
+  void SetRequireNoSameBunchPileup(bool flag);
+  void SetRequireVertexITSTPC(bool flag);
+  void SetRequireIsGoodZvtxFT0vsPV(bool flag);
 
   /// @brief Print the track selection
   void print() const;
 
  private:
+  bool mRequireSel8{true};
   bool mRequireFT0AND{true};
   float mMinZvtx{-10.f}, mMaxZvtx{+10.f};
   bool mRequireNoTFB{true};
   bool mRequireNoITSROFB{true};
+  bool mRequireNoSameBunchPileup{false};
+  bool mRequireVertexITSTPC{false};
+  bool mRequireGoodZvtxFT0vsPV{false};
 
   ClassDef(EMEventCut, 1);
 };

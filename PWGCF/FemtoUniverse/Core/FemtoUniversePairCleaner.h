@@ -13,7 +13,7 @@
 /// \brief FemtoUniversePairCleaner - Makes sure only proper candidates are paired
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Laura Serksnyte, TU München,laura.serksnyte@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_

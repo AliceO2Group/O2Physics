@@ -146,7 +146,7 @@ struct phosNbar {
     if (!selectEvent<isMC>(collision, mixIndex)) {
       return;
     }
-    selectNbars<isMC>(clusters);
+    selectNbars<isMC>(clusters, mcParticles);
     selectTracks<isMC>(tracks);
     // Fill Real
     double cpa, m, pt;
@@ -173,6 +173,12 @@ struct phosNbar {
       }
     }
     // FillMixed
+    // to avoid too often filling mixed, use events with nbar and tracks
+    if (nbarEvent.size() == 0 || piEvent.size() == 0) {
+      nbarEvent.clear();
+      piEvent.clear();
+      return; // do not fill Mixed, do not update stack of events
+    }
     for (auto tr : piEvent) {
       for (auto nbarMixEv : mixNbarEvts[mixIndex]) {
         for (auto nbar : nbarMixEv) {
@@ -243,11 +249,31 @@ struct phosNbar {
   }
   //----------------------------------------
   template <bool isMC, typename TClusters>
-  void selectNbars(TClusters const& clusters)
+  void selectNbars(TClusters const& clusters, aod::McParticles const* mcParticles)
   {
     // Select clusters produced by nbar and prepare list of nbar candidates
     for (const auto& clu : clusters) {
       bool isNbar = false;
+      int label = -1; // if no MC
+      if constexpr (isMC) {
+        auto mcList = clu.labels(); // const std::vector<int>
+        if (mcList.size() > 0) {
+          label = mcList[0];
+        }
+        int iparent = label;
+        while (iparent > -1) {
+          auto parent = mcParticles->iteratorAt(iparent);
+          if (parent.pdgCode() == -2112) {
+            isNbar = true;
+            break;
+          }
+          if (parent.mothersIds().size() == 0 || abs(parent.pdgCode()) < 22 || abs(parent.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
+            break;
+          }
+          iparent = parent.mothersIds()[0];
+        }
+      }
+
       // first simple cuts
       mHistManager.fill(HIST("cluCuts"), clu.e(), 0.);
       if (isNbar) {
@@ -325,14 +351,6 @@ struct phosNbar {
         continue;
       }
       double mom = mNbar / std::sqrt(std::pow(t * c / r, 2) - 1.);
-
-      int label = -1; // if no MC
-      if constexpr (isMC) {
-        auto mcList = clu.labels(); // const std::vector<int>
-        if (mcList.size() > 0) {
-          label = mcList[0];
-        }
-      }
       nbarEvent.emplace_back(mom, clu.globalx(), clu.globaly(), clu.globalz(), label);
     }
   } // selectNbars
@@ -379,17 +397,17 @@ struct phosNbar {
         if (iparentPi == iparentN) {
           return mcParticles->iteratorAt(iparentPi).pdgCode();
         }
-        auto parent = mcParticles->iteratorAt(iparentN);
-        if (parent.mothersIds().size() == 0 || abs(parent.pdgCode()) < 22 || abs(parent.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
+        auto parentN = mcParticles->iteratorAt(iparentN);
+        if (parentN.mothersIds().size() == 0 || parentN.pdgCode() == 21 || abs(parentN.pdgCode()) < 11 || abs(parentN.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
           break;
         }
-        iparentN = parent.mothersIds()[0];
+        iparentN = parentN.mothersIds()[0];
       }
-      auto parent = mcParticles->iteratorAt(iparentPi);
-      if (parent.mothersIds().size() == 0 || abs(parent.pdgCode()) < 22 || abs(parent.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
+      auto parentPi = mcParticles->iteratorAt(iparentPi);
+      if (parentPi.mothersIds().size() == 0 || parentPi.pdgCode() == 21 || abs(parentPi.pdgCode()) < 11 || abs(parentPi.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
         break;
       }
-      iparentPi = parent.mothersIds()[0];
+      iparentPi = parentPi.mothersIds()[0];
     }
     return 0; // nothing found
   }
@@ -438,7 +456,7 @@ struct phosNbar {
       }
       // Find optimal region
       double maxCPA = -1;
-      int iMax;
+      int iMax = -1;
       for (int i = 0; i < npoints; i++) {
         if (st[i].first > maxCPA) {
           maxCPA = st[i].first;
@@ -492,7 +510,7 @@ struct phosNbar {
   }
 
   void processData(SelCollision const& coll,
-                   aod::BCsWithTimestamps const& bcs, aod::CaloClusters const& clusters, TrackCandidates const& tracks)
+                   aod::BCsWithTimestamps const&, aod::CaloClusters const& clusters, TrackCandidates const& tracks)
   {
     // Initialize B-field
     if (mBz == 123456.) {
@@ -505,7 +523,7 @@ struct phosNbar {
   PROCESS_SWITCH(phosNbar, processData, "process data", false);
 
   void processMc(SelCollision const& coll,
-                 aod::BCsWithTimestamps const& bcs, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart)
+                 aod::BCsWithTimestamps const&, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart)
   {
     // Initialize B-field
     if (mBz == 123456.) {

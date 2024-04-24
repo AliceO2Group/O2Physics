@@ -82,7 +82,7 @@ struct AmbiguousTrackPropagation {
 
   using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext& /*initContext*/)
   {
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -93,8 +93,8 @@ struct AmbiguousTrackPropagation {
       registry.add({"TracksDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}});
       registry.add({"ReassignedDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}});
       registry.add({"TracksOrigDCAXY", " ; DCA_{XY} (wrt orig coll) (cm)", {HistType::kTH1F, {DCAxyAxis}}});
-      registry.add({"TracksAmbDegree", " ; N_{coll}^{comp}", {HistType::kTH1I, {{41, -0.5, 40.5}}}});
-      registry.add({"TrackIsAmb", " ; isAmbiguous", {HistType::kTH1I, {{2, -0.5, 1.5}}}});
+      registry.add({"TracksAmbDegree", " ; N_{coll}^{comp}", {HistType::kTH1D, {{41, -0.5, 40.5}}}});
+      registry.add({"TrackIsAmb", " ; isAmbiguous", {HistType::kTH1D, {{2, -0.5, 1.5}}}});
     }
   }
 
@@ -129,10 +129,13 @@ struct AmbiguousTrackPropagation {
   using ExTracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
 
   void processCentral(ExTracksSel const& tracks,
-                      aod::Collisions const& collisions,
-                      ExtBCs const&)
+                      aod::Collisions const&,
+                      ExtBCs const& bcs)
   {
-    auto bc = collisions.begin().bc_as<ExtBCs>();
+    if (bcs.size() == 0) {
+      return;
+    }
+    auto bc = bcs.begin();
     initCCDB(bc);
 
     gpu::gpustd::array<float, 2> dcaInfo;
@@ -197,8 +200,8 @@ struct AmbiguousTrackPropagation {
     initCCDB(bcs.begin());
 
     // Minimum only on DCAxy
-    float dcaInfo;
-    float bestDCA, bestDCAx, bestDCAy;
+    float dcaInfo = 0.f;
+    float bestDCA = 0.f, bestDCAx = 0.f, bestDCAy = 0.f;
     o2::track::TrackParCovFwd bestTrackPar;
 
     for (auto& atrack : atracks) {
@@ -283,8 +286,8 @@ struct AmbiguousTrackPropagation {
     }
     initCCDB(bcs.begin());
 
-    float dcaInfo;
-    float bestDCA, bestDCAx, bestDCAy;
+    float dcaInfo = 0.f;
+    float bestDCA = 0.f, bestDCAx = 0.f, bestDCAy = 0.f;
     o2::track::TrackParCovFwd bestTrackPar;
 
     for (auto& track : tracks) {

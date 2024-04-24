@@ -13,7 +13,7 @@
 /// \brief Tasks that reads the track tables used for the pairing
 /// This task is common for all femto analyses
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "Common/Core/EventMixing.h"

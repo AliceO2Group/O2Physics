@@ -128,8 +128,8 @@ struct UDQCmid {
 
   // ...............................................................................................................................................
   void processMain(CC const& collision, BCs const& bct0s,
-                   TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
-                   aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
+                   TCs const& tracks, FWs const& fwdtracks, ATs const& /*ambtracks*/, AFTs const& /*ambfwdtracks*/,
+                   aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/,
                    aod::Zdcs& zdcs)
   {
     LOGF(debug, "<UDQCmid. Collision %d", collision.globalIndex());
@@ -152,7 +152,7 @@ struct UDQCmid {
     // bool goodetas = true;
     // bool goodpts = true;
     bool ispipiCand = false;
-    auto netCharge = 0;
+    // auto netCharge = 0;
     auto lvtmp = TLorentzVector();
     auto ivm = TLorentzVector();
     if (isDGcandidate) {
@@ -183,7 +183,7 @@ struct UDQCmid {
          if (track.eta() <= diffCuts.minEta() || track.eta() >= diffCuts.maxEta()) {
            goodetas = false;
          }*/
-        netCharge += track.sign();
+        // netCharge += track.sign();
         ivm += lvtmp;
       }
 
@@ -432,8 +432,8 @@ struct UDQCmid {
 
   //.....................................................................................................................
   // Distribution of number of PV contributors for all collisions and those with empty FT0
-  void processFewProng(CC const& collision, BCs const& bct0s,
-                       aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  void processFewProng(CC const& collision, BCs const& /*bct0s*/,
+                       aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/)
   {
     // count collisions
     registry.get<TH1>(HIST("fpStat"))->Fill(1., 1.);

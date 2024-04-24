@@ -301,7 +301,7 @@ struct pidTofQaMc {
   }
 
   template <uint8_t mcID, uint8_t massID>
-  void addParticleMCHistos(const AxisSpec& ptAxis, const AxisSpec& pAxis, const AxisSpec& signalAxis)
+  void addParticleMCHistos(const AxisSpec& ptAxis, const AxisSpec&, const AxisSpec&)
   {
     switch (mcID) {
       case 0:

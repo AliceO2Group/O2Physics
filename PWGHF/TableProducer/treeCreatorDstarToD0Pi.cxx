@@ -251,8 +251,8 @@ struct HfTreeCreatorDstarToD0Pi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  using CandDstarWSelFlag = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstar, aod::HfSelDstarToD0Pi>>;
-  using CandDstarWSelFlagMcRec = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstar, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>>;
+  using CandDstarWSelFlag = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
+  using CandDstarWSelFlagMcRec = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using CandDstarMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandDstarMcGen>>;
 
@@ -518,7 +518,7 @@ struct HfTreeCreatorDstarToD0Pi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDStar),
+        RecoDecay::y(particle.pVector(), o2::constants::physics::MassDStar),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }

@@ -11,9 +11,18 @@
 #ifndef PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 #define PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 
+#include <CCDB/BasicCCDBManager.h>
+#include <TList.h>
 #include <vector>
 #include <string>
+#include <iomanip>
+#include <iostream>
+#include <locale>
+#include <sstream>
+#include <functional>
+#include <map>
 
+#include "ReconstructionDataFormats/PID.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
@@ -84,10 +93,18 @@ enum CentMultEstimatorType {
 /// \enum TriggerSelectionType
 /// \brief The type of trigger to apply for event selection
 enum TriggerSelectionType {
-  kNONE = 0,       ///< do not use trigger selection
-  kMB,             ///< Minimum bias trigger
-  knEventSelection ///< number of triggers for event selection
+  kNONE = 0,         ///< do not use trigger selection
+  kMB,               ///< Minimum bias trigger
+  kVTXTOFMATCHED,    ///< at least one vertex contributor is matched to TOF
+  kVTXTRDMATCHED,    ///< at least one vertex contributor is matched to TRD
+  kVTXTRDTOFMATCHED, ///< at least one vertex contributor is matched to TRD and TOF
+  knEventSelection   ///< number of triggers for event selection
 };
+
+//============================================================================================
+// The overall minimum momentum
+//============================================================================================
+float overallminp = 0.0f;
 
 //============================================================================================
 // The DptDptFilter configuration objects
@@ -119,13 +136,37 @@ static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionDCA
   o2::aod::track::TrackSelectionFlags::kDCAz | o2::aod::track::TrackSelectionFlags::kDCAxy;
 
 int tracktype = 1;
+std::function<float(float)> maxDcaZPtDep{}; // max dca in z axis as function of pT
 
 std::vector<TrackSelection*> trackFilters = {};
 bool dca2Dcut = false;
 float maxDCAz = 1e6f;
 float maxDCAxy = 1e6f;
 
-inline void initializeTrackSelection()
+inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdate, const char* period = "")
+{
+  std::tm cfgtm = {};
+  std::stringstream ss(ccdbdate);
+  ss >> std::get_time(&cfgtm, "%Y%m%d");
+  cfgtm.tm_hour = 12;
+  int64_t timestamp = std::mktime(&cfgtm) * 1000;
+
+  TList* lst = nullptr;
+  if (std::strlen(period) != 0) {
+    std::map<std::string, std::string> metadata{{"Period", period}};
+    lst = ccdb->template getSpecific<TList>(ccdbpath, timestamp, metadata);
+  } else {
+    lst = ccdb->template getForTimeStamp<TList>(ccdbpath, timestamp);
+  }
+  if (lst != nullptr) {
+    LOGF(info, "Correctly loaded CCDB input object");
+  } else {
+    LOGF(error, "CCDB input object could not be loaded");
+  }
+  return lst;
+}
+
+inline void initializeTrackSelection(const TrackSelectionTuneCfg& tune)
 {
   switch (tracktype) {
     case 1: { /* Run2 global track */
@@ -175,8 +216,67 @@ inline void initializeTrackSelection()
       dca2Dcut = true;
       trackFilters.push_back(tpcOnly);
     } break;
+    case 30: { /* Run 3 default global track: kAny on 3 IB layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 31: { /* Run 3 global track: kTwo on 3 IB layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 32: { /* Run 3 global track: kAny on all 7 layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 33: { /* Run 3 global track: kAll on all 7 layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 40: { /* Run 3 global track: kAny on 3 IB layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 41: { /* Run 3 global track: kTwo on 3 IB layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 42: { /* Run 3 global track: kAny on all 7 layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 43: { /* Run 3 global track: kAll on all 7 layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 50: { /* Run 3 global track: kAny on 3 IB layers of ITS, tighter DCAxy, tighter pT dep DCAz */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+    } break;
+    case 51: { /* Run 3 global track: kTwo on 3 IB layers of ITS, tighter DCAxy, tighter pT dep DCAz */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+    } break;
+    case 52: { /* Run 3 global track: kAny on all 7 layers of ITS, tighter DCAxy, tighter pT dep DCAz */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+    } break;
+    case 53: { /* Run 3 global track: kAll on all 7 layers of ITS, tighter DCAxy, tighter pT dep DCAz */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+    } break;
     default:
       break;
+  }
+  if (tune.mUseIt) {
+    for (auto filter : trackFilters) {
+      if (tune.mUseTPCclusters) {
+        filter->SetMinNClustersTPC(tune.mTPCclusters);
+      }
+      if (tune.mUseTPCxRows) {
+        filter->SetMinNCrossedRowsTPC(tune.mTPCxRows);
+      }
+      if (tune.mUseTPCXRoFClusters) {
+        filter->SetMinNCrossedRowsOverFindableClustersTPC(tune.mTPCXRoFClusters);
+      }
+      if (tune.mUseDCAxy) {
+        filter->SetMaxDcaXY(tune.mDCAxy);
+      }
+      if (tune.mUseDCAz) {
+        filter->SetMaxDcaZ(tune.mDCAz);
+      }
+    }
   }
 }
 
@@ -189,9 +289,6 @@ TriggerSelectionType fTriggerSelection = kMB;
 analysis::CheckRangeCfg traceDCAOutliers;
 bool traceOutOfSpeciesParticles = false;
 int recoIdMethod = 0;
-bool useOwnTrackSelection = false;
-TrackSelection ownTrackSelection = getGlobalTrackSelection();
-bool useOwnParticleSelection = false;
 float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
@@ -202,6 +299,12 @@ inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
   if (triggstr.empty() || triggstr == "MB") {
     return kMB;
+  } else if (triggstr == "VTXTOFMATCHED") {
+    return kVTXTOFMATCHED;
+  } else if (triggstr == "VTXTRDMATCHED") {
+    return kVTXTRDMATCHED;
+  } else if (triggstr == "VTXTRDTOFMATCHED") {
+    return kVTXTRDTOFMATCHED;
   } else if (triggstr == "None") {
     return kNONE;
   } else {
@@ -363,10 +466,33 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
       }
       break;
     case kppRun3:
-    case kPbPbRun3:
+    case kPbPbRun3: {
+      auto run3Accepted = [](auto const& coll) {
+        return coll.sel8() &&
+               coll.selection_bit(aod::evsel::kNoITSROFrameBorder) &&
+               coll.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
+               coll.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+               coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+               coll.selection_bit(aod::evsel::kIsVertexITSTPC);
+      };
       switch (fTriggerSelection) {
         case kMB:
-          if (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+          if (run3Accepted(collision)) {
+            trigsel = true;
+          }
+          break;
+        case kVTXTOFMATCHED:
+          if (run3Accepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kVTXTRDMATCHED:
+          if (run3Accepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kVTXTRDTOFMATCHED:
+          if (run3Accepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
             trigsel = true;
           }
           break;
@@ -376,7 +502,7 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
         default:
           break;
       }
-      break;
+    } break;
     default:
       break;
   }
@@ -655,9 +781,7 @@ inline bool matchTrackType(TrackObject const& track)
 {
   using namespace o2::aod::track;
 
-  if (useOwnTrackSelection) {
-    return ownTrackSelection.IsSelected(track);
-  } else if (tracktype == 4) {
+  if (tracktype == 4) {
     // under tests MM track selection
     // see: https://indico.cern.ch/event/1383788/contributions/5816953/attachments/2805905/4896281/TrackSel_GlobalTracks_vs_MMTrackSel.pdf
     // it should be equivalent to this
@@ -670,15 +794,31 @@ inline bool matchTrackType(TrackObject const& track)
   } else {
     for (auto filter : trackFilters) {
       if (filter->IsSelected(track)) {
-        if (dca2Dcut) {
-          if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
-            return false;
+        /* additional track cuts if needed */
+        auto checkDca2Dcut = [&](auto const& track) {
+          if (dca2Dcut) {
+            if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
+              return false;
+            } else {
+              return true;
+            }
           } else {
             return true;
           }
-        } else {
-          return true;
+        };
+        auto checkDcaZcut = [&](auto const& track) {
+          return ((maxDcaZPtDep) ? abs(track.dcaZ()) <= maxDcaZPtDep(track.pt()) : true);
+        };
+
+        /* tight pT dependent DCAz cut */
+        if (!checkDcaZcut(track)) {
+          return false;
         }
+        /* 2D DCA xy-o-z cut */
+        if (!checkDca2Dcut(track)) {
+          return false;
+        }
+        return true;
       }
     }
     return false;
@@ -691,6 +831,11 @@ inline bool matchTrackType(TrackObject const& track)
 template <typename TrackObject>
 inline bool InTheAcceptance(TrackObject const& track)
 {
+  /* overall minimum momentum cut for the analysis */
+  if (!(overallminp < track.p())) {
+    return false;
+  }
+
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
       return false;
@@ -746,31 +891,20 @@ inline float getCharge(ParticleObject& particle)
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
-inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
+inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
 {
+  /* overall momentum cut */
+  if (!(overallminp < particle.p())) {
+    return false;
+  }
+
   float charge = getCharge(particle);
 
   if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
     }
-    if (useOwnParticleSelection) {
-      float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-      float dcaz = TMath::Abs(particle.vz() - collision.posZ());
-      if (!((dcaxy < particleMaxDCAxy) && (dcaz < particleMaxDCAZ))) {
-        if ((particle.mcCollisionId() == 0) && traceCollId0) {
-          LOGF(info, "Rejecting particle with dcaxy: %.2f and dcaz: %.2f", dcaxy, dcaz);
-          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", particle.mcCollisionId(), collision.globalIndex());
-          LOGF(info, "   Collision x: %.5f, y: %.5f, z: %.5f", collision.posX(), collision.posY(), collision.posZ());
-          LOGF(info, "   Particle x: %.5f, y: %.5f, z: %.5f", particle.vx(), particle.vy(), particle.vz());
-          LOGF(info, "   index: %d, pdg code: %d", particle.globalIndex(), particle.pdgCode());
 
-          exploreMothers(particle, collision);
-        }
-        return false;
-      }
-    }
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
       return (charge != 0) ? true : false;
     }
@@ -791,6 +925,8 @@ struct PIDSpeciesSelection {
   const std::vector<std::string_view> spnames = {"e", "mu", "pi", "ka", "p"};
   const std::vector<std::string_view> sptitles = {"e", "#mu", "#pi", "K", "p"};
   const std::vector<std::string_view> spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
+  const std::vector<std::string_view> spadjnames = {"Electron", "Muon", "Pion", "Kaon", "Proton"};
+  const std::vector<std::string_view> chadjnames = {"P", "M"};
   const char* hadname = "h";
   const char* hadtitle = "h";
   const char* hadfname = "Ha";
@@ -801,6 +937,33 @@ struct PIDSpeciesSelection {
   const char* getHadName() { return hadname; }
   const char* getHadTitle() { return hadtitle; }
   const char* getHadFName() { return hadfname; }
+  bool isSpeciesBeingSelected(uint8_t sp) { return std::find(species.begin(), species.end(), sp) != species.end(); }
+  bool isGlobalSpecies(uint8_t isp, o2::track::PID::ID glsp) { return species[isp] == glsp; }
+  void storePIDAdjustments(TList* lst)
+  {
+    auto storedetectorwithcharge = [&](auto& detectorstore, auto detectorname, auto charge) {
+      for (uint isp = 0; isp < spadjnames.size(); ++isp) {
+        TString fullhname = TString::Format("%s%s%s_Difference", detectorname, spadjnames[isp].data(), charge);
+        detectorstore[isp] = static_cast<TH1*>(lst->FindObject(fullhname.Data()));
+      }
+    };
+    auto reportadjdetectorwithcharge = [&](auto& detectorstore, auto detectorname, auto charge) {
+      for (uint isp = 0; isp < spadjnames.size(); ++isp) {
+        if (detectorstore[isp] != nullptr) {
+          LOGF(info, "Stored nsigmas adjust for detector %s and species %s%s in histogram %s", detectorname, spadjnames[isp].data(), charge, detectorstore[isp]->GetName());
+        }
+      }
+    };
+    storedetectorwithcharge(tpcnsigmasshiftpos, "TPC", "P");
+    storedetectorwithcharge(tofnsigmasshiftpos, "TOF", "P");
+    storedetectorwithcharge(tpcnsigmasshiftneg, "TPC", "M");
+    storedetectorwithcharge(tofnsigmasshiftneg, "TOF", "M");
+
+    reportadjdetectorwithcharge(tpcnsigmasshiftpos, "TPC", "P");
+    reportadjdetectorwithcharge(tofnsigmasshiftpos, "TOF", "P");
+    reportadjdetectorwithcharge(tpcnsigmasshiftneg, "TPC", "M");
+    reportadjdetectorwithcharge(tofnsigmasshiftneg, "TOF", "M");
+  }
   void Add(uint8_t sp, o2::analysis::TrackSelectionPIDCfg* incfg)
   {
     o2::analysis::TrackSelectionPIDCfg* cfg = new o2::analysis::TrackSelectionPIDCfg(*incfg);
@@ -892,10 +1055,10 @@ struct PIDSpeciesSelection {
       return ((config->mPThreshold > 0.0) && (config->mPThreshold < track.p()));
     };
     auto isA = [&](auto& config, uint8_t sp) {
-      if (aboveThreshold(config)) {
-        if (track.hasTOF()) {
-          return closeToTPCTOF(config, sp) && awayFromTPCTOF(config, sp);
-        } else {
+      if (track.hasTOF()) {
+        return closeToTPCTOF(config, sp) && awayFromTPCTOF(config, sp);
+      } else {
+        if (aboveThreshold(config)) {
           if (config->mRequireTOF) {
             return false;
           }
@@ -907,6 +1070,35 @@ struct PIDSpeciesSelection {
       /* so we check only the TPC information                       */
       return closeToTPC(config, sp) && awayFromTPC(config, sp);
     };
+
+    auto adjustnsigmas = [&]() {
+      if (track.sign() > 0) {
+        for (uint isp = 0; isp < spnames.size(); ++isp) {
+          if (tpcnsigmasshiftpos[isp] != nullptr) {
+            TH1* h = tpcnsigmasshiftpos[isp];
+            tpcnsigmas[isp] -= h->GetBinContent(h->GetXaxis()->FindFixBin(track.p()));
+          }
+          if (tofnsigmasshiftpos[isp] != nullptr) {
+            TH1* h = tofnsigmasshiftpos[isp];
+            tofnsigmas[isp] -= h->GetBinContent(h->GetXaxis()->FindFixBin(track.p()));
+          }
+        }
+      } else {
+        for (uint isp = 0; isp < spnames.size(); ++isp) {
+          if (tpcnsigmasshiftneg[isp] != nullptr) {
+            TH1* h = tpcnsigmasshiftneg[isp];
+            tpcnsigmas[isp] -= h->GetBinContent(h->GetXaxis()->FindFixBin(track.p()));
+          }
+          if (tofnsigmasshiftneg[isp] != nullptr) {
+            TH1* h = tofnsigmasshiftneg[isp];
+            tofnsigmas[isp] -= h->GetBinContent(h->GetXaxis()->FindFixBin(track.p()));
+          }
+        }
+      }
+    };
+
+    /* adjust the nsigmas values if appropriate */
+    adjustnsigmas();
 
     /* let's first check the exclusion from the analysis */
     for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
@@ -955,10 +1147,55 @@ struct PIDSpeciesSelection {
       return 0;
     }
   }
+
+  template <typename ParticleObject>
+  int8_t whichTruthPrimarySpecies(ParticleObject part)
+  {
+    if (part.isPhysicalPrimary()) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
+  template <typename ParticleObject>
+  int8_t whichTruthSecondarySpecies(ParticleObject part)
+  {
+    if (!(part.isPhysicalPrimary())) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
+  template <typename ParticleObject>
+  int8_t whichTruthSecFromDecaySpecies(ParticleObject part)
+  {
+    if (!(part.isPhysicalPrimary()) && (part.getProcess() == 4)) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
+  template <typename ParticleObject>
+  int8_t whichTruthSecFromMaterialSpecies(ParticleObject part)
+  {
+    if (!(part.isPhysicalPrimary()) && (part.getProcess() != 4)) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
   std::vector<const o2::analysis::TrackSelectionPIDCfg*> config;        ///< the PID selection configuration of the species to include in the analysis
   std::vector<uint8_t> species;                                         ///< the species index of the species to include in the analysis
   std::vector<const o2::analysis::TrackSelectionPIDCfg*> configexclude; ///< the PID selection configuration of the species to exclude from the analysis
   std::vector<uint8_t> speciesexclude;                                  ///< the species index of teh species to exclude from the analysis
+  std::vector<TH1*> tpcnsigmasshiftpos{spnames.size(), nullptr};
+  std::vector<TH1*> tpcnsigmasshiftneg{spnames.size(), nullptr};
+  std::vector<TH1*> tofnsigmasshiftpos{spnames.size(), nullptr};
+  std::vector<TH1*> tofnsigmasshiftneg{spnames.size(), nullptr};
 };
 
 } // namespace dptdptfilter

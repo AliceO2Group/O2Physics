@@ -65,11 +65,7 @@ const double ptLcAxisMin = 0.;
 const double ptLcAxisMax = 36.;
 
 // definition of ME variables
-std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
-std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500., 5000.};
-std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50., 500.}; // In McGen multiplicity is defined by counting primaries
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
-BinningType corrBinning{{zBins, multBins}, true};
 
 using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::LcSelection>>;
 using SelectedTracks = soa::Filtered<aod::TracksWDca>;
@@ -110,7 +106,7 @@ struct HfCorrelatorLcHadronsSelection {
   }
 
   void processLcSelectionData(aod::Collision const& collision,
-                              soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates)
+                              soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&)
   {
     bool isLcFound = 0;
     if (selectedLcCandidates.size() > 0) {
@@ -129,7 +125,7 @@ struct HfCorrelatorLcHadronsSelection {
   PROCESS_SWITCH(HfCorrelatorLcHadronsSelection, processLcSelectionData, "Process Lc Collision Selection Data", true);
 
   void processLcSelectionMcRec(aod::Collision const& collision,
-                               soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const& candidates)
+                               soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&)
   {
     bool isLcFound = 0;
     if (selectedLcCandidatesMc.size() > 0) {
@@ -146,7 +142,7 @@ struct HfCorrelatorLcHadronsSelection {
   }
   PROCESS_SWITCH(HfCorrelatorLcHadronsSelection, processLcSelectionMcRec, "Process Lc Selection McRec", false);
 
-  void processLcSelectionMcGen(aod::McCollision const& mcCollision,
+  void processLcSelectionMcGen(aod::McCollision const&,
                                aod::McParticles const& mcParticles)
   {
     bool isLcFound = 0;
@@ -154,7 +150,7 @@ struct HfCorrelatorLcHadronsSelection {
       if (std::abs(particle.pdgCode()) != Pdg::kLambdaCPlus) {
         continue;
       }
-      double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassLambdaCPlus);
+      double yL = RecoDecay::y(particle.pVector(), MassLambdaCPlus);
       if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
         continue;
       }
@@ -187,9 +183,13 @@ struct HfCorrelatorLcHadrons {
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyLc{"efficiencyLc", std::vector<double>{vecEfficiencyLc}, "Efficiency values for Lc"};
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis binsMultiplicityMc{"binsMultiplicityMc", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
 
   HfHelper hfHelper;
   SliceCache cache;
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
 
   // Filters for ME
   Filter collisionFilter = aod::hf_selection_lc_collision::lcSel == true;
@@ -248,12 +248,13 @@ struct HfCorrelatorLcHadrons {
     // mass histogram for Lc background candidates only
     registry.add("hMassLcMcRecBkg", "Lc background candidates - Mc reco;inv. mass (p k #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountLctriggersMcGen", "Lc trigger particles - Mc gen;;N of trigger Lc", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    corrBinning = {{binsZVtx, binsMultiplicity}, true};
   }
 
   /// Lc-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via Mc truth)
   void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
                    aod::TracksWDca const& tracks,
-                   soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates)
+                   soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&)
   {
     // protection against empty tables to be sliced
     if (selectedLcCandidates.size() == 0) {
@@ -361,7 +362,7 @@ struct HfCorrelatorLcHadrons {
   /// Lc-Hadron correlation process starts for McRec
   void processMcRec(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
                     aod::TracksWDca const& tracks,
-                    soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const& candidates)
+                    soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&)
   {
     if (selectedLcCandidatesMc.size() == 0) {
       return;
@@ -502,7 +503,7 @@ struct HfCorrelatorLcHadrons {
     int counterLcHadron = 0;
     registry.fill(HIST("hMcEvtCount"), 0);
 
-    auto getTracksSize = [&mcParticles](aod::McCollision const& collision) {
+    auto getTracksSize = [&mcParticles](aod::McCollision const& /*collision*/) {
       int nTracks = 0;
       for (const auto& track : mcParticles) {
         if (track.isPhysicalPrimary() && std::abs(track.eta()) < 1.0) {
@@ -512,7 +513,7 @@ struct HfCorrelatorLcHadrons {
       return nTracks;
     };
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
-    BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBinsMcGen}, true};
+    BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {binsZVtx, binsMultiplicityMc}, true};
 
     // Mc gen level
     for (const auto& particle : mcParticles) {
@@ -520,7 +521,7 @@ struct HfCorrelatorLcHadrons {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
-        double yL = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassLambdaCPlus);
+        double yL = RecoDecay::y(particle.pVector(), MassLambdaCPlus);
         if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
           continue;
         }
@@ -661,7 +662,7 @@ struct HfCorrelatorLcHadrons {
     };
 
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
-    BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBins}, true};
+    BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {binsZVtx, binsMultiplicityMc}, true};
 
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<SelectedCollisionsMcGen, SelectedTracksMcGen, SelectedTracksMcGen, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
@@ -673,7 +674,7 @@ struct HfCorrelatorLcHadrons {
           continue;
         }
 
-        double yL = RecoDecay::y(std::array{t1.px(), t1.py(), t1.pz()}, MassLambdaCPlus);
+        double yL = RecoDecay::y(t1.pVector(), MassLambdaCPlus);
         if (yCandMax >= 0. && std::abs(yL) > yCandMax) {
           continue;
         }

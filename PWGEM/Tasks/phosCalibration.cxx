@@ -172,9 +172,9 @@ struct phosCalibration {
 
   /// \brief Process PHOS data
   void process(BCsWithBcSels const& bcs,
-               SelCollisions const& collisions,
+               SelCollisions const&,
                o2::aod::Calos const& cells,
-               o2::aod::CaloTriggers const& ctrs,
+               o2::aod::CaloTriggers const&,
                aod::CaloClusters const& clusters)
   {
     // Fill cell histograms
@@ -296,7 +296,6 @@ struct phosCalibration {
           tcorr -= calibParams->getLGTimeCalib(c.cellNumber());
         }
       }
-
       if (!mSkipL1phase) {
         int shift = (mL1 >> (ddl * 2)) & 3; // extract 2 bits corresponding to this ddl
         shift = bc % 4 - shift;

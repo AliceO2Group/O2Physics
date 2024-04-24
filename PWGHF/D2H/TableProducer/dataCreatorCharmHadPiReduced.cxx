@@ -33,6 +33,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -40,6 +41,7 @@ using namespace o2::aod;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_trkcandsel;
 
 enum Event : uint8_t {
   Processed = 0,
@@ -148,6 +150,7 @@ struct HfDataCreatorCharmHadPiReduced {
   Preslice<CandsD0FilteredWithMl> candsD0PerCollisionWithMl = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
+  std::shared_ptr<TH1> hCandidatesD0, hCandidatesDPlus;
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -232,6 +235,12 @@ struct HfDataCreatorCharmHadPiReduced {
     registry.add(Form("hPt%s", histMassTitle0.data()), Form("%s candidates candidates;%s candidate #it{p}_{T} (GeV/#it{c});entries", charmHadTitle0.data(), charmHadTitle0.data()), {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add(Form("hCpa%s", histMassTitle0.data()), Form("%s candidates;%s cosine of pointing angle;entries", charmHadTitle0.data(), charmHadTitle0.data()), {HistType::kTH1F, {{110, -1.1, 1.1}}});
+
+    /// candidate monitoring
+    hCandidatesD0 = registry.add<TH1>("hCandidatesD0", "D candidate counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesDPlus = registry.add<TH1>("hCandidatesDPlus", "B candidate counter", {HistType::kTH1D, {axisCands}});
+    setLabelHistoCands(hCandidatesD0);
+    setLabelHistoCands(hCandidatesDPlus);
   }
 
   /// Pion selection (D Pi <-- B0)
@@ -308,7 +317,7 @@ struct HfDataCreatorCharmHadPiReduced {
 
     if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
       // B0 → D- π+ → (π- K+ π-) π+
-      auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+      auto indexRec = RecoDecay::getMatchedMCRec<true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
         // D- → π- K+ π-
         // Printf("Checking D- → π- K+ π-");
@@ -326,13 +335,12 @@ struct HfDataCreatorCharmHadPiReduced {
           motherPt = particleMother.pt();
         }
       }
-      rowHfDPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, debug, motherPt);
 
       // additional checks for correlated backgrounds
       if (checkDecayTypeMc) {
         // B0 → Ds- π+ → (K- K+ π-) π+
         if (!flag) {
-          indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+          indexRec = RecoDecay::getMatchedMCRec<true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
           if (indexRec > -1) {
             // Ds- → K- K+ π-
             indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
@@ -396,6 +404,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         rowHfDPiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2, pdgCodeProng3);
       }
+      rowHfDPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, debug, motherPt);
     } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) {
       // B+ → D0(bar) π+ → (K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
@@ -424,9 +433,9 @@ struct HfDataCreatorCharmHadPiReduced {
   void runDataCreation(aod::Collision const& collision,
                        CCharmCands const& candsC,
                        aod::TrackAssoc const& trackIndices,
-                       TTracks const& tracks,
+                       TTracks const&,
                        PParticles const& particlesMc,
-                       aod::BCsWithTimestamps const& bcs)
+                       aod::BCsWithTimestamps const&)
   {
     // helpers for ReducedTables filling
     int indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
@@ -485,8 +494,8 @@ struct HfDataCreatorCharmHadPiReduced {
       o2::track::TrackParCov trackParCov1 = getTrackParCov(charmHadDauTracks[1]);
       o2::track::TrackParCov trackParCov2{};
 
-      std::array<float, 3> pVec0 = {charmHadDauTracks[0].px(), charmHadDauTracks[0].py(), charmHadDauTracks[0].pz()};
-      std::array<float, 3> pVec1 = {charmHadDauTracks[1].px(), charmHadDauTracks[1].py(), charmHadDauTracks[1].pz()};
+      std::array<float, 3> pVec0 = charmHadDauTracks[0].pVector();
+      std::array<float, 3> pVec1 = charmHadDauTracks[1].pVector();
       std::array<float, 3> pVec2{};
 
       auto dca0 = o2::dataformats::DCA(charmHadDauTracks[0].dcaXY(), charmHadDauTracks[0].dcaZ(), charmHadDauTracks[0].cYY(), charmHadDauTracks[0].cZY(), charmHadDauTracks[0].cZZ());
@@ -505,7 +514,7 @@ struct HfDataCreatorCharmHadPiReduced {
       if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
         charmHadDauTracks.push_back(candC.template prong2_as<TTracks>());
         trackParCov2 = getTrackParCov(charmHadDauTracks[2]);
-        pVec2 = std::array{charmHadDauTracks[2].px(), charmHadDauTracks[2].py(), charmHadDauTracks[2].pz()};
+        pVec2 = charmHadDauTracks[2].pVector();
         auto dca2 = o2::dataformats::DCA(charmHadDauTracks[2].dcaXY(), charmHadDauTracks[2].dcaZ(), charmHadDauTracks[2].cYY(), charmHadDauTracks[2].cZY(), charmHadDauTracks[2].cZZ());
 
         if (charmHadDauTracks[2].collisionId() != thisCollId) {
@@ -518,9 +527,19 @@ struct HfDataCreatorCharmHadPiReduced {
       o2::track::TrackParCov trackParCovCharmHad{};
       std::array<float, 3> pVecCharm{};
       if constexpr (decChannel == DecayChannel::B0ToDminusPi) { // D∓ → π∓ K± π∓
-        if (df3.process(trackParCov0, trackParCov1, trackParCov2) == 0) {
+
+        hCandidatesDPlus->Fill(SVFitting::BeforeFit);
+        try {
+          if (df3.process(trackParCov0, trackParCov1, trackParCov2) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+          hCandidatesDPlus->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidatesDPlus->Fill(SVFitting::FitOk);
+
         auto secondaryVertexCharm = df3.getPCACandidate();
         trackParCov0.propagateTo(secondaryVertexCharm[0], bz);
         trackParCov1.propagateTo(secondaryVertexCharm[0], bz);
@@ -529,11 +548,22 @@ struct HfDataCreatorCharmHadPiReduced {
         df3.getTrack(1).getPxPyPzGlo(pVec1);
         df3.getTrack(2).getPxPyPzGlo(pVec2);
         pVecCharm = RecoDecay::pVec(pVec0, pVec1, pVec2);
+        trackParCovCharmHad = df3.createParentTrackParCov();
         trackParCovCharmHad.setAbsCharge(charmHadDauTracks[1].sign());   // to be sure
       } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
-        if (df2.process(trackParCov0, trackParCov1) == 0) {
+
+        hCandidatesD0->Fill(SVFitting::BeforeFit);
+        try {
+          if (df2.process(trackParCov0, trackParCov1) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+          hCandidatesD0->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidatesD0->Fill(SVFitting::FitOk);
+
         auto secondaryVertexCharm = df2.getPCACandidate();
         trackParCov0.propagateTo(secondaryVertexCharm[0], bz);
         trackParCov1.propagateTo(secondaryVertexCharm[0], bz);
@@ -550,7 +580,7 @@ struct HfDataCreatorCharmHadPiReduced {
         // apply selections on pion tracks
         auto trackParCovPion = getTrackParCov(trackPion);
         o2::gpu::gpustd::array<float, 2> dcaPion{trackPion.dcaXY(), trackPion.dcaZ()};
-        std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+        std::array<float, 3> pVecPion = trackPion.pVector();
         if (trackPion.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovPion, 2.f, noMatCorr, &dcaPion);
           getPxPyPz(trackParCovPion, pVecPion);
@@ -678,11 +708,11 @@ struct HfDataCreatorCharmHadPiReduced {
       int8_t flag{0};
       if constexpr (decayChannel == DecayChannel::B0ToDminusPi) {
         // B0 → D- π+
-        if (RecoDecay::isMatchedMCGen(particlesMc, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true)) {
           // Match D- -> π- K+ π-
           auto candCMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking D- -> π- K+ π-");
-          if (RecoDecay::isMatchedMCGen(particlesMc, candCMC, -static_cast<int>(Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign)) {
+          if (RecoDecay::isMatchedMCGen(particlesMc, candCMC, -static_cast<int>(Pdg::kDPlus), std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
             flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
           }
         }
@@ -693,7 +723,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massB);
+        auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
         std::array<float, 2> ptProngs;
@@ -703,7 +733,7 @@ struct HfDataCreatorCharmHadPiReduced {
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
         rowHfB0McGenReduced(flag, ptParticle, yParticle, etaParticle,
@@ -726,7 +756,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massB);
+        auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
         std::array<float, 2> ptProngs;
@@ -736,7 +766,7 @@ struct HfDataCreatorCharmHadPiReduced {
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
+          yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
         rowHfBpMcGenReduced(flag, ptParticle, yParticle, etaParticle,

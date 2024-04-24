@@ -46,10 +46,10 @@ using namespace o2::aod::photonpair;
 using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM, aod::EMReducedMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsNgPCM, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMReducedEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
@@ -216,7 +216,7 @@ struct MaterialBudgetMC {
     LOGF(info, "Number of Pair cuts = %d", fPairCuts.size());
   }
 
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emreducedeventId;
+  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emeventId;
 
   template <PairType pairtype, typename TG1, typename TG2, typename TCut1, typename TCut2>
   bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& tagcut, TCut2 const& probecut)
@@ -225,7 +225,7 @@ struct MaterialBudgetMC {
   }
 
   template <PairType pairtype, typename TEvents, typename TPhotons, typename TPreslice, typename TCuts, typename TLegs, typename TMCParticles, typename TMCEvents>
-  void fillsinglephoton(TEvents const& collisions, TPhotons const& photons, TPreslice const& perCollision, TCuts const& cuts, TLegs const& legs, TMCParticles const& mcparticles, TMCEvents const&)
+  void fillsinglephoton(TEvents const& collisions, TPhotons const& photons, TPreslice const& perCollision, TCuts const& cuts, TLegs const& /*legs*/, TMCParticles const& mcparticles, TMCEvents const&)
   {
     THashList* list_ev_pair_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[0].data()));
     THashList* list_ev_pair_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[1].data()));
@@ -258,13 +258,14 @@ struct MaterialBudgetMC {
           auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
           auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
           int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
-
-          bool is_photon_physical_primary = false;
-          if (photonid > 0) {
-            auto mcphoton = mcparticles.iteratorAt(photonid);
-            is_photon_physical_primary = IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles);
+          if (photonid < 0) {
+            continue;
           }
-          if (!is_photon_physical_primary) {
+          auto mcphoton = mcparticles.iteratorAt(photonid);
+          if (!(mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator())) {
+            continue;
+          }
+          if (!IsConversionPointInAcceptance(mcphoton, maxRgen, maxY, margin_z_mc, mcparticles)) {
             continue;
           }
 
@@ -283,7 +284,7 @@ struct MaterialBudgetMC {
   }
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TMCParticles, typename TMCEvents>
-  void TruePairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& tagcuts, TCuts2 const& probecuts, TPairCuts const& paircuts, TLegs const& legs, TMCParticles const& mcparticles, TMCEvents const&)
+  void TruePairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& tagcuts, TCuts2 const& probecuts, TPairCuts const& paircuts, TLegs const& /*legs*/, TMCParticles const& mcparticles, TMCEvents const&)
   {
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
 
@@ -332,20 +333,27 @@ struct MaterialBudgetMC {
                 if (photonid1 < 0) {
                   continue;
                 }
-                auto g1mc = mcparticles.iteratorAt(photonid1);
-
                 int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);
                 if (photonid2 < 0) {
                   continue;
                 }
+
+                auto g1mc = mcparticles.iteratorAt(photonid1);
                 auto g2mc = mcparticles.iteratorAt(photonid2);
+
+                if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY, margin_z_mc, mcparticles)) {
+                  continue;
+                }
+                if (!IsConversionPointInAcceptance(g2mc, maxRgen, maxY, margin_z_mc, mcparticles)) {
+                  continue;
+                }
 
                 int pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
                 if (pi0id < 0) {
                   continue;
                 }
                 auto pi0mc = mcparticles.iteratorAt(pi0id);
-                if (!IsPhysicalPrimary(pi0mc.emreducedmcevent(), pi0mc, mcparticles)) {
+                if (!(pi0mc.isPhysicalPrimary() || pi0mc.producedByGenerator())) {
                   continue;
                 }
 
@@ -372,17 +380,17 @@ struct MaterialBudgetMC {
   Partition<MyCollisions> grouped_collisions = cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax; // this goes to same event.
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_subsys = o2::aod::emreducedevent::ngpcm >= 2;
+  Filter collisionFilter_subsys = o2::aod::emevent::ngpcm >= 2;
   using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to same event pairing.
 
-  void processMBMC(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
+  void processMBMC(MyCollisions const&, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const& mccollisions)
   {
     fillsinglephoton<PairType::kPCMPCM>(grouped_collisions, v0photons, perCollision_pcm, fProbeCuts, legs, mcparticles, mccollisions);
     TruePairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fTagCuts, fProbeCuts, fPairCuts, legs, mcparticles, mccollisions);
   }
 
-  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  void processGen(MyCollisions const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
+  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
+  void processGen(MyCollisions const&, aod::EMMCEvents const&, aod::EMMCParticles const&)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -392,7 +400,7 @@ struct MaterialBudgetMC {
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-      auto mccollision = collision.emreducedmcevent();
+      auto mccollision = collision.emmcevent();
       // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
 
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
@@ -415,7 +423,7 @@ struct MaterialBudgetMC {
     } // end of collision loop
   }
 
-  void processDummy(MyCollisions::iterator const& collision) {}
+  void processDummy(MyCollisions::iterator const&) {}
 
   PROCESS_SWITCH(MaterialBudgetMC, processMBMC, "process material budget", false);
   PROCESS_SWITCH(MaterialBudgetMC, processGen, "process generated information", false);
