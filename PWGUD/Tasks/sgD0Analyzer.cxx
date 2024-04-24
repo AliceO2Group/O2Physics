@@ -39,7 +39,7 @@ struct SGD0Analyzer {
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
-  //Track Selections
+  // Track Selections
   Configurable<float> PV_cut{"PV_cut", 0.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 2.0, "dcaXY cut (0 for Pt-function)"};
@@ -96,13 +96,12 @@ struct SGD0Analyzer {
     // int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     std::vector<float> parameters = {
-    PV_cut,
-    dcaZ_cut,
-    dcaXY_cut,
-    tpcChi2_cut,
-    tpcNClsFindable_cut,
-    itsChi2_cut
-};
+      PV_cut,
+      dcaZ_cut,
+      dcaXY_cut,
+      tpcChi2_cut,
+      tpcNClsFindable_cut,
+      itsChi2_cut};
     // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);
@@ -111,7 +110,8 @@ struct SGD0Analyzer {
     // Look for D0 and D0bar
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
       // PID cut - t0=K, t1=pi
-      if (!trackselector(t0, parameters)||!trackselector(t1,parameters))continue;
+      if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+        continue;
       if (std::abs(t0.tpcNSigmaKa()) < 3 && std::abs(t1.tpcNSigmaPi()) < 3 && std::abs(t0.tofNSigmaKa()) < 3 && std::abs(t1.tofNSigmaPi()) < 3) {
         // Apply pion hypothesis and create pairs
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
