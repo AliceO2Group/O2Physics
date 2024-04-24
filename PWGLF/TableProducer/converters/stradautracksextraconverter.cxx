@@ -12,32 +12,23 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 
 // Converts V0 version 001 to 002
-struct v0coresconverter {
-  Produces<aod::V0MCCores_001> v0MCCores_001;
+struct stradautracksextraconverter {
+  Produces<aod::DauTrackExtras_001> dauTrackExtras_001;
 
-  void process(aod::V0MCCores_000 const& v0MCCores_000)
+  void process(aod::DauTrackExtras_000 const& dauTrackExtras_000)
   {
-    for (auto& values : v0MCCores_000) {
-      v0MCCores_001(0,
-                    values.pdgCode(),
-                    values.pdgCodeMother(),
-                    values.pdgCodePositive(),
-                    values.pdgCodeNegative(),
-                    values.isPhysicalPrimary(),
-                    values.xMC(),
-                    values.yMC(),
-                    values.zMC(),
-                    values.pxPosMC(),
-                    values.pyPosMC(),
-                    values.pzPosMC(),
-                    values.pxNegMC(),
-                    values.pyNegMC(),
-                    values.pzNegMC());
+    for (auto& values : dauTrackExtras_000) {
+      dauTrackExtras_001(0,
+                         values.detectorMap(),
+                         values.itsClusterSizes(),
+                         values.tpcClusters(),
+                         values.tpcCrossedRows());
     }
   }
 };
@@ -45,5 +36,5 @@ struct v0coresconverter {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<v0coresconverter>(cfgc)};
+    adaptAnalysisTask<stradautracksextraconverter>(cfgc)};
 }
