@@ -75,6 +75,7 @@ struct k892analysis {
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};               // TPC
   Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};               // TOF
   Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", -999, "Combined nSigma cut for Kaon"}; // Combined
+  Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"};                           // By pass TOF PID selection
   // Track selections
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
@@ -281,6 +282,9 @@ struct k892analysis {
       if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
         tpcPIDPassed = true;
       }
+      if (cByPassTOF && tpcPIDPassed) {
+        return true;
+      }
       if (candidate.hasTOF()) {
         if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
           tofPIDPassed = true;
@@ -311,6 +315,9 @@ struct k892analysis {
       bool tpcPIDPassed{false}, tofPIDPassed{false};
       if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
         tpcPIDPassed = true;
+      }
+      if (cByPassTOF && tpcPIDPassed) {
+        return true;
       }
       if (candidate.hasTOF()) {
         if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
