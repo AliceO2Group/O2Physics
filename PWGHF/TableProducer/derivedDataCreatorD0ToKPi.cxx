@@ -126,7 +126,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   };
 
   template <typename T>
-  void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
+  void fillTablesCollision(const T& collision, int /*isEventReject*/, int /*runNumber*/)
   {
     if (fillCollBase) {
       rowCollBase(
@@ -237,7 +237,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   }
 
   template <typename T, typename U>
-  void fillTablesParticle(const T& particle, U mass)
+  void fillTablesParticle(const T& particle, U /*mass*/)
   {
     if (fillParticleBase) {
       rowParticleBase(

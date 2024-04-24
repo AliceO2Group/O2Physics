@@ -274,10 +274,10 @@ struct HfTreeCreatorLcToPKPi {
   }
 
   void processMc(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
-                 aod::McCollisions const& mcCollisions,
+                 aod::McCollisions const&,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                 TracksWPid const& tracks, aod::BCs const&)
+                 TracksWPid const&, aod::BCs const&)
   {
 
     // Filling event properties
@@ -471,7 +471,7 @@ struct HfTreeCreatorLcToPKPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen(),
           particle.globalIndex());
@@ -482,7 +482,7 @@ struct HfTreeCreatorLcToPKPi {
 
   void processData(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
                    soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
-                   TracksWPid const& tracks, aod::BCs const&)
+                   TracksWPid const&, aod::BCs const&)
   {
 
     // Filling event properties

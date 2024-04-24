@@ -60,25 +60,27 @@ struct mcdata {
     const AxisSpec axisPhi{nBinsPhi, -0.4, 6.8, "#phi"};
     const AxisSpec axisZvtx{nBinsZvtx, -30, 30, "Z_{vtx} (cm)"};
 
-    histos.add("etaHistogram", "; ", kTH1F, {axisEta});
-    histos.add("MCGENetaHistogram", "; ", kTH1F, {axisEta});
-    histos.add("FakeDataetaHistogram", "; ", kTH1F, {axisEta});
-    histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
-    histos.add("FakeDataeventCounter", "eventCounter", kTH1F, {axisCounter});
-    histos.add("MCGENeventCounter", "eventCounter", kTH1F, {axisCounter});
-    histos.add("Multiplicity", "; tracks; events", kTH1F, {axisNtrk});
-    histos.add("FakeDataMultiplicity", "; tracks; events", kTH1F, {axisNtrk});
-    histos.add("MCGENMultiplicity", "; tracks; events", kTH1F, {axisNtrk});
-    histos.add("PhiTracks", "; #phi; tracks", kTH1F, {axisPhi});
-    histos.add("FakeDataPhiTracks", "; #phi; tracks", kTH1F, {axisPhi});
+    histos.add("etaHistogram", "; ", kTH1D, {axisEta});
+    histos.add("MCGENetaHistogram", "; ", kTH1D, {axisEta});
+    histos.add("FakeDataetaHistogram", "; ", kTH1D, {axisEta});
+    histos.add("MCGENFakeDataetaHistogram", "; ", kTH1D, {axisEta});
+    histos.add("eventCounter", "eventCounter", kTH1D, {axisCounter});
+    histos.add("FakeDataeventCounter", "eventCounter", kTH1D, {axisCounter});
+    histos.add("MCGENeventCounter", "eventCounter", kTH1D, {axisCounter});
+    histos.add("MCGENFakeDataeventCounter", "eventCounter", kTH1D, {axisCounter});
+    histos.add("Multiplicity", "; tracks; events", kTH1D, {axisNtrk});
+    histos.add("FakeDataMultiplicity", "; tracks; events", kTH1D, {axisNtrk});
+    histos.add("MCGENMultiplicity", "; tracks; events", kTH1D, {axisNtrk});
+    histos.add("PhiTracks", "; #phi; tracks", kTH1D, {axisPhi});
+    histos.add("FakeDataPhiTracks", "; #phi; tracks", kTH1D, {axisPhi});
 
-    histos.add("ZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
-    histos.add("FakeDataZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
-    histos.add("MCGENZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
+    histos.add("ZvtxEvents", "; Z_{vtx} (cm); events", kTH1D, {axisZvtx});
+    histos.add("FakeDataZvtxEvents", "; Z_{vtx} (cm); events", kTH1D, {axisZvtx});
+    histos.add("MCGENZvtxEvents", "; Z_{vtx} (cm); events", kTH1D, {axisZvtx});
 
-    histos.add("EtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2F, {axisEta, axisZvtx});
-    histos.add("FakeDataEtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2F, {axisEta, axisZvtx});
-    histos.add("MCGENEtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2F, {axisEta, axisZvtx});
+    histos.add("EtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2D, {axisEta, axisZvtx});
+    histos.add("FakeDataEtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2D, {axisEta, axisZvtx});
+    histos.add("MCGENEtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2D, {axisEta, axisZvtx});
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks, aod::McParticles const&)
@@ -148,6 +150,20 @@ struct mcdata {
         }
       }
       histos.fill(HIST("MCGENMultiplicity"), MCparticleCounter);
+    }
+    if (random == 1) {
+      histos.fill(HIST("MCGENFakeDataeventCounter"), 0.5);
+
+      for (auto& mcParticle : mcParticles) {
+        if (mcParticle.isPhysicalPrimary()) {
+          auto pdgparticle = pdg->GetParticle(mcParticle.pdgCode());
+          if (pdgparticle != nullptr) {
+            if (std::abs(pdgparticle->Charge()) < 3)
+              continue;
+          }
+          histos.fill(HIST("MCGENFakeDataetaHistogram"), mcParticle.eta());
+        }
+      }
     }
   }
   PROCESS_SWITCH(mcdata, processMCGEN, "process for GEN MC data", true);

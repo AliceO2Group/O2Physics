@@ -346,7 +346,7 @@ struct tofSpectraRun2 {
   }
 
   template <bool fillFullInfo, PID::ID id, typename T, typename C>
-  void fillParticleHistos(const T& track, const C& collision)
+  void fillParticleHistos(const T& track, const C& /*collision*/)
   {
     if (abs(track.rapidity(PID::getMass(id))) > cfgCutY) {
       return;

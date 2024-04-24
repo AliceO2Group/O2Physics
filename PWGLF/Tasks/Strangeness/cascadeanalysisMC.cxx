@@ -90,7 +90,7 @@ struct cascadeGenerated {
     registry.add("hPtOmegaPlus", "hPtOmegaPlus", {HistType::kTH1F, {ptAxis}});
   }
 
-  void process(aod::McCollision const& collision, aod::McParticles const& mcparts)
+  void process(aod::McCollision const& /*collision*/, aod::McParticles const& mcparts)
   {
     // Count monte carlo events
     // WARNING: MC collision <-> real collision association has to be understood

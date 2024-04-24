@@ -53,7 +53,7 @@ struct JetMatchingSub {
   {
   }
 
-  void processDummy(JetCollisions const& collisions)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetMatchingSub, processDummy, "Dummy process", true);

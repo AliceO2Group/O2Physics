@@ -428,12 +428,12 @@ struct JetFinderFullQATask {
     }
   }
 
-  void processDummy(JetCollisions const& collisions)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processDummy, "dummy task", true);
 
-  void processJetsData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataJoined const& jets, JetTracks const& tracks, JetClusters const& clusters)
+  void processJetsData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataJoined const& jets, JetTracks const&, JetClusters const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -447,7 +447,7 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsData, "jet finder HF QA data", false);
 
-  void processJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDJoined const& jets, JetTracks const& tracks, JetClusters const& clusters)
+  void processJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDJoined const& jets, JetTracks const&, JetClusters const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -461,7 +461,7 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCD, "jet finder HF QA mcd", false);
 
-  void processJetsMCDWeighted(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDWeightedJoined const& jets, JetTracks const& tracks, JetClusters const& clusters)
+  void processJetsMCDWeighted(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDWeightedJoined const& jets, JetTracks const&, JetClusters const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -475,7 +475,7 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCDWeighted, "jet finder HF QA mcd on weighted events", false);
 
-  void processJetsMCP(typename JetTableMCPJoined::iterator const& jet, JetParticles const& particles)
+  void processJetsMCP(typename JetTableMCPJoined::iterator const& jet, JetParticles const&)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -487,7 +487,7 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCP, "jet finder HF QA mcp", false);
 
-  void processJetsMCPWeighted(typename JetTableMCPWeightedJoined::iterator const& jet, JetParticles const& particles)
+  void processJetsMCPWeighted(typename JetTableMCPWeightedJoined::iterator const& jet, JetParticles const&)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -499,12 +499,12 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCPWeighted, "jet finder HF QA mcp on weighted events", false);
 
-  void processJetsMCPMCDMatched(JetCollision const& collision,
+  void processJetsMCPMCDMatched(JetCollision const&,
                                 JetTableMCDMatchedJoined const& mcdjets,
-                                JetTableMCPMatchedJoined const& mcpjets,
-                                JetTracks const& tracks,
-                                JetClusters const& clusters,
-                                JetParticles const& particles)
+                                JetTableMCPMatchedJoined const&,
+                                JetTracks const&,
+                                JetClusters const&,
+                                JetParticles const&)
   {
 
     for (const auto& mcdjet : mcdjets) {
@@ -519,12 +519,12 @@ struct JetFinderFullQATask {
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCPMCDMatched, "jet finder HF QA matched mcp and mcd", false);
 
-  void processJetsMCPMCDMatchedWeighted(JetCollision const& collision,
+  void processJetsMCPMCDMatchedWeighted(JetCollision const&,
                                         JetTableMCDMatchedWeightedJoined const& mcdjets,
-                                        JetTableMCPMatchedWeightedJoined const& mcpjets,
-                                        JetTracks const& tracks,
-                                        JetClusters const& clusters,
-                                        JetParticles const& particles)
+                                        JetTableMCPMatchedWeightedJoined const&,
+                                        JetTracks const&,
+                                        JetClusters const&,
+                                        JetParticles const&)
   {
 
     for (const auto& mcdjet : mcdjets) {
@@ -562,7 +562,7 @@ struct JetFinderFullQATask {
   PROCESS_SWITCH(JetFinderFullQATask, processTracks, "QA for charged tracks", false);
 
   void processTracksWeighted(soa::Join<aod::JCollisions, aod::JMcCollisionLbs>::iterator const& collision,
-                             aod::JMcCollisions const& mcCollisions,
+                             aod::JMcCollisions const&,
                              soa::Filtered<JetTracks> const& tracks,
                              soa::Filtered<JetClusters> const& clusters)
   {

@@ -94,7 +94,9 @@ class FemtoDreamCollisionSelection
         return false;
       }
       // all checks additional to sel8 are pending to be included in sel8, check them explicitly now and remove them once they have been added to sel8
-      if (mAddCheckOffline && (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) || !col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup) || !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC))) {
+      // kIsGoodZvtxFT0vsPV can be a dangerous cut because the default event selection value is rather tight
+      // Remeber to open the cut (~4cm) with custom event selection task on hyperloop
+      if (mAddCheckOffline && (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) || !col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup) || !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC) || !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         return false;
       }
     } else {
@@ -109,7 +111,7 @@ class FemtoDreamCollisionSelection
   }
 
   template <typename C, typename T, typename TC>
-  bool isEmptyCollision(C const& col, T const& tracks, TC& trackCuts)
+  bool isEmptyCollision(C const& /*col*/, T const& tracks, TC& trackCuts)
   {
     // check if there is no selected track
     for (auto const& track : tracks) {
@@ -121,7 +123,7 @@ class FemtoDreamCollisionSelection
   }
 
   template <typename C, typename V, typename VC, typename T>
-  bool isEmptyCollision(C const& col, V const& V0s, VC& V0Cuts, T const& Tracks)
+  bool isEmptyCollision(C const& col, V const& V0s, VC& V0Cuts, T const& /*Tracks*/)
   {
     // check if there is no selected V0
     for (auto const& V0 : V0s) {
@@ -163,7 +165,7 @@ class FemtoDreamCollisionSelection
   /// \param tracks All tracks
   /// \return value of the sphericity of the event
   template <typename T1, typename T2>
-  float computeSphericity(T1 const& col, T2 const& tracks)
+  float computeSphericity(T1 const& /*col*/, T2 const& /*tracks*/)
   {
     return 2.f;
   }

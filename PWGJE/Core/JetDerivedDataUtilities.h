@@ -28,10 +28,8 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 
 enum JCollisionSel {
   sel8 = 0,
-  sel8WithoutTimeFrameBorderCut = 1,
-  sel7 = 2,
-  sel7WithoutTimeFrameBorderCut = 3,
-  WithoutTimeFrameBorderCut = 4
+  sel8Full = 1,
+  sel7 = 2
 };
 
 template <typename T>
@@ -47,40 +45,28 @@ int initialiseEventSelection(std::string eventSelection)
 {
   if (eventSelection == "sel8") {
     return JCollisionSel::sel8;
-  } else if (eventSelection == "sel8WithoutTimeFrameBorderCut") {
-    return JCollisionSel::sel8WithoutTimeFrameBorderCut;
-  } else if (eventSelection == "sel7") {
+  }
+  if (eventSelection == "sel8Full") {
+    return JCollisionSel::sel8Full;
+  }
+  if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
-  } else if (eventSelection == "sel7WithoutTimeFrameBorderCut") {
-    return JCollisionSel::sel7WithoutTimeFrameBorderCut;
-  } else if (eventSelection == "WithoutTimeFrameBorderCut") {
-    return JCollisionSel::WithoutTimeFrameBorderCut;
   }
   return -1;
 }
 
 template <typename T>
-uint16_t setEventSelectionBit(T const& collision)
+uint8_t setEventSelectionBit(T const& collision)
 {
-
-  uint16_t bit = 0;
-
-  if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-    SETBIT(bit, JCollisionSel::WithoutTimeFrameBorderCut);
-  }
+  uint8_t bit = 0;
   if (collision.sel8()) {
-    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      SETBIT(bit, JCollisionSel::sel8);
-    } else {
-      SETBIT(bit, JCollisionSel::sel8WithoutTimeFrameBorderCut);
+    SETBIT(bit, JCollisionSel::sel8);
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      SETBIT(bit, JCollisionSel::sel8Full);
     }
   }
   if (collision.sel7()) {
-    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      SETBIT(bit, JCollisionSel::sel7);
-    } else {
-      SETBIT(bit, JCollisionSel::sel7WithoutTimeFrameBorderCut);
-    }
+    SETBIT(bit, JCollisionSel::sel7);
   }
   return bit;
 }
@@ -103,7 +89,9 @@ bool eventEMCAL(T const& collision)
 enum JTrigSelCh {
   noChargedTigger = 0,
   chargedLow = 1,
-  chargedHigh = 2
+  chargedHigh = 2,
+  trackLowPt = 3,
+  trackHighPt = 4
 };
 
 template <typename T>
@@ -123,6 +111,13 @@ int initialiseChargedTriggerSelection(std::string triggerSelection)
   if (triggerSelection == "chargedHigh") {
     return JTrigSelCh::chargedHigh;
   }
+  if (triggerSelection == "trackLowPt") {
+    return JTrigSelCh::trackLowPt;
+  }
+  if (triggerSelection == "trackHighPt") {
+    return JTrigSelCh::trackHighPt;
+  }
+
   return -1;
 }
 
@@ -137,6 +132,13 @@ uint8_t setChargedTriggerSelectionBit(T const& collision)
   if (collision.hasJetChHighPt()) {
     SETBIT(bit, JTrigSelCh::chargedHigh);
   }
+  if (collision.hasTrackLowPt()) {
+    SETBIT(bit, JTrigSelCh::trackLowPt);
+  }
+  if (collision.hasTrackHighPt()) {
+    SETBIT(bit, JTrigSelCh::trackHighPt);
+  }
+
   return bit;
 }
 

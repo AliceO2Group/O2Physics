@@ -19,6 +19,7 @@
 #include <iostream>
 #include <locale>
 #include <sstream>
+#include <functional>
 #include <map>
 
 #include "ReconstructionDataFormats/PID.h"
@@ -135,6 +136,7 @@ static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionDCA
   o2::aod::track::TrackSelectionFlags::kDCAz | o2::aod::track::TrackSelectionFlags::kDCAxy;
 
 int tracktype = 1;
+std::function<float(float)> maxDcaZPtDep{}; // max dca in z axis as function of pT
 
 std::vector<TrackSelection*> trackFilters = {};
 bool dca2Dcut = false;
@@ -237,6 +239,22 @@ inline void initializeTrackSelection(const TrackSelectionTuneCfg& tune)
     } break;
     case 43: { /* Run 3 global track: kAll on all 7 layers of ITS, tighter DCAxy */
       trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 50: { /* Run 3 global track: kAny on 3 IB layers of ITS, tighter DCAxy, tighter pT dep DCAz */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+    } break;
+    case 51: { /* Run 3 global track: kTwo on 3 IB layers of ITS, tighter DCAxy, tighter pT dep DCAz */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+    } break;
+    case 52: { /* Run 3 global track: kAny on all 7 layers of ITS, tighter DCAxy, tighter pT dep DCAz */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
+    } break;
+    case 53: { /* Run 3 global track: kAll on all 7 layers of ITS, tighter DCAxy, tighter pT dep DCAz */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+      maxDcaZPtDep = [](float pt) { return 0.004f + 0.013f / pt; };
     } break;
     default:
       break;
@@ -776,15 +794,31 @@ inline bool matchTrackType(TrackObject const& track)
   } else {
     for (auto filter : trackFilters) {
       if (filter->IsSelected(track)) {
-        if (dca2Dcut) {
-          if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
-            return false;
+        /* additional track cuts if needed */
+        auto checkDca2Dcut = [&](auto const& track) {
+          if (dca2Dcut) {
+            if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
+              return false;
+            } else {
+              return true;
+            }
           } else {
             return true;
           }
-        } else {
-          return true;
+        };
+        auto checkDcaZcut = [&](auto const& track) {
+          return ((maxDcaZPtDep) ? abs(track.dcaZ()) <= maxDcaZPtDep(track.pt()) : true);
+        };
+
+        /* tight pT dependent DCAz cut */
+        if (!checkDcaZcut(track)) {
+          return false;
         }
+        /* 2D DCA xy-o-z cut */
+        if (!checkDca2Dcut(track)) {
+          return false;
+        }
+        return true;
       }
     }
     return false;
@@ -857,7 +891,7 @@ inline float getCharge(ParticleObject& particle)
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
-inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
+inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
 {
   /* overall momentum cut */
   if (!(overallminp < particle.p())) {
@@ -1111,6 +1145,46 @@ struct PIDSpeciesSelection {
       return -127;
     } else {
       return 0;
+    }
+  }
+
+  template <typename ParticleObject>
+  int8_t whichTruthPrimarySpecies(ParticleObject part)
+  {
+    if (part.isPhysicalPrimary()) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
+  template <typename ParticleObject>
+  int8_t whichTruthSecondarySpecies(ParticleObject part)
+  {
+    if (!(part.isPhysicalPrimary())) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
+  template <typename ParticleObject>
+  int8_t whichTruthSecFromDecaySpecies(ParticleObject part)
+  {
+    if (!(part.isPhysicalPrimary()) && (part.getProcess() == 4)) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
+  template <typename ParticleObject>
+  int8_t whichTruthSecFromMaterialSpecies(ParticleObject part)
+  {
+    if (!(part.isPhysicalPrimary()) && (part.getProcess() != 4)) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
     }
   }
 

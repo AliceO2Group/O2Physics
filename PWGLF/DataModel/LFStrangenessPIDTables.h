@@ -25,19 +25,25 @@ namespace o2::aod
 namespace dautrack
 {
 // ==== TPC INFORMATION ===
-DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float); //! track signal
-
+DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);     //! track TPC signal
 DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //! Nsigma proton
+
+// ==== TOF INFORMATION ===
+DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! track TOF signal
+DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float); //! track TOF signal
+DECLARE_SOA_COLUMN(Length, length, float);       //! track TOF signal
 } // namespace dautrack
 
 DECLARE_SOA_TABLE(DauTrackTPCPIDs, "AOD", "DAUTRACKTPCPID", // nsigma table (for analysis)
                   dautrack::TPCSignal, dautrack::TPCNSigmaEl,
                   dautrack::TPCNSigmaPi, dautrack::TPCNSigmaKa,
                   dautrack::TPCNSigmaPr, dautrack::TPCNSigmaHe);
+DECLARE_SOA_TABLE(DauTrackTOFPIDs, "AOD", "DAUTRACKTOFPID", // raw table (for posterior TOF calculation)
+                  dautrack::TOFSignal, dautrack::TOFEvTime, dautrack::Length);
 
 namespace v0data
 {
@@ -49,8 +55,6 @@ DECLARE_SOA_COLUMN(PosTOFSignal, posTOFSignal, float);         //! positive trac
 DECLARE_SOA_COLUMN(NegTOFSignal, negTOFSignal, float);         //! negative track signal
 DECLARE_SOA_COLUMN(PosTOFEventTime, posTOFEventTime, float);   //! positive track event time
 DECLARE_SOA_COLUMN(NegTOFEventTime, negTOFEventTime, float);   //! negative track event time
-
-// recalculated lengths
 DECLARE_SOA_COLUMN(PosTOFLength, posTOFLength, float); //! positive track length, recalculated
 DECLARE_SOA_COLUMN(NegTOFLength, negTOFLength, float); //! negative track length, recalculated
 
@@ -89,12 +93,15 @@ DECLARE_SOA_COLUMN(NegLifetimePr, negLifetimePr, float);         //! lifetime (t
 DECLARE_SOA_COLUMN(NegLifetimePi, negLifetimePi, float);         //! lifetime (to TOF) of neg prong assuming pion mass (ps)
 } // namespace v0data
 
+// /-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/
+// DEPRECATED - DO NOT USE - KEPT FOR BACKWARDS COMPATIBILITY, TO BE REMOVED
 DECLARE_SOA_TABLE(V0TOFs, "AOD", "V0TOF", // raw information table (for debug, etc)
                   v0data::PosTOFLengthToPV, v0data::NegTOFLengthToPV,
                   v0data::PosTOFSignal, v0data::NegTOFSignal,
                   v0data::PosTOFEventTime, v0data::NegTOFEventTime);
+// /-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/
+
 DECLARE_SOA_TABLE(V0TOFPIDs, "AOD", "V0TOFPID", // processed info table (for analysis)
-                  v0data::PosTOFLength, v0data::NegTOFLength,
                   v0data::PosTOFDeltaTLaPi, v0data::PosTOFDeltaTLaPr,
                   v0data::NegTOFDeltaTLaPi, v0data::NegTOFDeltaTLaPr,
                   v0data::PosTOFDeltaTK0Pi, v0data::NegTOFDeltaTK0Pi,
@@ -117,7 +124,6 @@ DECLARE_SOA_TABLE(V0TOFNSigmas, "AOD", "V0TOFNSIGMA", // processed NSigma table 
 
 namespace cascdata
 {
-// ==== TOF INFORMATION ===
 // lengths as stored in the AO2D for TOF calculations
 DECLARE_SOA_COLUMN(PosTOFLengthToPV, posTOFLengthToPV, float);   //! positive track length
 DECLARE_SOA_COLUMN(NegTOFLengthToPV, negTOFLengthToPV, float);   //! negative track length
@@ -150,10 +156,14 @@ DECLARE_SOA_COLUMN(TOFNSigmaOmLaPr, tofNSigmaOmLaPr, float); //! baryon track NS
 DECLARE_SOA_COLUMN(TOFNSigmaOmKa, tofNSigmaOmKa, float);     //! bachelor track NSigma from kaon <- om expectation
 } // namespace cascdata
 
+// /-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/
+// DEPRECATED - DO NOT USE - KEPT FOR BACKWARDS COMPATIBILITY, TO BE REMOVED
 DECLARE_SOA_TABLE(CascTOFs, "AOD", "CascTOF", // raw information table (for debug, etc)
                   cascdata::PosTOFLengthToPV, cascdata::NegTOFLengthToPV, cascdata::BachTOFLengthToPV,
                   cascdata::PosTOFSignal, cascdata::NegTOFSignal, cascdata::BachTOFSignal,
                   cascdata::PosTOFEventTime, cascdata::NegTOFEventTime, cascdata::BachTOFEventTime);
+// /-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/
+
 DECLARE_SOA_TABLE(CascTOFPIDs, "AOD", "CASCTOFPID", // processed information for analysis
                   cascdata::PosTOFDeltaTXiPi, cascdata::PosTOFDeltaTXiPr,
                   cascdata::NegTOFDeltaTXiPi, cascdata::NegTOFDeltaTXiPr,

@@ -43,6 +43,7 @@ DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);         //!
 DECLARE_SOA_COLUMN(Eta, eta, float);       //!
 DECLARE_SOA_COLUMN(Phi, phi, float);       //!
+DECLARE_SOA_COLUMN(Y, y, float);           //!
 DECLARE_SOA_COLUMN(Energy, energy, float); //!
 DECLARE_SOA_COLUMN(Mass, mass, float);     //!
 DECLARE_SOA_COLUMN(Area, area, float);     //!
@@ -72,6 +73,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! absolute p
                     jet::Eta,                                                                       \
                     jet::Phi,                                                                       \
                     jet::Energy,                                                                    \
+                    jet::Y,                                                                         \
                     jet::Mass,                                                                      \
                     jet::Area,                                                                      \
                     jet::R,                                                                         \

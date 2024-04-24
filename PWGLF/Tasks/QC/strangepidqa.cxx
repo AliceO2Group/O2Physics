@@ -250,7 +250,7 @@ struct strangepidqa {
     }
   }
 
-  void processReal(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFs, aod::V0TOFPIDs, aod::V0TOFBetas, aod::V0TOFDebugs> const& v0s)
+  void processReal(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFBetas, aod::V0TOFDebugs> const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
@@ -262,70 +262,16 @@ struct strangepidqa {
       if (TMath::Abs(lambda.eta()) > 0.5)
         continue;
 
-      if (TMath::Abs(lambda.mLambda() - 1.115683) < 0.01 && lambda.v0cosPA() > minCosPA) {
-        histos.fill(HIST("hPositiveStatus"), 0.0f);
-        if (lambda.posTOFSignal() > 1e-5 && lambda.posTOFEventTime() < 0.0f)
-          histos.fill(HIST("hPositiveStatus"), 1.0f);
-        if (lambda.posTOFSignal() < 0.0f && lambda.posTOFEventTime() > 1e-5)
-          histos.fill(HIST("hPositiveStatus"), 2.0f);
-        if (lambda.posTOFSignal() > 1e-5 && lambda.posTOFEventTime() > 1e-5)
-          histos.fill(HIST("hPositiveStatus"), 3.0f);
-
-        histos.fill(HIST("hNegativeStatus"), 0.0f);
-        if (lambda.negTOFSignal() > 1e-5 && lambda.negTOFEventTime() < 0.0f)
-          histos.fill(HIST("hNegativeStatus"), 1.0f);
-        if (lambda.negTOFSignal() < 0.0f && lambda.negTOFEventTime() > 1e-5)
-          histos.fill(HIST("hNegativeStatus"), 2.0f);
-        if (lambda.negTOFSignal() > 1e-5 && lambda.negTOFEventTime() > 1e-5)
-          histos.fill(HIST("hNegativeStatus"), 3.0f);
-
-        if (lambda.posTOFLength() > 0.0f) {
-          histos.fill(HIST("hPositiveStatusReachedTOF"), 0.0f);
-          if (lambda.posTOFSignal() > 1e-5 && lambda.posTOFEventTime() < 0.0f)
-            histos.fill(HIST("hPositiveStatusReachedTOF"), 1.0f);
-          if (lambda.posTOFSignal() < 0.0f && lambda.posTOFEventTime() > 1e-5)
-            histos.fill(HIST("hPositiveStatusReachedTOF"), 2.0f);
-          if (lambda.posTOFSignal() > 1e-5 && lambda.posTOFEventTime() > 1e-5)
-            histos.fill(HIST("hPositiveStatusReachedTOF"), 3.0f);
-        }
-
-        if (lambda.negTOFLength() > 0.0f) {
-          histos.fill(HIST("hNegativeStatusReachedTOF"), 0.0f);
-          if (lambda.negTOFSignal() > 1e-5 && lambda.negTOFEventTime() < 0.0f)
-            histos.fill(HIST("hNegativeStatusReachedTOF"), 1.0f);
-          if (lambda.negTOFSignal() < 0.0f && lambda.negTOFEventTime() > 1e-5)
-            histos.fill(HIST("hNegativeStatusReachedTOF"), 2.0f);
-          if (lambda.negTOFSignal() > 1e-5 && lambda.negTOFEventTime() > 1e-5)
-            histos.fill(HIST("hNegativeStatusReachedTOF"), 3.0f);
-        }
-
-        // properties of the positive and negative prongs / debug
-        histos.fill(HIST("h2dTimeVsLengthProtonProng"), lambda.posTOFLength(), lambda.posLifetimePr());
-        histos.fill(HIST("h2dTimeVsLengthPionProng"), lambda.negTOFLength(), lambda.negLifetimePr());
-      }
-
       histos.fill(HIST("h2dLambdaMassVsTOFCut"), lambda.mLambda(), TMath::Abs(lambda.posTOFDeltaTLaPr()));
       histos.fill(HIST("h2dLambdaMassVsTOFCutMeson"), lambda.mLambda(), TMath::Abs(lambda.negTOFDeltaTLaPi()));
 
       if (lambda.v0radius() < minV0Radius)
-        continue;
-      if (lambda.posTOFSignal() < 0 && requireTOFsignalProton)
-        continue;
-      if (lambda.negTOFSignal() < 0 && requireTOFsignalPion)
         continue;
 
       histos.fill(HIST("h2dLambdaDeltaDecayTime"), lambda.pt(), lambda.deltaDecayTimeLambda());
       if (TMath::Abs(lambda.mLambda() - 1.115683) < 0.01 && lambda.v0cosPA() > minCosPA) {
         histos.fill(HIST("h2dLambdaDeltaDecayTime_MassSelected"), lambda.pt(), lambda.deltaDecayTimeLambda());
       }
-
-      if (lambda.posTOFEventTime() < 0 && requireTOFEventTimeProton)
-        continue;
-      if (lambda.negTOFEventTime() < 0 && requireTOFEventTimePion)
-        continue;
-
-      histos.fill(HIST("h2dLambdaMassVsTOFCutWithSignals"), lambda.mLambda(), TMath::Abs(lambda.posTOFDeltaTLaPr()));
-      histos.fill(HIST("h2dLambdaMassVsTOFCutMesonWithSignals"), lambda.mLambda(), TMath::Abs(lambda.negTOFDeltaTLaPi()));
 
       if (lambda.pt() > minPtV0 && lambda.pt() < maxPtV0)
         histos.fill(HIST("hLambdaMass"), lambda.mLambda());
@@ -346,12 +292,6 @@ struct strangepidqa {
         histos.fill(HIST("h2dPionDeltaTimeVsRadius_MassSelected"), lambda.v0radius(), lambda.negTOFDeltaTLaPi());
         histos.fill(HIST("h2dLambdaBeta_MassSelected"), lambda.p(), lambda.tofBetaLambda());
       }
-
-      histos.fill(HIST("h2dProtonLengthVsRadius"), lambda.v0radius(), lambda.posTOFLength());
-      histos.fill(HIST("h2dPionLengthVsRadius"), lambda.v0radius(), lambda.negTOFLength());
-
-      histos.fill(HIST("h2dProtonLengthVsLengthToPV"), lambda.posTOFLengthToPV(), lambda.posTOFLength());
-      histos.fill(HIST("h2dPionLengthVsLengthToPV"), lambda.negTOFLengthToPV(), lambda.negTOFLength());
 
       // Standard selection of time
       if (TMath::Abs(lambda.deltaDecayTimeLambda()) < maxDeltaTimeDecay) {
@@ -399,7 +339,7 @@ struct strangepidqa {
     }
   }
 
-  void processSim(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFs, aod::V0TOFPIDs, aod::V0TOFBetas> const& v0s)
+  void processSim(aod::StraCollision const&, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFPIDs, aod::V0TOFBetas> const& v0s)
   {
     for (auto& lambda : v0s) { // selecting photons from Sigma0
       if (lambda.pdgCode() != 3122)
@@ -413,12 +353,6 @@ struct strangepidqa {
 
       histos.fill(HIST("hAssocLambdaMass"), lambda.mLambda());
 
-      if (TMath::Abs(lambda.negTOFDeltaTLaPi()) > 800) {
-        histos.fill(HIST("hAssocLambdaMassGoodTime"), lambda.mLambda());
-      } else {
-        histos.fill(HIST("hAssocLambdaMassBadTime"), lambda.mLambda());
-      }
-
       histos.fill(HIST("h2dAssocLambdaRadiusVsPt"), lambda.pt(), lambda.v0radius());
       histos.fill(HIST("h2dAssocLambdaMassVsPt"), lambda.pt(), lambda.mLambda());
 
@@ -426,12 +360,6 @@ struct strangepidqa {
       histos.fill(HIST("h2dAssocProtonDeltaTimeVsRadius"), lambda.v0radius(), lambda.posTOFDeltaTLaPr());
       histos.fill(HIST("h2dAssocPionDeltaTimeVsPt"), lambda.pt(), lambda.negTOFDeltaTLaPi());
       histos.fill(HIST("h2dAssocPionDeltaTimeVsRadius"), lambda.v0radius(), lambda.negTOFDeltaTLaPi());
-
-      histos.fill(HIST("h2dAssocProtonLengthVsRadius"), lambda.v0radius(), lambda.posTOFLength());
-      histos.fill(HIST("h2dAssocPionLengthVsRadius"), lambda.v0radius(), lambda.negTOFLength());
-
-      histos.fill(HIST("h2dAssocProtonLengthVsLengthToPV"), lambda.posTOFLengthToPV(), lambda.posTOFLength());
-      histos.fill(HIST("h2dAssocPionLengthVsLengthToPV"), lambda.negTOFLengthToPV(), lambda.negTOFLength());
 
       // delta lambda decay time
       histos.fill(HIST("h2dAssocLambdaDeltaDecayTime"), lambda.pt(), lambda.deltaDecayTimeLambda());

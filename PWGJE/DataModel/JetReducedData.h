@@ -18,6 +18,7 @@
 #define PWGJE_DATAMODEL_JETREDUCEDDATA_H_
 
 #include <cmath>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
@@ -66,11 +67,13 @@ DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
 DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
+DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
 } // namespace jcollision
 
 DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
@@ -131,6 +134,15 @@ DECLARE_SOA_TABLE(JCollisionBCs, "AOD", "JCOLLISIONBC",
 
 DECLARE_SOA_TABLE(StoredJCollisionBCs, "AOD1", "JCOLLISIONBC",
                   jcollision::JBCId,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(CollisionCounts, "AOD", "COLLCOUNT",
+                  jcollision::ReadCounts,
+                  jcollision::WrittenCounts);
+
+DECLARE_SOA_TABLE(StoredCollisionCounts, "AOD1", "COLLCOUNT",
+                  jcollision::ReadCounts,
+                  jcollision::WrittenCounts,
                   o2::soa::Marker<1>);
 
 namespace jmccollision
@@ -264,6 +276,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
+                           [](float e) -> float { return e; });
 } // namespace jmcparticle
 
 DECLARE_SOA_TABLE(JMcParticles, "AOD", "JMCPARTICLE",
@@ -283,7 +297,8 @@ DECLARE_SOA_TABLE(JMcParticles, "AOD", "JMCPARTICLE",
                   jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>);
+                  jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
+                  jmcparticle::Energy<jmcparticle::E>);
 
 using JMcParticle = JMcParticles::iterator;
 
@@ -305,6 +320,7 @@ DECLARE_SOA_TABLE(StoredJMcParticles, "AOD1", "JMCPARTICLE",
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
+                  jmcparticle::Energy<jmcparticle::E>,
                   o2::soa::Marker<1>);
 
 using StoredJMcParticle = StoredJMcParticles::iterator;

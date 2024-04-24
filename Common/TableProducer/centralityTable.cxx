@@ -482,7 +482,7 @@ struct CentralityTable {
        * @param multiplicity The multiplicity value.
        */
       auto populateTable = [&](auto& table, struct calibrationInfo& estimator, float multiplicity) {
-        const bool assignOutOfRange = embedINELgtZEROselection && collision.isInelGt0();
+        const bool assignOutOfRange = embedINELgtZEROselection && !collision.isInelGt0();
         auto scaleMC = [](float x, float pars[6]) {
           return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
         };

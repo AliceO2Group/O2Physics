@@ -279,7 +279,7 @@ struct tpcPidQa {
   }
 
   template <bool fillHistograms, typename CollisionType, typename TrackType>
-  bool isEventSelected(const CollisionType& collision, const TrackType& tracks)
+  bool isEventSelected(const CollisionType& collision, const TrackType& /*tracks*/)
   {
 
     if constexpr (fillHistograms) {
@@ -310,7 +310,7 @@ struct tpcPidQa {
   }
 
   template <bool fillHistograms, typename CollisionType, typename TrackType>
-  bool isTrackSelected(const CollisionType& collision, const TrackType& track)
+  bool isTrackSelected(const CollisionType& /*collision*/, const TrackType& track)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 1.f);

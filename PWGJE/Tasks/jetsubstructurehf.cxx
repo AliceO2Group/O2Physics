@@ -36,6 +36,7 @@
 #include "PWGJE/DataModel/JetSubstructure.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetSubstructureUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 
 using namespace o2;
@@ -62,6 +63,8 @@ struct JetSubstructureHFTask {
   std::vector<fastjet::PseudoJet> jetConstituents;
   std::vector<fastjet::PseudoJet> jetReclustered;
   JetFinder jetReclusterer;
+
+  std::vector<float> nSub;
 
   HistogramRegistry registry;
   void init(InitContext const&)
@@ -150,7 +153,7 @@ struct JetSubstructureHFTask {
     if constexpr (isSubtracted && !isMCP) {
       registry.fill(HIST("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted"), jet.pt(), nsd);
     }
-    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
+    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2]);
   }
 
   template <bool isSubtracted, typename T, typename U, typename V, typename M>
@@ -164,10 +167,11 @@ struct JetSubstructureHFTask {
     for (auto& jetHFCandidate : jet.template hfcandidates_as<V>()) { // should only be one at the moment
       fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), candMass);
     }
+    nSub = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, candidates, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
     jetReclustering<false, isSubtracted>(jet, outputTable);
   }
 
-  void processDummy(JetTracks const& tracks)
+  void processDummy(JetTracks const&)
   {
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processDummy, "Dummy process function turned on by default", true);
@@ -207,6 +211,7 @@ struct JetSubstructureHFTask {
     for (auto& jetHFCandidate : jet.template hfcandidates_as<CandidateTableMCP>()) {
       fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), candMass);
     }
+    nSub = jetsubstructureutilities::getNSubjettiness(jet, particles, particles, candidates, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
     jetReclustering<true, false>(jet, jetSubstructureMCPTable);
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsMCP, "HF jet substructure on MC particle level", false);

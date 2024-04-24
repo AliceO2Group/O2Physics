@@ -41,8 +41,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> highPtObjectsNames = {"JetD0ChLowPt", "JetD0ChHighPt", "JetLcChLowPt", "JetLcChHighPt"};
-
 struct JetHFFilterTask {
 
   HistogramRegistry registry;
@@ -63,19 +61,9 @@ struct JetHFFilterTask {
   Configurable<float> jetLcChR{"jetLcChR", 0.6, "jet resolution parameter for charged Lc jet for low pt trigger"};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<bool> fillTHns{"fillTHns", true, "fill THn histograms"};
-
-  Configurable<std::vector<double>> jetRadiiPlot{"jetRadiiPlot", std::vector<double>{0.2, 0.4, 0.6}, "jet resolution parameters"};
 
   void init(o2::framework::InitContext&)
   {
-    auto jetRadiiPlotBins = (std::vector<double>)jetRadiiPlot;
-    if (jetRadiiPlotBins.size() > 1) {
-      jetRadiiPlotBins.push_back(jetRadiiPlotBins[jetRadiiPlotBins.size() - 1] + (TMath::Abs(jetRadiiPlotBins[jetRadiiPlotBins.size() - 1] - jetRadiiPlotBins[jetRadiiPlotBins.size() - 2])));
-    } else {
-      jetRadiiPlotBins.push_back(jetRadiiPlotBins[jetRadiiPlotBins.size() - 1] + 0.1);
-    }
-
     registry.add("h_d0jet_pt", "D^{0} - tagged jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
     registry.add("h_d0jet_pt_lowpt", "D^{0} - tagged jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
     registry.add("h_d0jet_pt_highpt", "D^{0} - tagged jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
@@ -84,58 +72,40 @@ struct JetHFFilterTask {
     registry.add("h_lcjet_pt_lowpt", "#Lambda^{+}_{c} - tagged jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
     registry.add("h_lcjet_pt_highpt", "#Lambda^{+}_{c} - tagged jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
 
-    // these might end up being too big
-    registry.add("d0Thn", "Thn for D^{0}-tagged jets", {HistType::kTHnC, {{jetRadiiPlotBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}, {160, -1.0, 7.}, {200, 0., 200.}, {200, 0., 200.}, {100, -1.0, 1.0}, {160, -1.0, 7.}, {100, -1.0, 1.0}, {1700, 1.3, 3.0}}});
-    registry.add("d0Thn_witheventcuts", "Thn for D^{0}-tagged jets with event cuts", {HistType::kTHnC, {{jetRadiiPlotBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}, {160, -1.0, 7.}, {200, 0., 200.}, {200, 0., 200.}, {100, -1.0, 1.0}, {160, -1.0, 7.}, {100, -1.0, 1.0}, {1700, 1.3, 3.0}}});
-    registry.add("lcThn", "Thn for #Lambda^{+}_{c}-tagged jets", {HistType::kTHnC, {{jetRadiiPlotBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}, {160, -1.0, 7.}, {200, 0., 200.}, {200, 0., 200.}, {100, -1.0, 1.0}, {160, -1.0, 7.}, {100, -1.0, 1.0}, {1700, 1.3, 3.0}}});
-    registry.add("lcThn_witheventcuts", "Thn for #Lambda^{+}_{c}-tagged jets with event cuts", {HistType::kTHnC, {{jetRadiiPlotBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}, {160, -1.0, 7.}, {200, 0., 200.}, {200, 0., 200.}, {100, -1.0, 1.0}, {160, -1.0, 7.}, {100, -1.0, 1.0}, {1700, 1.3, 3.0}}});
-    // radius, JetPt, JetEta, Jet Phi, Jet Ntracks, HF pT, HF Eta, HF Phi, HF Y, HF Mass
+    registry.add("h_collisions", "Collision ;entries", {HistType::kTH1F, {{5, 0.0, 5.0}}});
   }
 
-  void processJets(soa::Join<JetCollisions, aod::EvSels>::iterator const& collision, soa::Join<o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents> const& d0Jets, CandidatesD0Data const& d0Candidates, soa::Join<o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents> const& lcJets, CandidatesLcData const& lcCandidates, JetTracks const& tracks)
+  void processJets(soa::Join<JetCollisions, aod::EvSels>::iterator const& /*collision*/, soa::Join<o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents> const& d0Jets, CandidatesD0Data const& /*d0Candidates*/, soa::Join<o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents> const& lcJets, CandidatesLcData const& /*lcCandidates*/, JetTracks const& /*tracks*/)
   {
+    registry.fill(HIST("h_collisions"), 0.5);
     bool keepEvent[kAllObjects]{false};
     for (auto const& d0Jet : d0Jets) {
-      if (fillTHns) {
-        for (auto const& d0Candidate : d0Jet.hfcandidates_as<CandidatesD0Data>()) {
-          registry.fill(HIST("d0Thn"), d0Jet.r() / 100.0, d0Jet.pt(), d0Jet.eta(), d0Jet.phi(), d0Jet.tracksIds().size() + d0Jet.hfcandidatesIds().size(), d0Candidate.pt(), d0Candidate.eta(), d0Candidate.phi(), d0Candidate.y(), d0Candidate.m());
-          if (collision.posZ() < vertexZCut && collision.sel8() && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-            registry.fill(HIST("d0Thn_witheventcuts"), d0Jet.r() / 100.0, d0Jet.pt(), d0Jet.eta(), d0Jet.phi(), d0Jet.tracksIds().size() + d0Jet.hfcandidatesIds().size(), d0Candidate.pt(), d0Candidate.eta(), d0Candidate.phi(), d0Candidate.y(), d0Candidate.m());
-          }
-          break;
-        }
-      }
       if (d0Jet.r() == round(jetD0ChR * 100.0f)) {
         registry.fill(HIST("h_d0jet_pt"), d0Jet.pt());
         if (d0Jet.pt() >= jetD0ChLowPtThreshold) {
           keepEvent[kJetD0ChLowPt] = true;
           registry.fill(HIST("h_d0jet_pt_lowpt"), d0Jet.pt());
+          registry.fill(HIST("h_collisions"), 1.5);
         }
         if (d0Jet.pt() >= jetD0ChHighPtThreshold) {
           keepEvent[kJetD0ChHighPt] = true;
           registry.fill(HIST("h_d0jet_pt_highpt"), d0Jet.pt());
+          registry.fill(HIST("h_collisions"), 2.5);
         }
       }
     }
     for (auto const& lcJet : lcJets) {
-      if (fillTHns) {
-        for (auto const& lcCandidate : lcJet.hfcandidates_as<CandidatesLcData>()) {
-          registry.fill(HIST("lcThn"), lcJet.r() / 100.0, lcJet.pt(), lcJet.eta(), lcJet.phi(), lcJet.tracksIds().size() + lcJet.hfcandidatesIds().size(), lcCandidate.pt(), lcCandidate.eta(), lcCandidate.phi(), lcCandidate.y(), lcCandidate.m());
-          if (collision.posZ() < vertexZCut && collision.sel8() && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-            registry.fill(HIST("lcThn_witheventcuts"), lcJet.r() / 100.0, lcJet.pt(), lcJet.eta(), lcJet.phi(), lcJet.tracksIds().size() + lcJet.hfcandidatesIds().size(), lcCandidate.pt(), lcCandidate.eta(), lcCandidate.phi(), lcCandidate.y(), lcCandidate.m());
-          }
-          break;
-        }
-      }
       if (lcJet.r() == round(jetLcChR * 100.0f)) {
         registry.fill(HIST("h_lcjet_pt"), lcJet.pt());
         if (lcJet.pt() >= jetLcChLowPtThreshold) {
           keepEvent[kJetLcChLowPt] = true;
           registry.fill(HIST("h_lcjet_pt_lowpt"), lcJet.pt());
+          registry.fill(HIST("h_collisions"), 3.5);
         }
         if (lcJet.pt() >= jetLcChHighPtThreshold) {
           keepEvent[kJetLcChHighPt] = true;
           registry.fill(HIST("h_lcjet_pt_highpt"), lcJet.pt());
+          registry.fill(HIST("h_collisions"), 4.5);
         }
       }
     }
