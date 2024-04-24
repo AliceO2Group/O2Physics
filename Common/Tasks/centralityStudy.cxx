@@ -33,6 +33,7 @@ struct centralityStudy {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurables
+  Configurable<bool> do2DPlots{"do2DPlots", true, "0 - no, 1 - yes"};
   Configurable<bool> applySel8{"applySel8", true, "0 - no, 1 - yes"};
   Configurable<bool> applyVtxZ{"applyVtxZ", true, "0 - no, 1 - yes"};
 
@@ -47,6 +48,9 @@ struct centralityStudy {
 
   // Configurable Axes
   ConfigurableAxis axisMultFT0C{"axisMultFT0C", {2000, 0, 100000}, "FT0C amplitude"};
+  ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
+  ConfigurableAxis axisMultITSOnly{"axisMultITSOnly", {200, 0, 6000}, "Number of ITS only tracks"};
+  ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
 
   void init(InitContext&)
   {
@@ -70,6 +74,11 @@ struct centralityStudy {
     if (doprocessBCs) {
       histos.add("hBCSelection", "hBCSelection", kTH1D, {{10, -0.5, 9.5f}});
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultFT0C});
+    }
+
+    if(do2DPlots){
+      histos.add("hFT0CvsNContribs", "hFT0CvsNContribs", kTH2F, {axisMultPVContributors, axisMultFT0C});
+      histos.add("hMatchedVsITSOnly", "hMatchedVsITSOnly", kTH2F, {axisMultITSOnly, axisMultITSTPC});
     }
   }
 
@@ -122,6 +131,11 @@ struct centralityStudy {
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() /* Not at same bunch pile-up */);
+
+    if(do2DPlots){
+      histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C());
+      histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
+    }
   }
 
   void processBCs(aod::MultsBC::iterator const& multbc)
