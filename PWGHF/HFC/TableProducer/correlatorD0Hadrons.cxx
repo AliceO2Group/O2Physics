@@ -272,8 +272,9 @@ struct HfCorrelatorD0Hadrons {
   {
     auto leadingParticle = tracks.begin();
     for (auto const& track : tracks) {
-      if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.)
+      if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.){
         continue;
+      }
       if (track.pt() > leadingParticle.pt()) {
         leadingParticle = track;
       }
