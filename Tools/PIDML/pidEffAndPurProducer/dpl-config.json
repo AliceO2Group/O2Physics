@@ -28,74 +28,11 @@
     "zdc-converter": "",
     "internal-dpl-aod-index-builder": "",
     "tracks-extra-spawner": "",
-    "multiplicity-table": {
-        "doVertexZeq": "1",
-        "fractionOfEvents": "2",
-        "enabledTables": {
-            "labels_rows": [
-                "FV0Mults",
-                "FT0Mults",
-                "FDDMults",
-                "ZDCMults",
-                "TrackletMults",
-                "TPCMults",
-                "PVMults",
-                "MultsExtra",
-                "MultZeqs",
-                "MultsExtraMC"
-            ],
-            "labels_cols": [
-                "Enable"
-            ],
-            "values": [
-                [
-                    "-1"
-                ],
-                [
-                    "-1"
-                ],
-                [
-                    "-1"
-                ],
-                [
-                    "-1"
-                ],
-                [
-                    "-1"
-                ],
-                [
-                    "-1"
-                ],
-                [
-                    "-1"
-                ],
-                [
-                    "-1"
-                ],
-                [
-                    "-1"
-                ],
-                [
-                    "-1"
-                ]
-            ]
-        },
-        "processRun2": "true",
-        "processRun3": "false"
-    },
     "pid-multiplicity": {
         "processIU": "false",
         "processStandard": "true"
     },
-    "tof-signal": {
-        "processRun3": "false",
-        "processRun2": "true"
-    },
-    "track-extension": {
-        "compatibilityIU": "false",
-        "processRun2": "true",
-        "processRun3": "false"
-    },
+    "track-extension": "",
     "tpc-pid-full": {
         "param-file": "",
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
@@ -119,24 +56,6 @@
         "pid-he": "-1",
         "pid-al": "-1"
     },
-    "tof-event-time": {
-        "minMomentum": "0.5",
-        "maxMomentum": "2",
-        "maxEvTimeTOF": "100000",
-        "paramFileName": "",
-        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
-        "parametrizationPath": "TOF\/Calib\/Params",
-        "passName": "",
-        "ccdb-timestamp": "-1",
-        "loadResponseFromCCDB": "false",
-        "fatalOnPassNotAvailable": "true",
-        "sel8TOFEvTime": "false",
-        "maxNtracksInSet": "10",
-        "processRun2": "true",
-        "processNoFT0": "false",
-        "processFT0": "false",
-        "processOnlyFT0": "false"
-    },
     "track-selection": {
         "isRun3": "false",
         "produceTable": "-1",
@@ -149,13 +68,45 @@
         "etaMin": "-0.800000012",
         "etaMax": "0.800000012"
     },
-    "tof-pid-full": {
-        "paramFileName": "",
+    "multiplicity-table": "",
+    "tof-signal": {
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
-        "parametrizationPath": "TOF\/Calib\/Params",
-        "timeShiftCCDBPath": "",
-        "passName": "",
         "ccdb-timestamp": "-1",
+        "timeShiftCCDBPath": "",
+        "distanceForGoodMatch": "999",
+        "distanceForGoodMatchLowMult": "999",
+        "multThreshold": "0",
+        "processRun3": "false",
+        "processRun2": "true"
+    },
+    "tof-event-time": {
+        "inheritFromBaseTask": "true",
+        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
+        "ccdb-timestamp": "-1",
+        "minMomentum": "0.5",
+        "maxMomentum": "2",
+        "maxEvTimeTOF": "100000",
+        "sel8TOFEvTime": "false",
+        "maxNtracksInSet": "10",
+        "paramFileName": "",
+        "parametrizationPath": "TOF\/Calib\/Params",
+        "passName": "",
+        "loadResponseFromCCDB": "false",
+        "enableTimeDependentResponse": "false",
+        "fatalOnPassNotAvailable": "true",
+        "processRun2": "true",
+        "processNoFT0": "false",
+        "processFT0": "false",
+        "processOnlyFT0": "false"
+    },
+    "tof-pid-full": {
+        "inheritFromBaseTask": "true",
+        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
+        "ccdb-timestamp": "-1",
+        "paramFileName": "",
+        "parametrizationPath": "TOF\/Calib\/Params",
+        "passName": "",
+        "timeShiftCCDBPath": "",
         "loadResponseFromCCDB": "false",
         "enableTimeDependentResponse": "false",
         "fatalOnPassNotAvailable": "true",
@@ -219,55 +170,6 @@
     },
     "pid-eff-and-pur-producer-o-n-n-x-interface": {
         "detector": "2",
-        "n-sigma-cut": "3",
-        "tof-pt-cut": "0.5",
-        "pT_cuts": {
-            "labels_rows": [
-                "211",
-                "321",
-                "2212",
-                "0211",
-                "0321",
-                "02212"
-            ],
-            "labels_cols": [
-                "TPC",
-                "TPC + TOF",
-                "TPC + TOF + TRD"
-            ],
-            "values": [
-                [
-                    "0",
-                    "0.5",
-                    "0.80000000000000004"
-                ],
-                [
-                    "0",
-                    "0.5",
-                    "0.80000000000000004"
-                ],
-                [
-                    "0",
-                    "0.5",
-                    "0.80000000000000004"
-                ],
-                [
-                    "0",
-                    "0.5",
-                    "0.80000000000000004"
-                ],
-                [
-                    "0",
-                    "0.5",
-                    "0.80000000000000004"
-                ],
-                [
-                    "0",
-                    "0.5",
-                    "0.80000000000000004"
-                ]
-            ]
-        },
         "pids": {
             "values": [
                 "211",
@@ -278,10 +180,9 @@
                 "-2212"
             ]
         },
-        "autoMode": "true",
         "ccdb-path": "Users\/m\/mkabus\/PIDML",
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
-        "useCCDB": "true",
+        "use-ccdb": "true",
         "local-path": "\/home\/mkabus\/PIDML\/",
         "use-fixed-timestamp": "false",
         "timestamp": "1524176895000"

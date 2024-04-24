@@ -18,4 +18,4 @@ o2-analysis-pid-tpc-full --configuration json://$config_file -b |
 o2-analysis-pid-tpc-base --configuration json://$config_file -b |
 o2-analysis-pid-eff-and-pur-producer --aod-file $AO2DS_DIR/$FILENAME.root --configuration json://$config_file -b \
   --aod-writer-keep AOD/PIDEFFANDPURRES/0:::PID_RESULTS_$FILENAME
-mv AnalysisResults.root MC_HISTS_$FILENAME
+mv AnalysisResults.root MC_HISTS_$FILENAME.root
