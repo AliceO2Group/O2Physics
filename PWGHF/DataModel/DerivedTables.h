@@ -127,6 +127,24 @@ DECLARE_SOA_TABLE(StoredHf3PCollIds, "AOD1", "HF3PCOLLID", //! Table with global
                   hf_cand::CollisionId,
                   soa::Marker<3>);
 
+DECLARE_SOA_TABLE(Hf3PMcCollBases, "AOD", "HF3PMCCOLLBASE", //! Table with basic MC collision info
+                  o2::soa::Index<>,
+                  mccollision::PosX,
+                  mccollision::PosY,
+                  mccollision::PosZ,
+                  soa::Marker<2>);
+
+using Hf3PMcCollBase = Hf3PMcCollBases::iterator;
+
+DECLARE_SOA_TABLE(StoredHf3PMcCollBases, "AOD1", "HF3PMCCOLLBASE", //! Table with basic MC collision info
+                  o2::soa::Index<>,
+                  mccollision::PosX,
+                  mccollision::PosY,
+                  mccollision::PosZ,
+                  soa::Marker<3>);
+
+using StoredHf3PMcCollBase = StoredHf3PMcCollBases::iterator;
+
 // Basic candidate properties
 namespace hf_cand_base
 {
