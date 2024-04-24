@@ -13,3 +13,13 @@ o2physics_add_dpl_workflow(strangederivedconverter
                     SOURCES strangederivedconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strarawcentsconverter
+                    SOURCES strarawcentsconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(v0sconverter
+                    SOURCES v0sconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

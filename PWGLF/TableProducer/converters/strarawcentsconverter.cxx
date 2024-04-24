@@ -18,48 +18,16 @@ using namespace o2::framework;
 
 // Converts V0 version 001 to 002
 struct strarawcentsconverter {
-  Produces<aod::DauTrackExtras_001> dauTrackExtras_001;
-  Produces<aod::V0MCCores_001> v0MCCores_001;
   Produces<aod::StraRawCents_001> straRawCents_001;
   Produces<aod::StraRawCents_003> straRawCents_003;
 
-  void process000to001(aod::StraRawCents_000 const& straRawCents_000, aod::DauTrackExtras_000 const& dauTrackExtras_000, aod::V0MCCores_000 const& v0MCCores_000)
+  void process000to001(aod::StraRawCents_000 const& straRawCents_000)
   {
     for (auto& values : straRawCents_000) {
       straRawCents_001(values.multFT0A(), values.multFT0C(), values.multFV0A(), values.multNTracksPVeta1(), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     }
-    for (auto& values : dauTrackExtras_000) {
-      dauTrackExtras_001(0,
-                         values.detectorMap(),
-                         values.itsClusterSizes(),
-                         values.tpcNClsFound(),
-                         values.tpcNClsCrossedRows(),
-                         values.tpcSignal(),
-                         values.tpcNSigmaEl(),
-                         values.tpcNSigmaPi(),
-                         values.tpcNSigmaKa(),
-                         values.tpcNSigmaPr(),
-                         values.tpcNSigmaHe());
-    }
-    for (auto& values : v0MCCores_000) {
-      v0MCCores_001(0,
-                    values.pdgCode(),
-                    values.pdgCodeMother(),
-                    values.pdgCodePositive(),
-                    values.pdgCodeNegative(),
-                    values.isPhysicalPrimary(),
-                    values.xMC(),
-                    values.yMC(),
-                    values.zMC(),
-                    values.pxPosMC(),
-                    values.pyPosMC(),
-                    values.pzPosMC(),
-                    values.pxNegMC(),
-                    values.pyNegMC(),
-                    values.pzNegMC());
-    }
   }
-  void process002to003(aod::StraRawCents_002 const& straRawCents_002, aod::DauTrackExtras_000 const& dauTrackExtras_000, aod::V0MCCores_000 const& v0MCCores_000)
+  void process002to003(aod::StraRawCents_002 const& straRawCents_002)
   {
     for (auto& values : straRawCents_002) {
       straRawCents_003(values.multFT0A(),
@@ -76,36 +44,6 @@ struct strarawcentsconverter {
                        values.multZEM2(),
                        values.multZPA(),
                        values.multZPC());
-    }
-    for (auto& values : dauTrackExtras_000) {
-      dauTrackExtras_001(0,
-                         values.detectorMap(),
-                         values.itsClusterSizes(),
-                         values.tpcNClsFound(),
-                         values.tpcNClsCrossedRows(),
-                         values.tpcSignal(),
-                         values.tpcNSigmaEl(),
-                         values.tpcNSigmaPi(),
-                         values.tpcNSigmaKa(),
-                         values.tpcNSigmaPr(),
-                         values.tpcNSigmaHe());
-    }
-    for (auto& values : v0MCCores_000) {
-      v0MCCores_001(0,
-                    values.pdgCode(),
-                    values.pdgCodeMother(),
-                    values.pdgCodePositive(),
-                    values.pdgCodeNegative(),
-                    values.isPhysicalPrimary(),
-                    values.xMC(),
-                    values.yMC(),
-                    values.zMC(),
-                    values.pxPosMC(),
-                    values.pyPosMC(),
-                    values.pzPosMC(),
-                    values.pxNegMC(),
-                    values.pyNegMC(),
-                    values.pzNegMC());
     }
   }
 
