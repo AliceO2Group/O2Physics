@@ -153,6 +153,7 @@ struct HfCorrelatorDsHadrons {
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
   Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
+  Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
   Configurable<bool> useSel8ForTrackEff{"useSel8ForTrackEff", true, "Flag for applying sel8 for collision selection"};
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying D-meson efficiency weights"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
@@ -197,6 +198,8 @@ struct HfCorrelatorDsHadrons {
                         kAssocTrackStepRecoAll,
                         kAssocTrackStepRecoMcMatch,
                         kAssocTrackStepRecoPrimaries,
+                        kAssocTrackStepRecoSpecies,
+                        kAssocTrackStepRecoCollMatch,
                         kAssocTrackStepFake,
                         kAssocTrackNSteps };
 
@@ -685,10 +688,20 @@ struct HfCorrelatorDsHadrons {
         hAssocTracks->Fill(kAssocTrackStepRecoAll, track.eta(), track.pt(), multiplicity, posZ);
         if (track.has_mcParticle()) {
           auto mcParticle = track.template mcParticle_as<CandDsMcGen>();
+          auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
+          if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+            continue;
+          }
           hAssocTracks->Fill(kAssocTrackStepRecoMcMatch, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
           if (mcParticle.isPhysicalPrimary()) {
             hAssocTracks->Fill(kAssocTrackStepRecoPrimaries, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
             registry.fill(HIST("hPtParticleAssocMcRec"), track.pt());
+            if ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton)) {
+              hAssocTracks->Fill(kAssocTrackStepRecoSpecies, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+              if (mcParticle.mcCollisionId() == track.collisionId()) {
+                hAssocTracks->Fill(kAssocTrackStepRecoCollMatch, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+              }
+            }
           }
         }
       } else {
