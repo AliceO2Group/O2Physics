@@ -19,7 +19,7 @@ o2physics_add_dpl_workflow(strarawcentsconverter
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(v0sconverter
-                    SOURCES v0sconverter.cxx
+o2physics_add_dpl_workflow(v0coressconverter
+                    SOURCES v0coressconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
