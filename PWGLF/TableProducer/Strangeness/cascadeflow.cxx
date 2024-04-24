@@ -117,6 +117,12 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 
 struct cascadeFlow {
 
+  // Event selection criteria
+  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
+  Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Same found-by-T0 bunch crossing rejection"};
+  Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 1, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
+
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
@@ -147,6 +153,38 @@ struct cascadeFlow {
   // Add objects needed for ML inference
   o2::analysis::MlResponse<float> mlResponseXi;
   o2::analysis::MlResponse<float> mlResponseOmega;
+
+  template <typename TCollision>
+  bool AcceptEvent(TCollision const& collision)
+  {
+    histos.fill(HIST("hNEvents"), 0.5);
+
+    // Event selection if required
+    if (sel8 && !collision.sel8()) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 1.5);
+
+    // Z vertex selection
+    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 2.5);
+
+    // kNoSameBunchPileup selection
+    if (isNoSameBunchPileupCut && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 3.5);
+
+    // kIsGoodZvtxFT0vsPV selection
+    if (isGoodZvtxFT0vsPVCut && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 4.5);
+
+    return true;
+  }
 
   template <typename TCascade, typename TDaughter>
   bool IsCascAccepted(TCascade casc, TDaughter negExtra, TDaughter posExtra, TDaughter bachExtra, int& counter) // loose cuts on topological selections of cascades
@@ -248,6 +286,12 @@ struct cascadeFlow {
     const AxisSpec ptAxis{static_cast<int>((MaxPt - MinPt) / 0.2), MinPt, MaxPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
     const AxisSpec CentAxis{18, 0., 90., "FT0C centrality percentile"};
+    TString hNEventsLabels[5] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV"};
+
+    histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{5, 0.f, 5.f}}});
+    for (Int_t n = 1; n <= histos.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
+      histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
+    }
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {{120, -12., 12.}});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
     histos.add("hPsiT0C", "hPsiT0C", HistType::kTH1D, {{100, 0, 2 * TMath::Pi()}});
@@ -289,9 +333,10 @@ struct cascadeFlow {
 
     int counter = 0;
 
-    if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
+    if (!AcceptEvent(coll)) {
       return;
     }
+
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
@@ -339,7 +384,7 @@ struct cascadeFlow {
   void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascMCCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
   {
 
-    if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
+    if (!AcceptEvent(coll)) {
       return;
     }
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
@@ -367,7 +412,7 @@ struct cascadeFlow {
   void processAnalyseData(CollEventPlane const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
   {
 
-    if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
+    if (!AcceptEvent(coll)) {
       return;
     }
 
