@@ -25,6 +25,7 @@
 //#include "Common/DataModel/PIDResponse.h"
 //#include "PWGUD/Core/RLhelper.h"
 #include <TString.h>
+#include <vector>
 #include "TLorentzVector.h"
 using namespace std;
 using namespace o2;

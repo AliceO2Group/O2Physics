@@ -102,7 +102,7 @@ struct SGFourPiAnalyzer {
     // int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     std::vector<float> parameters = {
-    pv_cut,	    
+    pv_cut, 
     dcaZ_cut,
     dcaXY_cut,
     tpcChi2_cut,
