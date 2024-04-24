@@ -402,7 +402,7 @@ struct HfTaskCorrelationDsHadrons {
     }
 
     // recontructed candidates loop
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       std::vector<float> outputMl = {-1., -1., -1.};
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
