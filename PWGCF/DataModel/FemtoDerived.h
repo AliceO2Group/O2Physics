@@ -66,6 +66,22 @@ DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
 DECLARE_SOA_TABLE(FDDownSample, "AOD", "FDDOWNSAMPLE",
                   femtodreamcollision::Downsample);
 
+namespace femtodreamMCcollision
+{
+DECLARE_SOA_COLUMN(MultMCgenPartEta08, multMCgenPartEta08, int); //! Multiplicity of the event as given by the generator in |eta|<0.8
+}
+
+DECLARE_SOA_TABLE(FDMCCollisions, "AOD", "FDMCCOLLISION",
+                  o2::soa::Index<>,
+                  femtodreamMCcollision::MultMCgenPartEta08);
+using FDMCCollision = FDMCCollisions::iterator;
+
+namespace mcfdcolllabel
+{
+DECLARE_SOA_INDEX_COLUMN(FDMCCollision, fdMCCollision); //! MC collision for femtodreamcollision
+}
+DECLARE_SOA_TABLE(FDMCCollLabels, "AOD", "FDMCCollLabel", mcfdcolllabel::FDMCCollisionId);
+
 /// FemtoDreamTrack
 namespace femtodreamparticle
 {

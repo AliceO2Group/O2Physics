@@ -26,7 +26,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct SG_FIT_Analyzer { // UDTutorial01
+struct SGFITAnalyzer { // UDTutorial01
   SGSelector sgSelector;
 
   // configurables
@@ -687,6 +687,6 @@ struct SG_FIT_Analyzer { // UDTutorial01
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SG_FIT_Analyzer>(cfgc, TaskName{"sgfitanalyzer"}),
+    adaptAnalysisTask<SGFITAnalyzer>(cfgc, TaskName{"sgfitanalyzer"}),
   };
 }

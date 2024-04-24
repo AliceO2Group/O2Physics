@@ -250,6 +250,16 @@ struct epvector {
     float psiTPC = -99;
     float psiTPCL = -99;
     float psiTPCR = -99;
+    auto qxFT0A = 0.0;
+    auto qxFT0C = 0.0;
+    auto qyFT0A = 0.0;
+    auto qyFT0C = 0.0;
+    auto qxTPC = 0.0;
+    auto qyTPC = 0.0;
+    auto qxTPCL = 0.0;
+    auto qyTPCL = 0.0;
+    auto qxTPCR = 0.0;
+    auto qyTPCR = 0.0;
     if (coll.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && coll.has_foundFT0() && eventSelected(coll, centrality) && coll.selection_bit(aod::evsel::kNoTimeFrameBorder) && coll.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       triggerevent = true;
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
@@ -258,10 +268,6 @@ struct epvector {
 
       histos.fill(HIST("hCentrality"), centrality);
       histos.fill(HIST("Vz"), vz);
-      auto qxFT0A = 0.0;
-      auto qxFT0C = 0.0;
-      auto qyFT0A = 0.0;
-      auto qyFT0C = 0.0;
 
       auto ft0 = coll.foundFT0();
       auto offsetFT0Ax = (*offsetFT0)[0].getX();
@@ -293,13 +299,6 @@ struct epvector {
         qxFT0C = qxFT0C + ampl * TMath::Cos(2.0 * phiC);
         qyFT0C = qyFT0C + ampl * TMath::Sin(2.0 * phiC);
       }
-
-      auto qxTPC = 0.0;
-      auto qyTPC = 0.0;
-      auto qxTPCL = 0.0;
-      auto qyTPCL = 0.0;
-      auto qxTPCR = 0.0;
-      auto qyTPCR = 0.0;
 
       for (auto& trk : tracks) {
         if (!selectionTrack(trk) || abs(trk.eta()) > 0.8 || trk.pt() > cfgCutPTMax || abs(trk.eta()) < cfgMinEta) {
@@ -375,7 +374,7 @@ struct epvector {
       }
       lastRunNumber = currentRunNumber;
     }
-    epcalibrationtable(triggerevent, centrality, psiFT0C, psiFT0A, psiTPC, psiTPCL, psiTPCR);
+    epcalibrationtable(triggerevent, centrality, psiFT0C, psiFT0A, psiTPC, psiTPCL, psiTPCR, TMath::Sqrt(qxFT0C * qxFT0C + qyFT0C * qyFT0C), TMath::Sqrt(qxFT0A * qxFT0A + qyFT0A * qyFT0A), TMath::Sqrt(qxTPC * qxTPC + qyTPC * qyTPC), TMath::Sqrt(qxTPCL * qxTPCL + qyTPCL * qyTPCL), TMath::Sqrt(qxTPCR * qxTPCR + qyTPCR * qyTPCR));
   }
 };
 

@@ -37,7 +37,7 @@ using namespace o2::framework::expressions;
 #define mpion 0.1396
 #define mkaon 0.4937
 #define mproton 0.9383
-struct SG_FourPi_Analyzer {
+struct SGFourPiAnalyzer {
   SGSelector sgSelector;
   Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
   Configurable<float> FT0A_cut{"FT0A", 150., "FT0A threshold"};
@@ -175,5 +175,5 @@ struct SG_FourPi_Analyzer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SG_FourPi_Analyzer>(cfgc)};
+    adaptAnalysisTask<SGFourPiAnalyzer>(cfgc)};
 }

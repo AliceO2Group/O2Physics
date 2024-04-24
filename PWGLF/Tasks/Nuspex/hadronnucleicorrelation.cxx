@@ -42,6 +42,7 @@ using namespace o2::framework::expressions;
 struct hadronnucleicorrelation {
 
   Configurable<bool> doQA{"doQA", true, "save QA histograms"};
+  Configurable<bool> isMC{"isMC", false, "is MC"};
   Configurable<bool> disable_pantip{"disable_pantip", false, "disable_pantip"};
 
   // Event selection
@@ -98,39 +99,42 @@ struct hadronnucleicorrelation {
     AxisSpec ptAxis = {pTA, "#it{p}_{T}/A of #bar{p} (GeV/c)"};
     AxisSpec etaAxis = {100, -1.5, 1.5, "#Delta#eta"};
     AxisSpec phiAxis = {157, -TMath::Pi() / 2, 1.5 * TMath::Pi(), "#Delta#phi"};
+    AxisSpec pTAxis = {200, -10.f, 10.f, "p_{T} GeV/c"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{3, 0.f, 3.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "Selected");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "#bar{d}-#bar{p}");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "p-#bar{p}");
 
-    registry.add("hDebug", "hDebug", {HistType::kTH1I, {{4, 0.f, 4.f}}});
-    registry.get<TH1>(HIST("hDebug"))->GetXaxis()->SetBinLabel(1, "all");
-    registry.get<TH1>(HIST("hDebug"))->GetXaxis()->SetBinLabel(2, "ev. with #bar{d}");
-    registry.get<TH1>(HIST("hDebug"))->GetXaxis()->SetBinLabel(3, "ev. with #bar{p}");
-    registry.get<TH1>(HIST("hDebug"))->GetXaxis()->SetBinLabel(4, "ev. with p");
+    if (!isMC) {
+      registry.add("hDebug", "hDebug", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+      registry.get<TH1>(HIST("hDebug"))->GetXaxis()->SetBinLabel(1, "all");
+      registry.get<TH1>(HIST("hDebug"))->GetXaxis()->SetBinLabel(2, "ev. with #bar{d}");
+      registry.get<TH1>(HIST("hDebug"))->GetXaxis()->SetBinLabel(3, "ev. with #bar{p}");
+      registry.get<TH1>(HIST("hDebug"))->GetXaxis()->SetBinLabel(4, "ev. with p");
 
-    registry.add("hDebugdp", "hDebugdp", {HistType::kTH1I, {{6, 0.f, 6.f}}});
-    registry.get<TH1>(HIST("hDebugdp"))->GetXaxis()->SetBinLabel(1, "N coll with #bar{d}");
-    registry.get<TH1>(HIST("hDebugdp"))->GetXaxis()->SetBinLabel(2, "N mixing bins");
-    registry.get<TH1>(HIST("hDebugdp"))->GetXaxis()->SetBinLabel(3, "N coll with #bar{d}");
-    registry.get<TH1>(HIST("hDebugdp"))->GetXaxis()->SetBinLabel(4, "#bar{d}-#bar{p} pairs SE");
-    registry.get<TH1>(HIST("hDebugdp"))->GetXaxis()->SetBinLabel(5, "#bar{d}-#bar{p} pairs ME");
+      registry.add("hDebugdp", "hDebugdp", {HistType::kTH1I, {{6, 0.f, 6.f}}});
+      registry.get<TH1>(HIST("hDebugdp"))->GetXaxis()->SetBinLabel(1, "N coll with #bar{d}");
+      registry.get<TH1>(HIST("hDebugdp"))->GetXaxis()->SetBinLabel(2, "N mixing bins");
+      registry.get<TH1>(HIST("hDebugdp"))->GetXaxis()->SetBinLabel(3, "N coll with #bar{d}");
+      registry.get<TH1>(HIST("hDebugdp"))->GetXaxis()->SetBinLabel(4, "#bar{d}-#bar{p} pairs SE");
+      registry.get<TH1>(HIST("hDebugdp"))->GetXaxis()->SetBinLabel(5, "#bar{d}-#bar{p} pairs ME");
 
-    nBins = pTA.value.size() - 1;
-    for (int i = 0; i < nBins; i++) {
-      if (!disable_pantip) {
-        auto htempSE_PrAntiPr = registry.add<TH3>(Form("hEtaPhi_PrAntiPr_SE_ptA%02.0f%02.0f", pTA.value.at(i) * 10, pTA.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}/A pr <%.1f)", pTA.value.at(i), pTA.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptAxis}});
-        auto htempME_PrAntiPr = registry.add<TH3>(Form("hEtaPhi_PrAntiPr_ME_ptA%02.0f%02.0f", pTA.value.at(i) * 10, pTA.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}/A pr <%.1f)", pTA.value.at(i), pTA.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptAxis}});
+      nBins = pTA.value.size() - 1;
+      for (int i = 0; i < nBins; i++) {
+        if (!disable_pantip) {
+          auto htempSE_PrAntiPr = registry.add<TH3>(Form("hEtaPhi_PrAntiPr_SE_ptA%02.0f%02.0f", pTA.value.at(i) * 10, pTA.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}/A pr <%.1f)", pTA.value.at(i), pTA.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptAxis}});
+          auto htempME_PrAntiPr = registry.add<TH3>(Form("hEtaPhi_PrAntiPr_ME_ptA%02.0f%02.0f", pTA.value.at(i) * 10, pTA.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}/A pr <%.1f)", pTA.value.at(i), pTA.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptAxis}});
 
-        hEtaPhi_PrAntiPr_SE.push_back(std::move(htempSE_PrAntiPr));
-        hEtaPhi_PrAntiPr_ME.push_back(std::move(htempME_PrAntiPr));
+          hEtaPhi_PrAntiPr_SE.push_back(std::move(htempSE_PrAntiPr));
+          hEtaPhi_PrAntiPr_ME.push_back(std::move(htempME_PrAntiPr));
+        }
+
+        auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_AntiDeAntiPr_SE_ptA%02.0f%02.0f", pTA.value.at(i) * 10, pTA.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}/A #bar{d} <%.1f)", pTA.value.at(i), pTA.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptAxis}});
+        auto htempME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_AntiDeAntiPr_ME_ptA%02.0f%02.0f", pTA.value.at(i) * 10, pTA.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}/A #bar{d} <%.1f)", pTA.value.at(i), pTA.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptAxis}});
+        hEtaPhi_AntiDeAntiPr_SE.push_back(std::move(htempSE_AntiDeAntiPr));
+        hEtaPhi_AntiDeAntiPr_ME.push_back(std::move(htempME_AntiDeAntiPr));
       }
-
-      auto htempSE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_AntiDeAntiPr_SE_ptA%02.0f%02.0f", pTA.value.at(i) * 10, pTA.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}/A #bar{d} <%.1f)", pTA.value.at(i), pTA.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptAxis}});
-      auto htempME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_AntiDeAntiPr_ME_ptA%02.0f%02.0f", pTA.value.at(i) * 10, pTA.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f<p_{T}/A #bar{d} <%.1f)", pTA.value.at(i), pTA.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptAxis}});
-      hEtaPhi_AntiDeAntiPr_SE.push_back(std::move(htempSE_AntiDeAntiPr));
-      hEtaPhi_AntiDeAntiPr_ME.push_back(std::move(htempME_AntiDeAntiPr));
     }
 
     if (doQA) {
@@ -142,38 +146,54 @@ struct hadronnucleicorrelation {
       QA.add("QA/hITSchi2", "ITS chi2/Ncls; ITS chi2/Ncls", {HistType::kTH1F, {{200, 0.f, 40.f}}});
       QA.add("QA/hDCAxy", "DCAxy", {HistType::kTH1F, {{80, -0.4f, 0.4f, "DCA xy (cm)"}}});
       QA.add("QA/hDCAz", "DCAz", {HistType::kTH1F, {{80, -0.4f, 0.4f, "DCA z (cm)"}}});
+      QA.add("QA/hnSigmaTPCVsPt_Pr", "n#sigma TPC vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+      QA.add("QA/hnSigmaTPCVsPt_De", "n#sigma TPC vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+      QA.add("QA/hnSigmaTOFVsPt_Pr", "n#sigma TOF vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+      QA.add("QA/hnSigmaTOFVsPt_De", "n#sigma TOF vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
 
-      QA.add("QA/hEtaPr", Form("#eta ditribution for p"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
-      QA.add("QA/hPhiPr", Form("#phi ditribution for p"), {HistType::kTH1F, {{100, 0.f, 2 * TMath::Pi(), "#phi"}}});
-      QA.add("QA/hEtaAntiPr", Form("#eta ditribution for #bar{p}"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
-      QA.add("QA/hPhiAntiPr", Form("#phi ditribution for #bar{p}"), {HistType::kTH1F, {{100, 0.f, 2 * TMath::Pi(), "#phi"}}});
-      QA.add("QA/hEtaDe", Form("#eta ditribution for d"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
-      QA.add("QA/hPhiDe", Form("#phi ditribution for d"), {HistType::kTH1F, {{100, 0.f, 2 * TMath::Pi(), "#phi"}}});
-      QA.add("QA/hEtaAntiDe", Form("#eta ditribution for #bar{d}"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
-      QA.add("QA/hPhiAntiDe", Form("#phi ditribution for #bar{d}"), {HistType::kTH1F, {{100, 0.f, 2 * TMath::Pi(), "#phi"}}});
+      if (!isMC) {
+        QA.add("QA/hEtaPr", Form("#eta ditribution for p"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
+        QA.add("QA/hPhiPr", Form("#phi ditribution for p"), {HistType::kTH1F, {{100, 0.f, 2 * TMath::Pi(), "#phi"}}});
+        QA.add("QA/hEtaAntiPr", Form("#eta ditribution for #bar{p}"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
+        QA.add("QA/hPhiAntiPr", Form("#phi ditribution for #bar{p}"), {HistType::kTH1F, {{100, 0.f, 2 * TMath::Pi(), "#phi"}}});
+        QA.add("QA/hEtaDe", Form("#eta ditribution for d"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
+        QA.add("QA/hPhiDe", Form("#phi ditribution for d"), {HistType::kTH1F, {{100, 0.f, 2 * TMath::Pi(), "#phi"}}});
+        QA.add("QA/hEtaAntiDe", Form("#eta ditribution for #bar{d}"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
+        QA.add("QA/hPhiAntiDe", Form("#phi ditribution for #bar{d}"), {HistType::kTH1F, {{100, 0.f, 2 * TMath::Pi(), "#phi"}}});
 
-      QA.add("QA/hnSigmaTPCVsPt_Pr", "n#sigma TPC vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {{200, -10.f, 10.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPt_De", "n#sigma TPC vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {{200, -10.f, 10.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPt_Pr_AfterSel", "n#sigma TPC vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {{200, -10.f, 10.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPt_De_AfterSel", "n#sigma TPC vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {{200, -10.f, 10.f}, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsPt_Pr_AfterSel", "n#sigma TPC vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsPt_De_AfterSel", "n#sigma TPC vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
 
-      QA.add("QA/hnSigmaTPCVsPhi_Pr", Form("n#sigma TPC vs #phi p; #phi; n#sigma TPC"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPhi_De", Form("n#sigma TPC vs #phi d; #phi; n#sigma TPC"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPhi_AntiPr", Form("n#sigma TPC vs #phi #bar{p}; #phi; n#sigma TPC"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPhi_AntiDe", Form("n#sigma TPC vs #phi #bar{d}; #phi; n#sigma TPC"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsEta_Pr", Form("n#sigma TPC vs #eta p; #eta; n#sigma TPC"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsEta_De", Form("n#sigma TPC vs #eta d; #eta; n#sigma TPC"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsEta_AntiPr", Form("n#sigma TPC vs #eta #bar{p}; #eta; n#sigma TPC"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsEta_AntiDe", Form("n#sigma TPC vs #eta #bar{d}; #eta; n#sigma TPC"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsPhi_Pr", Form("n#sigma TPC vs #phi p; #phi; n#sigma TPC"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsPhi_De", Form("n#sigma TPC vs #phi d; #phi; n#sigma TPC"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsPhi_AntiPr", Form("n#sigma TPC vs #phi #bar{p}; #phi; n#sigma TPC"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsPhi_AntiDe", Form("n#sigma TPC vs #phi #bar{d}; #phi; n#sigma TPC"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsEta_Pr", Form("n#sigma TPC vs #eta p; #eta; n#sigma TPC"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsEta_De", Form("n#sigma TPC vs #eta d; #eta; n#sigma TPC"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsEta_AntiPr", Form("n#sigma TPC vs #eta #bar{p}; #eta; n#sigma TPC"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsEta_AntiDe", Form("n#sigma TPC vs #eta #bar{d}; #eta; n#sigma TPC"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
 
-      QA.add("QA/hnSigmaTOFVsPt_Pr", "n#sigma TOF vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {{200, -10.f, 10.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTOFVsPt_De", "n#sigma TOF vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {{200, -10.f, 10.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTOFVsPt_Pr_AfterSel", "n#sigma TOF vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {{200, -10.f, 10.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTOFVsPt_De_AfterSel", "n#sigma TOF vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {{200, -10.f, 10.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTOFVsPhi_De", Form("n#sigma TOF vs #phi d; #phi; n#sigma TOF"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
-      QA.add("QA/hnSigmaTOFVsPhi_AntiDe", Form("n#sigma TOF vs #phi #bar{d}; #phi; n#sigma TOF"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
-      QA.add("QA/hnSigmaTOFVsEta_De", Form("n#sigma TOF vs #eta d; #eta; n#sigma TOF"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
-      QA.add("QA/hnSigmaTOFVsEta_AntiDe", Form("n#sigma TOF vs #eta #bar{d}; #eta; n#sigma TOF"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
+        QA.add("QA/hnSigmaTOFVsPt_Pr_AfterSel", "n#sigma TOF vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+        QA.add("QA/hnSigmaTOFVsPt_De_AfterSel", "n#sigma TOF vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+        QA.add("QA/hnSigmaTOFVsPhi_De", Form("n#sigma TOF vs #phi d; #phi; n#sigma TOF"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
+        QA.add("QA/hnSigmaTOFVsPhi_AntiDe", Form("n#sigma TOF vs #phi #bar{d}; #phi; n#sigma TOF"), {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi()}, AxisNSigma}});
+        QA.add("QA/hnSigmaTOFVsEta_De", Form("n#sigma TOF vs #eta d; #eta; n#sigma TOF"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
+        QA.add("QA/hnSigmaTOFVsEta_AntiDe", Form("n#sigma TOF vs #eta #bar{d}; #eta; n#sigma TOF"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
+      }
+    }
+
+    if (isMC) {
+      registry.add("hReco_EtaPhiPt_Proton", "Gen (anti)protons in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Deuteron", "Gen (anti)deuteron in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_PID_EtaPhiPt_Proton", "Gen (anti)protons + PID in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_PID_EtaPhiPt_Deuteron", "Gen (anti)deuteron + PID in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPtMC_Proton", "Gen (anti)protons in reco collisions (MC info used)", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPtMC_Deuteron", "Gen (anti)deuteron in reco collisions (MC info used)", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+
+      registry.add("hnSigmaTPCVsPt_Pr_MC", "n#sigma TPC vs p_{T} for p hypothesis true MC; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+      registry.add("hnSigmaTPCVsPt_De_MC", "n#sigma TPC vs p_{T} for d hypothesis true MC; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+      registry.add("hnSigmaTOFVsPt_Pr_MC", "n#sigma TOF vs p_{T} for p hypothesis true MC; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+      registry.add("hnSigmaTOFVsPt_De_MC", "n#sigma TOF vs p_{T} for d hypothesis true MC; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
     }
   }
 
@@ -453,6 +473,79 @@ struct hadronnucleicorrelation {
     mixbins_pantip.clear();
   }
   PROCESS_SWITCH(hadronnucleicorrelation, processData, "processData", true);
+
+  void processMC(soa::Filtered<FilteredCollisions>::iterator const& collision, soa::Filtered<FilteredTracksMC> const& tracks)
+  {
+    if (TMath::Abs(collision.posZ()) > cutzvertex)
+      return;
+
+    registry.fill(HIST("hNEvents"), 0.5);
+
+    for (auto track : tracks) {
+
+      if (doQA) {
+        QA.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
+        QA.fill(HIST("QA/hTPCchi2"), track.tpcChi2NCl());
+        QA.fill(HIST("QA/hTPCcrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+        QA.fill(HIST("QA/hITSchi2"), track.itsChi2NCl());
+        QA.fill(HIST("QA/hDCAxy"), track.dcaXY());
+        QA.fill(HIST("QA/hDCAz"), track.dcaZ());
+        QA.fill(HIST("QA/hVtxZ_trk"), track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ());
+        QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr"), track.pt() * track.sign(), track.tpcNSigmaPr());
+        QA.fill(HIST("QA/hnSigmaTPCVsPt_De"), track.pt() * track.sign(), track.tpcNSigmaDe());
+        QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr"), track.pt() * track.sign(), track.tofNSigmaPr());
+        QA.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
+      }
+
+      if (track.origin() != 0)
+        continue;
+
+      if (abs(track.pdgCode()) != 2212 && abs(track.pdgCode()) != 1000010020)
+        continue;
+
+      if (track.pdgCode() == 2212) {
+        registry.fill(HIST("hReco_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt());
+        registry.fill(HIST("hReco_EtaPhiPtMC_Proton"), track.eta_MC(), track.phi_MC(), track.pt_MC());
+
+        if (TMath::Abs(track.tpcNSigmaPr()) < nsigmaTPC) {
+          registry.fill(HIST("hReco_PID_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt());
+        }
+        registry.fill(HIST("hnSigmaTPCVsPt_Pr_MC"), track.pt(), track.tpcNSigmaPr());
+        registry.fill(HIST("hnSigmaTOFVsPt_Pr_MC"), track.pt(), track.tofNSigmaPr());
+      }
+      if (track.pdgCode() == -2212) {
+        registry.fill(HIST("hReco_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * -1);
+        registry.fill(HIST("hReco_EtaPhiPtMC_Proton"), track.eta_MC(), track.phi_MC(), track.pt_MC() * -1);
+
+        if (TMath::Abs(track.tpcNSigmaPr()) < nsigmaTPC) {
+          registry.fill(HIST("hReco_PID_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * -1);
+        }
+        registry.fill(HIST("hnSigmaTPCVsPt_Pr_MC"), track.pt() * -1, track.tpcNSigmaPr());
+        registry.fill(HIST("hnSigmaTOFVsPt_Pr_MC"), track.pt() * -1, track.tofNSigmaPr());
+      }
+      if (track.pdgCode() == 1000010020) {
+        registry.fill(HIST("hReco_EtaPhiPt_Deuteron"), track.eta(), track.phi(), track.pt());
+        registry.fill(HIST("hReco_EtaPhiPtMC_Deuteron"), track.eta_MC(), track.phi_MC(), track.pt_MC());
+
+        if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF) {
+          registry.fill(HIST("hReco_PID_EtaPhiPt_Deuteron"), track.eta(), track.phi(), track.pt());
+        }
+        registry.fill(HIST("hnSigmaTPCVsPt_De_MC"), track.pt(), track.tpcNSigmaDe());
+        registry.fill(HIST("hnSigmaTOFVsPt_De_MC"), track.pt(), track.tofNSigmaDe());
+      }
+      if (track.pdgCode() == -1000010020) {
+        registry.fill(HIST("hReco_EtaPhiPt_Deuteron"), track.eta(), track.phi(), track.pt() * -1);
+        registry.fill(HIST("hReco_EtaPhiPtMC_Deuteron"), track.eta_MC(), track.phi_MC(), track.pt_MC() * -1);
+
+        if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF) {
+          registry.fill(HIST("hReco_PID_EtaPhiPt_Deuteron"), track.eta(), track.phi(), track.pt() * -1);
+        }
+        registry.fill(HIST("hnSigmaTPCVsPt_De_MC"), track.pt() * -1, track.tpcNSigmaDe());
+        registry.fill(HIST("hnSigmaTOFVsPt_De_MC"), track.pt() * -1, track.tofNSigmaDe());
+      }
+    }
+  }
+  PROCESS_SWITCH(hadronnucleicorrelation, processMC, "processMC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

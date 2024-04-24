@@ -44,25 +44,32 @@ using namespace o2::framework::expressions;
 
 // Spectra task
 struct tofSpectra {
-  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutEtaMax{"cfgCutEtaMax", 0.8f, "Max eta range for tracks"};
-  Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", -0.8f, "Min eta range for tracks"};
-  Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
-  Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
-  Configurable<bool> removeITSROFrameBorder{"removeITSROFrameBorder", false, "Remove TF border"};
-  Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Remove TF border"};
-  Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Remove TF border"};
-  Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Remove TF border"};
-  Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove TF border"};
+  struct : ConfigurableGroup {
+    Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+    Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
+    Configurable<bool> removeITSROFrameBorder{"removeITSROFrameBorder", false, "Remove TF border"};
+    Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Remove TF border"};
+    Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Remove TF border"};
+    Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Remove TF border"};
+    Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove TF border"};
+  } evselOptions;
+
+  struct : ConfigurableGroup {
+    Configurable<float> cfgCutEtaMax{"cfgCutEtaMax", 0.8f, "Max eta range for tracks"};
+    Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", -0.8f, "Min eta range for tracks"};
+    Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
+    Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to require in TRD for track selection. -1 does not require any TRD cluster"};
+    Configurable<bool> requireTrdOnly{"requireTrdOnly", false, "Require only tracks from TRD"};
+    Configurable<bool> requireNoTrd{"requireNoTrd", false, "Require tracks without TRD"};
+    Configurable<int> selectEvTime{"selectEvTime", 0, "Select event time flags; 0: any event time, 1: isEvTimeDefined, 2: IsEvTimeTOF, 3: IsEvTimeT0AC, 4: IsEvTimeTOFT0AV, 5: NOT isEvTimeDefined"};
+  } trkselOptions;
+
   Configurable<bool> enableDcaGoodEvents{"enableDcaGoodEvents", true, "Enables the MC plots with the correct match between data and MC"};
   Configurable<bool> enableTrackCutHistograms{"enableTrackCutHistograms", true, "Enables track cut histograms, before and after the cut"};
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
   Configurable<bool> enableTPCTOFHistograms{"enableTPCTOFHistograms", true, "Enables TPC TOF histograms"};
   Configurable<bool> enableDCAxyzHistograms{"enableDCAxyzHistograms", false, "Enables DCAxyz correlation histograms"};
-  Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to require in TRD for track selection. -1 does not require any TRD cluster"};
-  Configurable<bool> requireTrdOnly{"requireTrdOnly", false, "Require only tracks from TRD"};
-  Configurable<bool> requireNoTrd{"requireNoTrd", false, "Require tracks without TRD"};
-  Configurable<int> selectEvTime{"selectEvTime", 0, "Select event time flags; 0: any event time, 1: isEvTimeDefined, 2: IsEvTimeTOF, 3: IsEvTimeT0AC, 4: IsEvTimeTOFT0AV, 5: NOT isEvTimeDefined"};
+
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
   ConfigurableAxis binsEta{"binsEta", {100, -1, 1}, "Binning of the eta axis"};
   ConfigurableAxis binsnsigmaTPC{"binsnsigmaTPC", {200, -10, 10}, "Binning of the nsigmaTPC axis"};
@@ -75,7 +82,7 @@ struct tofSpectra {
   Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M, 10 CentralityFV0A"};
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
-  Configurable<bool> ckeckKaonIsPvContrib{"ckeckKaonIsPvContrib", false, "Flag to ckeck if kaon tracks are from pv"};
+  Configurable<bool> kaonIsPvContrib{"kaonIsPvContrib", false, "Flag to ckeck if kaon tracks are from pv"};
   Configurable<bool> useCustomTrackCuts{"useCustomTrackCuts", false, "Flag to use custom track cuts"};
   Configurable<int> itsPattern{"itsPattern", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
   Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
@@ -155,6 +162,8 @@ struct tofSpectra {
       LOG(info) << "Enabling process function processLfFullAl";
     }
 
+    LOG(info) << "\tKaonIsPvContrib=" << kaonIsPvContrib.value;
+
     // Custom track cuts
     if (useCustomTrackCuts.value) {
       LOG(info) << "Using custom track cuts from values:";
@@ -167,7 +176,6 @@ struct tofSpectra {
       LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
       LOG(info) << "\tmaxDcaZ=" << maxDcaZ.value;
       LOG(info) << "\tmakeTHnSparseChoice=" << makeTHnSparseChoice.value;
-      LOG(info) << "\tckeckKaonIsPvContrib=" << ckeckKaonIsPvContrib.value;
 
       customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
       LOG(info) << "Customizing track cuts:";
@@ -203,12 +211,12 @@ struct tofSpectra {
     h->GetXaxis()->SetBinLabel(10, "INEL>0 (fraction)");
     h->GetXaxis()->SetBinLabel(11, "INEL>1 (fraction)");
     h->GetXaxis()->SetBinLabel(12, "posZ passed");
-    h->GetXaxis()->SetBinLabel(13, cfgINELCut.value == 1 ? "INEL>0" : "INEL>0 (fraction)");
-    h->GetXaxis()->SetBinLabel(14, cfgINELCut.value == 2 ? "INEL>1" : "INEL>1 (fraction)");
+    h->GetXaxis()->SetBinLabel(13, evselOptions.cfgINELCut.value == 1 ? "INEL>0" : "INEL>0 (fraction)");
+    h->GetXaxis()->SetBinLabel(14, evselOptions.cfgINELCut.value == 2 ? "INEL>1" : "INEL>1 (fraction)");
 
     h = histos.add<TH1>("tracksel", "tracksel", HistType::kTH1D, {{10, 0.5, 10.5}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
-    h->GetXaxis()->SetBinLabel(2, Form(" %.2f < #eta < %.2f ", cfgCutEtaMin.value, cfgCutEtaMax.value));
+    h->GetXaxis()->SetBinLabel(2, Form(" %.2f < #eta < %.2f ", trkselOptions.cfgCutEtaMin.value, trkselOptions.cfgCutEtaMax.value));
     h->GetXaxis()->SetBinLabel(3, "Quality passed");
     h->GetXaxis()->SetBinLabel(4, "TOF passed (partial)");
 
@@ -492,6 +500,8 @@ struct tofSpectra {
           histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
           histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
 
+          histos.add(hpt_numtofgoodmatch_prm[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
+
           histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
           histos.add(hpt_den_str[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
           histos.add(hpt_den_mat[i].data(), pTCharge[i], kTH3D, {ptAxis, multAxis, etaAxis});
@@ -508,6 +518,8 @@ struct tofSpectra {
           histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
+
+          histos.add(hpt_numtofgoodmatch_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
 
           histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_den_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
@@ -554,11 +566,11 @@ struct tofSpectra {
   template <bool fillFullInfo, PID::ID id, typename T, typename C>
   void fillParticleHistos(const T& track, const C& collision)
   {
-    if (abs(track.rapidity(PID::getMass(id))) > cfgCutY) {
+    if (abs(track.rapidity(PID::getMass(id))) > trkselOptions.cfgCutY) {
       return;
     }
     if constexpr (id == PID::Kaon) {
-      if (ckeckKaonIsPvContrib && !track.isPVContributor()) {
+      if (kaonIsPvContrib && !track.isPVContributor()) {
         return;
       }
     }
@@ -610,10 +622,10 @@ struct tofSpectra {
     if (!track.hasTOF()) {
       return;
     }
-    if (requireTrdOnly == true && !track.hasTRD()) {
+    if (trkselOptions.requireTrdOnly == true && !track.hasTRD()) {
       return;
     }
-    if (requireNoTrd == true && track.hasTRD()) {
+    if (trkselOptions.requireNoTrd == true && track.hasTRD()) {
       return;
     }
     histos.fill(HIST("evtime_tof"), 0.f);
@@ -629,7 +641,7 @@ struct tofSpectra {
     if (track.isEvTimeTOFT0AC()) {
       histos.fill(HIST("evtime_tof"), 4.f);
     }
-    switch (selectEvTime) {
+    switch (trkselOptions.selectEvTime) {
       case 0:
         break;
       case 1:
@@ -658,7 +670,7 @@ struct tofSpectra {
         }
         break;
       default:
-        LOG(fatal) << "Fatal did not recognise value select event time" << selectEvTime;
+        LOG(fatal) << "Fatal did not recognise value select event time" << trkselOptions.selectEvTime;
     }
     histos.fill(HIST("evtime_tof"), 5.f);
     if (track.isEvTimeDefined()) {
@@ -674,7 +686,7 @@ struct tofSpectra {
       histos.fill(HIST("evtime_tof"), 9.f);
     }
 
-    if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
+    if (track.hasTRD() && (trkselOptions.lastRequiredTrdCluster > 0)) {
       int lastLayer = 0;
       for (int l = 7; l >= 0; l--) {
         if (track.trdPattern() & (1 << l)) {
@@ -682,7 +694,7 @@ struct tofSpectra {
           break;
         }
       }
-      if (lastLayer < lastRequiredTrdCluster) {
+      if (lastLayer < trkselOptions.lastRequiredTrdCluster) {
         return;
       }
     }
@@ -812,31 +824,31 @@ struct tofSpectra {
     if (!collision.sel8()) {
       return false;
     }
-    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    if (evselOptions.removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 4.f);
     }
-    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    if (evselOptions.removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 5.f);
     }
-    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (evselOptions.requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 6.f);
     }
-    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
+    if (evselOptions.requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 7.f);
     }
-    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (evselOptions.removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
     if constexpr (fillHistograms) {
@@ -851,19 +863,19 @@ struct tofSpectra {
         histos.fill(HIST("evsel"), 11.f);
       }
     }
-    if (abs(collision.posZ()) > cfgCutVertex) {
+    if (abs(collision.posZ()) > evselOptions.cfgCutVertex) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 12.f);
       if (collision.multNTracksPVeta1() >= 1) {
         histos.fill(HIST("evsel"), 13.f);
-      } else if (cfgINELCut == 1) {
+      } else if (evselOptions.cfgINELCut == 1) {
         return false;
       }
       if (collision.multNTracksPVeta1() >= 2) {
         histos.fill(HIST("evsel"), 14.f);
-      } else if (cfgINELCut == 2) {
+      } else if (evselOptions.cfgINELCut == 2) {
         return false;
       }
       histos.fill(HIST("event/vertexz"), collision.posZ());
@@ -932,7 +944,7 @@ struct tofSpectra {
     if constexpr (fillHistograms) {
       histos.fill(HIST("tracksel"), 1);
     }
-    if (track.eta() < cfgCutEtaMin || track.eta() > cfgCutEtaMax) {
+    if (track.eta() < trkselOptions.cfgCutEtaMin || track.eta() > trkselOptions.cfgCutEtaMax) {
       return false;
     }
     if constexpr (fillHistograms) {
@@ -1321,11 +1333,11 @@ struct tofSpectra {
     if (mcParticle.pdgCode() != PDGs[i]) {
       return;
     }
-    if (track.eta() < cfgCutEtaMin || track.eta() > cfgCutEtaMax) {
+    if (track.eta() < trkselOptions.cfgCutEtaMin || track.eta() > trkselOptions.cfgCutEtaMax) {
       return;
     }
 
-    if (std::abs(mcParticle.y()) > cfgCutY) {
+    if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
       return;
     }
     if (!mcParticle.isPhysicalPrimary()) {
@@ -1397,7 +1409,7 @@ struct tofSpectra {
       } else {
         histos.fill(HIST(hpt_num_prm[i]), track.pt());
       }
-      if (track.hasTRD() && lastRequiredTrdCluster > 0) {
+      if (track.hasTRD() && trkselOptions.lastRequiredTrdCluster > 0) {
         int lastLayer = 0;
         for (int l = 7; l >= 0; l--) {
           if (track.trdPattern() & (1 << l)) {
@@ -1405,15 +1417,21 @@ struct tofSpectra {
             break;
           }
         }
-        if (lastLayer < lastRequiredTrdCluster) {
+        if (lastLayer < trkselOptions.lastRequiredTrdCluster) {
           return;
         }
       }
       if (track.hasTOF()) {
         if (includeCentralityMC) {
           histos.fill(HIST(hpt_numtof_prm[i]), track.pt(), multiplicity, track.eta()); // RD
+          if (!(track.mcMask() & (1 << 11))) {
+            histos.fill(HIST(hpt_numtofgoodmatch_prm[i]), track.pt(), multiplicity, track.eta()); // RD
+          }
         } else {
           histos.fill(HIST(hpt_numtof_prm[i]), track.pt());
+          if (!(track.mcMask() & (1 << 11))) {
+            histos.fill(HIST(hpt_numtofgoodmatch_prm[i]), track.pt());
+          }
         }
       }
 
@@ -1678,7 +1696,7 @@ struct tofSpectra {
     }
 
     if (mcParticle.isPhysicalPrimary()) {
-      if (abs(mcCollision.posZ()) < cfgCutVertex) {
+      if (abs(mcCollision.posZ()) < evselOptions.cfgCutVertex) {
         histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt());
       } else {
         histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt());
@@ -1767,7 +1785,7 @@ struct tofSpectra {
         const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
         for (const auto& mcParticle : particlesInCollision) {
 
-          if (std::abs(mcParticle.y()) > cfgCutY) {
+          if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
             continue;
           }
           static_for<0, 17>([&](auto i) {
@@ -1781,7 +1799,7 @@ struct tofSpectra {
           // if (std::abs(mcParticle.eta()) > cfgCutEta) {
           //   continue;
           // }
-          if (std::abs(mcParticle.y()) > cfgCutY) {
+          if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
             continue;
           }
           static_for<0, 17>([&](auto i) {
@@ -1797,7 +1815,7 @@ struct tofSpectra {
       }
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
       for (const auto& mcParticle : particlesInCollision) {
-        if (std::abs(mcParticle.y()) > cfgCutY) {
+        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
           continue;
         }
         static_for<0, 17>([&](auto i) {
@@ -1811,7 +1829,7 @@ struct tofSpectra {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       bool hasParticleInFT0C = false;
       bool hasParticleInFT0A = false;
-      if (cfgINELCut.value == 1) {
+      if (evselOptions.cfgINELCut.value == 1) {
         if (!isTrueINELgt0(particlesInCollision)) {
           continue;
         }
@@ -1831,7 +1849,7 @@ struct tofSpectra {
           }
         }
 
-        if (std::abs(mcParticle.y()) > cfgCutY) {
+        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
           continue;
         }
         static_for<0, 17>([&](auto i) {

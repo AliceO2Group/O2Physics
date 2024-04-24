@@ -52,6 +52,7 @@ struct singleTrackSelector {
   Configurable<int> centTableToUse{"centTableToUse", 1, "Flag to choose cent./mult.perc. estimator (Run3 only [FTOC for PbPb; FTOM for pp], for Run2 the V0M is used): 0 -> CentFV0As, 1 -> CentFT0Ms, 2 -> CentFT0As, 3 -> CentFT0Cs, 4 -> CentFDDMs, 5 -> CentNTPVs"};
   Configurable<int> multTableToUse{"multTableToUse", 1, "Flag to choose mult. estimator (Run3 only): 0 -> TPCMults, 1 -> MultNTracksPV, 2 -> MultNTracksPVeta1"};
   Configurable<bool> rejectNotPropagatedTrks{"rejectNotPropagatedTrks", true, "rejects tracks that are not propagated to the primary vertex"};
+  Configurable<bool> enable_gen_info{"enable_gen_info", false, "Enable MC true info"};
 
   Configurable<std::vector<int>> _particlesToKeep{"particlesToKeepPDGs", std::vector<int>{2212, 1000010020}, "PDG codes of perticles for which the 'singletrackselector' tables will be created (only proton and deurton are supported now)"};
   Configurable<std::vector<float>> keepWithinNsigmaTPC{"keepWithinNsigmaTPC", std::vector<float>{-4.0f, 4.0f}, "TPC range for preselection of particles specified with PDG"};
@@ -78,6 +79,7 @@ struct singleTrackSelector {
 
   using CollRun2 = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>;
   using CollRun3 = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::CentNTPVs>;
+  using CollRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::CentNTPVs>;
 
   Produces<o2::aod::SingleCollSels> tableRowColl;
   Produces<o2::aod::SingleCollExtras> tableRowCollExtra;
@@ -102,6 +104,9 @@ struct singleTrackSelector {
   std::vector<int> particlesToKeep;
   std::vector<int> particlesToReject;
 
+  HistogramRegistry registry{"registry"};
+  SliceCache cache;
+
   void init(InitContext&)
   {
 
@@ -112,6 +117,14 @@ struct singleTrackSelector {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    if (enable_gen_info) {
+      registry.add("hNEvents_MCGen", "hNEvents_MCGen", {HistType::kTH1F, {{1, 0.f, 1.f}}});
+      registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Proton", "Gen (anti)protons in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Deuteron", "Gen (anti)deuteron in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // inspired by PWGLF/TableProducer/lambdakzerobuilder.cxx
@@ -356,7 +369,7 @@ struct singleTrackSelector {
   }
   PROCESS_SWITCH(singleTrackSelector, processMCRun2, "process MC Run2", false);
 
-  void processMCRun3(soa::Filtered<CollRun3>::iterator const& collision, soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
+  void processMCRun3(soa::Filtered<CollRun3MC>::iterator const& collision, aod::McCollisions const&, soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
@@ -415,9 +428,67 @@ struct singleTrackSelector {
                         collision.selection_bit(aod::evsel::kIsVertexITSTPC));
 
       fillTrackTables<true>(tracks);
+
+      if (!enable_gen_info) {
+        return;
+      }
+
+      const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
+
+      for (auto& mcParticle : particlesInCollision) { // loop over generated particles
+
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+
+        if (mcParticle.pdgCode() == 1000010020) {
+          registry.fill(HIST("hReco_EtaPhiPt_Deuteron"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+        } else if (mcParticle.pdgCode() == -1000010020) {
+          registry.fill(HIST("hReco_EtaPhiPt_Deuteron"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+        }
+
+        if (mcParticle.pdgCode() == 2212) {
+          registry.fill(HIST("hReco_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+        } else if (mcParticle.pdgCode() == -2212) {
+          registry.fill(HIST("hReco_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+        }
+      }
     }
   }
   PROCESS_SWITCH(singleTrackSelector, processMCRun3, "process MC Run3", false);
+
+  void processGenRun3(aod::McCollisions::iterator const& mcCollision,
+                      aod::McParticles const& mcParticles)
+  {
+    if (!enable_gen_info) {
+      return;
+    }
+
+    if (abs(mcCollision.posZ()) > _vertexZ) {
+      return;
+    }
+
+    registry.fill(HIST("hNEvents_MCGen"), 0.5);
+
+    for (auto& mcParticle : mcParticles) { // loop over generated particles
+
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      if (mcParticle.pdgCode() == 1000010020) {
+        registry.fill(HIST("hGen_EtaPhiPt_Deuteron"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+      } else if (mcParticle.pdgCode() == -1000010020) {
+        registry.fill(HIST("hGen_EtaPhiPt_Deuteron"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+      }
+
+      if (mcParticle.pdgCode() == 2212) {
+        registry.fill(HIST("hGen_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+      } else if (mcParticle.pdgCode() == -2212) {
+        registry.fill(HIST("hGen_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+      }
+    }
+  }
+  PROCESS_SWITCH(singleTrackSelector, processGenRun3, "process MC Gen collisions Run3", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
