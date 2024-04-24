@@ -1507,7 +1507,8 @@ struct NucleiHistTask {
       const auto particle = track.mcParticle();
       const auto pdg = Form("%i", particle.pdgCode());
 
-      if (!particle.isPhysicalPrimary()) continue;
+      if (!particle.isPhysicalPrimary())
+        continue;
 
       histPDG->Fill(pdg, 1);
       const float pdgbin = histPDG->GetXaxis()->GetBinCenter(histPDG->GetXaxis()->FindBin(pdg));
@@ -1650,7 +1651,8 @@ struct NucleiHistTask {
       const auto particle = track.mcParticle();
       const auto pdg = Form("%i", particle.pdgCode());
 
-      if (!particle.isPhysicalPrimary()) continue;
+      if (!particle.isPhysicalPrimary())
+        continue;
 
       histPDG_eff->Fill(pdg, 1);
       const float pdgbin = histPDG_eff->GetXaxis()->GetBinCenter(histPDG_eff->GetXaxis()->FindBin(pdg));
