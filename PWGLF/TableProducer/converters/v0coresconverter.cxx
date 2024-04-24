@@ -17,11 +17,11 @@ using namespace o2;
 using namespace o2::framework;
 
 // Converts V0 version 001 to 002
-struct v0sconverter {
+struct v0coresconverter {
   Produces<aod::DauTrackExtras_001> dauTrackExtras_001;
   Produces<aod::V0MCCores_001> v0MCCores_001;
 
-  void process000to001(aod::DauTrackExtras_000 const& dauTrackExtras_000, aod::V0MCCores_000 const& v0MCCores_000)
+  void processRecoInfo000to001(aod::DauTrackExtras_000 const& dauTrackExtras_000)
   {
     for (auto& values : dauTrackExtras_000) {
       dauTrackExtras_001(0,
@@ -30,6 +30,9 @@ struct v0sconverter {
                          values.tpcClusters(),
                          values.tpcCrossedRows());
     }
+  }
+  void processMCInfo000to001(aod::V0MCCores_000 const& v0MCCores_000)
+  {
     for (auto& values : v0MCCores_000) {
       v0MCCores_001(0,
                     values.pdgCode(),
@@ -49,11 +52,12 @@ struct v0sconverter {
     }
   }
 
-  PROCESS_SWITCH(v0sconverter, process000to001, "from raw 000 to 001", false);
+  PROCESS_SWITCH(v0coresconverter, processRecoInfo000to001, "from reco 000 to 001", false);
+  PROCESS_SWITCH(v0coresconverter, processMCInfo000to001, "from MC 000 to 001", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<v0sconverter>(cfgc)};
+    adaptAnalysisTask<v0coresconverter>(cfgc)};
 }
