@@ -102,16 +102,16 @@ struct EventCuts {
 
 // *) Particle histograms:
 struct ParticleHistograms {
-  TList* fParticleHistogramsList = NULL;                                      //!<! list to hold all control particle histograms
-  TProfile* fParticleHistogramsPro = NULL;                                    //!<! keeps flags relevant for the control particle histograms
-  TH1D* fParticleHistograms[eParticleHistograms_N][2][2] = {{{NULL}}};        //! [ type - see enum eParticleHistograms ][reco,sim][before, after particle cuts]
-  Bool_t fBookParticleHistograms[eParticleHistograms_N] = {kTRUE};            // book or not this histogram, see configurable cfBookParticleHistograms
-  Double_t fParticleHistogramsBins[eParticleHistograms_N][3] = {{0.}};        // [nBins,min,max]
-  Double_t fParticleCuts[eParticleHistograms_N][2] = {{0.}};                  // [min,max]
-  TH2D* fParticleHistograms2D[eParticleHistograms2D_N][2][2] = {{{NULL}}};    //! [ type - see enum eParticleHistograms2D ][reco,sim][before, after particle cuts]
-  Bool_t fBookParticleHistograms2D[eParticleHistograms2D_N] = {kTRUE};        // book or not this 2D histogram, see configurable cfBookParticleHistograms2D
-  Double_t fParticleHistogramsBins2D[eParticleHistograms2D_N][2][3] = {{0.}}; // [type - see enum][x,y][nBins,min,max]
-} ph;                                                                         // "ph" labels an instance of group of histograms "ParticleHistograms"
+  TList* fParticleHistogramsList = NULL;                                        //!<! list to hold all control particle histograms
+  TProfile* fParticleHistogramsPro = NULL;                                      //!<! keeps flags relevant for the control particle histograms
+  TH1D* fParticleHistograms[eParticleHistograms_N][2][2] = {{{NULL}}};          //! [ type - see enum eParticleHistograms ][reco,sim][before, after particle cuts]
+  Bool_t fBookParticleHistograms[eParticleHistograms_N] = {kTRUE};              // book or not this histogram, see configurable cfBookParticleHistograms
+  Double_t fParticleHistogramsBins[eParticleHistograms_N][3] = {{0.}};          // [nBins,min,max]
+  Double_t fParticleCuts[eParticleHistograms_N][2] = {{0.}};                    // [min,max]
+  TH2D* fParticleHistograms2D[eParticleHistograms2D_N][2][2] = {{{NULL}}};      //! [ type - see enum eParticleHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fBookParticleHistograms2D[eParticleHistograms2D_N] = {kTRUE};          // book or not this 2D histogram, see configurable cfBookParticleHistograms2D
+  Double_t fParticleHistogramsBins2D[eParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
+} ph;                                                                           // "ph" labels an instance of group of histograms "ParticleHistograms"
 
 // *) Particle cuts:
 struct ParticleCuts {
@@ -122,14 +122,14 @@ struct ParticleCuts {
 
 // *) Q-vectors:
 struct Qvector {
-  TList* fQvectorList = NULL;                                                                                                        // list to hold all Q-vector objects
-  TProfile* fQvectorFlagsPro = NULL;                                                                                                 // profile to hold all flags for Q-vector
-  Bool_t fCalculateQvectors = kTRUE;                                                                                                 // to calculate or not to calculate Q-vectors, that's a Boolean...
-  TComplex fQ[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                         //! generic Q-vector
-  TComplex fQvector[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                   //! "integrated" Q-vector
-  TComplex fqvector[eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{{TComplex(0., 0.)}}}; //! "differenttial" q-vector [kine var.][binNo][fMaxHarmonic*fMaxCorrelator+1][fMaxCorrelator+1] = [6*12+1][12+1]
-  Int_t fqVectorEntries[eqvectorKine_N][gMaxNoBinsKine] = {{0}};                                                                     // count number of entries in each differential q-vector
-} qv;                                                                                                                                // "qv" is a common label for objects in this struct
+  TList* fQvectorList = NULL;                                                                                                          // list to hold all Q-vector objects
+  TProfile* fQvectorFlagsPro = NULL;                                                                                                   // profile to hold all flags for Q-vector
+  Bool_t fCalculateQvectors = kTRUE;                                                                                                   // to calculate or not to calculate Q-vectors, that's a Boolean...
+  TComplex fQ[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                           //! generic Q-vector
+  TComplex fQvector[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                     //! "integrated" Q-vector
+  TComplex fqvector[eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{{{TComplex(0., 0.)}}}}; //! "differenttial" q-vector [kine var.][binNo][fMaxHarmonic*fMaxCorrelator+1][fMaxCorrelator+1] = [6*12+1][12+1]
+  Int_t fqVectorEntries[eqvectorKine_N][gMaxNoBinsKine] = {{0}};                                                                       // count number of entries in each differential q-vector
+} qv;                                                                                                                                  // "qv" is a common label for objects in this struct
 
 // *) Multiparticle correlations (standard, isotropic, same harmonic):
 struct MultiparticleCorrelations {
