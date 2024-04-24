@@ -16,6 +16,7 @@
 #ifndef PWGUD_TASKS_SGTRACKSELECTOR_H_
 #define PWGUD_TASKS_SGTRACKSELECTOR_H_
 
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -25,7 +26,6 @@
 //#include "Common/DataModel/PIDResponse.h"
 //#include "PWGUD/Core/RLhelper.h"
 #include <TString.h>
-#include <vector>
 #include "TLorentzVector.h"
 using namespace std;
 using namespace o2;
