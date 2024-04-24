@@ -470,10 +470,10 @@ struct chargedkstaranalysis {
                         (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
-  using EventCandidates = soa::Filtered<
+  /*using EventCandidates = soa::Filtered<
     soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs,
-              aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
-  // using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
+    aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;*/
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                                   aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
@@ -694,8 +694,8 @@ struct chargedkstaranalysis {
 
   PROCESS_SWITCH(chargedkstaranalysis, processSE, "Process Same event", true);
 
-  void processME(EventCandidates const& collisions,
-                 TrackCandidates const& tracks, V0TrackCandidate const& V0s)
+  void processME(EventCandidates const& /*collisions*/,
+                 TrackCandidates const& /*tracks*/, V0TrackCandidate const& /*V0s*/)
 
   /*
     void processME(EventCandidates const& collisions,
