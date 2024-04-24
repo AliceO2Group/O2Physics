@@ -42,7 +42,7 @@ struct SGSpectraAnalyzer {
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   Configurable<float> eta_cut{"Eta", 0.9, "Eta cut"};
   Configurable<bool> use_tof{"Use_TOF", true, "TOF PID"};
-  // Track Selections
+  //Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
