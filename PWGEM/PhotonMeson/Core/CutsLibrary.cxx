@@ -450,11 +450,11 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
       return cut;
     } else if (nameStr.find("mleidlocal") != std::string::npos) {
       LOGF(info, "ML-PID-LOCAL is selected.");
-      cut->EnableEIDML(false, "/Users/d/dsekihat/pidml/", false, -1, "eid_lightgbm.onnx");
+      // cut->EnableEIDML(false, "/Users/d/dsekihat/pidml/", false, -1, "eid_lightgbm.onnx");
       return cut;
     } else if (nameStr.find("mleid") != std::string::npos) {
       LOGF(info, "ML-PID is selected.");
-      cut->EnableEIDML(true, "/Users/d/dsekihat/pidml/", false, -1, "eid_lightgbm.onnx");
+      // cut->EnableEIDML(true, "/Users/d/dsekihat/pidml/", false, -1, "eid_lightgbm.onnx");
       return cut;
     } else { // not match electron cut
       LOGF(info, Form("Did not find electron ID cut %s", cutName));
