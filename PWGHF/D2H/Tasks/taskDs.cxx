@@ -545,7 +545,7 @@ struct HfTaskDs {
           auto y = 0;
 
           if (particle.flagMcDecayChanGen() == decayChannel) {
-            y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
+            y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS);
             if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
               continue;
             }
@@ -560,7 +560,7 @@ struct HfTaskDs {
               std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta()); // gen. level pT
             }
           } else if (fillDplusMc) {
-            y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
+            y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
             if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
               continue;
             }

@@ -91,17 +91,19 @@ struct HfTaskSingleMuonSource {
       "Hadron",
       "Unidentified"};
 
-    AxisSpec axisColNumber{1, 0., 1., "Selected collisions"};
+    AxisSpec axisColNumber{1, 0.5, 1.5, "Selected collisions"};
     AxisSpec axisDCA{5000, 0., 5., "DCA (cm)"};
     AxisSpec axisChi2{500, 0., 100., "#chi^{2} of MCH-MFT matching"};
     AxisSpec axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
     AxisSpec axisDeltaPt{1000, -50., 50., "#Delta #it{p}_{T} (GeV/#it{c})"};
 
+    HistogramConfigSpec h1ColNumber{HistType::kTH1F, {axisColNumber}};
     HistogramConfigSpec h1Pt{HistType::kTH1F, {axisPt}};
     HistogramConfigSpec h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
     HistogramConfigSpec h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
     HistogramConfigSpec h2PtDeltaPt{HistType::kTH2F, {axisPt, axisDeltaPt}};
 
+    registry.add("h1ColNumber", "", h1ColNumber);
     for (const auto& src : muonSources) {
       registry.add(Form("h1%sPt", src.Data()), "", h1Pt);
       registry.add(Form("h2%sPtDCA", src.Data()), "", h2PtDCA);
@@ -306,6 +308,7 @@ struct HfTaskSingleMuonSource {
     if (std::abs(collision.posZ()) > edgeZ) {
       return;
     }
+    registry.fill(HIST("h1ColNumber"), 1.);
 
     for (const auto& muon : muons) {
       // muon selections

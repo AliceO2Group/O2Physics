@@ -129,7 +129,7 @@ struct UpcCandAnalyzer {
 
   void init(InitContext&)
   {
-    const AxisSpec axisSel{kNSelectors, 0., double(kNSelectors), ""};
+    const AxisSpec axisSel{kNSelectors, 0.0, static_cast<double>(kNSelectors), ""};
     registry.add("Selection/SelCounter", "", kTH1F, {axisSel});
     registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelIdealPID + 1, "kSelIdealPID");
     registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelIsNotFake + 1, "kSelIsNotFake");

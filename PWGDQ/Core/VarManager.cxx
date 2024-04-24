@@ -635,10 +635,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kS11A] = "";
   fgVariableNames[kS12A] = "S_{12}^{A} ";
   fgVariableUnits[kS12A] = "";
+  fgVariableNames[kS21A] = "S_{21}^{A} ";
+  fgVariableUnits[kS21A] = "";
   fgVariableNames[kS13A] = "S_{13}^{A} ";
   fgVariableUnits[kS13A] = "";
   fgVariableNames[kS31A] = "S_{31}^{A} ";
   fgVariableUnits[kS31A] = "";
+  fgVariableNames[kS22A] = "S_{22}^{A} ";
+  fgVariableUnits[kS22A] = "";
   fgVariableNames[kM11REF] = "M_{11}^{REF} ";
   fgVariableUnits[kM11REF] = "";
   fgVariableNames[kM01POI] = "M_{01}^{POI} ";

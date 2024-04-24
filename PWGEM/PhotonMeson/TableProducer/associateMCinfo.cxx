@@ -216,6 +216,54 @@ struct AssociateMCInfo {
           fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
           fCounters[0]++;
         }
+
+        bool is_used_for_gen = false;
+        if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && (abs(pdg) == 11 || abs(pdg) == 13) && mctrack.has_mothers()) {
+          auto mp = mctrack.template mothers_first_as<aod::McParticles>(); // mother particle of electron
+          int pdg_mother = abs(mp.pdgCode());
+
+          bool is_from_sm = pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333 || pdg_mother == 443 || pdg_mother == 100443 || pdg_mother == 553 || pdg_mother == 100553 || pdg_mother == 200553;
+          bool is_from_c_hadron = std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 3] == '4' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 4] == '4';
+          bool is_from_b_hadron = std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 3] == '5' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 4] == '5';
+
+          if ((is_from_sm || is_from_c_hadron || is_from_b_hadron)) {
+            is_used_for_gen = true;
+          }
+        }
+
+        if (is_used_for_gen) {
+          // Next, store mother-chain for only HF->l, because HF->ll analysis requires correlation between HF hadrons or quarks. PLEASE DON'T do this for other partices.
+          int motherid = -999; // first mother index
+          if (mctrack.has_mothers()) {
+            motherid = mctrack.mothersIds()[0]; // first mother index
+          }
+          while (motherid > -1) {
+            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mcTracks.iteratorAt(motherid);
+
+              if (abs(mp.pdgCode()) < 100) { // don't store quark/gluon informaiton, because data size explodes.
+                break;
+              }
+
+              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                fNewLabels[mp.globalIndex()] = fCounters[0];
+                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                // fMCFlags[mp.globalIndex()] = mcflags;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                fCounters[0]++;
+              }
+
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0]; // first mother index
+              } else {
+                motherid = -999;
+              }
+            } else {
+              motherid = -999;
+            }
+          } // end of mother chain loop
+        }
       } // end of mc track loop
 
       if constexpr (static_cast<bool>(system & kPCM)) {
@@ -485,6 +533,11 @@ struct AssociateMCInfo {
     const uint8_t sysflag = kPCM | kDalitzEE;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, nullptr, emprimaryelectrons, nullptr);
   }
+  void processMC_DalitzEE(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::EMPrimaryElectrons const& emprimaryelectrons)
+  {
+    const uint8_t sysflag = kDalitzEE;
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, nullptr, nullptr, nullptr, emprimaryelectrons, nullptr);
+  }
   void processMC_PCM_DalitzEE_DalitzMuMu(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectrons const& emprimaryelectrons, aod::EMPrimaryMuons const& emprimarymuons)
   {
     const uint8_t sysflag = kPCM | kDalitzEE | kDalitzMuMu;
@@ -539,6 +592,7 @@ struct AssociateMCInfo {
 
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM, "create em mc event table for PCM", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE, "create em mc event table for PCM, DalitzEE", false);
+  PROCESS_SWITCH(AssociateMCInfo, processMC_DalitzEE, "create em mc event table for DalitzEE", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE_DalitzMuMu, "create em mc event table for PCM, DalitzEE, DalitzMuMu", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PHOS, "create em mc event table for PHOS", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_EMC, "create em mc event table for EMCal", false);

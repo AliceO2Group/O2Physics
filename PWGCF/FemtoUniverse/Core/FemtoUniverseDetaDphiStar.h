@@ -50,11 +50,13 @@ class FemtoUniverseDetaDphiStar
   /// Destructor
   virtual ~FemtoUniverseDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaphistarcut, float ldeltaetacut, float lchosenradii, bool lplotForEveryRadii)
+  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaphistarcutmin, float ldeltaphistarcutmax, float ldeltaetacutmin, float ldeltaetacutmax, float lchosenradii, bool lplotForEveryRadii)
   {
     ChosenRadii = lchosenradii;
-    CutDeltaPhiStar = ldeltaphistarcut;
-    CutDeltaEta = ldeltaetacut;
+    CutDeltaPhiStarMax = ldeltaphistarcutmax;
+    CutDeltaPhiStarMin = ldeltaphistarcutmin;
+    CutDeltaEtaMax = ldeltaetacutmax;
+    CutDeltaEtaMin = ldeltaetacutmin;
     plotForEveryRadii = lplotForEveryRadii;
     mHistogramRegistry = registry;
     mHistogramRegistryQA = registryQA;
@@ -156,7 +158,7 @@ class FemtoUniverseDetaDphiStar
         LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
       }
 
-      if (pow(dphiAvg, 2) / pow(CutDeltaPhiStar, 2) + pow(deta, 2) / pow(CutDeltaEta, 2) < 1.) {
+      if (pow(dphiAvg, 2) / pow(CutDeltaPhiStarMax, 2) + pow(deta, 2) / pow(CutDeltaEtaMax, 2) < 1.) {
         return true;
       } else {
         if (ChosenEventType == femtoUniverseContainer::EventType::same) {
@@ -191,7 +193,7 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if (pow(dphiAvg, 2) / pow(CutDeltaPhiStar, 2) + pow(deta, 2) / pow(CutDeltaEta, 2) < 1.) {
+        if (pow(dphiAvg, 2) / pow(CutDeltaPhiStarMax, 2) + pow(deta, 2) / pow(CutDeltaEtaMax, 2) < 1.) {
           pass = true;
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {
@@ -229,7 +231,7 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if (pow(dphiAvg, 2) / pow(CutDeltaPhiStar, 2) + pow(deta, 2) / pow(CutDeltaEta, 2) < 1.) {
+        if (pow(dphiAvg, 2) / pow(CutDeltaPhiStarMax, 2) + pow(deta, 2) / pow(CutDeltaEtaMax, 2) < 1.) {
           pass = true;
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {
@@ -266,7 +268,7 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if ((fabs(dphiAvg) < CutDeltaPhiStar) && (fabs(deta) < CutDeltaEta)) {
+        if ((fabs(dphiAvg) < CutDeltaPhiStarMax) && (fabs(deta) < CutDeltaEtaMax)) {
           pass = true; // pair is close
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {
@@ -289,7 +291,13 @@ class FemtoUniverseDetaDphiStar
 
       bool pass = false;
       for (int i = 0; i < 2; i++) {
-        auto indexOfDaughter = part2.index() - 2 + i;
+        auto indexOfDaughter = 0;
+        if (ChosenEventType == femtoUniverseContainer::EventType::mixed) {
+          indexOfDaughter = part2.globalIndex() - 2 + i;
+        } else if (ChosenEventType == femtoUniverseContainer::EventType::same) {
+          indexOfDaughter = part2.index() - 2 + i;
+        }
+
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
         auto dphiAvg = AveragePhiStar(part1, *daughter, i); // CalculateDphiStar(part1, *daughter);
@@ -302,7 +310,7 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if ((fabs(dphiAvg) < CutDeltaPhiStar) && (fabs(deta) < CutDeltaEta)) {
+        if ((dphiAvg > CutDeltaPhiStarMin) && (dphiAvg < CutDeltaPhiStarMax) && (deta > CutDeltaEtaMin) && (deta < CutDeltaEtaMax)) {
           pass = true; // pair is close
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {
@@ -348,8 +356,10 @@ class FemtoUniverseDetaDphiStar
   static constexpr uint32_t kValue0 = 0;
 
   float ChosenRadii;
-  float CutDeltaPhiStar;
-  float CutDeltaEta;
+  float CutDeltaPhiStarMax;
+  float CutDeltaPhiStarMin;
+  float CutDeltaEtaMax;
+  float CutDeltaEtaMin;
   float magfield;
   bool plotForEveryRadii = false;
 

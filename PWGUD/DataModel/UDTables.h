@@ -394,6 +394,24 @@ DECLARE_SOA_TABLE(UDFwdTracksCovProp, "AOD", "UDFWDTRKCOVPROP",
 using UDFwdTrackProp = UDFwdTracksProp::iterator;
 using UDFwdTrackCovProp = UDFwdTracksCovProp::iterator;
 
+namespace udfwdtrkcl
+{
+DECLARE_SOA_INDEX_COLUMN(UDFwdTrack, udFwdTrack); //!
+}
+
+DECLARE_SOA_TABLE(UDFwdTracksCls, "AOD", "UDFWDTRKCL", //! Forward Track Cluster information
+                  o2::soa::Index<>,
+                  udfwdtrkcl::UDFwdTrackId,
+                  fwdtrkcl::X,
+                  fwdtrkcl::Y,
+                  fwdtrkcl::Z,
+                  fwdtrkcl::ClInfo,
+                  fwdtrkcl::DEId<fwdtrkcl::ClInfo>,
+                  fwdtrkcl::IsGoodX<fwdtrkcl::ClInfo>,
+                  fwdtrkcl::IsGoodY<fwdtrkcl::ClInfo>);
+
+using UDFwdTrackCls = UDFwdTracksCls::iterator;
+
 namespace udmcfwdtracklabel
 {
 DECLARE_SOA_INDEX_COLUMN(UDMcParticle, udMcParticle);
