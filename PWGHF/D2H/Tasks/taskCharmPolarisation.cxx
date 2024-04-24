@@ -94,8 +94,8 @@ struct TaskPolarisationCharmHadrons {
 
   /// activate rotational background
   Configurable<int> nBkgRotations{"nBkgRotations", 0, "Number of rotated copies (background) per each original candidate"};
-  Configurable<float> minRotAngleMultByPi{"minRotAngleMultByPi", 5./6, "Minimum angle rotation for track rotation, to be multiplied by pi"};
-  Configurable<float> maxRotAngleMultByPi{"maxRotAngleMultByPi", 7./6, "Maximum angle rotation for track rotation, to be multiplied by pi"};
+  Configurable<float> minRotAngleMultByPi{"minRotAngleMultByPi", 5. / 6, "Minimum angle rotation for track rotation, to be multiplied by pi"};
+  Configurable<float> maxRotAngleMultByPi{"maxRotAngleMultByPi", 7. / 6, "Maximum angle rotation for track rotation, to be multiplied by pi"};
 
   /// output THnSparses
   Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", true, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
