@@ -270,7 +270,7 @@ struct phianalysis {
           histos.fill(HIST("QAMCTrue/trkDCAz"), trk2.dcaZ());
 
           // MC histograms
-          histos.fill(HIST("phiRec"), lResonance.Pt(), multiplicity;
+          histos.fill(HIST("phiRec"), lResonance.Pt(), multiplicity);
           histos.fill(HIST("phiRecinvmass"), lResonance.M());
           histos.fill(HIST("h3Recphiinvmass"), multiplicity, lResonance.Pt(), lResonance.M());
         }
