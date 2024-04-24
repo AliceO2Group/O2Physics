@@ -212,7 +212,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // F) Process only converted simulated Run 2 data:
-  void processSim_Run2(aod::Collision const& collision) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
+  void processSim_Run2(aod::Collision const&) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
   {
     // Steer<eSim_Run2>(collision, tracks);
   }
@@ -231,7 +231,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
-  void processRecSim_Run1(aod::Collision const& collision) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
+  void processRecSim_Run1(aod::Collision const&) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
   {
     // Steer<eRecSim_Run1>(collision, tracks);
   }
@@ -240,7 +240,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // I) Process only converted simulated Run 1 data.
-  void processSim_Run1(aod::Collision const& collision) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
+  void processSim_Run1(aod::Collision const&) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
   {
     // Steer<eSim_Run1>(collision, tracks);
   }
