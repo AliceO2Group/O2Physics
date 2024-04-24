@@ -35,8 +35,7 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct FlowGFWPbPb
-{
+struct FlowGFWPbPb {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
@@ -52,7 +51,7 @@ struct FlowGFWPbPb
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
-  //ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
+  // ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
   AxisSpec axisMultiplicity{{0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -67,20 +66,17 @@ struct FlowGFWPbPb
   HistogramRegistry registry{"registry"};
 
   // define global variables
-  GFW* fGFW = new GFW();  // GFW class used from main src
+  GFW* fGFW = new GFW(); // GFW class used from main src
   std::vector<GFW::CorrConfig> corrconfigs;
 
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;  // collisions filter
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;  // tracks filter
+  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;   // collisions filter
+  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>; // tracks filter
 
-
-
-  void init(InitContext const&)  // Initialization
+  void init(InitContext const&) // Initialization
   {
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(nolaterthan.value);
-
 
     // Add some output objects to the histogram registry
     registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{1, 0, 1}}});
@@ -94,20 +90,17 @@ struct FlowGFWPbPb
     registry.add("c26", ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("c28", ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisMultiplicity}});
 
-
-
-    fGFW->AddRegion("full", -0.8, 0.8, 1, 1);  // eta region -0.8 to 0.8
-    //fGFW->AddRegion("refN", -0.8, -0.5, 1, 1);
-    //fGFW->AddRegion("refP", 0.8, 0.5, 1, 1);
-    //corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "ChGap22", kFALSE));
+    fGFW->AddRegion("full", -0.8, 0.8, 1, 1); // eta region -0.8 to 0.8
+    // fGFW->AddRegion("refN", -0.8, -0.5, 1, 1);
+    // fGFW->AddRegion("refP", 0.8, 0.5, 1, 1);
+    // corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "ChGap22", kFALSE));
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 -2 -2 -2}", "ChFull26", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 2  -2 -2 -2 -2}", "ChFull28", kFALSE));
 
-    fGFW->CreateRegions();  // finalize the initialization
-
+    fGFW->CreateRegions(); // finalize the initialization
   }
 
   template <char... chars>
@@ -115,7 +108,8 @@ struct FlowGFWPbPb
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)  return;
+    if (dnx == 0)
+      return;
 
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
@@ -129,12 +123,14 @@ struct FlowGFWPbPb
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
-    if (!collision.sel8()) return;
+    if (!collision.sel8())
+      return;
 
     int Ntot = tracks.size();
-    if (Ntot < 1)  return;
+    if (Ntot < 1)
+      return;
 
-   // if (!collision.sel7())  return;
+    // if (!collision.sel7())  return;
 
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
