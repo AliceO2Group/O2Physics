@@ -459,7 +459,7 @@ struct HfTaskCorrelationDsHadrons {
     }
 
     // recontructed tracks loop
-    for (auto& track : tracksData) {
+    for (const auto& track : tracksData) {
       if (track.has_collision()) {
         if (!track.isGlobalTrackWoDCA() || track.dcaXY() > dcaXYTrackMax || track.dcaZ() > dcaZTrackMax || track.tpcNClsCrossedRows() < nTpcCrossedRaws) {
           continue;
