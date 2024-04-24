@@ -46,37 +46,37 @@ void BookBaseList()
                                                                                 // Then, I replace placeholder with run number in DetermineAndPropagateRunNumber(T const& collision)
 
   fBasePro->GetXaxis()->SetBinLabel(eDryRun, "fDryRun");
-  fBasePro->Fill(eDryRun - 0.5, static_cast<int>(tc.fDryRun));
+  fBasePro->Fill(static_cast<float>(eDryRun) - 0.5, static_cast<int>(tc.fDryRun));
 
   fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose");
-  fBasePro->Fill(eVerbose - 0.5, static_cast<int>(tc.fVerbose));
+  fBasePro->Fill(static_cast<float>(eVerbose) - 0.5, static_cast<int>(tc.fVerbose));
 
   fBasePro->GetXaxis()->SetBinLabel(eVerboseForEachParticle, "fVerboseForEachParticle");
-  fBasePro->Fill(eVerboseForEachParticle - 0.5, static_cast<int>(tc.fVerboseForEachParticle));
+  fBasePro->Fill(static_cast<float>(eVerboseForEachParticle) - 0.5, static_cast<int>(tc.fVerboseForEachParticle));
 
   fBasePro->GetXaxis()->SetBinLabel(eDoAdditionalInsanityChecks, "fDoAdditionalInsanityChecks");
-  fBasePro->Fill(eDoAdditionalInsanityChecks - 0.5, static_cast<int>(tc.fDoAdditionalInsanityChecks));
+  fBasePro->Fill(static_cast<float>(eDoAdditionalInsanityChecks) - 0.5, static_cast<int>(tc.fDoAdditionalInsanityChecks));
 
   fBasePro->GetXaxis()->SetBinLabel(eInsanityCheckForEachParticle, "fInsanityCheckForEachParticle");
-  fBasePro->Fill(eInsanityCheckForEachParticle - 0.5, static_cast<int>(tc.fInsanityCheckForEachParticle));
+  fBasePro->Fill(static_cast<float>(eInsanityCheckForEachParticle) - 0.5, static_cast<int>(tc.fInsanityCheckForEachParticle));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseCCDB, "fUseCCDB");
-  fBasePro->Fill(eUseCCDB - 0.5, static_cast<int>(tc.fUseCCDB));
+  fBasePro->Fill(static_cast<float>(eUseCCDB) - 0.5, static_cast<int>(tc.fUseCCDB));
 
   fBasePro->GetXaxis()->SetBinLabel(eWhichProcess,
                                     Form("WhichProcess = %s", tc.fWhichProcess.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
-  fBasePro->Fill(eRandomSeed - 0.5, static_cast<int>(tc.fRandomSeed));
+  fBasePro->Fill(static_cast<float>(eRandomSeed) - 0.5, static_cast<int>(tc.fRandomSeed));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseFisherYates, "fUseFisherYates");
-  fBasePro->Fill(eUseFisherYates - 0.5, static_cast<int>(tc.fUseFisherYates));
+  fBasePro->Fill(static_cast<float>(eUseFisherYates) - 0.5, static_cast<int>(tc.fUseFisherYates));
 
   fBasePro->GetXaxis()->SetBinLabel(eFixedNumberOfRandomlySelectedTracks, "fFixedNumberOfRandomlySelectedTracks");
-  fBasePro->Fill(eFixedNumberOfRandomlySelectedTracks - 0.5, static_cast<int>(tc.fFixedNumberOfRandomlySelectedTracks));
+  fBasePro->Fill(static_cast<float>(eFixedNumberOfRandomlySelectedTracks) - 0.5, static_cast<int>(tc.fFixedNumberOfRandomlySelectedTracks));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseStopwatch, "fUseStopwatch");
-  fBasePro->Fill(eUseStopwatch - 0.5, static_cast<int>(tc.fUseStopwatch));
+  fBasePro->Fill(static_cast<float>(eUseStopwatch) - 0.5, static_cast<int>(tc.fUseStopwatch));
 
   fBaseList->Add(fBasePro);
 
@@ -930,11 +930,11 @@ void BookEventCutsHistograms()
 
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eTrigger, Form("fTrigger = %s", ec.fTrigger.Data()));
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eUseTrigger, "fUseTrigger");
-  ec.fEventCutsPro->Fill(eUseTrigger - 0.5, static_cast<int>(ec.fUseTrigger));
+  ec.fEventCutsPro->Fill(static_cast<float>(eUseTrigger) - 0.5, static_cast<int>(ec.fUseTrigger));
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eUseSel7, "fUseSel7");
-  ec.fEventCutsPro->Fill(eUseSel7 - 0.5, static_cast<int>(ec.fUseSel7));
+  ec.fEventCutsPro->Fill(static_cast<float>(eUseSel7) - 0.5, static_cast<int>(ec.fUseSel7));
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eUseSel8, "fUseSel8");
-  ec.fEventCutsPro->Fill(eUseSel8 - 0.5, static_cast<int>(ec.fUseSel8));
+  ec.fEventCutsPro->Fill(static_cast<float>(eUseSel8) - 0.5, static_cast<int>(ec.fUseSel8));
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eCentralityEstimator, Form("fCentralityEstimator = %s", ec.fCentralityEstimator.Data()));
 
   ec.fEventCutsList->Add(ec.fEventCutsPro);
