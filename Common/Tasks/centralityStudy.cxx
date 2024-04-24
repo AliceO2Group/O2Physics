@@ -76,7 +76,7 @@ struct centralityStudy {
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultFT0C});
     }
 
-    if(do2DPlots){
+    if (do2DPlots) {
       histos.add("hFT0CvsNContribs", "hFT0CvsNContribs", kTH2F, {axisMultPVContributors, axisMultFT0C});
       histos.add("hMatchedVsITSOnly", "hMatchedVsITSOnly", kTH2F, {axisMultITSOnly, axisMultITSTPC});
     }
@@ -132,7 +132,7 @@ struct centralityStudy {
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() /* Not at same bunch pile-up */);
 
-    if(do2DPlots){
+    if (do2DPlots) {
       histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C());
       histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
     }
