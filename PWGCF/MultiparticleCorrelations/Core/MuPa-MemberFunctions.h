@@ -1542,9 +1542,8 @@ void InternalValidation()
         LOGF(info, Form("%d %s = %f", h, fPhiPDF->GetParName(h), fPhiPDF->GetParameter(h)));
       }
       LOGF(info, "  Remark: Parameter [18] at the moment is reaction plane.\n");
-    } // if (tc.fVerbose) {
-  }   // if(iv.fHarmonicsOptionInternalValidation->EqualTo("constant"))
-  else if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) {
+    }                                                                        // if (tc.fVerbose) {
+  } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) { // if(iv.fHarmonicsOptionInternalValidation->EqualTo("constant"))
     // For this option, three selected vn's (v1,v2,v3) are correlated, and all psin's are set to zero, for simplicity.
     // Remark: The last parameter [3] is a random reaction plane, keep in sync with fPhiPDF->SetParameter(3,fReactionPlane); below
     //         Keep also in sync with const Int_t gMaxHarmonic = 9; in *GlobalConstants.h
