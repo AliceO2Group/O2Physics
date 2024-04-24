@@ -374,7 +374,7 @@ struct HfTaskCorrelationDsHadrons {
 
     /// Gen loop
     float multiplicity = -1.;
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       // generated candidates
       if (std::abs(mcParticle.pdgCode()) == Pdg::kDS) {
         auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
