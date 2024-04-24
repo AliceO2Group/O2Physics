@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// This task does dedicated centrality studies for understanding the 
-// Run 3 Pb-Pb centrality selections in 2023 data. It is compatible with 
-// derived data. 
+// This task does dedicated centrality studies for understanding the
+// Run 3 Pb-Pb centrality selections in 2023 data. It is compatible with
+// derived data.
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -50,9 +50,9 @@ struct centralityStudy {
 
   void init(InitContext&)
   {
-    if(doprocessCollisions){
+    if (doprocessCollisions) {
       const AxisSpec axisCollisions{100, -0.5f, 99.5f, "Number of collisions"};
-      histos.add("hCollisionSelection", "hCollisionSelection", kTH1D, {{10,-0.5f, +9.5f}});
+      histos.add("hCollisionSelection", "hCollisionSelection", kTH1D, {{10, -0.5f, +9.5f}});
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
@@ -67,8 +67,8 @@ struct centralityStudy {
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultFT0C});
     }
 
-    if(doprocessBCs){
-      histos.add("hBCSelection", "hBCSelection", kTH1D, {{10,-0.5,9.5f}});
+    if (doprocessBCs) {
+      histos.add("hBCSelection", "hBCSelection", kTH1D, {{10, -0.5, 9.5f}});
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultFT0C});
     }
   }
@@ -76,12 +76,12 @@ struct centralityStudy {
   void processCollisions(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections>::iterator const& collision)
   {
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
-    if( applySel8 && !collision.multSel8() )
+    if (applySel8 && !collision.multSel8())
       return;
     histos.fill(HIST("hCollisionSelection"), 1);
-    if( applyVtxZ && TMath::Abs(collision.multPVz()) > 10 ) 
+    if (applyVtxZ && TMath::Abs(collision.multPVz()) > 10)
       return;
-    histos.fill(HIST("hCollisionSelection"),2);
+    histos.fill(HIST("hCollisionSelection"), 2);
 
     // _______________________________________________________
     // Extra event selections start here
@@ -129,14 +129,14 @@ struct centralityStudy {
     // process BCs, calculate FT0C distribution
     // conditionals suggested by FIT team (Jacek O. et al)
     histos.fill(HIST("hBCSelection"), 0); // all BCs
-    if(!multbc.multBCColliding()) 
-      return; 
+    if (!multbc.multBCColliding())
+      return;
     histos.fill(HIST("hBCSelection"), 1); // colliding
-    if(!multbc.multBCTVX()) 
-      return; 
+    if (!multbc.multBCTVX())
+      return;
     histos.fill(HIST("hBCSelection"), 2); // TVX
-    if(!multbc.multBCFV0OrA()) 
-      return; 
+    if (!multbc.multBCFV0OrA())
+      return;
     histos.fill(HIST("hBCSelection"), 3); // FV0OrA
 
     // if we got here, we also finally fill the FT0C histogram, please
