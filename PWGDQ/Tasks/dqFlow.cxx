@@ -205,6 +205,7 @@ struct DQEventQvector {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {3 -3}", "ChFull32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
 
     fGFW->CreateRegions();
@@ -457,10 +458,12 @@ struct DQEventQvector {
 
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0) {
       VarManager::FillQVectorFromCentralFW(collision);
-      if (fConfigQA) {
-        fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
-        if (fEventCut->IsSelected(VarManager::fgValues)) {
-          fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
+      if ((tracks1.size() > 0) && (VarManager::fgValues[VarManager::kMultA] * VarManager::fgValues[VarManager::kMultB] * VarManager::fgValues[VarManager::kMultC] != 0.0)) {
+        if (fConfigQA) {
+          fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
+          if (fEventCut->IsSelected(VarManager::fgValues)) {
+            fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
+          }
         }
       }
       if (fEventCut->IsSelected(VarManager::fgValues)) {
@@ -531,7 +534,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     histMan->AddHistClass(classStr.Data());
 
     if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector,trigger,cent,res");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector,cross,trigger,cent,res");
     }
 
     if (classStr.Contains("Track")) {
