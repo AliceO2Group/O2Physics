@@ -3246,10 +3246,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
   // charm baryon invariant mass spectra limits
   Configurable<double> massXiPiMin{"massXiPiMin", 2.1, "Invariant mass lower limit for xi pi decay channel"};
   Configurable<double> massXiPiMax{"massXiPiMax", 3., "Invariant mass upper limit for xi pi decay channel"};
-  Configurable<double> massOmegaPiMin{"massOmegaPiMin", 2.4, "Invariant mass lower limit for omega pi decay channel"};
-  Configurable<double> massOmegaPiMax{"massOmegaPiMax", 3., "Invariant mass upper limit for omega pi decay channel"};
-  Configurable<double> massOmegaKMin{"massOmegaKMin", 2.4, "Invariant mass lower limit for omega kaon decay channel"};
-  Configurable<double> massOmegaKMax{"massOmegaKMax", 3., "Invariant mass upper limit for omega kaon decay channel"};
+  Configurable<double> massOmegaCharmBachelorMin{"massOmegaCharmBachelorMin", 2.4, "Invariant mass lower limit for omega pi and omega k decay channel"};
+  Configurable<double> massOmegaCharmBachelorMax{"massOmegaCharmBachelorMax", 3., "Invariant mass upper limit for omega pi and omega k decay channel"};
   Configurable<double> massXiPiPiMin{"massXiPiPiMin", 2.1, "Invariant mass lower limit for xi pi pi decay channel"};
   Configurable<double> massXiPiPiMax{"massXiPiPiMax", 2.8, "Invariant mass upper limit for xi pi pi decay channel"};
 
@@ -3399,8 +3397,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
       // dcaFitter exception counter
       registry.add("hFitterStatusXi2Prong", "Charm DCAFitter status (xi hyp. - 2prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});       // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
-      registry.add("hFitterStatusOmegaPi2Prong", "Charm DCAFitter status (omega hyp. - 2prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
-      registry.add("hFitterStatusOmegaK2Prong", "Charm DCAFitter status (omega hyp. - 2prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});  // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
+      registry.add("hFitterStatusOmega2Prong", "Charm DCAFitter status (omega hyp. - 2prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
       registry.add("hFitterStatusXi3Prong", "Charm DCAFitter status (xi hyp. - 3prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});       // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
     }
   }
@@ -3466,7 +3463,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   {
     uint8_t hfFlag = 0;
     bool isGoogForXi2Prong = true;
-    bool isGoogForOmegaPi2Prong = true;
+    bool isGoogForOmega2Prong = true;
     bool isGoogForOmegaK2Prong = true;
 
     for (const auto& collision : collisions) {
@@ -3546,7 +3543,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
           hfFlag = 0;
           isGoogForXi2Prong = true;
-          isGoogForOmegaPi2Prong = true;
+          isGoogForOmega2Prong = true;
           isGoogForOmegaK2Prong = true;
 
           auto trackCharmBachelor1 = trackIdCharmBachelor1.track_as<aod::TracksWCovDca>();
@@ -3567,8 +3564,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
           // primary pion track to be processed with DCAFitter
           auto trackParVarCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
-          auto trackParVarCharmBachelor1KaonHyp = trackParVarCharmBachelor1;
-          trackParVarCharmBachelor1KaonHyp.setPID(o2::track::PID::Kaon);
 
           // find charm baryon decay using xi PID hypothesis (xi pi channel)
           int nVtxFrom2ProngFitterXiHyp = 0;
@@ -3606,89 +3601,59 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 registry.fill(HIST("hMassXicZeroOmegacZeroToXiPi"), mass2ProngXiHyp);
               }
             } else if (df2.isPropagationFailure()) {
-              LOGF(info, "Exception caught: failed to propagate tracks (2prong - xi pi) to charm baryon decay vtx");
+              LOGF(info, "Exception caught: failed to propagate tracks (2prong - xi) to charm baryon decay vtx");
             }
           }
 
-          // find charm baryon decay using omega PID hypothesis to be combined with a pion (omega pi channel)
-          int nVtxFrom2ProngFitterOmegaHypWithPi = 0;
+          // find charm baryon decay using omega PID hypothesis to be combined with the charm bachelor (either pion or kaon)
+          int nVtxFrom2ProngFitterOmegaHyp = 0;
           try {
-            nVtxFrom2ProngFitterOmegaHypWithPi = df2.process(trackCascOmega, trackParVarCharmBachelor1);
+            nVtxFrom2ProngFitterOmegaHyp = df2.process(trackCascOmega, trackParVarCharmBachelor1);
           } catch (...) {
             if (fillHistograms) {
-              registry.fill(HIST("hFitterStatusOmegaPi2Prong"), 1);
+              registry.fill(HIST("hFitterStatusOmega2Prong"), 1);
             }
-            isGoogForOmegaPi2Prong = false;
+            isGoogForOmega2Prong = false;
           }
-          if (isGoogForOmegaPi2Prong && fillHistograms) {
-            registry.fill(HIST("hFitterStatusOmegaPi2Prong"), 0);
+          if (isGoogForOmega2Prong && fillHistograms) {
+            registry.fill(HIST("hFitterStatusOmega2Prong"), 0);
           }
 
-          if (nVtxFrom2ProngFitterOmegaHypWithPi > 0) {
+          if (nVtxFrom2ProngFitterOmegaHyp > 0) {
 
             df2.propagateTracksToVertex();
 
             if (df2.isPropagateTracksToVertexDone()) {
 
               std::array<float, 3> pVecOmega = {0.};
-              std::array<float, 3> pVecPion1OmegaHyp = {0.};
+              std::array<float, 3> pVecCharmBachelor1OmegaHyp = {0.};
               df2.getTrack(0).getPxPyPzGlo(pVecOmega);
-              df2.getTrack(1).getPxPyPzGlo(pVecPion1OmegaHyp);
+              df2.getTrack(1).getPxPyPzGlo(pVecCharmBachelor1OmegaHyp);
 
-              std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecPion1OmegaHyp};
-              auto mass2ProngOmegaHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi]);
+              std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecCharmBachelor1OmegaHyp};
+              auto mass2ProngOmegaPiHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi]);
+              auto mass2ProngOmegaKHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK]);
 
-              if ((std::abs(casc.mOmega() - massOmega) < cascadeMassWindow) && (mass2ProngOmegaHyp >= massOmegaPiMin) && (mass2ProngOmegaHyp <= massOmegaPiMax)) {
-                SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
+              if (std::abs(casc.mOmega() - massOmega) < cascadeMassWindow){
+                if ((mass2ProngOmegaPiHyp >= massOmegaCharmBachelorMin) && (mass2ProngOmegaPiHyp <= massOmegaCharmBachelorMax)) {
+                  SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
+                }
+                if ((mass2ProngOmegaKHyp >= massOmegaCharmBachelorMin) && (mass2ProngOmegaKHyp <= massOmegaCharmBachelorMax)) {
+                  SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK);
+                }
               }
 
               // fill histograms
-              if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi))) {
-                registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaHyp);
+              if (fillHistograms){
+                if (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi)) {
+                  registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaPiHyp);
+                }
+                if (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK)) {
+                  registry.fill(HIST("hMassOmegacZeroToOmegaK"), mass2ProngOmegaKHyp);
+                }
               }
             } else if (df2.isPropagationFailure()) {
-              LOGF(info, "Exception caught: failed to propagate tracks (2prong - omega pi) to charm baryon decay vtx");
-            }
-          }
-
-          // find charm baryon decay using omega PID hypothesis to be combined with a kaon (omega kaon channel)
-          int nVtxFrom2ProngFitterOmegaHypWithK = 0;
-          try {
-            nVtxFrom2ProngFitterOmegaHypWithK = df2.process(trackCascOmega, trackParVarCharmBachelor1KaonHyp);
-          } catch (...) {
-            if (fillHistograms) {
-              registry.fill(HIST("hFitterStatusOmegaK2Prong"), 1);
-            }
-            isGoogForOmegaK2Prong = false;
-          }
-          if (isGoogForOmegaK2Prong && fillHistograms) {
-            registry.fill(HIST("hFitterStatusOmegaK2Prong"), 0);
-          }
-
-          if (nVtxFrom2ProngFitterOmegaHypWithK > 0) {
-
-            df2.propagateTracksToVertex();
-
-            if (df2.isPropagateTracksToVertexDone()) {
-
-              std::array<float, 3> pVecOmega = {0.};
-              std::array<float, 3> pVecKaon1OmegaHyp = {0.};
-              df2.getTrack(0).getPxPyPzGlo(pVecOmega);
-              df2.getTrack(1).getPxPyPzGlo(pVecKaon1OmegaHyp);
-
-              std::array<std::array<float, 3>, 2> arrMomToOmega = {pVecOmega, pVecKaon1OmegaHyp};
-              auto mass2ProngOmegaHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK]);
-
-              if ((std::abs(casc.mOmega() - massOmega) < cascadeMassWindow) && (mass2ProngOmegaHyp >= massOmegaKMin) && (mass2ProngOmegaHyp <= massOmegaKMax)) {
-                SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK);
-              }
-
-              // fill histograms
-              if (fillHistograms && (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK))) {
-                registry.fill(HIST("hMassOmegacZeroToOmegaK"), mass2ProngOmegaHyp);
-              }
-            } else if (df2.isPropagationFailure()) {
-              LOGF(info, "Exception caught: failed to propagate tracks (2prong - omega k) to charm baryon decay vtx");
+              LOGF(info, "Exception caught: failed to propagate tracks (2prong - omega) to charm baryon decay vtx");
             }
           }
 
