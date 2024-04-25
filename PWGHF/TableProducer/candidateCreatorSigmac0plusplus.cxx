@@ -389,7 +389,8 @@ struct HfCandidateSigmac0plusplusMc {
   float zPvPosMax{1000.f};
 
   /// @brief init function
-  void init(InitContext& initContext) {
+  void init(InitContext& initContext)
+  {
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-3prong") == 0) { // here we assume that the hf-candidate-creator-3prong is in the workflow
