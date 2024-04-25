@@ -457,6 +457,7 @@ struct HfCandidateCreatorCascadeMc {
         for (const auto& option : device.options) {
           if (option.name.compare("zPvPosMax") == 0) {
             zPvPosMax = option.defaultValue.get<float>();
+            break;
           }
         }
         break;
