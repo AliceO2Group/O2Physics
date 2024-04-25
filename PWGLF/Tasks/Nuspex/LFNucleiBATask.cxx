@@ -4292,7 +4292,7 @@ struct LFNucleiBATask {
                    TrackCandidates const& tracks)
   {
     fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/);
-  } // CLOSING PROCESS DATA
+  }
   PROCESS_SWITCH(LFNucleiBATask, processData, "process data", true);
 
   // Process function that runs on the original AO2D
@@ -4300,7 +4300,7 @@ struct LFNucleiBATask {
                         TrackCandidatesLfPid const& tracks)
   {
     fillHistograms<false /*MC*/, false /*Filtered*/>(event, tracks, true /*dummy*/);
-  } // CLOSING PROCESS DATA
+  }
   PROCESS_SWITCH(LFNucleiBATask, processDataLfPid, "process data with LF PID", false);
 
   // Process function that runs on the filtered data
@@ -4310,7 +4310,7 @@ struct LFNucleiBATask {
     // Runs on data filtered on the fly with LF Tree creator nuclei task
     // Takes as input full AO2Ds
     fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
-  } // CLOSING PROCESS DATA ON FILTERED DATA
+  }
   PROCESS_SWITCH(LFNucleiBATask, processDataFiltered, "process data on the filtered data", false);
 
   void processDataLight(o2::aod::LfNuclEvents::iterator const& event,
@@ -4319,7 +4319,7 @@ struct LFNucleiBATask {
     // Runs on derived tables produced with LF Tree creator nuclei task
     // Takes as input derived trees
     fillHistograms<false /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
-  } // CLOSING PROCESS DATA ON FILTERED DATA
+  }
   PROCESS_SWITCH(LFNucleiBATask, processDataLight, "process data on the derived trees", false);
 
   /////////////
