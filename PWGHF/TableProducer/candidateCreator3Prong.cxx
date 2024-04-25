@@ -504,7 +504,8 @@ struct HfCandidateCreator3ProngExpressions {
 
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+                 aod::McParticles const& mcParticles,
+                 aod::McCollisions const&)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
 

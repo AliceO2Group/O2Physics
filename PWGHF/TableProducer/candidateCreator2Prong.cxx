@@ -685,7 +685,8 @@ struct HfCandidateCreator2ProngExpressions {
 
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+                 aod::McParticles const& mcParticles,
+                 aod::McCollisions const&)
   {
     rowCandidateProng2->bindExternalIndices(&tracks);
 
@@ -697,6 +698,7 @@ struct HfCandidateCreator2ProngExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : *rowCandidateProng2) {
+
       flag = 0;
       origin = 0;
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};

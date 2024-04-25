@@ -464,7 +464,8 @@ struct HfCandidateCreatorCascadeMc {
   }
 
   void processMc(MyTracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+                 aod::McParticles const& mcParticles,
+                 aod::McCollisions const&)
   {
     int8_t sign = 0;
     int8_t origin = 0;

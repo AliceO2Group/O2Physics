@@ -412,7 +412,8 @@ struct HfCandidateSigmac0plusplusMc {
   /// @param mcParticles table of generated particles
   void processMc(aod::McParticles const& mcParticles,
                  aod::TracksWMc const& tracks,
-                 LambdacMc const& candsLc /*, const LambdacMcGen&*/)
+                 LambdacMc const& candsLc /*, const LambdacMcGen&*/,
+                 aod::McCollisions const&)
   {
 
     // Match reconstructed candidates.
