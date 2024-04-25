@@ -69,8 +69,8 @@ struct TrackTuner {
   std::string pathFileQoverPt = "";   // Path to file containing D0 sigma graphs from data and MC
   std::string nameFileQoverPt = "";   // file name containing Q/Pt correction graphs from data and MC
   bool usePvRefitCorrections = false; // establish whether to use corrections obtained with or w/o PV refit
-  float qOverPtMC = 0.;               // 1/pt old
-  float qOverPtData = 0.;             // 1/pt new
+  float qOverPtMC = -1.;              // 1/pt old
+  float qOverPtData = -1.;            // 1/pt new
   ///////////////////////////////
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -293,7 +293,7 @@ struct TrackTuner {
     outputString += ", qOverPtData=" + std::to_string(qOverPtData);
     LOG(info) << "[TrackTuner]     qOverPtData = " << qOverPtData;
 
-    if ((updateCurvatureIU == 1) && (updateCurvature == 1)) {
+    if ((updateCurvatureIU) && (updateCurvature)) {
       LOG(fatal) << " [ updateCurvatureIU==kTRUE and updateCurvature==kTRUE ] -> Only one of them can be set to kTRUE at once! Please refer to the trackTuner documentation.";
     }
 
@@ -335,7 +335,7 @@ struct TrackTuner {
       LOG(fatal) << "Something wrong with the input file" << fullNameInputFile << " for dca correction. Fix it!";
     }
     std::unique_ptr<TFile> inputFileQoverPt(TFile::Open(fullNameFileQoverPt.c_str(), "READ"));
-    if (!inputFileQoverPt.get()) {
+    if (!inputFileQoverPt.get() && (updateCurvature || updateCurvatureIU)) {
       LOG(fatal) << "Something wrong with the Q/Pt input file" << fullNameFileQoverPt << " for Q/Pt correction. Fix it!";
     }
 
@@ -385,9 +385,12 @@ struct TrackTuner {
 
     std::string grOneOverPtPionNameMC = "sigmaVsPtMc";
     std::string grOneOverPtPionNameData = "sigmaVsPtData";
-    grOneOverPtPionMC.reset(dynamic_cast<TGraphErrors*>(inputFileQoverPt->Get(grOneOverPtPionNameMC.c_str())));
-    grOneOverPtPionData.reset(dynamic_cast<TGraphErrors*>(inputFileQoverPt->Get(grOneOverPtPionNameData.c_str())));
-  }
+
+    if (updateCurvature || updateCurvatureIU) {
+      grOneOverPtPionMC.reset(dynamic_cast<TGraphErrors*>(inputFileQoverPt->Get(grOneOverPtPionNameMC.c_str())));
+      grOneOverPtPionData.reset(dynamic_cast<TGraphErrors*>(inputFileQoverPt->Get(grOneOverPtPionNameData.c_str())));
+    }
+  } // getDcaGraphs() ends here
 
   template <typename T1, typename T2, typename T3, typename T4, typename H>
   void tuneTrackParams(T1 const& mcparticle, T2& trackParCov, T3 const& matCorr, T4 dcaInfoCov, H hQA)
@@ -415,24 +418,28 @@ struct TrackTuner {
     dcaZResData = evalGraph(ptMC, grDcaZResVsPtPionData.get());
 
     // For Q/Pt corrections, files on CCDB will be used if both qOverPtMC and qOverPtData are null
-    if ((qOverPtMC == 0) && (qOverPtData == 0)) {
-      qOverPtMC = evalGraph(ptMC, grOneOverPtPionMC.get());
-      qOverPtData = evalGraph(ptMC, grOneOverPtPionData.get());
+    if (updateCurvature || updateCurvatureIU) {
+      if ((qOverPtMC < 0) || (qOverPtData < 0)) {
+        LOG(info) << "### q/pt smearing: qOverPtMC=" << qOverPtMC << ", qOverPtData=" << qOverPtData << ". One of them is negative. Retrieving then values from graphs from input .root file";
+        /// check that input graphs for q/pt smearing are correctly retrieved
+        if (!grOneOverPtPionData.get() || !grOneOverPtPionMC.get()) {
+          LOG(info) << "### q/pt smearing: input graphs not correctly retrieved. Aborting.";
+        }
+        qOverPtMC = std::max(0.0, evalGraph(ptMC, grOneOverPtPionMC.get()));
+        qOverPtData = std::max(0.0, evalGraph(ptMC, grOneOverPtPionData.get()));
+      } // qOverPtMC, qOverPtData block ends here
+    }   // updateCurvature, updateCurvatureIU block ends here
+
+    if (updateTrackDCAs) {
+      dcaXYMeanMC = evalGraph(ptMC, grDcaXYMeanVsPtPionMC.get());
+      dcaXYMeanData = evalGraph(ptMC, grDcaXYMeanVsPtPionData.get());
+
+      dcaXYPullMC = evalGraph(ptMC, grDcaXYPullVsPtPionMC.get());
+      dcaXYPullData = evalGraph(ptMC, grDcaXYPullVsPtPionData.get());
+
+      dcaZPullMC = evalGraph(ptMC, grDcaZPullVsPtPionMC.get());
+      dcaZPullData = evalGraph(ptMC, grDcaZPullVsPtPionData.get());
     }
-
-    if ((qOverPtMC < 0) || (qOverPtData < 0)) {
-      LOG(fatal) << " Please assign a positive integer to qOverPtMC and qOverPtData in your configuration! Please refer to the trackTuner documentation.";
-    }
-
-    dcaXYMeanMC = evalGraph(ptMC, grDcaXYMeanVsPtPionMC.get());
-    dcaXYMeanData = evalGraph(ptMC, grDcaXYMeanVsPtPionData.get());
-
-    dcaXYPullMC = evalGraph(ptMC, grDcaXYPullVsPtPionMC.get());
-    dcaXYPullData = evalGraph(ptMC, grDcaXYPullVsPtPionData.get());
-
-    dcaZPullMC = evalGraph(ptMC, grDcaZPullVsPtPionMC.get());
-    dcaZPullData = evalGraph(ptMC, grDcaZPullVsPtPionData.get());
-
     //  Unit conversion, is it required ??
     dcaXYResMC *= 1.e-4;
     dcaZResMC *= 1.e-4;
@@ -528,7 +535,8 @@ struct TrackTuner {
         sigma1Pt2 *= (qOverPtData / qOverPtMC);
         trackParCov.setCov(sigma1Pt2, 14);
       }
-    }
+    } // updateCurvatureIU block ends here
+
     // propagate to DCA with respect to the Production point
     // if (!updateCurvatureIU) {
     //   o2::base::Propagator::Instance()->propagateToDCABxByBz(vtxMC, trackParCov, 2.f, matCorr, dcaInfoCov);
@@ -715,10 +723,12 @@ struct TrackTuner {
     if (updatePulls) {
       double ratioDCAxyPulls = 1.0;
       double ratioDCAzPulls = 1.0;
-      if (dcaZPullData != 0.0)
+      if (dcaZPullData > 0.0) {
         ratioDCAzPulls = dcaZPullMC / dcaZPullData;
-      if (dcaXYPullData != 0.0)
+      }
+      if (dcaXYPullData > 0.0) {
         ratioDCAxyPulls = dcaXYPullMC / dcaXYPullData;
+      }
 
       // covar[0]*=pullcorr*pullcorr;//yy
       sigmaY2 *= (ratioDCAxyPulls * ratioDCAxyPulls);
