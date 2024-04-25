@@ -195,7 +195,7 @@ struct antidLambdaEbye {
   ConfigurableAxis momResAxis{"momResAxis", {1.e2, -1.f, 1.f}, "momentum resolution binning"};
   ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
   ConfigurableAxis tofAxis{"tofAxis", {1.e3, 0.f, 1.f}, "tof signal axis binning"};
-  ConfigurableAxis tpcClsAxis{"tpcClsAxis", {160, 0, 160}, "tpc n clusters binning"};
+  ConfigurableAxis tpcClsAxis{"tpcClsAxis", {160, 0.f, 160.f}, "tpc n clusters binning"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -249,6 +249,7 @@ struct antidLambdaEbye {
   Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1f, "DCA Neg To PV"};
   Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"};
   Configurable<float> v0setting_radius{"v0setting_radius", 0.5f, "v0radius"};
+  Configurable<float> v0setting_lifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
   Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.005f, "maximum deviation from PDG mass"};
   Configurable<float> lambdaMassCutQA{"lambdaMassCutQA", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
@@ -287,10 +288,11 @@ struct antidLambdaEbye {
       return false;
     }
     if (doprocessRun2 || doprocessMcRun2) {
-      if (!(track.flags() & o2::aod::track::TrackFlagsRun2Enum::TPCrefit)) {
+      if (!(track.trackType() & o2::aod::track::Run2Track) ||
+          !(track.flags() & o2::aod::track::TPCrefit)) {
         return false;
       }
-      if (v0requireITSrefit && !(track.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit)) {
+      if (v0requireITSrefit && !(track.flags() & o2::aod::track::ITSrefit)) {
         return false;
       }
     }
@@ -315,8 +317,9 @@ struct antidLambdaEbye {
       return false;
     }
     if (doprocessRun2 || doprocessMcRun2) {
-      if (!(track.flags() & o2::aod::track::TrackFlagsRun2Enum::TPCrefit) ||
-          !(track.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit)) {
+      if (!(track.trackType() & o2::aod::track::Run2Track) ||
+          !(track.flags() & o2::aod::track::TPCrefit) ||
+          !(track.flags() & o2::aod::track::ITSrefit)) {
         return false;
       }
     }
@@ -413,9 +416,11 @@ struct antidLambdaEbye {
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
     fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
+    fitter.setMaxDZIni(4);
+    fitter.setMaxDXYIni(1);
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
+    fitter.setWeightedFinalPCA(false);
     int mat{static_cast<int>(cfgMaterialCorrection)};
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
@@ -653,8 +658,8 @@ struct antidLambdaEbye {
         continue;
 
       if (doprocessRun2 || doprocessMcRun2) {
-        bool checkPosPileUp = posTrack.hasTOF() || (posTrack.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit);
-        bool checkNegPileUp = negTrack.hasTOF() || (negTrack.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit);
+        bool checkPosPileUp = posTrack.hasTOF() || (posTrack.flags() & o2::aod::track::ITSrefit);
+        bool checkNegPileUp = negTrack.hasTOF() || (negTrack.flags() & o2::aod::track::ITSrefit);
         if (!checkPosPileUp && !checkNegPileUp) {
           continue;
         }
@@ -727,15 +732,22 @@ struct antidLambdaEbye {
         continue;
       }
 
+      auto ptotal = RecoDecay::sqrtSumOfSquares(momV0[0], momV0[1], momV0[2]);
+      auto lengthTraveled = RecoDecay::sqrtSumOfSquares(vtx[0] - primVtx[0], vtx[1] - primVtx[1], vtx[2] - primVtx[2]);
+      float ML2P_Lambda = o2::constants::physics::MassLambda * lengthTraveled / ptotal;
+      if (ML2P_Lambda > v0setting_lifetime) {
+        continue;
+      }
+
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto posDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-      if (posDcaToPv < v0setting_dcapostopv) {
+      if (posDcaToPv < v0setting_dcapostopv && std::abs(dcaInfo[0]) < v0setting_dcapostopv) {
         continue;
       }
 
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto negDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-      if (negDcaToPv < v0setting_dcanegtopv) {
+      if (negDcaToPv < v0setting_dcanegtopv && std::abs(dcaInfo[0]) < v0setting_dcanegtopv) {
         continue;
       }
 

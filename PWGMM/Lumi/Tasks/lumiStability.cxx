@@ -16,6 +16,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/ASoAHelpers.h"
 #include "DataFormatsFDD/Digit.h"
@@ -23,7 +24,10 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::aod::evsel;
+
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 int nBCsPerOrbit = 3564;
 
@@ -33,39 +37,42 @@ struct lumiStabilityTask {
 
   void init(InitContext const&)
   {
-    const AxisSpec axisFDDTriggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
-    const AxisSpec axisFT0Triggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
-    const AxisSpec axisFV0Triggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
+    const AxisSpec axisTriggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
 
     // histo about triggers
-    histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcVertexTriggerCoincidence", "vertex trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcSCentralTrigger", "scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcSCentralTriggerCoincidence", "scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcVSCTrigger", "vertex and scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcVSCTriggerCoincidence", "vertex and scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcCentralTrigger", "central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcCentralTriggerCoincidence", "central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcVCTrigger", "vertex and central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    histos.add("FDD/bcVCTriggerCoincidence", "vertex and central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
+    histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVertexTriggerCoincidence", "vertex trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcSCentralTrigger", "scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcSCentralTriggerCoincidence", "scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVSCTrigger", "vertex and scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVSCTriggerCoincidence", "vertex and scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcCentralTrigger", "central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcCentralTriggerCoincidence", "central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVCTrigger", "vertex and central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVCTriggerCoincidence", "vertex and central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
 
-    histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
-    histos.add("FT0/bcSCentralTrigger", "Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
-    histos.add("FT0/bcVSCTrigger", "vertex and Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
-    histos.add("FT0/bcCentralTrigger", "central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
-    histos.add("FT0/bcVCTrigger", "vertex and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
-    histos.add("FT0/bcSCentralCentralTrigger", "Scentral and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
+    histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcSCentralTrigger", "Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcVSCTrigger", "vertex and Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcCentralTrigger", "central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcVCTrigger", "vertex and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcSCentralCentralTrigger", "Scentral and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
 
-    histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisFV0Triggger});
-    histos.add("FV0/bcInTrigger", "In trigger per BC (FV0);BC in V0; counts", kTH1F, {axisFV0Triggger});
-    histos.add("FV0/bcSCenTrigger", "SCen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisFV0Triggger});
-    histos.add("FV0/bcCenTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisFV0Triggger});
-    histos.add("FV0/bcSCenCenTrigger", "SCen and Cen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisFV0Triggger});
+    histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
+    histos.add("FV0/bcInTrigger", "In trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
+    histos.add("FV0/bcSCenTrigger", "SCen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
+    histos.add("FV0/bcCenTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
+    histos.add("FV0/bcSCenCenTrigger", "SCen and Cen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
   }
 
   bool checkAnyCoincidence(const std::vector<int>& channels)
   {
-    std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {4, 7}};
+    constexpr std::pair<int, int> pair0 = {0, 4};
+    constexpr std::pair<int, int> pair1 = {1, 5};
+    constexpr std::pair<int, int> pair2 = {2, 6};
+    constexpr std::pair<int, int> pair3 = {3, 7};
+    constexpr std::array<std::pair<int, int>, 4> channelPairs = {pair0, pair1, pair2, pair3};
+    // std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
     for (const auto& pair : channelPairs) {
       if (std::find(channels.begin(), channels.end(), pair.first) != channels.end() &&
           std::find(channels.begin(), channels.end(), pair.second) != channels.end()) {
@@ -75,16 +82,58 @@ struct lumiStabilityTask {
     return false;
   }
 
-  void processFDDFT0(aod::FT0s const& ft0s, aod::FDDs const& fdds, aod::BCsWithTimestamps const&)
+  void processMain(aod::FT0s const& ft0s, aod::FDDs const& fdds, aod::FV0As const& fv0s, BCsRun3 const& bcs)
   {
+    int CountNormal(0), CountPastProtec(0);
     for (auto const& fdd : fdds) {
-      auto bc = fdd.bc_as<BCsWithTimestamps>();
-      if (bc.timestamp() == false) {
+      auto bc = fdd.bc_as<BCsRun3>();
+      if (bc.timestamp() == 0) {
         continue;
       }
 
       Long64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
+
+      int deltaIndex = 0; // backward move counts
+      int deltaBC = 0;    // current difference wrt globalBC
+      int maxDeltaBC = 5; // maximum difference
+      bool pastActivityFDD = false;
+      while (deltaBC < maxDeltaBC) {
+        deltaIndex++;
+        if (bc.globalIndex() - deltaIndex < 0) {
+          break;
+        }
+        const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
+        deltaBC = globalBC - bc_past.globalBC();
+        if (deltaBC < maxDeltaBC) {
+          pastActivityFDD |= bc_past.has_fdd();
+        }
+      }
+      deltaIndex = 0;
+      deltaBC = 0;
+
+      bool futureActivityFDD = false;
+      while (deltaBC < maxDeltaBC) {
+        deltaIndex++;
+        if (bc.globalIndex() + deltaIndex >= bcs.size()) {
+          break;
+        }
+        const auto& bc_future = bcs.iteratorAt(bc.globalIndex() + deltaIndex);
+        deltaBC = bc_future.globalBC() - globalBC;
+        if (deltaBC < maxDeltaBC) {
+          futureActivityFDD |= bc_future.has_fdd();
+        }
+      }
+
+      CountNormal++;
+      if (pastActivityFDD == true || futureActivityFDD == true) {
+        CountPastProtec++;
+        continue;
+      }
+      /*if (pastActivityFDD == true) {
+        CountPastProtec++;
+        continue;
+      }*/
 
       std::bitset<8> fddTriggers = fdd.triggerMask();
       bool vertex = fddTriggers[o2::fdd::Triggers::bitVertex];
@@ -144,13 +193,51 @@ struct lumiStabilityTask {
     }   // loop over FDD events
 
     for (auto const& ft0 : ft0s) {
-      auto bc = ft0.bc_as<BCsWithTimestamps>();
-      if (bc.timestamp() == false) {
+      auto bc = ft0.bc_as<BCsRun3>();
+      if (bc.timestamp() == 0) {
         continue;
       }
 
       Long64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
+
+      int deltaIndex = 0; // backward move counts
+      int deltaBC = 0;    // current difference wrt globalBC
+      int maxDeltaBC = 5; // maximum difference
+      bool pastActivityFT0 = false;
+      while (deltaBC < maxDeltaBC) {
+        deltaIndex++;
+        if (bc.globalIndex() - deltaIndex < 0) {
+          break;
+        }
+        const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
+        deltaBC = globalBC - bc_past.globalBC();
+        if (deltaBC < maxDeltaBC) {
+          pastActivityFT0 |= bc_past.has_ft0();
+        }
+      }
+      deltaIndex = 0;
+      deltaBC = 0;
+
+      bool futureActivityFT0 = false;
+      while (deltaBC < maxDeltaBC) {
+        deltaIndex++;
+        if (bc.globalIndex() + deltaIndex >= bcs.size()) {
+          break;
+        }
+        const auto& bc_future = bcs.iteratorAt(bc.globalIndex() + deltaIndex);
+        deltaBC = bc_future.globalBC() - globalBC;
+        if (deltaBC < maxDeltaBC) {
+          futureActivityFT0 |= bc_future.has_ft0();
+        }
+      }
+
+      if (pastActivityFT0 == true || futureActivityFT0 == true) {
+        continue;
+      }
+      /*if (pastActivityFT0 == true) {
+        continue;
+      }*/
 
       std::bitset<8> fT0Triggers = ft0.triggerMask();
       bool vertex = fT0Triggers[o2::fdd::Triggers::bitVertex];
@@ -179,20 +266,54 @@ struct lumiStabilityTask {
         }
       }
     } // loop over FT0 events
-  }   // end processFDDFT0
 
-  PROCESS_SWITCH(lumiStabilityTask, processFDDFT0, "Process FDD and FT0 to lumi stability analysis", true);
-
-  void processV0(aod::FV0As const& fv0s, aod::BCsWithTimestamps const&)
-  {
     for (auto const& fv0 : fv0s) {
-      auto bc = fv0.bc_as<BCsWithTimestamps>();
-      if (bc.timestamp() == false) {
+      auto bc = fv0.bc_as<BCsRun3>();
+      if (bc.timestamp() == 0) {
         continue;
       }
 
       Long64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
+
+      int deltaIndex = 0; // backward move counts
+      int deltaBC = 0;    // current difference wrt globalBC
+      int maxDeltaBC = 5; // maximum difference
+      bool pastActivityV0A = false;
+      while (deltaBC < maxDeltaBC) {
+        deltaIndex++;
+        if (bc.globalIndex() - deltaIndex < 0) {
+          break;
+        }
+        const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
+        deltaBC = globalBC - bc_past.globalBC();
+        if (deltaBC < maxDeltaBC) {
+          pastActivityV0A |= bc_past.has_fv0a();
+        }
+      }
+      deltaIndex = 0;
+      deltaBC = 0;
+
+      bool futureActivityV0A = false;
+      while (deltaBC < maxDeltaBC) {
+        deltaIndex++;
+        if (bc.globalIndex() + deltaIndex >= bcs.size()) {
+          break;
+        }
+        const auto& bc_future = bcs.iteratorAt(bc.globalIndex() + deltaIndex);
+        deltaBC = bc_future.globalBC() - globalBC;
+        if (deltaBC < maxDeltaBC) {
+          futureActivityV0A |= bc_future.has_fv0a();
+        }
+      }
+
+      if (pastActivityV0A == true || futureActivityV0A == true) {
+        continue;
+      }
+
+      /*if (pastActivityV0A == true) {
+        continue;
+      }*/
 
       std::bitset<8> fv0Triggers = fv0.triggerMask();
       bool aOut = fv0Triggers[o2::fdd::Triggers::bitAOut];
@@ -219,9 +340,12 @@ struct lumiStabilityTask {
         }
       }
     } // loop over V0 events
-  }   // end processV0
+    std::cout << "************ >>>>>>>>>>>>>> "
+              << "Whithout Past Protection: " << CountNormal << " "
+              << "Avoided Whith Past Protection: " << CountPastProtec << "<<<<<<<<<<<< ********************" << std::endl;
+  } // end processMain
 
-  PROCESS_SWITCH(lumiStabilityTask, processV0, "Process V0 to lumi stability analysis", true);
+  PROCESS_SWITCH(lumiStabilityTask, processMain, "Process FDD and FT0 to lumi stability analysis", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
