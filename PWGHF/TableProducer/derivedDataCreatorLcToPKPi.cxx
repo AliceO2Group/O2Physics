@@ -148,7 +148,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
 
   template <typename T, typename U>
-  auto fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prong2, int candFlag, double invMass,
+  void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prong2, int candFlag, double invMass,
                            double ct, int8_t flagMc, int8_t origin, int8_t swapping, const std::vector<float>& mlScores)
   {
     if (fillCandidateBase) {
