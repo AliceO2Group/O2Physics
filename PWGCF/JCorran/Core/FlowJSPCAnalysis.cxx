@@ -15,7 +15,7 @@
 
 // O2 Physics headers.
 
-#include "PWGCF/Flow/Core/FlowJSPCAnalysis.h"
+#include "PWGCF/JCorran/Core/FlowJSPCAnalysis.h"
 
 using namespace o2;
 using namespace o2::framework;
