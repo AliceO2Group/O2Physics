@@ -58,6 +58,9 @@ TrackSelection getGlobalTrackSelectionRun3ITSMatch(int matching, int passFlag)
     case TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers:
       selectedTracks.SetRequireHitsInITSLayers(7, {0, 1, 2, 3, 4, 5, 6});
       break;
+    case TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibFirst:
+      selectedTracks.SetRequireHitsInITSLayers(1, {0});
+      break;
     default:
       LOG(fatal) << "getGlobalTrackSelectionRun3ITSMatch with undefined ITS matching";
       break;
