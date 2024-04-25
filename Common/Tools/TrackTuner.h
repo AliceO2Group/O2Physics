@@ -420,10 +420,12 @@ struct TrackTuner {
     // For Q/Pt corrections, files on CCDB will be used if both qOverPtMC and qOverPtData are null
     if (updateCurvature || updateCurvatureIU) {
       if ((qOverPtMC < 0) || (qOverPtData < 0)) {
-        LOG(info) << "### q/pt smearing: qOverPtMC=" << qOverPtMC << ", qOverPtData=" << qOverPtData << ". One of them is negative. Retrieving then values from graphs from input .root file";
+        if (debugInfo) {
+          LOG(info) << "### q/pt smearing: qOverPtMC=" << qOverPtMC << ", qOverPtData=" << qOverPtData << ". One of them is negative. Retrieving then values from graphs from input .root file";
+        }
         /// check that input graphs for q/pt smearing are correctly retrieved
         if (!grOneOverPtPionData.get() || !grOneOverPtPionMC.get()) {
-          LOG(info) << "### q/pt smearing: input graphs not correctly retrieved. Aborting.";
+          LOG(fatal) << "### q/pt smearing: input graphs not correctly retrieved. Aborting.";
         }
         qOverPtMC = std::max(0.0, evalGraph(ptMC, grOneOverPtPionMC.get()));
         qOverPtData = std::max(0.0, evalGraph(ptMC, grOneOverPtPionData.get()));
@@ -536,7 +538,6 @@ struct TrackTuner {
         trackParCov.setCov(sigma1Pt2, 14);
       }
     } // updateCurvatureIU block ends here
-
     // propagate to DCA with respect to the Production point
     // if (!updateCurvatureIU) {
     //   o2::base::Propagator::Instance()->propagateToDCABxByBz(vtxMC, trackParCov, 2.f, matCorr, dcaInfoCov);
