@@ -56,6 +56,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+using dauMCTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackMCIds, aod::DauTrackTPCPIDs>;
 using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
 using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0MCCollRefs>;
 
@@ -73,6 +74,12 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "fill feeddown matrix if MC"};
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
+
+  Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", true, "require events with at least one ITS-TPC track"};
+  Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
+  Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", true, "require events with at least one of vertex contributors matched to TOF"};
+  Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", true, "require events with at least one of vertex contributors matched to TRD"};
+  Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
 
   // Selection criteria: acceptance
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
@@ -152,7 +159,7 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisITScluMap{"axisITSMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
   ConfigurableAxis axisDetMap{"axisDetMap", {16, -0.5f, 15.5f}, "Detector use map"};
   ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {13, -0.5f, 12.5f}, "ITS Coarse cluster map"};
-  ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {4, -0.5f, 3.5f}, "Detector Coarse user map"};
+  ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {5, -0.5f, 4.5f}, "Detector Coarse user map"};
 
   // MC coll assoc QA axis
   ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
@@ -294,6 +301,11 @@ struct derivedlambdakzeroanalysis {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "kIsVertexITSTPC");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "kIsGoodZvtxFT0vsPV");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisCentrality, {500, 0.0f, +2000.0f}});
@@ -728,6 +740,7 @@ struct derivedlambdakzeroanalysis {
 
   uint computeDetBitmap(uint8_t detMap)
   // Focus on the 4 dominant track configurations :
+  //  Others
   //  ITS-TPC
   //  ITS-TPC-TRD
   //  ITS-TPC-TOF
@@ -737,16 +750,16 @@ struct derivedlambdakzeroanalysis {
 
     if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF))) {
       // ITS-TPC-TRD-TOF
-      bitMap = 3;
+      bitMap = 4;
     } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF))) {
       // ITS-TPC-TOF
-      bitMap = 2;
+      bitMap = 3;
     } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD))) {
       // ITS-TPC-TRD
-      bitMap = 1;
+      bitMap = 2;
     } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC))) {
       // ITS-TPC
-      bitMap = 0;
+      bitMap = 1;
     }
 
     return bitMap;
@@ -1027,6 +1040,31 @@ struct derivedlambdakzeroanalysis {
       return;
     }
     histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
+
+    if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 5 /* Contains at least one ITS-TPC track */);
+
+    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 6 /* PV position consistency check */);
+
+    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 7 /* PV with at least one contributor matched with TOF */);
+
+    if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TRD */);
+
+    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 9 /* Not at same bunch pile-up */);
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {
