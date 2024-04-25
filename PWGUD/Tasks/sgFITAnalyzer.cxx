@@ -21,6 +21,7 @@
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Tasks/SGTrackSelector.h"
 
 using namespace o2;
 using namespace o2::framework;
