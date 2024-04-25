@@ -358,9 +358,6 @@ struct HfDerivedDataCreatorLcToPKPi {
       reserveTable(rowParticleBase, fillParticleBase, sizeTablePart);
       reserveTable(rowParticleId, fillParticleId, sizeTablePart);
       for (const auto& particle : particlesThisMcColl) {
-        if (!TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
-          continue;
-        }
         fillTablesParticle(particle, o2::constants::physics::MassLambdaCPlus);
       }
     }
