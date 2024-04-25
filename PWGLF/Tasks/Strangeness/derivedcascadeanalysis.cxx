@@ -716,8 +716,9 @@ struct derivedCascadeAnalysis {
           if (TMath::Abs(bachExtra.tpcNSigmaPi()) > nsigmatpcPi)
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
-        } else
+        } else {
           ++counter;
+        }
 
         if (bachExtra.hasTOF() && doNTOFSigmaBachelorCut) {
           histos.fill(HIST("hNsigmaTOFBachelorPion"), casc.tofNSigmaXiPi(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
@@ -972,8 +973,9 @@ struct derivedCascadeAnalysis {
           if (TMath::Abs(bachExtra.tpcNSigmaKa()) > nsigmatpcKa)
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
-        } else
+        } else {
           ++counter;
+        }
 
         if (bachExtra.hasTOF() && doNTOFSigmaBachelorCut) {
           histos.fill(HIST("hNsigmaTOFBachelorKaon"), casc.tofNSigmaOmKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
