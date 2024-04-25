@@ -32,13 +32,8 @@
 #include <TH2F.h>
 #include <TProfile.h>
 #include <TLorentzVector.h>
-#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include "Framework/ASoAHelpers.h"
 
 // constants
 const float ctauxiPDG = 4.91;     // from PDG
