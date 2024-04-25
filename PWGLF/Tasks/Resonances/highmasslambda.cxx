@@ -75,12 +75,10 @@ struct highmasslambda {
 
   // fill output
   Configurable<bool> fillPolarization{"fillPolarization", false, "fill polarization"};
-
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 80.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 20.0f, "Accepted minimum Centrality"};
-
   // proton track cut
   Configurable<float> confRapidity{"confRapidity", 0.5, "cut on Rapidity"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.3, "PT cut on daughter track"};
@@ -100,20 +98,21 @@ struct highmasslambda {
   Configurable<double> ConfV0CPAMin{"ConfV0CPAMin", 0.996f, "Minimum CPA of V0"};
   Configurable<float> ConfV0TranRadV0Min{"ConfV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
   Configurable<float> ConfV0TranRadV0Max{"ConfV0TranRadV0Max", 100.f, "Maximum transverse radius"};
-  Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.5, "Maximum V0 DCA to PV"};
+  Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.3, "Maximum V0 DCA to PV"};
   Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
   Configurable<float> cSigmaMassKs0{"cSigmaMassKs0", 0.006, "Sigma cut on KS0 mass"};
-
   // config for V0 daughters
   Configurable<float> ConfDaughEta{"ConfDaughEta", 0.8f, "V0 Daugh sel: max eta"};
   Configurable<float> ConfDaughPt{"ConfDaughPt", 0.1f, "V0 Daugh sel: min pt"};
   Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 70.f, "V0 Daugh sel: Min. nCls TPC"};
   Configurable<double> ConfDaughDCAMin{"ConfDaughDCAMin", 0.08f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
   Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 3, "PID selections for KS0 daughters"};
-
+  // Fill strategy
+  Configurable<int> cfgFillStrategy{"cfgFillStrategy", 1, "Fill strategy"};
+  // Fill strategy
+  Configurable<int> cfgSelectDaughterTopology{"cfgSelectDaughterTopology", 1, "Select daughter for topology"};
   // Mixed event
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 1, "Number of mixed events per event"};
-
   /// activate rotational background
   Configurable<int> nBkgRotations{"nBkgRotations", 9, "Number of rotated copies (background) per each original candidate"};
 
@@ -125,6 +124,7 @@ struct highmasslambda {
   ConfigurableAxis configThnAxisPhiminusPsi{"configThnAxisPhiminusPsi", {6, 0.0, TMath::Pi()}, "#phi - #psi"};
   ConfigurableAxis configThnAxisV2{"configThnAxisV2", {100, -1, 1}, "V2"};
   ConfigurableAxis configThnAxisSA{"configThnAxisSA", {100, -1, 1}, "SA"};
+  ConfigurableAxis cnfigThnAxisDecayLength{"cnfigThnAxisDecayLength", {150, 0.0, 0.3}, "SA"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
@@ -152,12 +152,13 @@ struct highmasslambda {
     const AxisSpec thnAxisCentrality{configThnAxisCentrality, "Centrality (%)"};
     const AxisSpec thnAxisV2{configThnAxisV2, "V2"};
     const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
+    const AxisSpec thnAxisDecayLength{cnfigThnAxisDecayLength, "Decay Length"};
 
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec resAxis = {400, -2, 2, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
-    AxisSpec dcaAxis = {100, 0.0, 0.1, "V0M (%)"};
-    AxisSpec dcatoPVAxis = {10, 0.0, 0.5, "V0M (%)"};
+    AxisSpec dcaAxis = {150, 0.0, 0.3, "V0M (%)"};
+    AxisSpec dcatoPVAxis = {30, 0.0, 0.3, "V0M (%)"};
 
     histos.add("hInvMassKs0", "hInvMassKs0", kTH1F, {{200, 0.4f, 0.6f}});
     histos.add("hV0Dca", "hV0Dca", kTH1F, {{2000, -1.0f, 1.0f}});
@@ -177,14 +178,16 @@ struct highmasslambda {
     histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
     histos.add("hPsiTPCR", "PsiTPCR", kTH2F, {centAxis, phiAxis});
     histos.add("hPsiTPCL", "PsiTPCL", kTH2F, {centAxis, phiAxis});
-
-    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
-    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
-    histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
-    histos.add("hSparseV2SASameEvent_V2_new", "hSparseV2SASameEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisCentrality});
-    histos.add("hSparseV2SASameEventRotational_V2_new", "hSparseV2SASameEventRotational_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisCentrality});
-    histos.add("hSparseV2SAMixedEvent_V2_new", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisCentrality});
-
+    if (cfgFillStrategy == 1) {
+      histos.add("hSparseV2SASameEvent_V2_new", "hSparseV2SASameEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDecayLength, thnAxisDecayLength, thnAxisCentrality});
+      histos.add("hSparseV2SASameEventRotational_V2_new", "hSparseV2SASameEventRotational_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDecayLength, thnAxisDecayLength, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_V2_new", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisDecayLength, thnAxisDecayLength, thnAxisCentrality});
+    }
+    if (cfgFillStrategy == 2) {
+      histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
+      histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, dcatoPVAxis, thnAxisCentrality});
+    }
     if (fillPolarization) {
       histos.add("hSparseV2SASameEventplus_SA", "hSparseV2SASameEventplus_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEventplus_SA_A0", "hSparseV2SASameEventplus_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
@@ -425,10 +428,16 @@ struct highmasslambda {
         }
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
+
         auto diffangle = Proton.Phi() - Lambdac.Phi();
         auto decaylength = std::abs(track1.dcaXY() / TMath::Sin(diffangle));
-        histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), std::abs(v0.dcav0topv()), centrality);
-        histos.fill(HIST("hSparseV2SASameEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, decaylength, centrality);
+
+        if (cfgFillStrategy == 1) {
+          histos.fill(HIST("hSparseV2SASameEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, decaylength, std::abs(v0.dcav0topv()), centrality);
+        }
+        if (cfgFillStrategy == 2) {
+          histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), std::abs(v0.dcav0topv()), centrality);
+        }
         for (int nrotbkg = 1; nrotbkg < nBkgRotations; nrotbkg++) {
           auto anglestep = nrotbkg * (2.0 * TMath::Pi() / nBkgRotations);
           auto rotProtonPx = track1.px() * std::cos(anglestep) - track1.py() * std::sin(anglestep);
@@ -439,8 +448,12 @@ struct highmasslambda {
           auto v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
           auto diffangleRot = ProtonRot.Phi() - LambdacRot.Phi();
           auto decaylengthRot = std::abs(track1.dcaXY() / TMath::Sin(diffangleRot));
-          histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, std::abs(track1.dcaXY()), std::abs(v0.dcav0topv()), centrality);
-          histos.fill(HIST("hSparseV2SASameEventRotational_V2_new"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, decaylengthRot, centrality);
+          if (cfgFillStrategy == 1) {
+            histos.fill(HIST("hSparseV2SASameEventRotational_V2_new"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, decaylengthRot, std::abs(v0.dcav0topv()), centrality);
+          }
+          if (cfgFillStrategy == 2) {
+            histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, std::abs(track1.dcaXY()), centrality);
+          }
         }
         ROOT::Math::Boost boost{Lambdac.BoostToCM()};
         fourVecDauCM = boost(Kshort);
@@ -511,11 +524,14 @@ struct highmasslambda {
         }
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
-        histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), std::abs(v0.dcav0topv()), centrality);
+        if (cfgFillStrategy == 2) {
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), std::abs(v0.dcav0topv()), centrality);
+        }
         auto diffangle = Proton.Phi() - Lambdac.Phi();
         auto decaylength = std::abs(track1.dcaXY() / TMath::Sin(diffangle));
-        histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, decaylength, centrality);
-
+        if (cfgFillStrategy == 1) {
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, decaylength, std::abs(v0.dcav0topv()), centrality);
+        }
         ROOT::Math::Boost boost{Lambdac.BoostToCM()};
         fourVecDauCM = boost(Kshort);
         threeVecDauCM = fourVecDauCM.Vect();
