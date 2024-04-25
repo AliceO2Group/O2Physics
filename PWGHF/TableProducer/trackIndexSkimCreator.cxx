@@ -3634,7 +3634,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
               auto mass2ProngOmegaPiHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi]);
               auto mass2ProngOmegaKHyp = RecoDecay::m(arrMomToOmega, arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK]);
 
-              if (std::abs(casc.mOmega() - massOmega) < cascadeMassWindow){
+              if (std::abs(casc.mOmega() - massOmega) < cascadeMassWindow) {
                 if ((mass2ProngOmegaPiHyp >= massOmegaCharmBachelorMin) && (mass2ProngOmegaPiHyp <= massOmegaCharmBachelorMax)) {
                   SETBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
                 }
@@ -3644,7 +3644,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
               }
 
               // fill histograms
-              if (fillHistograms){
+              if (fillHistograms) {
                 if (TESTBIT(hfFlag, aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi)) {
                   registry.fill(HIST("hMassOmegacZeroToOmegaPi"), mass2ProngOmegaPiHyp);
                 }
