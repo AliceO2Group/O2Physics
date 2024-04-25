@@ -93,7 +93,7 @@ class SGSelector
         }
       }
       if (newdgabc != newdgcbc) {
-        if (ampc / diffCuts.FITAmpLimits()[2] > ampa / diffCuts.FITAmpLimits()[2])
+        if (ampc / diffCuts.FITAmpLimits()[2] > ampa / diffCuts.FITAmpLimits()[1])
           newdgabc = newdgcbc;
       }
       newbc = newdgabc;
