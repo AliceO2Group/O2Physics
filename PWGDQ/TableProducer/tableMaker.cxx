@@ -246,7 +246,7 @@ struct TableMaker {
                              context.mOptions.get<bool>("processMuonOnlyWithMults") || context.mOptions.get<bool>("processMuonOnlyWithCentAndMults") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCovAndCent") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithCovAndEventFilter") || context.mOptions.get<bool>("processMuonOnlyWithEventFilter") ||
-                             context.mOptions.get<bool>("processMuonOnlyWithMultsAndEventFilter") || context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") || context.mOptions.get<bool>("processAmbiguousMuonOnly") ||
+                             context.mOptions.get<bool>("processMuonOnlyWithMultsAndEventFilter") || context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") ||
                              context.mOptions.get<bool>("processMuonsAndMFT") || context.mOptions.get<bool>("processMuonsAndMFTWithFilter") || context.mOptions.get<bool>("processMuonMLOnly"));
 
     if (enableBarrelHistos) {
@@ -1560,31 +1560,7 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
-    }
-  }
-
-  // Produce muon tables only for ambiguous tracks studies --------------------------------------------------------------------------------------
-  void processAmbiguousMuonOnly(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
-                                soa::Filtered<MyMuons> const& tracksMuon, aod::AmbiguousTracksFwd const& ambiTracksFwd)
-  {
-    // Process orphan tracks
-    if (fDoDetailedQA && fIsAmbiguous) {
-      for (auto& ambiTrackFwd : ambiTracksFwd) {
-        auto muon = ambiTrackFwd.template fwdtrack_as<MyMuons>();
-        if (muon.collisionId() < 0) {
-          VarManager::FillTrack<gkMuonFillMapWithAmbi>(muon);
-          if ((static_cast<int>(muon.trackType()) == 0)) {
-            fHistMan->FillHistClass("Orphan_Muons_MFTMCHMID", VarManager::fgValues);
-          } else if ((static_cast<int>(muon.trackType()) == 3)) {
-            fHistMan->FillHistClass("Orphan_Muons_MCHMID", VarManager::fgValues);
-          }
-        }
-      }
-    }
-    for (auto& collision : collisions) {
-      auto groupedMuons = tracksMuon.sliceBy(perCollisionMuons, collision.globalIndex());
-      fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collision, bcs, nullptr, groupedMuons, nullptr, ambiTracksFwd);
+      fullSkimmingIndices<gkEventFillMapWithCent, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
@@ -1676,7 +1652,6 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithEventFilter, "Build muon-only DQ skimmed data model, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processMuonMLOnly, "Build muon-only DQ skimmed data model with global muon track by ML matching", false);
   PROCESS_SWITCH(TableMaker, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);
-  PROCESS_SWITCH(TableMaker, processAmbiguousMuonOnly, "Build muon-only DQ skimmed data model with QA plots for ambiguous muons", false);
   PROCESS_SWITCH(TableMaker, processAmbiguousMuonOnlyWithCov, "Build muon-only with cov DQ skimmed data model with QA plots for ambiguous muons", false);
   PROCESS_SWITCH(TableMaker, processAmbiguousBarrelOnly, "Build barrel-only DQ skimmed data model with QA plots for ambiguous tracks", false);
   PROCESS_SWITCH(TableMaker, processAssociatedMuonOnly, "Build muon-only DQ skimmed data model using track-collision association tables", false);
