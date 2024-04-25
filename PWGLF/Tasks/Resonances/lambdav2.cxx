@@ -376,13 +376,8 @@ struct lambdav2 {
 
   Filter acceptanceFilter =
     (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
-  // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) &&
-  //                     (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::EPCalibrationTables>>;
-  // using EventCandidates = soa::Filtered<
-  // soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults,
-  //	      aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::EPCalibrationTables>>;
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                                   aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
