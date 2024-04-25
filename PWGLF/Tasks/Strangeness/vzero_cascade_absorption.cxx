@@ -410,8 +410,8 @@ struct vzero_cascade_absorption {
         if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs)
           registryData.fill(HIST("AntiLambda_after_target_data"), v0.p(), v0.mAntiLambda());
       }
-    } // end loop on V0s
-  } // end processData
+    }
+  }
   PROCESS_SWITCH(vzero_cascade_absorption, processData, "Process data", true);
 
   Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
@@ -556,10 +556,9 @@ struct vzero_cascade_absorption {
             registryMC.fill(HIST("AntiLambda_Rresolution_after_target"), v0.p(), deltaR);
           }
         }
-
-      } // end loop on V0s
+      }
     }
-  } // end processMC
+  }
 
   void processMCgen(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
