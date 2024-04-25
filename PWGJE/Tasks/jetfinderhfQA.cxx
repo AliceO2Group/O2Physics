@@ -127,6 +127,7 @@ struct JetFinderHFQATask {
       registry.add("h3_jet_r_jet_pt_candidate_y", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});y_{candidate}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_candidate_invmass_jet_pt_candidate_pt", ";#it{m}_{inv, candidate} (GeV/#it{c}^{2}); #it{p}_{T,jet} (GeV/#it{c}) ;#it{p}_{T,candidate} (GeV/#it{c})", {HistType::kTH3F, {{500, 0.0, 5.0}, {200, 0.0, 200.0}, {200, 0.0, 200.0}}});
       registry.add("h3_candidatebar_invmass_jet_pt_candidate_pt", ";#it{m}_{inv, candidate bar} (GeV/#it{c}^{2}); #it{p}_{T,jet} (GeV/#it{c}) ;#it{p}_{T,candidate} (GeV/#it{c})", {HistType::kTH3F, {{500, 0.0, 5.0}, {200, 0.0, 200.0}, {200, 0.0, 200.0}}});
+      registry.add("h_jet_phat_weighted", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0, 350}}});
     }
 
     if (doprocessJetsRhoAreaSubData) {
@@ -208,6 +209,7 @@ struct JetFinderHFQATask {
       registry.add("h3_jet_r_part_jet_pt_part_candidate_eta_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#eta_{candidate}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_part_jet_pt_part_candidate_phi_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#varphi{candidate}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {160, -1.0, 7.}}});
       registry.add("h3_jet_r_part_jet_pt_part_candidate_y_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});y_{candidate}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
+      registry.add("h_jet_phat_part_weighted", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0, 350}}});
     }
 
     if (doprocessJetsMCPMCDMatched || doprocessJetsMCPMCDMatchedWeighted || doprocessJetsSubMatched) {
@@ -503,6 +505,7 @@ struct JetFinderHFQATask {
     if (jet.pt() > pTHatMaxMCD * pTHat) {
       return;
     }
+    registry.fill(HIST("h_jet_phat_weighted"), pTHat, weight);
 
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt"), jet.pt(), weight);
@@ -631,6 +634,7 @@ struct JetFinderHFQATask {
     if (jet.pt() > pTHatMaxMCP * pTHat) {
       return;
     }
+    registry.fill(HIST("h_jet_phat_part_weighted"), pTHat, weight);
 
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt_part"), jet.pt(), weight);
