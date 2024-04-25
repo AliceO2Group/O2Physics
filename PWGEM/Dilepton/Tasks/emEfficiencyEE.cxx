@@ -119,7 +119,6 @@ struct AnalysisEventSelection {
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
 
-
   HistogramManager* fHistMan;
   AnalysisCompositeCut* fEventCut;
 
@@ -991,7 +990,6 @@ struct AnalysisSameEventPairing {
   ConfigurableAxis meeBins{"meeBins", {600, 0.f, 3.5f}, "Mee binning"};
 
   // output lists
-   // output lists
   OutputObj<THashList> fOutputQA{"DielectronQA"};
   HistogramRegistry registry{"HistoSameEventSelection", {}, OutputObjHandlingPolicy::AnalysisObject};
   THashList* fQADielectronList; // QA in case on with histo from manager outputs
@@ -1007,7 +1005,7 @@ struct AnalysisSameEventPairing {
   std::vector<std::shared_ptr<TH2>> fHistRecPairMC;
 
   // QA
-  HistogramManager* fHistManQA;                            // histo manager
+  HistogramManager* fHistManQA; // histo manager
 
   void init(o2::framework::InitContext&)
   {
@@ -1099,19 +1097,18 @@ struct AnalysisSameEventPairing {
         std::vector<TString> mcnamesreco;
         for (unsigned int isig = 0; isig < fMCSignals.size(); ++isig) {
           names = {
-            Form("PairsBarrelSEPM_%s_%s", cut.GetName(),fMCSignals.at(isig).GetName()),
-            Form("PairsBarrelSEPP_%s_%s", cut.GetName(),fMCSignals.at(isig).GetName()),
-            Form("PairsBarrelSEMM_%s_%s", cut.GetName(),fMCSignals.at(isig).GetName())};
+            Form("PairsBarrelSEPM_%s_%s", cut.GetName(), fMCSignals.at(isig).GetName()),
+            Form("PairsBarrelSEPP_%s_%s", cut.GetName(), fMCSignals.at(isig).GetName()),
+            Form("PairsBarrelSEMM_%s_%s", cut.GetName(), fMCSignals.at(isig).GetName())};
           histClassesQA += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
         }
-
       }
 
       fHistManQA = new HistogramManager("DielectronQA", "aa", VarManager::kNVars);
       fHistManQA->SetUseDefaultVariableNames(kTRUE);
       fHistManQA->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
       DefineHistograms(fHistManQA, histClassesQA.Data(), fConfigAddSEPHistogram); // define all histograms
-      VarManager::SetUseVars(fHistManQA->GetUsedVars());  // provide the list of required variables so that VarManager knows what to fill
+      VarManager::SetUseVars(fHistManQA->GetUsedVars());                          // provide the list of required variables so that VarManager knows what to fill
       fQADielectronList = fHistManQA->GetMainHistogramList();
     }
     fOutputQA.setObject(fQADielectronList);
@@ -1372,19 +1369,19 @@ struct AnalysisSameEventPairing {
               if (!fConfigFillLS) {
                 fHistRecPair[j * fMCSignals.size() + i]->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
                 if (fConfigQA)
-                  fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fTrackCuts.at(j).GetName(),fMCSignals.at(i).GetName()), VarManager::fgValues);
+                  fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fTrackCuts.at(j).GetName(), fMCSignals.at(i).GetName()), VarManager::fgValues);
               } else {
                 if (uls) {
                   fHistRecPair[j * (2 * fMCSignals.size()) + 2 * i]->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
                   if (fConfigQA)
-                    fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fTrackCuts.at(j).GetName(),fMCSignals.at(i).GetName()), VarManager::fgValues);
+                    fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fTrackCuts.at(j).GetName(), fMCSignals.at(i).GetName()), VarManager::fgValues);
                 } else {
                   fHistRecPair[j * (2 * fMCSignals.size()) + 2 * i + 1]->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
                   if (fConfigQA) {
                     if (t1.sign() > 0) {
-                      fHistManQA->FillHistClass(Form("PairsBarrelSEPP_%s_%s", fTrackCuts.at(j).GetName(),fMCSignals.at(i).GetName()), VarManager::fgValues);
+                      fHistManQA->FillHistClass(Form("PairsBarrelSEPP_%s_%s", fTrackCuts.at(j).GetName(), fMCSignals.at(i).GetName()), VarManager::fgValues);
                     } else {
-                      fHistManQA->FillHistClass(Form("PairsBarrelSEMM_%s_%s", fTrackCuts.at(j).GetName(),fMCSignals.at(i).GetName()), VarManager::fgValues);
+                      fHistManQA->FillHistClass(Form("PairsBarrelSEMM_%s_%s", fTrackCuts.at(j).GetName(), fMCSignals.at(i).GetName()), VarManager::fgValues);
                     }
                   }
                 }
