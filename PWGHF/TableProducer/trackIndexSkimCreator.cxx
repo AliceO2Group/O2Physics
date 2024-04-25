@@ -3464,7 +3464,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
     uint8_t hfFlag = 0;
     bool isGoogForXi2Prong = true;
     bool isGoogForOmega2Prong = true;
-    bool isGoogForOmegaK2Prong = true;
 
     for (const auto& collision : collisions) {
 
@@ -3544,7 +3543,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
           hfFlag = 0;
           isGoogForXi2Prong = true;
           isGoogForOmega2Prong = true;
-          isGoogForOmegaK2Prong = true;
 
           auto trackCharmBachelor1 = trackIdCharmBachelor1.track_as<aod::TracksWCovDca>();
 
