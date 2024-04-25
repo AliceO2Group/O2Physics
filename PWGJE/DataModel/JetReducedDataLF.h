@@ -45,19 +45,8 @@ DECLARE_SOA_TABLE(StoredJV0Ids, "AOD1", "JV0ID",
                   jv0indices::NegTrackId,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(JV0PIds, "AOD", "JV0PID",
-                  jv0indices::JMcCollisionId,
-                  jv0indices::JMcParticleId);
-
-DECLARE_SOA_TABLE(StoredJV0PIds, "AOD1", "JV0PID",
-                  jv0indices::JMcCollisionId,
-                  jv0indices::JMcParticleId,
-                  o2::soa::Marker<1>);
-
 namespace jv0mcparticle
 {
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollisionParent);
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticleParent);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
@@ -83,8 +72,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 
 DECLARE_SOA_TABLE(JV0McParticles, "AOD", "JV0MCPARTICLE",
                   o2::soa::Index<>,
-                  jv0mcparticle::McCollisionId,
-                  jv0mcparticle::McParticleId,
+                  jv0indices::JMcCollisionId,
+                  jv0indices::JMcParticleId,
                   jv0mcparticle::Pt,
                   jv0mcparticle::Eta,
                   jv0mcparticle::Phi,
@@ -107,6 +96,8 @@ using JV0McParticle = JV0McParticles::iterator;
 
 DECLARE_SOA_TABLE(StoredJV0McParticles, "AOD1", "JV0MCPARTICLE",
                   o2::soa::Index<>,
+                  jv0indices::JMcCollisionId,
+                  jv0indices::JMcParticleId,
                   jv0mcparticle::Pt,
                   jv0mcparticle::Eta,
                   jv0mcparticle::Phi,
@@ -127,13 +118,6 @@ DECLARE_SOA_TABLE(StoredJV0McParticles, "AOD1", "JV0MCPARTICLE",
                   o2::soa::Marker<1>);
 
 using StoredJV0McParticle = StoredJV0McParticles::iterator;
-
-DECLARE_SOA_TABLE(JV0McPIs, "AOD", "JV0MCPI",
-                  jv0mcparticle::McCollisionId, jv0mcparticle::McParticleId);
-
-DECLARE_SOA_TABLE(StoredJV0McPIs, "AOD1", "JV0MCPI",
-                  jv0mcparticle::McCollisionId, jv0mcparticle::McParticleId,
-                  o2::soa::Marker<1>);
 
 } // namespace o2::aod
 

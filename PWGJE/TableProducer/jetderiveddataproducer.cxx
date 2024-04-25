@@ -37,6 +37,7 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGJE/Core/JetV0Utilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -67,10 +68,12 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JLcIds> jLcIdsTable;
   Produces<aod::JLcPIds> jLcParticleIdsTable;
   Produces<aod::JV0Ids> jV0IdsTable;
-  Produces<aod::JV0PIds> jV0ParticleIdsTable;
+  Produces<aod::JV0McParticles> jV0McParticlesTable;
 
   Preslice<aod::EMCALClusterCells> perClusterCells = aod::emcalclustercell::emcalclusterId;
   Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalclustercell::emcalclusterId;
+
+  Service<o2::framework::O2DatabasePDG> pdgDatabase;
 
   void init(InitContext const&)
   {
@@ -245,11 +248,32 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processV0, "produces derived index for V0 candidates", false);
 
-  void processV0MC(aod::JV0McPIs::iterator const& V0)
-  {
-    jV0ParticleIdsTable(V0.mcCollisionParentId(), V0.mcParticleParentId());
+  void processV0MC(aod::McParticle const& particle)
+  { // can loop over McV0Labels tables if we want to only store matched V0Particles
+    if (jetv0utilities::isV0Particle(particle)) {
+      std::vector<int> mothersId;
+      if (particle.has_mothers()) {
+        auto mothersIdTemps = particle.mothersIds();
+        for (auto mothersIdTemp : mothersIdTemps) {
+          mothersId.push_back(mothersIdTemp);
+        }
+      }
+      int daughtersId[2] = {-1, -1};
+      auto i = 0;
+      if (particle.has_daughters()) {
+        for (auto daughterId : particle.daughtersIds()) {
+          if (i > 1) {
+            break;
+          }
+          daughtersId[i] = daughterId;
+          i++;
+        }
+      }
+      auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
+      jV0McParticlesTable(particle.mcCollisionId(), particle.globalIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId, jetv0utilities::setV0ParticleDecayBit<aod::McParticles>(particle));
+    }
   }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processV0MC, "produces derived index for V0 particles", false);
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processV0MC, "produces V0 particles", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

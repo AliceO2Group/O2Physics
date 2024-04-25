@@ -482,6 +482,7 @@ DECLARE_SOA_TABLE(V0TrackXs, "AOD", "V0TRACKX", //! track X positions at minima 
                   v0data::PosX, v0data::NegX, o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE_FULL(V0CoresBase, "V0Cores", "AOD", "V0CORE", //! core information about decay, viable with AO2Ds or derived
+                       o2::soa::Index<>,
                        v0data::X, v0data::Y, v0data::Z,
                        v0data::PxPos, v0data::PyPos, v0data::PzPos,
                        v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
@@ -529,6 +530,7 @@ DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, V0CoresBase, "V0COREEXT",              
                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
 
 DECLARE_SOA_TABLE_FULL(StoredV0CoresBase, "V0Cores", "AOD1", "V0CORE", //! core information about decay, viable with AO2Ds or derived
+                       o2::soa::Index<>,
                        v0data::X, v0data::Y, v0data::Z,
                        v0data::PxPos, v0data::PyPos, v0data::PzPos,
                        v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
