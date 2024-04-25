@@ -94,6 +94,8 @@ struct TaskPolarisationCharmHadrons {
 
   /// activate rotational background
   Configurable<int> nBkgRotations{"nBkgRotations", 0, "Number of rotated copies (background) per each original candidate"};
+  Configurable<float> minRotAngleMultByPi{"minRotAngleMultByPi", 5. / 6, "Minimum angle rotation for track rotation, to be multiplied by pi"};
+  Configurable<float> maxRotAngleMultByPi{"maxRotAngleMultByPi", 7. / 6, "Maximum angle rotation for track rotation, to be multiplied by pi"};
 
   /// output THnSparses
   Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", true, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
@@ -147,7 +149,7 @@ struct TaskPolarisationCharmHadrons {
     massKaon = o2::constants::physics::MassKaonCharged;
     massDstar = o2::constants::physics::MassDStar;
     massLc = o2::constants::physics::MassLambdaCPlus;
-    bkgRotationAngleStep = constants::math::TwoPI / (nBkgRotations + 1); // nBkgRotations==0: 2π (no rotation); nBkgRotations==1: π; nBkgRotations==2: 2π/3, 4π/3; ...
+    bkgRotationAngleStep = (nBkgRotations > 1) ? (maxRotAngleMultByPi - minRotAngleMultByPi) * constants::math::PI / (nBkgRotations - 1) : 0.;
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisInvMassD0{configThnAxisInvMassD0, "#it{M}(D^{0}) (GeV/#it{c}^{2})"};
@@ -603,7 +605,8 @@ struct TaskPolarisationCharmHadrons {
         // polarization measured from the soft-pion daughter (*)
 
         massDau = massPi; // (*)
-        const float bkgRotAngle = bkgRotationAngleStep * bkgRotationId;
+        const float bkgRotAngle = (bkgRotationId > 0) ? minRotAngleMultByPi * constants::math::PI + bkgRotationAngleStep * (bkgRotationId - 1) : 0;
+
         std::array<float, 3> threeVecSoftPi{candidate.pxSoftPi() * std::cos(bkgRotAngle) - candidate.pySoftPi() * std::sin(bkgRotAngle), candidate.pxSoftPi() * std::sin(bkgRotAngle) + candidate.pySoftPi() * std::cos(bkgRotAngle), candidate.pzSoftPi()}; // we rotate the soft pion
         std::array<float, 3> threeVecD0Prong0{candidate.pVectorProng0()};
         std::array<float, 3> threeVecD0Prong1{candidate.pVectorProng1()};
@@ -659,7 +662,8 @@ struct TaskPolarisationCharmHadrons {
 
         /// mass-hypothesis-independent variables
         /// daughters momenta
-        const float bkgRotAngle = bkgRotationAngleStep * bkgRotationId;
+        const float bkgRotAngle = (bkgRotationId > 0) ? minRotAngleMultByPi * constants::math::PI + bkgRotationAngleStep * (bkgRotationId - 1) : 0;
+
         std::array<float, 3> threeVecLcProng0{candidate.pVectorProng0()};
         std::array<float, 3> threeVecLcRotatedProng1{candidate.pxProng1() * std::cos(bkgRotAngle) - candidate.pyProng1() * std::sin(bkgRotAngle), candidate.pxProng1() * std::sin(bkgRotAngle) + candidate.pyProng1() * std::cos(bkgRotAngle), candidate.pzProng1()};
         std::array<float, 3> threeVecLcProng2{candidate.pVectorProng2()};
