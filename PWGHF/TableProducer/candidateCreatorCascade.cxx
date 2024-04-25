@@ -22,6 +22,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
 
@@ -445,8 +446,28 @@ struct HfCandidateCreatorCascadeMc {
 
   using MyTracksWMc = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
 
+  float zPvPosMax{1000.f};
+
+  // inspect for which zPvPosMax cut was set for reconstructed
+  void init(InitContext& initContext)
+  {
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name.compare("hf-candidate-creator-cascade") == 0) {
+        for (const auto& option : device.options) {
+          if (option.name.compare("zPvPosMax") == 0) {
+            zPvPosMax = option.defaultValue.get<float>();
+            break;
+          }
+        }
+        break;
+      }
+    }
+  }
+
   void processMc(MyTracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+                 aod::McParticles const& mcParticles,
+                 aod::McCollisions const&)
   {
     int8_t sign = 0;
     int8_t origin = 0;
@@ -493,6 +514,14 @@ struct HfCandidateCreatorCascadeMc {
     // Match generated particles.
     for (const auto& particle : mcParticles) {
       origin = 0;
+
+      auto mcCollision = particle.mcCollision();
+      float zPv = mcCollision.posZ();
+      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+        rowMcMatchGen(sign, origin);
+        continue;
+      }
+
       // checking if I have a Lc --> K0S + p
       RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
       if (sign == 0) { // now check for anti-Lc
