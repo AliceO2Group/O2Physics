@@ -33,6 +33,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/DCA.h"
 
 #include "Common/Core/trackUtilities.h"
@@ -665,7 +666,21 @@ struct HfCandidateCreator2ProngExpressions {
   Produces<aod::HfCand2ProngMcRec> rowMcMatchRec;
   Produces<aod::HfCand2ProngMcGen> rowMcMatchGen;
 
-  void init(InitContext const&) {}
+  float zPvPosMax{1000.f};
+
+  // inspect for which zPvPosMax cut was set for reconstructed
+  void init(InitContext& initContext) {
+    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name.compare("hf-candidate-creator-2prong") == 0) {
+        for (const auto& option : device.options) {
+          if (option.name.compare("zPvPosMax") == 0) {
+            zPvPosMax = option.defaultValue.get<float>();
+          }
+        }
+      }
+    }
+  }
 
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
@@ -720,6 +735,13 @@ struct HfCandidateCreator2ProngExpressions {
     for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
+
+      auto mcCollision = particle.mcCollision();
+      float zPv = mcCollision.posZ();
+      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+        rowMcMatchGen(flag, origin);
+        continue;
+      }
 
       // D0(bar) → π± K∓
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
