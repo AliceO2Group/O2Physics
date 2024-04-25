@@ -44,7 +44,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::analysis::PWGCF;
+using namespace o2::analysis::PWGCF::jspc;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                aod::FT0sCorrected, aod::CentFT0Ms,
@@ -120,22 +120,16 @@ struct flowJSPCAnalysisTask {
 
     /////////////////////
 
-    // Analysis class initialization
-    // blaa blaa spcAnalysis.CreateOutputObjects()
-
     ccdb->setURL(cfgCCDB.cfgURL);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(cfgCCDB.cfgTime.value);
-
-    // Add CCDB access here
   }
 
   void process(soa::Filtered<MyCollisions>::iterator const& coll, soa::Filtered<MyTracks> const& tracks)
   {
     if (tracks.size() < cfgEventCuts.cfgMultMin)
       return;
-    // Int_t nTracks = tracks.size();
 
     float cent = -1.;
     switch (cfgEventCuts.cfgCentEst) {
@@ -159,17 +153,12 @@ struct flowJSPCAnalysisTask {
       return;
     }
     Int_t cBin = histManager.GetCentBin(cent);
-    // printf("Centrality: %.2f,\tBin: %d\n", cent, cBin);
     SPCHistograms.fill(HIST("FullCentrality"), cent);
     int nTracks = tracks.size();
 
     for (auto& track : tracks) {
       if (cfgFillQA)
         histManager.FillTrackQA<1>(track, cBin, coll.posZ());
-      // printf("Track phi: %.3f, %.2f\n", track.phi(), cent);
-      // We get the NUE and NUA weight values from the objects fetched earlier
-      // in the CCDB. These weights still need to be inverted to be used in
-      // the computations of the Q-vectors.
 
       if (cfgUseNUE) {
         ;
@@ -184,11 +173,7 @@ struct flowJSPCAnalysisTask {
 
     jqvecs.Calculate(tracks, 0.0, cfgTrackCuts.cfgEtaMax);
     spcAnalysis.SetQvectors(&jqvecs);
-    printf("Q-vectors calculated\n");
     spcAnalysis.CalculateCorrelators(cBin);
-
-    /* Reset the variables for the next collision. */
-    // This ensures no mixing between collision can happen accidentally.
 
     LOGF(info, "Collision analysed. Next...");
   }

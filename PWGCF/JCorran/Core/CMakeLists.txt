@@ -11,6 +11,7 @@
 
 o2physics_add_library(JCorran
                     SOURCES JFFlucAnalysis.cxx
+                    FlowJSPCAnalysis.cxx
                     JHistManager.cxx
                     FlowJHistManager.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
@@ -18,5 +19,7 @@ o2physics_add_library(JCorran
 o2physics_target_root_dictionary(JCorran
                     HEADERS JFFlucAnalysis.h
                     FlowJHistManager.h
+                    FlowJSPCAnalysis.h
+                    FlowJSPCObservables.h
                     JHistManager.h
                     LINKDEF JCORRANLinkDef.h)

@@ -12,8 +12,8 @@
 // \brief   Helper class for the SPC-related analyses.
 // \author  Maxim Virta (maxim.virta@cern.fi)
 
-#ifndef PWGCF_FLOW_CORE_FLOWJSPCOBSERVABLES_H_
-#define PWGCF_FLOW_CORE_FLOWJSPCOBSERVABLES_H_
+#ifndef PWGCF_JCORRAN_CORE_FLOWJSPCOBSERVABLES_H_
+#define PWGCF_JCORRAN_CORE_FLOWJSPCOBSERVABLES_H_
 
 // O2 headers. //
 // #include "Framework/AnalysisDataModel.h"
@@ -25,8 +25,6 @@ using namespace o2::framework;
 using namespace std;
 
 const int maxNrComb = 12;
-namespace o2::analysis::PWGCF
-{
 class FlowJSPCObservables
 {
  public:
@@ -101,5 +99,5 @@ class FlowJSPCObservables
  private:
   ClassDefNV(FlowJSPCObservables, 1);
 };
-} // namespace o2::analysis::PWGCF
-#endif // PWGCF_FLOW_CORE_FLOWJSPCOBSERVABLES_H_
+}
+#endif // PWGCF_JCORRAN_CORE_FLOWJSPCOBSERVABLES_H_

@@ -21,9 +21,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace std;
 
-namespace o2::analysis::PWGCF
-{
-
 TComplex FlowJSPCAnalysis::Q(const Int_t harmN, const Int_t p)
 {
   if (harmN >= 0)
@@ -86,14 +83,12 @@ void FlowJSPCAnalysis::CalculateCorrelators(const Int_t fCentBin)
   Double_t correlationDenom;
   Double_t weightCorrelationDenom;
 
-  // Int_t fDebugLevel = 0;
   for (Int_t j = 0; j < 12; j++) {
     if (fHarmosArray[j][0] == 0) {
       continue;
     } // Skip null correlator list.
 
     // Calculate the numerator.
-    // if (fDebugLevel > 5) {printf("Calculating numerator.\n");}
     Int_t hArrayNum[7] = {0};
     for (int iH = 0; iH < 7; iH++) {
       hArrayNum[iH] = fHarmosArray[j][iH + 1];
@@ -103,7 +98,6 @@ void FlowJSPCAnalysis::CalculateCorrelators(const Int_t fCentBin)
     weightCorrelationNum = dataCorrelation[1];
 
     // Calculate the denominator.
-    // if (fDebugLevel > 5) {printf("Calculating denominator.\n");}
     Int_t nPartDen = 2 * fHarmosArray[j][0];
     Int_t hArrayDen[14] = {0};
     for (int iH = 0; iH < 7; iH++) {
@@ -201,9 +195,6 @@ void FlowJSPCAnalysis::FillHistograms(const Int_t fCentBin, Int_t ind, Double_t 
 void FlowJSPCAnalysis::Correlation(Int_t c_nPart, Int_t c_nHarmo, Int_t* harmo, Double_t* correlData)
 {
   // Calculate the correlators for the provided set of harmonics using Q-vectors.
-  // if (fDebugLevel > 5) {for (Int_t i = 0; i < c_nHarmo; i++) {printf("%d ", harmo[i]);}}
-  // if (fDebugLevel > 5) {printf("\n");}
-
   // Protection against anisotropic correlators.
   Int_t sumHarmo = 0;
   for (Int_t i = 0; i < c_nHarmo; i++) {
@@ -213,7 +204,6 @@ void FlowJSPCAnalysis::Correlation(Int_t c_nPart, Int_t c_nHarmo, Int_t* harmo, 
     printf("\nOups, this correlator is not isotropic(sum = %d). Bye\n", sumHarmo);
     return;
   }
-  // printf("\nYeah, this correlator is isotropic(sum = %d).\n", sumHarmo);
 
   switch (c_nPart) {
     case 2: {
@@ -380,8 +370,6 @@ void FlowJSPCAnalysis::Correlation(Int_t c_nPart, Int_t c_nHarmo, Int_t* harmo, 
 int FlowJSPCAnalysis::GetCentBin(float cValue)
 {
   const float centClasses[] = {0., 1., 2., 5., 10., 20., 30., 40., 50., 60., 70.};
-  // const float centClasses[] = {0., 5., 10., 20., 30., 40., 50., 60., 70.};
-
   for (int i = 0; i < 8; i++) {
     if (cValue >= centClasses[i]) {
       continue;
@@ -394,5 +382,3 @@ int FlowJSPCAnalysis::GetCentBin(float cValue)
   // --> The measured percentile is larger than the final class we consider.
   return -1;
 }
-
-} // namespace o2::analysis::PWGCF

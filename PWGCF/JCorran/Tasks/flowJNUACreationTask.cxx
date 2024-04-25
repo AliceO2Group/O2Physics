@@ -109,7 +109,6 @@ struct flowJNUACreationTask {
   {
     if (tracks.size() < cfgEventCuts.cfgMultMin)
       return;
-    // Int_t nTracks = tracks.size();
 
     float cent = -1.;
     switch (cfgEventCuts.cfgCentEst) {
@@ -133,24 +132,12 @@ struct flowJNUACreationTask {
       return;
     }
     Int_t cBin = histManager.GetCentBin(cent);
-    // printf("Centrality: %.2f,\tBin: %d\n", cent, cBin);
-    vector<float> trackPhi;
-    int nTracks = 0;
+    int nTracks = tracks.size();
 
     for (auto& track : tracks) {
       histManager.FillTrackQA<1>(track, cBin, 1., 1., coll.posZ());
-      trackPhi.push_back(track.phi());
-      // printf("Track phi: %.3f, %.2f\n", track.phi(), cent);
-      // We get the NUE and NUA weight values from the objects fetched earlier
-      // in the CCDB. These weights still need to be inverted to be used in
-      // the computations of the Q-vectors.
-      nTracks++;
     }
     histManager.FillEventQA<1>(coll, cBin, cent, nTracks);
-
-    /* Reset the variables for the next collision. */
-    // This ensures no mixing between collision can happen accidentally.
-    trackPhi.clear();
 
     LOGF(info, "Collision analysed. Next...");
   }

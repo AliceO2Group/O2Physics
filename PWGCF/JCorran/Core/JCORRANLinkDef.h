@@ -19,5 +19,7 @@
 #pragma link C++ class JFFlucAnalysis + ;
 #pragma link C++ class JHistManager + ;
 #pragma link C++ class FlowJHistManager + ;
+#pragma link C++ class FlowJSPCAnalysis + ;
+#pragma link C++ class FlowJSPCObservables + ;
 
 #endif // PWGCF_JCORRAN_CORE_JCORRANLINKDEF_H_

@@ -12,8 +12,8 @@
 // \brief   Calculation class for the SPC-related analyses.
 // \author  Maxim Virta (maxim.virta@cern.fi), Cindy Mordasini (cindy.mordasini@cern.ch)
 
-#ifndef PWGCF_FLOW_CORE_FLOWJSPCANALYSIS_H_
-#define PWGCF_FLOW_CORE_FLOWJSPCANALYSIS_H_
+#ifndef PWGCF_JCORRAN_CORE_FLOWJSPCANALYSIS_H_
+#define PWGCF_JCORRAN_CORE_FLOWJSPCANALYSIS_H_
 
 /* Header files. */
 #include <iostream>
@@ -32,8 +32,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace std;
 
-namespace o2::analysis::PWGCF
-{
 class FlowJSPCAnalysis
 {
  public:
@@ -101,5 +99,4 @@ class FlowJSPCAnalysis
 
   ClassDefNV(FlowJSPCAnalysis, 1);
 };
-} // namespace o2::analysis::PWGCF
-#endif // PWGCF_FLOW_CORE_FLOWJSPCANALYSIS_H_
+#endif // PWGCF_JCORRAN_CORE_FLOWJSPCANALYSIS_H_

@@ -24,13 +24,3 @@ o2physics_add_dpl_workflow(flow-gfw-pbpb
                     SOURCES FlowGFWPbPb.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(flow-spc-task
-                    SOURCES flowJSPCAnalysisTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFFlowCore O2Physics::JCorran
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(flow-nuacreation-task
-                    SOURCES flowJNUACreationTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFFlowCore O2Physics::JCorran
-                    COMPONENT_NAME Analysis)
