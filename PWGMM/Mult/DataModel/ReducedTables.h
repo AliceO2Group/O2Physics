@@ -11,6 +11,8 @@
 
 #ifndef PWGMM_MULT_DATAMODEL_REDUCEDTABLES_H_
 #define PWGMM_MULT_DATAMODEL_REDUCEDTABLES_H_
+#include <vector>
+
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
@@ -34,7 +36,7 @@ namespace rcol
 {
 DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
 DECLARE_SOA_COLUMN(MapEtaPhi, mapetaphi, std::vector<int>);
-}
+} // namespace rcol
 
 #define Ccols o2::soa::Index<>,            \
               rcol::RBCId,                 \
