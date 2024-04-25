@@ -183,8 +183,8 @@ struct JetSubstructureOutputTask {
     int readCollisionCounter = 0;
     int writtenCollisionCounter = -1;
     readCollisionCounter = collisions.size();
-    std::vector<int> previousReadCounts = {0};
-    std::vector<int> previousWrittenCounts = {0};
+    std::vector<int> previousReadCounts;
+    std::vector<int> previousWrittenCounts;
     int iPreviousDataFrame = 0;
     for (const auto& collisionCount : collisionCounts) {
       auto readCollisionCounterSpan = collisionCount.readCounts();
