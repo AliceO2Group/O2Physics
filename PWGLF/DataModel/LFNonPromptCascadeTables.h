@@ -24,6 +24,10 @@ namespace o2::aod
 {
 namespace NPCascadeTable
 {
+DECLARE_SOA_COLUMN(PvX, pvX, float);
+DECLARE_SOA_COLUMN(PvY, pvY, float);
+DECLARE_SOA_COLUMN(PvZ, pvZ, float);
+
 DECLARE_SOA_COLUMN(CascPt, cascPt, float);
 DECLARE_SOA_COLUMN(CascEta, cascEta, float);
 DECLARE_SOA_COLUMN(CascPhi, cascPhi, float);
@@ -83,6 +87,9 @@ DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
 
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
+                  NPCascadeTable::PvX,
+                  NPCascadeTable::PvY,
+                  NPCascadeTable::PvZ,
                   NPCascadeTable::CascPt,
                   NPCascadeTable::CascEta,
                   NPCascadeTable::CascPhi,
@@ -126,6 +133,9 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::BachPionTOFNSigma)
 
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
+                  NPCascadeTable::PvX,
+                  NPCascadeTable::PvY,
+                  NPCascadeTable::PvZ,
                   NPCascadeTable::CascPt,
                   NPCascadeTable::CascEta,
                   NPCascadeTable::CascPhi,
