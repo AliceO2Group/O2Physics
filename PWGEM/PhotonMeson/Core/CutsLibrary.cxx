@@ -104,10 +104,27 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
   V0PhotonCut* cut = new V0PhotonCut(cutName, cutName);
   std::string nameStr = cutName;
 
-  if (!nameStr.compare("analysis")) {
+  // e.g. qc_minpt100_mexeta09
+  float min_pt = 0.1;
+  float max_eta = 0.9;
+  std::vector<std::string> tmp = splitString(nameStr, '_');
+  for (size_t i = 0; i < tmp.size(); i++) {
+    if (tmp[i].find("minpt") != std::string::npos) {
+      min_pt = static_cast<float>(customAtoi(tmp[i])) * 1e-3; // convert MeV to GeV
+    }
+    if (tmp[i].find("maxeta") != std::string::npos) {
+      max_eta = static_cast<float>(customAtoi(tmp[i])) * 0.1;
+    }
+  } // end of split string loop
+
+  // apply kinetic cuts
+  cut->SetTrackPtRange(min_pt * 0.4, 1e+10f); // this does not make sense, beucase pT, eta, phi are measured at SV, not at PV. But, reject some low-quality tracks.
+  // cut->SetTrackEtaRange(-max_eta, +max_eta); // this does not make sense, beucase pT, eta, phi are measured at SV, not at PV.
+  cut->SetV0PtRange(min_pt, 1e10f);
+  cut->SetV0EtaRange(-max_eta, +max_eta);
+
+  if (nameStr.find("qc") != std::string::npos) {
     // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
     cut->SetChi2PerClusterTPC(0.0, 4.0);
@@ -117,197 +134,81 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetIsWithinBeamPipe(true);
     // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
+    cut->SetMinCosPA(0.99);
+    cut->SetMaxPCA(3.0);
+    cut->SetRxyRange(4, 90);
+    cut->SetAPRange(0.95, 0.01);
+    cut->RejectITSib(true);
+
+    if (nameStr.find("ITSTPC") != std::string::npos) {
+      cut->SetRequireITSTPC(true);
+      cut->SetMaxPCA(1.0);
+      cut->SetRxyRange(4, 40);
+      return cut;
+    } else if (nameStr.find("ITSonly") != std::string::npos) {
+      cut->SetRequireITSonly(true);
+      cut->SetMaxPCA(1.0);
+      cut->SetRxyRange(4, 24);
+      return cut;
+    } else if (nameStr.find("TPConly") != std::string::npos) {
+      cut->SetRequireTPConly(true);
+      cut->SetMaxPCA(3.0);
+      cut->SetRxyRange(36, 90);
+      return cut;
+    }
+    return cut;
+  }
+
+  if (nameStr.find("wire") != std::string::npos) {
+    // for track
+    cut->SetMinNCrossedRowsTPC(20);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetTPCNsigmaElRange(-3, +3);
+    cut->SetNClustersITS(2, 4);
+    cut->SetChi2PerClusterITS(-1e+10, 5.0);
+    cut->SetNClustersITS(2, 4);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
+    // cut->SetIsWithinBeamPipe(true);
+    // for v0
+    cut->SetMinCosPA(0.99);
+    cut->SetMaxPCA(0.3);
+    cut->SetOnWwireIB(true);
+    cut->SetOnWwireOB(true);
+    cut->SetAPRange(0.95, 0.01);
+    cut->RejectITSib(true);
+
+    if (nameStr.find("ib") != std::string::npos) {
+      cut->SetOnWwireIB(true);
+      cut->SetOnWwireOB(false);
+      cut->SetRxyRange(7, 14);
+      return cut;
+    } else if (nameStr.find("ob") != std::string::npos) {
+      cut->SetOnWwireIB(false);
+      cut->SetOnWwireOB(true);
+      cut->SetRxyRange(28, 33);
+      return cut;
+    }
+    return cut;
+  }
+
+  if (nameStr.find("analysis") != std::string::npos) {
+    // for track
+    cut->SetMinNCrossedRowsTPC(20);
+    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    cut->SetChi2PerClusterTPC(0.0, 4.0);
+    cut->SetTPCNsigmaElRange(-3, +3);
+    cut->SetChi2PerClusterITS(-1e+10, 5.0);
+    cut->SetNClustersITS(2, 4);
+    cut->SetMeanClusterSizeITSob(0.0, 16.0);
+    cut->SetIsWithinBeamPipe(true);
+    // for v0
     cut->SetMinCosPA(0.995);
     cut->SetMaxPCA(0.5);
     cut->SetRxyRange(1, 90);
     return cut;
-  }
-  if (!nameStr.compare("qc")) {
+  } else if (nameStr.find("tag_track") != std::string::npos) {
     // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetChi2PerClusterITS(-1e+10, 5.0);
-    cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    cut->SetIsWithinBeamPipe(true);
-    // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(3.0);
-    cut->SetRxyRange(1, 90);
-    cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
-    return cut;
-  }
-  if (!nameStr.compare("qc_ITSTPC")) {
-    // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetIsWithinBeamPipe(true);
-    cut->SetChi2PerClusterITS(-1e+10, 5.0);
-    cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    cut->SetRequireITSTPC(true);
-    // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.0);
-    cut->SetRxyRange(1, 90);
-    cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
-    return cut;
-  }
-  if (!nameStr.compare("qc_ITSonly")) {
-    // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetIsWithinBeamPipe(true);
-    cut->SetRequireITSonly(true);
-    cut->SetChi2PerClusterITS(-1e+10, 5.0);
-    cut->SetNClustersITS(4, 4);
-    cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.0);
-    cut->SetRxyRange(1, 90);
-    cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
-    return cut;
-  }
-  if (!nameStr.compare("qc_TPConly")) {
-    // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetIsWithinBeamPipe(true);
-    cut->SetRequireTPConly(true);
-    // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(3.0);
-    cut->SetRxyRange(36, 90);
-    cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
-    return cut;
-  }
-  if (!nameStr.compare("wwire")) { // conversion only on tungstate wire
-    // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetNClustersITS(2, 4);
-    cut->SetChi2PerClusterITS(-1e+10, 5.0);
-    cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    // cut->SetIsWithinBeamPipe(true);
-    // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(0.3);
-    cut->SetOnWwireIB(true);
-    cut->SetOnWwireOB(true);
-    cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
-    return cut;
-  }
-  if (!nameStr.compare("wwire_ib")) { // conversion only on tungstate wire outside of ITSib
-    // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetNClustersITS(2, 4);
-    cut->SetChi2PerClusterITS(-1e+10, 5.0);
-    cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    // cut->SetIsWithinBeamPipe(true);
-    // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(0.3);
-    cut->SetOnWwireIB(true);
-    cut->SetOnWwireOB(false);
-    cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
-    return cut;
-  }
-  if (!nameStr.compare("wwire_ob")) { // conversion only on tungstate wire outside of ITSob (middle layer)
-    // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetNClustersITS(0, 2);
-    cut->SetChi2PerClusterITS(-1e+10, 5.0);
-    cut->SetNClustersITS(2, 2);
-    cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    // cut->SetIsWithinBeamPipe(true);
-    // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(0.3);
-    cut->SetOnWwireIB(false);
-    cut->SetOnWwireOB(true);
-    cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
-    return cut;
-  }
-
-  // for low B=0.2T
-  if (!nameStr.compare("qc_lowB")) {
-    // for track
-    cut->SetTrackPtRange(0.02f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetChi2PerClusterITS(-1e+10, 5.0);
-    cut->SetNClustersITS(2, 4);
-    cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    cut->SetIsWithinBeamPipe(true);
-    // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(3.0);
-    cut->SetRxyRange(1, 90);
-    cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
-    return cut;
-  }
-  if (!nameStr.compare("qc_ITSTPC_lowB")) {
-    // for track
-    cut->SetTrackPtRange(0.02f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
     cut->SetChi2PerClusterTPC(0.0, 4.0);
@@ -318,59 +219,13 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetIsWithinBeamPipe(true);
     cut->SetRequireITSTPC(true);
     // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(1.0);
     cut->SetRxyRange(1, 90);
     cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
     return cut;
-  }
-  if (!nameStr.compare("qc_ITSonly_lowB")) {
+  } else if (nameStr.find("nopid") != std::string::npos) {
     // for track
-    cut->SetTrackPtRange(0.02f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetIsWithinBeamPipe(true);
-    cut->SetRequireITSonly(true);
-    cut->SetChi2PerClusterITS(-1e+10, 5.0);
-    cut->SetNClustersITS(4, 4);
-    cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.0);
-    cut->SetRxyRange(1, 90);
-    cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
-    return cut;
-  }
-  if (!nameStr.compare("qc_TPConly_lowB")) {
-    // for track
-    cut->SetTrackPtRange(0.02f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetIsWithinBeamPipe(true);
-    cut->SetRequireTPConly(true);
-    // for v0
-    cut->SetV0PtRange(0.05f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(3.0);
-    cut->SetRxyRange(36, 90);
-    cut->SetAPRange(0.95, 0.01);
-    cut->RejectITSib(true);
-    return cut;
-  }
-
-  if (!nameStr.compare("nopid")) {
-    // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
     cut->SetChi2PerClusterTPC(0.0, 4.0);
@@ -379,19 +234,14 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetIsWithinBeamPipe(true);
     // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(3.0);
     cut->SetRxyRange(1, 90);
     cut->SetAPRange(0.95, 0.01);
     cut->RejectITSib(true);
     return cut;
-  }
-  if (!nameStr.compare("nocut")) {
+  } else if (nameStr.find("nocut") != std::string::npos) {
     // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
     cut->SetChi2PerClusterTPC(0.0, 4.0);
@@ -401,18 +251,13 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetMeanClusterSizeITSob(0.0, 16.0);
     cut->SetIsWithinBeamPipe(false);
     // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
     cut->SetMinCosPA(0.95);
     cut->SetMaxPCA(3.0);
     cut->SetRxyRange(1, 90);
     cut->SetAPRange(0.95, 0.01);
     return cut;
-  }
-  if (!nameStr.compare("tag_track")) {
+  } else {
     // for track
-    cut->SetTrackPtRange(0.04f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
     cut->SetMinNCrossedRowsTPC(20);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
     cut->SetChi2PerClusterTPC(0.0, 4.0);
@@ -420,13 +265,10 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
     cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    cut->SetIsWithinBeamPipe(true);
-    cut->SetRequireITSTPC(true);
+    cut->SetIsWithinBeamPipe(false);
     // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.0);
+    cut->SetMinCosPA(0.95);
+    cut->SetMaxPCA(3.0);
     cut->SetRxyRange(1, 90);
     cut->SetAPRange(0.95, 0.01);
     return cut;
@@ -575,7 +417,6 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
 
   if (nameStr.find("mee") != std::string::npos) { // for electron
     if (nameStr.find("tpcmupikaprrejortofreq") != std::string::npos) {
-      // for PID
       cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
       cut->SetTOFbetaRange(true, 0.0, 0.95);
       cut->SetTPCNsigmaElRange(-2, +3);
@@ -587,7 +428,6 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
       cut->SetMuonExclusionTPC(true);
       return cut;
     } else if (nameStr.find("tpcpikaprrejortofreq") != std::string::npos) {
-      // for PID
       cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq);
       cut->SetTOFbetaRange(true, 0.0, 0.95);
       cut->SetTPCNsigmaElRange(-2, +3);
@@ -597,18 +437,24 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
       cut->SetTOFNsigmaElRange(-3, +3);
       return cut;
     } else if (nameStr.find("tpconly") != std::string::npos) {
-      // for PID
       cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
       cut->SetTOFbetaRange(true, 0.0, 0.95);
       cut->SetTPCNsigmaElRange(-2, +3);
       cut->SetTPCNsigmaPiRange(-3, +3);
       return cut;
     } else if (nameStr.find("tpcelonly") != std::string::npos) {
-      // for PID
       cut->SetPIDScheme(DalitzEECut::PIDSchemes::kTPConly);
       cut->SetTOFbetaRange(true, 0.0, 0.95);
       cut->SetTPCNsigmaElRange(-2, +3);
       cut->SetTPCNsigmaPiRange(0, 0);
+      return cut;
+    } else if (nameStr.find("mleidlocal") != std::string::npos) {
+      LOGF(info, "ML-PID-LOCAL is selected.");
+      // cut->EnableEIDML(false, "/Users/d/dsekihat/pidml/", false, -1, "eid_lightgbm.onnx");
+      return cut;
+    } else if (nameStr.find("mleid") != std::string::npos) {
+      LOGF(info, "ML-PID is selected.");
+      // cut->EnableEIDML(true, "/Users/d/dsekihat/pidml/", false, -1, "eid_lightgbm.onnx");
       return cut;
     } else { // not match electron cut
       LOGF(info, Form("Did not find electron ID cut %s", cutName));
