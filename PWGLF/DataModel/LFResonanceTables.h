@@ -33,6 +33,20 @@ namespace o2::aod
 /// Resonance Collisions
 namespace resocollision
 {
+enum {
+  kECbegin = 0,
+  kINEL = 1,
+  kINEL10,
+  kINELg0,
+  kINELg010,
+  kTrig,
+  kINELg0Trig,
+  kINELg010Trig,
+  kSel,
+  kINELg0Sel,
+  kINELg010Sel,
+  kECend,
+};
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (Multiplicity) percentile (Default: FT0M)
 DECLARE_SOA_COLUMN(Spherocity, spherocity, float); //! Spherocity of the event
 DECLARE_SOA_COLUMN(EvtPl, evtPl, float);           //! Second harmonic event plane
@@ -40,6 +54,12 @@ DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float); //! Second harmonic event pla
 DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float); //! Second harmonic event plane resolution of A-C sub events
 DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float); //! Second harmonic event plane resolution of B-C sub events
 DECLARE_SOA_COLUMN(BMagField, bMagField, float);   //! Magnetic field
+// MC
+DECLARE_SOA_COLUMN(IsVtxIn10, isVtxIn10, bool);               //! Vtx10
+DECLARE_SOA_COLUMN(IsINELgt0, isINELgt0, bool);               //! INEL>0
+DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
+DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
+
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   o2::soa::Index<>,
@@ -56,6 +76,13 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   resocollision::BMagField,
                   timestamp::Timestamp);
 using ResoCollision = ResoCollisions::iterator;
+
+DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
+                  resocollision::IsVtxIn10,
+                  resocollision::IsINELgt0,
+                  resocollision::IsInSel8,
+                  resocollision::IsInAfterAllCuts);
+using ResoMCCollision = ResoMCCollisions::iterator;
 
 // Resonance Daughters
 // inspired from PWGCF/DataModel/FemtoDerived.h
