@@ -45,6 +45,13 @@ struct SGFITAnalyzer { // UDTutorial01
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
+  //Track Selections
+  Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
+  Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
+  Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
+  Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};
+  Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
+  Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   // initialize histogram registry
   HistogramRegistry registry{
     "registry",
@@ -113,10 +120,14 @@ struct SGFITAnalyzer { // UDTutorial01
     registry.add("ZDC/CZNA", "Amplitude ZNA, C Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/ACZNA", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/ACZNA_CR", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/AZNA_CR", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/CZNA_CR", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/AZNC", "Amplitude ZNC, A Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/CZNC", "Amplitude ZNC, C Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/ACZNC", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/ACZNC_CR", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/AZNC_CR", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/CZNC_CR", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/tAZNA", "Time ZNA", {HistType::kTH1F, {{100, -19.5, 19.5}}});
     registry.add("ZDC/tAZNC", "Time ZNC", {HistType::kTH1F, {{100, -19.5, 19.5}}});
     registry.add("ZDC/tCZNA", "Time ZNA", {HistType::kTH1F, {{100, -19.5, 19.5}}});
@@ -182,6 +193,16 @@ struct SGFITAnalyzer { // UDTutorial01
     registry.add("FIT/ACFT0C_CR", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFDDA_CR", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFDDC_CR", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFV0A_CR", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFT0A_CR", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFT0C_CR", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFDDA_CR", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFDDC_CR", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFV0A_CR", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFT0A_CR", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFT0C_CR", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFDDA_CR", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFDDC_CR", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFV0A", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFT0A", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFT0C", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
@@ -279,7 +300,8 @@ struct SGFITAnalyzer { // UDTutorial01
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; // UDCollisions
   // using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions>; // UDCollisions
   using UDCollisionFull = UDCollisionsFull::iterator;
-  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  //using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   //  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksFlags>;
 
   void process(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
@@ -298,8 +320,8 @@ struct SGFITAnalyzer { // UDTutorial01
     // select PV contributors
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
     PVContributors.bindTable(dgtracks);
-    if (PVContributors.size() > 50)
-      return;
+//    if (PVContributors.size() > 50)
+ //     return;
     registry.get<TH1>(HIST("collisions/multiplicityPVC"))->Fill(PVContributors.size(), 1.);
     bool tof = false;
     // relative BC number
@@ -311,18 +333,25 @@ struct SGFITAnalyzer { // UDTutorial01
       LOGF(info, "<UDTutorial01sg>   Number of tracks %d", dgtracks.size());
       LOGF(info, "<UDTutorial01sg>   Number of PV contributors %d", PVContributors.size());
     }
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut};
     // check rho0 signals
     bool coh_rho0 = false;
-    TLorentzVector p1, p2, rho;
-    if (PVContributors.size() == 2) {
-      for (auto& [t0, t1] : combinations(dgtracks, dgtracks)) {
-        // Apply pion hypothesis and create pairs
-        p1.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
-        p2.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
-        rho = p1 + p2;
+    TLorentzVector rho;
+    std::vector<TLorentzVector> goodTracks;
+    float sign = 0;
+    for (auto t : dgtracks) {
+      TLorentzVector a;
+      a.SetXYZM(t.px(), t.py(), t.pz(), mpion);
+      if (trackselector(t, parameters)) {
+        sign += t.sign();
+        goodTracks.push_back(a);
       }
-      if (TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.15)
-        coh_rho0 = true;
+    }
+    if (goodTracks.size() == 2) {
+      for (auto pion : goodTracks) {
+        rho += pion;
+      }
+      if (sign == 0 && TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.15) coh_rho0 = true;
     }
     int pva = 0;
     int pvc = 0;
@@ -418,6 +447,15 @@ struct SGFITAnalyzer { // UDTutorial01
       registry.get<TH1>(HIST("ZDC/tCZNC"))->Fill(dgcand.timeZNC(), 1.);
     }
     if (truegapSide == 0) {
+      if (coh_rho0) {
+        registry.get<TH1>(HIST("ZDC/AZNA_CR"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/AZNC_CR"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/AFT0A_CR"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFT0C_CR"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/AFV0A_CR"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFDDA_CR"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFDDC_CR"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
       registry.get<TH1>(HIST("ZDC/tAZNA"))->Fill(dgcand.timeZNA(), 1.);
       registry.get<TH1>(HIST("ZDC/tAZNC"))->Fill(dgcand.timeZNC(), 1.);
       registry.get<TH1>(HIST("ZDC/AZNA"))->Fill(zna, 1.);
@@ -480,6 +518,15 @@ struct SGFITAnalyzer { // UDTutorial01
       registry.get<TH2>(HIST("ZDC/MAZNC"))->Fill(PVContributors.size(), znc);
     }
     if (truegapSide == 1) {
+      if (coh_rho0) {
+        registry.get<TH1>(HIST("ZDC/CZNA_CR"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/CZNC_CR"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/CFT0A_CR"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFT0C_CR"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/CFV0A_CR"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFDDA_CR"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFDDC_CR"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
       registry.get<TH1>(HIST("ZDC/CZNA"))->Fill(zna, 1.);
       registry.get<TH1>(HIST("ZDC/CZNC"))->Fill(znc, 1.);
       registry.get<TH2>(HIST("ZDC/CZNAC"))->Fill(zna, znc);
