@@ -23,6 +23,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -45,13 +46,13 @@
 
 namespace o2::aod
 {
-namespace TrackTunerColumns
+namespace track_tuner
 {
-DECLARE_SOA_COLUMN(TunedQoverPt, tunedQoverPt, float);
-} // namespace TrackTunerColumns
+DECLARE_SOA_COLUMN(TunedQOverPt, tunedQOverPt, float);
+} // namespace track_tuner
 
 DECLARE_SOA_TABLE(TrackTunerTable, "AOD", "TRACKTUNERTABLE", //!
-                  TrackTunerColumns::TunedQoverPt);
+                  track_tuner::TunedQOverPt);
 } // namespace o2::aod
 
 struct TrackTuner {
