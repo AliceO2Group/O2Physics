@@ -250,6 +250,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   {
     if (fillParticleBase) {
       rowParticleBase(
+        rowMcCollBase.lastIndex(),
         particle.pt(),
         particle.eta(),
         particle.phi(),
