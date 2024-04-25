@@ -476,7 +476,7 @@ struct HfCandidateCreator3ProngExpressions {
   {
 
     // inspect for which particle species the candidates were created and which zPvPosMax cut was set for reconstructed
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-3prong") == 0) {
         for (const auto& option : device.options) {
@@ -492,6 +492,7 @@ struct HfCandidateCreator3ProngExpressions {
             zPvPosMax = option.defaultValue.get<float>();
           }
         }
+        break;
       }
     }
 

@@ -671,14 +671,16 @@ struct HfCandidateCreator2ProngExpressions {
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
   {
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-2prong") == 0) {
         for (const auto& option : device.options) {
           if (option.name.compare("zPvPosMax") == 0) {
             zPvPosMax = option.defaultValue.get<float>();
           }
+          break;
         }
+        break;
       }
     }
   }

@@ -451,7 +451,7 @@ struct HfCandidateCreatorCascadeMc {
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
   {
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-cascade") == 0) {
         for (const auto& option : device.options) {
@@ -459,6 +459,7 @@ struct HfCandidateCreatorCascadeMc {
             zPvPosMax = option.defaultValue.get<float>();
           }
         }
+        break;
       }
     }
   }
