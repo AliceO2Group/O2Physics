@@ -155,7 +155,7 @@ DECLARE_SOA_TABLE(Hf3PMcCollBases, "AOD", "HF3PMCCOLLBASE", //! Table with basic
 
 using Hf3PMcCollBase = Hf3PMcCollBases::iterator;
 
-DECLARE_SOA_TABLE(StoredHf3PMcCollBases, "AOD1", "HF3PMCCOLLBASE", //! Table with basic MC collision info
+DECLARE_SOA_TABLE(StoredHf3PMcCollBases, "AOD1", "HF3PMCCOLLBASE", //! Table with basic MC collision info (stored version)
                   o2::soa::Index<>,
                   mccollision::PosX,
                   mccollision::PosY,
@@ -163,6 +163,12 @@ DECLARE_SOA_TABLE(StoredHf3PMcCollBases, "AOD1", "HF3PMCCOLLBASE", //! Table wit
                   soa::Marker<3>);
 
 using StoredHf3PMcCollBase = StoredHf3PMcCollBases::iterator;
+
+DECLARE_SOA_TABLE(Hf3PMcCollIds, "AOD", "HF3PMCCOLLID", //! Table with indices pointing to the derived collision table
+                  hf_mc_coll::Hf3PCollBaseIds);
+
+DECLARE_SOA_TABLE(StoredHf3PMcCollIds, "AOD1", "HF3PMCCOLLID", //! Table with indices pointing to the derived collision table (stored version)
+                  hf_mc_coll::StoredHf3PCollBaseIds);
 
 // ================
 // Candidate tables
