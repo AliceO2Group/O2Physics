@@ -127,9 +127,9 @@ struct HfCandidateCreatorToXiPi {
     }
 
     registry.add("hInvMassCharmBaryon", "Charm baryon invariant mass;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 2.2, 3.1}}});
-    registry.add("hFitterStatus", "Charm DCAFitter status;status;entries", {HistType::kTH1F, {{3, -0.5, 2.5}}}); // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
+    registry.add("hFitterStatus", "Charm DCAFitter status;status;entries", {HistType::kTH1F, {{3, -0.5, 2.5}}});                 // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
     registry.add("hCandidateCounter", "Candidate counter wrt derived data;status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}}); // 0 --> candidates in derived data table, 1 --> candidates passing testbit selection, 2 --> candidates passing fitter step 3 --> candidates filled in new table
-    registry.add("hCascadesCounter", "Cascades counter wrt derived data;status;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
+    registry.add("hCascadesCounter", "Cascades counter wrt derived data;status;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}});   // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
     hCollisions = registry.add<TH1>("hCollisions", "HF event counter;;entries", {HistType::kTH1D, {axisEvents}});
     hPosZBeforeEvSel = registry.add<TH1>("hPosZBeforeEvSel", "all events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
     hPosZAfterEvSel = registry.add<TH1>("hPosZAfterEvSel", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
@@ -387,7 +387,6 @@ struct HfCandidateCreatorToXiPi {
 
     } // loop over LF Cascade-bachelor candidates
   }   // end of run function
-
 
   /// @brief process function w/o centrality selections
   void processNoCent(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
