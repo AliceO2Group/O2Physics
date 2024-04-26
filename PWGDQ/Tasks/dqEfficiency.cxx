@@ -836,7 +836,7 @@ struct AnalysisSameEventPairing {
     } // end loop over barrel track pairs
   }   // end runPairing
 
-  template <typename TTracksMC>
+  template <int TPairType, typename TTracksMC>
   void runMCGen(TTracksMC& groupedMCTracks)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
@@ -879,7 +879,7 @@ struct AnalysisSameEventPairing {
           checked = sig.CheckSignal(false, t1, t2);
         }
         if (checked) {
-          VarManager::FillPairMC(t1, t2);
+          VarManager::FillPairMC<TPairType>(t1, t2);
           fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
         }
       }
@@ -901,7 +901,7 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(event, tracks, tracks, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGen(groupedMCTracks);
+    runMCGen<VarManager::kDecayToEE>(groupedMCTracks);
   }
 
   void processDecayToEEVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
@@ -916,7 +916,7 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkEventFillMapWithCov, gkMCEventFillMap, gkTrackFillMapWithCov>(event, tracks, tracks, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGen(groupedMCTracks);
+    runMCGen<VarManager::kDecayToEE>(groupedMCTracks);
   }
 
   void processDecayToMuMuSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
@@ -931,7 +931,7 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToMuMu, gkEventFillMap, gkMCEventFillMap, gkMuonFillMap>(event, muons, muons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGen(groupedMCTracks);
+    runMCGen<VarManager::kDecayToMuMu>(groupedMCTracks);
   }
 
   void processDecayToMuMuVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
@@ -946,7 +946,7 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMCEventFillMap, gkMuonFillMapWithCov>(event, muons, muons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGen(groupedMCTracks);
+    runMCGen<VarManager::kDecayToMuMu>(groupedMCTracks);
   }
 
   /*void processElectronMuonSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
@@ -959,7 +959,7 @@ struct AnalysisSameEventPairing {
 
     runPairing<VarManager::kElectronMuon, gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(event, tracks, muons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(aod::reducedtrackMC::reducedMCeventId, event.reducedMCevent().globalIndex());
-    runMCGen(groupedMCTracks);
+    runMCGen<VarManager::kElectronMuon>(groupedMCTracks);
   }*/
   void processDummy(MyEvents&)
   {
