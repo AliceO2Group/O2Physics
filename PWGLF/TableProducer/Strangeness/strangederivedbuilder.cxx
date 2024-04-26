@@ -108,10 +108,11 @@ struct strangederivedbuilder {
 
   //__________________________________________________
   // Q-vectors
-  Produces<aod::StraFT0AQVs> StraFT0AQVs; // FT0A Q-vector
-  Produces<aod::StraFT0CQVs> StraFT0CQVs; // FT0C Q-vector
-  Produces<aod::StraFT0MQVs> StraFT0MQVs; // FT0M Q-vector
-  Produces<aod::StraFV0AQVs> StraFV0AQVs; // FV0A Q-vector
+  Produces<aod::StraFT0AQVs> StraFT0AQVs;     // FT0A Q-vector
+  Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
+  Produces<aod::StraFT0MQVs> StraFT0MQVs;     // FT0M Q-vector
+  Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
+  Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
 
   //__________________________________________________
   // Generated binned data
@@ -771,6 +772,7 @@ struct strangederivedbuilder {
   void processFT0CQVectorsLF(soa::Join<aod::Collisions, aod::EPCalibrationTables>::iterator const& collision)
   {
     StraFT0CQVs(std::cos(2 * collision.psiFT0C()), std::sin(2 * collision.psiFT0C()), 1.f);
+    StraFT0CQVsEv(collision.triggereventep());
   }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
   {
