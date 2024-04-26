@@ -83,6 +83,10 @@ struct QADataCollectingEngine {
   //===================================================
   // The QA output objects
   //===================================================
+  /* momentum histograms */
+  std::shared_ptr<TH2> fhPvsInnerP = nullptr;
+  std::shared_ptr<TH2> fhTruePvsP = nullptr;
+  std::shared_ptr<TH2> fhTruePvsInnerP = nullptr;
   /* efficiency histograms histograms */
   /* when two indexes, first index reco and detector level, second index generator level */
   /* when no indexes, reco and detector level */
@@ -151,6 +155,8 @@ struct QADataCollectingEngine {
     using namespace efficiencyandqatask;
     using namespace analysis::dptdptfilter;
 
+    AxisSpec pidPAxis{150, 0.1, 5.0, "#it{p} (GeV/#it{c})"};
+    pidPAxis.makeLogarithmic();
     const AxisSpec ptAxis{ptbins, ptlow, ptup, "#it{p}_{T} (GeV/c)"};
     const AxisSpec etaAxis{etabins, etalow, etaup, "#eta"};
     const AxisSpec phiAxis{360, 0.0f, constants::math::TwoPI, "#varphi"};
@@ -186,6 +192,7 @@ struct QADataCollectingEngine {
       fhTPC_CrossedRowsOverFindableCls_vs_PtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "XRowsOverFindableCls", "TPC xrows over findable clusters", kTH2F, {ptAxis, tpcXRowsOverFindClsAxis});
       fhTPC_Chi2NCls_vs_PtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "TPCChi2NCls", "TPC #Chi^{2}", kTH2F, {ptAxis, tpcCh2Axis});
       /* efficiency histograms */
+      fhPvsInnerP = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "pVsInnerP", "#it{p} versus TPC inner wall #it{p}", kTH2F, {pidPAxis, pidPAxis});
       fhPt_vs_EtaItsAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsAcc", "ITS tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
       fhPt_vs_EtaTpcAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptTpcAcc", "TPC tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
       fhPt_vs_EtaItsTpcAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsTpcAcc", "ITS&TPC tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
@@ -213,6 +220,8 @@ struct QADataCollectingEngine {
     } else {
       AxisSpec recoSpecies{static_cast<int>(nsp) + 1, -0.5, nsp - 0.5, "reco species"};
       AxisSpec trueSpecies{static_cast<int>(nmainsp) + 1, -0.5, nmainsp + 0.5, "true species"};
+      fhTruePvsP = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Gen"), "truePVsP", "#it{p} gen versus reco #it{p}", kTH2F, {pidPAxis, pidPAxis});
+      fhTruePvsInnerP = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Gen"), "truePVsInnerP", "#it{p} gen versus reco TPC inner wall #it{p}", kTH2F, {pidPAxis, pidPAxis});
       fhPtPurityPosPrimA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityPosPrim", "Primaries for reconstructed positive", kTH3F, {recoSpecies, trueSpecies, ptAxis});
       fhPtPurityNegPrimA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityNegPrim", "Primaries for reconstructed negative", kTH3F, {recoSpecies, trueSpecies, ptAxis});
       fhPtPurityPosSecA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityPosSec", "Secondaries for reconstructed positive", kTH3F, {recoSpecies, trueSpecies, ptAxis});
@@ -298,7 +307,7 @@ struct QADataCollectingEngine {
           h->Fill(track.eta(), track.pt());
         }
       };
-      bool hasits = track.hasITS() && TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelectionITS) && TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelectionDCA);
+      bool hasits = track.hasITS() && TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelectionITS);
       bool hastpc = track.hasTPC() && TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelectionTPC);
       bool hastof = track.hasTOF();
 
@@ -331,6 +340,7 @@ struct QADataCollectingEngine {
         fhTPC_CrossedRowsOverFindableCls_vs_PtA[track.trackacceptedid()]->Fill(track.pt(), track.tpcCrossedRowsOverFindableCls());
         fhTPC_Chi2NCls_vs_PtA[track.trackacceptedid()]->Fill(track.pt(), track.tpcChi2NCl());
         /* efficiency histograms */
+        fhPvsInnerP->Fill(track.tpcInnerParam(), track.p());
         fillhisto(fhPt_vs_EtaItsA[track.trackacceptedid()], hasits);
         fillhisto(fhPt_vs_EtaTpcA[track.trackacceptedid()], hastpc);
         fillhisto(fhPt_vs_EtaItsTpcA[track.trackacceptedid()], hasits && hastpc);
@@ -367,6 +377,8 @@ struct QADataCollectingEngine {
           fillpurityhistos(fhPtPurityPosPrimA, fhPtPurityNegPrimA, genid, track, isprimary);
           fillpurityhistos(fhPtPurityPosSecA, fhPtPurityNegSecA, genid, track, issecdecay);
           fillpurityhistos(fhPtPurityPosMatA, fhPtPurityNegMatA, genid, track, isfrommaterial);
+          fhTruePvsP->Fill(track.p(), mcparticle.p());
+          fhTruePvsInnerP->Fill(track.tpcInnerParam(), mcparticle.p());
 
           auto fillhisto = [](auto& h, float pt, float eta, bool cond1, bool cond2) {
             if (cond1 && cond2) {
