@@ -774,6 +774,32 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/proton/dca/after/hDCAxyVsPtantiProtonTruePrim", "DCAxy vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
           histos.add<TH2>("tracks/proton/dca/after/hDCAxyVsPtantiProtonTrueSec", "DCAxy vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
           histos.add<TH2>("tracks/proton/dca/after/hDCAxyVsPtantiProtonTrueTransport", "DCAxy vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
+
+          if (doTOFplots) {
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAxyVsPtProtonTrue", "DCAxy vs Pt (p); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcaxyAxis}});
+
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAxyVsPtProtonTruePrim", "DCAxy vs Pt (p); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcaxyAxis}});
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAxyVsPtProtonTrueSec", "DCAxy vs Pt (p); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcaxyAxis}});
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAxyVsPtProtonTrueTransport", "DCAxy vs Pt (p); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcaxyAxis}});
+
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAxyVsPtantiProtonTrue", "DCAxy vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcaxyAxis}});
+
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAxyVsPtantiProtonTruePrim", "DCAxy vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcaxyAxis}});
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAxyVsPtantiProtonTrueSec", "DCAxy vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcaxyAxis}});
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAxyVsPtantiProtonTrueTransport", "DCAxy vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcaxyAxis}});
+
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAzVsPtProtonTrue", "DCAz vs Pt (p); #it{p}_{T} (GeV/#it{c}); DCAz (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcazAxis}});
+
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAzVsPtProtonTruePrim", "DCAz vs Pt (p); #it{p}_{T} (GeV/#it{c}); DCAz (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcazAxis}});
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAzVsPtProtonTrueSec", "DCAz vs Pt (p); #it{p}_{T} (GeV/#it{c}); DCAz (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcazAxis}});
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAzVsPtProtonTrueTransport", "DCAz vs Pt (p); #it{p}_{T} (GeV/#it{c}); DCAz (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcazAxis}});
+
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAzVsPtantiProtonTrue", "DCAz vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAz (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcazAxis}});
+
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAzVsPtantiProtonTruePrim", "DCAz vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAz (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcazAxis}});
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAzVsPtantiProtonTrueSec", "DCAz vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAz (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcazAxis}});
+            histos.add<TH2>("tracks/proton/dca/before/TOF/hDCAzVsPtantiProtonTrueTransport", "DCAz vs Pt (#bar{p}); #it{p}_{T} (GeV/#it{c}); DCAz (cm)", HistType::kTH2F, {{900, 0.5f, 5.f}, {dcazAxis}});
+          }
         }
       }
       if (enableDe) {
