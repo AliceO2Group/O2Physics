@@ -377,7 +377,7 @@ struct HfTaskCorrelationDsHadrons {
 
     /// Gen loop
     float multiplicity = -1.;
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       // generated candidates
       if (std::abs(mcParticle.pdgCode()) == Pdg::kDS) {
         auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
@@ -411,7 +411,7 @@ struct HfTaskCorrelationDsHadrons {
     }
 
     // recontructed candidates loop
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       std::vector<float> outputMl = {-1., -1., -1.};
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -458,7 +458,7 @@ struct HfTaskCorrelationDsHadrons {
     /// Gen loop
     float multiplicity = -1.;
     float posZ = -20.;
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       // generated tracks
       if (mcParticle.isPhysicalPrimary() && ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton))) {
         auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
@@ -473,7 +473,7 @@ struct HfTaskCorrelationDsHadrons {
     }
 
     // recontructed tracks loop
-    for (auto& track : tracksData) {
+    for (const auto& track : tracksData) {
       if (track.has_collision()) {
         if (!track.isGlobalTrackWoDCA() || track.dcaXY() > dcaXYTrackMax || track.dcaZ() > dcaZTrackMax || track.tpcNClsCrossedRows() < nTpcCrossedRaws) {
           continue;
