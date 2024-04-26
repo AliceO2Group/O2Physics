@@ -39,7 +39,7 @@ struct SGD0Analyzer {
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
-  //Track Selections
+  // Track Selections
   Configurable<float> PV_cut{"PV_cut", 0.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 2.0, "dcaXY cut (0 for Pt-function)"};
@@ -47,7 +47,7 @@ struct SGD0Analyzer {
   Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
-  //D0 Specific Cuts
+  // D0 Specific Cuts
   Configurable<float> Ntr_min{"Ntr_min", 2., "Minimum Number of Tracks"};
   Configurable<float> Ntr_max{"Ntr_max", 50., "Maximum Number of Tracks"};
   HistogramRegistry registry{
@@ -80,10 +80,9 @@ struct SGD0Analyzer {
       {"ss_KPi_pT_2", "K#pi pT (GeV/c); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
       {"ss_KPi_eTa_2", "K#pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -1., 1.}}}},
       {"ss_KPi_invm_2", "K#pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
-      {"os_Ntr_KPi_invm_0", "N tracks vs K#pi Mass", {HistType::kTH2F, {{48, 1.5, 49.5},{750, .7, 2.2}}}},
-      {"os_Ntr_KPi_invm_1", "N tracks vs K#pi Mass", {HistType::kTH2F, {{48, 1.5, 49.5},{750, .7, 2.2}}}},
-      {"os_Ntr_KPi_invm_2", "N tracks vs K#pi Mass", {HistType::kTH2F, {{48, 1.5, 49.5},{750, .7, 2.2}}}}
-    }};
+      {"os_Ntr_KPi_invm_0", "N tracks vs K#pi Mass", {HistType::kTH2F, {{48, 1.5, 49.5}, {750, .7, 2.2}}}},
+      {"os_Ntr_KPi_invm_1", "N tracks vs K#pi Mass", {HistType::kTH2F, {{48, 1.5, 49.5}, {750, .7, 2.2}}}},
+      {"os_Ntr_KPi_invm_2", "N tracks vs K#pi Mass", {HistType::kTH2F, {{48, 1.5, 49.5}, {750, .7, 2.2}}}}}};
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
@@ -109,10 +108,12 @@ struct SGD0Analyzer {
     registry.fill(HIST("TrueGapSide"), truegapSide);
     gapSide = truegapSide;
     // Look for D0 and D0bar
-    if (tracks.size() < Ntr_min || tracks.size() > Ntr_max) return;
+    if (tracks.size() < Ntr_min || tracks.size() > Ntr_max)
+      return;
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
       // PID cut - t0=K, t1=pi
-      if (!trackselector(t0, parameters)||!trackselector(t1,parameters))continue;
+      if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+        continue;
       if (std::abs(t0.tpcNSigmaKa()) < 3 && std::abs(t1.tpcNSigmaPi()) < 3 && std::abs(t0.tofNSigmaKa()) < 3 && std::abs(t1.tofNSigmaPi()) < 3) {
         // Apply pion hypothesis and create pairs
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
