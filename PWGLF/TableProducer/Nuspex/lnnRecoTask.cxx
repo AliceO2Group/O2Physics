@@ -283,16 +283,16 @@ struct lnnRecoTask {
       // temporary fix: tpcInnerParam() returns the momentum in all the software tags before: https://github.com/AliceO2Group/AliceO2/pull/12521
       bool posTritonPID = posTrack.pidForTracking() == o2::track::PID::Triton;
       bool negTritonPID = negTrack.pidForTracking() == o2::track::PID::Triton;
-      float posRigidity = posTritonPID ? posTrack.tpcInnerParam() / 2 : posTrack.tpcInnerParam();
-      float negRigidity = negTritonPID ? negTrack.tpcInnerParam() / 2 : negTrack.tpcInnerParam();
+      float posRigidity = posTrack.tpcInnerParam(); 
+      float negRigidity = negTrack.tpcInnerParam();
 
       hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
       hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
 
       // Bethe-Bloch calcution for 3H
-      double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity * 2 / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
+      double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
 
-      double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity * 2 / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
+      double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
 
       // nSigma calculation
       double expSigmaPos{expBethePos * mBBparams3H[5]};
@@ -346,11 +346,6 @@ struct lnnRecoTask {
       auto& piPropTrack = lnnCand.isMatter ? fitter.getTrack(1) : fitter.getTrack(0);
       h3PropTrack.getPxPyPzGlo(lnnCand.mom3H);
       piPropTrack.getPxPyPzGlo(lnnCand.momPi);
-
-      // the momentum has to be multiplied by 2 (charge)
-      for (int i = 0; i < 3; i++) {
-        lnnCand.mom3H[i] *= 2;
-      }
 
       // Definition of relativistic momentum and energy to triton and pion and total energy
       float h3P2 = lnnCand.mom3H[0] * lnnCand.mom3H[0] + lnnCand.mom3H[1] * lnnCand.mom3H[1] + lnnCand.mom3H[2] * lnnCand.mom3H[2];
