@@ -10,8 +10,13 @@
 // or submit itself to any jurisdiction.
 
 /// \file DerivedTablesStored.h
-/// \brief Definitions of stored versions of derived tables produced by derived-data creators
+/// \brief Definitions of stored versions of derived tables produced by derived-data creators (defined in DerivedTables.h)
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
+/// \note Things to check when comparing with DerivedTables.h:
+///       - Prefix "Stored" in table definitions
+///       - Prefix "Stored" in names of index columns pointing to derived tables
+///       - Origin AOD1
+///       - Incremented Marker number
 
 #ifndef PWGHF_DATAMODEL_DERIVEDTABLESSTORED_H_
 #define PWGHF_DATAMODEL_DERIVEDTABLESSTORED_H_
