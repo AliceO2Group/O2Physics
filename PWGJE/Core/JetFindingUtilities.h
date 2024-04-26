@@ -27,6 +27,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/HistogramRegistry.h"
 
 #include "Framework/Logger.h"
 #include "Common/Core/TrackSelection.h"
@@ -223,7 +224,7 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
  * @param doHFJetFinding set whether only jets containing a HF candidate are saved
  */
 template <typename T, typename U, typename V>
-void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, bool doHFJetFinding = false)
+void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, std::shared_ptr<THn> thnSparseJet, bool fillThnSparse, bool doCandidateJetFinding = false)
 {
   auto jetRValues = static_cast<std::vector<double>>(jetRadius);
   jetFinder.jetPtMin = jetPtMin;
@@ -233,42 +234,46 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
     std::vector<fastjet::PseudoJet> jets;
     fastjet::ClusterSequenceArea clusterSeq(jetFinder.findJets(inputParticles, jets));
     for (const auto& jet : jets) {
-      bool isHFJet = false;
-      if (doHFJetFinding) {
-        for (const auto& constituent : jet.constituents()) {
-          if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF)) {
-            isHFJet = true;
-            break;
-          }
-        }
-        if (!isHFJet) {
-          continue;
-        }
-      }
       if (jet.has_area() && jet.area() < jetAreaFractionMin * M_PI * R * R) {
         continue;
       }
-      std::vector<int> trackconst;
-      std::vector<int> candconst;
-      std::vector<int> clusterconst;
-      std::vector<int> v0const;
+      if (fillThnSparse) {
+        thnSparseJet->Fill(R, jet.pt(), jet.eta(), jet.phi()); // important for normalisation in V0Jet analyses to store all jets, including those that aren't V0s
+      }
+      bool isCandidateJet = false;
+      if (doCandidateJetFinding) {
+        for (const auto& constituent : jet.constituents()) {
+          auto constituentStatus = constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus();
+          if (constituentStatus == static_cast<int>(JetConstituentStatus::candidateHF) || constituentStatus == static_cast<int>(JetConstituentStatus::v0)) { // note currently we cannot run V0 and HF in the same jet. If we ever need to we can seperate the loops
+            isCandidateJet = true;
+            break;
+          }
+        }
+        if (!isCandidateJet) {
+          continue;
+        }
+      }
+      std::vector<int> tracks;
+      std::vector<int> cands;
+      std::vector<int> clusters;
+      std::vector<int> v0s;
       jetsTable(collision.globalIndex(), jet.pt(), jet.eta(), jet.phi(),
                 jet.E(), jet.rapidity(), jet.m(), jet.has_area() ? jet.area() : 0., std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
         if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::track)) {
-          trackconst.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
+          tracks.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
         if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::cluster)) {
-          clusterconst.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
+          clusters.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
         if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF)) {
-          candconst.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
+          cands.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
         if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::v0)) {
-          v0const.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
+          v0s.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
       }
-      constituentsTable(jetsTable.lastIndex(), trackconst, clusterconst, candconst, v0const);
+      constituentsTable(jetsTable.lastIndex(), tracks, clusters, cands, v0s);
     }
   }
 }
@@ -326,8 +331,8 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
           if (cand.mcParticleId() == particle.globalIndex()) {
             continue;
           }
-          auto V0Particle = cand.template mcParticle_as<T>();
-          if (jethfutilities::isDaughterParticle(V0Particle, particle.globalIndex())) {
+          auto v0Particle = cand.template mcParticle_as<T>();
+          if (jethfutilities::isDaughterParticle(v0Particle, particle.globalIndex())) {
             continue;
           }
         }

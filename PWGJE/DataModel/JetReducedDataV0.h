@@ -14,8 +14,8 @@
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#ifndef PWGJE_DATAMODEL_JETREDUCEDDATALF_H_
-#define PWGJE_DATAMODEL_JETREDUCEDDATALF_H_
+#ifndef PWGJE_DATAMODEL_JETREDUCEDDATAV0_H_
+#define PWGJE_DATAMODEL_JETREDUCEDDATAV0_H_
 
 #include <cmath>
 #include "Framework/AnalysisDataModel.h"
@@ -121,4 +121,4 @@ using StoredJV0McParticle = StoredJV0McParticles::iterator;
 
 } // namespace o2::aod
 
-#endif // PWGJE_DATAMODEL_JETREDUCEDDATALF_H_
+#endif // PWGJE_DATAMODEL_JETREDUCEDDATAV0_H_

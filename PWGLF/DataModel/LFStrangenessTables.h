@@ -666,7 +666,6 @@ DECLARE_SOA_TABLE_VERSIONED(V0MCCores_001, "AOD", "V0MCCORE", 1, //! debug infor
                             v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
                             v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
-
 DECLARE_SOA_TABLE(StoredV0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
                   v0data::PDGCode, v0data::PDGCodeMother,
                   v0data::PDGCodePositive, v0data::PDGCodeNegative,
@@ -676,14 +675,13 @@ DECLARE_SOA_TABLE(StoredV0MCCores_000, "AOD", "V0MCCORE", //! MC properties of t
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE_VERSIONED(StoredV0MCCores_001, "AOD", "V0MCCORE", 1, //! debug information
-                            v0data::ParticleIdMC,                //! MC properties of the V0 for posterior analysis
+                            v0data::ParticleIdMC,                      //! MC properties of the V0 for posterior analysis
                             v0data::PDGCode, v0data::PDGCodeMother,
                             v0data::PDGCodePositive, v0data::PDGCodeNegative,
                             v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
                             v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
                             v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
                             o2::soa::Marker<1>);
-
 
 DECLARE_SOA_TABLE(V0MCCollRefs, "AOD", "V0MCCOLLREF", //! refers MC candidate back to proper MC Collision
                   o2::soa::Index<>, v0data::StraMCCollisionId, o2::soa::Marker<2>);

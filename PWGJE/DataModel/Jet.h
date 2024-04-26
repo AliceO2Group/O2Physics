@@ -28,7 +28,7 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
-#include "PWGJE/DataModel/JetReducedDataLF.h"
+#include "PWGJE/DataModel/JetReducedDataV0.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
 #include "PWGHF/DataModel/DerivedTables.h"
