@@ -270,7 +270,7 @@ struct cascadeFlow {
 
   template <class collision_t, class cascade_t>
   //  void fillAnalisedTable(collision_t coll, cascade_t casc, float BDTresponse)
-  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2C, float BDTresponseXi, float BDTresponseOmega)
+  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2C, float PsiT0C, float BDTresponseXi, float BDTresponseOmega)
   {
     analysisSample(coll.centFT0C(),
                    casc.sign(),
@@ -280,6 +280,7 @@ struct cascadeFlow {
                    casc.mXi(),
                    casc.mOmega(),
                    v2C,
+		   PsiT0C,
                    BDTresponseXi,
                    BDTresponseOmega);
   }
@@ -526,7 +527,7 @@ struct cascadeFlow {
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, casc, v2CSP, BDTresponse[0], BDTresponse[1]);
+        fillAnalysedTable(coll, casc, v2CSP, PsiT0C, BDTresponse[0], BDTresponse[1]);
     }
   }
 
