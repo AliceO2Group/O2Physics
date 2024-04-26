@@ -138,11 +138,11 @@ struct HfTaskLcAlice3 {
 
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
-        if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus)) > 4.0) {
+        if (std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus)) > 4.0) {
           continue;
         }
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus);
+        auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus);
         registry.fill(HIST("hMassGen"), ptGen, std::abs(yGen));
       }
     }

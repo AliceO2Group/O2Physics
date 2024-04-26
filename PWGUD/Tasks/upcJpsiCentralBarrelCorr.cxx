@@ -34,7 +34,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::math;
 
-struct upcJpsiCentralBarrel {
+struct UpcJpsiCentralBarrel {
   // configurable axes
   ConfigurableAxis IVMAxis{"IVMAxis", {350.0f, 0.0f, 4.5f}, "M_#it{inv} (GeV/#it{c}^{2})"};
   ConfigurableAxis ptAxis{"ptAxis", {250.0f, 0.1f, 3.0f}, "#it{p}_T (GeV/#it{c})"};
@@ -414,7 +414,7 @@ struct upcJpsiCentralBarrel {
     return true;
   }
 
-  void process(UDCollisionFull const& collision, UDTracksFull const& tracks)
+  void process(UDCollisionFull const&, UDTracksFull const& tracks)
   {
     Statistics.get<TH1>(HIST("Statistics/hNumberOfCollisions"))->Fill(0); // number of collisions without any cuts
 
@@ -513,13 +513,13 @@ struct upcJpsiCentralBarrel {
     float massPr = o2::constants::physics::MassProton;
 
     if (countGT == 2) {
-      TLorentzVector mom, daughter[2];
-      auto trkDaughter1 = tracks.iteratorAt(trkIdx[0]);
-      auto trkDaughter2 = tracks.iteratorAt(trkIdx[1]);
-      if ((trkDaughter1.sign() * trkDaughter2.sign()) > 0) {
-        return;
-      }
       if (countGTel == 2) {
+        TLorentzVector mom, daughter[2];
+        auto trkDaughter1 = tracks.iteratorAt(trkIdx[0]);
+        auto trkDaughter2 = tracks.iteratorAt(trkIdx[1]);
+        if ((trkDaughter1.sign() * trkDaughter2.sign()) > 0) {
+          return;
+        }
         if (!(RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaMu(), trkDaughter2.tpcNSigmaMu()) < RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaEl(), trkDaughter2.tpcNSigmaEl()))) {
           return;
         }
@@ -659,6 +659,9 @@ struct upcJpsiCentralBarrel {
         TLorentzVector mom, daughter[2];
         auto trkDaughter1 = tracks.iteratorAt(trkIdx[0]);
         auto trkDaughter2 = tracks.iteratorAt(trkIdx[1]);
+        if ((trkDaughter1.sign() * trkDaughter2.sign()) > 0) {
+          return;
+        }
         if (!(RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaEl(), trkDaughter2.tpcNSigmaEl() < RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaMu(), trkDaughter2.tpcNSigmaMu())))) {
           return;
         }
@@ -674,7 +677,7 @@ struct upcJpsiCentralBarrel {
         std::array<double, 3> mother = {trkDaughter1.px() + trkDaughter2.px(), trkDaughter1.py() + trkDaughter2.py(), trkDaughter1.pz() + trkDaughter2.pz()};
 
         auto arrMom = std::array{daughter1, daughter2};
-        float massJpsi = RecoDecay::m(arrMom, std::array{massEl, massEl});
+        float massJpsi = RecoDecay::m(arrMom, std::array{massMu, massMu});
         float rapJpsi = RecoDecay::y(mother, massJpsi);
 
         TGmu.get<TH1>(HIST("TGmu/hTrackPt"))->Fill(trkDaughter1.pt());
@@ -777,6 +780,9 @@ struct upcJpsiCentralBarrel {
         TLorentzVector mom, daughter[2];
         auto trkDaughter1 = tracks.iteratorAt(trkIdx[0]);
         auto trkDaughter2 = tracks.iteratorAt(trkIdx[1]);
+        if ((trkDaughter1.sign() * trkDaughter2.sign()) > 0) {
+          return;
+        }
 
         auto ene1 = RecoDecay::e(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz(), massPr);
         auto ene2 = RecoDecay::e(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz(), massPr);
@@ -790,7 +796,7 @@ struct upcJpsiCentralBarrel {
         std::array<double, 3> mother = {trkDaughter1.px() + trkDaughter2.px(), trkDaughter1.py() + trkDaughter2.py(), trkDaughter1.pz() + trkDaughter2.pz()};
 
         auto arrMom = std::array{daughter1, daughter2};
-        float massJpsi = RecoDecay::m(arrMom, std::array{massEl, massEl});
+        float massJpsi = RecoDecay::m(arrMom, std::array{massPr, massPr});
         float rapJpsi = RecoDecay::y(mother, massJpsi);
 
         TGp.get<TH1>(HIST("TGp/hTrackPt"))->Fill(trkDaughter1.pt());
@@ -870,6 +876,6 @@ struct upcJpsiCentralBarrel {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<upcJpsiCentralBarrel>(cfgc, TaskName{"upc-jpsi-corr"}),
+    adaptAnalysisTask<UpcJpsiCentralBarrel>(cfgc, TaskName{"upc-jpsi-corr"}),
   };
 }

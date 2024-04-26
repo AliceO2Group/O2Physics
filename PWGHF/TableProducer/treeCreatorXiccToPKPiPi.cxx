@@ -270,7 +270,7 @@ struct HfTreeCreatorXiccToPKPiPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCCPlusPlus),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCCPlusPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

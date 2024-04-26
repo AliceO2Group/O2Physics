@@ -126,7 +126,7 @@ struct HfCorrelatorDsHadronsSelCollision {
         if (std::abs(particle.pdgCode()) != Pdg::kDS) {
           continue;
         }
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassDS);
+        double yD = RecoDecay::y(particle.pVector(), MassDS);
         if (std::abs(yD) > yCandMax || particle.pt() < ptCandMin) {
           continue;
         }
@@ -148,9 +148,11 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsHadronGenInfo> entryDsHadronGenInfo;
   Produces<aod::DsHadronMlInfo> entryDsHadronMlInfo;
   Produces<aod::DsCandRecoInfo> entryDsCandRecoInfo;
+  Produces<aod::TrackRecoInfo> entryTrackRecoInfo;
 
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
+  Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
   Configurable<bool> useSel8ForTrackEff{"useSel8ForTrackEff", true, "Flag for applying sel8 for collision selection"};
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying D-meson efficiency weights"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
@@ -203,8 +205,8 @@ struct HfCorrelatorDsHadrons {
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;                           // flagDsFilter applied
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi, aod::HfCand3ProngMcRec>>; // flagDsFilter applied
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                                         // flagDsFilter applied
-  using MyTracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;                                             // trackFilter applied
-  using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, o2::aod::McTrackLabels>>;                     // trackFilter applied
+  using MyTracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;                           // trackFilter applied
+  using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, o2::aod::McTrackLabels>>;   // trackFilter applied
 
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
@@ -427,6 +429,7 @@ struct HfCorrelatorDsHadrons {
           entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(candidate), false);
           entryDsHadronGenInfo(false, false);
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
+          entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
@@ -436,6 +439,7 @@ struct HfCorrelatorDsHadrons {
           entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(candidate), false);
           entryDsHadronGenInfo(false, false);
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
+          entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         }
       } // end track loop
     }   // end candidate loop
@@ -546,6 +550,7 @@ struct HfCorrelatorDsHadrons {
               registry.fill(HIST("hPtPrimaryParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
             }
           }
+          entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
@@ -572,6 +577,7 @@ struct HfCorrelatorDsHadrons {
               registry.fill(HIST("hPtPrimaryParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
             }
           }
+          entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
         }
       } // end track loop
       isAlreadyFilledEvent = true;
@@ -598,7 +604,7 @@ struct HfCorrelatorDsHadrons {
         hCandidates->Fill(kCandidateStepMcGenAll, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
         if (std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
           hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
-          auto yDs = RecoDecay::y(std::array{mcParticle.px(), mcParticle.py(), mcParticle.pz()}, o2::constants::physics::MassDS);
+          auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
           if (std::abs(yDs) <= yCandGenMax) {
             hCandidates->Fill(kCandidateStepMcCandInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
           }
@@ -665,7 +671,7 @@ struct HfCorrelatorDsHadrons {
     // recontructed tracks loop
     for (auto& track : tracksData) {
       if (track.has_collision()) {
-        if (!track.isGlobalTrackWoDCA()) {
+        if (!track.isGlobalTrackWoDCA() || track.dcaXY() > dcaXYTrackMax || track.dcaZ() > dcaZTrackMax || track.tpcNClsCrossedRows() < nTpcCrossedRaws) {
           continue;
         }
         auto collision = track.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels>>();
@@ -719,7 +725,7 @@ struct HfCorrelatorDsHadrons {
         continue;
       }
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassDS); // TODO
+        double yD = RecoDecay::y(particle.pVector(), MassDS); // TODO
         if (yCandGenMax >= 0. && std::abs(yD) > yCandGenMax) {
           continue;
         }
@@ -804,6 +810,7 @@ struct HfCorrelatorDsHadrons {
             outputMl[iclass] = cand.mlProbDsToKKPi()[classMl->at(iclass)];
           }
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
+          entryTrackRecoInfo(pAssoc.dcaXY(), pAssoc.dcaZ(), pAssoc.tpcNClsCrossedRows());
         } else if (cand.isSelDsToPiKK() >= selectionFlagDs) {
           // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d), PiKK", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.collision().index(), pAssoc.collision().index());
           entryDsHadronPair(getDeltaPhi(pAssoc.phi(), cand.phi()),
@@ -817,6 +824,7 @@ struct HfCorrelatorDsHadrons {
             outputMl[iclass] = cand.mlProbDsToPiKK()[classMl->at(iclass)];
           }
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
+          entryTrackRecoInfo(pAssoc.dcaXY(), pAssoc.dcaZ(), pAssoc.tpcNClsCrossedRows());
         }
       }
     }

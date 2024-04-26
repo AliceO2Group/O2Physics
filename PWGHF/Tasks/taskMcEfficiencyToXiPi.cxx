@@ -14,6 +14,8 @@
 ///
 /// \author Federica Zanone, Heidelberg University
 
+#include "TMCProcess.h" // for VMC Particle Production Process
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -220,25 +222,21 @@ struct HfTaskMcEfficiencyToXiPi {
       }
 
       // exclude cases with undesired decays
-      if (mcParticle.daughtersIds().size() != 2) {
-        LOGP(fatal, "Invalid numbers of daughters for charm baryon {}: {}", mcParticle.globalIndex(), mcParticle.daughtersIds().size());
+      int cascId = -999;
+      int pionId = -999;
+      for (auto& dauCharm : mcParticle.template daughters_as<T2>()) {
+        if (std::abs(dauCharm.pdgCode()) == kXiMinus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)) {
+          cascId = dauCharm.globalIndex();
+        } else if (std::abs(dauCharm.pdgCode()) == kPiPlus && (dauCharm.getProcess() == TMCProcess::kPDecay || dauCharm.getProcess() == TMCProcess::kPPrimary)) {
+          pionId = dauCharm.globalIndex();
+        }
       }
-      auto cascId = mcParticle.daughtersIds()[0];
-      auto pionId = mcParticle.daughtersIds()[1];
       if (cascId < 0 || pionId < 0) {
+        LOGP(debug, "Invalid charm baryon daughters PDG codes/production processes");
         continue;
       }
-      auto cascade = genParticles.rawIteratorAt(mcParticle.daughtersIds().front());
-      auto pion = genParticles.rawIteratorAt(mcParticle.daughtersIds().back());
-      if (std::abs(cascade.pdgCode()) == kPiPlus) { // check if std::abs(cascade.pdgCode()) is different wrt kXiMinus and equal to kPiPlus (daughters ID assignment swapped)
-        std::swap(cascade, pion);
-        std::swap(cascId, pionId);
-      } else if (std::abs(cascade.pdgCode()) == kXiMinus && std::abs(pion.pdgCode()) == kPiPlus) {
-        LOGP(debug, "Correct assignment of charm baryon daughters IDs - gen level");
-      } else {
-        LOGP(fatal, "Invalid charm baryon daughters PDG codes");
-      }
-
+      auto cascade = genParticles.rawIteratorAt(cascId);
+      auto pion = genParticles.rawIteratorAt(pionId);
       // check pion <-- charm baryon pt and eta
       bool inAcceptance = true;
       if (std::abs(pion.eta()) > acceptanceEtaPionFromCharm || pion.pt() < acceptancePtPionFromCharm) {
@@ -247,43 +245,37 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // check LF daughters pt (pion<--cascade) and eta
       // first create cascade daughters objects
-      if (cascade.daughtersIds().size() != 2) {
-        LOGP(fatal, "Invalid numbers of daughters for cascade {}: {}", cascade.globalIndex(), cascade.daughtersIds().size());
+      int lambdaId = -999;
+      int pionFromCascadeId = -999;
+      for (auto& dauCasc : cascade.template daughters_as<T2>()) {
+        if (std::abs(dauCasc.pdgCode()) == kLambda0 && dauCasc.getProcess() == TMCProcess::kPDecay) {
+          lambdaId = dauCasc.globalIndex();
+        } else if (std::abs(dauCasc.pdgCode()) == kPiPlus && dauCasc.getProcess() == TMCProcess::kPDecay) {
+          pionFromCascadeId = dauCasc.globalIndex();
+        }
       }
-      auto lambdaId = cascade.daughtersIds()[0];
-      auto pionFromCascadeId = cascade.daughtersIds()[1];
       if (lambdaId < 0 || pionFromCascadeId < 0) {
+        LOGP(debug, "Invalid cascade daughters PDG codes/production processes");
         continue;
       }
-      auto lambda = genParticles.rawIteratorAt(cascade.daughtersIds().front());
-      auto pionFromCascade = genParticles.rawIteratorAt(cascade.daughtersIds().back());
-      if (std::abs(lambda.pdgCode()) == kPiPlus) { // check if std::abs(lambda.pdgCode()) is different wrt kLambda0 and equal to kPiPlus (daughters ID assignment swapped)
-        std::swap(lambda, pionFromCascade);
-        std::swap(lambdaId, pionFromCascadeId);
-      } else if (std::abs(lambda.pdgCode()) == kLambda0 && std::abs(pionFromCascade.pdgCode()) == kPiPlus) {
-        LOGP(debug, "Correct assignment of cascade daughters IDs - gen level");
-      } else {
-        LOGP(fatal, "Invalid cascade daughters PDG codes");
-      }
+      auto lambda = genParticles.rawIteratorAt(lambdaId);
+      auto pionFromCascade = genParticles.rawIteratorAt(pionFromCascadeId);
       // then create lambda daughters objects
-      if (lambda.daughtersIds().size() != 2) {
-        LOGP(fatal, "Invalid numbers of daughters for lambda {}: {}", lambda.globalIndex(), lambda.daughtersIds().size());
+      int protonId = -999;
+      int pionFromLambdaId = -999;
+      for (auto& dauV0 : lambda.template daughters_as<T2>()) {
+        if (std::abs(dauV0.pdgCode()) == kProton && dauV0.getProcess() == TMCProcess::kPDecay) {
+          protonId = dauV0.globalIndex();
+        } else if (std::abs(dauV0.pdgCode()) == kPiPlus && dauV0.getProcess() == TMCProcess::kPDecay) {
+          pionFromLambdaId = dauV0.globalIndex();
+        }
       }
-      auto protonId = lambda.daughtersIds()[0];
-      auto pionFromLambdaId = lambda.daughtersIds()[1];
       if (protonId < 0 || pionFromLambdaId < 0) {
+        LOGP(debug, "Invalid lambda daughters PDG codes/production processes");
         continue;
       }
-      auto proton = genParticles.rawIteratorAt(lambda.daughtersIds().front());
-      auto pionFromLambda = genParticles.rawIteratorAt(lambda.daughtersIds().back());
-      if (std::abs(proton.pdgCode()) == kPiPlus) { // check if std::abs(proton.pdgCode()) is different wrt kProton and equal to kPiPlus (daughters ID assignment swapped)
-        std::swap(proton, pionFromLambda);
-        std::swap(protonId, pionFromLambdaId);
-      } else if (std::abs(proton.pdgCode()) == kProton && std::abs(pionFromLambda.pdgCode()) == kPiPlus) {
-        LOGP(debug, "Correct assignment of lambda daughters IDs - gen level");
-      } else {
-        LOGP(fatal, "Invalid lambda daughters PDG codes");
-      }
+      auto proton = genParticles.rawIteratorAt(protonId);
+      auto pionFromLambda = genParticles.rawIteratorAt(pionFromLambdaId);
       // check on pt and eta
       if (std::abs(pionFromCascade.eta()) > acceptanceEtaLf || std::abs(pionFromLambda.eta()) > acceptanceEtaLf || std::abs(proton.eta()) > acceptanceEtaLf) {
         inAcceptance = false;

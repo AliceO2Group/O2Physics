@@ -33,6 +33,7 @@ const AxisSpec axisSparseDcaR{100, -5., 5., "DCA_{r}, cm"};
 const AxisSpec axisSparseDcaZ{100, -5., 5., "DCA_{z}, cm"};
 
 struct MshapeQaTask {
+  Configurable<double> confTimeBinWidthInSec{"TimeBinWidthInSec", 0.1, "Width of time bins in seconds"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   o2::tpc::TPCMShapeCorrection mshape; // object for simple access
@@ -61,7 +62,9 @@ struct MshapeQaTask {
       auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", bcs.iteratorAt(0).timestamp(), metadata);
       minSec = floor(grpecs->getTimeStart() / 1000.);
       maxSec = ceil(grpecs->getTimeEnd() / 1000.);
-      const AxisSpec axisSeconds{static_cast<int>(maxSec - minSec) * 10, 0, maxSec - minSec, "seconds"};
+      int nTimeBins = static_cast<int>((maxSec - minSec) / confTimeBinWidthInSec);
+      double timeInterval = nTimeBins * confTimeBinWidthInSec;
+      const AxisSpec axisSeconds{nTimeBins, 0, timeInterval, "seconds"};
       histos.add("hSecondsAsideQoverPtSumDcaR", "", kTH2F, {axisSeconds, axisSparseQoverPt});
       histos.add("hSecondsAsideQoverPtSumDcaZ", "", kTH2F, {axisSeconds, axisSparseQoverPt});
       histos.add("hSecondsCsideQoverPtSumDcaR", "", kTH2F, {axisSeconds, axisSparseQoverPt});
@@ -89,6 +92,10 @@ struct MshapeQaTask {
       histos.add("hSecondsITSlayer4vsPhi", "", kTH2F, {axisSeconds, axisPhi});
       histos.add("hSecondsITSlayer5vsPhi", "", kTH2F, {axisSeconds, axisPhi});
       histos.add("hSecondsITSlayer6vsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      histos.add("hSecondsITS7clsVsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      histos.add("hSecondsITSglobalVsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      histos.add("hSecondsITSTRDVsPhi", "", kTH2F, {axisSeconds, axisPhi});
+      histos.add("hSecondsITSTOFVsPhi", "", kTH2F, {axisSeconds, axisPhi});
     }
 
     int64_t ts = col.bc_as<BCsRun3>().timestamp();
@@ -140,6 +147,10 @@ struct MshapeQaTask {
           nCsideITSTPCContrib++;
         }
 
+        // select straight tracks
+        if (track.pt() < 1) {
+          continue;
+        }
         // study ITS cluster pattern vs sec
         if (track.itsClusterMap() & (1 << 0))
           histos.fill(HIST("hSecondsITSlayer0vsPhi"), secFromSOR, track.phi());
@@ -155,6 +166,14 @@ struct MshapeQaTask {
           histos.fill(HIST("hSecondsITSlayer5vsPhi"), secFromSOR, track.phi());
         if (track.itsClusterMap() & (1 << 6))
           histos.fill(HIST("hSecondsITSlayer6vsPhi"), secFromSOR, track.phi());
+        if (track.itsNCls() == 7)
+          histos.fill(HIST("hSecondsITS7clsVsPhi"), secFromSOR, track.phi());
+        if (track.hasITS() && track.hasTPC())
+          histos.fill(HIST("hSecondsITSglobalVsPhi"), secFromSOR, track.phi());
+        if (track.hasTRD())
+          histos.fill(HIST("hSecondsITSTRDVsPhi"), secFromSOR, track.phi());
+        if (track.hasTOF())
+          histos.fill(HIST("hSecondsITSTOFVsPhi"), secFromSOR, track.phi());
       }
     }
     histos.fill(HIST("hSecondsCollisions"), secFromSOR);

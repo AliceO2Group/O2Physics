@@ -33,6 +33,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include "TF1.h"
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -57,8 +58,22 @@ using std::array;
 struct phianalysisrun3 {
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<bool> piluprejection{"piluprejection", false, "Pileup rejection"};
+  Configurable<bool> goodzvertex{"goodzvertex", false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
+  Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
+  Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
+  Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
+
+  // Event selection cuts - Alex (Temporary, need to fix!)
+  TF1* fMultPVCutLow = nullptr;
+  TF1* fMultPVCutHigh = nullptr;
+  TF1* fMultCutLow = nullptr;
+  TF1* fMultCutHigh = nullptr;
+  TF1* fMultMultPVCut = nullptr;
+
   // track
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
@@ -77,7 +92,6 @@ struct phianalysisrun3 {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
-  Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
   Configurable<float> cmultLow{"cmultLow", -0.5f, "Low centrality percentile"};
   Configurable<float> cmultHigh{"cmultHigh", 200.5f, "High centrality percentile"};
   Configurable<int> cmultBins{"cmultBins", 201, "Number of centrality bins"};
@@ -123,6 +137,18 @@ struct phianalysisrun3 {
       histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {axisPt});
       histos.add("h3PhiRec", "Phi meson Rec", kTHnSparseF, {axisPt, axisPt, {200, -0.1, 0.1}}, true);
     }
+    if (additionalEvsel) {
+      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
+      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
+      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
+      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
+    }
   }
 
   double massKa = o2::constants::physics::MassKPlus;
@@ -134,6 +160,45 @@ struct phianalysisrun3 {
   array<float, 3> pvec0;
   array<float, 3> pvec1;
   array<float, 3> pvec1rotation;
+
+  template <typename Collision>
+  bool eventselection(Collision const& collision, const float& multiplicity)
+  {
+    if (!collision.sel8()) {
+      return false;
+    }
+    if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      return false;
+    }
+    if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    if (itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return false;
+    }
+    // if (collision.alias_bit(kTVXinTRD)) {
+    //   // TRD triggered
+    //   // return 0;
+    // }
+    auto multNTracksPV = collision.multNTracksPV();
+    if (additionalEvsel && multNTracksPV < fMultPVCutLow->Eval(multiplicity)) {
+      return false;
+    }
+    if (additionalEvsel && multNTracksPV > fMultPVCutHigh->Eval(multiplicity)) {
+      return false;
+    }
+    // if (multTrk < fMultCutLow->Eval(multiplicity))
+    //  return 0;
+    // if (multTrk > fMultCutHigh->Eval(multiplicity))
+    //  return 0;
+    // if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
+    //  return 0;
+    return true;
+  }
+
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
@@ -240,7 +305,7 @@ struct phianalysisrun3 {
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::Mults>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                   aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
@@ -266,17 +331,14 @@ struct phianalysisrun3 {
 
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
-    if (!collision.sel8()) {
-      return;
-    }
-    if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (!eventselection(collision, collision.centFT0M())) {
       return;
     }
     float multiplicity;
-    if (cfgMultFT0)
-      multiplicity = collision.centFT0C();
-    if (!cfgMultFT0)
-      multiplicity = collision.numContrib();
+    // if (cfgMultFT0)
+    multiplicity = collision.centFT0M();
+    // if (!cfgMultFT0)
+    //   multiplicity = collision.numContrib();
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
@@ -323,20 +385,17 @@ struct phianalysisrun3 {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      if (!c1.sel8()) {
+      if (!eventselection(c1, c1.centFT0M())) {
         continue;
       }
-      if (!c2.sel8()) {
-        continue;
-      }
-      if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (!eventselection(c2, c2.centFT0M())) {
         continue;
       }
       float multiplicity;
-      if (cfgMultFT0)
-        multiplicity = c1.centFT0C();
-      if (!cfgMultFT0)
-        multiplicity = c1.numContrib();
+      // if (cfgMultFT0)
+      multiplicity = c1.centFT0M();
+      // if (!cfgMultFT0)
+      //   multiplicity = c1.numContrib();
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         bool unlike = false;

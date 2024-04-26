@@ -45,10 +45,11 @@ using namespace o2::analysis::femtoDream;
 namespace o2::aod
 {
 
-using FemtoFullCollision =
-  soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
+using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
 using FemtoFullCollision_noCent_MC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
+using FemtoFullMCgenCollisions = soa::Join<aod::McCollisions, MultsExtraMC>;
+using FemtoFullMCgenCollision = FemtoFullMCgenCollisions::iterator;
 
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA,
@@ -72,6 +73,8 @@ int getRowDaughters(int daughID, T const& vecID)
 struct femtoDreamProducerTask {
 
   Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDMCCollisions> outputMCCollision;
+  Produces<aod::FDMCCollLabels> outputCollsMCLabels;
   Produces<aod::FDParticles> outputParts;
   Produces<aod::FDMCParticles> outputPartsMC;
   Produces<aod::FDExtParticles> outputDebugParts;
@@ -355,6 +358,17 @@ struct femtoDreamProducerTask {
     }
   }
 
+  template <typename CollisionType>
+  void fillMCCollision(CollisionType const& col)
+  {
+    if (col.has_mcCollision()) {
+      auto genMCcol = col.template mcCollision_as<aod::FemtoFullMCgenCollisions>();
+      outputMCCollision(genMCcol.multMCNParticlesEta08());
+      outputCollsMCLabels(outputMCCollision.lastIndex());
+    } else {
+      outputCollsMCLabels(-1);
+    }
+  }
   template <bool isMC, bool useCentrality, typename V0Type, typename TrackType, typename CollisionType>
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
@@ -392,6 +406,9 @@ struct femtoDreamProducerTask {
     }
 
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+    if constexpr (isMC) {
+      fillMCCollision(col);
+    }
 
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
@@ -530,7 +547,7 @@ struct femtoDreamProducerTask {
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                 aod::McCollisions const&,
+                 aod::FemtoFullMCgenCollisions const&,
                  aod::McParticles const&,
                  soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
@@ -544,7 +561,7 @@ struct femtoDreamProducerTask {
   void processMC_noCentrality(aod::FemtoFullCollision_noCent_MC const& col,
                               aod::BCsWithTimestamps const&,
                               soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                              aod::McCollisions const&,
+                              aod::FemtoFullMCgenCollisions const&,
                               aod::McParticles const&,
                               soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {

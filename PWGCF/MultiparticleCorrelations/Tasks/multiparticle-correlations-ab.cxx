@@ -49,15 +49,17 @@ using EventSelection_Run1 = soa::Join<aod::EvSels, aod::Mults>; // TBI 20240205 
 using CollisionRec_Run1 = soa::Join<aod::Collisions, EventSelection_Run1>::iterator;
 
 // *) ROOT:
-#include "TList.h"
-#include "TSystem.h"
-#include "TFile.h"
-#include "TH1D.h"
-#include "TGrid.h"
-#include "Riostream.h"
-#include "TRandom3.h"
+#include <TList.h>
+#include <TSystem.h>
+#include <TFile.h>
+#include <TH1D.h>
+#include <TGrid.h>
+#include <Riostream.h>
+#include <TRandom3.h>
 #include <TComplex.h>
 #include <TStopwatch.h>
+#include <TF1.h>
+#include <TF3.h>
 using namespace std;
 
 // *) Enums:
@@ -130,6 +132,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookCorrelationsHistograms();
     BookWeightsHistograms();
     BookNestedLoopsHistograms();
+    BookInternalValidationHistograms();
     BookTest0Histograms();
     BookTheRest(); // here I book everything that was not sorted (yet) in the specific functions above
 
