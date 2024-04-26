@@ -302,7 +302,8 @@ struct cascadeFlow {
     }
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {{120, -12., 12.}});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
-    histos.add("hPsiT0C", "hPsiT0C", HistType::kTH1D, {{100, 0, 2 * TMath::Pi()}});
+    histos.add("hPsiT0C", "hPsiT0C", HistType::kTH1D, {{100, -TMath::Pi(), TMath::Pi()}});
+    histos.add("hPsiT0CvsCentFT0C", "hPsiT0CvsCentFT0C", HistType::kTH2D, {CentAxis, {100, -TMath::Pi(), TMath::Pi()}});
     histos.add("hEventNchCorrelation", "hEventNchCorrelation", kTH2F, {{5000, 0, 5000}, {5000, 0, 2500}});
     histos.add("hEventPVcontributorsVsCentrality", "hEventPVcontributorsVsCentrality", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
     histos.add("hEventGlobalTracksVsCentrality", "hEventGlobalTracksVsCentrality", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
@@ -314,7 +315,7 @@ struct cascadeFlow {
     histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1F, {{6, -0.5, 5.5}});
     histos.add("hCascade", "hCascade", HistType::kTH1F, {{6, -0.5, 5.5}});
     histos.add("hCascadePhi", "hCascadePhi", HistType::kTH1F, {{100, 0, 2 * TMath::Pi()}});
-    histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1F, {{100, 0, 2 * TMath::Pi()}});
+    histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1F, {{100, 0, 2 *TMath::Pi()}});
     for (int iS{0}; iS < 2; ++iS) {
       cascadev2::hMassBeforeSelVsPt[iS] = histos.add<TH2>(Form("hMassBeforeSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassBeforeSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
       cascadev2::hMassAfterSelVsPt[iS] = histos.add<TH2>(Form("hMassAfterSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassAfterSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
@@ -437,6 +438,7 @@ struct cascadeFlow {
 
     const float PsiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     histos.fill(HIST("hPsiT0C"), PsiT0C);
+    histos.fill(HIST("hPsiT0CvsCentFT0C"), coll.centFT0C(), PsiT0C);
 
     std::vector<float> bdtScore[2];
     for (auto& casc : Cascades) {
