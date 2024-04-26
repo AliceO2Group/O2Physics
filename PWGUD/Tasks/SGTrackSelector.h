@@ -39,7 +39,7 @@ template <typename T>
 int trackselector(const T& track, const std::vector<float>& params)
 {
   // Ensure the params vector contains all the necessary parameters
-  if (params.size() < 6) {
+  if (params.size() < 7) {
     throw std::runtime_error("Insufficient parameters provided");
   }
   TLorentzVector a;
@@ -60,6 +60,8 @@ int trackselector(const T& track, const std::vector<float>& params)
   if (track.tpcNClsFindable() < params[4])
     return 0;
   if (track.itsChi2NCl() > params[5])
+    return 0;
+  if (std::abs(a.Eta()) > params[6])
     return 0;
   return 1;
 }

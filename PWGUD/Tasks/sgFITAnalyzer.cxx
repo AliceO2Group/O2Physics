@@ -22,6 +22,10 @@
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Tasks/SGTrackSelector.h"
+#define mpion 0.1396
+#define mmuon 0.1057
+#define mkaon 0.4937
+#define mproton 0.9383
 
 using namespace o2;
 using namespace o2::framework;
@@ -52,6 +56,7 @@ struct SGFITAnalyzer { // UDTutorial01
   Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};
   Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
+  Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
   // initialize histogram registry
   HistogramRegistry registry{
     "registry",
@@ -122,12 +127,18 @@ struct SGFITAnalyzer { // UDTutorial01
     registry.add("ZDC/ACZNA_CR", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/AZNA_CR", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/CZNA_CR", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/ACZNA_CM", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/AZNA_CM", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/CZNA_CM", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/AZNC", "Amplitude ZNC, A Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/CZNC", "Amplitude ZNC, C Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/ACZNC", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/ACZNC_CR", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/AZNC_CR", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/CZNC_CR", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/ACZNC_CM", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/AZNC_CM", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/CZNC_CM", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/tAZNA", "Time ZNA", {HistType::kTH1F, {{100, -19.5, 19.5}}});
     registry.add("ZDC/tAZNC", "Time ZNC", {HistType::kTH1F, {{100, -19.5, 19.5}}});
     registry.add("ZDC/tCZNA", "Time ZNA", {HistType::kTH1F, {{100, -19.5, 19.5}}});
@@ -203,6 +214,21 @@ struct SGFITAnalyzer { // UDTutorial01
     registry.add("FIT/CFT0C_CR", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/CFDDA_CR", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/CFDDC_CR", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFV0A_CM", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFT0A_CM", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFT0C_CM", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFDDA_CM", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFDDC_CM", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFV0A_CM", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFT0A_CM", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFT0C_CM", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFDDA_CM", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFDDC_CM", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFV0A_CM", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFT0A_CM", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFT0C_CM", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFDDA_CM", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFDDC_CM", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFV0A", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFT0A", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFT0C", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
@@ -333,26 +359,39 @@ struct SGFITAnalyzer { // UDTutorial01
       LOGF(info, "<UDTutorial01sg>   Number of tracks %d", dgtracks.size());
       LOGF(info, "<UDTutorial01sg>   Number of PV contributors %d", PVContributors.size());
     }
-    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut};
     // check rho0 signals
     bool coh_rho0 = false;
-    TLorentzVector rho;
+    bool coh_jpsi = false;
+    TLorentzVector rho, jpsi;
     std::vector<TLorentzVector> goodTracks;
+    std::vector<TLorentzVector> muonTracks;
     float sign = 0;
     for (auto t : dgtracks) {
       TLorentzVector a;
+      TLorentzVector b;
       a.SetXYZM(t.px(), t.py(), t.pz(), mpion);
+      b.SetXYZM(t.px(), t.py(), t.pz(), mmuon);
       if (trackselector(t, parameters)) {
         sign += t.sign();
         goodTracks.push_back(a);
+        if (std::abs(t.tpcNSigmaMu()) < 3)
+          muonTracks.push_back(b);
       }
     }
     if (goodTracks.size() == 2) {
       for (auto pion : goodTracks) {
         rho += pion;
       }
-      if (sign == 0 && TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.15)
+      if (sign == 0 && TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.1)
         coh_rho0 = true;
+      if (muonTracks.size() == 2) {
+        for (auto muon : muonTracks) {
+          jpsi += muon;
+        }
+        if (sign == 0 && TMath::Abs(jpsi.Rapidity()) < .9 && jpsi.M() > 2.8 && jpsi.M() < 3.35 && jpsi.Pt() < 0.1)
+          coh_jpsi = true;
+      }
     }
     int pva = 0;
     int pvc = 0;
@@ -457,6 +496,15 @@ struct SGFITAnalyzer { // UDTutorial01
         registry.get<TH1>(HIST("FIT/AFDDA_CR"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
         registry.get<TH1>(HIST("FIT/AFDDC_CR"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
       }
+      if (coh_jpsi) {
+        registry.get<TH1>(HIST("ZDC/AZNA_CM"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/AZNC_CM"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/AFT0A_CM"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFT0C_CM"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/AFV0A_CM"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFDDA_CM"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFDDC_CM"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
       registry.get<TH1>(HIST("ZDC/tAZNA"))->Fill(dgcand.timeZNA(), 1.);
       registry.get<TH1>(HIST("ZDC/tAZNC"))->Fill(dgcand.timeZNC(), 1.);
       registry.get<TH1>(HIST("ZDC/AZNA"))->Fill(zna, 1.);
@@ -527,6 +575,15 @@ struct SGFITAnalyzer { // UDTutorial01
         registry.get<TH1>(HIST("FIT/CFV0A_CR"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
         registry.get<TH1>(HIST("FIT/CFDDA_CR"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
         registry.get<TH1>(HIST("FIT/CFDDC_CR"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
+      if (coh_jpsi) {
+        registry.get<TH1>(HIST("ZDC/CZNA_CM"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/CZNC_CM"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/CFT0A_CM"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFT0C_CM"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/CFV0A_CM"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFDDA_CM"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFDDC_CM"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
       }
       registry.get<TH1>(HIST("ZDC/CZNA"))->Fill(zna, 1.);
       registry.get<TH1>(HIST("ZDC/CZNC"))->Fill(znc, 1.);
@@ -612,6 +669,15 @@ struct SGFITAnalyzer { // UDTutorial01
         registry.get<TH1>(HIST("FIT/ACFV0A_CR"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
         registry.get<TH1>(HIST("FIT/ACFDDA_CR"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
         registry.get<TH1>(HIST("FIT/ACFDDC_CR"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
+      if (coh_jpsi) {
+        registry.get<TH1>(HIST("ZDC/ACZNA_CM"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/ACZNC_CM"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/ACFT0A_CM"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFT0C_CM"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFV0A_CM"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFDDA_CM"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFDDC_CM"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
       }
       registry.get<TH1>(HIST("FIT/ACFT0A"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
       registry.get<TH1>(HIST("FIT/ACFT0C"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
