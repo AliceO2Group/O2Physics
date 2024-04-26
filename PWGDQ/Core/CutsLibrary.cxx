@@ -1021,7 +1021,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   vecTypetrack.emplace_back("_ITSanyfirsttwo");  // default TightGlobalTrackRun3 but with a cluster in any of the first two layers
   vecTypetrack.emplace_back("_ITSanyfirstthree"); // default TightGlobalTrackRun3 but with a cluster in any of the first three layers
 
-
   // loop to define PID cuts with and without post calibration
   for (size_t icase = 0; icase < vecTypetrack.size(); icase++) {
     // 4 cuts to separate pos & neg tracks in pos & neg eta range
@@ -1136,7 +1135,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   vecTypetrackWithPID.emplace_back("_TPCstrongncls"); // default TightGlobalTrackRun3 but with 130 TPC clusters
   vecTypetrackWithPID.emplace_back("_ITSanyfirsttwo");  // default TightGlobalTrackRun3 but with a cluster in any of the first two layers
   vecTypetrackWithPID.emplace_back("_ITSanyfirstthree"); // default TightGlobalTrackRun3 but with a cluster in any of the first three layers
-
 
   // loop to define PID cuts with and without post calibration
   for (size_t icase = 0; icase < vecPIDcase.size(); icase++) {
