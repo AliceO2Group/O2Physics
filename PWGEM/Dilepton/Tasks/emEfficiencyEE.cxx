@@ -1093,6 +1093,13 @@ struct AnalysisSameEventPairing {
       TString histClassesQA = "";
       for (auto& cut : fTrackCuts) {
 
+        // All passing dileptons
+        names = {
+          Form("PairsBarrelSEPM_%s", cut.GetName()),
+          Form("PairsBarrelSEPP_%s", cut.GetName()),
+          Form("PairsBarrelSEMM_%s", cut.GetName())};
+        histClassesQA += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+
         // All reconstructed dileptons matched to a MC signal
         std::vector<TString> mcnamesreco;
         for (unsigned int isig = 0; isig < fMCSignals.size(); ++isig) {
@@ -1327,6 +1334,27 @@ struct AnalysisSameEventPairing {
 
       //
       VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2);
+
+      // Fill the QA for all passing tracks
+      if (fConfigQA) {
+        for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
+          if (twoTrackFilter & (uint8_t(1) << j)) {
+            if (!fConfigFillLS) {
+              fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+            } else {
+              if (uls) {
+                fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+              } else {
+                if (t1.sign() > 0) {
+                  fHistManQA->FillHistClass(Form("PairsBarrelSEPP_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+                } else {
+                  fHistManQA->FillHistClass(Form("PairsBarrelSEMM_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+                }
+              }
+            }
+          }
+        }
+      }
 
       // run MC matching for this pair
       uint32_t mcDecision = 0;
