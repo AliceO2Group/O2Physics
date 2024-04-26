@@ -51,7 +51,7 @@ struct centralityStudy {
   ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
   ConfigurableAxis axisMultITSOnly{"axisMultITSOnly", {200, 0, 6000}, "Number of ITS only tracks"};
   ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
-  ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -10.0f, 10.0f}, "Vertex Z (cm)"};
+  ConfigurableAxis axisVertexZ{"axisVertexZ", {80, -20.0f, 20.0f}, "Vertex Z (cm)"};
 
   void init(InitContext&)
   {
@@ -71,6 +71,7 @@ struct centralityStudy {
 
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultFT0C});
       histos.add("hVertexZ", "hVertexZ", kTH1D, {axisVertexZ});
+      histos.add("hProfileFT0C", "hProfileFT0C", kTProfile, {axisVertexZ});
     }
 
     if (doprocessBCs) {
@@ -140,8 +141,10 @@ struct centralityStudy {
       passExtraEventSelection = false;
     }
 
-    if (passExtraEventSelection)
-      histos.fill(HIST("hVertexZ"), collision.multPVz() /* Not at same bunch pile-up */);
+    if (passExtraEventSelection){
+      histos.fill(HIST("hVertexZ"), collision.multPVz() );
+      histos.fill(HIST("hProfileFT0C"), collision.multPVz(), collision.multFT0C());
+    }
 
     // if we got here, we also finally fill the FT0C histogram, please
     if (passExtraEventSelection && passVtxZ) {
