@@ -34,6 +34,7 @@ using namespace o2::framework::expressions;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorLcToPKPi {
+  // Candidates
   Produces<o2::aod::Hf3PBases> rowCandidateBase;
   Produces<o2::aod::Hf3PPars> rowCandidatePar;
   Produces<o2::aod::Hf3PParEs> rowCandidateParE;
@@ -41,9 +42,13 @@ struct HfDerivedDataCreatorLcToPKPi {
   Produces<o2::aod::Hf3PMls> rowCandidateMl;
   Produces<o2::aod::Hf3PIds> rowCandidateId;
   Produces<o2::aod::Hf3PMcs> rowCandidateMc;
+  // Collisions
   Produces<o2::aod::Hf3PCollBases> rowCollBase;
   Produces<o2::aod::Hf3PCollIds> rowCollId;
+  // MC collisions
   Produces<o2::aod::Hf3PMcCollBases> rowMcCollBase;
+  Produces<o2::aod::Hf3PMcCollIds> rowMcCollId;
+  // MC particles
   Produces<o2::aod::Hf3PPBases> rowParticleBase;
   Produces<o2::aod::Hf3PPIds> rowParticleId;
 
@@ -58,8 +63,9 @@ struct HfDerivedDataCreatorLcToPKPi {
   Configurable<bool> fillCollBase{"fillCollBase", true, "Fill collision base properties"};
   Configurable<bool> fillCollId{"fillCollId", true, "Fill collision indices"};
   Configurable<bool> fillMcCollBase{"fillMcCollBase", true, "Fill MC collision base properties"};
-  Configurable<bool> fillParticleBase{"fillParticleBase", true, "Fill particle properties"};
-  Configurable<bool> fillParticleId{"fillParticleId", true, "Fill particle indices"};
+  Configurable<bool> fillMcCollId{"fillMcCollId", true, "Fill MC collision indices"};
+  Configurable<bool> fillParticleBase{"fillParticleBase", true, "Fill MC particle properties"};
+  Configurable<bool> fillParticleId{"fillParticleId", true, "Fill MC particle indices"};
   // Parameters for production of training samples
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
@@ -144,6 +150,11 @@ struct HfDerivedDataCreatorLcToPKPi {
         collision.posX(),
         collision.posY(),
         collision.posZ());
+    }
+    if (fillMcCollId) {
+      std::vector<int> ids{};
+      rowMcCollId(
+        ids);
     }
   }
 
