@@ -102,6 +102,8 @@ struct TaskPolarisationCharmHadrons {
   Configurable<bool> activateTHnSparseCosThStarProduction{"activateTHnSparseCosThStarProduction", true, "Activate the THnSparse with cosThStar w.r.t. production axis"};
   Configurable<bool> activateTHnSparseCosThStarBeam{"activateTHnSparseCosThStarBeam", true, "Activate the THnSparse with cosThStar w.r.t. beam axis"};
   Configurable<bool> activateTHnSparseCosThStarRandom{"activateTHnSparseCosThStarRandom", true, "Activate the THnSparse with cosThStar w.r.t. random axis"};
+  float minInvMass{0.f};
+  float maxInvMass{1000.f};
 
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
@@ -163,6 +165,10 @@ struct TaskPolarisationCharmHadrons {
     const AxisSpec thnAxisMlBkg{configThnAxisMlBkg, "ML bkg"};
     const AxisSpec thnAxisMlNonPrompt{configThnAxisMlNonPrompt, "ML non-prompt"};
     const AxisSpec thnAxisIsRotatedCandidate{2, -0.5f, 1.5f, "rotated bkg"};
+
+    auto invMassBins = thnAxisInvMass.binEdges;
+    minInvMass = invMassBins.front();
+    maxInvMass = invMassBins.back();
 
     if (doprocessDstarWithMl || doprocessDstarMcWithMl) {
       /// analysis for D*+ meson with ML, w/o rot. background axis
@@ -741,6 +747,10 @@ struct TaskPolarisationCharmHadrons {
         }
 
       } // Lc->pKpi
+
+      if (invMassCharmHadForSparse < minInvMass || invMassCharmHadForSparse > maxInvMass) {
+        continue;
+      }
 
       float phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
       float thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
