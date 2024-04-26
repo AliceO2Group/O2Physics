@@ -51,6 +51,7 @@ struct centralityStudy {
   ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
   ConfigurableAxis axisMultITSOnly{"axisMultITSOnly", {200, 0, 6000}, "Number of ITS only tracks"};
   ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
+  ConfigurableAxis axisVertexZ{"axisVertexZ", {40, -10.0f, 10.0f}, "Vertex Z (cm)"};
 
   void init(InitContext&)
   {
@@ -69,6 +70,7 @@ struct centralityStudy {
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
 
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultFT0C});
+      histos.add("hVertexZ", "hVertexZ", kTH1D, {axisVertexZ});
     }
 
     if (doprocessBCs) {
@@ -88,53 +90,67 @@ struct centralityStudy {
     if (applySel8 && !collision.multSel8())
       return;
     histos.fill(HIST("hCollisionSelection"), 1);
-    if (applyVtxZ && TMath::Abs(collision.multPVz()) > 10)
-      return;
-    histos.fill(HIST("hCollisionSelection"), 2);
+
+    bool passVtxZ = (TMath::Abs(collision.multPVz()) < 10);
+    if( passVtxZ ){
+      histos.fill(HIST("hCollisionSelection"), 2);
+    }
 
     // _______________________________________________________
     // Extra event selections start here
+
+    bool passExtraEventSelection = true;
     if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      return;
+      passExtraEventSelection = false;
     }
-    histos.fill(HIST("hCollisionSelection"), 3 /* Not at ITS ROF border */);
+    if( passExtraEventSelection && passVtxZ )
+      histos.fill(HIST("hCollisionSelection"), 3 /* Not at ITS ROF border */);
 
     if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      return;
+      passExtraEventSelection = false;
     }
-    histos.fill(HIST("hCollisionSelection"), 4 /* Not at TF border */);
+    if( passExtraEventSelection && passVtxZ )
+      histos.fill(HIST("hCollisionSelection"), 4 /* Not at TF border */);
 
     if (requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      return;
+      passExtraEventSelection = false;
     }
-    histos.fill(HIST("hCollisionSelection"), 5 /* Contains at least one ITS-TPC track */);
+    if( passExtraEventSelection && passVtxZ )
+      histos.fill(HIST("hCollisionSelection"), 5 /* Contains at least one ITS-TPC track */);
 
     if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return;
+      passExtraEventSelection = false;
     }
-    histos.fill(HIST("hCollisionSelection"), 6 /* PV position consistency check */);
+    if( passExtraEventSelection && passVtxZ )
+      histos.fill(HIST("hCollisionSelection"), 6 /* PV position consistency check */);
 
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
-      return;
+      passExtraEventSelection = false;
     }
-    histos.fill(HIST("hCollisionSelection"), 7 /* PV with at least one contributor matched with TOF */);
+    if( passExtraEventSelection && passVtxZ )
+      histos.fill(HIST("hCollisionSelection"), 7 /* PV with at least one contributor matched with TOF */);
 
     if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
-      return;
+      passExtraEventSelection = false;
     }
-    histos.fill(HIST("hCollisionSelection"), 8 /* PV with at least one contributor matched with TRD */);
+    if( passExtraEventSelection && passVtxZ )
+      histos.fill(HIST("hCollisionSelection"), 8 /* PV with at least one contributor matched with TRD */);
 
     if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      return;
+      passExtraEventSelection = false;
     }
-    histos.fill(HIST("hCollisionSelection"), 9 /* Not at same bunch pile-up */);
+
+    if( passExtraEventSelection ) 
+      histos.fill(HIST("hVertexZ"), collision.multPVz() /* Not at same bunch pile-up */);
 
     // if we got here, we also finally fill the FT0C histogram, please
-    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() /* Not at same bunch pile-up */);
-
-    if (do2DPlots) {
-      histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C());
-      histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
+    if( passExtraEventSelection && passVtxZ ){
+      histos.fill(HIST("hCollisionSelection"), 9 /* Not at same bunch pile-up */);
+      histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() /* Not at same bunch pile-up */);
+      if (do2DPlots) {
+        histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C());
+        histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
+      }
     }
   }
 
