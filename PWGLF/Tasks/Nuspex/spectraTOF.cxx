@@ -96,6 +96,7 @@ struct tofSpectra {
   Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
   Configurable<bool> makeTHnSparseChoice{"makeTHnSparseChoice", false, "choose if produce thnsparse"}; // RD
+  Configurable<bool> enableTPCTOFvsEtaHistograms{"enableTPCTOFvsEtaHistograms", false, "choose if produce TPC tof vs Eta"};
   Configurable<bool> includeCentralityMC{"includeCentralityMC", true, "choose if include Centrality to MC"};
   Configurable<bool> tpctofVsMult{"tpctofVsMult", false, "Produce TPC-TOF plots vs multiplicity"};
 
@@ -449,8 +450,8 @@ struct tofSpectra {
           histos.add(hdeltatpc[i].data(), pTCharge[i], kTH2D, {ptAxis, deltaTPCAxis});
         }
         if (enableTPCTOFHistograms) {
-          if (makeTHnSparseChoice) {                                                                                        // JL
-            histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis}); // JL
+          if (enableTPCTOFvsEtaHistograms) {
+            histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis});
           } else {
             histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3D, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis});
           }
@@ -468,11 +469,15 @@ struct tofSpectra {
           histos.add(hdeltatpc[i].data(), pTCharge[i], kTH3D, {ptAxis, deltaTPCAxis, multAxis});
         }
         if (enableTPCTOFHistograms) {
-          if (makeTHnSparseChoice) {                                                                                        // JL
-            histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis}); // JL
-          } else {
-            if (tpctofVsMult) {
+          if (tpctofVsMult) {
+            if (enableTPCTOFvsEtaHistograms) {
+              histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis, multAxis});
+            } else {
               histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis, multAxis});
+            }
+          } else {
+            if (enableTPCTOFvsEtaHistograms) {
+              histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, etaAxis, nsigmaTPCAxis, nsigmaTOFAxis});
             } else {
               histos.add(hnsigmatpctof[i].data(), pTCharge[i], kTH3D, {ptAxis, nsigmaTPCAxis, nsigmaTOFAxis});
             }
@@ -722,18 +727,26 @@ struct tofSpectra {
     }
 
     if (enableTPCTOFHistograms) {
-      if (makeTHnSparseChoice) {
-        if (track.sign() > 0) {
-          histos.fill(HIST(hnsigmatpctof[id]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF);
+      if (tpctofVsMult) {
+        if (enableTPCTOFvsEtaHistograms) {
+          if (track.sign() > 0) {
+            histos.fill(HIST(hnsigmatpctof[id]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF, multiplicity);
+          } else {
+            histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF, multiplicity);
+          }
         } else {
-          histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF);
-        }
-      } else {
-        if (tpctofVsMult) {
           if (track.sign() > 0) {
             histos.fill(HIST(hnsigmatpctof[id]), track.pt(), nsigmaTPC, nsigmaTOF, multiplicity);
           } else {
             histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), nsigmaTPC, nsigmaTOF, multiplicity);
+          }
+        }
+      } else {
+        if (enableTPCTOFvsEtaHistograms) {
+          if (track.sign() > 0) {
+            histos.fill(HIST(hnsigmatpctof[id]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF);
+          } else {
+            histos.fill(HIST(hnsigmatpctof[id + Np]), track.pt(), track.eta(), nsigmaTPC, nsigmaTOF);
           }
         } else {
           if (track.sign() > 0) {
