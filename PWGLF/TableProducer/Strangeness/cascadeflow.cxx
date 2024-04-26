@@ -35,7 +35,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs>::iterator;
+using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraRawCents>::iterator;
 
 namespace cascadev2
 {
@@ -158,6 +158,9 @@ struct cascadeFlow {
   bool AcceptEvent(TCollision const& collision)
   {
     histos.fill(HIST("hNEvents"), 0.5);
+    histos.fill(HIST("hEventNchCorrelationBefCuts"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+    histos.fill(HIST("hEventPVcontributorsVsCentralityBefCuts"), collision.centFT0C(), collision.multNTracksPVeta1());
+    histos.fill(HIST("hEventGlobalTracksVsCentralityBefCuts"), collision.centFT0C(), collision.multNTracksGlobal());
 
     // Event selection if required
     if (sel8 && !collision.sel8()) {
@@ -182,6 +185,10 @@ struct cascadeFlow {
       return false;
     }
     histos.fill(HIST("hNEvents"), 4.5);
+
+    histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+    histos.fill(HIST("hEventPVcontributorsVsCentrality"), collision.centFT0C(), collision.multNTracksPVeta1());
+    histos.fill(HIST("hEventGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
 
     return true;
   }
@@ -296,6 +303,12 @@ struct cascadeFlow {
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {{120, -12., 12.}});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
     histos.add("hPsiT0C", "hPsiT0C", HistType::kTH1D, {{100, 0, 2 * TMath::Pi()}});
+    histos.add("hEventNchCorrelation", "hEventNchCorrelation", kTH2F, {{5000, 0, 5000}, {5000, 0, 2500}});
+    histos.add("hEventPVcontributorsVsCentrality", "hEventPVcontributorsVsCentrality", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
+    histos.add("hEventGlobalTracksVsCentrality", "hEventGlobalTracksVsCentrality", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
+    histos.add("hEventNchCorrelationBefCuts", "hEventNchCorrelationBefCuts", kTH2F, {{5000, 0, 5000}, {2500, 0, 2500}});
+    histos.add("hEventPVcontributorsVsCentralityBefCuts", "hEventPVcontributorsVsCentralityBefCuts", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
+    histos.add("hEventGlobalTracksVsCentralityBefCuts", "hEventGlobalTracksVsCentralityBefCuts", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
 
     histos.add("hCandidate", "hCandidate", HistType::kTH1F, {{22, -0.5, 21.5}});
     histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1F, {{6, -0.5, 5.5}});
@@ -329,7 +342,7 @@ struct cascadeFlow {
     }
   }
 
-  void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
+  void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraRawCents>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
   {
 
     int counter = 0;
@@ -382,7 +395,7 @@ struct cascadeFlow {
     }
   }
 
-  void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascMCCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
+  void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraRawCents>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascMCCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
   {
 
     if (!AcceptEvent(coll)) {
