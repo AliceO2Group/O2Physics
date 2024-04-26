@@ -61,7 +61,7 @@ DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
 DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
 
 } // namespace resocollision
-DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
+DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::mult::MultNTracksPV,
                   collision::PosX,
@@ -158,9 +158,11 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::aod::pidtpc::TPCNSigmaPi,
                   o2::aod::pidtpc::TPCNSigmaKa,
                   o2::aod::pidtpc::TPCNSigmaPr,
+                  o2::aod::pidtpc::TPCNSigmaEl,
                   o2::aod::pidtof::TOFNSigmaPi,
                   o2::aod::pidtof::TOFNSigmaKa,
                   o2::aod::pidtof::TOFNSigmaPr,
+                  o2::aod::pidtof::TOFNSigmaEl,
                   o2::aod::track::TPCSignal,
                   o2::aod::track::PassedITSRefit,
                   o2::aod::track::PassedTPCRefit,
@@ -279,7 +281,7 @@ using ResoMCParent = ResoMCParents::iterator;
 
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
 using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
-using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCEl, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFEl>;
 using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>; // Without Extra
 
 } // namespace o2::aod

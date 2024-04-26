@@ -677,16 +677,17 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kEta, 200, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Phi_Eta", "#phi vs #eta distribution", false, 200, -5.0, 5.0, VarManager::kEta, 200, -2. * TMath::Pi(), 2. * TMath::Pi(), VarManager::kPhi);
   }
-  if (groupStr.Contains("mctruth")) {
+  if (groupStr.Contains("mctruth_track")) {
     hm->AddHistogram(histClass, "PtMC", "MC pT", false, 2000, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "EtaMC", "MC #eta", false, 50, -5.0, 5.0, VarManager::kMCEta);
+    hm->AddHistogram(histClass, "PhiMC", "MC #phi", false, 50, -6.3, 6.3, VarManager::kMCPhi);
     hm->AddHistogram(histClass, "PtMC_photon", "MC pT", false, 4500, 0.0, 4.5, VarManager::kMCPt);
     hm->AddHistogram(histClass, "MCY", "MC y", false, 50, -5.0, 5.0, VarManager::kMCY);
-    hm->AddHistogram(histClass, "EtaMC", "MC #eta", false, 50, -5.0, 5.0, VarManager::kMCEta);
-    hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kMCEta, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "EtaMC_PtMC", "", false, 40, -2.0, 2.0, VarManager::kMCEta, 200, 0.0, 20.0, VarManager::kMCPt);
     hm->AddHistogram(histClass, "VzMC", "MC vz", false, 100, -15.0, 15.0, VarManager::kMCVz);
     hm->AddHistogram(histClass, "VzMC_VtxZMC", "MC vz vs MC vtxZ", false, 50, -15.0, 15.0, VarManager::kMCVz, 50, -15.0, 15.0, VarManager::kMCVtxZ);
-    hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 5.0, VarManager::kMCParticleWeight);
-    hm->AddHistogram(histClass, "Rapidity", "", false, 400, -4.0, 4.0, VarManager::kMCY);
+    hm->AddHistogram(histClass, "MassMC", "", false, 500, 0.0, 5.0, VarManager::kMCParticleWeight);
+    hm->AddHistogram(histClass, "RapidityMC", "", false, 400, -4.0, 4.0, VarManager::kMCY);
   }
 
   if (groupStr.Contains("pair")) {
