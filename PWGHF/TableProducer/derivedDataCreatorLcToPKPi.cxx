@@ -356,6 +356,7 @@ struct HfDerivedDataCreatorLcToPKPi {
     // Fill MC collision properties
     auto sizeTableMcColl = mcCollisions.size();
     reserveTable(rowMcCollBase, fillMcCollBase, sizeTableMcColl);
+    reserveTable(rowMcCollId, fillMcCollId, sizeTableMcColl);
     for (const auto& mcCollision : mcCollisions) {
       auto thisMcCollId = mcCollision.globalIndex();
       auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
