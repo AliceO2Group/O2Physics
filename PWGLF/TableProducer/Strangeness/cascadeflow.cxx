@@ -276,7 +276,7 @@ struct cascadeFlow {
                    casc.sign(),
                    casc.pt(),
                    casc.eta(),
-		   casc.phi(),
+                   casc.phi(),
                    casc.mXi(),
                    casc.mOmega(),
                    v2C,
@@ -505,7 +505,7 @@ struct cascadeFlow {
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
       auto v2CSP = cascQvec.Dot(eventplaneVecT0C) / std::sqrt(eventplaneVecT0C.mag2());
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
-      auto v2CEP = TMath::Cos(2.0* cascminuspsiT0C);
+      auto v2CEP = TMath::Cos(2.0 * cascminuspsiT0C);
 
       histos.fill(HIST("hv2CEPvsFT0C"), coll.centFT0C(), v2CEP);
       histos.fill(HIST("hv2CEPvsv2CSP"), v2CSP, v2CEP);
