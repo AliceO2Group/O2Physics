@@ -141,8 +141,8 @@ struct centralityStudy {
       passExtraEventSelection = false;
     }
 
-    if (passExtraEventSelection){
-      histos.fill(HIST("hVertexZ"), collision.multPVz() );
+    if (passExtraEventSelection) {
+      histos.fill(HIST("hVertexZ"), collision.multPVz());
       histos.fill(HIST("hProfileFT0C"), collision.multPVz(), collision.multFT0C());
     }
 
