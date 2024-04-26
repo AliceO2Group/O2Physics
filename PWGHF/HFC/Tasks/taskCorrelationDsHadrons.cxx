@@ -144,8 +144,11 @@ struct HfTaskCorrelationDsHadrons {
     registry.add("hCorrel2DVsPtMcGen", "Ds-h correlations MC Gen", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
     registry.add("hCorrel2DVsPtMcGenPromptDivision", "Ds-h correlations Prompt-NonPrompt MC Gen", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisDsPrompt}, {axisPoolBin}}});
     // Histograms for efficiencies
-    registry.add("hPtCand", "Ds candidates pt", {HistType::kTH1F, {axisPtD}});
-    registry.add("hPtCandMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisPtD}});
+    registry.add("hPtCandMcRecPrompt", "Ds prompt candidates pt", {HistType::kTH1F, {axisPtD}});
+    registry.add("hPtCandMcRecNonPrompt", "Ds non prompt candidates pt", {HistType::kTH1F, {axisPtD}});
+    registry.add("hPtCandMcGenPrompt", "Ds,Hadron particles prompt - MC Gen", {HistType::kTH1F, {axisPtD}});
+    registry.add("hPtCandMcGenNonPrompt", "Ds,Hadron particles non prompt - MC Gen", {HistType::kTH1F, {axisPtD}});
+    registry.add("hPtCandMcGenDaughterInAcc", "Ds,Hadron particles non prompt - MC Gen", {HistType::kTH1F, {axisPtD}});
     registry.add("hPtParticleAssocMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
     registry.add("hPtParticleAssocMcGen", "Associated Particle - MC Gen", {HistType::kTH1F, {axisPtHadron}});
     auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPtD, axisMultFT0M, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kCandidateNSteps});
@@ -385,6 +388,12 @@ struct HfTaskCorrelationDsHadrons {
           auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
           if (std::abs(yDs) <= yCandGenMax) {
             hCandidates->Fill(kCandidateStepMcCandInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
+            if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
+              registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt());
+            }
+            if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+              registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt());
+            }
           }
           bool isDaughterInAcceptance = true;
           auto daughters = mcParticle.template daughters_as<CandDsMcGen>();
@@ -395,7 +404,7 @@ struct HfTaskCorrelationDsHadrons {
           }
           if (isDaughterInAcceptance) {
             hCandidates->Fill(kCandidateStepMcDaughtersInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
-            registry.fill(HIST("hPtCandMcGen"), mcParticle.pt());
+            registry.fill(HIST("hPtCandMcGenDaughterInAcc"), mcParticle.pt());
           }
         }
       }
@@ -422,10 +431,15 @@ struct HfTaskCorrelationDsHadrons {
         auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
         // DsToKKPi and DsToPiKK division
         if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
-          registry.fill(HIST("hPtCand"), candidate.pt());
           hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
           if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
             hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicity, candidate.originMcRec());
+            if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+              registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());
+            }
+            if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+              registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt());
+            }
           }
         }
       }
