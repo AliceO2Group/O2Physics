@@ -15,10 +15,6 @@
 // General remarks:
 // 0. Starting with C++11, it's possible to initialize data members at declaration, so I do it here
 // 1. Use //!<! for introducing a Doxygen comment interpreted as transient in both ROOT 5 and ROOT 6.
-// 2. If I hit at the compilation error: Framework/StructToTuple.h:286:6: error: only 99 names provided for structured binding
-//    2a) As far as I can tell, that means that sum of individual data members + struct fields + individual configurables > 99
-//    2b) Therefore, wrap up all data members in some struct fields + use in instead of individual configurables arrays whenever possible.
-//    2c) Within a given struct field, number of data members do not add to that number. Also, number of enum fields do not add.
 
 // a) Base list to hold all output objects ("grandmother" of all lists);
 // *) Task configuration;
@@ -86,19 +82,16 @@ struct EventHistograms {
   TH1D* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum eEventHistograms ][reco,sim][before, after event cuts]
   Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};     // book or not this histogram, see SetBookEventHistograms
   Double_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}}; // [nBins,min,max]
-  Double_t fEventCuts[eEventHistograms_N][2] = {{0.}};           // [min,max]
 } eh;                                                            // "eh" labels an instance of group of histograms "EventHistograms"
 
 // *) Event cuts:
 struct EventCuts {
-  TList* fEventCutsList = NULL;      //!<! list to hold all event cuts objects
-  TProfile* fEventCutsPro = NULL;    //!<! keeps flags relevant for the event cuts
-  TString fTrigger = "";             // offline trigger, use e.g. "kINT7" for Run 2 and Run 1 data via configurable cfTrigger
-  Bool_t fUseTrigger = kFALSE;       // kFALSE by default. Set automatically when supported trigger is set via configurable cTrigger
-  Bool_t fUseSel7 = kFALSE;          // See doc: for Run 2 data and MC
-  Bool_t fUseSel8 = kFALSE;          // See doc: for Run 3 data and MC
-  TString fCentralityEstimator = ""; // centrality estimator, see in process() arguments to which cent. tables I subscribe, separately for Run 3 and Run 2. Set via configurable fCentralityEstimator
-} ec;                                // "ec" is a common label for objects in this struct
+  TList* fEventCutsList = NULL;                   //!<! list to hold all event cuts objects
+  TProfile* fEventCutsPro = NULL;                 //!<! keeps flags relevant for the event cuts
+  Bool_t fUseEventCuts[eEventCuts_N] = {kFALSE};  // Use or do not use a cut enumerated in eEventHistograms + eEventCuts
+  Double_t fdEventCuts[eEventCuts_N][2] = {{0.}}; // [min,max)
+  TString fsEventCuts[eEventCuts_N] = {""};       // specific option passed via string
+} ec;                                             // "ec" is a common label for objects in this struct
 
 // *) Particle histograms:
 struct ParticleHistograms {
@@ -115,10 +108,12 @@ struct ParticleHistograms {
 
 // *) Particle cuts:
 struct ParticleCuts {
-  TList* fParticleCutsList = NULL;   //!<! list to hold all particle cuts objects
-  TProfile* fParticleCutsPro = NULL; //!<! keeps flags relevant for the particle cuts
-  // ...  TBI 20240223
-} pc; // "pc" is a common label for objects in this struct
+  TList* fParticleCutsList = NULL;                      //!<! list to hold all particle cuts objects
+  TProfile* fParticleCutsPro = NULL;                    //!<! keeps flags relevant for the particle cuts
+  Bool_t fUseParticleCuts[eParticleCuts_N] = {kFALSE};  // true or false .
+  Double_t fdParticleCuts[eParticleCuts_N][2] = {{0.}}; // [min,max) . Remark: I use here eParticleHistograms_N , not to duplicate these enums for ParticleCuts.
+  TString fsParticleCuts[eParticleCuts_N] = {""};       // specific option passed via string
+} pc;                                                   // "pc" is a common label for objects in this struct
 
 // *) Q-vectors:
 struct Qvector {

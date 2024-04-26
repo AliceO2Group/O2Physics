@@ -30,53 +30,50 @@ void BookBaseList()
   fBaseList.setObject(temp);
   // fBaseList.object->SetName("4444");
 
-  fBasePro = new TProfile("fBasePro", "flags for the whole analysis",
-                          eConfiguration_N, 0., eConfiguration_N);
+  fBasePro = new TProfile("fBasePro", "flags for the whole analysis", eConfiguration_N, 0.5, 0.5 + static_cast<float>(eConfiguration_N));
   fBasePro->SetStats(kFALSE);
   fBasePro->SetLineColor(eColor);
   fBasePro->SetFillColor(eFillColor);
 
-  // Remark: If I want to change the ordering of bin lables, simply change the
+  // Remark: If I want to change the ordering of bin labels, simply change the
   // ordering in enum eConfiguration { ... }, nothing needs to be changed here.
-  fBasePro->GetXaxis()->SetBinLabel(eTaskName,
-                                    Form("fTaskName = %s", tc.fTaskName.Data()));
+  fBasePro->GetXaxis()->SetBinLabel(eTaskName, Form("fTaskName = %s", tc.fTaskName.Data()));
 
-  fBasePro->GetXaxis()->SetBinLabel(eRunNumber,
-                                    Form("fRunNumber = %s", "__RUN_NUMBER__")); // I have to do it this way via placeholder, because run number is available only when i start to process date
-                                                                                // Then, I replace placeholder with run number in DetermineAndPropagateRunNumber(T const& collision)
+  fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", "__RUN_NUMBER__"));
+  // I have to do it this way via placeholder, because run number is available only when i start to process data.
+  // Then, I replace placeholder with run number in DetermineAndPropagateRunNumber(T const& collision)
 
   fBasePro->GetXaxis()->SetBinLabel(eDryRun, "fDryRun");
-  fBasePro->Fill(static_cast<float>(eDryRun) - 0.5, static_cast<int>(tc.fDryRun));
+  fBasePro->Fill(eDryRun, static_cast<int>(tc.fDryRun));
 
   fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose");
-  fBasePro->Fill(static_cast<float>(eVerbose) - 0.5, static_cast<int>(tc.fVerbose));
+  fBasePro->Fill(eVerbose, static_cast<int>(tc.fVerbose));
 
   fBasePro->GetXaxis()->SetBinLabel(eVerboseForEachParticle, "fVerboseForEachParticle");
-  fBasePro->Fill(static_cast<float>(eVerboseForEachParticle) - 0.5, static_cast<int>(tc.fVerboseForEachParticle));
+  fBasePro->Fill(eVerboseForEachParticle, static_cast<int>(tc.fVerboseForEachParticle));
 
   fBasePro->GetXaxis()->SetBinLabel(eDoAdditionalInsanityChecks, "fDoAdditionalInsanityChecks");
-  fBasePro->Fill(static_cast<float>(eDoAdditionalInsanityChecks) - 0.5, static_cast<int>(tc.fDoAdditionalInsanityChecks));
+  fBasePro->Fill(eDoAdditionalInsanityChecks, static_cast<int>(tc.fDoAdditionalInsanityChecks));
 
   fBasePro->GetXaxis()->SetBinLabel(eInsanityCheckForEachParticle, "fInsanityCheckForEachParticle");
-  fBasePro->Fill(static_cast<float>(eInsanityCheckForEachParticle) - 0.5, static_cast<int>(tc.fInsanityCheckForEachParticle));
+  fBasePro->Fill(eInsanityCheckForEachParticle, static_cast<int>(tc.fInsanityCheckForEachParticle));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseCCDB, "fUseCCDB");
-  fBasePro->Fill(static_cast<float>(eUseCCDB) - 0.5, static_cast<int>(tc.fUseCCDB));
+  fBasePro->Fill(eUseCCDB, static_cast<int>(tc.fUseCCDB));
 
-  fBasePro->GetXaxis()->SetBinLabel(eWhichProcess,
-                                    Form("WhichProcess = %s", tc.fWhichProcess.Data()));
+  fBasePro->GetXaxis()->SetBinLabel(eWhichProcess, Form("WhichProcess = %s", tc.fWhichProcess.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
-  fBasePro->Fill(static_cast<float>(eRandomSeed) - 0.5, static_cast<int>(tc.fRandomSeed));
+  fBasePro->Fill(eRandomSeed, static_cast<int>(tc.fRandomSeed));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseFisherYates, "fUseFisherYates");
-  fBasePro->Fill(static_cast<float>(eUseFisherYates) - 0.5, static_cast<int>(tc.fUseFisherYates));
+  fBasePro->Fill(eUseFisherYates, static_cast<int>(tc.fUseFisherYates));
 
   fBasePro->GetXaxis()->SetBinLabel(eFixedNumberOfRandomlySelectedTracks, "fFixedNumberOfRandomlySelectedTracks");
-  fBasePro->Fill(static_cast<float>(eFixedNumberOfRandomlySelectedTracks) - 0.5, static_cast<int>(tc.fFixedNumberOfRandomlySelectedTracks));
+  fBasePro->Fill(eFixedNumberOfRandomlySelectedTracks, static_cast<int>(tc.fFixedNumberOfRandomlySelectedTracks));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseStopwatch, "fUseStopwatch");
-  fBasePro->Fill(static_cast<float>(eUseStopwatch) - 0.5, static_cast<int>(tc.fUseStopwatch));
+  fBasePro->Fill(eUseStopwatch, static_cast<int>(tc.fUseStopwatch));
 
   fBaseList->Add(fBasePro);
 
@@ -108,27 +105,34 @@ void DefaultConfiguration()
 
   // d) There are also implicit variables like "doprocessSomeProcessName" within a PROCESS_SWITCH clause. For them, I do not need an entry in Configurables
 
-  // Configurable<string> cfTaskName{ ... }
-  tc.fTaskName = TString(cfTaskName);
+  // e) Use whenever you can ConfigurableGroup, keep grouping in sync with all struct's in MuPa-DataMembers.h.
+  //    This is needed, to avoid this compilation error:
+  //        Framework/StructToTuple.h:286:6: error: only 99 names provided for structured binding
+  //    *) As far as I can tell, that means that sum of individual data members + struct fields + individual configurables > 99
+  //    *) Therefore, wrap up all data members in some struct fields + use in instead of individual configurables ConfigurableGroup whenever possible.
+  //    *) Within a given struct field, number of data members do not add to that number. Also, number of enum fields do not add.
 
-  // Configurable<bool> cfDryRun{ ... }
-  tc.fDryRun = cfDryRun;
+  // Configurable<string> cf_tc.cfTaskName{ ... }
+  tc.fTaskName = TString(cf_tc.cfTaskName);
 
-  // Configurable<bool> cfVerbose{ ... }
-  tc.fVerbose = cfVerbose;
+  // Configurable<bool> cf_tc.cfDryRun{ ... }
+  tc.fDryRun = cf_tc.cfDryRun;
+
+  // Configurable<bool> cf_tc.cfVerbose{ ... }
+  tc.fVerbose = cf_tc.cfVerbose;
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // yes, here
   }
 
-  // Configurable<bool> cfVerboseForEachParticle{ ... }
-  tc.fVerboseForEachParticle = cfVerboseForEachParticle;
+  // Configurable<bool> cf_tc.cfVerboseForEachParticle{ ... }
+  tc.fVerboseForEachParticle = cf_tc.cfVerboseForEachParticle;
 
-  // Configurable<bool> cfDoAdditionalInsanityChecks{ ... }
-  tc.fDoAdditionalInsanityChecks = cfDoAdditionalInsanityChecks;
+  // Configurable<bool> cf_tc.cfDoAdditionalInsanityChecks{ ... }
+  tc.fDoAdditionalInsanityChecks = cf_tc.cfDoAdditionalInsanityChecks;
 
-  // Configurable<bool> cfUseCCDB{ ... }
-  tc.fUseCCDB = cfUseCCDB;
+  // Configurable<bool> cf_tc.cfUseCCDB{ ... }
+  tc.fUseCCDB = cf_tc.cfUseCCDB;
 
   // Set automatically what to process, from an implicit variable "doprocessSomeProcessName" within a PROCESS_SWITCH clause:
   // Remark: As of 20240224, I have abandoned Configurable<string> cfWhatToProcess{ ... ), which is now obsolete
@@ -188,27 +192,12 @@ void DefaultConfiguration()
     tc.fWhichProcess = "ProcessTest";
   }
 
-  // Configurable<unsigned int> cfRandomSeed{ ... )
-  tc.fRandomSeed = cfRandomSeed;
-
-  // Configurable<bool> cfUseFisherYates{ ... }
-  tc.fUseFisherYates = cfUseFisherYates;
-
-  // Configurable<int> cfFixedNumberOfRandomlySelectedTracks{ ... }
-  tc.fFixedNumberOfRandomlySelectedTracks = cfFixedNumberOfRandomlySelectedTracks;
-
-  // Configurable<bool> cfUseStopwatch{ ... }
-  tc.fUseStopwatch = cfUseStopwatch;
+  tc.fRandomSeed = cf_tc.cfRandomSeed;
+  tc.fUseFisherYates = cf_tc.cfUseFisherYates;
+  tc.fFixedNumberOfRandomlySelectedTracks = cf_tc.cfFixedNumberOfRandomlySelectedTracks;
+  tc.fUseStopwatch = cf_tc.cfUseStopwatch;
 
   // *) Event cuts:
-  // Configurable<string> cfTrigger{ ... )
-  ec.fTrigger = TString(cfTrigger);
-  // Configurable<bool> cfUseSel7{ ... }
-  ec.fUseSel7 = cfUseSel7;
-  // Configurable<bool> cfUseSel8{ ... }
-  ec.fUseSel8 = cfUseSel8;
-  // Configurable<string> cfCentralityEstimator{ ... )
-  ec.fCentralityEstimator = cfCentralityEstimator;
   // ...
 
   // Configurable<bool> cfCalculateQvectors{ ... }
@@ -219,15 +208,12 @@ void DefaultConfiguration()
 
   // ...
 
-  // Configurable<bool> cfCalculateTest0{ ... };
-  t0.fCalculateTest0 = cfCalculateTest0; // + see below, how it's automatically set via other Test0 flags
-
-  // Configurable<bool> cfCalculateTest0AsFunctionOfIntegrated{ ... } + analogous configurables for other ones:
-  t0.fCalculateTest0AsFunctionOf[AFO_INTEGRATED] = cfCalculateTest0AsFunctionOfIntegrated;
-  t0.fCalculateTest0AsFunctionOf[AFO_MULTIPLICITY] = cfCalculateTest0AsFunctionOfMultiplicity;
-  t0.fCalculateTest0AsFunctionOf[AFO_CENTRALITY] = cfCalculateTest0AsFunctionOfCentrality;
-  t0.fCalculateTest0AsFunctionOf[AFO_PT] = cfCalculateTest0AsFunctionOfPt;
-  t0.fCalculateTest0AsFunctionOf[AFO_ETA] = cfCalculateTest0AsFunctionOfEta;
+  t0.fCalculateTest0 = cf_t0.cfCalculateTest0; // + see below, how it's automatically set via other Test0 flags
+  t0.fCalculateTest0AsFunctionOf[AFO_INTEGRATED] = cf_t0.cfCalculateTest0AsFunctionOfIntegrated;
+  t0.fCalculateTest0AsFunctionOf[AFO_MULTIPLICITY] = cf_t0.cfCalculateTest0AsFunctionOfMultiplicity;
+  t0.fCalculateTest0AsFunctionOf[AFO_CENTRALITY] = cf_t0.cfCalculateTest0AsFunctionOfCentrality;
+  t0.fCalculateTest0AsFunctionOf[AFO_PT] = cf_t0.cfCalculateTest0AsFunctionOfPt;
+  t0.fCalculateTest0AsFunctionOf[AFO_ETA] = cf_t0.cfCalculateTest0AsFunctionOfEta;
   // Use above Test0 flags to automatically set the main Test0 flag:
   for (Int_t v = 0; v < eAsFunctionOf_N; v++) {
     if (t0.fCalculateTest0AsFunctionOf[v]) {
@@ -235,52 +221,33 @@ void DefaultConfiguration()
       break; // yes, it suffices one diff. flag to be true, for the main Test0 flag to be true
     }
   }
+  t0.fFileWithLabels = TString(cf_t0.cfFileWithLabels);
 
-  // Configurable<string> cfFileWithLabels{ ... }
-  t0.fFileWithLabels = TString(cfFileWithLabels);
-
-  // Configurable<bool> cfUsePhiWeights{ ... };
-  pw.fUseWeights[wPHI] = cfUsePhiWeights;
-
-  // Configurable<bool> cfUsePtWeights{ ... };
-  pw.fUseWeights[wPT] = cfUsePtWeights;
-
-  // Configurable<bool> cfUseEtaWeights{ ... };
-  pw.fUseWeights[wETA] = cfUseEtaWeights;
-
-  // Configurable<bool> cfUseDiffPhiPtWeights{ ... };
-  pw.fUseDiffWeights[wPHIPT] = cfUseDiffPhiPtWeights;
-
-  // Configurable<bool> cfUseDiffPhiEtaWeights{ ... };
-  pw.fUseDiffWeights[wPHIETA] = cfUseDiffPhiEtaWeights;
-
-  // Configurable<string> cfFileWithWeights{ ... }
-  pw.fFileWithWeights = TString(cfFileWithWeights);
+  // *) Particle weights:
+  pw.fUseWeights[wPHI] = cf_pw.cfUsePhiWeights;
+  pw.fUseWeights[wPT] = cf_pw.cfUsePtWeights;
+  pw.fUseWeights[wETA] = cf_pw.cfUseEtaWeights;
+  pw.fUseDiffWeights[wPHIPT] = cf_pw.cfUseDiffPhiPtWeights;
+  pw.fUseDiffWeights[wPHIETA] = cf_pw.cfUseDiffPhiEtaWeights;
+  pw.fFileWithWeights = cf_pw.cfFileWithWeights;
 
   // ...
 
   // *) Nested loops:
-  // Configurable<bool> cfCalculateNestedLoops{ ... }
-  nl.fCalculateNestedLoops = cfCalculateNestedLoops;
-
-  // Configurable<bool> cfCalculateCustomNestedLoops{ ... }
-  nl.fCalculateCustomNestedLoops = cfCalculateCustomNestedLoops;
-
-  // Configurable<bool> cfCalculateKineCustomNestedLoops{ ... }
-  nl.fCalculateKineCustomNestedLoops = cfCalculateKineCustomNestedLoops;
-
-  // Configurable<int> cfMaxNestedLoop{...};
-  nl.fMaxNestedLoop = cfMaxNestedLoop;
+  nl.fCalculateNestedLoops = cf_nl.cfCalculateNestedLoops;
+  nl.fCalculateCustomNestedLoops = cf_nl.cfCalculateCustomNestedLoops;
+  nl.fCalculateKineCustomNestedLoops = cf_nl.cfCalculateKineCustomNestedLoops;
+  nl.fMaxNestedLoop = cf_nl.cfMaxNestedLoop;
 
   // ...
 
   // *) Internal validation:
-  iv.fUseInternalValidation = cfUseInternalValidation;
-  iv.fnEventsInternalValidation = cfnEventsInternalValidation;
-  iv.fRescaleWithTheoreticalInput = cfRescaleWithTheoreticalInput;
+  iv.fUseInternalValidation = cf_iv.cfUseInternalValidation;
+  iv.fnEventsInternalValidation = cf_iv.cfnEventsInternalValidation;
+  iv.fRescaleWithTheoreticalInput = cf_iv.cfRescaleWithTheoreticalInput;
 
   // *) Results histograms:
-  res.fSaveResultsHistograms = cfSaveResultsHistograms;
+  res.fSaveResultsHistograms = cf_res.cfSaveResultsHistograms;
 
 } // void DefaultConfiguration()
 
@@ -303,7 +270,7 @@ void DefaultBooking()
   // By default all event histograms are booked. If you do not want particular event histogram to be booked,
   // use configurable array cfBookEventHistograms, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eEventHistograms. // TBI 20240124 is this safe enough?
-  auto lBookEventHistograms = (vector<int>)cfBookEventHistograms; // this is now the local version of that int array from configurable.
+  auto lBookEventHistograms = (vector<int>)cf_eh.cfBookEventHistograms; // this is now the local version of that int array from configurable.
   if (lBookEventHistograms.size() != eEventHistograms_N) {
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookEventHistograms, and number of entries in enum eEventHistograms \n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -326,7 +293,7 @@ void DefaultBooking()
   // By default all particle histograms are booked. If you do not want particular particle histogram to be booked,
   // use configurable array cfBookParticleHistograms, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms. // TBI 20240124 is this safe enough?
-  auto lBookParticleHistograms = (vector<int>)cfBookParticleHistograms; // this is now the local version of that int array from configurable. TBI 20240124 why is this casting mandatory?
+  auto lBookParticleHistograms = (vector<int>)cf_ph.cfBookParticleHistograms; // this is now the local version of that int array from configurable. TBI 20240124 why is this casting mandatory?
   if (lBookParticleHistograms.size() != eParticleHistograms_N) {
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms, and number of entries in enum eParticleHistograms \n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -342,7 +309,7 @@ void DefaultBooking()
   // By default all 2D particle histograms are booked. If you do not want particular 2D particle histogram to be booked,
   // use configurable array cfBookParticleHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms2D. // TBI 20240124 is this safe enough?
-  auto lBookParticleHistograms2D = (vector<int>)cfBookParticleHistograms2D; // this is now the local version of that int array from configurable. TBI 20240124 why is this casting mandatory?
+  auto lBookParticleHistograms2D = (vector<int>)cf_ph.cfBookParticleHistograms2D; // this is now the local version of that int array from configurable. TBI 20240124 why is this casting mandatory?
   if (lBookParticleHistograms2D.size() != eParticleHistograms2D_N) {
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms2D, and number of entries in enum eParticleHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -483,36 +450,36 @@ void DefaultBinning()
   res.fResultsProFixedLengthBins[AFO_INTEGRATED][2] = 1.;
 
   // *) Fixed-length binning vs. multiplicity:
-  auto lFixedLength_mult_bins = (vector<float>)cFixedLength_mult_bins; // this is now the local version of that float array from configurable.
+  auto lFixedLength_mult_bins = (vector<float>)cf_res.cfFixedLength_mult_bins; // this is now the local version of that float array from configurable.
   if (lFixedLength_mult_bins.size() != 3) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cFixedLength_mult_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_mult_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
   }
   res.fResultsProFixedLengthBins[AFO_MULTIPLICITY][0] = lFixedLength_mult_bins[0];
   res.fResultsProFixedLengthBins[AFO_MULTIPLICITY][1] = lFixedLength_mult_bins[1];
   res.fResultsProFixedLengthBins[AFO_MULTIPLICITY][2] = lFixedLength_mult_bins[2];
 
   // *) Fixed-length binning vs. centrality:
-  auto lFixedLength_cent_bins = (vector<float>)cFixedLength_cent_bins; // this is now the local version of that float array from configurable.
+  auto lFixedLength_cent_bins = (vector<float>)cf_res.cfFixedLength_cent_bins; // this is now the local version of that float array from configurable.
   if (lFixedLength_cent_bins.size() != 3) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cFixedLength_cent_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_cent_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
   }
   res.fResultsProFixedLengthBins[AFO_CENTRALITY][0] = lFixedLength_cent_bins[0];
   res.fResultsProFixedLengthBins[AFO_CENTRALITY][1] = lFixedLength_cent_bins[1];
   res.fResultsProFixedLengthBins[AFO_CENTRALITY][2] = lFixedLength_cent_bins[2];
 
   // *) Fixed-length binning vs. pt:
-  auto lFixedLength_pt_bins = (vector<float>)cFixedLength_pt_bins; // this is now the local version of that float array from configurable.
+  auto lFixedLength_pt_bins = (vector<float>)cf_res.cfFixedLength_pt_bins; // this is now the local version of that float array from configurable.
   if (lFixedLength_pt_bins.size() != 3) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cFixedLength_pt_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_pt_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
   }
   res.fResultsProFixedLengthBins[AFO_PT][0] = lFixedLength_pt_bins[0];
   res.fResultsProFixedLengthBins[AFO_PT][1] = lFixedLength_pt_bins[1];
   res.fResultsProFixedLengthBins[AFO_PT][2] = lFixedLength_pt_bins[2];
 
   // *) Fixed-length binning vs. eta:
-  auto lFixedLength_eta_bins = (vector<float>)cFixedLength_eta_bins; // this is now the local version of that float array from configurable.
+  auto lFixedLength_eta_bins = (vector<float>)cf_res.cfFixedLength_eta_bins; // this is now the local version of that float array from configurable.
   if (lFixedLength_eta_bins.size() != 3) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cFixedLength_eta_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_eta_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
   }
   res.fResultsProFixedLengthBins[AFO_ETA][0] = lFixedLength_eta_bins[0];
   res.fResultsProFixedLengthBins[AFO_ETA][1] = lFixedLength_eta_bins[1];
@@ -520,27 +487,27 @@ void DefaultBinning()
 
   // e) Variable-length binning set via MuPa-Configurables.h:
   // *) Variable-length binning vs. multiplicity:
-  if (cUseVariableLength_mult_bins) {
+  if (cf_res.cfUseVariableLength_mult_bins) {
     res.fUseResultsProVariableLengthBins[AFO_MULTIPLICITY] = kTRUE;
-    res.fResultsProVariableLengthBinsString[AFO_MULTIPLICITY] = cVariableLength_mult_bins;
+    res.fResultsProVariableLengthBinsString[AFO_MULTIPLICITY] = cf_res.cfVariableLength_mult_bins;
     this->CastStringIntoArray(AFO_MULTIPLICITY);
   }
   // *) Variable-length binning vs. centrality:
-  if (cUseVariableLength_cent_bins) {
+  if (cf_res.cfUseVariableLength_cent_bins) {
     res.fUseResultsProVariableLengthBins[AFO_CENTRALITY] = kTRUE;
-    res.fResultsProVariableLengthBinsString[AFO_CENTRALITY] = cVariableLength_cent_bins;
+    res.fResultsProVariableLengthBinsString[AFO_CENTRALITY] = cf_res.cfVariableLength_cent_bins;
     this->CastStringIntoArray(AFO_CENTRALITY);
   }
   // *) Variable-length binning vs. pt:
-  if (cUseVariableLength_pt_bins) {
+  if (cf_res.cfUseVariableLength_pt_bins) {
     res.fUseResultsProVariableLengthBins[AFO_PT] = kTRUE;
-    res.fResultsProVariableLengthBinsString[AFO_PT] = cVariableLength_pt_bins;
+    res.fResultsProVariableLengthBinsString[AFO_PT] = cf_res.cfVariableLength_pt_bins;
     this->CastStringIntoArray(AFO_PT);
   }
   // *) Variable-length binning vs. eta:
-  if (cUseVariableLength_eta_bins) {
+  if (cf_res.cfUseVariableLength_eta_bins) {
     res.fUseResultsProVariableLengthBins[AFO_ETA] = kTRUE;
-    res.fResultsProVariableLengthBinsString[AFO_ETA] = cVariableLength_eta_bins;
+    res.fResultsProVariableLengthBinsString[AFO_ETA] = cf_res.cfVariableLength_eta_bins;
     this->CastStringIntoArray(AFO_ETA);
   }
 
@@ -599,45 +566,112 @@ void DefaultCuts()
   }
 
   // a) Default event cuts:
-  auto lNumberOfEvents = (vector<int>)cNumberOfEvents; // Configurable<vector<int>> cNumberOfEvents ...
-  eh.fEventCuts[eNumberOfEvents][eMin] = lNumberOfEvents[eMin];
-  eh.fEventCuts[eNumberOfEvents][eMax] = lNumberOfEvents[eMax];
 
-  auto lTotalMultiplicity = (vector<int>)cTotalMultiplicity; // Configurable<vector<int>> cTotalMultiplicity ...
-  eh.fEventCuts[eTotalMultiplicity][eMin] = lTotalMultiplicity[eMin];
-  eh.fEventCuts[eTotalMultiplicity][eMax] = lTotalMultiplicity[eMax];
+  // *) Use or do not use a cut enumerated in eEventHistograms + eEventCuts.
+  //    Default cuts are set in configurable cfUseEventCuts
+  auto lUseEventCuts = (vector<int>)cf_ec.cfUseEventCuts;
+  if (lUseEventCuts.size() != eEventCuts_N) {
+    LOGF(info, "\033[1;31m lUseEventCuts.size() = %d\033[0m", lUseEventCuts.size());
+    LOGF(info, "\033[1;31m eEventCuts_N = %d\033[0m", static_cast<int>(eEventCuts_N));
+    LOGF(fatal, "\033[1;31m%s at line %d : Mismatch in the number of flags in configurable cfUseEventCuts, and number of entries in enum eEventHistograms + eEventCuts \n \033[0m", __FUNCTION__, __LINE__);
+  }
+  // eEventHistograms:
+  ec.fUseEventCuts[eNumberOfEvents] = static_cast<bool>(lUseEventCuts[eNumberOfEvents]);
+  ec.fUseEventCuts[eTotalMultiplicity] = static_cast<bool>(lUseEventCuts[eTotalMultiplicity]);
+  ec.fUseEventCuts[eSelectedTracks] = static_cast<bool>(lUseEventCuts[eSelectedTracks]);
+  ec.fUseEventCuts[eMultFV0M] = static_cast<bool>(lUseEventCuts[eMultFV0M]);
+  ec.fUseEventCuts[eMultFT0M] = static_cast<bool>(lUseEventCuts[eMultFT0M]);
+  ec.fUseEventCuts[eMultTPC] = static_cast<bool>(lUseEventCuts[eMultTPC]);
+  ec.fUseEventCuts[eMultNTracksPV] = static_cast<bool>(lUseEventCuts[eMultNTracksPV]);
+  ec.fUseEventCuts[eCentrality] = static_cast<bool>(lUseEventCuts[eCentrality]);
+  ec.fUseEventCuts[eVertex_x] = static_cast<bool>(lUseEventCuts[eVertex_x]);
+  ec.fUseEventCuts[eVertex_y] = static_cast<bool>(lUseEventCuts[eVertex_y]);
+  ec.fUseEventCuts[eVertex_z] = static_cast<bool>(lUseEventCuts[eVertex_z]);
+  ec.fUseEventCuts[eNContributors] = static_cast<bool>(lUseEventCuts[eNContributors]);
+  ec.fUseEventCuts[eImpactParameter] = static_cast<bool>(lUseEventCuts[eImpactParameter]);
+  // eEventCuts:
+  ec.fUseEventCuts[eTrigger] = static_cast<bool>(lUseEventCuts[eTrigger]);
+  ec.fUseEventCuts[eSel7] = static_cast<bool>(lUseEventCuts[eSel7]);
+  ec.fUseEventCuts[eSel8] = static_cast<bool>(lUseEventCuts[eSel8]);
+  ec.fUseEventCuts[eCentralityEstimator] = static_cast<bool>(lUseEventCuts[eCentralityEstimator]);
 
-  auto lSelectedTracks = (vector<int>)cSelectedTracks; // Configurable<vector<int>> cSelectedTracks ...
-  eh.fEventCuts[eSelectedTracks][eMin] = lSelectedTracks[eMin];
-  eh.fEventCuts[eSelectedTracks][eMax] = lSelectedTracks[eMax];
+  // *) [min, max):
+  auto lNumberOfEvents = (vector<int>)cf_ec.cfNumberOfEvents;
+  ec.fdEventCuts[eNumberOfEvents][eMin] = lNumberOfEvents[eMin];
+  ec.fdEventCuts[eNumberOfEvents][eMax] = lNumberOfEvents[eMax];
 
-  auto lCentrality = (vector<float>)cCentrality; // Configurable<vector<float>> cCentrality ...
-  eh.fEventCuts[eCentrality][eMin] = lCentrality[eMin];
-  eh.fEventCuts[eCentrality][eMax] = lCentrality[eMax];
+  auto lTotalMultiplicity = (vector<int>)cf_ec.cfTotalMultiplicity;
+  ec.fdEventCuts[eTotalMultiplicity][eMin] = lTotalMultiplicity[eMin];
+  ec.fdEventCuts[eTotalMultiplicity][eMax] = lTotalMultiplicity[eMax];
 
-  auto lVertex_x = (vector<float>)cVertex_x; // Configurable<vector<float>> cVertex_x ...
-  eh.fEventCuts[eVertex_x][eMin] = lVertex_x[eMin];
-  eh.fEventCuts[eVertex_x][eMax] = lVertex_x[eMax];
+  auto lSelectedTracks = (vector<int>)cf_ec.cfSelectedTracks;
+  ec.fdEventCuts[eSelectedTracks][eMin] = lSelectedTracks[eMin];
+  ec.fdEventCuts[eSelectedTracks][eMax] = lSelectedTracks[eMax];
 
-  auto lVertex_y = (vector<float>)cVertex_y; // Configurable<vector<float>> cVertex_y ...
-  eh.fEventCuts[eVertex_y][eMin] = lVertex_y[eMin];
-  eh.fEventCuts[eVertex_y][eMax] = lVertex_y[eMax];
+  auto lCentrality = (vector<float>)cf_ec.cfCentrality;
+  ec.fdEventCuts[eCentrality][eMin] = lCentrality[eMin];
+  ec.fdEventCuts[eCentrality][eMax] = lCentrality[eMax];
 
-  auto lVertex_z = (vector<float>)cVertex_z; // Configurable<vector<float>> cVertex_z ...
-  eh.fEventCuts[eVertex_z][eMin] = lVertex_z[eMin];
-  eh.fEventCuts[eVertex_z][eMax] = lVertex_z[eMax];
+  auto lVertex_x = (vector<float>)cf_ec.cfVertex_x;
+  ec.fdEventCuts[eVertex_x][eMin] = lVertex_x[eMin];
+  ec.fdEventCuts[eVertex_x][eMax] = lVertex_x[eMax];
 
-  auto lNContributors = (vector<int>)cNContributors; // Configurable<vector<int>> cNContributors ...
-  eh.fEventCuts[eNContributors][eMin] = lNContributors[eMin];
-  eh.fEventCuts[eNContributors][eMax] = lNContributors[eMax];
+  auto lVertex_y = (vector<float>)cf_ec.cfVertex_y;
+  ec.fdEventCuts[eVertex_y][eMin] = lVertex_y[eMin];
+  ec.fdEventCuts[eVertex_y][eMax] = lVertex_y[eMax];
 
-  auto lImpactParameter = (vector<float>)cImpactParameter; // Configurable<vector<float>> cImpactParameter ...
-  eh.fEventCuts[eImpactParameter][eMin] = lImpactParameter[eMin];
-  eh.fEventCuts[eImpactParameter][eMax] = lImpactParameter[eMax];
+  auto lVertex_z = (vector<float>)cf_ec.cfVertex_z;
+  ec.fdEventCuts[eVertex_z][eMin] = lVertex_z[eMin];
+  ec.fdEventCuts[eVertex_z][eMax] = lVertex_z[eMax];
 
-  // ...
+  auto lNContributors = (vector<int>)cf_ec.cfNContributors;
+  ec.fdEventCuts[eNContributors][eMin] = lNContributors[eMin];
+  ec.fdEventCuts[eNContributors][eMax] = lNContributors[eMax];
+
+  auto lImpactParameter = (vector<float>)cf_ec.cfImpactParameter;
+  ec.fdEventCuts[eImpactParameter][eMin] = lImpactParameter[eMin];
+  ec.fdEventCuts[eImpactParameter][eMax] = lImpactParameter[eMax];
+
+  // *) specific option passed via string:
+  ec.fsEventCuts[eCentralityEstimator] = cf_ec.cfCentralityEstimator;
+  ec.fsEventCuts[eTrigger] = cf_ec.cfTrigger;
+
+  // ----------------------------------------------------------------------
 
   // b) Default particle cuts:
+
+  // *) Use or do not use a cut enumerated in eParticleHistograms + eParticleCuts.
+  //    Default cuts are set in configurable cfUseParticleCuts
+  auto lUseParticleCuts = (vector<int>)cf_pc.cfUseParticleCuts;
+  if (lUseParticleCuts.size() != eParticleCuts_N) {
+    LOGF(info, "\033[1;31m lUseParticleCuts.size() = %d\033[0m", lUseEventCuts.size());
+    LOGF(info, "\033[1;31m eParticleCuts_N = %d\033[0m", static_cast<int>(eEventCuts_N));
+    LOGF(fatal, "in function \033[1;31m%s at line %d : Mismatch in the number of flags in configurable cfUseParticleCuts, and number of entries in enum eParticleHistograms + eParticleCuts \n \033[0m", __FUNCTION__, __LINE__);
+  }
+  // eParticleHistograms:
+  pc.fUseParticleCuts[ePhi] = static_cast<bool>(lUseParticleCuts[ePhi]);
+  pc.fUseParticleCuts[ePt] = static_cast<bool>(lUseParticleCuts[ePt]);
+  pc.fUseParticleCuts[eEta] = static_cast<bool>(lUseParticleCuts[eEta]);
+  pc.fUseParticleCuts[etpcNClsCrossedRows] = static_cast<bool>(lUseParticleCuts[etpcNClsCrossedRows]);
+  pc.fUseParticleCuts[eDCA_xy] = static_cast<bool>(lUseParticleCuts[eDCA_xy]);
+  pc.fUseParticleCuts[eDCA_z] = static_cast<bool>(lUseParticleCuts[eDCA_z]);
+  pc.fUseParticleCuts[ePDG] = static_cast<bool>(lUseParticleCuts[ePDG]);
+
+  // *) [min, max):
+  auto lPhi = (vector<float>)cf_pc.cfPhi;
+  pc.fdParticleCuts[ePhi][eMin] = lPhi[eMin];
+  pc.fdParticleCuts[ePhi][eMax] = lPhi[eMax];
+
+  auto lPt = (vector<float>)cf_pc.cfPt;
+  pc.fdParticleCuts[ePt][eMin] = lPt[eMin];
+  pc.fdParticleCuts[ePt][eMax] = lPt[eMax];
+
+  auto lEta = (vector<float>)cf_pc.cfEta;
+  pc.fdParticleCuts[eEta][eMin] = lEta[eMin];
+  pc.fdParticleCuts[eEta][eMax] = lEta[eMax];
+
+  // *) specific option passed via string:
+  // pc.fsParticleCuts[...] = ... ;
 
 } // void DefaultCuts()
 
@@ -675,23 +709,23 @@ void InsanityChecks()
 
   // *) Insanity checks on event cuts:
   if (tc.fProcess[eProcessRec_Run2] || tc.fProcess[eProcessRec_Run1]) { // From documentation: Bypass this check if you analyse MC or continuous Run3 data.
-    if (!(ec.fTrigger.EqualTo("kINT7"))) {                              // TBI 20240223 expand this list with other supported triggers eventually in this category (see if(...) above)
-      LOGF(info, "in function \033[1;32m%s at line %d : trigger \"%s\" is not internally supported yet. Add it to the list of supported triggers, if you really want to use that one.\033[0m", __FUNCTION__, __LINE__, ec.fTrigger.Data());
-      ec.fUseTrigger = kFALSE;
+    if (!(ec.fsEventCuts[eTrigger].EqualTo("kINT7"))) {                 // TBI 20240223 expand this list with other supported triggers eventually in this category (see if(...) above)
+      LOGF(info, "in function \033[1;32m%s at line %d : trigger \"%s\" is not internally supported yet. Add it to the list of supported triggers, if you really want to use that one.\033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eTrigger].Data());
+      ec.fUseEventCuts[eTrigger] = kFALSE;
     } else {
-      ec.fUseTrigger = kTRUE; // I am analyzing converted Run 1 or Run 2 real data (not MC!), and the trigger is supported, so let's use it
+      ec.fUseEventCuts[eTrigger] = kTRUE; // I am analyzing converted Run 1 or Run 2 real data (not MC!), and the trigger is supported, so let's use it
     }
   }
 
-  if (ec.fUseSel7) { // from doc: for Run 2 data and MC
+  if (ec.fUseEventCuts[eSel7]) { // from doc: for Run 2 data and MC
     if (!(tc.fProcess[eProcessRec_Run2] || tc.fProcess[eProcessRecSim_Run2] || tc.fProcess[eProcessSim_Run2] || tc.fProcess[eProcessRec_Run1] || tc.fProcess[eProcessRecSim_Run1] || tc.fProcess[eProcessSim_Run1])) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d use fUseSel7 for Run 2 data and MC\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "in function \033[1;31m%s at line %d use fSel7 for Run 2 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
-  if (ec.fUseSel8) { // from doc: for Run 3 data and MC
+  if (ec.fUseEventCuts[eSel8]) { // from doc: for Run 3 data and MC
     if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d use fUseSel8 for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "in function \033[1;31m%s at line %d use fSel8 for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
@@ -701,18 +735,18 @@ void InsanityChecks()
 
   if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim]) {
     // Supported centrality estimators for Run 3 are enlisted here:
-    if (!(ec.fCentralityEstimator.EqualTo("centFT0M", TString::kIgnoreCase) ||
-          ec.fCentralityEstimator.EqualTo("centFV0A", TString::kIgnoreCase) ||
-          ec.fCentralityEstimator.EqualTo("centNTPV", TString::kIgnoreCase))) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %s is not supported yet for Run 3 analysis. \033[0m", __FUNCTION__, __LINE__, ec.fCentralityEstimator.Data());
+    if (!(ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0M", TString::kIgnoreCase) ||
+          ec.fsEventCuts[eCentralityEstimator].EqualTo("centFV0A", TString::kIgnoreCase) ||
+          ec.fsEventCuts[eCentralityEstimator].EqualTo("centNTPV", TString::kIgnoreCase))) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %s is not supported yet for Run 3 analysis. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
   }
 
   if (tc.fProcess[eProcessRec_Run2] || tc.fProcess[eProcessRecSim_Run2] || tc.fProcess[eProcessSim_Run2] || tc.fProcess[eProcessRec_Run1] || tc.fProcess[eProcessRecSim_Run1] || tc.fProcess[eProcessSim_Run1]) {
     // Supported centrality estimators for Run 3 are enlisted here:
-    if (!(ec.fCentralityEstimator.EqualTo("centRun2V0M", TString::kIgnoreCase) ||
-          ec.fCentralityEstimator.EqualTo("centRun2SPDTracklets", TString::kIgnoreCase))) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %s is not supported yet for converted Run 2 and Run 1 analysis. \033[0m", __FUNCTION__, __LINE__, ec.fCentralityEstimator.Data());
+    if (!(ec.fsEventCuts[eCentralityEstimator].EqualTo("centRun2V0M", TString::kIgnoreCase) ||
+          ec.fsEventCuts[eCentralityEstimator].EqualTo("centRun2SPDTracklets", TString::kIgnoreCase))) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %s is not supported yet for converted Run 2 and Run 1 analysis. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
   }
 
@@ -922,20 +956,63 @@ void BookEventCutsHistograms()
   }
 
   // a) Book the profile holding flags:
-  ec.fEventCutsPro = new TProfile("fEventCutsPro",
-                                  "flags for event cuts", eEventCuts_N - 1, 0., eEventCuts_N - 1);
+  ec.fEventCutsPro = new TProfile("fEventCutsPro", "flags for event cuts", eEventCuts_N - 1, 0.5, 0.5 + static_cast<float>(eEventCuts_N - 1));
   ec.fEventCutsPro->SetStats(kFALSE);
   ec.fEventCutsPro->SetLineColor(eColor);
   ec.fEventCutsPro->SetFillColor(eFillColor);
 
-  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eTrigger, Form("fTrigger = %s", ec.fTrigger.Data()));
-  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eUseTrigger, "fUseTrigger");
-  ec.fEventCutsPro->Fill(static_cast<float>(eUseTrigger) - 0.5, static_cast<int>(ec.fUseTrigger));
-  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eUseSel7, "fUseSel7");
-  ec.fEventCutsPro->Fill(static_cast<float>(eUseSel7) - 0.5, static_cast<int>(ec.fUseSel7));
-  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eUseSel8, "fUseSel8");
-  ec.fEventCutsPro->Fill(static_cast<float>(eUseSel8) - 0.5, static_cast<int>(ec.fUseSel8));
-  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eCentralityEstimator, Form("fCentralityEstimator = %s", ec.fCentralityEstimator.Data()));
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eNumberOfEvents, "NumberOfEvents");
+  ec.fEventCutsPro->Fill(eNumberOfEvents, static_cast<int>(ec.fUseEventCuts[eNumberOfEvents]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eTotalMultiplicity, "TotalMultiplicity");
+  ec.fEventCutsPro->Fill(eTotalMultiplicity, static_cast<int>(ec.fUseEventCuts[eTotalMultiplicity]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eSelectedTracks, "SelectedTracks");
+  ec.fEventCutsPro->Fill(eSelectedTracks, static_cast<int>(ec.fUseEventCuts[eSelectedTracks]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eMultFV0M, "MultFV0M");
+  ec.fEventCutsPro->Fill(eMultFV0M, static_cast<int>(ec.fUseEventCuts[eMultFV0M]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eMultTPC, "MultTPC");
+  ec.fEventCutsPro->Fill(eMultTPC, static_cast<int>(ec.fUseEventCuts[eMultTPC]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eMultNTracksPV, "MultNTracksPV");
+  ec.fEventCutsPro->Fill(eMultNTracksPV, static_cast<int>(ec.fUseEventCuts[eMultNTracksPV]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eCentrality, "Centrality");
+  ec.fEventCutsPro->Fill(eCentrality, static_cast<int>(ec.fUseEventCuts[eCentrality]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eVertex_x, "Vertex_x");
+  ec.fEventCutsPro->Fill(eVertex_x, static_cast<int>(ec.fUseEventCuts[eVertex_x]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eVertex_y, "Vertex_y");
+  ec.fEventCutsPro->Fill(eVertex_y, static_cast<int>(ec.fUseEventCuts[eVertex_y]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eVertex_z, "Vertex_z");
+  ec.fEventCutsPro->Fill(eVertex_z, static_cast<int>(ec.fUseEventCuts[eVertex_z]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eNContributors, "NContributors");
+  ec.fEventCutsPro->Fill(eNContributors, static_cast<int>(ec.fUseEventCuts[eNContributors]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eImpactParameter, "ImpactParameter");
+  ec.fEventCutsPro->Fill(eImpactParameter, static_cast<int>(ec.fUseEventCuts[eImpactParameter]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eTrigger, "Trigger");
+  ec.fEventCutsPro->Fill(eTrigger, static_cast<int>(ec.fUseEventCuts[eTrigger]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eSel7, "Sel7");
+  ec.fEventCutsPro->Fill(eSel7, static_cast<int>(ec.fUseEventCuts[eSel7]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eSel8, "Sel8");
+  ec.fEventCutsPro->Fill(eSel8, static_cast<int>(ec.fUseEventCuts[eSel8]));
+
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eCentralityEstimator, "CentralityEstimator");
+  ec.fEventCutsPro->Fill(eCentralityEstimator, static_cast<int>(ec.fUseEventCuts[eCentralityEstimator]));
+
+  // TBI 20240426 re-think how to store in this profile cuts [min, max) + strings -> it seems I will need separate profile to store them?
+  // The approach below won't scale up.
+  // ec.fEventCutsPro->GetXaxis()->SetBinLabel(eNumberOfEvents, "NumberOfEvents[eMin]");
+  // ec.fEventCutsPro->Fill(eNumberOfEvents, ec.fdEventCuts[eNumberOfEvents][eMin]);
 
   ec.fEventCutsList->Add(ec.fEventCutsPro);
 
@@ -1075,13 +1152,24 @@ void BookParticleCutsHistograms()
 
   // a) Book the profile holding flags:
   pc.fParticleCutsPro = new TProfile("fParticleCutsPro",
-                                     "flags for particle cuts", eParticleCuts_N - 1, 0., eParticleCuts_N - 1);
+                                     "flags for particle cuts", eParticleCuts_N - 1, 0.5, 0.5 + eParticleCuts_N - 1);
   pc.fParticleCutsPro->SetStats(kFALSE);
   pc.fParticleCutsPro->SetLineColor(eColor);
   pc.fParticleCutsPro->SetFillColor(eFillColor);
 
+  pc.fParticleCutsPro->GetXaxis()->SetBinLabel(ePhi, "Phi");
+  pc.fParticleCutsPro->Fill(ePhi, static_cast<int>(ec.fUseEventCuts[ePhi]));
+
+  pc.fParticleCutsPro->GetXaxis()->SetBinLabel(ePt, "Pt");
+  pc.fParticleCutsPro->Fill(ePt, static_cast<int>(ec.fUseEventCuts[ePt]));
+
+  pc.fParticleCutsPro->GetXaxis()->SetBinLabel(eEta, "Eta");
+  pc.fParticleCutsPro->Fill(eEta, static_cast<int>(ec.fUseEventCuts[eEta]));
+
+  // TBI 20240426 ctd in the same way with other particle cuts
+
   pc.fParticleCutsPro->GetXaxis()->SetBinLabel(eTBI, "TBI");
-  // ...
+  // TBI 20240426 also here i need to figure out how to store [min, max)
 
   pc.fParticleCutsList->Add(pc.fParticleCutsPro);
 
@@ -1400,7 +1488,7 @@ void BookInternalValidationHistograms()
   }
 
   // *) TBI
-  iv.fHarmonicsOptionInternalValidation = new TString(cfHarmonicsOptionInternalValidation);
+  iv.fHarmonicsOptionInternalValidation = new TString(cf_iv.cfHarmonicsOptionInternalValidation);
   if (!(iv.fHarmonicsOptionInternalValidation->EqualTo("constant", TString::kIgnoreCase) ||
         iv.fHarmonicsOptionInternalValidation->EqualTo("correlated", TString::kIgnoreCase))) {
     LOGF(fatal, "in function \033[1;31m%s at line %d : fHarmonicsOptionInternalValidation = %s is not supported. \033[0m", __FUNCTION__, __LINE__, iv.fHarmonicsOptionInternalValidation->Data());
@@ -1408,7 +1496,7 @@ void BookInternalValidationHistograms()
 
   // b) Book and fill container vn amplitudes:
   iv.fInternalValidationVnPsin[eVn] = new TArrayD(gMaxHarmonic);
-  auto lInternalValidationAmplitudes = (vector<float>)cfInternalValidationAmplitudes; // this is now the local version of that array from configurable
+  auto lInternalValidationAmplitudes = (vector<float>)cf_iv.cfInternalValidationAmplitudes; // this is now the local version of that array from configurable
   if (lInternalValidationAmplitudes.size() < 1) {
     LOGF(fatal, "in function \033[1;31m%s at line %d Set at least one vn amplitude in array cfInternalValidationAmplitudes\n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -1421,7 +1509,7 @@ void BookInternalValidationHistograms()
 
   // c) Book and fill container for Psin planes:
   iv.fInternalValidationVnPsin[ePsin] = new TArrayD(gMaxHarmonic);
-  auto lInternalValidationPlanes = (vector<float>)cfInternalValidationPlanes;
+  auto lInternalValidationPlanes = (vector<float>)cf_iv.cfInternalValidationPlanes;
   if (lInternalValidationPlanes.size() < 1) {
     LOGF(fatal, "in function \033[1;31m%s at line %d Set at least one Psi plane in array cfInternalValidationPlanes\n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -1436,7 +1524,7 @@ void BookInternalValidationHistograms()
   }
 
   // d) Handle multiplicity for internal validation:
-  auto lMultRangeInternalValidation = (vector<int>)cfMultRangeInternalValidation;
+  auto lMultRangeInternalValidation = (vector<int>)cf_iv.cfMultRangeInternalValidation;
   iv.fMultRangeInternalValidation[eMin] = lMultRangeInternalValidation[eMin];
   iv.fMultRangeInternalValidation[eMax] = lMultRangeInternalValidation[eMax];
   if (iv.fMultRangeInternalValidation[eMin] >= iv.fMultRangeInternalValidation[eMax]) {
@@ -1477,8 +1565,7 @@ TComplex TheoreticalValue(TArrayI* harmonics, TArrayD* amplitudes, TArrayD* plan
   // b) Main calculus:
   TComplex value = TComplex(1., 0., kTRUE); // yes, polar representation
   for (Int_t h = 0; h < harmonics->GetSize(); h++) {
-    // cout<<"h = "<<h<<" ... "<<TMath::Abs(harmonics->GetAt(h))<<endl;
-    //  Using polar form of TComplex (Double_t re, Double_t im=0, Bool_t polar=kFALSE)
+    //  Using polar form of TComplex (Double_t re, Double_t im=0, Bool_t polar=kFALSE):
     value *= TComplex(amplitudes->GetAt(TMath::Abs(harmonics->GetAt(h)) - 1), 1. * harmonics->GetAt(h) * planes->GetAt(TMath::Abs(harmonics->GetAt(h)) - 1), kTRUE);
   } // for(Int_t h=0;h<harmonics->GetSize();h++)
 
@@ -2086,8 +2173,8 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
   //    From documentation: Bypass this check if you analyse MC or continuous Run3 data.
   //    In addition: remember that I can use it only for process cases where I have joined aod::Collisions with aod::EvSels
   if constexpr (rs == eRec_Run2 || rs == eRec_Run1) {
-    if (ec.fUseTrigger) {
-      if (ec.fTrigger.EqualTo("kINT7")) {
+    if (ec.fUseEventCuts[eTrigger]) {
+      if (ec.fsEventCuts[eTrigger].EqualTo("kINT7")) {
         if (!collision.alias_bit(kINT7)) {
           if (tc.fVerbose) {
             LOGF(info, "\033[1;31m%s collision.alias_bit(kINT7)\033[0m", __FUNCTION__);
@@ -2102,7 +2189,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
   // *) sel7() and sel8(); TBI 20240223 sort out eventualy:
   // if constexpr (rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1 || rs == eSim_Run1) {
   if constexpr (rs == eRec_Run2 || rs == eRec_Run1) { // TBI 20240223 use the line above, after I join aod::Collisions with aod::EvSels also for RecSim and Sim cases for Run 2 and Run 1
-    if (ec.fUseSel7) {                                // from doc: for Run 2 data and MC
+    if (ec.fUseEventCuts[eSel7]) {                    // from doc: for Run 2 data and MC
       if (!collision.sel7()) {
         if (tc.fVerbose) {
           LOGF(info, "\033[1;31m%s collision.sel7()\033[0m", __FUNCTION__); // just a bare function name
@@ -2113,7 +2200,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
   }
   // if constexpr (rs == eRec || rs == eRecAndSim || rs == eSim) {
   if constexpr (rs == eRec || rs == eRecAndSim) { // TBI 20240223 use the line above, after I join aod::Collisions with aod::EvSels also for Sim case for Run 3
-    if (ec.fUseSel8) {                            // from doc: for Run 3 data and MC
+    if (ec.fUseEventCuts[eSel8]) {                // from doc: for Run 3 data and MC
       if (!collision.sel8()) {
         if (tc.fVerbose) {
           LOGF(info, "\033[1;31m%s collision.sel8()\033[0m", __FUNCTION__); // just a bare function name
@@ -2127,8 +2214,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
   if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
     //   *) NumberOfEvents: => cut directly in void process( ... )
     //   *) TotalMultiplicity:
-    if ((tracks.size() < eh.fEventCuts[eTotalMultiplicity][eMin]) ||
-        (tracks.size() > eh.fEventCuts[eTotalMultiplicity][eMax])) {
+    if (ec.fUseEventCuts[eTotalMultiplicity] && (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eTotalMultiplicity\033[0m", __FUNCTION__);
       }
@@ -2136,40 +2222,36 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
     }
     //   *) SelectedTracks: => cut directly in void process( ... )
 
-    //   *) Centrtality:
-    if ((ebye.fCentrality < eh.fEventCuts[eCentrality][eMin]) || (ebye.fCentrality > eh.fEventCuts[eCentrality][eMax])) {
+    //   *) Centrality:
+    if (ec.fUseEventCuts[eCentrality] && (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eCentrality\033[0m", __FUNCTION__);
       }
       return kFALSE;
     }
     //   *) Vertex_x:
-    if ((collision.posX() < eh.fEventCuts[eVertex_x][eMin]) ||
-        (collision.posX() > eh.fEventCuts[eVertex_x][eMax])) {
+    if (ec.fUseEventCuts[eVertex_x] && (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eVertex_x\033[0m", __FUNCTION__);
       }
       return kFALSE;
     }
     //   *) Vertex_y:
-    if ((collision.posY() < eh.fEventCuts[eVertex_y][eMin]) ||
-        (collision.posY() > eh.fEventCuts[eVertex_y][eMax])) {
+    if (ec.fUseEventCuts[eVertex_y] && (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eVertex_y\033[0m", __FUNCTION__);
       }
       return kFALSE;
     }
     //   *) Vertex_z:
-    if ((collision.posZ() < eh.fEventCuts[eVertex_z][eMin]) ||
-        (collision.posZ() > eh.fEventCuts[eVertex_z][eMax])) {
+    if (ec.fUseEventCuts[eVertex_z] && (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eVertex_z\033[0m", __FUNCTION__);
       }
       return kFALSE;
     }
     //   *) NContributors:
-    if ((collision.numContrib() < eh.fEventCuts[eNContributors][eMin]) ||
-        (collision.numContrib() > eh.fEventCuts[eNContributors][eMax])) {
+    if (ec.fUseEventCuts[eNContributors] && (collision.numContrib() < ec.fdEventCuts[eNContributors][eMin] || collision.numContrib() > ec.fdEventCuts[eNContributors][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eNContributors\033[0m", __FUNCTION__);
       }
@@ -2193,8 +2275,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
   // *) Specific direct event cuts on info available only in simulated data:
   if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
     //   *) Impact parameter:
-    if ((collision.impactParameter() < eh.fEventCuts[eImpactParameter][eMin]) ||
-        (collision.impactParameter() > eh.fEventCuts[eImpactParameter][eMax])) {
+    if (ec.fUseEventCuts[eImpactParameter] && (collision.impactParameter() < ec.fdEventCuts[eImpactParameter][eMin] || collision.impactParameter() > ec.fdEventCuts[eImpactParameter][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eImpactParameter\033[0m", __FUNCTION__);
       }
@@ -2209,8 +2290,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
     // A few example cuts.
 
     //   *) ...
-    if ((tracks.size() < eh.fEventCuts[eTotalMultiplicity][eMin]) ||
-        (tracks.size() > eh.fEventCuts[eTotalMultiplicity][eMax])) {
+    if (ec.fUseEventCuts[eTotalMultiplicity] && (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eTotalMultiplicity\033[0m", __FUNCTION__);
       }
@@ -2218,8 +2298,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
     }
 
     //   *) Vertex_z:
-    if ((collision.posZ() < eh.fEventCuts[eVertex_z][eMin]) ||
-        (collision.posZ() > eh.fEventCuts[eVertex_z][eMax])) {
+    if (ec.fUseEventCuts[eVertex_z] && (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eVertex_z\033[0m", __FUNCTION__);
       }
@@ -2227,7 +2306,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
     }
 
     //   *) Centrality:
-    if ((ebye.fCentrality < eh.fEventCuts[eCentrality][eMin]) || (ebye.fCentrality > eh.fEventCuts[eCentrality][eMax])) {
+    if (ec.fUseEventCuts[eCentrality] && (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eCentrality\033[0m", __FUNCTION__);
       }
@@ -2454,7 +2533,7 @@ Bool_t ParticleCuts(T const& track)
 {
   // Particles cuts.
 
-  // a) Particle cuts on info available in reconstructed (and corresponding MC truth simulated);
+  // a) Particle cuts on info available in reconstructed (and the corresponding MC truth simulated track);
   // b) Particle cuts on info available only in simulated data;
   // c) Test case.
 
@@ -2466,7 +2545,13 @@ Bool_t ParticleCuts(T const& track)
 
   // a) Particle cuts on info available in reconstructed ...:
   if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
-    if ((track.pt() < pt_min) || (track.pt() > pt_max)) {
+    if (pc.fUseParticleCuts[ePhi] && (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax])) {
+      return kFALSE;
+    }
+    if (pc.fUseParticleCuts[ePt] && (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax])) {
+      return kFALSE;
+    }
+    if (pc.fUseParticleCuts[eEta] && (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax])) {
       return kFALSE;
     }
 
@@ -2478,8 +2563,14 @@ Bool_t ParticleCuts(T const& track)
         LOGF(warning, "No MC particle for this track, skip...");
         return kFALSE; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this particle
       }
-      auto mcparticle = track.mcParticle();                           // corresponding MC truth simulated particle
-      if ((mcparticle.pt() < pt_min) || (mcparticle.pt() > pt_max)) { // TBI 20231107 re-thing if i really cut directly on MC truth, keep it in sync with what I did in AliPhysics
+      auto mcparticle = track.mcParticle();                                                                                                      // corresponding MC truth simulated particle
+      if (pc.fUseParticleCuts[ePhi] && (mcparticle.phi() < pc.fdParticleCuts[ePhi][eMin] || mcparticle.phi() > pc.fdParticleCuts[ePhi][eMax])) { // TBI 20231107 re-thing if i really cut directly on MC truth, keep it in sync with what I did in AliPhysics
+        return kFALSE;
+      }
+      if (pc.fUseParticleCuts[ePt] && (mcparticle.pt() < pc.fdParticleCuts[ePt][eMin] || mcparticle.pt() > pc.fdParticleCuts[ePt][eMax])) { // TBI 20231107 re-thing if i really cut directly on MC truth, keep it in sync with what I did in AliPhysics
+        return kFALSE;
+      }
+      if (pc.fUseParticleCuts[eEta] && (mcparticle.eta() < pc.fdParticleCuts[eEta][eMin] || mcparticle.eta() > pc.fdParticleCuts[eEta][eMax])) { // TBI 20231107 re-thing if i really cut directly on MC truth, keep it in sync with what I did in AliPhysics
         return kFALSE;
       }
 
@@ -2491,7 +2582,13 @@ Bool_t ParticleCuts(T const& track)
   // b) Particle cuts on info available only in simulated data:
   if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
     // Remark: in this branch, 'track' is always TracksSim = aod::McParticles
-    if ((track.pt() < pt_min) || (track.pt() > pt_max)) {
+    if (pc.fUseParticleCuts[ePhi] && (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax])) {
+      return kFALSE;
+    }
+    if (pc.fUseParticleCuts[ePt] && (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax])) {
+      return kFALSE;
+    }
+    if (pc.fUseParticleCuts[eEta] && (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax])) {
       return kFALSE;
     }
 
@@ -2502,7 +2599,13 @@ Bool_t ParticleCuts(T const& track)
   // c) Test case:
   // TBI 2024023 for the time being, eTest cuts only on eRec info.
   if constexpr (rs == eTest) {
-    if ((track.pt() < pt_min) || (track.pt() > pt_max)) {
+    if (pc.fUseParticleCuts[ePhi] && (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax])) {
+      return kFALSE;
+    }
+    if (pc.fUseParticleCuts[ePt] && (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax])) {
+      return kFALSE;
+    }
+    if (pc.fUseParticleCuts[eEta] && (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax])) {
       return kFALSE;
     }
   } // if constexpr (rs == eTest) {
@@ -3085,7 +3188,7 @@ void CalculateKineTest0(const char* kc)
   for (Int_t b = 0; b < nBins; b++) {
 
     // *) Ensures that in each bin of interest, I have the same cut on number of particles, like in integrated analysis:
-    if ((qv.fqVectorEntries[qvKine_var][b] < eh.fEventCuts[eSelectedTracks][eMin]) || (qv.fqVectorEntries[qvKine_var][b] > eh.fEventCuts[eSelectedTracks][eMax])) {
+    if ((qv.fqVectorEntries[qvKine_var][b] < ec.fdEventCuts[eSelectedTracks][eMin]) || (qv.fqVectorEntries[qvKine_var][b] > ec.fdEventCuts[eSelectedTracks][eMax])) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eSelectedTracks cut in bin = %d, for qvKine_var = %d\033[0m", __FUNCTION__, b, static_cast<int>(qvKine_var));
       }
@@ -4751,7 +4854,7 @@ Bool_t MaxNumberOfEvents()
   }
 
   // *) Okay, do the thing:
-  if (eh.fEventHistograms[eNumberOfEvents][rs][eAfter] && eh.fEventHistograms[eNumberOfEvents][rs][eAfter]->GetBinContent(1) == eh.fEventCuts[eNumberOfEvents][eMax]) {
+  if (eh.fEventHistograms[eNumberOfEvents][rs][eAfter] && eh.fEventHistograms[eNumberOfEvents][rs][eAfter]->GetBinContent(1) == ec.fdEventCuts[eNumberOfEvents][eMax]) {
     reachedMaxNumberOfEvents = kTRUE;
   }
 
@@ -5225,14 +5328,14 @@ void DetermineCentrality(T const& collision)
 
   // a) For real data, determine centrality from default centrality estimator:
   if constexpr (rs == eRec || rs == eRecAndSim) {
-    if (ec.fCentralityEstimator.EqualTo("centFT0M", TString::kIgnoreCase)) {
+    if (ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0M", TString::kIgnoreCase)) {
       ebye.fCentrality = collision.centFT0M();
-    } else if (ec.fCentralityEstimator.EqualTo("CentFV0A", TString::kIgnoreCase)) {
+    } else if (ec.fsEventCuts[eCentralityEstimator].EqualTo("CentFV0A", TString::kIgnoreCase)) {
       ebye.fCentrality = collision.centFV0A();
-    } else if (ec.fCentralityEstimator.EqualTo("CentNTPV", TString::kIgnoreCase)) {
+    } else if (ec.fsEventCuts[eCentralityEstimator].EqualTo("CentNTPV", TString::kIgnoreCase)) {
       ebye.fCentrality = collision.centNTPV();
     } else {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fCentralityEstimator.Data());
+      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
     // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
   }
@@ -5244,12 +5347,12 @@ void DetermineCentrality(T const& collision)
 
   // c) Same as a), just for converted Run 2 data:
   if constexpr (rs == eRec_Run2 || rs == eRecAndSim_Run2) {
-    if (ec.fCentralityEstimator.EqualTo("centRun2V0M", TString::kIgnoreCase)) {
+    if (ec.fsEventCuts[eCentralityEstimator].EqualTo("centRun2V0M", TString::kIgnoreCase)) {
       ebye.fCentrality = collision.centRun2V0M();
-    } else if (ec.fCentralityEstimator.EqualTo("CentRun2SPDTracklets", TString::kIgnoreCase)) {
+    } else if (ec.fsEventCuts[eCentralityEstimator].EqualTo("CentRun2SPDTracklets", TString::kIgnoreCase)) {
       ebye.fCentrality = collision.centRun2SPDTracklets();
     } else {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fCentralityEstimator.Data());
+      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
     // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
   }
@@ -5261,12 +5364,12 @@ void DetermineCentrality(T const& collision)
 
   // e) Same as a), just for converted Run 1 data:
   if constexpr (rs == eRec_Run1 || rs == eRecAndSim_Run1) {
-    if (ec.fCentralityEstimator.EqualTo("centRun2V0M", TString::kIgnoreCase)) {
+    if (ec.fsEventCuts[eCentralityEstimator].EqualTo("centRun2V0M", TString::kIgnoreCase)) {
       // ebye.fCentrality = collision.centRun2V0M(); // TBI 20240224 enable when I add support for RecAndSim_Run1
-    } else if (ec.fCentralityEstimator.EqualTo("CentRun2SPDTracklets", TString::kIgnoreCase)) {
+    } else if (ec.fsEventCuts[eCentralityEstimator].EqualTo("CentRun2SPDTracklets", TString::kIgnoreCase)) {
       // ebye.fCentrality = collision.centRun2SPDTracklets(); // TBI 20240224 enable when I add support for RecAndSim_Run1
     } else {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fCentralityEstimator.Data());
+      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
     // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
   }
@@ -5578,7 +5681,7 @@ void Steer(T1 const& collision, T2 const& tracks)
   MainLoopOverParticles<rs>(tracks);
 
   // *) Remaining event cuts which can be applied only after the loop over particles is performed:
-  if ((ebye.fSelectedTracks < eh.fEventCuts[eSelectedTracks][eMin]) || (ebye.fSelectedTracks > eh.fEventCuts[eSelectedTracks][eMax])) {
+  if ((ebye.fSelectedTracks < ec.fdEventCuts[eSelectedTracks][eMin]) || (ebye.fSelectedTracks > ec.fdEventCuts[eSelectedTracks][eMax])) {
     if (tc.fVerbose) {
       LOGF(info, "\033[1;31m%s eSelectedTracks\033[0m", __FUNCTION__); // just a bare function name
     }
@@ -5750,7 +5853,7 @@ void MainLoopOverParticles(T const& tracks)
 
     // *) Counter of selected tracks in the current event:
     ebye.fSelectedTracks++;
-    if (ebye.fSelectedTracks >= eh.fEventCuts[eSelectedTracks][eMax]) {
+    if (ebye.fSelectedTracks >= ec.fdEventCuts[eSelectedTracks][eMax]) {
       break;
     }
 
