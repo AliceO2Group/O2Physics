@@ -31,7 +31,7 @@ class FemtoDreamEventHisto
   virtual ~FemtoDreamEventHisto() = default;
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
-  void init(HistogramRegistry* registry)
+  void init(HistogramRegistry* registry, bool isMC)
   {
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/hZvtx", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
@@ -40,12 +40,16 @@ class FemtoDreamEventHisto
     mHistogramRegistry->add("Event/hMultNTrVsZvtx", "; Multiplicity (MultNtr); vtx_{z} (cm)", kTH2F, {{200, 0, 200}, {300, -12.5, 12.5}});
     mHistogramRegistry->add("Event/hMultNTrVsMultPercentile", "; Multiplicity (MultNtr); Multiplicity Percentile (FT0M)", kTH2F, {{200, 0, 200}, {110, 0, 110}});
     mHistogramRegistry->add("Event/hMultPercentileVsZvtx", "; Multiplicity Percentile (FT0M); vtx_{z} (cm)", kTH2F, {{110, 0, 110}, {300, -12.5, 12.5}});
+
+    if (isMC) {
+      mHistogramRegistry->add("Event_MC/hGenMult08VsMultPercentile", "; generated MC multiplicity (#eta<0.8); Multiplicity Percentile (FT0M)", kTH2F, {{200, 0, 200}, {110, 0, 110}});
+    }
   }
 
   /// Some basic QA of the event
   /// \tparam T type of the collision
   /// \param col Collision
-  template <typename T>
+  template <bool isMC, typename T>
   void fillQA(T const& col)
   {
     if (mHistogramRegistry) {
@@ -55,6 +59,12 @@ class FemtoDreamEventHisto
       mHistogramRegistry->fill(HIST("Event/hMultNTrVsZvtx"), col.multNtr(), col.posZ());
       mHistogramRegistry->fill(HIST("Event/hMultNTrVsMultPercentile"), col.multNtr(), col.multV0M());
       mHistogramRegistry->fill(HIST("Event/hMultPercentileVsZvtx"), col.multV0M(), col.posZ());
+
+      if constexpr (isMC) {
+        if (col.has_fdMCCollision()) {
+          mHistogramRegistry->fill(HIST("Event_MC/hGenMult08VsMultPercentile"), col.fdMCCollision().multMCgenPartEta08(), col.multV0M());
+        }
+      }
     }
   }
 

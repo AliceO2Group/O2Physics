@@ -144,12 +144,14 @@ struct DGFilterRun3 {
   {
     // initialize
     LOGF(debug, "<DGFilterRun3. Collision %d", collision.globalIndex());
-    bool ccs{false};
+    bool isDG{false};
+    bool isDGSmall{false};
+    bool isDGLarge{false};
     registry.fill(HIST("stat/aftercuts"), 0.);
 
     // reject events at TF boundaries
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      filterTable(ccs);
+      filterTable(isDGSmall, isDGLarge);
       return;
     }
     registry.fill(HIST("stat/aftercuts"), 1.);
@@ -165,8 +167,16 @@ struct DGFilterRun3 {
     registry.fill(HIST("stat/aftercuts"), isDGEvent + 2);
 
     // update filterTable
-    ccs = (isDGEvent == 0);
-    filterTable(ccs);
+    if (isDGEvent == 0) {
+      isDG = true;
+      // distinguish between small (numContrib<4) and large events (numContrib>=4)
+      if (collision.numContrib() < 4) {
+        isDGSmall = true;
+      } else {
+        isDGLarge = true;
+      }
+    }
+    filterTable(isDGSmall, isDGLarge);
 
     // log output to check consistency of selections on original and skimmed data
     auto bc2 = collision.foundBC_as<BCs>();
@@ -190,7 +200,7 @@ struct DGFilterRun3 {
       registry.fill(HIST("FIT/FDDCtime"), bc2.foundFDD().timeC());
     }
 
-    auto FITlims = std::vector<float>(5, 1000000.);
+    auto FITlims = std::vector<float>(5, -1.);
     bool isDGcandidate = true;
     for (int nMinBC = 0; nMinBC <= 20; nMinBC++) {
       auto bcSlice = udhelpers::compatibleBCs(collision, 0, bcs, nMinBC);
@@ -223,7 +233,7 @@ struct DGFilterRun3 {
     registry.fill(HIST("collisions/netChargeAll"), collision.numContrib(), netCharge);
     registry.fill(HIST("collisions/dtcvsrPVtrwTOFAll"), collision.collisionTimeRes(), rgtrwTOF);
     registry.fill(HIST("collisions/rPVtrwTOFAll"), collision.numContrib(), rgtrwTOF);
-    if (ccs) {
+    if (isDG) {
       registry.fill(HIST("collisions/tracksDG"), tracks.size());
       registry.fill(HIST("collisions/PVTracksDG"), collision.numContrib());
       registry.get<TH1>(HIST("collisions/globalTracksDG"))->Fill(goodTracks.size());
@@ -236,7 +246,7 @@ struct DGFilterRun3 {
     for (auto const& track : tracks) {
       if (track.isPVContributor()) {
         registry.fill(HIST("tracks/etavsptAll"), track.eta(), track.pt());
-        if (ccs) {
+        if (isDG) {
           if (track.hasTOF()) {
             registry.fill(HIST("tracks/etavsptDGwT"), track.eta(), track.pt());
           } else {
@@ -254,7 +264,7 @@ struct DGFilterRun3 {
     }
     for (auto ii = 0; ii < 5; ii++) {
       registry.fill(HIST("collisions/forwardTracksAll"), ii, nforwardTracks[ii]);
-      if (ccs) {
+      if (isDG) {
         registry.fill(HIST("collisions/forwardTracksDG"), ii, nforwardTracks[ii]);
       }
     }

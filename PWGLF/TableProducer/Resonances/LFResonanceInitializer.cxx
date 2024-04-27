@@ -46,17 +46,6 @@ using namespace o2::soa;
 
 /// Initializer for the resonance candidate producers
 struct reso2initializer {
-  enum {
-    kECbegin = 0,
-    kINEL = 1,
-    kINEL10,
-    kINELg0,
-    kINELg010,
-    kTrig,
-    kINELg0Trig,
-    kINELg010Trig,
-    kECend,
-  };
   SliceCache cache;
   float cXiMass;
   int mRunNumber;
@@ -66,6 +55,7 @@ struct reso2initializer {
   Service<o2::framework::O2DatabasePDG> pdg;
 
   Produces<aod::ResoCollisions> resoCollisions;
+  Produces<aod::ResoMCCollisions> resoMCCollisions;
   Produces<aod::ResoTracks> reso2trks;
   Produces<aod::ResoV0s> reso2v0s;
   Produces<aod::ResoCascades> reso2cascades;
@@ -94,8 +84,7 @@ struct reso2initializer {
   Configurable<int> trackSphMin{"trackSphMin", 10, "Number of tracks for Spherocity Calculation"};
 
   // EventCorrection for MC
-  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 0.01, 0.1, 1.0, 5.0, 10., 15., 20., 30., 40., 50., 70., 100.0, 105.}, "Binning of the centrality axis"};
-  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -20, -15, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3, 5, 7, 10, 15, 20}, "Mixing bins - z-vertex"};
+  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 0.01, 0.1, 1.0, 5.0, 10., 15., 20., 30., 40., 50., 60., 70., 80., 90., 100.0, 105.}, "Binning of the centrality axis"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -159,7 +148,6 @@ struct reso2initializer {
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   Filter tpcPIDFilter = nabs(aod::pidtpc::tpcNSigmaPi) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaKa) < pidnSigmaPreSelectionCut || nabs(aod::pidtpc::tpcNSigmaPr) < pidnSigmaPreSelectionCut; // TPC
   Filter trackEtaFilter = nabs(aod::track::eta) < cfgCutEta;                                                                                                                                                 // Eta cut
-  Filter collisionFilter = nabs(aod::collision::posZ) < ConfEvtZvtx;
 
   EventPlaneHelper helperEP;
 
@@ -338,6 +326,24 @@ struct reso2initializer {
     return true;
   }
 
+  // Check if the collision is INEL>0
+  template <typename MCColl, typename MCPart>
+  bool IsTrueINEL0(MCColl const& mccoll, MCPart const& mcparts)
+  {
+    for (auto& mcparticle : mcparts) {
+      if (!mcparticle.isPhysicalPrimary())
+        continue;
+      auto p = pdg->GetParticle(mcparticle.pdgCode());
+      if (p != nullptr) {
+        if (std::abs(p->Charge()) >= 3) {
+          if (std::abs(mcparticle.eta()) < 1)
+            return true;
+        }
+      }
+    }
+    return false;
+  }
+
   // Centralicity estimator selection
   template <typename ResoColl>
   float CentEst(ResoColl ResoEvents)
@@ -462,9 +468,11 @@ struct reso2initializer {
                 track.tpcNSigmaPi(),
                 track.tpcNSigmaKa(),
                 track.tpcNSigmaPr(),
+                track.tpcNSigmaEl(),
                 track.tofNSigmaPi(),
                 track.tofNSigmaKa(),
                 track.tofNSigmaPr(),
+                track.tofNSigmaEl(),
                 track.tpcSignal(),
                 track.passedITSRefit(),
                 track.passedTPCRefit(),
@@ -825,6 +833,42 @@ struct reso2initializer {
     }
   }
 
+  template <bool isRun2, typename MCCol, typename MCPart>
+  void fillMCCollision(MCCol const& mccol, MCPart const& mcparts)
+  {
+    auto centrality = 0.0;
+    if constexpr (!isRun2)
+      centrality = CentEst(mccol);
+    else
+      centrality = mccol.centRun2V0M();
+    bool inVtx10 = (abs(mccol.mcCollision().posZ()) > 10.) ? false : true;
+    bool isTrueINELgt0 = IsTrueINEL0(mccol, mcparts);
+    bool isSel8 = mccol.sel8();
+    bool isSelected = colCuts.isSelected(mccol);
+    resoMCCollisions(inVtx10, isTrueINELgt0, isSel8, isSelected);
+
+    // QA for Trigger efficiency
+    qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINEL);
+    if (inVtx10)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINEL10);
+    if (isTrueINELgt0)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg0);
+    if (inVtx10 && isTrueINELgt0)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg010);
+    if (isSel8)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kTrig);
+    if (isSel8 && isTrueINELgt0)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg0Trig);
+    if (isSel8 && isTrueINELgt0 && inVtx10)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg010Trig);
+    if (isSelected)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kSel);
+    if (isSelected && isTrueINELgt0)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg0Sel);
+    if (isSelected && isTrueINELgt0 && inVtx10)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg010Sel);
+  }
+
   void init(InitContext&)
   {
     cXiMass = pdg->GetParticle(3312)->Mass();
@@ -844,18 +888,19 @@ struct reso2initializer {
     }
 
     // Check if we are running multiple processes at the same time
-    int nProcesses = doprocessTrackDataRun2 + doprocessTrackV0DataRun2 + doprocessTrackV0CascDataRun2 +
-                     doprocessMCGenCountRun2 + doprocessTrackMCRun2 + doprocessTrackV0MCRun2 +
-                     doprocessTrackV0CascMCRun2;
+    int nProcesses = doprocessTrackData + doprocessTrackV0Data + doprocessTrackV0CascData +
+                     doprocessTrackMC + doprocessTrackV0MC + doprocessTrackV0CascMC + doprocessTrackEPData +
+                     doprocessTrackDataRun2 + doprocessTrackV0DataRun2 + doprocessTrackV0CascDataRun2 +
+                     doprocessTrackMCRun2 + doprocessTrackV0MCRun2 + doprocessTrackV0CascMCRun2;
 
     if (nProcesses > 1) {
       LOG(fatal) << "Multiple processes are not supported at the same time";
     }
 
     // Case selector based on the process.
-    if (doprocessTrackDataRun2 || doprocessTrackV0DataRun2 || doprocessTrackV0CascDataRun2 || doprocessMCGenCountRun2 || doprocessTrackMCRun2 || doprocessTrackV0MCRun2 || doprocessTrackV0CascMCRun2) {
+    if (doprocessTrackDataRun2 || doprocessTrackV0DataRun2 || doprocessTrackV0CascDataRun2 || doprocessTrackMCRun2 || doprocessTrackV0MCRun2 || doprocessTrackV0CascMCRun2) {
       colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, false);
-    } else if (doprocessTrackData || doprocessTrackV0Data || doprocessTrackV0CascData || doprocessMCGenCount || doprocessTrackMC || doprocessTrackV0MC || doprocessTrackV0CascMC || doprocessTrackEPData) {
+    } else if (doprocessTrackData || doprocessTrackV0Data || doprocessTrackV0CascData || doprocessTrackMC || doprocessTrackV0MC || doprocessTrackV0CascMC || doprocessTrackEPData) {
       colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, true);
     }
     colCuts.init(&qaRegistry);
@@ -874,6 +919,11 @@ struct reso2initializer {
     }
 
     // QA histograms
+    if (doprocessTrackMCRun2 || doprocessTrackV0MCRun2 || doprocessTrackV0CascMCRun2 || doprocessTrackMC || doprocessTrackV0MC || doprocessTrackV0CascMC) {
+      AxisSpec centAxis = {binsCent, "Centrality (%)"};
+      AxisSpec idxMCAxis = {16, -0.5, 15.5, "Index"};
+      qaRegistry.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {centAxis, idxMCAxis});
+    }
     AxisSpec idxAxis = {8, 0, 8, "Index"};
     if (ConfFillQA) {
       qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});
@@ -883,14 +933,6 @@ struct reso2initializer {
       qaRegistry.add("hGoodCascIndices", "hGoodCascIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodMCCascIndices", "hGoodMCCascIndices", kTH1F, {idxAxis});
       qaRegistry.add("Phi", "#phi distribution", kTH1F, {{65, -0.1, 6.4}});
-    }
-    // MC histograms
-    if (doprocessMCGenCount) {
-      AxisSpec EvtClassAxis = {kECend - 1, +kECbegin + 0.5, +kECend - 0.5, "", "event class"};
-      AxisSpec ZAxis = {CfgVtxBins, "zaxis"};
-      AxisSpec CentAxis = {binsCent, "centrality"};
-      qaRegistry.add("Event/totalEventGenMC", "totalEventGenMC", {HistType::kTHnSparseF, {EvtClassAxis}});
-      qaRegistry.add("Event/hgenzvtx", "evntclass; zvtex", {HistType::kTHnSparseF, {EvtClassAxis, ZAxis, CentAxis}});
     }
   }
 
@@ -938,7 +980,7 @@ struct reso2initializer {
     LOGF(info, "Bz set to %f for run: ", d_bz, mRunNumber);
   }
 
-  void processTrackData(soa::Filtered<ResoEvents>::iterator const& collision,
+  void processTrackData(ResoEvents::iterator const& collision,
                         soa::Filtered<ResoTracks> const& tracks,
                         aod::BCsWithTimestamps const&)
   {
@@ -955,7 +997,7 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackData, "Process for data", true);
 
-  void processTrackDataRun2(soa::Filtered<ResoRun2Events>::iterator const& collision,
+  void processTrackDataRun2(ResoRun2Events::iterator const& collision,
                             soa::Filtered<ResoTracks> const& tracks,
                             aod::BCsWithTimestamps const&)
   {
@@ -972,7 +1014,7 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackDataRun2, "Process for data", false);
 
-  void processTrackEPData(soa::Filtered<soa::Join<ResoEvents, aod::Qvectors>>::iterator const& collision,
+  void processTrackEPData(soa::Join<ResoEvents, aod::Qvectors>::iterator const& collision,
                           soa::Filtered<ResoTracks> const& tracks,
                           aod::BCsWithTimestamps const&)
   {
@@ -989,117 +1031,7 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackEPData, "Process for data and ep ana", false);
 
-  PresliceUnsorted<ResoEventsMC> perMcCol = aod::mccollisionlabel::mcCollisionId;
-  void processMCGenCount(aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, ResoEventsMC const& mcCols)
-  {
-    // Mainly referenced from dndeta_hi task in PWG-MM PAG-Multiplicity (Beomkyu Kim)
-    for (auto& mcCollision : mccollisions) { // Gen MC Event loop
-      auto particles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-      std::vector<Bool_t> bevtc(kECend, false);
-      bevtc[kINEL] = true;
-      auto posZ = mcCollision.posZ();
-      if (std::abs(posZ) < 10)
-        bevtc[kINEL10] = true;
-      for (auto& particle : particles) {
-        if (!particle.isPhysicalPrimary())
-          continue;
-        auto kp = pdg->GetParticle(particle.pdgCode());
-        if (kp != nullptr) {
-          if (std::abs(kp->Charge()) >= 3) {    // 3 quarks
-            if (std::abs(particle.eta()) < 1) { // INEL>0 definition
-              bevtc[kINELg0] = true;
-              break;
-            }
-          }
-        }
-      }
-      if (bevtc[kINELg0] && bevtc[kINEL10])
-        bevtc[kINELg010] = true;
-
-      for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
-        if (bevtc[ievtc])
-          qaRegistry.fill(HIST("Event/totalEventGenMC"), Double_t(ievtc));
-      }
-
-      auto collisionsample = mcCols.sliceBy(perMcCol, mcCollision.globalIndex());
-      float cent = -1.0;
-      if (collisionsample.size() != 1) { // Prevent no reconstructed collision case
-        cent = -1;
-      } else {
-        for (auto& collision : collisionsample) {
-          cent = CentEst(collision);
-          if (collision.sel8())
-            bevtc[kTrig] = true;
-        }
-      }
-      if (bevtc[kTrig] && bevtc[kINELg0])
-        bevtc[kINELg0Trig] = true;
-      if (bevtc[kINELg0Trig] && bevtc[kINEL10])
-        bevtc[kINELg010Trig] = true;
-      for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
-        if (bevtc[ievtc])
-          qaRegistry.fill(HIST("Event/hgenzvtx"), Double_t(ievtc), posZ, cent);
-      }
-    }
-  }
-  PROCESS_SWITCH(reso2initializer, processMCGenCount, "Process for MC", false);
-
-  PresliceUnsorted<ResoRun2EventsMC> perMcColRun2 = aod::mccollisionlabel::mcCollisionId;
-  void processMCGenCountRun2(aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, ResoRun2EventsMC const& mcCols)
-  {
-    // Mainly referenced from dndeta_hi task in PWG-MM PAG-Multiplicity (Beomkyu Kim)
-    for (auto& mcCollision : mccollisions) { // Gen MC Event loop
-      auto particles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-      std::vector<Bool_t> bevtc(kECend, false);
-      bevtc[kINEL] = true;
-      auto posZ = mcCollision.posZ();
-      if (std::abs(posZ) < 10)
-        bevtc[kINEL10] = true;
-      for (auto& particle : particles) {
-        if (!particle.isPhysicalPrimary())
-          continue;
-        auto kp = pdg->GetParticle(particle.pdgCode());
-        if (kp != nullptr) {
-          if (std::abs(kp->Charge()) >= 3) {    // 3 quarks
-            if (std::abs(particle.eta()) < 1) { // INEL>0 definition
-              bevtc[kINELg0] = true;
-              break;
-            }
-          }
-        }
-      }
-      if (bevtc[kINELg0] && bevtc[kINEL10])
-        bevtc[kINELg010] = true;
-
-      for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
-        if (bevtc[ievtc])
-          qaRegistry.fill(HIST("Event/totalEventGenMC"), Double_t(ievtc));
-      }
-
-      auto collisionsample = mcCols.sliceBy(perMcColRun2, mcCollision.globalIndex());
-      float cent = -1.0;
-      if (collisionsample.size() != 1) { // Prevent no reconstructed collision case
-        cent = -1;
-      } else {
-        for (auto& collision : collisionsample) {
-          cent = CentEst(collision);
-          if (collision.sel7())
-            bevtc[kTrig] = true;
-        }
-      }
-      if (bevtc[kTrig] && bevtc[kINELg0])
-        bevtc[kINELg0Trig] = true;
-      if (bevtc[kINELg0Trig] && bevtc[kINEL10])
-        bevtc[kINELg010Trig] = true;
-      for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
-        if (bevtc[ievtc])
-          qaRegistry.fill(HIST("Event/hgenzvtx"), Double_t(ievtc), posZ, cent);
-      }
-    }
-  }
-  PROCESS_SWITCH(reso2initializer, processMCGenCountRun2, "Process for MC", false);
-
-  void processTrackV0Data(soa::Filtered<ResoEvents>::iterator const& collision,
+  void processTrackV0Data(ResoEvents::iterator const& collision,
                           soa::Filtered<ResoTracks> const& tracks,
                           ResoV0s const& V0s,
                           aod::BCsWithTimestamps const&)
@@ -1118,7 +1050,7 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackV0Data, "Process for data", false);
 
-  void processTrackV0DataRun2(soa::Filtered<ResoRun2Events>::iterator const& collision,
+  void processTrackV0DataRun2(ResoRun2Events::iterator const& collision,
                               soa::Filtered<ResoTracks> const& tracks,
                               ResoV0s const& V0s,
                               aod::BCsWithTimestamps const&)
@@ -1137,7 +1069,7 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackV0DataRun2, "Process for data", false);
 
-  void processTrackV0CascData(soa::Filtered<ResoEvents>::iterator const& collision,
+  void processTrackV0CascData(ResoEvents::iterator const& collision,
                               soa::Filtered<ResoTracks> const& tracks,
                               ResoV0s const& V0s,
                               ResoCascades const& Cascades,
@@ -1158,7 +1090,7 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackV0CascData, "Process for data", false);
 
-  void processTrackV0CascDataRun2(soa::Filtered<ResoRun2Events>::iterator const& collision,
+  void processTrackV0CascDataRun2(ResoRun2Events::iterator const& collision,
                                   soa::Filtered<ResoTracks> const& tracks,
                                   ResoV0s const& V0s,
                                   ResoCascades const& Cascades,
@@ -1180,17 +1112,16 @@ struct reso2initializer {
   PROCESS_SWITCH(reso2initializer, processTrackV0CascDataRun2, "Process for data", false);
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
-  void processTrackMC(soa::Filtered<soa::Join<ResoEvents, aod::McCollisionLabels>>::iterator const& collision,
+  void processTrackMC(soa::Join<ResoEvents, aod::McCollisionLabels>::iterator const& collision,
                       aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
                       aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
-    if (!colCuts.isSelected(collision))
-      return;
     colCuts.fillQA(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
@@ -1201,18 +1132,36 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackMC, "Process for MC", false);
 
+  void processTrackEPMC(soa::Join<ResoEvents, aod::Qvectors, aod::McCollisionLabels>::iterator const& collision,
+                        aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
+                        aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
+  {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    initCCDB(bc);
+    colCuts.fillQA(collision);
+
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), GetEvtPl(collision), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefAId), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefBId), GetEvtPlRes(collision, EvtPlRefAId, EvtPlRefBId), d_bz, bc.timestamp());
+    fillMCCollision<false>(collision, mcParticles);
+
+    // Loop over tracks
+    fillTracks<false>(collision, tracks);
+    // Loop over all MC particles
+    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
+    fillMCParticles(mcParts, mcParticles);
+  }
+  PROCESS_SWITCH(reso2initializer, processTrackEPMC, "Process for MC and ep ana", false);
+
   Preslice<aod::McParticles> perMcCollisionRun2 = aod::mcparticle::mcCollisionId;
-  void processTrackMCRun2(soa::Filtered<soa::Join<ResoRun2Events, aod::McCollisionLabels>>::iterator const& collision,
+  void processTrackMCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
                           aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
                           aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
-    if (!colCuts.isSelected(collision))
-      return;
     colCuts.fillQARun2(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
@@ -1223,18 +1172,17 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackMCRun2, "Process for MC", false);
 
-  void processTrackV0MC(soa::Filtered<soa::Join<ResoEvents, aod::McCollisionLabels>>::iterator const& collision,
+  void processTrackV0MC(soa::Join<ResoEvents, aod::McCollisionLabels>::iterator const& collision,
                         aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
                         ResoV0sMC const& V0s,
                         aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
-    if (!colCuts.isSelected(collision))
-      return;
     colCuts.fillQA(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
@@ -1246,18 +1194,17 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackV0MC, "Process for MC", false);
 
-  void processTrackV0MCRun2(soa::Filtered<soa::Join<ResoRun2Events, aod::McCollisionLabels>>::iterator const& collision,
+  void processTrackV0MCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
                             aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
                             ResoV0sMC const& V0s,
                             aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
-    if (!colCuts.isSelected(collision))
-      return;
     colCuts.fillQARun2(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
@@ -1269,7 +1216,7 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackV0MCRun2, "Process for MC", false);
 
-  void processTrackV0CascMC(soa::Filtered<soa::Join<ResoEvents, aod::McCollisionLabels>>::iterator const& collision,
+  void processTrackV0CascMC(soa::Join<ResoEvents, aod::McCollisionLabels>::iterator const& collision,
                             aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
                             ResoV0sMC const& V0s,
                             ResoCascadesMC const& Cascades,
@@ -1277,11 +1224,10 @@ struct reso2initializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
-    if (!colCuts.isSelected(collision))
-      return;
     colCuts.fillQA(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
@@ -1295,7 +1241,7 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackV0CascMC, "Process for MC", false);
 
-  void processTrackV0CascMCRun2(soa::Filtered<soa::Join<ResoRun2Events, aod::McCollisionLabels>>::iterator const& collision,
+  void processTrackV0CascMCRun2(soa::Join<ResoRun2Events, aod::McCollisionLabels>::iterator const& collision,
                                 aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
                                 ResoV0sMC const& V0s,
                                 ResoCascadesMC const& Cascades,
@@ -1303,11 +1249,10 @@ struct reso2initializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
-    if (!colCuts.isSelected(collision))
-      return;
     colCuts.fillQARun2(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);

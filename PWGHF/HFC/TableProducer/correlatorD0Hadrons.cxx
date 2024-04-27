@@ -184,9 +184,11 @@ struct HfCorrelatorD0Hadrons {
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<float> ptSoftPionMax{"ptSoftPionMax", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification"};
+  Configurable<bool> correlateD0WithLeadingParticle{"correlateD0WithLeadingParticle", false, "Switch for correlation of D0 mesons with leading particle only"};
 
   HfHelper hfHelper;
 
+  int leadingIndex = 0;
   double massD0{0.};
   double massPi{0.};
   double massK{0.};
@@ -264,6 +266,22 @@ struct HfCorrelatorD0Hadrons {
     registry.add("hCountD0TriggersGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
+  // Find Leading Particle
+  template <typename TTracks>
+  int findLeadingParticle(TTracks const& tracks)
+  {
+    auto leadingParticle = tracks.begin();
+    for (auto const& track : tracks) {
+      if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.) {
+        continue;
+      }
+      if (track.pt() > leadingParticle.pt()) {
+        leadingParticle = track;
+      }
+    }
+    int leadingIndex = leadingParticle.globalIndex();
+    return leadingIndex;
+  }
   // =======  Process starts for Data, Same event ============
 
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -275,6 +293,11 @@ struct HfCorrelatorD0Hadrons {
     if (selectedD0Candidates.size() == 0) {
       return;
     }
+    // find leading particle
+    if (correlateD0WithLeadingParticle) {
+      leadingIndex = findLeadingParticle(tracks);
+    }
+
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -383,6 +406,12 @@ struct HfCorrelatorD0Hadrons {
           signalStatus += aod::hf_correlation_d0_hadron::ParticleTypeData::D0barOnly;
         }
 
+        if (correlateD0WithLeadingParticle) {
+          if (track.globalIndex() != leadingIndex) {
+            continue;
+          }
+          registry.fill(HIST("hTrackCounter"), 4); // fill no. of tracks  have leading particle
+        }
         entryD0HadronPair(getDeltaPhi(track.phi(), candidate1.phi()),
                           track.eta() - candidate1.eta(),
                           candidate1.pt(),

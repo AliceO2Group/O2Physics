@@ -25,7 +25,8 @@ DECLARE_SOA_COLUMN(He, hasHe, bool);             //!
 DECLARE_SOA_COLUMN(H3L3Body, hasH3L3Body, bool); //! hypertriton 3body
 
 // diffraction
-DECLARE_SOA_COLUMN(UDdiff, hasDiff, bool); //! Double Gap events, DG
+DECLARE_SOA_COLUMN(UDdiffSmall, hasDiffSmall, bool); //! Double Gap events, <= 3 prongs
+DECLARE_SOA_COLUMN(UDdiffLarge, hasDiffLarge, bool); //! Double Gap events, >= 4 prongs
 
 DECLARE_SOA_COLUMN(UDdiffBC, hasDiffBC, bool); //! diffractive BC
 
@@ -161,7 +162,7 @@ using NucleiFilter = NucleiFilters::iterator;
 
 // diffraction
 DECLARE_SOA_TABLE(DiffractionFilters, "AOD", "DiffFilters", //! Diffraction filters (Collisions)
-                  filtering::UDdiff);
+                  filtering::UDdiffSmall, filtering::UDdiffLarge);
 using DiffractionFilter = DiffractionFilters::iterator;
 
 DECLARE_SOA_TABLE(DiffractionBCFilters, "AOD", "DiffBCFilters", //! Diffraction filters (BCs)

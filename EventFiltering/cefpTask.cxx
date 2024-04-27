@@ -322,10 +322,10 @@ struct centralEventFilterTask {
 
       auto schema{tablePtr->schema()};
       for (auto& colName : tableName.second) {
-        int bin{mScalers->GetXaxis()->FindBin(colName.first.data())};
+        uint64_t bin{static_cast<uint64_t>(mScalers->GetXaxis()->FindBin(colName.first.data()))};
         double binCenter{mScalers->GetXaxis()->GetBinCenter(bin)};
-        uint64_t decisionBin{BIT(bin - 2) / 64};
-        uint64_t triggerBit{BIT(bin - 2) % 64};
+        uint64_t decisionBin{(bin - 2) / 64};
+        uint64_t triggerBit{BIT((bin - 2) % 64)};
         auto column{tablePtr->GetColumnByName(colName.first)};
         double downscaling{colName.second};
         if (column) {
