@@ -1745,8 +1745,6 @@ struct NucleiHistTask {
           }
         }
       }
-
-      
     }
   }
   PROCESS_SWITCH(NucleiHistTask, processMCefficiency, "process MC efficencies", false);
