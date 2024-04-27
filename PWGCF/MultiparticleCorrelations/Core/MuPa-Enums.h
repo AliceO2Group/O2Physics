@@ -19,6 +19,7 @@ enum eConfiguration {
   eVerbose,
   eVerboseForEachParticle,
   eDoAdditionalInsanityChecks,
+  eInsanityCheckForEachParticle,
   eUseCCDB,
   eWhichProcess,
   eRandomSeed,
@@ -26,6 +27,24 @@ enum eConfiguration {
   eFixedNumberOfRandomlySelectedTracks,
   eUseStopwatch,
   eConfiguration_N
+};
+
+enum eProcess {
+  eProcessRec = 0,     // Run 3, only reconstructed
+  eProcessRecSim,      // Run 3, both reconstructed and simulated
+  eProcessSim,         // Run 3, only simulated
+  eProcessRec_Run2,    // Run 2, only reconstructed
+  eProcessRecSim_Run2, // Run 2, both reconstructed and simulated
+  eProcessSim_Run2,    // Run 2, only simulated
+  eProcessRec_Run1,    // Run 1, only reconstructed
+  eProcessRecSim_Run1, // Run 1, both reconstructed and simulated
+  eProcessSim_Run1,    // Run 1, only simulated
+  eProcessTest,        // minimum subscription to the tables, for testing purposes
+  // Generic flags, calculated and set from individual flags above in DefaultConfiguration(), AFTER process switch was taken into account:
+  eGenericRec,    // generic "Rec" case, eTest is treated for the time being as "Rec"
+  eGenericRecSim, // generic "RecSim" case
+  eGenericSim,    // generic "Sim" case
+  eProcess_N
 };
 
 enum eRecSim { eRec = 0,
@@ -45,6 +64,10 @@ enum eBeforeAfter { eBefore = 0,
 enum eMinMax { eMin = 0,
                eMax = 1 };
 
+enum eXYZ { eX = 0,
+            eY = 1,
+            eZ = 2 };
+
 enum eDefaultColors { eColor = kBlack,
                       eFillColor = kGray };
 
@@ -58,6 +81,9 @@ enum eDiffWeights {
   wPHIETA,
   eDiffWeights_N
 };
+
+enum eVnPsin { eVn = 0,
+               ePsin = 1 };
 
 enum eEventHistograms {
   eNumberOfEvents = 0,
@@ -94,6 +120,12 @@ enum eParticleHistograms {
   eDCA_z,
   ePDG,
   eParticleHistograms_N
+};
+
+enum eParticleHistograms2D {
+  ePhiPt = 0,
+  ePhiEta,
+  eParticleHistograms2D_N
 };
 
 enum eParticleCuts {

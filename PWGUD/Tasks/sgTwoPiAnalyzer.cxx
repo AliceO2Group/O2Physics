@@ -37,7 +37,7 @@ using namespace o2::framework::expressions;
 #define mpion 0.1396
 #define mkaon 0.4937
 #define mproton 0.9383
-struct SG_FourPi_Analyzer {
+struct SGTwoPiAnalyzer {
   SGSelector sgSelector;
   Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
   Configurable<float> FT0A_cut{"FT0A", 150., "FT0A threshold"};
@@ -45,6 +45,14 @@ struct SG_FourPi_Analyzer {
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
+  // Track Selections
+  Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
+  Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
+  Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
+  Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};
+  Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
+  Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
+  Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
   HistogramRegistry registry{
     "registry",
     {
@@ -52,30 +60,30 @@ struct SG_FourPi_Analyzer {
       {"GapSide", "Gap Side; Entries", {HistType::kTH1F, {{4, -1.5, 2.5}}}},
       {"TrueGapSide", "Gap Side; Entries", {HistType::kTH1F, {{4, -1.5, 2.5}}}},
       {"ITSNCls", "ITS Clusters", {HistType::kTH1F, {{10, -.5, 9.5}}}},
-      {"os_4Pi_pT", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_4Pi_eTa", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"os_4Pi_invm", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_4Pi_pT", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_4Pi_eTa", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"ss_4Pi_invm", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_4Pi_pT_1", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_4Pi_eTa_1", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"os_4Pi_invm_1", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_4Pi_pT_1", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_4Pi_eTa_1", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"ss_4Pi_invm_1", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_4Pi_pT_0", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_4Pi_eTa_0", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"os_4Pi_invm_0", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_4Pi_pT_0", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_4Pi_eTa_0", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"ss_4Pi_invm_0", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_4Pi_pT_2", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_4Pi_eTa_2", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"os_4Pi_invm_2", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_4Pi_pT_2", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_4Pi_eTa_2", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"ss_4Pi_invm_2", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_2Pi_pT", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_2Pi_eTa", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"os_2Pi_invm", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_2Pi_pT", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_2Pi_eTa", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"ss_2Pi_invm", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_2Pi_pT_1", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_2Pi_eTa_1", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"os_2Pi_invm_1", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_2Pi_pT_1", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_2Pi_eTa_1", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"ss_2Pi_invm_1", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_2Pi_pT_0", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_2Pi_eTa_0", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"os_2Pi_invm_0", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_2Pi_pT_0", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_2Pi_eTa_0", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"ss_2Pi_invm_0", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_2Pi_pT_2", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_2Pi_eTa_2", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"os_2Pi_invm_2", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_2Pi_pT_2", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_2Pi_eTa_2", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"ss_2Pi_invm_2", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
     }};
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
@@ -93,6 +101,7 @@ struct SG_FourPi_Analyzer {
     //  int truegapSide = sgSelector.trueGap(collision);
     // int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut};
     // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);
@@ -108,13 +117,13 @@ struct SG_FourPi_Analyzer {
       //}
       TLorentzVector a;
       a.SetXYZM(t.px(), t.py(), t.pz(), mpion);
-      if (trackselector(t)) {
+      if (trackselector(t, parameters)) {
         sign += t.sign();
         goodTracks.push_back(a);
       }
     }
     //    std::cout << goodTracks.size()<<std::endl;
-    if (goodTracks.size() == 4) {
+    if (goodTracks.size() == 2) {
       for (auto pion : goodTracks) {
         v01 += pion;
       }
@@ -122,50 +131,50 @@ struct SG_FourPi_Analyzer {
       // Opposite sign pairs
 
       if (sign == 0) {
-        registry.fill(HIST("os_4Pi_pT"), v01.Pt());
-        registry.fill(HIST("os_4Pi_eTa"), v01.Eta());
+        registry.fill(HIST("os_2Pi_pT"), v01.Pt());
+        registry.fill(HIST("os_2Pi_eTa"), v01.Eta());
         if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-          registry.fill(HIST("os_4Pi_invm"), v01.M());
+          registry.fill(HIST("os_2Pi_invm"), v01.M());
         if (gapSide == 0) {
-          registry.fill(HIST("os_4Pi_pT_0"), v01.Pt());
-          registry.fill(HIST("os_4Pi_eTa_0"), v01.Eta());
+          registry.fill(HIST("os_2Pi_pT_0"), v01.Pt());
+          registry.fill(HIST("os_2Pi_eTa_0"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("os_4Pi_invm_0"), v01.M());
+            registry.fill(HIST("os_2Pi_invm_0"), v01.M());
         }
         if (gapSide == 1) {
-          registry.fill(HIST("os_4Pi_pT_1"), v01.Pt());
-          registry.fill(HIST("os_4Pi_eTa_1"), v01.Eta());
+          registry.fill(HIST("os_2Pi_pT_1"), v01.Pt());
+          registry.fill(HIST("os_2Pi_eTa_1"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("os_4Pi_invm_1"), v01.M());
+            registry.fill(HIST("os_2Pi_invm_1"), v01.M());
         }
         if (gapSide == 2) {
-          registry.fill(HIST("os_4Pi_pT_2"), v01.Pt());
-          registry.fill(HIST("os_4Pi_eTa_2"), v01.Eta());
+          registry.fill(HIST("os_2Pi_pT_2"), v01.Pt());
+          registry.fill(HIST("os_2Pi_eTa_2"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("os_4Pi_invm_2"), v01.M());
+            registry.fill(HIST("os_2Pi_invm_2"), v01.M());
         }
       } else {
-        registry.fill(HIST("ss_4Pi_pT"), v01.Pt());
-        registry.fill(HIST("ss_4Pi_eTa"), v01.Eta());
+        registry.fill(HIST("ss_2Pi_pT"), v01.Pt());
+        registry.fill(HIST("ss_2Pi_eTa"), v01.Eta());
         if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-          registry.fill(HIST("ss_4Pi_invm"), v01.M());
+          registry.fill(HIST("ss_2Pi_invm"), v01.M());
         if (gapSide == 0) {
-          registry.fill(HIST("ss_4Pi_pT_0"), v01.Pt());
-          registry.fill(HIST("ss_4Pi_eTa_0"), v01.Eta());
+          registry.fill(HIST("ss_2Pi_pT_0"), v01.Pt());
+          registry.fill(HIST("ss_2Pi_eTa_0"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("ss_4Pi_invm_0"), v01.M());
+            registry.fill(HIST("ss_2Pi_invm_0"), v01.M());
         }
         if (gapSide == 1) {
-          registry.fill(HIST("ss_4Pi_pT_1"), v01.Pt());
-          registry.fill(HIST("ss_4Pi_eTa_1"), v01.Eta());
+          registry.fill(HIST("ss_2Pi_pT_1"), v01.Pt());
+          registry.fill(HIST("ss_2Pi_eTa_1"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("ss_4Pi_invm_1"), v01.M());
+            registry.fill(HIST("ss_2Pi_invm_1"), v01.M());
         }
         if (gapSide == 2) {
-          registry.fill(HIST("ss_4Pi_pT_2"), v01.Pt());
-          registry.fill(HIST("ss_4Pi_eTa_2"), v01.Eta());
+          registry.fill(HIST("ss_2Pi_pT_2"), v01.Pt());
+          registry.fill(HIST("ss_2Pi_eTa_2"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("ss_4Pi_invm_2"), v01.M());
+            registry.fill(HIST("ss_2Pi_invm_2"), v01.M());
         }
       }
     }
@@ -175,5 +184,5 @@ struct SG_FourPi_Analyzer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SG_FourPi_Analyzer>(cfgc)};
+    adaptAnalysisTask<SGTwoPiAnalyzer>(cfgc)};
 }

@@ -198,6 +198,8 @@ DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
+DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);
 DECLARE_SOA_COLUMN(TrackSel, trackSel, uint8_t);
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -245,6 +247,15 @@ DECLARE_SOA_TABLE(StoredJTracks, "AOD1", "JTRACK",
                   o2::soa::Marker<1>);
 
 using StoredJTrack = StoredJTracks::iterator;
+
+DECLARE_SOA_TABLE(JTrackExtras, "AOD", "JTRACKEXTRA",
+                  jtrack::DCAXY,
+                  jtrack::DCAZ);
+
+DECLARE_SOA_TABLE(StoredJTrackExtras, "AOD1", "JTRACKEXTRA",
+                  jtrack::DCAXY,
+                  jtrack::DCAZ,
+                  o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(JTrackPIs, "AOD", "JTRACKPI",
                   jtrack::TrackId);

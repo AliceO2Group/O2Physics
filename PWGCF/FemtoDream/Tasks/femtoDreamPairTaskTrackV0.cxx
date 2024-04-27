@@ -69,10 +69,11 @@ struct femtoDreamPairTaskTrackV0 {
   Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
   Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
 
-  using FilteredCollisions = soa::Filtered<FDCollisions>;
-  using FilteredCollision = FilteredCollisions::iterator;
   using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, FDDownSample>>;
   using FilteredMaskedCollision = FilteredMaskedCollisions::iterator;
+  using FilteredMaskedMCCollisions = soa::Filtered<soa::Join<FDCollisions, aod::FDMCCollLabels, FDColMasks, FDDownSample>>;
+  using FilteredMaskedMCCollision = FilteredMaskedMCCollisions::iterator;
+
   femtodreamcollision::BitMaskType BitMask = -1;
 
   /// Particle 1 (track)
@@ -205,7 +206,7 @@ struct femtoDreamPairTaskTrackV0 {
 
   void init(InitContext& context)
   {
-    eventHisto.init(&qaRegistry);
+    eventHisto.init(&qaRegistry, Option.IsMC);
     // void init(HistogramRegistry* registry,
     //    T& MomentumBins, T& tempFitVarBins, T& NsigmaTPCBins, T& NsigmaTOFBins, T& NsigmaTPCTOFBins, T& InvMassBins,
     //    bool isMC, int pdgCode, bool isDebug = false)
@@ -332,19 +333,19 @@ struct femtoDreamPairTaskTrackV0 {
     if ((col.bitmaskTrackOne() & BitMask) != BitMask && (col.bitmaskTrackTwo() & BitMask) != BitMask) {
       return;
     }
-    eventHisto.fillQA(col);
+    eventHisto.fillQA<false>(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceV02 = PartitionV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<false>(SliceTrk1, SliceV02, parts, col);
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMasked, "Enable processing same event with masks", true);
 
-  void processSameEventMCMasked(FilteredMaskedCollision const& col, FilteredFDMCParts const& parts, o2::aod::FDMCParticles const&)
+  void processSameEventMCMasked(FilteredMaskedMCCollision const& col, o2::aod::FDMCCollisions&, FilteredFDMCParts const& parts, o2::aod::FDMCParticles const&)
   {
     if ((col.bitmaskTrackOne() & BitMask) != BitMask && (col.bitmaskTrackTwo() & BitMask) != BitMask) {
       return;
     }
-    eventHisto.fillQA(col);
+    eventHisto.fillQA<true>(col);
     auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMCV02 = PartitionMCV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<true>(SliceMCTrk1, SliceMCV02, parts, col);
@@ -410,7 +411,7 @@ struct femtoDreamPairTaskTrackV0 {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processMixedEventMasked, "Enable processing mixed events with masks", true);
 
-  void processMixedEventMCMasked(FilteredMaskedCollisions const& cols, FilteredFDMCParts const& parts, o2::aod::FDMCParticles const&)
+  void processMixedEventMCMasked(FilteredMaskedMCCollisions const& cols, o2::aod::FDMCCollisions&, FilteredFDMCParts const& parts, o2::aod::FDMCParticles const&)
   {
     switch (Mixing.Policy.value) {
       case femtodreamcollision::kMult:
