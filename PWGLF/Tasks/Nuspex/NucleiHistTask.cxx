@@ -1700,24 +1700,48 @@ struct NucleiHistTask {
         }
       }
 
-      float TPCnumberClsFound = track.tpcNClsFound();
-      float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
-      float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
-      float Chi2perClusterTPC = track.tpcChi2NCl();
-      float Chi2perClusterITS = track.itsChi2NCl();
+      if ((particle.pdgCode() == 1000020030) | (particle.pdgCode() == -1000020030) | (particle.pdgCode() == 1000020040) | (particle.pdgCode() == -1000020040)) {
+        float TPCnumberClsFound = track.tpcNClsFound();
+        float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
+        float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
+        float Chi2perClusterTPC = track.tpcChi2NCl();
+        float Chi2perClusterITS = track.itsChi2NCl();
 
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
-        continue;
-      }
+        if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
+          continue;
+        }
 
-      MC_eff.fill(HIST("histEffSkimming"), 4, pdgbin);
+        MC_eff.fill(HIST("histEffSkimming"), 4, pdgbin);
 
-      if (passedITS) {
-        MC_eff.fill(HIST("hist_rec_ITS_vs_pT"), track.pt(), pdgbin);
-        if (passedTPC) {
-          MC_eff.fill(HIST("hist_rec_ITS_TPC_vs_pT"), track.pt(), pdgbin);
-          if (passedTOF) {
-            MC_eff.fill(HIST("hist_rec_ITS_TPC_TOF_vs_pT"), track.pt(), pdgbin);
+        if (passedITS) {
+          MC_eff.fill(HIST("hist_rec_ITS_vs_pT"), track.pt() * 2, pdgbin);
+          if (passedTPC) {
+            MC_eff.fill(HIST("hist_rec_ITS_TPC_vs_pT"), track.pt() * 2, pdgbin);
+            if (passedTOF) {
+              MC_eff.fill(HIST("hist_rec_ITS_TPC_TOF_vs_pT"), track.pt() * 2, pdgbin);
+            }
+          }
+        }
+      } else {
+        float TPCnumberClsFound = track.tpcNClsFound();
+        float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
+        float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
+        float Chi2perClusterTPC = track.tpcChi2NCl();
+        float Chi2perClusterITS = track.itsChi2NCl();
+
+        if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
+          continue;
+        }
+
+        MC_eff.fill(HIST("histEffSkimming"), 4, pdgbin);
+
+        if (passedITS) {
+          MC_eff.fill(HIST("hist_rec_ITS_vs_pT"), track.pt(), pdgbin);
+          if (passedTPC) {
+            MC_eff.fill(HIST("hist_rec_ITS_TPC_vs_pT"), track.pt(), pdgbin);
+            if (passedTOF) {
+              MC_eff.fill(HIST("hist_rec_ITS_TPC_TOF_vs_pT"), track.pt(), pdgbin);
+            }
           }
         }
       }
