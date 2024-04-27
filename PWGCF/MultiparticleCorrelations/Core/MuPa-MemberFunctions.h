@@ -243,6 +243,7 @@ void DefaultConfiguration()
 
   // *) Internal validation:
   iv.fUseInternalValidation = cf_iv.cfUseInternalValidation;
+  iv.fInternalValidationForceBailout = cf_iv.fInternalValidationForceBailout;
   iv.fnEventsInternalValidation = cf_iv.cfnEventsInternalValidation;
   iv.fRescaleWithTheoreticalInput = cf_iv.cfRescaleWithTheoreticalInput;
 
@@ -1762,7 +1763,9 @@ void InternalValidation()
 
     // *) If I reached max number of events, ignore the remaining collisions:
     if (MaxNumberOfEvents()) {
-      BailOut();
+      if (iv.fInternalValidationForceBailout) {   
+        BailOut();
+      }
     }
 
   } // for(Int_t e=0;e<e<static_cast<int>(iv.fnEventsInternalValidation);e++)
