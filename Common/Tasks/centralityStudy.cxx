@@ -48,6 +48,7 @@ struct centralityStudy {
 
   // Configurable Axes
   ConfigurableAxis axisMultFT0C{"axisMultFT0C", {2000, 0, 100000}, "FT0C amplitude"};
+  ConfigurableAxis axisMultUltraFineFT0C{"axisMultUltraFineFT0C", {60000, 0, 60000}, "FT0C amplitude"};
   ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
   ConfigurableAxis axisMultITSOnly{"axisMultITSOnly", {200, 0, 6000}, "Number of ITS only tracks"};
   ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
@@ -68,12 +69,12 @@ struct centralityStudy {
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
 
-      histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultFT0C});
+      histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
     }
 
     if (doprocessBCs) {
       histos.add("hBCSelection", "hBCSelection", kTH1D, {{10, -0.5, 9.5f}});
-      histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultFT0C});
+      histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultUltraFineFT0C});
     }
 
     if (do2DPlots) {
