@@ -243,7 +243,7 @@ void DefaultConfiguration()
 
   // *) Internal validation:
   iv.fUseInternalValidation = cf_iv.cfUseInternalValidation;
-  iv.fInternalValidationForceBailout = cf_iv.fInternalValidationForceBailout;
+  iv.fInternalValidationForceBailout = cf_iv.cfInternalValidationForceBailout;
   iv.fnEventsInternalValidation = cf_iv.cfnEventsInternalValidation;
   iv.fRescaleWithTheoreticalInput = cf_iv.cfRescaleWithTheoreticalInput;
 
