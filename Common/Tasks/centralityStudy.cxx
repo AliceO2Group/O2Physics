@@ -53,7 +53,7 @@ struct centralityStudy {
   // For one-dimensional plots, where binning is no issue
   ConfigurableAxis axisMultUltraFineFT0C{"axisMultUltraFineFT0C", {60000, 0, 60000}, "FT0C amplitude"};
   ConfigurableAxis axisMultUltraFinePVContributors{"axisMultUltraFinePVContributors", {10000, 0, 10000}, "Number of PV Contributors"};
-  
+
   ConfigurableAxis axisMultITSOnly{"axisMultITSOnly", {200, 0, 6000}, "Number of ITS only tracks"};
   ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
 
@@ -136,8 +136,8 @@ struct centralityStudy {
     histos.fill(HIST("hCollisionSelection"), 9 /* Not at same bunch pile-up */);
 
     // if we got here, we also finally fill the FT0C histogram, please
-    histos.fill(HIST("hNPVContributors"), collision.MultPVTotalContributors() );
-    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() );
+    histos.fill(HIST("hNPVContributors"), collision.MultPVTotalContributors());
+    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
 
     if (do2DPlots) {
       histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C());
