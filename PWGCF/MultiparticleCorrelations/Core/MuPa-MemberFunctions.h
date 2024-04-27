@@ -1152,7 +1152,7 @@ void BookParticleCutsHistograms()
 
   // a) Book the profile holding flags:
   pc.fParticleCutsPro = new TProfile("fParticleCutsPro",
-                                     "flags for particle cuts", eParticleCuts_N - 1, 0.5, 0.5 + eParticleCuts_N - 1);
+                                     "flags for particle cuts", eParticleCuts_N - 1, 0.5, 0.5 + static_cast<float>(eParticleCuts_N - 1));
   pc.fParticleCutsPro->SetStats(kFALSE);
   pc.fParticleCutsPro->SetLineColor(eColor);
   pc.fParticleCutsPro->SetFillColor(eFillColor);
