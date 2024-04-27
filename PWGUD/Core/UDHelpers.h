@@ -589,11 +589,31 @@ bool cutIsGoodZvtxFT0vsPV(T const& coll)
 
 template <typename T>
 bool cutIsVertexITSTPC(T const& coll)
-// Selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks.
+// Selects collisions with at least one ITS-TPC PV track, and thus rejects vertices built from ITS-only tracks.
 // Has an effect only on the pp data, in Pb-Pb ITS-only vertices are already rejected by default.
 // Return true when event is good.
 {
   return coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexTRDmatched(T const& coll)
+// Selects collisions with at least one TRD PV track.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexTRDmatched);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexTOFmatched(T const& coll)
+// Selects collisions with at least one TOF PV track.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexTOFmatched);
 }
 
 // -----------------------------------------------------------------------------
@@ -605,15 +625,19 @@ bool goodCollision(T const& coll, DGCutparHolder const& diffCuts)
   bool accepted = true;
   std::vector<int> sels = diffCuts.collisionSel();
   if (sels[0])
-    accepted = cutNoTimeFrameBorder(coll);
+    accepted = accepted && cutNoTimeFrameBorder(coll);
   if (sels[1])
-    accepted = cutNoSameBunchPileup(coll);
+    accepted = accepted && cutNoSameBunchPileup(coll);
   if (sels[2])
-    accepted = cutNoITSROFrameBorder(coll);
+    accepted = accepted && cutNoITSROFrameBorder(coll);
   if (sels[3])
-    accepted = cutIsGoodZvtxFT0vsPV(coll);
+    accepted = accepted && cutIsGoodZvtxFT0vsPV(coll);
   if (sels[4])
-    accepted = cutIsVertexITSTPC(coll);
+    accepted = accepted && cutIsVertexITSTPC(coll);
+  if (sels[5])
+    accepted = accepted && cutIsVertexTRDmatched(coll);
+  if (sels[6])
+    accepted = accepted && cutIsVertexTOFmatched(coll);
 
   return accepted;
 }
