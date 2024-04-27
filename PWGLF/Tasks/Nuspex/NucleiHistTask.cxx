@@ -364,10 +364,11 @@ struct NucleiHistTask {
     MC_truth_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_truth_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_truth_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_truth_reg.add("histRecVtxMC", "MC collision z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
+    MC_truth_reg.add("histGenVtxMC", "MC generated vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
     MC_truth_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
 
     // MC reconstructed
+    MC_recon_reg.add("histRecVtxMC", "MC reconstructed vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
     MC_recon_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_recon_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_recon_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
@@ -427,35 +428,12 @@ struct NucleiHistTask {
 
     // MC efficencies
     MC_eff.add("histEffSkimming", "Efficiency skimming", HistType::kTH2F, {{10, 0.0, 10.0}, PDGBINNING});
-    MC_eff.add("histITS_vs_pT", "ITS pT distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_eff.add("histITS_TPC_vs_pT", "ITS_TPC pT distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_eff.add("histITS_TPC_TOFvs_pT", "ITS_TPC_TOF pT distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
-
-    MC_eff.add("histPt_TPC_Pi", "#pi^{+} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aPi", "#pi^{-} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_Pr", "p reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aPr", "#bar{p} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_De", "d reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aDe", "#bar{d} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_Tr", "t reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aTr", "#bar{t} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_He3", "^{3}He reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aHe3", "^{3}#bar{He} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_He4", "^{4}He reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aHe4", "^{4}#bar{He} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-
-    MC_eff.add("histPt_TOF_Pi", "#pi^{+} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aPi", "#pi^{-} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_Pr", "p reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aPr", "#bar{p} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_De", "d reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aDe", "#bar{d} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_Tr", "t reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aTr", "#bar{t} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_He3", "^{3}He reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aHe3", "^{3}#bar{He} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_He4", "^{4}He reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aHe4", "^{4}#bar{He} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
+    MC_eff.add("hist_gen_ITS_vs_pT", "ITS generated p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
+    MC_eff.add("hist_gen_ITS_TPC_vs_pT", "ITS_TPC generated p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
+    MC_eff.add("hist_gen_ITS_TPC_TOF_vs_pT", "ITS_TPC_TOF generated p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
+    MC_eff.add("hist_rec_ITS_vs_pT", "ITS reconstructed p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
+    MC_eff.add("hist_rec_ITS_TPC_vs_pT", "ITS_TPC reconstructed p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
+    MC_eff.add("hist_rec_ITS_TPC_TOF_vs_pT", "ITS_TPC_TOF reconstructed p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
   }
 
   // Configurables
@@ -1521,7 +1499,8 @@ struct NucleiHistTask {
                  aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
-    MC_truth_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
+    MC_recon_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
+    MC_truth_reg.fill(HIST("histGenVtxMC"), collisions.mcCollision().posZ());
     MC_truth_reg.fill(HIST("histCentrality"), collisions.centFT0C());
 
     for (auto& track : tracks) {
@@ -1533,6 +1512,29 @@ struct NucleiHistTask {
 
       histPDG->Fill(pdg, 1);
       const float pdgbin = histPDG->GetXaxis()->GetBinCenter(histPDG->GetXaxis()->FindBin(pdg));
+
+      TLorentzVector lorentzVector_pion{};
+      TLorentzVector lorentzVector_proton{};
+      TLorentzVector lorentzVector_deuteron{};
+      TLorentzVector lorentzVector_triton{};
+      TLorentzVector lorentzVector_He3{};
+      TLorentzVector lorentzVector_He4{};
+
+      lorentzVector_pion.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
+      lorentzVector_proton.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
+      lorentzVector_deuteron.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
+      lorentzVector_triton.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
+      lorentzVector_He3.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
+      lorentzVector_He4.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
+
+      if (lorentzVector_pion.Rapidity() < yMin || lorentzVector_pion.Rapidity() > yMax ||
+          lorentzVector_proton.Rapidity() < yMin || lorentzVector_proton.Rapidity() > yMax ||
+          lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
+          lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
+          lorentzVector_He3.Rapidity() < yMin || lorentzVector_He3.Rapidity() > yMax ||
+          lorentzVector_He4.Rapidity() < yMin || lorentzVector_He4.Rapidity() > yMax) {
+        continue;
+      }
 
       MC_truth_reg.fill(HIST("histPhi"), particle.phi(), pdgbin);
       MC_truth_reg.fill(HIST("histEta"), particle.eta(), pdgbin);
@@ -1684,104 +1686,63 @@ struct NucleiHistTask {
       bool passedTOF = track.hasTOF();
 
       if (passedITS) {
-        MC_eff.fill(HIST("histITS_vs_pT"), particle.pt(), pdgbin);
+        MC_eff.fill(HIST("hist_gen_ITS_vs_pT"), particle.pt(), pdgbin);
         MC_eff.fill(HIST("histEffSkimming"), 1, pdgbin);
 
         if (passedTPC) {
-          MC_eff.fill(HIST("histITS_TPC_vs_pT"), particle.pt(), pdgbin);
+          MC_eff.fill(HIST("hist_gen_ITS_TPC_vs_pT"), particle.pt(), pdgbin);
           MC_eff.fill(HIST("histEffSkimming"), 2, pdgbin);
 
           if (passedTOF) {
-            MC_eff.fill(HIST("histITS_TPC_TOFvs_pT"), particle.pt(), pdgbin);
+            MC_eff.fill(HIST("hist_gen_ITS_TPC_TOF_vs_pT"), particle.pt(), pdgbin);
             MC_eff.fill(HIST("histEffSkimming"), 3, pdgbin);
           }
         }
       }
 
-      float TPCnumberClsFound = track.tpcNClsFound();
-      float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
-      float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
-      float Chi2perClusterTPC = track.tpcChi2NCl();
-      float Chi2perClusterITS = track.itsChi2NCl();
+      if ((particle.pdgCode() == 1000020030) | (particle.pdgCode() == -1000020030) | (particle.pdgCode() == 1000020040) | (particle.pdgCode() == -1000020040)) {
+        float TPCnumberClsFound = track.tpcNClsFound();
+        float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
+        float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
+        float Chi2perClusterTPC = track.tpcChi2NCl();
+        float Chi2perClusterITS = track.itsChi2NCl();
 
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
-        continue;
-      }
-
-      MC_eff.fill(HIST("histEffSkimming"), 4, pdgbin);
-
-      float nSigmaPion = track.tpcNSigmaPi();
-      float nSigmaProton = track.tpcNSigmaPr();
-      float nSigmaDeuteron = track.tpcNSigmaDe();
-      float nSigmaTriton = track.tpcNSigmaTr();
-      float nSigmaHe3 = track.tpcNSigmaHe();
-      float nSigmaHe4 = track.tpcNSigmaAl();
-
-      float TOFnSigmaPion = track.tofNSigmaPi();
-      float TOFnSigmaProton = track.tofNSigmaPr();
-      float TOFnSigmaDeuteron = track.tofNSigmaDe();
-      float TOFnSigmaTriton = track.tofNSigmaTr();
-      float TOFnSigmaHe3 = track.tofNSigmaHe();
-      float TOFnSigmaHe4 = track.tofNSigmaAl();
-
-      if (track.sign() > 0) {
-        if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_Pi"), track.pt());
-        if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_Pr"), track.pt());
-        if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_De"), track.pt());
-        if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_Tr"), track.pt());
-        if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_He3"), track.pt());
-        if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_He4"), track.pt());
-      }
-      if (track.sign() < 0) {
-        if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aPi"), track.pt());
-        if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aPr"), track.pt());
-        if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aDe"), track.pt());
-        if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aTr"), track.pt());
-        if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aHe3"), track.pt());
-        if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aHe4"), track.pt());
-      }
-
-      if (track.hasTOF()) {
-
-        if (track.sign() > 0) {
-          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh && TOFnSigmaPion > nsigmacutLow && TOFnSigmaPion < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_Pi"), track.pt());
-          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh && TOFnSigmaProton > nsigmacutLow && TOFnSigmaProton < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_Pr"), track.pt());
-          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh && TOFnSigmaDeuteron > nsigmacutLow && TOFnSigmaDeuteron < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_De"), track.pt());
-          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh && TOFnSigmaTriton > nsigmacutLow && TOFnSigmaTriton < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_Tr"), track.pt());
-          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh && TOFnSigmaHe3 > nsigmacutLow && TOFnSigmaHe3 < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_He3"), track.pt());
-          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh && TOFnSigmaHe4 > nsigmacutLow && TOFnSigmaHe4 < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_He4"), track.pt());
+        if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
+          continue;
         }
-        if (track.sign() < 0) {
-          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh && TOFnSigmaPion > nsigmacutLow && TOFnSigmaPion < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aPi"), track.pt());
-          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh && TOFnSigmaProton > nsigmacutLow && TOFnSigmaProton < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aPr"), track.pt());
-          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh && TOFnSigmaDeuteron > nsigmacutLow && TOFnSigmaDeuteron < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aDe"), track.pt());
-          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh && TOFnSigmaTriton > nsigmacutLow && TOFnSigmaTriton < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aTr"), track.pt());
-          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh && TOFnSigmaHe3 > nsigmacutLow && TOFnSigmaHe3 < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aHe3"), track.pt());
-          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh && TOFnSigmaHe4 > nsigmacutLow && TOFnSigmaHe4 < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aHe4"), track.pt());
+
+        MC_eff.fill(HIST("histEffSkimming"), 4, pdgbin);
+
+        if (passedITS) {
+          MC_eff.fill(HIST("hist_rec_ITS_vs_pT"), track.pt() * 2, pdgbin);
+          if (passedTPC) {
+            MC_eff.fill(HIST("hist_rec_ITS_TPC_vs_pT"), track.pt() * 2, pdgbin);
+            if (passedTOF) {
+              MC_eff.fill(HIST("hist_rec_ITS_TPC_TOF_vs_pT"), track.pt() * 2, pdgbin);
+            }
+          }
+        }
+      } else {
+        float TPCnumberClsFound = track.tpcNClsFound();
+        float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
+        float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
+        float Chi2perClusterTPC = track.tpcChi2NCl();
+        float Chi2perClusterITS = track.itsChi2NCl();
+
+        if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
+          continue;
+        }
+
+        MC_eff.fill(HIST("histEffSkimming"), 4, pdgbin);
+
+        if (passedITS) {
+          MC_eff.fill(HIST("hist_rec_ITS_vs_pT"), track.pt(), pdgbin);
+          if (passedTPC) {
+            MC_eff.fill(HIST("hist_rec_ITS_TPC_vs_pT"), track.pt(), pdgbin);
+            if (passedTOF) {
+              MC_eff.fill(HIST("hist_rec_ITS_TPC_TOF_vs_pT"), track.pt(), pdgbin);
+            }
+          }
         }
       }
     }

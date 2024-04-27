@@ -34,7 +34,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::math;
 
-struct upcJpsiCentralBarrel {
+struct UpcJpsiCentralBarrel {
   // configurable axes
   ConfigurableAxis IVMAxis{"IVMAxis", {350.0f, 0.0f, 4.5f}, "M_#it{inv} (GeV/#it{c}^{2})"};
   ConfigurableAxis ptAxis{"ptAxis", {250.0f, 0.1f, 3.0f}, "#it{p}_T (GeV/#it{c})"};
@@ -876,6 +876,6 @@ struct upcJpsiCentralBarrel {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<upcJpsiCentralBarrel>(cfgc, TaskName{"upc-jpsi-corr"}),
+    adaptAnalysisTask<UpcJpsiCentralBarrel>(cfgc, TaskName{"upc-jpsi-corr"}),
   };
 }

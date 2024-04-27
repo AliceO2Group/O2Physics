@@ -94,12 +94,16 @@ struct TaskPolarisationCharmHadrons {
 
   /// activate rotational background
   Configurable<int> nBkgRotations{"nBkgRotations", 0, "Number of rotated copies (background) per each original candidate"};
+  Configurable<float> minRotAngleMultByPi{"minRotAngleMultByPi", 5. / 6, "Minimum angle rotation for track rotation, to be multiplied by pi"};
+  Configurable<float> maxRotAngleMultByPi{"maxRotAngleMultByPi", 7. / 6, "Maximum angle rotation for track rotation, to be multiplied by pi"};
 
   /// output THnSparses
   Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", true, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
   Configurable<bool> activateTHnSparseCosThStarProduction{"activateTHnSparseCosThStarProduction", true, "Activate the THnSparse with cosThStar w.r.t. production axis"};
   Configurable<bool> activateTHnSparseCosThStarBeam{"activateTHnSparseCosThStarBeam", true, "Activate the THnSparse with cosThStar w.r.t. beam axis"};
   Configurable<bool> activateTHnSparseCosThStarRandom{"activateTHnSparseCosThStarRandom", true, "Activate the THnSparse with cosThStar w.r.t. random axis"};
+  float minInvMass{0.f};
+  float maxInvMass{1000.f};
 
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
@@ -147,7 +151,7 @@ struct TaskPolarisationCharmHadrons {
     massKaon = o2::constants::physics::MassKaonCharged;
     massDstar = o2::constants::physics::MassDStar;
     massLc = o2::constants::physics::MassLambdaCPlus;
-    bkgRotationAngleStep = constants::math::TwoPI / (nBkgRotations + 1); // nBkgRotations==0: 2π (no rotation); nBkgRotations==1: π; nBkgRotations==2: 2π/3, 4π/3; ...
+    bkgRotationAngleStep = (nBkgRotations > 1) ? (maxRotAngleMultByPi - minRotAngleMultByPi) * constants::math::PI / (nBkgRotations - 1) : 0.;
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisInvMassD0{configThnAxisInvMassD0, "#it{M}(D^{0}) (GeV/#it{c}^{2})"};
@@ -161,6 +165,10 @@ struct TaskPolarisationCharmHadrons {
     const AxisSpec thnAxisMlBkg{configThnAxisMlBkg, "ML bkg"};
     const AxisSpec thnAxisMlNonPrompt{configThnAxisMlNonPrompt, "ML non-prompt"};
     const AxisSpec thnAxisIsRotatedCandidate{2, -0.5f, 1.5f, "rotated bkg"};
+
+    auto invMassBins = thnAxisInvMass.binEdges;
+    minInvMass = invMassBins.front();
+    maxInvMass = invMassBins.back();
 
     if (doprocessDstarWithMl || doprocessDstarMcWithMl) {
       /// analysis for D*+ meson with ML, w/o rot. background axis
@@ -603,7 +611,8 @@ struct TaskPolarisationCharmHadrons {
         // polarization measured from the soft-pion daughter (*)
 
         massDau = massPi; // (*)
-        const float bkgRotAngle = bkgRotationAngleStep * bkgRotationId;
+        const float bkgRotAngle = (bkgRotationId > 0) ? minRotAngleMultByPi * constants::math::PI + bkgRotationAngleStep * (bkgRotationId - 1) : 0;
+
         std::array<float, 3> threeVecSoftPi{candidate.pxSoftPi() * std::cos(bkgRotAngle) - candidate.pySoftPi() * std::sin(bkgRotAngle), candidate.pxSoftPi() * std::sin(bkgRotAngle) + candidate.pySoftPi() * std::cos(bkgRotAngle), candidate.pzSoftPi()}; // we rotate the soft pion
         std::array<float, 3> threeVecD0Prong0{candidate.pVectorProng0()};
         std::array<float, 3> threeVecD0Prong1{candidate.pVectorProng1()};
@@ -659,7 +668,8 @@ struct TaskPolarisationCharmHadrons {
 
         /// mass-hypothesis-independent variables
         /// daughters momenta
-        const float bkgRotAngle = bkgRotationAngleStep * bkgRotationId;
+        const float bkgRotAngle = (bkgRotationId > 0) ? minRotAngleMultByPi * constants::math::PI + bkgRotationAngleStep * (bkgRotationId - 1) : 0;
+
         std::array<float, 3> threeVecLcProng0{candidate.pVectorProng0()};
         std::array<float, 3> threeVecLcRotatedProng1{candidate.pxProng1() * std::cos(bkgRotAngle) - candidate.pyProng1() * std::sin(bkgRotAngle), candidate.pxProng1() * std::sin(bkgRotAngle) + candidate.pyProng1() * std::cos(bkgRotAngle), candidate.pzProng1()};
         std::array<float, 3> threeVecLcProng2{candidate.pVectorProng2()};
@@ -737,6 +747,10 @@ struct TaskPolarisationCharmHadrons {
         }
 
       } // Lc->pKpi
+
+      if (invMassCharmHadForSparse < minInvMass || invMassCharmHadForSparse > maxInvMass) {
+        continue;
+      }
 
       float phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
       float thetaRandom = gRandom->Uniform(0.f, constants::math::PI);

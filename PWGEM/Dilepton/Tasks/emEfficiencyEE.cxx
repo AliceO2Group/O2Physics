@@ -19,6 +19,8 @@
 #include <THashList.h>
 #include <TLorentzVector.h>
 #include <TString.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPObject.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -41,6 +43,9 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "Field/MagneticField.h"
+#include "TGeoGlobalMagField.h"
 
 using std::cout;
 using std::endl;
@@ -103,7 +108,7 @@ constexpr static uint32_t gkMCEventFillMap = VarManager::ObjTypes::ReducedEventM
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkParticleMCFillMap = VarManager::ObjTypes::ParticleMC;
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses);
+void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar); // defines histograms for all tasks
 void SetBinsLinear(std::vector<double>& fBins, const double min, const double max, const unsigned int steps);
 
 struct AnalysisEventSelection {
@@ -112,6 +117,7 @@ struct AnalysisEventSelection {
   OutputObj<THashList> fOutputList{"QA"};
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
 
   HistogramManager* fHistMan;
   AnalysisCompositeCut* fEventCut;
@@ -128,7 +134,7 @@ struct AnalysisEventSelection {
       fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
       fHistMan->SetUseDefaultVariableNames(kTRUE);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-      DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;"); // define all histograms
+      DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;", fConfigAddEventHistogram); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());                 // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
@@ -423,6 +429,7 @@ struct AnalysisTrackSelection {
   ConfigurableAxis deltaphiResBins{"deltaphiResBins", {500, -0.5f, 0.5f}, "DeltaPhi binning for resolution"};
 
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
 
   // output lists
   OutputObj<THashList> fOutputQA{"SingleElectronQA"};
@@ -602,7 +609,7 @@ struct AnalysisTrackSelection {
       fHistManQA = new HistogramManager("SingleElectronQA", "aa", VarManager::kNVars);
       fHistManQA->SetUseDefaultVariableNames(kTRUE);
       fHistManQA->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-      DefineHistograms(fHistManQA, histClassesQA.Data()); // define all histograms
+      DefineHistograms(fHistManQA, histClassesQA.Data(), fConfigAddTrackHistogram); // define all histograms
       VarManager::SetUseVars(fHistManQA->GetUsedVars());  // provide the list of required variables so that VarManager knows what to fill
       fQASingleElectronList = fHistManQA->GetMainHistogramList();
     }
@@ -956,6 +963,10 @@ struct AnalysisSameEventPairing {
   // Partition<ReducedMCTracks> mcSkimmedElectrons = nabs(o2::aod::mcparticle::pdgCode) == 11;
   // Partition<aod::McParticles> mcNotSkimmedElectrons = nabs(o2::aod::mcparticle::pdgCode) == 11;
 
+  float mMagField = 0.0;
+  o2::parameters::GRPMagField* grpmag = nullptr;
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
+
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMCSignals{"cfgBarrelMCSignals", "", "Comma separated list of MC signals"};
   Configurable<double> fConfigMinPt{"cfgMinPtFidCut", 0., "Fiducial min Pt for MC signal"};
@@ -965,13 +976,23 @@ struct AnalysisSameEventPairing {
   Configurable<bool> fConfigRecWithMC{"cfgEffRecWithMCVars", false, "If true, fill also 3D histograms at reconstructed level with mc variables"};
   Configurable<bool> fConfigFillLS{"cfgEffFillLS", false, "If true, fill LS histograms"};
   Configurable<bool> fConfigIsPrimary{"cfgIsPrimary", false, "If true, fill only with primary particles"};
+  Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
+  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> fUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
+  Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // 2D histos: mee and ptee
   ConfigurableAxis pteeBins{"pteeBins", {100, 0.f, 10.f}, "Ptee binning"};
   ConfigurableAxis meeBins{"meeBins", {600, 0.f, 3.5f}, "Mee binning"};
 
   // output lists
+  OutputObj<THashList> fOutputQA{"DielectronQA"};
   HistogramRegistry registry{"HistoSameEventSelection", {}, OutputObjHandlingPolicy::AnalysisObject};
+  THashList* fQADielectronList; // QA in case on with histo from manager outputs
 
   // Cuts and signals
   std::vector<AnalysisCompositeCut> fTrackCuts; // list of track cuts to init properly the histos
@@ -983,10 +1004,21 @@ struct AnalysisSameEventPairing {
   std::vector<std::shared_ptr<TH2>> fHistRecPair;
   std::vector<std::shared_ptr<TH2>> fHistRecPairMC;
 
-  // QA: to be defined
+  // QA
+  HistogramManager* fHistManQA; // histo manager
 
   void init(o2::framework::InitContext&)
   {
+    fCurrentRun = 0;
+
+    ccdb->setURL(ccdburl.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    // Create list output for QA
+    fQADielectronList = new THashList;
+    fQADielectronList->SetOwner(kTRUE);
+    fQADielectronList->SetName("DEQA");
 
     // Binning 2D histos
     AxisSpec axisPtee{pteeBins, "#it{p}_{T,ee} (GeV/#it{c})"};
@@ -1054,6 +1086,39 @@ struct AnalysisSameEventPairing {
         }
       }
     }
+
+    // Configure QA histogram classes
+    if (fConfigQA) {
+      std::vector<TString> names;
+      TString histClassesQA = "";
+      for (auto& cut : fTrackCuts) {
+
+        // All passing dileptons
+        names = {
+          Form("PairsBarrelSEPM_%s", cut.GetName()),
+          Form("PairsBarrelSEPP_%s", cut.GetName()),
+          Form("PairsBarrelSEMM_%s", cut.GetName())};
+        histClassesQA += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+
+        // All reconstructed dileptons matched to a MC signal
+        std::vector<TString> mcnamesreco;
+        for (unsigned int isig = 0; isig < fMCSignals.size(); ++isig) {
+          names = {
+            Form("PairsBarrelSEPM_%s_%s", cut.GetName(), fMCSignals.at(isig).GetName()),
+            Form("PairsBarrelSEPP_%s_%s", cut.GetName(), fMCSignals.at(isig).GetName()),
+            Form("PairsBarrelSEMM_%s_%s", cut.GetName(), fMCSignals.at(isig).GetName())};
+          histClassesQA += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+        }
+      }
+
+      fHistManQA = new HistogramManager("DielectronQA", "aa", VarManager::kNVars);
+      fHistManQA->SetUseDefaultVariableNames(kTRUE);
+      fHistManQA->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+      DefineHistograms(fHistManQA, histClassesQA.Data(), fConfigAddSEPHistogram); // define all histograms
+      VarManager::SetUseVars(fHistManQA->GetUsedVars());                          // provide the list of required variables so that VarManager knows what to fill
+      fQADielectronList = fHistManQA->GetMainHistogramList();
+    }
+    fOutputQA.setObject(fQADielectronList);
   }
 
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
@@ -1132,7 +1197,6 @@ struct AnalysisSameEventPairing {
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TTracksMC>
   void runDataPairing(TEvent const& event, TTracks const& tracks, TTracksMC const& tracksMC)
   {
-
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     // fill event information which might be needed in histograms that combine track and event properties
     VarManager::FillEvent<TEventFillMap>(event);
@@ -1271,6 +1335,27 @@ struct AnalysisSameEventPairing {
       //
       VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2);
 
+      // Fill the QA for all passing tracks
+      if (fConfigQA) {
+        for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
+          if (twoTrackFilter & (uint8_t(1) << j)) {
+            if (!fConfigFillLS) {
+              fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+            } else {
+              if (uls) {
+                fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+              } else {
+                if (t1.sign() > 0) {
+                  fHistManQA->FillHistClass(Form("PairsBarrelSEPP_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+                } else {
+                  fHistManQA->FillHistClass(Form("PairsBarrelSEMM_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+                }
+              }
+            }
+          }
+        }
+      }
+
       // run MC matching for this pair
       uint32_t mcDecision = 0;
       int isig = 0;
@@ -1311,11 +1396,22 @@ struct AnalysisSameEventPairing {
             if (twoTrackFilter & (uint8_t(1) << j)) {
               if (!fConfigFillLS) {
                 fHistRecPair[j * fMCSignals.size() + i]->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
+                if (fConfigQA)
+                  fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fTrackCuts.at(j).GetName(), fMCSignals.at(i).GetName()), VarManager::fgValues);
               } else {
                 if (uls) {
                   fHistRecPair[j * (2 * fMCSignals.size()) + 2 * i]->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
+                  if (fConfigQA)
+                    fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fTrackCuts.at(j).GetName(), fMCSignals.at(i).GetName()), VarManager::fgValues);
                 } else {
                   fHistRecPair[j * (2 * fMCSignals.size()) + 2 * i + 1]->Fill(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt]);
+                  if (fConfigQA) {
+                    if (t1.sign() > 0) {
+                      fHistManQA->FillHistClass(Form("PairsBarrelSEPP_%s_%s", fTrackCuts.at(j).GetName(), fMCSignals.at(i).GetName()), VarManager::fgValues);
+                    } else {
+                      fHistManQA->FillHistClass(Form("PairsBarrelSEMM_%s_%s", fTrackCuts.at(j).GetName(), fMCSignals.at(i).GetName()), VarManager::fgValues);
+                    }
+                  }
                 }
               }
             }
@@ -1386,6 +1482,22 @@ struct AnalysisSameEventPairing {
                               soa::Filtered<MyBarrelTracksSelected> const& tracks,
                               ReducedMCTracks const& tracksMC)
   {
+
+    if (fCurrentRun != event.runNumber()) {
+      if (fUseRemoteField.value) {
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, event.timestamp());
+        if (grpmag != nullptr) {
+          mMagField = grpmag->getNominalL3Field();
+        } else {
+          LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", event.timestamp());
+        }
+        VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+      } else {
+        VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+      }
+      fCurrentRun = event.runNumber();
+    }
+
     runDataPairing<gkEventFillMap, gkTrackFillMap>(event, tracks, tracksMC);
   }
 
@@ -1400,9 +1512,26 @@ struct AnalysisSameEventPairing {
   }
 
   void processDataToEENoSkimmed(soa::Filtered<MyEventsSelectedNoSkimmed>::iterator const& event,
+                                aod::BCsWithTimestamps const&,
                                 soa::Filtered<MyBarrelTracksSelectedNoSkimmed> const& tracks,
                                 aod::McParticles const& tracksMC)
   {
+    auto bc = event.template bc_as<aod::BCsWithTimestamps>();
+    if (fCurrentRun != bc.runNumber()) {
+      if (fUseRemoteField.value) {
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+        if (grpmag != nullptr) {
+          mMagField = grpmag->getNominalL3Field();
+        } else {
+          LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
+        }
+        VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+      } else {
+        VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+      }
+      fCurrentRun = bc.runNumber();
+    }
+
     runDataPairing<gkEventFillMapNoSkimmed, gkTrackFillMapNoSkimmed>(event, tracks, tracksMC);
   }
 
@@ -1440,7 +1569,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc)};
 }
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses)
+void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar)
 {
   //
   // Define here the histograms for all the classes required in analysis.
@@ -1452,22 +1581,21 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     TString classStr = objArray->At(iclass)->GetName();
     histMan->AddHistClass(classStr.Data());
 
+    TString histName = configVar.value;
     // NOTE: The level of detail for histogramming can be controlled via configurables
     if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "trigger,mc");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", histName);
     }
 
-    if (classStr.Contains("Track")) {
+    if (classStr.Contains("Track") && !classStr.Contains("Pairs")) {
       if (classStr.Contains("Barrel")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "kine,its,tpcpid,dca,tofpid,mc");
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
       }
     }
 
     if (classStr.Contains("Pairs")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "vertexing-barrel");
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon", "vertexing-forward");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
     }
-
     if (classStr.Contains("MCTruthGenPair")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_pair");
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt", "MC generator p_{T} distribution", false, 200, 0.0, 20.0, VarManager::kMCPt);
@@ -1480,5 +1608,5 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     if (classStr.Contains("DileptonsSelected")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel");
     }
-  }
-} // end loop over histogram classes
+  } // end loop over histogram classes
+}
