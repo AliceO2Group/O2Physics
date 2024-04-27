@@ -136,7 +136,7 @@ struct centralityStudy {
     histos.fill(HIST("hCollisionSelection"), 9 /* Not at same bunch pile-up */);
 
     // if we got here, we also finally fill the FT0C histogram, please
-    histos.fill(HIST("hNPVContributors"), collision.MultPVTotalContributors());
+    histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
 
     if (do2DPlots) {
