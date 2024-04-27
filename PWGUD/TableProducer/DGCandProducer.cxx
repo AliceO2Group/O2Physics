@@ -215,10 +215,10 @@ struct DGCandProducer {
     registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
     registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
     registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
-    
-    std::string labels[nXbinsInStatH] = {"all","hasBC","FITveto","MID trk","global PV trk","not global PB trk",
-                                         "ITS-only PV trk","TOF PV trk fraction","n PV trks","PID","pt","eta","net charge",
-                                         "inv mass","evsel TF border","evsel no pile-up","evsel ITSROF","evsel z-vtx","evsel ITSTPC vtx","evsel TRD vtx","evsel TOF vtx","",""};
+
+    std::string labels[nXbinsInStatH] = {"all", "hasBC", "FITveto", "MID trk", "global PV trk", "not global PB trk",
+                                         "ITS-only PV trk", "TOF PV trk fraction", "n PV trks", "PID", "pt", "eta", "net charge",
+                                         "inv mass", "evsel TF border", "evsel no pile-up", "evsel ITSROF", "evsel z-vtx", "evsel ITSTPC vtx", "evsel TRD vtx", "evsel TOF vtx", "", ""};
 
     registry.get<TH1>(HIST("reco/Stat"))->SetNdivisions(nXbinsInStatH, "X");
     for (int iXbin(1); iXbin < nXbinsInStatH + 1; iXbin++) {

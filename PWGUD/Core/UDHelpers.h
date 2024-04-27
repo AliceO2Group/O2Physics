@@ -627,17 +627,17 @@ bool goodCollision(T const& coll, DGCutparHolder const& diffCuts)
   if (sels[0])
     accepted = accepted && cutNoTimeFrameBorder(coll);
   if (sels[1])
-    accepted = accepted &&  cutNoSameBunchPileup(coll);
+    accepted = accepted && cutNoSameBunchPileup(coll);
   if (sels[2])
-    accepted = accepted &&  cutNoITSROFrameBorder(coll);
+    accepted = accepted && cutNoITSROFrameBorder(coll);
   if (sels[3])
-    accepted = accepted &&  cutIsGoodZvtxFT0vsPV(coll);
+    accepted = accepted && cutIsGoodZvtxFT0vsPV(coll);
   if (sels[4])
-    accepted = accepted &&  cutIsVertexITSTPC(coll);
+    accepted = accepted && cutIsVertexITSTPC(coll);
   if (sels[5])
-    accepted = accepted &&  cutIsVertexTRDmatched(coll);
+    accepted = accepted && cutIsVertexTRDmatched(coll);
   if (sels[6])
-    accepted = accepted &&  cutIsVertexTOFmatched(coll);
+    accepted = accepted && cutIsVertexTOFmatched(coll);
 
   return accepted;
 }
