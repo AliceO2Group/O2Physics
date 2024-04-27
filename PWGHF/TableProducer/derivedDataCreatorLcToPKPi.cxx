@@ -74,6 +74,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   SliceCache cache;
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
+  using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc>>;
@@ -118,7 +119,7 @@ struct HfDerivedDataCreatorLcToPKPi {
     }
   };
 
-  template <typename T>
+  template <bool isMC, typename T>
   // void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
   void fillTablesCollision(const T& collision)
   {
@@ -140,19 +141,25 @@ struct HfDerivedDataCreatorLcToPKPi {
       rowCollId(
         collision.globalIndex());
     }
+    if constexpr (isMC) {
+      if (fillMcCollId) {
+        // Save pair (collision.mcCollisionId(), rowCollBase.lastIndex())
+      }
+    }
   }
 
   template <typename T>
-  void fillTablesMcCollision(const T& collision)
+  void fillTablesMcCollision(const T& mcCollision)
   {
     if (fillMcCollBase) {
       rowMcCollBase(
-        collision.posX(),
-        collision.posY(),
-        collision.posZ());
+        mcCollision.posX(),
+        mcCollision.posY(),
+        mcCollision.posZ());
     }
     if (fillMcCollId) {
-      std::vector<int> ids{};
+      std::vector<int> ids;
+      // Fill vector of collision indices matched to mcCollision.globalIndex()
       rowMcCollId(
         ids);
     }
@@ -294,7 +301,7 @@ struct HfDerivedDataCreatorLcToPKPi {
         continue;
       }
       // fillTablesCollision(collision, 0, collision.bc().runNumber());
-      fillTablesCollision(collision);
+      fillTablesCollision<isMc>(collision);
 
       // Fill candidate properties
       reserveTable(rowCandidateBase, fillCandidateBase, sizeTableCand);
@@ -385,7 +392,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processData, "Process data", true);
 
-  void processMcSig(CollisionsWCentMult const& collisions,
+  void processMcSig(CollisionsWMcCentMult const& collisions,
                     SelectedCandidatesMc const&,
                     TypeMcCollisions const& mcCollisions,
                     MatchedGenCandidatesMc const& mcParticles,
@@ -397,7 +404,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcSig, "Process MC only for signals", false);
 
-  void processMcBkg(CollisionsWCentMult const& collisions,
+  void processMcBkg(CollisionsWMcCentMult const& collisions,
                     SelectedCandidatesMc const&,
                     TypeMcCollisions const& mcCollisions,
                     MatchedGenCandidatesMc const& mcParticles,
@@ -409,7 +416,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcBkg, "Process MC only for background", false);
 
-  void processMcAll(CollisionsWCentMult const& collisions,
+  void processMcAll(CollisionsWMcCentMult const& collisions,
                     SelectedCandidatesMc const&,
                     TypeMcCollisions const& mcCollisions,
                     MatchedGenCandidatesMc const& mcParticles,
@@ -432,7 +439,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processDataMl, "Process data with ML", false);
 
-  void processMcMlSig(CollisionsWCentMult const& collisions,
+  void processMcMlSig(CollisionsWMcCentMult const& collisions,
                       SelectedCandidatesMcMl const&,
                       TypeMcCollisions const& mcCollisions,
                       MatchedGenCandidatesMc const& mcParticles,
@@ -444,7 +451,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcMlSig, "Process MC with ML only for signals", false);
 
-  void processMcMlBkg(CollisionsWCentMult const& collisions,
+  void processMcMlBkg(CollisionsWMcCentMult const& collisions,
                       SelectedCandidatesMcMl const&,
                       TypeMcCollisions const& mcCollisions,
                       MatchedGenCandidatesMc const& mcParticles,
@@ -456,7 +463,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcMlBkg, "Process MC with ML only for background", false);
 
-  void processMcMlAll(CollisionsWCentMult const& collisions,
+  void processMcMlAll(CollisionsWMcCentMult const& collisions,
                       SelectedCandidatesMcMl const&,
                       TypeMcCollisions const& mcCollisions,
                       MatchedGenCandidatesMc const& mcParticles,
