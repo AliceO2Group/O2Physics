@@ -1763,7 +1763,7 @@ void InternalValidation()
 
     // *) If I reached max number of events, ignore the remaining collisions:
     if (MaxNumberOfEvents()) {
-      if (iv.fInternalValidationForceBailout) {   
+      if (iv.fInternalValidationForceBailout) {
         BailOut();
       }
     }

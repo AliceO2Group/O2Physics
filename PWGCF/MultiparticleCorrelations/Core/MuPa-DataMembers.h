@@ -168,7 +168,7 @@ struct InternalValidation {
   TList* fInternalValidationList = NULL;              // list to hold all objects for internal validation
   TProfile* fInternalValidationFlagsPro = NULL;       // profile to hold all flags for internal validation
   Bool_t fUseInternalValidation = kFALSE;             // use internal validation
-  Bool_t fInternalValidationForceBailout = kFALSE;    // force bailout after fnEventsInternalValidation is reached. In HL, for each real event, I do fnEventsInternalValidation events 
+  Bool_t fInternalValidationForceBailout = kFALSE;    // force bailout after fnEventsInternalValidation is reached. In HL, for each real event, I do fnEventsInternalValidation events
   UInt_t fnEventsInternalValidation = 0;              // how many events will be sampled on-the-fly for internal validation
   TString* fHarmonicsOptionInternalValidation = NULL; // see .cxx for full documentation
   Bool_t fRescaleWithTheoreticalInput = kFALSE;       // if kTRUE, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1
