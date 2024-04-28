@@ -134,8 +134,15 @@ o2physics_add_dpl_workflow(kaonkaonanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
- o2physics_add_dpl_workflow(lambdav2
-    SOURCES lambdav2.cxx
+o2physics_add_dpl_workflow(kstarpbpbpol
+    SOURCES kstarpbpbpol.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(phipbpbpol
+    SOURCES phipbpbpol.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+
 
