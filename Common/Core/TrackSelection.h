@@ -53,7 +53,8 @@ class TrackSelection
     Run3ITSibAny,
     Run3ITSallAny,
     Run3ITSall7Layers,
-    Run3ITSibTwo
+    Run3ITSibTwo,
+    Run3ITSibFirst
   };
 
   // Flags for the selection of the DCAxy

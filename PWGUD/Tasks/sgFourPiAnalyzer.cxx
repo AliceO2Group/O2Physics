@@ -53,6 +53,7 @@ struct SGFourPiAnalyzer {
   Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};
   Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
+  Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
   HistogramRegistry registry{
     "registry",
     {
@@ -101,7 +102,7 @@ struct SGFourPiAnalyzer {
     //  int truegapSide = sgSelector.trueGap(collision);
     // int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
-    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut};
     // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);

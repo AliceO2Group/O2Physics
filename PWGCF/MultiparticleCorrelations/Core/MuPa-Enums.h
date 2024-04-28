@@ -103,10 +103,9 @@ enum eEventHistograms {
 };
 
 enum eEventCuts {
-  eTrigger = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
-  eUseTrigger,
-  eUseSel7,
-  eUseSel8,
+  eTrigger = eEventHistograms_N, // yes, because I do not want to duplicate the same enum's from eEventHistograms here
+  eSel7,
+  eSel8,
   eCentralityEstimator,
   eEventCuts_N
 };
@@ -129,7 +128,7 @@ enum eParticleHistograms2D {
 };
 
 enum eParticleCuts {
-  eTBI = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
+  eTBI = eParticleHistograms_N, // yes, because I do not want to duplicate the same enum's from eParticleHistograms here
   eParticleCuts_N
 };
 

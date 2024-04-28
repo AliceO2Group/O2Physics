@@ -183,6 +183,14 @@ class DGSelector
     if (sels[4] && !udhelpers::cutIsVertexITSTPC(collision)) {
       return 17;
     }
+    // is ITS-TPC track
+    if (sels[5] && !udhelpers::cutIsVertexTRDmatched(collision)) {
+      return 18;
+    }
+    // is ITS-TPC track
+    if (sels[6] && !udhelpers::cutIsVertexTOFmatched(collision)) {
+      return 19;
+    }
 
     // if we arrive here then the event is good!
     return 0;
