@@ -52,6 +52,7 @@ struct lambdaAnalysis_pb {
   Configurable<float> cEtaCut{"cEtaCut", 0.8, "Pseudorapidity cut"};
   Configurable<float> cDcaz{"cDcazMin", 1., "Minimum DCAz"};
   Configurable<float> cDcaxy{"cDcaxyMin", 0.1, "Minimum DCAxy"};
+  Configurable<bool> isonlyQC{"isonlyQC", false, "only QC"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
   Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
@@ -127,6 +128,7 @@ struct lambdaAnalysis_pb {
     histos.add("QAafter/Proton/h2d_pr_nsigma_tpc_pt", " Protons", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Proton/h2d_Prpi_nsigma_tpc_p", " Protons pion", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Proton/h2d_Prka_nsigma_tpc_p", " Protons kaon", kTH2F, {axisPt_pid, axisTPCNsigma});
+    histos.add("QAafter/Proton/h2d_Prel_nsigma_tpc_p", " Protons electron", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tpc_p", " Protons", kTH2F, {axisP_pid, axisTPCNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_pt", " Protons", kTH2F, {axisPt_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_p", " Protons", kTH2F, {axisP_pid, axisTOFNsigma});
@@ -139,6 +141,7 @@ struct lambdaAnalysis_pb {
     histos.add("QAafter/Kaon/h2d_ka_dEdx_p", "TPC Signal Kaon", kTH2F, {axisP_pid, axisdEdx});
     histos.add("QAafter/Kaon/h2d_Kapi_nsigma_tpc_p", " Kaons pion", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_Kapr_nsigma_tpc_p", " Kaons proton", kTH2F, {axisP_pid, axisTPCNsigma});
+    histos.add("QAafter/Kaon/h2d_Kael_nsigma_tpc_p", " Kaons electron", kTH2F, {axisP_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tpc_pt", " Kaons", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tpc_p", " Kaons", kTH2F, {axisP_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_pt", " Kaons", kTH2F, {axisPt_pid, axisTOFNsigma});
@@ -221,6 +224,7 @@ struct lambdaAnalysis_pb {
     float tpcNsigmaPi = std::abs(candidate.tpcNSigmaPi());
     float tpcNsigmaKa = std::abs(candidate.tpcNSigmaKa());
     float tpcNsigmaPr = std::abs(candidate.tpcNSigmaPr());
+    float tpcNsigmaEl = std::abs(candidate.tpcNSigmaEl());
     float tofNsigmaPi = std::abs(candidate.tofNSigmaPi());
     float tofNsigmaKa = std::abs(candidate.tofNSigmaKa());
     float tofNsigmaPr = std::abs(candidate.tofNSigmaPr());
@@ -255,7 +259,7 @@ struct lambdaAnalysis_pb {
     } else {
       tofPIDPassed = true;
       for (int i = 0; i < nitr - 1; ++i) {
-        if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaPr < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmaTpc && tpcNsigmaKa > cRejNsigmaTpc)) {
+        if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaPr < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmaTpc && tpcNsigmaKa > cRejNsigmaTpc && tpcNsigmaEl > cRejNsigmaTpc)) {
           tpcPIDPassed = true;
         }
       }
@@ -279,6 +283,7 @@ struct lambdaAnalysis_pb {
     float tpcNsigmaPi = std::abs(candidate.tpcNSigmaPi());
     float tpcNsigmaKa = std::abs(candidate.tpcNSigmaKa());
     float tpcNsigmaPr = std::abs(candidate.tpcNSigmaPr());
+    float tpcNsigmaEl = std::abs(candidate.tpcNSigmaEl());
     float tofNsigmaPi = std::abs(candidate.tofNSigmaPi());
     float tofNsigmaKa = std::abs(candidate.tofNSigmaKa());
     float tofNsigmaPr = std::abs(candidate.tofNSigmaPr());
@@ -315,7 +320,7 @@ struct lambdaAnalysis_pb {
     } else {
       tofPIDPassed = true;
       for (int i = 0; i < nitr - 1; ++i) {
-        if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaKa < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmaTpc && tpcNsigmaPr > cRejNsigmaTpc)) {
+        if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaKa < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmaTpc && tpcNsigmaPr > cRejNsigmaTpc && tpcNsigmaEl > cRejNsigmaTpc)) {
           tpcPIDPassed = true;
         }
       }
@@ -396,6 +401,7 @@ struct lambdaAnalysis_pb {
         histos.fill(HIST("QAafter/Proton/h2d_pr_dEdx_p"), p_ptot, trkPr.tpcSignal());
         histos.fill(HIST("QAafter/Proton/h2d_Prpi_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaPi());
         histos.fill(HIST("QAafter/Proton/h2d_Prka_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaKa());
+        histos.fill(HIST("QAafter/Proton/h2d_Prel_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaEl());
         histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, _tpcnsigmaPr);
         histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_pt"), _ptPr, _tpcnsigmaPr);
         if (!cUseTpcOnly && trkPr.hasTOF()) {
@@ -416,6 +422,7 @@ struct lambdaAnalysis_pb {
         histos.fill(HIST("QAafter/Kaon/h2d_ka_dEdx_p"), k_ptot, trkKa.tpcSignal());
         histos.fill(HIST("QAafter/Kaon/h2d_Kapi_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaPi());
         histos.fill(HIST("QAafter/Kaon/h2d_Kapr_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaPr());
+        histos.fill(HIST("QAafter/Kaon/h2d_Kael_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaEl());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_p"), k_ptot, _tpcnsigmaKa);
         histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_pt"), _ptKa, _tpcnsigmaKa);
         if (!cUseTpcOnly && trkKa.hasTOF()) {
@@ -428,6 +435,8 @@ struct lambdaAnalysis_pb {
         }
       }
 
+      if (isonlyQC)
+        continue;
       // Invariant mass reconstruction.
       p1.SetXYZM(_pxPr, _pyPr, _pzPr, MassProton);
       p2.SetXYZM(_pxKa, _pyKa, _pzKa, MassKaonCharged);
@@ -517,22 +526,6 @@ struct lambdaAnalysis_pb {
     // LOGF(info, " collisions: Index = %d %d", collision.globalIndex(),tracks.size());
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
     fillDataHistos<false, false>(tracks, tracks, collision.cent());
-
-    // get proton and kaon pT-spectra
-    for (auto const& track : tracks) {
-      if (!selTracks(track))
-        continue;
-
-      float p = TMath::Sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
-
-      if (selectionPIDKaon(track, p)) {
-        histos.fill(HIST("QAChecks/h1d_ka_pt"), track.pt());
-      }
-
-      if (selectionPIDProton(track, p)) {
-        histos.fill(HIST("QAChecks/h1d_pr_pt"), track.pt());
-      }
-    }
   }
 
   PROCESS_SWITCH(lambdaAnalysis_pb, processData, "Process for Same Event Data", true);

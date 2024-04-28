@@ -24,6 +24,7 @@
 #include "DetectorsVertexing/PVertexer.h"      // for dca recalculation
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
@@ -385,8 +386,24 @@ struct HfCandidateSigmac0plusplusMc {
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
   // using LambdacMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
+  float zPvPosMax{1000.f};
+
   /// @brief init function
-  void init(InitContext const&) {}
+  void init(InitContext& initContext)
+  {
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name.compare("hf-candidate-creator-3prong") == 0) { // here we assume that the hf-candidate-creator-3prong is in the workflow
+        for (const auto& option : device.options) {
+          if (option.name.compare("zPvPosMax") == 0) {
+            zPvPosMax = option.defaultValue.get<float>();
+            break;
+          }
+        }
+        break;
+      }
+    }
+  }
 
   /// @brief dummy process function, to be run on data
   /// @param
@@ -397,7 +414,8 @@ struct HfCandidateSigmac0plusplusMc {
   /// @param mcParticles table of generated particles
   void processMc(aod::McParticles const& mcParticles,
                  aod::TracksWMc const& tracks,
-                 LambdacMc const& candsLc /*, const LambdacMcGen&*/)
+                 LambdacMc const& candsLc /*, const LambdacMcGen&*/,
+                 aod::McCollisions const&)
   {
 
     // Match reconstructed candidates.
@@ -468,6 +486,13 @@ struct HfCandidateSigmac0plusplusMc {
     for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
+
+      auto mcCollision = particle.mcCollision();
+      float zPv = mcCollision.posZ();
+      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+        rowMCMatchScGen(flag, origin);
+        continue;
+      }
 
       /// 3 levels:
       ///   1. Σc0 → Λc+ π-,+

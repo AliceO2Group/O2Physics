@@ -116,7 +116,7 @@ struct AnalysisEventSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, typename TEvent, typename TEventsMC>
-  void runSelection(TEvent const& event, TEventsMC const& mcEvents)
+  void runSelection(TEvent const& event, TEventsMC const& /*mcEvents*/)
   {
     // Reset the values array
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -222,7 +222,7 @@ struct AnalysisTrackSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvent, typename TTracks, typename TEventsMC, typename TTracksMC>
-  void runSelection(TEvent const& event, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  void runSelection(TEvent const& event, TTracks const& tracks, TEventsMC const& /*eventsMC*/, TTracksMC const& /*tracksMC*/)
   {
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
     // fill event information which might be needed in histograms that combine track and event properties
@@ -382,7 +382,7 @@ struct AnalysisMuonSelection {
   }
 
   template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TMuonFillMap, uint32_t TMuonMCFillMap, typename TEvent, typename TMuons, typename TEventsMC, typename TMuonsMC>
-  void runSelection(TEvent const& event, TMuons const& muons, TEventsMC const& eventsMC, TMuonsMC const& muonsMC)
+  void runSelection(TEvent const& event, TMuons const& muons, TEventsMC const& /*eventsMC*/, TMuonsMC const& /*muonsMC*/)
   {
     // cout << "Event ######################################" << endl;
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
@@ -685,7 +685,7 @@ struct AnalysisSameEventPairing {
   }
 
   template <int TPairType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2, typename TEventsMC, typename TTracksMC>
-  void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& /*eventsMC*/, TTracksMC const& /*tracksMC*/)
   {
     if (fCurrentRun != event.runNumber()) {
       if (fUseRemoteField.value) {
@@ -1084,7 +1084,7 @@ struct AnalysisDileptonTrack {
 
   // Template function to run pair - track combinations
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TDileptons, typename TEventsMC, typename TTracksMC>
-  void runDileptonTrack(TEvent const& event, TTracks const& tracks, TDileptons const& dileptons, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  void runDileptonTrack(TEvent const& event, TTracks const& tracks, TDileptons const& dileptons, TEventsMC const& /*eventsMC*/, TTracksMC const& /*tracksMC*/)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesTrack);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
@@ -1272,7 +1272,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
 
     if (classStr.Contains("Track") && !classStr.Contains("Pairs")) {
       if (classStr.Contains("Barrel")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid,mc");
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid,mc,mcMother");
       }
       if (classStr.Contains("Muon")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
@@ -1290,15 +1290,17 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
 
     if (classStr.Contains("MCTruthGenPair")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_pair");
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt", "MC generator p_{T} distribution", false, 200, 0.0, 20.0, VarManager::kMCPt);
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 500, -5.0, 5.0, VarManager::kMCEta);
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 500, -6.3, 6.3, VarManager::kMCPhi);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt", "MC generator p_{T} distribution", false, 120, 0.0, 30.0, VarManager::kMCPt);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 200, 2.5, 4.0, VarManager::kMCEta);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Rapidity", "MC generator y distribution", false, 150, 2.5, 4.0, VarManager::kMCY);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 50, 0.0, 2. * TMath::Pi(), VarManager::kMCPhi);
     }
     if (classStr.Contains("MCTruthGen")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth");
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt", "MC generator p_{T} distribution", false, 200, 0.0, 20.0, VarManager::kMCPt);
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 500, -5.0, 5.0, VarManager::kMCEta);
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 500, -6.3, 6.3, VarManager::kMCPhi);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt", "MC generator p_{T} distribution", false, 120, 0.0, 30.0, VarManager::kMCPt);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 200, 2.5, 4.0, VarManager::kMCEta);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Rapidity", "MC generator y distribution", false, 150, 2.5, 4.0, VarManager::kMCY);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 50, 0.0, 2. * TMath::Pi(), VarManager::kMCPhi);
     }
     if (classStr.Contains("DileptonsSelected")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,dimuon");

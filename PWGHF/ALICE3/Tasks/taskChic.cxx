@@ -204,7 +204,7 @@ struct HfTaskChicMc {
     for (const auto& particle : mcParticles) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
         auto mchic = o2::constants::physics::MassChiC1; // chi_c1(1p)
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, mchic)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), mchic)) > yCandMax) {
           continue;
         }
 
