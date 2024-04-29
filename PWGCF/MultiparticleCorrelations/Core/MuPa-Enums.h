@@ -141,6 +141,13 @@ enum eAsFunctionOf {
   eAsFunctionOf_N
 }; // prefix is needed, to avoid conflict with enum eKinematics
 
+enum eNUAPDF {
+  ePhiNUAPDF = 0,
+  ePtNUAPDF,
+  eEtaNUAPDF,
+  eNUAPDF_N
+};
+
 enum eqvectorKine { // Here "kine" originally meant "kinematic", i.e. vs. pt or vs. eta, now it's general.
   PTq = 0,
   ETAq,
