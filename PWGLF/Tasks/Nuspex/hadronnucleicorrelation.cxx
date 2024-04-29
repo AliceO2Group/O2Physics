@@ -331,9 +331,6 @@ struct hadronnucleicorrelation {
       if (abs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > cutzvertex)
         continue;
 
-      if (track.pt() > pTA.value.at(nBins) * 2 || track.pt() < pTA.value.at(0))
-        continue;
-
       if (doQA) {
         QA.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
         QA.fill(HIST("QA/hTPCchi2"), track.tpcChi2NCl());
@@ -347,6 +344,9 @@ struct hadronnucleicorrelation {
         QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr"), track.pt() * track.sign(), track.tofNSigmaPr());
         QA.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
       }
+
+      if (track.pt() > pTA.value.at(nBins) * 2 || track.pt() < pTA.value.at(0))
+        continue;
 
       bool isPr = false;
       bool isAntiPr = false;
