@@ -21,7 +21,7 @@
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Tasks/SGTrackSelector.h"
+#include "PWGUD/Core/SGTrackSelector.h"
 #define mpion 0.1396
 #define mmuon 0.1057
 #define mkaon 0.4937

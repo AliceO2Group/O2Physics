@@ -104,7 +104,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Default configuration, booking, binning and cuts:
     DefaultConfiguration();
-    DefaultBooking();
+    DefaultBooking(); // here I decide only which histograms are booked, not details like binning, etc. That's done later in Book* member functions.
     DefaultBinning();
     DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
@@ -132,6 +132,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookCorrelationsHistograms();
     BookWeightsHistograms();
     BookNestedLoopsHistograms();
+    BookNUAHistograms();
     BookInternalValidationHistograms();
     BookTest0Histograms();
     BookTheRest(); // here I book everything that was not sorted (yet) in the specific functions above
@@ -212,7 +213,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // F) Process only converted simulated Run 2 data:
-  void processSim_Run2(aod::Collision const&) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
+  void processSim_Run2(aod::Collision const&) // TBI 20240424 not ready yet, just a dummy to version to get later "doprocess..." variable.
   {
     // Steer<eSim_Run2>(collision, tracks);
   }
@@ -231,7 +232,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
-  void processRecSim_Run1(aod::Collision const&) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
+  void processRecSim_Run1(aod::Collision const&) // TBI 20240424 not ready yet, just a dummy to version to get later "doprocess..." variable.
   {
     // Steer<eRecSim_Run1>(collision, tracks);
   }
@@ -240,7 +241,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // I) Process only converted simulated Run 1 data.
-  void processSim_Run1(aod::Collision const&) // TBI 20240224 not ready yet, this is just dummy to version to get later "doprocess..." variable
+  void processSim_Run1(aod::Collision const&) // TBI 20240424 not ready yet, just a dummy to version to get later "doprocess..." variable.
   {
     // Steer<eSim_Run1>(collision, tracks);
   }

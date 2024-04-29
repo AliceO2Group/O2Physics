@@ -611,7 +611,7 @@ struct QaEfficiency {
       registry->add(hPtEtaGenerated[histogramIndex].data(), "Generated " + tagPtEta, kTH2D, {axisPt, axisEta});
     }
 
-    LOG(info) << "Done with particle: " << partName;
+    LOG(info) << "Done with making histograms for particle: " << partName;
   }
 
   template <int pdgSign, o2::track::PID::ID id>
@@ -731,7 +731,7 @@ struct QaEfficiency {
       makeEfficiency2D("ITS-TPC-TOF_vsPt_vsEta", HIST(hPtEtaItsTpcTof[histogramIndex]));
     }
 
-    LOG(info) << "Done with particle: " << partName << " for efficiencies";
+    LOG(info) << "Done with making histograms for particle: " << partName << " for efficiencies";
   }
 
   void initMC(const AxisSpec& axisSel)
@@ -1301,9 +1301,9 @@ struct QaEfficiency {
       return;
     }
     if constexpr (recoEv) {
-      histos.fill(HIST(hPtGeneratedRecoEv[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hPtGeneratedRecoEv[histogramIndex]), mcParticle.pt());
       if (isPhysicalPrimary(mcParticle)) {
-        histos.fill(HIST(hPtGeneratedPrmRecoEv[histogramIndex]), mcParticle.pt());
+        h->fill(HIST(hPtGeneratedPrmRecoEv[histogramIndex]), mcParticle.pt());
       }
       return;
     }
@@ -1714,7 +1714,7 @@ struct QaEfficiency {
   SliceCache cache;
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
   Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
-  void processMC(o2::aod::McCollision const&,
+  void processMC(o2::aod::McCollisions const&,
                  o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
                  o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
                  o2::aod::McParticles const& mcParticles)
