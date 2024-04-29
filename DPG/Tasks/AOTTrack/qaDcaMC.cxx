@@ -121,9 +121,6 @@ struct QaDcaMc {
   ConfigurableAxis phiBins{"phiBins", {200, 0.f, 6.284f}, "Phi binning"};
   ConfigurableAxis yBins{"yBins", {200, -0.5f, 0.5f}, "Y binning"};
   ConfigurableAxis dcaBins{"dcaBins", {2000, -1.f, 1.f}, "DCA binning"};
-  // Task configuration
-  Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
-  // Custom track cuts for debug purposes
   Configurable<bool> doPVContributorCut{"doPVContributorCut", false, "Select tracks used for primary vertex recostruction (isPVContributor)"};
 
   // Histograms
@@ -192,10 +189,6 @@ struct QaDcaMc {
 
   void initMC(const AxisSpec& axisSel)
   {
-    if (!doprocessMC) {
-      return;
-    }
-
     auto h = histos.add<TH1>("MC/trackSelection", "Track Selection", kTH1D, {axisSel});
     h->GetXaxis()->SetBinLabel(trkCutIdxTrkRead, "Tracks read");
     h->GetXaxis()->SetBinLabel(trkCutIdxHasMcPart, "Passed has MC part.");
@@ -274,16 +267,7 @@ struct QaDcaMc {
 
     histos.add("eventSelection", "Event Selection", kTH1D, {{10, 0.5, 10.5, "Selection"}});
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(1, "Events read");
-    if (applyEvSel == 0) {
-      histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel. (no ev. sel)");
-    } else if (applyEvSel == 1) {
-      histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel. (sel7)");
-    } else if (applyEvSel == 2) {
-      histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel. (sel8)");
-    } else {
-      LOG(fatal) << "Can't interpret event selection asked " << applyEvSel << " (0: no event selection, 1: sel7, 2: sel8)";
-    }
-
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(2, "Passed Ev. Sel. (sel8)");
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Contrib.");
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Position");
 
@@ -355,7 +339,7 @@ struct QaDcaMc {
     } else { // Material
       h->fill(HIST(hPtMat[histogramIndex]), mcParticle.pt(), track.dcaXY(), track.dcaZ());
       if (mcParticle.has_mothers()) {
-        if (mcParticle.mothers_as<aod::McParticles>()[0].pdgCode() == mcParticle.pdgCode()) {
+        if (mcParticle.mothers_as<o2::aod::McParticles>()[0].pdgCode() == mcParticle.pdgCode()) {
           h->fill(HIST(hPtMatSM[histogramIndex]), mcParticle.pt(), track.dcaXY(), track.dcaZ());
         }
       }
@@ -391,9 +375,32 @@ struct QaDcaMc {
 
   // Global process
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
-  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision)
+  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>::iterator const& collision,
+               o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
+               o2::aod::McParticles const&)
   {
-    isCollisionSelected<true>(collision);
+    if (!isCollisionSelected<true>(collision)) {
+      return;
+    }
+
+    // Track loop
+    for (const auto& track : tracks) {
+      if (!isTrackSelected(track, HIST("MC/trackSelection"))) {
+        continue;
+      }
+      // Filling variable histograms
+      static_for<0, 1>([&](auto pdgSign) {
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Electron>(track, doEl);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Muon>(track, doMu);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Pion>(track, doPi);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Kaon>(track, doKa);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Proton>(track, doPr);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Deuteron>(track, doDe);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Triton>(track, doTr);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Helium3>(track, doHe);
+        fillMCTrackHistograms<pdgSign, o2::track::PID::Alpha>(track, doAl);
+      });
+    }
   }
 
   // Function to apply particle selection
@@ -587,36 +594,6 @@ struct QaDcaMc {
 
     return true;
   }
-
-  // MC process
-  void processMC(o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>::iterator const& collision,
-                 o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
-                 o2::aod::McParticles const&)
-  {
-    if (!isCollisionSelected<false>(collision)) {
-      return;
-    }
-
-    // Track loop
-    for (const auto& track : tracks) {
-      if (!isTrackSelected(track, HIST("MC/trackSelection"))) {
-        continue;
-      }
-      // Filling variable histograms
-      static_for<0, 1>([&](auto pdgSign) {
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Electron>(track, doEl);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Muon>(track, doMu);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Pion>(track, doPi);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Kaon>(track, doKa);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Proton>(track, doPr);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Deuteron>(track, doDe);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Triton>(track, doTr);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Helium3>(track, doHe);
-        fillMCTrackHistograms<pdgSign, o2::track::PID::Alpha>(track, doAl);
-      });
-    }
-  }
-  PROCESS_SWITCH(QaDcaMc, processMC, "process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<QaDcaMc>(cfgc)}; }
