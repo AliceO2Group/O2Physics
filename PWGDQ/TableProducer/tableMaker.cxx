@@ -1561,8 +1561,7 @@ struct TableMaker {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       fullSkimmingIndices<gkEventFillMapWithMult, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
-  }
-                                              
+  }                                              
   void processAssociatedMuonOnlyWithCovAndCent(MyEventsWithCent const& collisions, aod::BCsWithTimestamps const& bcs,
                                                soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousTracksFwd const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
