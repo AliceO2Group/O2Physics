@@ -200,14 +200,13 @@ void DefaultConfiguration()
   // *) Event cuts:
   // ...
 
-  // Configurable<bool> cfCalculateQvectors{ ... }
-  qv.fCalculateQvectors = cfCalculateQvectors;
+  // *) Q-vectors:
+  qv.fCalculateQvectors = cf_qv.cfCalculateQvectors;
 
-  // Configurable<bool> cfCalculateCorrelations{ ... };
-  mupa.fCalculateCorrelations = cfCalculateCorrelations;
+  // *) Multiparticle correlations:
+  mupa.fCalculateCorrelations = cf_mupa.cfCalculateCorrelations;
 
-  // ...
-
+  // *) Test0:
   t0.fCalculateTest0 = cf_t0.cfCalculateTest0; // + see below, how it's automatically set via other Test0 flags
   t0.fCalculateTest0AsFunctionOf[AFO_INTEGRATED] = cf_t0.cfCalculateTest0AsFunctionOfIntegrated;
   t0.fCalculateTest0AsFunctionOf[AFO_MULTIPLICITY] = cf_t0.cfCalculateTest0AsFunctionOfMultiplicity;
@@ -241,6 +240,27 @@ void DefaultConfiguration()
 
   // ...
 
+  // *) Toy NUA:
+  auto lApplyNUAPDF = (vector<int>)cf_nua.cfApplyNUAPDF;
+  if (lApplyNUAPDF.size() != eNUAPDF_N) {
+    LOGF(info, "\033[1;31m lApplyNUAPDF.size() = %d\033[0m", lApplyNUAPDF.size());
+    LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
+    LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfApplyNUAPDF, and number of entries in enum eNUAPDF \n \033[0m", __FUNCTION__, __LINE__);
+  }
+  nua.fApplyNUAPDF[ePhiNUAPDF] = static_cast<bool>(lApplyNUAPDF[ePhiNUAPDF]);
+  nua.fApplyNUAPDF[ePtNUAPDF] = static_cast<bool>(lApplyNUAPDF[ePtNUAPDF]);
+  nua.fApplyNUAPDF[eEtaNUAPDF] = static_cast<bool>(lApplyNUAPDF[eEtaNUAPDF]);
+
+  auto lUseDefaultNUAPDF = (vector<int>)cf_nua.cfUseDefaultNUAPDF;
+  if (lUseDefaultNUAPDF.size() != eNUAPDF_N) {
+    LOGF(info, "\033[1;31m lUseDefaultNUAPDF.size() = %d\033[0m", lUseDefaultNUAPDF.size());
+    LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
+    LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfUseDefaultNUAPDF, and number of entries in enum eNUAPDF \n \033[0m", __FUNCTION__, __LINE__);
+  }
+  nua.fUseDefaultNUAPDF[ePhiNUAPDF] = static_cast<bool>(lUseDefaultNUAPDF[ePhiNUAPDF]);
+  nua.fUseDefaultNUAPDF[ePtNUAPDF] = static_cast<bool>(lUseDefaultNUAPDF[ePtNUAPDF]);
+  nua.fUseDefaultNUAPDF[eEtaNUAPDF] = static_cast<bool>(lUseDefaultNUAPDF[eEtaNUAPDF]);
+
   // *) Internal validation:
   iv.fUseInternalValidation = cf_iv.cfUseInternalValidation;
   iv.fInternalValidationForceBailout = cf_iv.cfInternalValidationForceBailout;
@@ -268,55 +288,71 @@ void DefaultBooking()
   }
 
   // a) Event histograms:
+  // By default all event histograms are booked. Set this flag to kFALSE to switch off booking of all event histograms:
+  eh.fFillEventHistograms = cf_eh.cfFillEventHistograms;
+
   // By default all event histograms are booked. If you do not want particular event histogram to be booked,
   // use configurable array cfBookEventHistograms, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eEventHistograms. // TBI 20240124 is this safe enough?
   auto lBookEventHistograms = (vector<int>)cf_eh.cfBookEventHistograms; // this is now the local version of that int array from configurable.
   if (lBookEventHistograms.size() != eEventHistograms_N) {
+    LOGF(info, "\033[1;31m lBookEventHistograms.size() = %d\033[0m", lBookEventHistograms.size());
+    LOGF(info, "\033[1;31m eEventHistograms_N) = %d\033[0m", static_cast<int>(eEventHistograms_N));
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookEventHistograms, and number of entries in enum eEventHistograms \n \033[0m", __FUNCTION__, __LINE__);
   }
 
-  eh.fBookEventHistograms[eNumberOfEvents] = static_cast<bool>(lBookEventHistograms[eNumberOfEvents]);
-  eh.fBookEventHistograms[eTotalMultiplicity] = static_cast<bool>(lBookEventHistograms[eTotalMultiplicity]);
-  eh.fBookEventHistograms[eSelectedTracks] = static_cast<bool>(lBookEventHistograms[eSelectedTracks]);
-  eh.fBookEventHistograms[eMultFV0M] = static_cast<bool>(lBookEventHistograms[eMultFV0M]);
-  eh.fBookEventHistograms[eMultFT0M] = static_cast<bool>(lBookEventHistograms[eMultFT0M]);
-  eh.fBookEventHistograms[eMultTPC] = static_cast<bool>(lBookEventHistograms[eMultTPC]);
-  eh.fBookEventHistograms[eMultNTracksPV] = static_cast<bool>(lBookEventHistograms[eMultNTracksPV]);
-  eh.fBookEventHistograms[eCentrality] = static_cast<bool>(lBookEventHistograms[eCentrality]);
-  eh.fBookEventHistograms[eVertex_x] = static_cast<bool>(lBookEventHistograms[eVertex_x]);
-  eh.fBookEventHistograms[eVertex_y] = static_cast<bool>(lBookEventHistograms[eVertex_y]);
-  eh.fBookEventHistograms[eVertex_z] = static_cast<bool>(lBookEventHistograms[eVertex_z]);
-  eh.fBookEventHistograms[eNContributors] = static_cast<bool>(lBookEventHistograms[eNContributors]);
-  eh.fBookEventHistograms[eImpactParameter] = static_cast<bool>(lBookEventHistograms[eImpactParameter]);
+  // I append "&& eh.fFillEventHistograms" below, to switch off booking of all event histograms with one common flag:
+  eh.fBookEventHistograms[eNumberOfEvents] = static_cast<bool>(lBookEventHistograms[eNumberOfEvents]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eTotalMultiplicity] = static_cast<bool>(lBookEventHistograms[eTotalMultiplicity]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eSelectedTracks] = static_cast<bool>(lBookEventHistograms[eSelectedTracks]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eMultFV0M] = static_cast<bool>(lBookEventHistograms[eMultFV0M]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eMultFT0M] = static_cast<bool>(lBookEventHistograms[eMultFT0M]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eMultTPC] = static_cast<bool>(lBookEventHistograms[eMultTPC]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eMultNTracksPV] = static_cast<bool>(lBookEventHistograms[eMultNTracksPV]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eCentrality] = static_cast<bool>(lBookEventHistograms[eCentrality]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertex_x] = static_cast<bool>(lBookEventHistograms[eVertex_x]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertex_y] = static_cast<bool>(lBookEventHistograms[eVertex_y]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertex_z] = static_cast<bool>(lBookEventHistograms[eVertex_z]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eNContributors] = static_cast<bool>(lBookEventHistograms[eNContributors]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eImpactParameter] = static_cast<bool>(lBookEventHistograms[eImpactParameter]) && eh.fFillEventHistograms;
 
   // b) Particle histograms 1D:
-  // By default all particle histograms are booked. If you do not want particular particle histogram to be booked,
-  // use configurable array cfBookParticleHistograms, where you can specify flags 1 (book) or 0 (do not book).
+  // By default all 1D particle histograms are booked. Set this flag to kFALSE to switch off booking of all 1D particle histograms:
+  ph.fFillParticleHistograms = cf_ph.cfFillParticleHistograms;
+
+  // If you do not want particular particle histogram to be booked, use configurable array cfBookParticleHistograms, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms. // TBI 20240124 is this safe enough?
   auto lBookParticleHistograms = (vector<int>)cf_ph.cfBookParticleHistograms; // this is now the local version of that int array from configurable. TBI 20240124 why is this casting mandatory?
   if (lBookParticleHistograms.size() != eParticleHistograms_N) {
+    LOGF(info, "\033[1;31m lBookParticleHistograms.size() = %d\033[0m", lBookParticleHistograms.size());
+    LOGF(info, "\033[1;31m eParticleHistograms_N) = %d\033[0m", static_cast<int>(eEventHistograms_N));
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms, and number of entries in enum eParticleHistograms \n \033[0m", __FUNCTION__, __LINE__);
   }
 
-  ph.fBookParticleHistograms[ePhi] = static_cast<bool>(lBookParticleHistograms[ePhi]);
-  ph.fBookParticleHistograms[ePt] = static_cast<bool>(lBookParticleHistograms[ePt]);
-  ph.fBookParticleHistograms[eEta] = static_cast<bool>(lBookParticleHistograms[eEta]);
-  ph.fBookParticleHistograms[etpcNClsCrossedRows] = static_cast<bool>(lBookParticleHistograms[etpcNClsCrossedRows]);
-  ph.fBookParticleHistograms[eDCA_xy] = static_cast<bool>(lBookParticleHistograms[eDCA_xy]);
-  ph.fBookParticleHistograms[eDCA_z] = static_cast<bool>(lBookParticleHistograms[eDCA_z]);
+  // I append "&& ph.fFillParticleHistograms" below, to switch off booking of all 1D particle histograms with one common flag:
+  ph.fBookParticleHistograms[ePhi] = static_cast<bool>(lBookParticleHistograms[ePhi]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[ePt] = static_cast<bool>(lBookParticleHistograms[ePt]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[eEta] = static_cast<bool>(lBookParticleHistograms[eEta]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[etpcNClsCrossedRows] = static_cast<bool>(lBookParticleHistograms[etpcNClsCrossedRows]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[eDCA_xy] = static_cast<bool>(lBookParticleHistograms[eDCA_xy]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[eDCA_z] = static_cast<bool>(lBookParticleHistograms[eDCA_z]) && ph.fFillParticleHistograms;
 
   // c) Particle histograms 2D:
-  // By default all 2D particle histograms are booked. If you do not want particular 2D particle histogram to be booked,
-  // use configurable array cfBookParticleHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
+  // By default all 2D particle histograms are booked. Set this flag to kFALSE to switch off booking of all 2D particle histograms:
+  ph.fFillParticleHistograms2D = cf_ph.cfFillParticleHistograms2D;
+
+  // If you do not want particular 2D particle histogram to be booked, use configurable array cfBookParticleHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms2D. // TBI 20240124 is this safe enough?
   auto lBookParticleHistograms2D = (vector<int>)cf_ph.cfBookParticleHistograms2D; // this is now the local version of that int array from configurable. TBI 20240124 why is this casting mandatory?
   if (lBookParticleHistograms2D.size() != eParticleHistograms2D_N) {
+    LOGF(info, "\033[1;31m lBookParticleHistograms2D.size() = %d\033[0m", lBookParticleHistograms2D.size());
+    LOGF(info, "\033[1;31m eParticleHistograms2D_N) = %d\033[0m", static_cast<int>(eParticleHistograms2D_N));
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms2D, and number of entries in enum eParticleHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
   }
 
-  ph.fBookParticleHistograms2D[ePhiPt] = static_cast<bool>(lBookParticleHistograms2D[ePhiPt]);
-  ph.fBookParticleHistograms2D[ePhiEta] = static_cast<bool>(lBookParticleHistograms2D[ePhiEta]);
+  // I append "&& ph.fFillParticleHistograms2D" below, to switch off booking of all 2D particle histograms with one common flag:
+  ph.fBookParticleHistograms2D[ePhiPt] = static_cast<bool>(lBookParticleHistograms2D[ePhiPt]) && ph.fFillParticleHistograms2D;
+  ph.fBookParticleHistograms2D[ePhiEta] = static_cast<bool>(lBookParticleHistograms2D[ePhiEta]) && ph.fFillParticleHistograms2D;
 
   // d) QA:
   // ...
@@ -687,7 +723,8 @@ void InsanityChecks()
   // c) Insanity checks on booking;
   // d) Insanity checks on binning;
   // e) Insanity checks on cuts;
-  // f) Insanity checks on internal validation.
+  // f) Insanity checks on Toy NUA;
+  // g) Insanity checks on internal validation.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -760,6 +797,14 @@ void InsanityChecks()
   // *) Insanity checks on cuts:
   // ...
 
+  // *) Insanity checks on Toy NUA:
+  for (Int_t pdf = 0; pdf < eNUAPDF_N; pdf++) // use pdfs for NUA in (phi, pt, eta, ...)
+  {
+    if (nua.fApplyNUAPDF[pdf] && !nua.fUseDefaultNUAPDF[pdf]) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d : Support for custom pdf is not implemented yet for this varible, use default p.d.f. \033[0m", __FUNCTION__, __LINE__);
+    }
+  }
+
   // *) Insanity checks on internal validation:
   //    Remark: I check here only in the settings I could define in DefaultConfiguration(), the other insanity checks are in BookInternalValidationHistograms()
   if (iv.fUseInternalValidation) {
@@ -794,6 +839,7 @@ void BookAndNestAllLists()
   // *) Q-vectors;
   // *) Particle weights;
   // *) Nested loops;
+  // *) Toy NUA;
   // *) Internal validation;
   // *) Test0;
   // *) Results.
@@ -856,6 +902,12 @@ void BookAndNestAllLists()
   nl.fNestedLoopsList->SetOwner(kTRUE);
   fBaseList->Add(nl.fNestedLoopsList);
 
+  // *) Toy NUA:
+  nua.fNUAList = new TList();
+  nua.fNUAList->SetName("ToyNUA");
+  nua.fNUAList->SetOwner(kTRUE);
+  fBaseList->Add(nua.fNUAList);
+
   // *) Internal validation:
   iv.fInternalValidationList = new TList();
   iv.fInternalValidationList->SetName("InternalValidation");
@@ -912,8 +964,7 @@ void BookEventHistograms()
   TString sba[2] = {"before", "after"};
   TString sba_long[2] = {"before cuts", "after cuts"};
 
-  for (Int_t t = 0; t < eEventHistograms_N;
-       t++) // type, see enum eEventHistograms
+  for (Int_t t = 0; t < eEventHistograms_N; t++) // type, see enum eEventHistograms
   {
     if (!eh.fBookEventHistograms[t]) {
       continue;
@@ -923,6 +974,11 @@ void BookEventHistograms()
       // If I am analyzing only reconstructed data, do not book histos for simulated, and vice versa.
       // TBI 20240223 tc.fProcess[eProcessTest] is treated as tc.fProcess[eProcessRec], for the time being
       if ((tc.fProcess[eGenericRec] && rs == eSim) || (tc.fProcess[eGenericSim] && rs == eRec)) {
+        continue;
+      }
+
+      // If I am doing internal validation, I need only sim:
+      if (iv.fUseInternalValidation && rs == eRec) {
         continue;
       }
 
@@ -1062,9 +1118,17 @@ void BookParticleHistograms()
     }
     for (Int_t rs = 0; rs < 2; rs++) // reco/sim
     {
+
+      // If I am analyzing only reconstructed data, do not book histos for simulated, and vice versa.
       if ((tc.fProcess[eGenericRec] && rs == eSim) || (tc.fProcess[eGenericSim] && rs == eRec)) {
-        continue; // if I am analyzing only reconstructed data, do not book histos for simulated, and vice versa.
+        continue;
       }
+
+      // If I am doing internal validation, I need only sim:
+      if (iv.fUseInternalValidation && rs == eRec) {
+        continue;
+      }
+
       for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
       {
         ph.fParticleHistograms[t][rs][ba] = new TH1D(Form("fParticleHistograms[%s][%s][%s]", stype[t].Data(), srs[rs].Data(), sba[ba].Data()),
@@ -1449,6 +1513,144 @@ void BookNestedLoopsHistograms()
 
 //============================================================
 
+void BookNUAHistograms()
+{
+  // Book all objects for Toy NUA.
+
+  // a) Book the profile holding flags;
+  // b) Common local labels;
+  // c) Histograms.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+  }
+
+  // a) Book the profile holding flags:
+  nua.fNUAFlagsPro = new TProfile("fNUAFlagsPro", "flags for Toy NUA", 6, 0.5, 6.5);
+  nua.fNUAFlagsPro->SetStats(kFALSE);
+  nua.fNUAFlagsPro->SetLineColor(eColor);
+  nua.fNUAFlagsPro->SetFillColor(eFillColor);
+  nua.fNUAFlagsPro->GetXaxis()->SetLabelSize(0.04);
+  // TBI 20240429 the binning below is a bit fragile, but ok...
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + ePhiNUAPDF), "fApplyNUAPDF[phi]");
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + ePtNUAPDF), "fApplyNUAPDF[pt]");
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + eEtaNUAPDF), "fApplyNUAPDF[eta]");
+  if (nua.fApplyNUAPDF[ePhiNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(1 + ePhiNUAPDF), 1.);
+  }
+  if (nua.fApplyNUAPDF[ePtNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(1 + ePtNUAPDF), 1.);
+  }
+  if (nua.fApplyNUAPDF[eEtaNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(1 + eEtaNUAPDF), 1.);
+  }
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + ePhiNUAPDF), "fUseDefaultNUAPDF[phi]");
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + ePtNUAPDF), "fUseDefaultNUAPDF[pt]");
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + eEtaNUAPDF), "fUseDefaultNUAPDF[eta]");
+  if (nua.fUseDefaultNUAPDF[ePhiNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(4 + ePhiNUAPDF), 1.);
+  }
+  if (nua.fUseDefaultNUAPDF[ePtNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(4 + ePtNUAPDF), 1.);
+  }
+  if (nua.fUseDefaultNUAPDF[eEtaNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(4 + eEtaNUAPDF), 1.);
+  }
+  nua.fNUAList->Add(nua.fNUAFlagsPro);
+
+  if (!(nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF])) {
+    return;
+  }
+
+  // b) Common local labels:
+  TString sVariable[eNUAPDF_N] = {"#varphi", "p_{t}", "#eta"}; // has to be in sync with the ordering of enum eNUAPDF
+
+  // c) Histograms:
+  for (Int_t pdf = 0; pdf < eNUAPDF_N; pdf++) // use pdfs for NUA in (phi, pt, eta, ...)
+  {
+    if (!nua.fCustomNUAPDF[pdf]) // yes, because these histos are cloned from the external ones, see void SetNUAPDF(TH1D* const hist, const char* variable);
+    {
+      // otherwise, book here TF1 objects with default pdfs for NUA:
+
+      // *) default NUA for azimuthal angle pdf:
+      if (sVariable[pdf].EqualTo("#varphi")) {
+        if (!nua.fApplyNUAPDF[ePhiNUAPDF]) {
+          continue;
+        }
+        // Define default detector acceptance in azimuthal angle: Two sectors, with different probabilities.
+        Double_t dFirstSector[2] = {-(3. / 4.) * TMath::Pi(), -(1. / 4.) * TMath::Pi()}; // first sector is defined as [-3Pi/4,Pi/4]
+        Double_t dSecondSector[2] = {(1. / 3.) * TMath::Pi(), (2. / 3.) * TMath::Pi()};  // second sector is defined as [Pi/3,2Pi/3]
+        Double_t dProbability[2] = {0.3, 0.5};                                           // probabilities
+        nua.fDefaultNUAPDF[ePhiNUAPDF] = new TF1(Form("fDefaultNUAPDF[%d]", ePhiNUAPDF), "1.-(x>=[0])*(1.-[4]) + (x>=[1])*(1.-[4]) - (x>=[2])*(1.-[5]) + (x>=[3])*(1.-[5]) ",
+                                                 ph.fParticleHistogramsBins[ePhi][1], ph.fParticleHistogramsBins[ePhi][2]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(0, dFirstSector[0]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(1, dFirstSector[1]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(2, dSecondSector[0]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(3, dSecondSector[1]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(4, dProbability[0]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(5, dProbability[1]);
+        nua.fNUAList->Add(nua.fDefaultNUAPDF[ePhiNUAPDF]);
+
+      } else if (sVariable[pdf].EqualTo("p_{t}")) {
+
+        // *) default NUA for transverse momentum pdf:
+        if (!nua.fApplyNUAPDF[ePtNUAPDF]) {
+          continue;
+        }
+        // Define default detector acceptance in transverse momentum: One sectors, with probability < 1.
+        Double_t dSector[2] = {0.4, 0.8}; // sector is defined as 0.8 < pT < 1.2
+        Double_t dProbability = 0.3;      // probability, so after being set this way, only 30% of particles in that sector are reconstructed
+        nua.fDefaultNUAPDF[ePtNUAPDF] = new TF1(Form("fDefaultNUAPDF[%d]", ePtNUAPDF), "1.-(x>=[0])*(1.-[2]) + (x>=[1])*(1.-[2])",
+                                                ph.fParticleHistogramsBins[ePt][1], ph.fParticleHistogramsBins[ePt][2]);
+        nua.fDefaultNUAPDF[ePtNUAPDF]->SetParameter(0, dSector[0]);
+        nua.fDefaultNUAPDF[ePtNUAPDF]->SetParameter(1, dSector[1]);
+        nua.fDefaultNUAPDF[ePtNUAPDF]->SetParameter(2, dProbability);
+        nua.fNUAList->Add(nua.fDefaultNUAPDF[ePtNUAPDF]);
+
+      } else if (sVariable[pdf].EqualTo("#eta")) {
+
+        // *) default NUA for pseudorapidity pdf:
+        if (!nua.fApplyNUAPDF[eEtaNUAPDF]) {
+          continue;
+        }
+        // Define default detector acceptance in pseudorapidity: One sectors, with probability < 1.
+        Double_t dSector[2] = {2.0, 2.5}; // sector is defined as 0.5 < eta < 1.0
+        Double_t dProbability = 0.5;      // probability, so after being set this way, only 50% of particles in that sector are reconstructed
+        nua.fDefaultNUAPDF[eEtaNUAPDF] = new TF1(Form("fDefaultNUAPDF[%d]", eEtaNUAPDF), "1.-(x>=[0])*(1.-[2]) + (x>=[1])*(1.-[2])",
+                                                 ph.fParticleHistogramsBins[eEta][1], ph.fParticleHistogramsBins[eEta][2]);
+        nua.fDefaultNUAPDF[eEtaNUAPDF]->SetParameter(0, dSector[0]);
+        nua.fDefaultNUAPDF[eEtaNUAPDF]->SetParameter(1, dSector[1]);
+        nua.fDefaultNUAPDF[eEtaNUAPDF]->SetParameter(2, dProbability);
+        nua.fNUAList->Add(nua.fDefaultNUAPDF[eEtaNUAPDF]);
+      } else {
+        LOGF(fatal, "in function \033[1;31m%s at line %d : pdf = %s is not supported (yet)\n \033[0m", __FUNCTION__, __LINE__, sVariable[pdf].Data());
+      }
+
+    } else { // if(!nua.fCustomNUAPDF[pdf])
+      // generic cosmetics for custom user-supplied pdfs via histograms:
+      nua.fCustomNUAPDF[pdf]->SetTitle(Form("Custom user-provided NUA for %s", sVariable[pdf].Data()));
+      nua.fCustomNUAPDF[pdf]->SetStats(kFALSE);
+      nua.fCustomNUAPDF[pdf]->GetXaxis()->SetTitle(sVariable[pdf].Data());
+      nua.fCustomNUAPDF[pdf]->SetFillColor(eFillColor);
+      nua.fCustomNUAPDF[pdf]->SetLineColor(eColor);
+      nua.fNUAList->Add(nua.fCustomNUAPDF[pdf]);
+    } // if(!nua.fCustomNUAPDF[pdf])
+
+    // Get the max values of pdfs, so that later in Accept(...) there is no loss of efficiency, when would need to calculate the same thing for each particle:
+    if (!nua.fUseDefaultNUAPDF[pdf] && nua.fCustomNUAPDF[pdf]) { // pdf is a loop variable
+      // custom, user-provided pdf via TH1D object:
+      nua.fMaxValuePDF[pdf] = nua.fCustomNUAPDF[pdf]->GetMaximum();
+    } else if (nua.fUseDefaultNUAPDF[pdf] && nua.fDefaultNUAPDF[pdf]) {
+      // default pdf implemented as TF1 object:
+      nua.fMaxValuePDF[pdf] = nua.fDefaultNUAPDF[pdf]->GetMaximum(ph.fParticleHistogramsBins[pdf][1], ph.fParticleHistogramsBins[pdf][2]);
+    }
+
+  } // for(Int_t pdf=0;pdf<eNUAPDF_N;pdf++) // use pdfs for NUA in (phi, pt, eta, ...).
+
+} // void BookNUAHistograms()
+
+//============================================================
+
 void BookInternalValidationHistograms()
 {
   // Book all internal validation histograms.
@@ -1587,10 +1789,11 @@ void InternalValidation()
   // a) Fourier like p.d.f. for azimuthal angles and flow amplitudes;
   // b) Loop over on-the-fly events.
   //    b0) Reset ebe quantities;
-  //    b1) Determine multiplicity, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e;
-  //    b2) Loop over particles;
-  //    b3) Calculate correlations;
-  //    b4) Optionally, cross-check with nested loops;
+  //    b1) Determine multiplicity, centrality, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e;
+  //    b2) Fill event histograms;
+  //    b3) Loop over particles;
+  //    b4) Calculate correlations;
+  //    b5) Optionally, cross-check with nested loops;
   // c) Delete persistent objects.
 
   if (tc.fVerbose) {
@@ -1657,26 +1860,30 @@ void InternalValidation()
   // watch.Start();
   Double_t v1 = 0., v2 = 0., v3 = 0.;
   for (Int_t e = 0; e < static_cast<int>(iv.fnEventsInternalValidation); e++) {
-    // ..) Event counter:
-    !eh.fEventHistograms[eNumberOfEvents][eSim][eBefore] ? true : eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]->Fill(0.5);
 
     // b0) Reset ebe quantities:
     ResetEventByEventQuantities();
 
-    // b1) Determine multiplicity, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
+    // b1) Determine multiplicity, centrality, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
     Int_t nMult = gRandom->Uniform(iv.fMultRangeInternalValidation[eMin], iv.fMultRangeInternalValidation[eMax]);
-    // cout<<"nMult = "<<nMult<<endl;
-    !eh.fEventHistograms[eTotalMultiplicity][eSim][eBefore] ? true : eh.fEventHistograms[eTotalMultiplicity][eSim][eBefore]->Fill(nMult);
-
     ebye.fSelectedTracks = nMult; // I can do it this way, as long as I do not apply some cuts on tracks in InternalValidation(). Otherwise, introduce a special counter
                                   // Remember that I have to calculate ebye.fSelectedTracks, due to e.g. if(ebye.fSelectedTracks<2){return;} in Calculate* member functions
-    !eh.fEventHistograms[eSelectedTracks][eSim][eBefore] ? true : eh.fEventHistograms[eSelectedTracks][eSim][eBefore]->Fill(ebye.fSelectedTracks);
 
     Double_t fReactionPlane = gRandom->Uniform(0., TMath::TwoPi());
     if (iv.fHarmonicsOptionInternalValidation->EqualTo("constant")) {
       fPhiPDF->SetParameter(18, fReactionPlane);
     } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) {
       fPhiPDF->SetParameter(3, fReactionPlane);
+    }
+
+    ebye.fCentrality = gRandom->Uniform(0., 100.); // this is perfectly fine for this exercise
+
+    //    b2) Fill event histograms:
+    if (eh.fFillEventHistograms) {
+      !eh.fEventHistograms[eNumberOfEvents][eSim][eBefore] ? true : eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]->Fill(0.5);
+      !eh.fEventHistograms[eTotalMultiplicity][eSim][eBefore] ? true : eh.fEventHistograms[eTotalMultiplicity][eSim][eBefore]->Fill(nMult);
+      !eh.fEventHistograms[eSelectedTracks][eSim][eBefore] ? true : eh.fEventHistograms[eSelectedTracks][eSim][eBefore]->Fill(ebye.fSelectedTracks);
+      !eh.fEventHistograms[eCentrality][eSim][eBefore] ? true : eh.fEventHistograms[eCentrality][eSim][eBefore]->Fill(ebye.fCentrality);
     }
 
     // configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
@@ -1706,7 +1913,7 @@ void InternalValidation()
       // Particle angle:
       dPhi = fPhiPDF->GetRandom();
 
-      // To increase performance, sample pt or eta only if requested:
+      // *) To increase performance, sample pt or eta only if requested:
       if (mupa.fCalculateCorrelations || t0.fCalculateTest0AsFunctionOf[AFO_PT]) { // TBI 20240423 The first switch I need to replace with differentual switch, like I have it for Test0 now
         dPt = gRandom->Uniform(dPt_min, dPt_max);
       }
@@ -1715,9 +1922,43 @@ void InternalValidation()
         dEta = gRandom->Uniform(dEta_min, dEta_max);
       }
 
-      // Remark: Deliberately I do not fill Control Particle Histograms in InternalValidation(), to increase the performance, and to make copying and merging faster.
+      // *) Fill few selected particle histograms before cuts here directly here:
+      // Remark: I do not call FillParticleHistograms<rs>(track, eBefore), as I do not want to bother to make here full 'track' object, etc., just to fill simple kine info:
+      if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D) {
+        // 1D:
+        !ph.fParticleHistograms[ePhi][eSim][eBefore] ? true : ph.fParticleHistograms[ePhi][eSim][eBefore]->Fill(dPhi);
+        !ph.fParticleHistograms[ePt][eSim][eBefore] ? true : ph.fParticleHistograms[ePt][eSim][eBefore]->Fill(dPt);
+        !ph.fParticleHistograms[eEta][eSim][eBefore] ? true : ph.fParticleHistograms[eEta][eSim][eBefore]->Fill(dEta);
+        // 2D:
+        !ph.fParticleHistograms2D[ePhiPt][eSim][eBefore] ? true : ph.fParticleHistograms2D[ePhiPt][eSim][eBefore]->Fill(dPhi, dPt);
+        !ph.fParticleHistograms2D[ePhiEta][eSim][eBefore] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][eBefore]->Fill(dPhi, dEta);
+      }
 
-      // Fill Q-vector (simplified version, without weights):
+      // *) Particle cuts (only support for Toy NUA is provided, for the time being):
+      //    NUA:
+      if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
+        continue;
+      }
+      if (nua.fApplyNUAPDF[ePtNUAPDF] && !Accept(dPt, ePtNUAPDF)) {
+        continue;
+      }
+      if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
+        continue;
+      }
+
+      // *) Fill few selected particle histograms after cuts here directly here:
+      // Remark: I do not call FillParticleHistograms<rs>(track, eAfter), as I do not want to bother to make here full 'track' object, etc., just to fill simple kine info:
+      if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D) {
+        // 1D:
+        !ph.fParticleHistograms[ePhi][eSim][eAfter] ? true : ph.fParticleHistograms[ePhi][eSim][eAfter]->Fill(dPhi);
+        !ph.fParticleHistograms[ePt][eSim][eAfter] ? true : ph.fParticleHistograms[ePt][eSim][eAfter]->Fill(dPt);
+        !ph.fParticleHistograms[eEta][eSim][eAfter] ? true : ph.fParticleHistograms[eEta][eSim][eAfter]->Fill(dEta);
+        // 2D:
+        !ph.fParticleHistograms2D[ePhiPt][eSim][eAfter] ? true : ph.fParticleHistograms2D[ePhiPt][eSim][eAfter]->Fill(dPhi, dPt);
+        !ph.fParticleHistograms2D[ePhiEta][eSim][eAfter] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][eAfter]->Fill(dPhi, dEta);
+      }
+
+      // *) Fill Q-vector (simplified version, without weights):
       for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
         for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) // weight power
         {
@@ -1725,7 +1966,7 @@ void InternalValidation()
         }                                                                             // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
       }                                                                               // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
 
-      // Nested loops containers:
+      // *) Nested loops containers:
       if (nl.fCalculateNestedLoops || nl.fCalculateCustomNestedLoops) {
         if (nl.ftaNestedLoops[0]) {
           nl.ftaNestedLoops[0]->AddAt(dPhi, p);
@@ -1744,9 +1985,6 @@ void InternalValidation()
       }
 
     } // for(Int_t p=0;p<nMult;p++)
-
-    // *) Centrality for this event:
-    ebye.fCentrality = gRandom->Uniform(0., 100.); // in any case it's meaningless in this exercise
 
     // *) Calculate everything for selected events and particles:
     CalculateEverything();
@@ -1777,6 +2015,47 @@ void InternalValidation()
     delete fvnPDF;
 
 } // void InternalValidation()
+
+//============================================================
+
+Bool_t Accept(const Double_t& value, Int_t var)
+{
+  // Given the acceptance profile for this observable, accept or not that observable for the analysis.
+  // Use in Toy NUA studies.
+
+  // Remark: var corrsponds to the field in enum eNUAPDF { ePhiNUAPDF, ePtNUAPDF, eEtaNUAPDF };
+  //         Therefore, always call this function as e.g. Accept(someAngle,ePhiNUAPDF) or Accept(somePt,ePtNUAPDF)
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+  }
+
+  // Basic protection:
+  if (nua.fUseDefaultNUAPDF[var] && !nua.fDefaultNUAPDF[var]) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  } else if (!nua.fUseDefaultNUAPDF[var] && !nua.fCustomNUAPDF[var]) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+
+  Bool_t bAccept = kTRUE; // return value
+
+  Double_t acceptanceProbability = 1.;
+  Double_t correspondingAcceptance = -44.;
+  if (!nua.fUseDefaultNUAPDF[var]) {
+    correspondingAcceptance = nua.fCustomNUAPDF[var]->GetBinContent(nua.fCustomNUAPDF[var]->FindBin(value));
+  } else {
+    correspondingAcceptance = nua.fDefaultNUAPDF[var]->Eval(value);
+  }
+
+  // Probability to accept:
+  acceptanceProbability = 1. - (nua.fMaxValuePDF[var] - correspondingAcceptance) / nua.fMaxValuePDF[var];
+
+  // Accept or not:
+  (gRandom->Uniform(0, 1) < acceptanceProbability) ? bAccept = kTRUE : bAccept = kFALSE;
+
+  return bAccept;
+
+} // Bool_t Accept(const Double_t &value, Int_t var)
 
 //============================================================
 
@@ -2538,7 +2817,8 @@ Bool_t ParticleCuts(T const& track)
 
   // a) Particle cuts on info available in reconstructed (and the corresponding MC truth simulated track);
   // b) Particle cuts on info available only in simulated data;
-  // c) Test case.
+  // c) Test case;
+  // d) Toy NUA.
 
   // TBI 20240213 at the moment, I take that there is nothing specific for Run 3, 2, 1 here. Otherwise, see what I did in EventCuts
 
@@ -2612,6 +2892,77 @@ Bool_t ParticleCuts(T const& track)
       return kFALSE;
     }
   } // if constexpr (rs == eTest) {
+
+  // d) Toy NUA:
+  if (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF]) {
+
+    // Local kine variables on which support for Toy NUA is implemented and applied:
+    Double_t dPhi = 0.;
+    Double_t dPt = 0.;
+    Double_t dEta = 0.;
+
+    // *) Apply Toy NUA on info available in reconstructed (and the corresponding MC truth simulated track);
+    if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+      dPhi = track.phi();
+      dPt = track.pt();
+      dEta = track.eta();
+
+      // Apply NUA on these kine variables:
+      if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
+        return kFALSE;
+      }
+      if (nua.fApplyNUAPDF[ePtNUAPDF] && !Accept(dPt, ePtNUAPDF)) {
+        return kFALSE;
+      }
+      if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
+        return kFALSE;
+      }
+
+      // ... and corresponding MC truth simulated ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
+      if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
+        if (!track.has_mcParticle()) {
+          LOGF(warning, "No MC particle for this track, skip...");
+          return kFALSE; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this particle
+        }
+        auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+        dPhi = mcparticle.phi();
+        dPt = mcparticle.pt();
+        dEta = mcparticle.eta();
+
+        // Apply NUA on these kine variables:
+        if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
+          return kFALSE;
+        }
+        if (nua.fApplyNUAPDF[ePtNUAPDF] && !Accept(dPt, ePtNUAPDF)) {
+          return kFALSE;
+        }
+        if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
+          return kFALSE;
+        }
+
+      } // if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
+    }   // if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+
+    // *) Apply Toy NUA on info available only in simulated data:
+    if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
+      // Remark: in this branch, 'track' is always TracksSim = aod::McParticles
+      dPhi = track.phi();
+      dPt = track.pt();
+      dEta = track.eta();
+
+      // Apply NUA on these kine variables:
+      if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
+        return kFALSE;
+      }
+      if (nua.fApplyNUAPDF[ePtNUAPDF] && !Accept(dPt, ePtNUAPDF)) {
+        return kFALSE;
+      }
+      if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
+        return kFALSE;
+      }
+    } // if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
+
+  } // if(nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF]) {
 
   return kTRUE;
 
@@ -5472,6 +5823,7 @@ void BailOut()
   bailOutList->Add(mupa.fCorrelationsList);
   bailOutList->Add(pw.fWeightsList);
   bailOutList->Add(nl.fNestedLoopsList);
+  bailOutList->Add(nua.fNUAList);
   bailOutList->Add(iv.fInternalValidationList);
   bailOutList->Add(t0.fTest0List);
   bailOutList->Add(res.fResultsList);
@@ -5589,7 +5941,7 @@ void CalculateEverything()
   // *) Progress info:
   if (iv.fUseInternalValidation && eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]) {
     // this branch is relevant e.g. for internal validation:
-    LOGF(info, "  Processing event %d .... ", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eRec][eBefore]->GetBinContent(1)));
+    LOGF(info, "  Processing event %d .... ", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]->GetBinContent(1)));
   } else if (eh.fEventHistograms[eNumberOfEvents][eRec][eBefore] && eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]) {
     LOGF(info, "  Processing event %d/%d (selected/total) .... ", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]->GetBinContent(1)), static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eRec][eBefore]->GetBinContent(1)));
   }
@@ -5664,7 +6016,9 @@ void Steer(T1 const& collision, T2 const& tracks)
   DetermineCentrality<rs>(collision);
 
   // *) Fill event histograms before event cuts:
-  FillEventHistograms<rs>(collision, tracks, eBefore);
+  if (eh.fFillEventHistograms) {
+    FillEventHistograms<rs>(collision, tracks, eBefore);
+  }
 
   // *) Print info on the current event number (total, before cuts):
   if (tc.fVerbose) {
@@ -5693,7 +6047,9 @@ void Steer(T1 const& collision, T2 const& tracks)
   }
 
   // *) Fill event histograms after event AND particle cuts: // TBI 20240110 not sure still if this one is called here, or it has to be moved above
-  FillEventHistograms<rs>(collision, tracks, eAfter);
+  if (eh.fFillEventHistograms) {
+    FillEventHistograms<rs>(collision, tracks, eAfter);
+  }
 
   // *) Calculate everything for selected events and particles:
   CalculateEverything();
@@ -5783,7 +6139,9 @@ void MainLoopOverParticles(T const& tracks)
     }
 
     // *) Fill particle histograms before particle cuts:
-    FillParticleHistograms<rs>(track, eBefore);
+    if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D) {
+      FillParticleHistograms<rs>(track, eBefore);
+    }
 
     // *) Particle cuts:
     if (!ParticleCuts<rs>(track)) {
@@ -5791,7 +6149,9 @@ void MainLoopOverParticles(T const& tracks)
     }
 
     // *) Fill particle histograms after particle cuts:
-    FillParticleHistograms<rs>(track, eAfter);
+    if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D) {
+      FillParticleHistograms<rs>(track, eAfter);
+    }
 
     // *) Fill Q-vectors:
     //  Kinematics (Remark: for "eRecSim" processing, kinematics is taken from "reconstructed"):
