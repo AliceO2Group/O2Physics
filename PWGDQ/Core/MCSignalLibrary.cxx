@@ -417,6 +417,30 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from any open charm hadron decays", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("eFromD0")) {
+    MCProng prong(2, {11, 421}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from D0 decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromChargedD")) {
+    MCProng prong(2, {11, 421}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from D+/- decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromDs")) {
+    MCProng prong(2, {11, 431}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from Ds +/- decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromLambdaC")) {
+    MCProng prong(2, {11, 4122}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from Lambda c + decays", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("eFromHb")) {
     MCProng prong(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -735,6 +759,14 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng prong(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from b->e and b->e", {prong, prong}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // b->e and b->e (commonAncestors)
+  if (!nameStr.compare("eeFromSameB")) {
+    MCProng prong(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from b->e and b->e", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
 
