@@ -13,8 +13,8 @@
 // \author Sasha Bylinkin, alexander.bylinkin@gmail.com
 // \since  April 2023
 
-#ifndef PWGUD_TASKS_SGTRACKSELECTOR_H_
-#define PWGUD_TASKS_SGTRACKSELECTOR_H_
+#ifndef PWGUD_CORE_SGTRACKSELECTOR_H_
+#define PWGUD_CORE_SGTRACKSELECTOR_H_
 
 #include <vector>
 #include "Framework/runDataProcessing.h"
@@ -94,4 +94,4 @@ int trackpid(const T& track, bool use_tof)
   return pid;
 }
 
-#endif // PWGUD_TASKS_SGTRACKSELECTOR_H_
+#endif // PWGUD_CORE_SGTRACKSELECTOR_H_
