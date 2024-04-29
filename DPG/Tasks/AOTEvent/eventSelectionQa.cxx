@@ -596,6 +596,9 @@ struct EventSelectionQaTask {
       const AxisSpec axisBCinTF{static_cast<int>(nBCsPerTF), 0, static_cast<double>(nBCsPerTF), "bc in TF"};
       histos.add("hNcontribVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
       histos.add("hNcontribAfterCutsVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
+      histos.add("hNcolMCVsBcInTF", ";bc in TF; n MC collisions", kTH1F, {axisBCinTF});
+      histos.add("hNcolVsBcInTF", ";bc in TF; n collisions", kTH1F, {axisBCinTF});
+      histos.add("hNtvxVsBcInTF", ";bc in TF; n TVX triggers", kTH1F, {axisBCinTF});
 
       double minSec = floor(tsSOR / 1000.);
       double maxSec = ceil(tsEOR / 1000.);
@@ -749,7 +752,10 @@ struct EventSelectionQaTask {
           histos.fill(HIST("hMultT0Aref"), multT0A);
           histos.fill(HIST("hMultT0Cref"), multT0C);
         }
-
+        if (bc.selection_bit(kIsTriggerTVX)) {
+          int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+          histos.fill(HIST("hNtvxVsBcInTF"), bcInTF);
+        }
         if (!bc.selection_bit(kNoBGFDA) && bc.selection_bit(kIsTriggerTVX)) {
           histos.fill(HIST("hMultT0Abga"), multT0A);
           histos.fill(HIST("hMultT0Cbga"), multT0C);
@@ -914,6 +920,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hNcontribCol"), nContributors);
       histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
       histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
+      histos.fill(HIST("hNcolVsBcInTF"), bcInTF);
       histos.fill(HIST("hColBcDiffVsNcontrib"), nContributors, bcDiff);
       histos.fill(HIST("hColTimeResVsNcontrib"), nContributors, timeRes);
       if (!col.selection_bit(kIsVertexITSTPC)) {
@@ -1076,12 +1083,14 @@ struct EventSelectionQaTask {
       uint64_t globalBC = bc.globalBC();
       uint64_t orbit = globalBC / nBCsPerOrbit;
       int localBC = globalBC % nBCsPerOrbit;
+      int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
       histos.fill(HIST("hGlobalBcColMC"), globalBC - minGlobalBC);
       histos.fill(HIST("hOrbitColMC"), orbit - minOrbit);
       histos.fill(HIST("hBcColMC"), localBC);
       histos.fill(HIST("hVertexXMC"), mcCol.posX());
       histos.fill(HIST("hVertexYMC"), mcCol.posY());
       histos.fill(HIST("hVertexZMC"), mcCol.posZ());
+      histos.fill(HIST("hNcolMCVsBcInTF"), bcInTF);
     }
 
     // check fraction of collisions matched to wrong bcs
