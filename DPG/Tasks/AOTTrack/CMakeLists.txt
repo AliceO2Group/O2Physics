@@ -17,11 +17,6 @@ o2physics_add_dpl_workflow(qa-trackselection
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(qa-fakes
-    SOURCES qaFakeHits.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(qa-event-track
     SOURCES qaEventTrack.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ReconstructionDataFormats
