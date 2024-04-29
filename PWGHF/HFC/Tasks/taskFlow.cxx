@@ -17,6 +17,8 @@
 #include <TH1F.h>
 #include <THn.h>
 
+#include <iostream> // Alexian : To debug with std::cout ?
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/AnalysisDataModel.h"
@@ -49,6 +51,7 @@ using namespace o2::framework::expressions;
 struct HfTaskFlow {
   //  configurables for processing options
   Configurable<bool> processRun2{"processRun2", false, "Flag to run on Run 2 data"};
+  // Will we ever use Run 2 data ? Otherwise remove this line ? 
   Configurable<bool> processRun3{"processRun3", true, "Flag to run on Run 3 data"};
   Configurable<bool> processMc{"processMc", false, "Flag to run on MC"};
   Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
@@ -70,6 +73,7 @@ struct HfTaskFlow {
   using MyTracks = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
   using HfCandidatesSel = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 
+  
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < zVertexMax;
@@ -80,6 +84,15 @@ struct HfTaskFlow {
   //  HF candidate filter
   //  TODO: use Partition instead of filter
   Filter candidateFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+
+  // First try to use Partition instead
+  // This would be if we want to partition between D0 and D0 bar, but maybe we when to partition between selected and non-selected ? 
+  Partition<HfCandidatesSel> selectedD0 = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0;
+  Partition<HfCandidatesSel> selectedD0bar = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+
+  // Partition between selected and non-selected
+  Partition<HfCandidatesSel> selectedCandidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<HfCandidatesSel> NotSelectedcandidates = aod::hf_sel_candidate_d0::isSelD0 <= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar <= selectionFlagD0bar;
 
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
@@ -96,7 +109,7 @@ struct HfTaskFlow {
   //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
   //        either 1) add invariant mass axis or 2) define several containers for different inv. mass regions
   //        Note: don't forget to check inv. mass separately for D0 and D0bar candidate
-  ConfigurableAxis axisMass{"axisMass", {30, 1.7, 2.0}, "axis of invariant mass of HF candidates"};
+  ConfigurableAxis axisMass{"axisMass", {2, 1.7, 2.0}, "axis of invariant mass of HF candidates"};
 
   HistogramRegistry registry{"registry"};
 
@@ -105,6 +118,7 @@ struct HfTaskFlow {
   OutputObj<CorrelationContainer> sameHF{"sameEventHFHadrons"};
   OutputObj<CorrelationContainer> mixedTPCTPCCh{"mixedEventTPCTPCChHadrons"};
   OutputObj<CorrelationContainer> mixedHF{"mixedEventHFHadrons"};
+  OutputObj<CorrelationContainer> mixedMFT{"mixedEventTPCMFTChHadrons"};
 
   //  =========================
   //      init()
@@ -199,6 +213,7 @@ struct HfTaskFlow {
     sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, userAxis));
     mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", corrAxis, effAxis, {}));
     mixedHF.setObject(new CorrelationContainer("mixedEventHFHadrons", "mixedEventHFHadrons", corrAxis, effAxis, userAxis));
+    mixedMFT.setObject(new CorrelationContainer("mixedEventTPCMFTChHadrons", "mixedEventTPCMFTChHadrons", corrAxis, effAxis, {}));
   }
 
   //  ---------------
@@ -301,6 +316,7 @@ struct HfTaskFlow {
   template <typename TTrack>
   bool isAcceptedCandidate(TTrack const& candidate)
   {
+    // Alexian : Why is it only one "&" just beneath ?
     if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
       return false;
     }
@@ -374,11 +390,23 @@ struct HfTaskFlow {
         invmass = hfHelper.invMassD0ToPiK(track1);
       }
 
+      int i = 0;
+      i++;
+
       //  fill single-track distributions
       if (!fillingHFcontainer) {
         target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, triggerWeight);
       } else {
         target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, invmass, triggerWeight);
+        
+        // To fill multiplicity bins artificially just to check
+        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 50, posZ, invmass, triggerWeight);
+        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 60, posZ, invmass, triggerWeight);
+        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 70, posZ, invmass, triggerWeight);
+        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 80, posZ, invmass, triggerWeight);
+        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 90, posZ, invmass, triggerWeight);
+        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 100, posZ, invmass, triggerWeight);
+        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 130, posZ, invmass, triggerWeight);
       }
 
       for (const auto& track2 : tracks2) {
@@ -412,6 +440,9 @@ struct HfTaskFlow {
         //  set range of delta phi in (-pi/2 , 3/2*pi)
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
 
+        int j = 0;
+        j++;
+
         if (!fillingHFcontainer) {
           //  fill pair correlations
           target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
@@ -420,6 +451,29 @@ struct HfTaskFlow {
         } else {
           target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
+                                      triggerWeight * associatedWeight);
+
+          // To fill multiplicity bins artificially just to check
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, 55, deltaPhi, posZ, invmass,
+                                      triggerWeight * associatedWeight);
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, 65, deltaPhi, posZ, invmass,
+                                      triggerWeight * associatedWeight);
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, 75, deltaPhi, posZ, invmass,
+                                      triggerWeight * associatedWeight);
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, 85, deltaPhi, posZ, invmass,
+                                      triggerWeight * associatedWeight);
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, 95, deltaPhi, posZ, invmass,
+                                      triggerWeight * associatedWeight);
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, 105, deltaPhi, posZ, invmass,
+                                      triggerWeight * associatedWeight);
+          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                      eta1 - eta2, pt2, pt1, 140, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
         }
       }
@@ -487,6 +541,7 @@ struct HfTaskFlow {
     registry.fill(HIST("hEventCountSame"), bin);
 
     sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+
     fillQA(multiplicity, tracks);
     fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
   }
@@ -499,13 +554,13 @@ struct HfTaskFlow {
                             MyTracks const& tracks,
                             HfCandidatesSel const& candidates)
   {
-    if (!(isCollisionSelected(collision, false))) {
+    if (!(isCollisionSelected(collision, true))) {
       return;
     }
-
     const auto multiplicity = tracks.size();
 
     sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+
     fillCandidateQA(candidates);
     fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
   }
@@ -518,7 +573,7 @@ struct HfTaskFlow {
                            MyTracks const& tracks,
                            aod::MFTTracks const& mfttracks)
   {
-    if (!(isCollisionSelected(collision, false))) {
+    if (!(isCollisionSelected(collision, true))) {
       return;
     }
 
@@ -565,6 +620,24 @@ struct HfTaskFlow {
     mixCollisions(collisions, candidates, tracks, getTracksSize, mixedHF);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedHfHadrons, "Process mixed-event correlations for HF-h case", true);
+
+  // =====================================
+  //    process mixed event correlations: h-MFT case
+  // =====================================
+  void processMixedTpcMftHH(MyCollisions const& collisions,
+                             MyTracks const& tracks,
+                             aod::MFTTracks const& mfttracks)
+  {
+    //  we want to group collisions based on charged-track multiplicity
+    auto getTracksSize = [&tracks, this](MyCollisions::iterator const& col) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
+      auto size = associatedTracks.size();
+      return size;
+    };
+
+    mixCollisions(collisions, mfttracks, tracks, getTracksSize, mixedMFT);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftHH, "Process mixed-event correlations for h-MFT case", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
