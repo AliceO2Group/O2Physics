@@ -823,8 +823,8 @@ class VarManager : public TObject
   static void FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <int pairType, typename T1, typename T2>
   static void FillPairME(T1 const& t1, T2 const& t2, float* values = nullptr);
-  template <int pairType, typename T1, typename T2>
-  static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr);
+  template <typename T1, typename T2>
+  static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kDecayToEE);
   template <typename T1, typename T2, typename T3>
   static void FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
@@ -2324,8 +2324,8 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   }
 }
 
-template <int pairType, typename T1, typename T2>
-void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
+template <typename T1, typename T2>
+void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandidateType pairType)
 {
   if (!values) {
     values = fgValues;
@@ -2356,10 +2356,6 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
-
-  if (fgUsedVars[kPairPhiv]) {
-    values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
-  }
 }
 
 template <typename T1, typename T2, typename T3>

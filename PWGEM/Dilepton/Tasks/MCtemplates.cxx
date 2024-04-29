@@ -577,7 +577,7 @@ struct AnalysisSameEventPairing {
     } // end loop over barrel track pairs
   }   // end runPairing
 
-  template <int TPairType, typename TTracksMC>
+  template <typename TTracksMC>
   void runMCGenPair(TTracksMC const& groupedMCTracks)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
@@ -602,7 +602,7 @@ struct AnalysisSameEventPairing {
           checked = sig.CheckSignal(true, t1, t2);
         }
         if (checked) {
-          VarManager::FillPairMC<TPairType>(t1, t2);
+          VarManager::FillPairMC(t1, t2);
           fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
         }
       }
@@ -626,7 +626,7 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkTrackFillMap>(tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGenPair<VarManager::kDecayToEE>(groupedMCTracks);
+    runMCGenPair(groupedMCTracks);
   }
 
   void processDecayToEESkimmedWithCov(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
@@ -641,7 +641,7 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkTrackFillMapWithCov>(tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGenPair<VarManager::kDecayToEE>(groupedMCTracks);
+    runMCGenPair(groupedMCTracks);
   }
 
   void processDecayToEEAOD(soa::Filtered<MyEventsSelectedAOD>::iterator const& event,
@@ -656,7 +656,7 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkTrackFillMapAOD>(tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGenPair<VarManager::kDecayToEE>(groupedMCTracks);
+    runMCGenPair(groupedMCTracks);
   }
 
   void processDummy(MyEvents&)
