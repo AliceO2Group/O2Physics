@@ -1301,13 +1301,13 @@ struct QaEfficiency {
       return;
     }
     if constexpr (recoEv) {
-      histos.fill(HIST(hPtGeneratedRecoEv[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hPtGeneratedRecoEv[histogramIndex]), mcParticle.pt());
       if (isPhysicalPrimary(mcParticle)) {
-        histos.fill(HIST(hPtGeneratedPrmRecoEv[histogramIndex]), mcParticle.pt());
+        h->fill(HIST(hPtGeneratedPrmRecoEv[histogramIndex]), mcParticle.pt());
       }
       return;
     }
-    histos.fill(HIST("MC/particleSelection"), 6 + id);
+    h->fill(HIST("MC/particleSelection"), 6 + id);
 
     h->fill(HIST(hPGenerated[histogramIndex]), mcParticle.p());
     h->fill(HIST(hPtGenerated[histogramIndex]), mcParticle.pt());
