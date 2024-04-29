@@ -413,8 +413,9 @@ struct CorrelationTask {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
         cfg.mEfficiencyTrigger = reinterpret_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
         // cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<double>>(cfgEfficiencyTrigger, -1);
-      } else
+      } else {
         cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, timestamp);
+      }
       if (cfg.mEfficiencyTrigger == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
       }
@@ -425,8 +426,9 @@ struct CorrelationTask {
         TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
         cfg.mEfficiencyAssociated = reinterpret_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
         // cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<double>>(cfgEfficiencyAssociated, -1);
-      } else
+      } else {
         cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
+      }
       if (cfg.mEfficiencyAssociated == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgEfficiencyAssociated.value.c_str());
       }
