@@ -409,13 +409,11 @@ struct CorrelationTask {
       return;
     }
     if (cfgEfficiencyTrigger.value.empty() == false) {
-      if (cfgLocalEfficiency > 0)
-      {
-        TFile* fEfficiencyTrigger= TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
+      if (cfgLocalEfficiency > 0) {
+        TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
         cfg.mEfficiencyTrigger = (THn*)fEfficiencyTrigger->Get("ccdb_object");
-        //cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<double>>(cfgEfficiencyTrigger, -1);
-      }
-      else
+        // cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<double>>(cfgEfficiencyTrigger, -1);
+      } else
         cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, timestamp);
       if (cfg.mEfficiencyTrigger == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
@@ -423,13 +421,11 @@ struct CorrelationTask {
       LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), (void*)cfg.mEfficiencyTrigger);
     }
     if (cfgEfficiencyAssociated.value.empty() == false) {
-      if (cfgLocalEfficiency > 0)
-      {
+      if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
         cfg.mEfficiencyAssociated = (THn*)fEfficiencyAssociated->Get("ccdb_object");
-        //cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<double>>(cfgEfficiencyAssociated, -1);
-      }
-      else
+        // cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<double>>(cfgEfficiencyAssociated, -1);
+      } else
         cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
       if (cfg.mEfficiencyAssociated == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgEfficiencyAssociated.value.c_str());
