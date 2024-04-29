@@ -161,6 +161,9 @@ struct kstarqa {
     histos.add("h1genmass", "Invariant mass of generated kstar meson", kTH1D, {invmassAxis});
     histos.add("h1recpt", "pT of generated kstar meson", kTH1D, {ptAxis});
     histos.add("events_check", "No. of events in the reconstructed and generated MC", kTH1F, {{6, 0, 6}});
+
+    // Multplicity distribution
+    histos.add("multdist", "FT0M multiplicity distribution", kTH1F, {{1000, 0, 10000}});
   }
 
   double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass(); // FIXME: Get from the common header
@@ -419,6 +422,7 @@ struct kstarqa {
     // Fill the event counter
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
     rEventSelection.fill(HIST("hmult"), multiplicity);
+    histos.fill(HIST("multdist"), collision.multFT0M());
 
     for (auto track1 : tracks) {
 
