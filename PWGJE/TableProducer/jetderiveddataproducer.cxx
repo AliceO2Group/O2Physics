@@ -53,6 +53,7 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JMcCollisions> jMcCollisionsTable;
   Produces<aod::JMcCollisionPIs> jMcCollisionsParentIndexTable;
   Produces<aod::JTracks> jTracksTable;
+  Produces<aod::JTrackExtras> jTracksExtraTable;
   Produces<aod::JTrackPIs> jTracksParentIndexTable;
   Produces<aod::JMcTrackLbs> jMcTracksLabelTable;
   Produces<aod::JMcParticles> jMcParticlesTable;
@@ -129,9 +130,10 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
-  void processTracks(soa::Join<aod::Tracks, aod::TrackSelection>::iterator const& track)
+  void processTracks(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>::iterator const& track)
   {
     jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track));
+    jTracksExtraTable(track.dcaXY(), track.dcaZ()); // these need to be recalculated when we add the track to collision associator
     jTracksParentIndexTable(track.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracks, "produces derived track table", true);

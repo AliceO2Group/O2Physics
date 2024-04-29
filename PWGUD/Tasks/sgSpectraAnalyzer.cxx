@@ -19,7 +19,7 @@
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Tasks/SGTrackSelector.h"
+#include "PWGUD/Core/SGTrackSelector.h"
 //#include "Common/DataModel/PIDResponse.h"
 //#include "PWGUD/Core/RLhelper.h"
 #include <TString.h>
@@ -40,8 +40,15 @@ struct SGSpectraAnalyzer {
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
-  Configurable<float> eta_cut{"Eta", 0.9, "Eta cut"};
   Configurable<bool> use_tof{"Use_TOF", true, "TOF PID"};
+  // Track Selections
+  Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
+  Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
+  Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
+  Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};
+  Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
+  Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
+  Configurable<float> eta_cut{"Eta", 0.9, "Eta cut"};
   HistogramRegistry registry{
     "registry",
     {// Pion histograms for each eta bin and gapSide
@@ -192,6 +199,7 @@ struct SGSpectraAnalyzer {
     sum.SetXYZM(0, 0, 0, 0);
     int gapSide = collision.gapSide();
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut};
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
     gapSide = truegapSide;
     if (gapSide < 0 || gapSide > 2)
@@ -222,7 +230,7 @@ struct SGSpectraAnalyzer {
         registry.get<TH1>(HIST("DcaZ_PV"))->Fill(track.dcaZ());
         registry.get<TH1>(HIST("DcaXY_PV"))->Fill(track.dcaXY());
         alltracks++;
-        if (trackselector(track)) {
+        if (trackselector(track, parameters)) {
           int track_pid = trackpid(track, use_tof);
           // if (ispion(track, use_tof)) {
           if (track_pid <= 1) {

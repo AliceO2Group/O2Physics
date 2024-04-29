@@ -157,32 +157,32 @@ struct SGCandProducer {
     if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     // reject collisions at ITS RO TF boundaries
     if (noITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
-    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(2., 1.);
     // reject Same Bunch PileUp
     if (noSameBunchPileUp && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return;
     }
-    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(3., 1.);
     // check vertex matching to FT0
     if (IsGoodVertex && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
     }
-    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(4., 1.);
     // reject ITS Only vertices
     if (ITSTPCVertex && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return;
     }
-    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
-    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(5., 1.);
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(2., 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(6., 1.);
     auto bc = collision.foundBC_as<BCs>();
     auto newbc = bc;
 
@@ -196,7 +196,7 @@ struct SGCandProducer {
     } else {
       LOGF(info, "No Newbc %i", bc.globalBC());
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(issgevent + 3, 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(issgevent + 8, 1.);
     if (issgevent <= 2) {
       //    LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
       if (sameCuts.minRgtrwTOF()) {

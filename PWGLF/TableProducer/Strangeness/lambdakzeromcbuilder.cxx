@@ -104,7 +104,7 @@ struct lambdakzeromcbuilder {
         lLabel, lMotherLabel);
       if (populateV0MCCores) {
         v0mccores(
-          pdgCode, pdgCodeMother, pdgCodePositive, pdgCodeNegative,
+          lLabel, pdgCode, pdgCodeMother, pdgCodePositive, pdgCodeNegative,
           isPhysicalPrimary, xmc, ymc, zmc,
           pxposmc, pyposmc, pzposmc,
           pxnegmc, pynegmc, pznegmc);

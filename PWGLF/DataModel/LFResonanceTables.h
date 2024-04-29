@@ -33,6 +33,20 @@ namespace o2::aod
 /// Resonance Collisions
 namespace resocollision
 {
+enum {
+  kECbegin = 0,
+  kINEL = 1,
+  kINEL10,
+  kINELg0,
+  kINELg010,
+  kTrig,
+  kINELg0Trig,
+  kINELg010Trig,
+  kSel,
+  kINELg0Sel,
+  kINELg010Sel,
+  kECend,
+};
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (Multiplicity) percentile (Default: FT0M)
 DECLARE_SOA_COLUMN(Spherocity, spherocity, float); //! Spherocity of the event
 DECLARE_SOA_COLUMN(EvtPl, evtPl, float);           //! Second harmonic event plane
@@ -40,8 +54,14 @@ DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float); //! Second harmonic event pla
 DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float); //! Second harmonic event plane resolution of A-C sub events
 DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float); //! Second harmonic event plane resolution of B-C sub events
 DECLARE_SOA_COLUMN(BMagField, bMagField, float);   //! Magnetic field
+// MC
+DECLARE_SOA_COLUMN(IsVtxIn10, isVtxIn10, bool);               //! Vtx10
+DECLARE_SOA_COLUMN(IsINELgt0, isINELgt0, bool);               //! INEL>0
+DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
+DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
+
 } // namespace resocollision
-DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
+DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::mult::MultNTracksPV,
                   collision::PosX,
@@ -56,6 +76,13 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   resocollision::BMagField,
                   timestamp::Timestamp);
 using ResoCollision = ResoCollisions::iterator;
+
+DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
+                  resocollision::IsVtxIn10,
+                  resocollision::IsINELgt0,
+                  resocollision::IsInSel8,
+                  resocollision::IsInAfterAllCuts);
+using ResoMCCollision = ResoMCCollisions::iterator;
 
 // Resonance Daughters
 // inspired from PWGCF/DataModel/FemtoDerived.h
@@ -131,9 +158,11 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::aod::pidtpc::TPCNSigmaPi,
                   o2::aod::pidtpc::TPCNSigmaKa,
                   o2::aod::pidtpc::TPCNSigmaPr,
+                  o2::aod::pidtpc::TPCNSigmaEl,
                   o2::aod::pidtof::TOFNSigmaPi,
                   o2::aod::pidtof::TOFNSigmaKa,
                   o2::aod::pidtof::TOFNSigmaPr,
+                  o2::aod::pidtof::TOFNSigmaEl,
                   o2::aod::track::TPCSignal,
                   o2::aod::track::PassedITSRefit,
                   o2::aod::track::PassedTPCRefit,
@@ -252,7 +281,7 @@ using ResoMCParent = ResoMCParents::iterator;
 
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
 using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
-using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCEl, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFEl>;
 using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>; // Without Extra
 
 } // namespace o2::aod

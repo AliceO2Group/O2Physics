@@ -61,14 +61,14 @@ struct FemtoCorrelationsMC {
   Configurable<std::vector<float>> _tpcNSigma_1{"tpcNSigma_1", std::vector<float>{-3.0f, 3.0f}, "first particle PID: Nsigma range in TPC before the TOF is used"};
   Configurable<float> _PIDtrshld_1{"PIDtrshld_1", 10.0, "first particle PID: value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma_1{"tofNSigma_1", std::vector<float>{-3.0f, 3.0f}, "first particle PID: Nsigma range in TOF"};
-  Configurable<float> _tpcNSigmaResidual_1{"tpcNSigmaResidual_1", 5, "first particle PID: residual TPC Nsigma cut (abs. value) to use with the TOF"};
+  Configurable<std::vector<float>> _tpcNSigmaResidual_1{"tpcNSigmaResidual_1", std::vector<float>{-5.0f, 5.0f}, "first particle PID: residual TPC Nsigma cut to use with the TOF"};
 
   Configurable<int> _sign_2{"sign_2", 1, "sign of the second particle in a pair"};
   Configurable<int> _particlePDG_2{"particlePDG_2", 2212, "PDG code of the second particle in a pair to perform PID for (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> _tpcNSigma_2{"tpcNSigma_2", std::vector<float>{-3.0f, 3.0f}, "second particle PID: Nsigma range in TPC before the TOF is used"};
   Configurable<float> _PIDtrshld_2{"PIDtrshld_2", 10.0, "second particle PID: value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma_2{"tofNSigma_2", std::vector<float>{-3.0f, 3.0f}, "second particle PID: Nsigma range in TOF"};
-  Configurable<float> _tpcNSigmaResidual_2{"tpcNSigmaResidual_2", 5, "second particle PID: residual TPC Nsigma cut (abs. value) to use with the TOF"};
+  Configurable<std::vector<float>> _tpcNSigmaResidual_2{"tpcNSigmaResidual_2", std::vector<float>{-5.0f, 5.0f}, "second particle PID: residual TPC Nsigma cut to use with the TOF"};
 
   Configurable<int> _particlePDGtoReject{"particlePDGtoRejectFromSecond", 0, "applied only if the particles are non-identical and only to the second particle in the pair!!!"};
   Configurable<std::vector<float>> _rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-0.0f, 0.0f}, "TOF rejection Nsigma range for the particle specified with PDG to be rejected"};
@@ -183,8 +183,8 @@ struct FemtoCorrelationsMC {
       for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
         auto kT_tmp = registry.add<TH1>(Form("Cent%i/kT_cent%i_kT%i", i, i, j), Form("kT_cent%i_kT%i", i, j), kTH1F, {{500, 0., 5., "kT"}});
         auto Res_tmp = registry.add<TH2>(Form("Cent%i/ResolutionMatrix_cent%i_kT%i", i, i, j), Form("ResolutionMatrix_rec(gen)_cent%i_kT%i", i, j), kTH2F, {{CFkStarBinning, "k*_gen (GeV/c)"}, {CFkStarBinning, "k*_rec (GeV/c)"}});
-        auto DblTrk_SE_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_SE_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j), kTH2F, {{600, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
-        auto DblTrk_ME_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_ME_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j), kTH2F, {{600, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+        auto DblTrk_SE_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_SE_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j), kTH2F, {{628, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+        auto DblTrk_ME_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_ME_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j), kTH2F, {{628, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
         kThistos_perMult.push_back(std::move(kT_tmp));
         Resolution_histos_perMult.push_back(std::move(Res_tmp));
         DoubleTrack_SE_histos_perMult.push_back(std::move(DblTrk_SE_tmp));
@@ -288,7 +288,7 @@ struct FemtoCorrelationsMC {
 
       unsigned int centBin = o2::aod::singletrackselector::getBinIndex<unsigned int>(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc(), _centBins);
 
-      if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1))) {
+      if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1.value))) {
 
         trackOrigin = track.origin();
 
@@ -309,7 +309,7 @@ struct FemtoCorrelationsMC {
 
       if (IsIdentical) {
         continue;
-      } else if (track.sign() != _sign_2 && !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2, _tpcNSigmaResidual_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
+      } else if (track.sign() != _sign_2 && !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2, _tpcNSigmaResidual_2.value))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
 
         trackOrigin = track.origin();
 

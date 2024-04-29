@@ -27,7 +27,6 @@ struct DGCandProducer {
   DGCutparHolder diffCuts = DGCutparHolder();
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
-  Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", false, "reject collisions at a TF boundary"};
   Configurable<bool> fillFIThistos{"fillFIThistos", false, "fill the histograms with the FIT amplitudes"};
 
   // DG selector
@@ -217,9 +216,9 @@ struct DGCandProducer {
     registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
     registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
 
-    std::string labels[nXbinsInStatH] = {"all", "hasBC", "selected", "FITveto", "MID trk", "global PV trk", "not global PB trk",
+    std::string labels[nXbinsInStatH] = {"all", "hasBC", "FITveto", "MID trk", "global PV trk", "not global PB trk",
                                          "ITS-only PV trk", "TOF PV trk fraction", "n PV trks", "PID", "pt", "eta", "net charge",
-                                         "inv mass", "TF border", "no pile-up", "ITSROF", "z-vtx", "ITSTPC vtx", "", "", "", "", ""};
+                                         "inv mass", "evsel TF border", "evsel no pile-up", "evsel ITSROF", "evsel z-vtx", "evsel ITSTPC vtx", "evsel TRD vtx", "evsel TOF vtx", "", ""};
 
     registry.get<TH1>(HIST("reco/Stat"))->SetNdivisions(nXbinsInStatH, "X");
     for (int iXbin(1); iXbin < nXbinsInStatH + 1; iXbin++) {
@@ -236,17 +235,11 @@ struct DGCandProducer {
     LOGF(debug, "<DGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
 
-    // reject collisions at TF boundaries
-    if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      return;
-    }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
-
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(2., 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     auto bc = collision.foundBC_as<BCs>();
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
 
@@ -261,7 +254,7 @@ struct DGCandProducer {
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 3, 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 2, 1.);
     if (isDGEvent == 0) {
       LOGF(debug, "<DGCandProducer>  Data: good collision!");
 
