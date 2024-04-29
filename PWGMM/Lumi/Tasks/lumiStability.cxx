@@ -98,7 +98,6 @@ struct lumiStabilityTask {
 
   void processMain(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const&)
   {
-    int CountNormal(0), CountPastProtec(0);
     for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
       if (bc.timestamp() == 0) {
@@ -107,47 +106,6 @@ struct lumiStabilityTask {
 
       Long64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
-
-      int deltaIndex = 0; // backward move counts
-      int deltaBC = 0;    // current difference wrt globalBC
-      int maxDeltaBC = 5; // maximum difference
-      bool pastActivityFDD = false;
-      while (deltaBC < maxDeltaBC) {
-        deltaIndex++;
-        if (bc.globalIndex() - deltaIndex < 0) {
-          break;
-        }
-        const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
-        deltaBC = globalBC - bc_past.globalBC();
-        if (deltaBC < maxDeltaBC) {
-          pastActivityFDD |= bc_past.has_fdd();
-        }
-      }
-      deltaIndex = 0;
-      deltaBC = 0;
-
-      bool futureActivityFDD = false;
-      while (deltaBC < maxDeltaBC) {
-        deltaIndex++;
-        if (bc.globalIndex() + deltaIndex >= bcs.size()) {
-          break;
-        }
-        const auto& bc_future = bcs.iteratorAt(bc.globalIndex() + deltaIndex);
-        deltaBC = bc_future.globalBC() - globalBC;
-        if (deltaBC < maxDeltaBC) {
-          futureActivityFDD |= bc_future.has_fdd();
-        }
-      }
-
-      CountNormal++;
-      if (pastActivityFDD == true || futureActivityFDD == true) {
-        CountPastProtec++;
-        continue;
-      }
-      /*if (pastActivityFDD == true) {
-        CountPastProtec++;
-        continue;
-      }*/
 
       std::bitset<8> fddTriggers = fdd.triggerMask();
       bool vertex = fddTriggers[o2::fdd::Triggers::bitVertex];
@@ -305,44 +263,6 @@ struct lumiStabilityTask {
       Long64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
 
-      int deltaIndex = 0; // backward move counts
-      int deltaBC = 0;    // current difference wrt globalBC
-      int maxDeltaBC = 5; // maximum difference
-      bool pastActivityFT0 = false;
-      while (deltaBC < maxDeltaBC) {
-        deltaIndex++;
-        if (bc.globalIndex() - deltaIndex < 0) {
-          break;
-        }
-        const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
-        deltaBC = globalBC - bc_past.globalBC();
-        if (deltaBC < maxDeltaBC) {
-          pastActivityFT0 |= bc_past.has_ft0();
-        }
-      }
-      deltaIndex = 0;
-      deltaBC = 0;
-
-      bool futureActivityFT0 = false;
-      while (deltaBC < maxDeltaBC) {
-        deltaIndex++;
-        if (bc.globalIndex() + deltaIndex >= bcs.size()) {
-          break;
-        }
-        const auto& bc_future = bcs.iteratorAt(bc.globalIndex() + deltaIndex);
-        deltaBC = bc_future.globalBC() - globalBC;
-        if (deltaBC < maxDeltaBC) {
-          futureActivityFT0 |= bc_future.has_ft0();
-        }
-      }
-
-      if (pastActivityFT0 == true || futureActivityFT0 == true) {
-        continue;
-      }
-      /*if (pastActivityFT0 == true) {
-        continue;
-      }*/
-
       std::bitset<8> fT0Triggers = ft0.triggerMask();
       bool vertex = fT0Triggers[o2::ft0::Triggers::bitVertex];
       bool sCentral = fT0Triggers[o2::ft0::Triggers::bitSCen];
@@ -440,45 +360,6 @@ struct lumiStabilityTask {
 
       Long64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
-
-      int deltaIndex = 0; // backward move counts
-      int deltaBC = 0;    // current difference wrt globalBC
-      int maxDeltaBC = 5; // maximum difference
-      bool pastActivityV0A = false;
-      while (deltaBC < maxDeltaBC) {
-        deltaIndex++;
-        if (bc.globalIndex() - deltaIndex < 0) {
-          break;
-        }
-        const auto& bc_past = bcs.iteratorAt(bc.globalIndex() - deltaIndex);
-        deltaBC = globalBC - bc_past.globalBC();
-        if (deltaBC < maxDeltaBC) {
-          pastActivityV0A |= bc_past.has_fv0a();
-        }
-      }
-      deltaIndex = 0;
-      deltaBC = 0;
-
-      bool futureActivityV0A = false;
-      while (deltaBC < maxDeltaBC) {
-        deltaIndex++;
-        if (bc.globalIndex() + deltaIndex >= bcs.size()) {
-          break;
-        }
-        const auto& bc_future = bcs.iteratorAt(bc.globalIndex() + deltaIndex);
-        deltaBC = bc_future.globalBC() - globalBC;
-        if (deltaBC < maxDeltaBC) {
-          futureActivityV0A |= bc_future.has_fv0a();
-        }
-      }
-
-      if (pastActivityV0A == true || futureActivityV0A == true) {
-        continue;
-      }
-
-      /*if (pastActivityV0A == true) {
-        continue;
-      }*/
 
       std::bitset<8> fv0Triggers = fv0.triggerMask();
       bool aOut = fv0Triggers[o2::fv0::Triggers::bitAOut];
