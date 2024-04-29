@@ -280,14 +280,20 @@ struct lnnRecoTask {
       if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax)
         continue;
 
+
       // temporary fix: tpcInnerParam() returns the momentum in all the software tags before: https://github.com/AliceO2Group/AliceO2/pull/12521
       bool posTritonPID = posTrack.pidForTracking() == o2::track::PID::Triton;
       bool negTritonPID = negTrack.pidForTracking() == o2::track::PID::Triton;
       float posRigidity = posTrack.tpcInnerParam(); 
       float negRigidity = negTrack.tpcInnerParam();
 
-      hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
-      hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
+      if (posTritonPID) {
+        hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
+      }
+
+      if (negTritonPID) {
+        hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
+      }
 
       // Bethe-Bloch calcution for 3H
       double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
@@ -380,12 +386,14 @@ struct lnnRecoTask {
         continue;
       }
 
+
       std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
 
       double cosPA = RecoDecay::cpa(primVtx, lnnCand.decVtx, lnnMom);
       if (cosPA < v0cospa) {
         continue;
       }
+
 
       for (int i = 0; i < 3; i++) {
         lnnCand.decVtx[i] = lnnCand.decVtx[i] - primVtx[i];
