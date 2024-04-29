@@ -1176,6 +1176,8 @@ DECLARE_SOA_COLUMN(EtaCharmBaryonGen, etaCharmBaryonGen, float);
 
 // mapping of decay types
 enum DecayType { DecayToXiPi = 0,
+                 DecayToOmegaPi,
+                 DecayToOmegaK,
                  OmegaczeroToXiPi,
                  XiczeroToXiPi };
 
