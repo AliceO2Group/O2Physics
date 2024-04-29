@@ -428,9 +428,7 @@ struct NucleiHistTask {
 
     // MC efficencies
     MC_eff.add("histEffSkimming", "Efficiency skimming", HistType::kTH2F, {{10, 0.0, 10.0}, PDGBINNING});
-    MC_eff.add("hist_gen_ITS_vs_pT", "ITS generated p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_eff.add("hist_gen_ITS_TPC_vs_pT", "ITS_TPC generated p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_eff.add("hist_gen_ITS_TPC_TOF_vs_pT", "ITS_TPC_TOF generated p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
+    MC_eff.add("hist_gen_pT", "generated p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
     MC_eff.add("hist_rec_ITS_vs_pT", "ITS reconstructed p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
     MC_eff.add("hist_rec_ITS_TPC_vs_pT", "ITS_TPC reconstructed p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
     MC_eff.add("hist_rec_ITS_TPC_TOF_vs_pT", "ITS_TPC_TOF reconstructed p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
@@ -1480,7 +1478,7 @@ struct NucleiHistTask {
 
   using EventCandidatesCent = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
 
   void processData(EventCandidates::iterator const& event, TrackCandidates const& tracks)
   {
@@ -1495,7 +1493,7 @@ struct NucleiHistTask {
   }
   PROCESS_SWITCH(NucleiHistTask, processDataCent, "process data with centralities", false);
 
-  void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
+  void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
                  aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
@@ -1643,7 +1641,7 @@ struct NucleiHistTask {
   PROCESS_SWITCH(NucleiHistTask, processMC, "process MC", false);
 
   void processMCefficiency(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>::iterator const& /*collisions*/,
-                           soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
+                           soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
                            aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
@@ -1659,6 +1657,7 @@ struct NucleiHistTask {
       MC_eff.fill(HIST("histEffSkimming"), 0, pdgbin);
 
       TLorentzVector lorentzVector_pion{};
+      TLorentzVector lorentzVector_kaon{};
       TLorentzVector lorentzVector_proton{};
       TLorentzVector lorentzVector_deuteron{};
       TLorentzVector lorentzVector_triton{};
@@ -1666,6 +1665,7 @@ struct NucleiHistTask {
       TLorentzVector lorentzVector_He4{};
 
       lorentzVector_pion.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
+      lorentzVector_kaon.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
       lorentzVector_proton.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
       lorentzVector_deuteron.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
       lorentzVector_triton.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
@@ -1673,6 +1673,7 @@ struct NucleiHistTask {
       lorentzVector_He4.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
 
       if (lorentzVector_pion.Rapidity() < yMin || lorentzVector_pion.Rapidity() > yMax ||
+          lorentzVector_kaon.Rapidity() < yMin || lorentzVector_kaon.Rapidity() > yMax ||
           lorentzVector_proton.Rapidity() < yMin || lorentzVector_proton.Rapidity() > yMax ||
           lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
           lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
@@ -1681,24 +1682,12 @@ struct NucleiHistTask {
         continue;
       }
 
+      MC_eff.fill(HIST("histEffSkimming"), 1, pdgbin);
+      MC_eff.fill(HIST("hist_gen_pT"), particle.pt(), pdgbin);
+
       bool passedITS = track.hasITS();
       bool passedTPC = track.hasTPC();
       bool passedTOF = track.hasTOF();
-
-      if (passedITS) {
-        MC_eff.fill(HIST("hist_gen_ITS_vs_pT"), particle.pt(), pdgbin);
-        MC_eff.fill(HIST("histEffSkimming"), 1, pdgbin);
-
-        if (passedTPC) {
-          MC_eff.fill(HIST("hist_gen_ITS_TPC_vs_pT"), particle.pt(), pdgbin);
-          MC_eff.fill(HIST("histEffSkimming"), 2, pdgbin);
-
-          if (passedTOF) {
-            MC_eff.fill(HIST("hist_gen_ITS_TPC_TOF_vs_pT"), particle.pt(), pdgbin);
-            MC_eff.fill(HIST("histEffSkimming"), 3, pdgbin);
-          }
-        }
-      }
 
       if ((particle.pdgCode() == 1000020030) | (particle.pdgCode() == -1000020030) | (particle.pdgCode() == 1000020040) | (particle.pdgCode() == -1000020040)) {
         float TPCnumberClsFound = track.tpcNClsFound();
@@ -1711,7 +1700,7 @@ struct NucleiHistTask {
           continue;
         }
 
-        MC_eff.fill(HIST("histEffSkimming"), 4, pdgbin);
+        MC_eff.fill(HIST("histEffSkimming"), 2, pdgbin);
 
         if (passedITS) {
           MC_eff.fill(HIST("hist_rec_ITS_vs_pT"), track.pt() * 2, pdgbin);
@@ -1733,7 +1722,7 @@ struct NucleiHistTask {
           continue;
         }
 
-        MC_eff.fill(HIST("histEffSkimming"), 4, pdgbin);
+        MC_eff.fill(HIST("histEffSkimming"), 3, pdgbin);
 
         if (passedITS) {
           MC_eff.fill(HIST("hist_rec_ITS_vs_pT"), track.pt(), pdgbin);
