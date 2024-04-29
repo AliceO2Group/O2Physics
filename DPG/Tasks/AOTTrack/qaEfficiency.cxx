@@ -611,7 +611,7 @@ struct QaEfficiency {
       registry->add(hPtEtaGenerated[histogramIndex].data(), "Generated " + tagPtEta, kTH2D, {axisPt, axisEta});
     }
 
-    LOG(info) << "Done with particle: " << partName;
+    LOG(info) << "Done with making histograms for particle: " << partName;
   }
 
   template <int pdgSign, o2::track::PID::ID id>
@@ -731,7 +731,7 @@ struct QaEfficiency {
       makeEfficiency2D("ITS-TPC-TOF_vsPt_vsEta", HIST(hPtEtaItsTpcTof[histogramIndex]));
     }
 
-    LOG(info) << "Done with particle: " << partName << " for efficiencies";
+    LOG(info) << "Done with making histograms for particle: " << partName << " for efficiencies";
   }
 
   void initMC(const AxisSpec& axisSel)
@@ -1307,7 +1307,7 @@ struct QaEfficiency {
       }
       return;
     }
-    h->fill(HIST("MC/particleSelection"), 6 + id);
+    histos.fill(HIST("MC/particleSelection"), 6 + id);
 
     h->fill(HIST(hPGenerated[histogramIndex]), mcParticle.p());
     h->fill(HIST(hPtGenerated[histogramIndex]), mcParticle.pt());
@@ -1551,16 +1551,16 @@ struct QaEfficiency {
         return false;
       }
 
-      if (noFakesHits) { // Selecting tracks with no fake hits
-        bool hasFakeHit = false;
-        for (int i = 0; i < 10; i++) { // From ITS to TPC
-          if (track.mcMask() & 1 << i) {
-            hasFakeHit = true;
-            break;
+      if (noFakesHits) {              // Selecting tracks with no fake hits
+        for (int i = 0; i < 7; i++) { // ITS
+          if (track.mcMismatchInITS(i)) {
+            return false;
           }
         }
-        if (hasFakeHit) {
-          return false;
+        for (int i = 7; i < 10; i++) { // TPC
+          if (track.mcMismatchInTPC(i)) {
+            return false;
+          }
         }
       }
       if constexpr (doFillHisto) {
@@ -1714,7 +1714,7 @@ struct QaEfficiency {
   SliceCache cache;
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
   Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
-  void processMC(o2::aod::McCollision const&,
+  void processMC(o2::aod::McCollisions const&,
                  o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
                  o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
                  o2::aod::McParticles const& mcParticles)
