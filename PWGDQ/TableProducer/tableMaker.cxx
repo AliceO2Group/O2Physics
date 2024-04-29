@@ -1565,7 +1565,7 @@ struct TableMaker {
   }
 
   void processAssociatedMuonOnlyWithCovAndMults(MyEventsWithMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                                               soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousTracksFwd const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+                                                soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, aod::AmbiguousTracksFwd const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
