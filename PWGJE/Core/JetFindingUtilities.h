@@ -22,6 +22,7 @@
 #include <string>
 #include <optional>
 #include <cmath>
+#include <memory>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
