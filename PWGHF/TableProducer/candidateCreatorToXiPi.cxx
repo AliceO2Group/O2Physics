@@ -401,6 +401,7 @@ struct HfCandidateCreatorToXiPi {
       float dcaCharmBaryonDau = std::sqrt(df.getChi2AtPCACandidate());
 
       // set hfFlag
+      // FIX ME!!!
       int hfFlag = 0;
       if(isToXiPi){
         hfFlag = 1 << aod::hf_cand_toxipi::DecayType::DecayToXiPi;
