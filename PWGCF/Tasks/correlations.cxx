@@ -411,7 +411,7 @@ struct CorrelationTask {
     if (cfgEfficiencyTrigger.value.empty() == false) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
-        cfg.mEfficiencyTrigger = (THn*)fEfficiencyTrigger->Get("ccdb_object");
+        cfg.mEfficiencyTrigger = reinterpret_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
         // cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<double>>(cfgEfficiencyTrigger, -1);
       } else
         cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, timestamp);
@@ -423,7 +423,7 @@ struct CorrelationTask {
     if (cfgEfficiencyAssociated.value.empty() == false) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
-        cfg.mEfficiencyAssociated = (THn*)fEfficiencyAssociated->Get("ccdb_object");
+        cfg.mEfficiencyAssociated = reinterpret_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
         // cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<double>>(cfgEfficiencyAssociated, -1);
       } else
         cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
