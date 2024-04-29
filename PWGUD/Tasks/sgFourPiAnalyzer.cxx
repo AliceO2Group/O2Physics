@@ -19,7 +19,7 @@
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Tasks/SGTrackSelector.h"
+#include "PWGUD/Core/SGTrackSelector.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Framework/ASoA.h"
 #include "Framework/DataTypes.h"
@@ -39,14 +39,14 @@ using namespace o2::framework::expressions;
 #define mproton 0.9383
 struct SGFourPiAnalyzer {
   SGSelector sgSelector;
-  // Adjusted Gap thresholds
+  //Adjusted Gap thresholds
   Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
   Configurable<float> FT0A_cut{"FT0A", 150., "FT0A threshold"};
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
-  // Track Selections
+  //Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
