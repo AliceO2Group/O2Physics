@@ -664,10 +664,10 @@ struct HfTaskMcValidationRec {
       if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DplusToPiKPi)) {
         whichHad = DplusToPiKPi;
       } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DsToKKPi)) {
-        if (TESTBIT(std::abs(cand3Prong.flagMcDecayChanRec()), hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi)) {
+        if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi) {
           whichHad = DsToPhiPiToKKPi;
         }
-        if (TESTBIT(std::abs(cand3Prong.flagMcDecayChanRec()), hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi)) {
+        if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi) {
           whichHad = DplusToPhiPiToKKPi;
         }
       } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::LcToPKPi)) {
