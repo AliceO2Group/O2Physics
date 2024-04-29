@@ -19,7 +19,7 @@
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Tasks/SGTrackSelector.h"
+#include "PWGUD/Core/SGTrackSelector.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Framework/ASoA.h"
 #include "Framework/DataTypes.h"
