@@ -120,7 +120,7 @@ struct ExclusiveTwoProtons {
       double averageClusterSize = 0.;
       for (int i = 0; i < 7; i++) { // info stored in 4 bits
         clusterSize[i] = (((1 << 4) - 1) & (trk.itsClusterSizes() >> 4 * i));
-        averageClusterSize += (double)clusterSize[i];
+        averageClusterSize += static_cast<double>(clusterSize[i]);
       }
       averageClusterSize /= 7.;
       registry.fill(HIST("hClusterSizeAllTracks"), averageClusterSize);

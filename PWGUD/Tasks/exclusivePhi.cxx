@@ -361,7 +361,7 @@ struct ExclusivePhi {
       double averageClusterSize = 0.;
       for (int i = 0; i < 7; i++) { // info stored in 4 bits
         clusterSize[i] = (((1 << 4) - 1) & (t.itsClusterSizes() >> 4 * i));
-        averageClusterSize += (double)clusterSize[i];
+        averageClusterSize += static_cast<double>(clusterSize[i]);
       }
       averageClusterSize /= 7.;
       registry.fill(HIST("hClusterSizeAllTracks"), averageClusterSize);
@@ -592,21 +592,25 @@ struct ExclusivePhi {
 
       registry.fill(HIST("hTracksITSonly"), allTracksAreITSonlyAndFourITSclusters.size());
 
-      TLorentzVector reallyPhi[allTracksAreITSonlyAndFourITSclusters.size()];
+      // TLorentzVector reallyPhi[allTracksAreITSonlyAndFourITSclusters.size()];
       for (int kaon = 0; kaon < allTracksAreITSonlyAndFourITSclusters.size(); kaon++) {
 
         int clusterSize[7];
         double averageClusterSize = 0.;
         for (int i = 0; i < 7; i++) { // info stored in 4 bits
           clusterSize[i] = (((1 << 4) - 1) & (onlyITS[kaon].itsClusterSizes() >> 4 * i));
-          averageClusterSize += (double)clusterSize[i];
+          averageClusterSize += static_cast<double>(clusterSize[i]);
         }
         averageClusterSize /= 7.;
         registry.fill(HIST("hClusterSizeOnlyITS"), averageClusterSize);
 
-        reallyPhi[kaon] += allTracksAreKaonsBandPID[0];
-        reallyPhi[kaon] += allTracksAreITSonlyAndFourITSclusters[kaon];
-        registry.fill(HIST("PHI/hMassPtPhiIdentifiedKaonAndITSkaon"), reallyPhi[kaon].M(), reallyPhi[kaon].Pt());
+        TLorentzVector reallyPhi;
+        // reallyPhi[kaon] += allTracksAreKaonsBandPID[0];
+        // reallyPhi[kaon] += allTracksAreITSonlyAndFourITSclusters[kaon];
+        reallyPhi += allTracksAreKaonsBandPID[0];
+        reallyPhi += allTracksAreITSonlyAndFourITSclusters[kaon];
+        registry.fill(HIST("PHI/hMassPtPhiIdentifiedKaonAndITSkaon"), reallyPhi.M(), reallyPhi.Pt());
+        // registry.fill(HIST("PHI/hMassPtPhiIdentifiedKaonAndITSkaon"), reallyPhi[kaon].M(), reallyPhi[kaon].Pt());
       }
     }
 
