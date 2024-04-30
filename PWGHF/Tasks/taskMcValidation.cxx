@@ -216,7 +216,7 @@ struct HfTaskMcValidationGen {
             continue;
           }
         } else if (nDaughters[iD] == 3) {
-          if (!RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal3Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
+          if (!RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal3Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
             continue;
           }
           if (iD == DstarToDzeroPi &&
@@ -228,7 +228,6 @@ struct HfTaskMcValidationGen {
               !RecoDecay::isMatchedMCGen(mcParticles, particle, -PDGArrayParticle[iD], std::array{+o2::constants::physics::Pdg::kPhi, -kPiPlus})) {
             continue;
           }
-          // TODO: check if particles are recovered after isMatchedMCGen update to skip daughters from material
           if (iD == LcToPiK0s &&
               !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+kK0Short, +kProton}, false, nullptr, 2) &&
               !RecoDecay::isMatchedMCGen(mcParticles, particle, -PDGArrayParticle[iD], std::array{+kK0Short, -kProton}, false, nullptr, 2)) {
