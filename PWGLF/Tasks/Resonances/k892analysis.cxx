@@ -93,6 +93,8 @@ struct k892analysis {
   Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
+  // MC Event selection
+  Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
 
   // Event selection cuts - Alex (Temporary, need to fix!)
   TF1* fMultPVCutLow = nullptr;
@@ -519,7 +521,7 @@ struct k892analysis {
   void processMCLight(ResoMCCols::iterator const& collision,
                       soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
-    if (!collision.isInAfterAllCuts()) // MC event selection
+    if (!collision.isInAfterAllCuts() || (abs(colision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }
