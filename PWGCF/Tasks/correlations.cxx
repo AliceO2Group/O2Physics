@@ -424,7 +424,6 @@ struct CorrelationTask {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
         cfg.mEfficiencyAssociated = reinterpret_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
-        // cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<double>>(cfgEfficiencyAssociated, -1);
       } else {
         cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
       }
