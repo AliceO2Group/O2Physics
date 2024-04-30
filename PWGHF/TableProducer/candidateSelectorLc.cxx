@@ -57,6 +57,16 @@ struct HfCandidateSelectorLc {
   Configurable<double> ptPidBayesMax{"ptPidBayesMax", 100, "Upper bound of track pT for Bayesian PID"};
   // Combined PID options
   Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Bool to decide how to combine TPC and TOF PID: true = both (if present, only one otherwise); false = one is enough"};
+  // Single track cuts
+  Configurable<int> tpcNClsFoundMin{"tpcNClsFoundMin", 0, "min number of found TPC clusters"};
+  Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 0, "min number of crossed rows in TPC"};
+  Configurable<float> tpcNCrossedRowsOverFindableClustersMin{"tpcNCrossedRowsOverFindableClustersMin", 0., "min ratio crossed rows / findable clusters"};
+  Configurable<float> tpcChi2PerClusterMax{"tpcChi2PerClusterMax", 1e10f, "max tpc fit chi2 per TPC cluster"};
+  Configurable<int> itsNClsFoundMin{"itsNClsFoundMin", 0, "min. number of found ITS clusters"};
+  Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 1e10f, "max its fit chi2 per ITS cluster"};
+  // DCA track cuts
+  Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA XY/Z pT-dependent cut"};
+  Configurable<LabeledArray<double>> cutsSingleTrack{"cutsSingleTrack", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], hf_cuts_lc_to_p_k_pi::nBinsPt, hf_cuts_lc_to_p_k_pi::nCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
@@ -131,6 +141,25 @@ struct HfCandidateSelectorLc {
     }
   }
 
+  /// Single track quality cuts
+  /// \param track is track
+  /// \return true if track passes all cuts
+  template <typename T>
+  bool selectionTrackQuality(const T& trackPos1, const T& trackNeg, const T& trackPos2, int tpcNClsFoundMin, int tpcNCrossedRowsMin, float tpcNCrossedRowsOverFindableClustersMin, float tpcChi2PerClusterMax, int itsNClsFoundMin, float itsChi2PerClusterMax)
+  {
+    if (!isTpcQualityCuts(trackPos1, tpcNClsFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax) &&
+        !isTpcQualityCuts(trackNeg, tpcNClsFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax) &&
+        !isTpcQualityCuts(trackPos2, tpcNClsFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax)) {
+      return false;
+    }
+    if (!isItsQualityCuts(trackPos1, itsNClsFoundMin, itsChi2PerClusterMax) &&
+        !isItsQualityCuts(trackNeg, itsNClsFoundMin, itsChi2PerClusterMax) &&
+        !isItsQualityCuts(trackPos2, itsNClsFoundMin, itsChi2PerClusterMax)) {
+      return false;
+    }
+    return true;
+  }
+
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
@@ -162,6 +191,11 @@ struct HfCandidateSelectorLc {
     if (candidate.decayLength() <= cuts->get(pTBin, "decay length")) {
       return false;
     }
+
+    if (!isSelectedCandidateDca(candidate)) {
+      return false;
+    }
+
     return true;
   }
 
@@ -196,6 +230,33 @@ struct HfCandidateSelectorLc {
       }
     }
 
+    return true;
+  }
+
+  /// Single-track dca_xy and dca_z cuts
+  /// \param candidate is the Lc candidate
+  /// \return true if all the prongs pass the selections
+  template <typename T1>
+  bool isSelectedCandidateDca(const T1& candidate)
+  {
+    return (isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
+            isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()) &&
+            isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2(), candidate.impactParameterZ2()));
+  }
+
+  /// Apply PID selection
+  /// \param pidTrackPos1 is the PID status of trackPos1 (prong0 of Lc candidate)
+  /// \param pidTrackNeg is the PID status of trackNeg (prong1 of Lc candidate)
+  /// \param pidTrackPos2 is the PID status of trackPos2 (prong2 of Lc candidate)
+  /// \return true if prongs pass all selections
+  template <typename T = int>
+  bool isSelectedPID(const T& pidTrackPos1, const T& pidTrackNeg, const T& pidTrackPos2)
+  {
+    if (pidTrackPos1 == TrackSelectorPID::Rejected ||
+        pidTrackNeg == TrackSelectorPID::Rejected ||
+        pidTrackPos2 == TrackSelectorPID::Rejected) {
+      return false;
+    }
     return true;
   }
 
@@ -235,6 +296,16 @@ struct HfCandidateSelectorLc {
 
       // implement filter bit 4 cut - should be done before this task at the track selection level
 
+      // track quality selection
+      bool trackQualitySel = selectionTrackQuality(trackPos1, trackNeg, trackPos2, tpcNClsFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax, itsNClsFoundMin, itsChi2PerClusterMax);
+      if (!trackQualitySel) {
+        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
+        if (applyMl) {
+          hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
+        }
+        continue;
+      }
+
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
@@ -245,7 +316,6 @@ struct HfCandidateSelectorLc {
       }
 
       // conjugate-dependent topological selection for Lc
-
       bool topolLcToPKPi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
       bool topolLcToPiKP = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
 
@@ -291,23 +361,15 @@ struct HfCandidateSelectorLc {
           pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
         }
 
-        if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
-            pidTrackNegKaon == TrackSelectorPID::Accepted &&
-            pidTrackPos2Pion == TrackSelectorPID::Accepted) {
+        if (isSelectedPID(pidTrackPos1Proton, pidTrackNegKaon, pidTrackPos2Pion)) {
           pidLcToPKPi = 1; // accept LcToPKPi
-        } else if (pidTrackPos1Proton == TrackSelectorPID::Rejected ||
-                   pidTrackNegKaon == TrackSelectorPID::Rejected ||
-                   pidTrackPos2Pion == TrackSelectorPID::Rejected) {
-          pidLcToPKPi = 0; // exclude LcToPKPi
+        } else {
+          pidLcToPKPi = 0; // reject LcToPKPi
         }
-        if (pidTrackPos2Proton == TrackSelectorPID::Accepted &&
-            pidTrackNegKaon == TrackSelectorPID::Accepted &&
-            pidTrackPos1Pion == TrackSelectorPID::Accepted) {
+        if (isSelectedPID(pidTrackPos2Proton, pidTrackNegKaon, pidTrackPos1Pion)) {
           pidLcToPiKP = 1; // accept LcToPiKP
-        } else if (pidTrackPos1Pion == TrackSelectorPID::Rejected ||
-                   pidTrackNegKaon == TrackSelectorPID::Rejected ||
-                   pidTrackPos2Proton == TrackSelectorPID::Rejected) {
-          pidLcToPiKP = 0; // exclude LcToPiKP
+        } else {
+          pidLcToPiKP = 0; // accept LcToPiKP
         }
       }
 
@@ -322,40 +384,29 @@ struct HfCandidateSelectorLc {
         int pidBayesTrackPos2Pion = selectorPion.statusBayes(trackPos2);
         int pidBayesTrackNegKaon = selectorKaon.statusBayes(trackNeg);
 
-        if (pidBayesTrackPos1Proton == TrackSelectorPID::Accepted &&
-            pidBayesTrackNegKaon == TrackSelectorPID::Accepted &&
-            pidBayesTrackPos2Pion == TrackSelectorPID::Accepted) {
+        if (isSelectedPID(pidBayesTrackPos1Proton, pidBayesTrackNegKaon, pidBayesTrackPos2Pion)) {
           pidBayesLcToPKPi = 1; // accept LcToPKPi
-        } else if (pidBayesTrackPos1Proton == TrackSelectorPID::Rejected ||
-                   pidBayesTrackNegKaon == TrackSelectorPID::Rejected ||
-                   pidBayesTrackPos2Pion == TrackSelectorPID::Rejected) {
-          pidBayesLcToPKPi = 0; // exclude LcToPKPi
+        } else {
+          pidBayesLcToPKPi = 0; // reject LcToPKPi
         }
-        if (pidBayesTrackPos2Proton == TrackSelectorPID::Accepted &&
-            pidBayesTrackNegKaon == TrackSelectorPID::Accepted &&
-            pidBayesTrackPos1Pion == TrackSelectorPID::Accepted) {
+
+        if (isSelectedPID(pidBayesTrackPos2Proton, pidBayesTrackNegKaon, pidBayesTrackPos1Pion)) {
           pidBayesLcToPiKP = 1; // accept LcToPiKP
-        } else if (pidBayesTrackPos1Pion == TrackSelectorPID::Rejected ||
-                   pidBayesTrackNegKaon == TrackSelectorPID::Rejected ||
-                   pidBayesTrackPos2Proton == TrackSelectorPID::Rejected) {
-          pidBayesLcToPiKP = 0; // exclude LcToPiKP
+        } else {
+          pidBayesLcToPiKP = 0; // reject LcToPiKP
         }
       }
 
-      if (pidLcToPKPi == 0 && pidLcToPiKP == 0) {
+      if ((pidLcToPKPi == 0 && pidLcToPiKP == 0) || (pidBayesLcToPKPi == 0 && pidBayesLcToPiKP == 0)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         if (applyMl) {
           hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
         }
         continue;
       }
+
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
-      }
-
-      if (pidBayesLcToPKPi == 0 && pidBayesLcToPiKP == 0) {
-        hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
-        continue;
       }
 
       bool isSelectedMlLcToPKPi = true;
@@ -365,11 +416,11 @@ struct HfCandidateSelectorLc {
         isSelectedMlLcToPKPi = false;
         isSelectedMlLcToPiKP = false;
 
-        if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && topolLcToPKPi) {
+        if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
           std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
           isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
         }
-        if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && topolLcToPiKP) {
+        if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && topolLcToPiKP) {
           std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
           isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
         }
@@ -386,10 +437,10 @@ struct HfCandidateSelectorLc {
         }
       }
 
-      if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && isSelectedMlLcToPKPi && topolLcToPKPi) {
+      if ( pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && isSelectedMlLcToPKPi && topolLcToPKPi && trackQualitySel) {
         statusLcToPKPi = 1; // identified as LcToPKPi
       }
-      if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && isSelectedMlLcToPiKP && topolLcToPiKP) {
+      if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && isSelectedMlLcToPiKP && topolLcToPiKP && trackQualitySel) {
         statusLcToPiKP = 1; // identified as LcToPiKP
       }
 
