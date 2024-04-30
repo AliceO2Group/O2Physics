@@ -509,7 +509,7 @@ struct AnalysisPrefilterSelection {
     const int pairType = VarManager::kDecayToEE;
     fPrefiltermap.clear();
 
-    if (events.size()>0 && fCurrentRun != events.begin().runNumber()) {
+    if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
       if (grpmag != nullptr) {
         VarManager::SetMagneticField(grpmag->getNominalL3Field());
@@ -707,7 +707,7 @@ struct AnalysisEventMixing {
   template <int TPairType, uint32_t TEventFillMap, typename TEvents, typename TTracks>
   void runSameSide(TEvents& events, TTracks const& tracks, Preslice<TTracks>& preSlice)
   {
-    if (events.size()>0 && fCurrentRun != events.begin().runNumber()) {
+    if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
       if (grpmag != nullptr) {
         VarManager::SetMagneticField(grpmag->getNominalL3Field());
@@ -738,7 +738,7 @@ struct AnalysisEventMixing {
   template <uint32_t TEventFillMap, typename TEvents, typename TTracks, typename TMuons>
   void runBarrelMuon(TEvents& events, TTracks const& tracks, TMuons const& muons)
   {
-    if (events.size()>0 && fCurrentRun != events.begin().runNumber()) {
+    if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
       if (grpmag != nullptr) {
         VarManager::SetMagneticField(grpmag->getNominalL3Field());

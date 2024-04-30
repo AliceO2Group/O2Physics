@@ -1479,7 +1479,7 @@ struct AnalysisSameEventPairing {
                           soa::Filtered<MyBarrelTracksSelected> const& tracks,
                           ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
-    if (events.size()>0 && fCurrentRun != events.begin().runNumber()) {
+    if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
       if (fUseRemoteField.value) {
         grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
         if (grpmag != nullptr) {
