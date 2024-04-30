@@ -11,23 +11,6 @@
 ///
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/EventSelection.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-
 #include <TH1F.h>
 #include <TRandom.h>
 #include <TDirectory.h>
@@ -44,6 +27,22 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Common/DataModel/EventSelection.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Framework/ASoAHelpers.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/HistogramRegistry.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/Core/TrackSelection.h"
 
 using namespace o2;
 using namespace o2::framework;
