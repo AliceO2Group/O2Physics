@@ -899,7 +899,7 @@ struct nuclei_in_jets {
     }
   }
 
-  void processRec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const&, const aod::McParticles&)
+  void processRec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::McCollisions const& mcCollisions, const aod::McParticles& mcParticles)
   {
 
     for (const auto& collision : collisions) {
@@ -914,7 +914,7 @@ struct nuclei_in_jets {
       if (abs(collision.posZ()) > 10)
         continue;
 
-      // Event Counter (after event sel)
+      // Event Counter (after cut on z_vtx)
       registryQC.fill(HIST("number_of_events_mc"), 2.5);
 
       auto tracks_per_coll = mcTracks.sliceBy(perCollision, collision.globalIndex());
@@ -1039,13 +1039,13 @@ struct nuclei_in_jets {
       // Generated Particles
       for (auto& particle : mcParticles_per_coll) {
 
+        // Particle Index
+        i++;
+
         if (!particle.isPhysicalPrimary())
           continue;
         if (particle.pdgCode() != -2212)
           continue;
-
-        // Index
-        i++;
 
         // Find pt Leading
         if (particle.pt() > pt_max) {
