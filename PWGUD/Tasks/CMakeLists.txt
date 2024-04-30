@@ -112,3 +112,8 @@ o2physics_add_dpl_workflow(upc-photonuclear-jmg
                            SOURCES upcPhotonuclearAnalysisJMG.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(exclusive-two-protons
+                           SOURCES exclusiveTwoProtons.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)

@@ -103,7 +103,7 @@ struct lambdakzeroBuilder {
   std::map<std::string, std::string> metadata;
 
   Produces<aod::V0Indices> v0indices;
-  Produces<aod::StoredV0Cores> v0cores;
+  Produces<aod::V0CoresBase> v0cores;
   Produces<aod::V0TrackXs> v0trackXs;
   Produces<aod::V0Covs> v0covs;                  // covariances
   Produces<aod::V0DauCovs> v0daucovs;            // covariances of daughter tracks

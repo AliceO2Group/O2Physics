@@ -69,6 +69,7 @@ struct lambda1520analysis {
   Configurable<float> cRejNsigmaTpc{"cRejNsigmaTpc", 3.0, "Reject tracks to improve purity of TPC PID"}; // Reject missidentified particles when tpc bands merge
   Configurable<float> cRejNsigmaTof{"cRejNsigmaTof", 3.0, "Reject tracks to improve purity of TOF PID"}; // Reject missidentified particles when tpc bands merge
   Configurable<bool> cUseRejNsigma{"cUseRejNsigma", false, "Switch on/off track rejection method to improve purity"};
+  Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
 
   // Kaon
   // Old PID use case
@@ -343,39 +344,48 @@ struct lambda1520analysis {
   template <typename T>
   bool selectionnewPIDProton(const T& candidate)
   {
-    bool tpcPIDPassed{false}, tofPIDPassed{false};
-    if (std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
-      if (cUseRejNsigma) {
-        if (candidate.tpcNSigmaPi() > cRejNsigmaTpc && candidate.tpcNSigmaKa() > cRejNsigmaTpc) {
-          tpcPIDPassed = true;
-        }
-      } else {
-        tpcPIDPassed = true;
+    if (tof_at_high_pt) {
+      if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton)) {
+        return true;
       }
-    }
-    if (candidate.hasTOF()) {
-      if ((nsigmaCutCombinedProton > 0) && ((candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (nsigmaCutCombinedProton * nsigmaCutCombinedProton))) {
-        if (cUseRejNsigma) {
-          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaKa() > cRejNsigmaTof) {
-            tofPIDPassed = true;
-          }
-        } else {
-          tofPIDPassed = true;
-        }
-      } else if (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton) {
-        if (cUseRejNsigma) {
-          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaKa() > cRejNsigmaTof) {
-            tofPIDPassed = true;
-          }
-        } else {
-          tofPIDPassed = true;
-        }
+      if (!candidate.hasTOF() && (std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaKaon)) {
+        return true;
       }
     } else {
-      tofPIDPassed = true;
-    }
-    if (tpcPIDPassed && tofPIDPassed) {
-      return true;
+      bool tpcPIDPassed{false}, tofPIDPassed{false};
+      if (std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
+        if (cUseRejNsigma) {
+          if (std::abs(candidate.tpcNSigmaPi()) > cRejNsigmaTpc && std::abs(candidate.tpcNSigmaKa()) > cRejNsigmaTpc) {
+            tpcPIDPassed = true;
+          }
+        } else if (!cUseRejNsigma) {
+          tpcPIDPassed = true;
+        }
+      }
+      if (candidate.hasTOF()) {
+        if ((nsigmaCutCombinedProton > 0) && ((candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (nsigmaCutCombinedProton * nsigmaCutCombinedProton))) {
+          if (cUseRejNsigma) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaKa()) > cRejNsigmaTof) {
+              tofPIDPassed = true;
+            }
+          } else if (!cUseRejNsigma) {
+            tofPIDPassed = true;
+          }
+        } else if ((nsigmaCutCombinedProton <= 0) && (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton)) {
+          if (cUseRejNsigma) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaKa()) > cRejNsigmaTof) {
+              tofPIDPassed = true;
+            }
+          } else if (!cUseRejNsigma) {
+            tofPIDPassed = true;
+          }
+        }
+      } else {
+        tofPIDPassed = true;
+      }
+      if (tpcPIDPassed && tofPIDPassed) {
+        return true;
+      }
     }
     return false;
   }
@@ -383,40 +393,48 @@ struct lambda1520analysis {
   template <typename T>
   bool selectionnewPIDKaon(const T& candidate)
   {
-    bool tpcPIDPassed{false}, tofPIDPassed{false};
-    if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
-      if (cUseRejNsigma) {
-        if (candidate.tpcNSigmaPi() > cRejNsigmaTpc && candidate.tpcNSigmaPr() > cRejNsigmaTpc) {
-          tpcPIDPassed = true;
-        }
-      } else {
-        tpcPIDPassed = true;
+    if (tof_at_high_pt) {
+      if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
+        return true;
       }
-    }
-    if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
-        if (cUseRejNsigma) {
-          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaPr() > cRejNsigmaTof) {
-            tofPIDPassed = true;
-          }
-        } else {
-          tofPIDPassed = true;
-        }
-      }
-      if ((nsigmaCutCombinedKaon > 0) && ((candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < (nsigmaCutCombinedKaon * nsigmaCutCombinedKaon))) {
-        if (cUseRejNsigma) {
-          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaPr() > cRejNsigmaTof) {
-            tofPIDPassed = true;
-          }
-        } else {
-          tofPIDPassed = true;
-        }
+      if (!candidate.hasTOF() && (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon)) {
+        return true;
       }
     } else {
-      tofPIDPassed = true;
-    }
-    if (tpcPIDPassed && tofPIDPassed) {
-      return true;
+      bool tpcPIDPassed{false}, tofPIDPassed{false};
+      if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+        if (cUseRejNsigma) {
+          if (std::abs(candidate.tpcNSigmaPi()) > cRejNsigmaTpc && std::abs(candidate.tpcNSigmaPr()) > cRejNsigmaTpc) {
+            tpcPIDPassed = true;
+          }
+        } else if (!cUseRejNsigma) {
+          tpcPIDPassed = true;
+        }
+      }
+      if (candidate.hasTOF()) {
+        if ((nsigmaCutCombinedKaon > 0) && ((candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < (nsigmaCutCombinedKaon * nsigmaCutCombinedKaon))) {
+          if (cUseRejNsigma) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaPr()) > cRejNsigmaTof) {
+              tofPIDPassed = true;
+            }
+          } else if (!cUseRejNsigma) {
+            tofPIDPassed = true;
+          }
+        } else if ((nsigmaCutCombinedKaon <= 0) && (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
+          if (cUseRejNsigma) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaPr()) > cRejNsigmaTof) {
+              tofPIDPassed = true;
+            }
+          } else if (!cUseRejNsigma) {
+            tofPIDPassed = true;
+          }
+        }
+      } else {
+        tofPIDPassed = true;
+      }
+      if (tpcPIDPassed && tofPIDPassed) {
+        return true;
+      }
     }
     return false;
   }
@@ -514,14 +532,14 @@ struct lambda1520analysis {
     return isTrk2Selected;
   }
 
-  template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
+  template <bool IsData, bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
     auto multiplicity = collision.cent();
 
     // Multiplicity correlation calibration plots
     if (isFilladditionalQA) {
-      if constexpr (!IsMix) {
+      if constexpr (IsData) {
         histos.fill(HIST("MultCalib/centglopr_before"), multiplicity, dTracks1.size());
         histos.fill(HIST("MultCalib/centgloka_before"), multiplicity, dTracks2.size());
         histos.fill(HIST("MultCalib/GloPVpr_before"), dTracks1.size(), collision.multNTracksPV());
@@ -533,7 +551,7 @@ struct lambda1520analysis {
       return;
     }
     if (isFilladditionalQA) {
-      if constexpr (!IsMix) {
+      if constexpr (IsData) {
         histos.fill(HIST("MultCalib/centglopr_after"), multiplicity, dTracks1.size());
         histos.fill(HIST("MultCalib/centgloka_after"), multiplicity, dTracks2.size());
         histos.fill(HIST("MultCalib/GloPVpr_after"), dTracks1.size(), collision.multNTracksPV());
@@ -566,7 +584,7 @@ struct lambda1520analysis {
 
       //// QA plots before the selection
       //  --- Track QA all
-      if constexpr (!IsMix) {
+      if constexpr (IsData) {
         histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTPC);
         if (isTrk1hasTOF) {
           histos.fill(HIST("QA/QAbefore/Track/TOF_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTOF);
@@ -605,7 +623,7 @@ struct lambda1520analysis {
       }
 
       //// QA plots after the selection
-      if constexpr (!IsMix) { //  --- PID QA Proton
+      if constexpr (IsData) { //  --- PID QA Proton
         histos.fill(HIST("QA/QAafter/Proton/TPC_Nsigma_pr_all"), multiplicity, trk1ptPr, trk1NSigmaPrTPC);
         histos.fill(HIST("QA/QAafter/Proton/TPC_Signal_pr_all"), trk1ptPr, trk1.tpcSignal());
         if (isTrk1hasTOF) {
@@ -664,7 +682,7 @@ struct lambda1520analysis {
         continue;
       //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
-        if constexpr (!IsMix) {
+        if constexpr (IsData) {
           if (trk1.sign() < 0) {
             histos.fill(HIST("Result/Data/lambda1520invmass"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmass"), collision.cent(), lResonance.Pt(), lResonance.M());
@@ -679,7 +697,7 @@ struct lambda1520analysis {
             histos.fill(HIST("Result/Data/hlambda1520invmassUnlikeSignCside"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignCside"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
-        } else {
+        } else if (IsMix) {
           histos.fill(HIST("Result/Data/lambda1520invmassME"), lResonance.M());
           histos.fill(HIST("Result/Data/h3lambda1520invmassME"), collision.cent(), lResonance.Pt(), lResonance.M());
           if (cEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
@@ -729,7 +747,7 @@ struct lambda1520analysis {
           }
         }
       } else {
-        if constexpr (!IsMix) {
+        if constexpr (IsData) {
           if (cEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassLikeSignAside"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignAside"), collision.cent(), lResonance.Pt(), lResonance.M());
@@ -753,14 +771,14 @@ struct lambda1520analysis {
   void processData(aod::ResoCollision& collision,
                    aod::ResoTracks const& resotracks)
   {
-    fillHistograms<false, false>(collision, resotracks, resotracks);
+    fillHistograms<true, false, false>(collision, resotracks, resotracks);
   }
   PROCESS_SWITCH(lambda1520analysis, processData, "Process Event for data without partition", false);
 
   void processMC(aod::ResoCollision& collision,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
-    fillHistograms<true, false>(collision, resotracks, resotracks);
+    fillHistograms<false, true, false>(collision, resotracks, resotracks);
   }
   PROCESS_SWITCH(lambda1520analysis, processMC, "Process Event for MC Light without partition", false);
 
@@ -801,7 +819,7 @@ struct lambda1520analysis {
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
-      fillHistograms<false, true>(collision1, tracks1, tracks2);
+      fillHistograms<false, false, true>(collision1, tracks1, tracks2);
     }
   };
   PROCESS_SWITCH(lambda1520analysis, processME, "Process EventMixing light without partition", false);

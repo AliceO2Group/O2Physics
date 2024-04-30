@@ -132,6 +132,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookCorrelationsHistograms();
     BookWeightsHistograms();
     BookNestedLoopsHistograms();
+    BookNUAHistograms();
     BookInternalValidationHistograms();
     BookTest0Histograms();
     BookTheRest(); // here I book everything that was not sorted (yet) in the specific functions above

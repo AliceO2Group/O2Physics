@@ -638,7 +638,7 @@ struct tableMakerMuonMchTrkEfficiency {
     auto mcCollision = collision.reducedMCevent();
     VarManager::FillEvent<gkReducedEventMCFillMap>(mcCollision);
     /// event selection
-    runEventSelection<gkReducedMuonFillMap>(collision);
+    runEventSelection<gkReducedEventFillMap>(collision);
 
     /// Run muon selection and histo filling
     //        VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
