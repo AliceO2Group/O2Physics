@@ -40,11 +40,13 @@ enum {
   kINELg0,
   kINELg010,
   kTrig,
+  kTrig10,
   kINELg0Trig,
   kINELg010Trig,
   kSel,
+  kSel10,
   kINELg0Sel,
-  kINELg010Sel,
+  kINELg010Sel, // = 12
   kECend,
 };
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (Multiplicity) percentile (Default: FT0M)
