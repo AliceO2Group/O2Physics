@@ -105,14 +105,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! absolute p
     DECLARE_SOA_ARRAY_INDEX_COLUMN(_track_type_, tracks);                                             \
     DECLARE_SOA_ARRAY_INDEX_COLUMN(JCluster, clusters);                                               \
     DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(HfCandidates, hfcandidates, int32_t, _cand_type_, "_hfcand"); \
-    DECLARE_SOA_ARRAY_INDEX_COLUMN(V0Data, v0candidates);                                             \
   }                                                                                                   \
   DECLARE_SOA_TABLE(_jet_type_##Constituents, "AOD", _Description_ "C",                               \
                     _name_##constituents::_jet_type_##Id,                                             \
                     _name_##constituents::_track_type_##Ids,                                          \
                     _name_##constituents::JClusterIds,                                                \
-                    _name_##constituents::HfCandidatesIds,                                            \
-                    _name_##constituents::V0DataIds);
+                    _name_##constituents::HfCandidatesIds);
 
 // combine definition of tables for jets, constituents
 #define DECLARE_JET_TABLES(_collision_name_, _jet_type_, _track_type_, _hfcand_type_, _description_)        \
