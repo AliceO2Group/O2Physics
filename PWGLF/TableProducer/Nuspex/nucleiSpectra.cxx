@@ -628,6 +628,9 @@ struct nucleiSpectra {
     if (!eventSelection(collision)) {
       return;
     }
+    if (!collision.triggereventep()) {
+      return;
+    }
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
