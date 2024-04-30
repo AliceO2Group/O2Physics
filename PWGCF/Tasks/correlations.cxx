@@ -768,6 +768,9 @@ struct CorrelationTask {
       LOGF(info, "processMCSameDerived. MC collision: %d, particles: %d, collisions: %d", mcCollision.globalIndex(), mcParticles.size(), collisions.size());
     }
 
+    if (cfgCentBinsForMC > 0 && collisions.size() == 0) {
+      return;
+    }
     auto multiplicity = mcCollision.multiplicity();
     if (cfgCentBinsForMC > 0) {
       for (auto& collision : collisions) {
@@ -814,7 +817,9 @@ struct CorrelationTask {
       if (cfgVerbosity > 0) {
         LOGF(info, "Found %d related collisions", groupedCollisions.size());
       }
-
+      if (cfgCentBinsForMC > 0 && groupedCollisions.size() == 0) {
+      return;
+      }
       if (cfgCentBinsForMC > 0) {
         for (auto& collision : groupedCollisions) {
           multiplicity = collision.multiplicity();
