@@ -201,7 +201,7 @@ struct qVectorsCorrection {
   void process(MyCollisions::iterator const& qVec)
   {
     histosQA.fill(HIST("histCentFull"), qVec.cent());
-    if( cfgAddEvtSel && (
+    if( cfgAddEvtSel && ( !qVec.sel8() ||
         !qVec.selection_bit(aod::evsel::kNoTimeFrameBorder) ||
         !qVec.selection_bit(aod::evsel::kNoTimeFrameBorder) ||
         !qVec.selection_bit(aod::evsel::kNoITSROFrameBorder) ||
