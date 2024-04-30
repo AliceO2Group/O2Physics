@@ -819,8 +819,7 @@ struct CorrelationTask {
         for (auto& collision : groupedCollisions) {
           multiplicity = collision.multiplicity();
         }
-      }
-      else {
+      } else {
         multiplicity = collision1.multiplicity();
       }
 
