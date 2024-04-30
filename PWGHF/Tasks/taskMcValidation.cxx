@@ -44,22 +44,30 @@ enum DecayChannels { DzeroToKPi = 0,
                      DsToK0starKToKKPi,  // resonant channel with K0*, Ds -> K0*K -> KKPi
                      LcToPKPi,
                      LcToPiK0s,
-                     XicToPKPi,
+                     XiCplusToPKPi,
+                     XiCplusToXiPiPi,
+                     XiCzeroToXiPi,
+                     OmegaCToOmegaPi,
+                     OmegaCToXiPi,
                      nChannels }; // always keep nChannels at the end
 
+static const int nMesonChannels = 6;  // number of meson channels
 static const std::array<int, nChannels> PDGArrayParticle = {o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDPlus,
                                                             o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kLambdaCPlus,
-                                                            o2::constants::physics::Pdg::kXiCPlus};
-static const int nMesonChannels = 6;                                                       
-static const std::array<unsigned int, nChannels> nDaughters = {2, 3, 3, 3, 3, 3, 3, 3, 3};
-static const std::array<int, nChannels> maxDepthForSearch = {1, 2, 2, 2, 2, 2, 2, 3, 2};
+                                                            o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kXiC0, o2::constants::physics::Pdg::kOmegaC0, o2::constants::physics::Pdg::kOmegaC0};                          
+static const std::array<unsigned int, nChannels> nDaughters = {2, 3, 3, 3, 3, 3, 3, 3, 3, 5, 4, 4, 4};
+static const std::array<int, nChannels> maxDepthForSearch = {1, 2, 2, 2, 2, 2, 2, 3, 2, 4, 3, 3, 3};
 // keep coherent indexing with PDGArrayParticle
 // FIXME: look for a better solution
-static const std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{+kPiPlus, -kKPlus}, {}, {}, {}, {}, {}, {}, {}, {}}};
-static const std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kPiPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}}};
-static const std::array<std::string, nChannels> labels = {"D^{0} #rightarrow K#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{+} #rightarrow K#pi#pi", "D^{+} #rightarrow KK#pi",
-                                                          "D_{s}^{+} #rightarrow #Phi#pi #rightarrow KK#pi", "D_{s}^{+} #rightarrow #bar{K}^{*0}K #rightarrow KK#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s}", "#Xi_{c}^{+} #rightarrow pK#pi"};
-static const std::array<std::string, nChannels> particleNames = {"DzeroToKPi", "DstarToDzeroPi", "DplusToPiKPi", "DplusToKKpi", "DsToPhiPiToKKpi", "DsToK0starKToKKpi", "LcToPKPi", "LcToPiK0s", "XiCplusToPKPi"};
+static const std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{+kPiPlus, -kKPlus}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}};
+static const std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kPiPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {}, {}, {}, {}}};
+static const std::array<std::array<int, 4>, nChannels> arrPDGFinal4Prong = {{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {+kPiPlus, -kKPlus, -kPiPlus, +kProton}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}}};
+static const std::array<std::array<int, 5>, nChannels> arrPDGFinal5Prong = {{{}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, +kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {}, {}, {}, {}}};
+static const std::array<std::string, nChannels> labels = {"D^{0} #rightarrow K#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{+} #rightarrow K#pi#pi", "D^{+} #rightarrow KK#pi", "D_{s}^{+} #rightarrow #Phi#pi #rightarrow KK#pi",
+                                                          "D_{s}^{+} #rightarrow #bar{K}^{*0}K #rightarrow KK#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s}", "#Xi_{c}^{+} #rightarrow pK#pi",
+                                                          "#Xi_{c}^{+} #rightarrow #Xi#pi#pi", "#Xi_{c}^{0} #rightarrow #Xi#pi", "#Omega_{c}^{0} #rightarrow #Omega#pi", "#Omega_{c}^{0} #rightarrow #Xi#pi"};
+static const std::array<std::string, nChannels> particleNames = {"DzeroToKPi", "DstarToDzeroPi", "DplusToPiKPi", "DplusToKKpi", "DsToPhiPiToKKpi", "DsToK0starKToKKpi",
+                                                                 "LcToPKPi", "LcToPiK0s", "XiCplusToPKPi", "XiCplusToXiPiPi", "XiCzeroToXiPi", "OmegaCToOmegaPi", "OmegaCToXiPi"};
 static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 } // namespace
 
@@ -235,7 +243,9 @@ struct HfTaskMcValidationGen {
           if (!RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal2Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
             continue;
           }
-        } else if (nDaughters[iD] == 3) {
+        }
+
+        if (nDaughters[iD] == 3) {
           if (!RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal3Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
             continue;
           }
@@ -255,6 +265,18 @@ struct HfTaskMcValidationGen {
           if (iD == LcToPiK0s &&
               !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+kK0Short, +kProton}, false, nullptr, 2) &&
               !RecoDecay::isMatchedMCGen(mcParticles, particle, -PDGArrayParticle[iD], std::array{+kK0Short, -kProton}, false, nullptr, 2)) {
+            continue;
+          }
+        }
+
+        if (nDaughters[iD] == 4) {
+          if (!RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal4Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
+            continue;
+          }
+        }
+
+        if (nDaughters[iD] == 5) {
+          if (!RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal5Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
             continue;
           }
         }
@@ -340,7 +362,7 @@ struct HfTaskMcValidationGen {
     registry.fill(HIST("promptCharmMesons/hCountPromptDsToK0starKToKKPi"), counterPrompt[DsToK0starKToKKPi]);
     registry.fill(HIST("promptCharmBaryons/hCountPromptLambdaCToPKPi"), counterPrompt[LcToPKPi]);
     registry.fill(HIST("promptCharmBaryons/hCountPromptLambdaCToPK0s"), counterPrompt[LcToPiK0s]);
-    registry.fill(HIST("promptCharmBaryons/hCountPromptXiCToPKPi"), counterPrompt[XicToPKPi]);
+    registry.fill(HIST("promptCharmBaryons/hCountPromptXiCToPKPi"), counterPrompt[XiCplusToPKPi]);
     registry.fill(HIST("nonPromptCharmMesons/hCountNonPromptDzeroToKPi"), counterNonPrompt[DzeroToKPi]);
     registry.fill(HIST("nonPromptCharmMesons/hCountNonPromptDstarToD0Pi"), counterNonPrompt[DstarToDzeroPi]);
     registry.fill(HIST("nonPromptCharmMesons/hCountNonPromptDplusToKPiPi"), counterNonPrompt[DplusToPiKPi]);
@@ -349,7 +371,7 @@ struct HfTaskMcValidationGen {
     registry.fill(HIST("nonPromptCharmMesons/hCountNonPromptDsToK0starKToKKPi"), counterNonPrompt[DsToK0starKToKKPi]);
     registry.fill(HIST("nonPromptCharmBaryons/hCountNonPromptLambdaCToPKPi"), counterNonPrompt[LcToPKPi]);
     registry.fill(HIST("nonPromptCharmBaryons/hCountNonPromptLambdaCToPK0s"), counterNonPrompt[LcToPiK0s]);
-    registry.fill(HIST("nonPromptCharmBaryons/hCountNonPromptXiCToPKPi"), counterNonPrompt[XicToPKPi]);
+    registry.fill(HIST("nonPromptCharmBaryons/hCountNonPromptXiCToPKPi"), counterNonPrompt[XiCplusToPKPi]);
   };
 };
 
@@ -714,7 +736,7 @@ struct HfTaskMcValidationRec {
       } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::LcToPKPi)) {
         whichHad = LcToPKPi;
       } else if (isXicSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::XicToPKPi)) {
-        whichHad = XicToPKPi;
+        whichHad = XiCplusToPKPi;
       }
       int whichOrigin;
       if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
