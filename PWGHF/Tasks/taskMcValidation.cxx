@@ -58,7 +58,7 @@ static const std::array<int, nChannels> maxDepthForSearch = {1, 2, 2, 2, 2, 2, 2
 static const std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{+kPiPlus, -kKPlus}, {}, {}, {}, {}, {}, {}, {}, {}}};
 static const std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kPiPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}}};
 static const std::array<std::string, nChannels> labels = {"D^{0} #rightarrow K#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{+} #rightarrow K#pi#pi", "D^{+} #rightarrow KK#pi",
-                                                          "D_{s}^{+} #rightarrow #Phi pi #rightarrow KK#pi", "D_{s}^{+} #rightarrow #bar{K}^{*0}K #rightarrow KK#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s}", "#Xi_{c}^{+} #rightarrow pK#pi"};
+                                                          "D_{s}^{+} #rightarrow #Phi#pi #rightarrow KK#pi", "D_{s}^{+} #rightarrow #bar{K}^{*0}K #rightarrow KK#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s}", "#Xi_{c}^{+} #rightarrow pK#pi"};
 static const std::array<std::string, nChannels> particleNames = {"DzeroToKPi", "DstarToDzeroPi", "DplusToPiKPi", "DplusToKKpi", "DsToPhiPiToKKpi", "DsToK0starKToKKpi", "LcToPKPi", "LcToPiK0s", "XiCplusToPKPi"};
 static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 } // namespace
