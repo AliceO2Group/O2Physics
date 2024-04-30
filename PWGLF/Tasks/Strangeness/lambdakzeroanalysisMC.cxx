@@ -84,7 +84,7 @@ struct lambdakzeroQa {
     registry.add("hMassAntiLambda", "hMassAntiLambda", {HistType::kTH1F, {massAxisLambda}});
   }
 
-  void process(aod::Collision const& collision, aod::V0Datas const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void process(aod::Collision const& collision, aod::V0Datas const& fullV0s, aod::McParticles const& /*mcParticles*/, MyTracks const& /*tracks*/)
   {
     registry.fill(HIST("hCollisionZ"), collision.posZ());
     for (auto& v0 : fullV0s) {
@@ -206,7 +206,7 @@ struct lambdakzeroAnalysisMc {
 
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& /*mcParticles*/, MyTracks const& /*tracks*/)
   // void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentV0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
   {
     registry.fill(HIST("hEventSelection"), 0.5);
@@ -341,7 +341,7 @@ struct lambdakzeroAnalysisMc {
   }
   PROCESS_SWITCH(lambdakzeroAnalysisMc, processRun3, "Process Run 3 data", true);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& mcParticles, MyTracks const& tracks)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, aod::McParticles const& /*mcParticles*/, MyTracks const& /*tracks*/)
   {
     if (!collision.alias_bit(kINT7)) {
       return;

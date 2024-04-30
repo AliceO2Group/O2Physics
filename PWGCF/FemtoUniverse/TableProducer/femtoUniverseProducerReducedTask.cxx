@@ -14,7 +14,7 @@
 /// \author Luca Barioglio, TU München, andreas.mathis@ph.tum.de
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include "TMath.h"
 #include <CCDB/BasicCCDBManager.h>
@@ -327,7 +327,7 @@ struct femtoUniverseProducerReducedTask {
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                 aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+                 aod::McCollisions const&, aod::McParticles const&)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());

@@ -93,7 +93,6 @@ void analyseClusters(std::vector<fastjet::PseudoJet>& inputParticles, T const& c
  * Adds hf candidates to a fastjet inputParticles list (for data)
  *
  * @param inputParticles fastjet container
- * @param candMass pdg mass of hf candidate
  * @param candPtMin minimum pT of hf candidate
  * @param candPtMax maximum pT of hf candidate
  * @param candYMin minimum Y of hf candidate
@@ -101,8 +100,9 @@ void analyseClusters(std::vector<fastjet::PseudoJet>& inputParticles, T const& c
  * @param candidate hf candidate
  */
 template <typename T>
-bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, T const& candidate, float candPtMin, float candPtMax, float candYMin, float candYMax, float candMass)
+bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, T const& candidate, float candPtMin, float candPtMax, float candYMin, float candYMax)
 {
+  auto candMass = jethfutilities::getCandidatePDGMass(candidate);
   if (isnan(candidate.y())) {
     return false;
   }
@@ -120,7 +120,6 @@ bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, T const& 
  * Adds hf candidates to a fastjet inputParticles list (for MC det)
  *
  * @param inputParticles fastjet container
- * @param candMass pdg mass of hf candidate
  * @param candPtMin minimum pT of hf candidate
  * @param candPtMax maximum pT of hf candidate
  * @param candYMin minimum Y of hf candidate
@@ -129,12 +128,12 @@ bool analyseCandidate(std::vector<fastjet::PseudoJet>& inputParticles, T const& 
  * @param rejectBackgroundMCCandidates choose whether to accept background hf candidates as defined by the selection flag
  */
 template <typename T>
-bool analyseCandidateMC(std::vector<fastjet::PseudoJet>& inputParticles, T const& candidate, float candPtMin, float candPtMax, float candYMin, float candYMax, float candMass, bool rejectBackgroundMCCandidates)
+bool analyseCandidateMC(std::vector<fastjet::PseudoJet>& inputParticles, T const& candidate, float candPtMin, float candPtMax, float candYMin, float candYMax, bool rejectBackgroundMCCandidates)
 {
   if (rejectBackgroundMCCandidates && !jethfutilities::isMatchedHFCandidate(candidate)) {
     return false;
   }
-  return analyseCandidate(inputParticles, candidate, candPtMin, candPtMax, candYMin, candYMax, candMass);
+  return analyseCandidate(inputParticles, candidate, candPtMin, candPtMax, candYMin, candYMax);
 }
 
 /**
@@ -149,9 +148,11 @@ bool analyseCandidateMC(std::vector<fastjet::PseudoJet>& inputParticles, T const
  * @param doHFJetFinding set whether only jets containing a HF candidate are saved
  */
 template <typename T, typename U, typename V>
-void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, bool doHFJetFinding = false)
+void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, bool doHFJetFinding = false)
 {
   auto jetRValues = static_cast<std::vector<double>>(jetRadius);
+  jetFinder.jetPtMin = jetPtMin;
+  jetFinder.jetPtMax = jetPtMax;
   for (auto R : jetRValues) {
     jetFinder.jetR = R;
     std::vector<fastjet::PseudoJet> jets;
@@ -176,7 +177,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       std::vector<int> candconst;
       std::vector<int> clusterconst;
       jetsTable(collision.globalIndex(), jet.pt(), jet.eta(), jet.phi(),
-                jet.E(), jet.m(), jet.has_area() ? jet.area() : 0., std::round(R * 100));
+                jet.E(), jet.rapidity(), jet.m(), jet.has_area() ? jet.area() : 0., std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
         if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::track)) {
           trackconst.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
@@ -230,8 +231,11 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
     if constexpr (jethfutilities::isHFMcCandidate<U>()) {
       if (candidate != std::nullopt) {
         auto cand = candidate.value();
+        if (cand.mcParticleId() == particle.globalIndex()) {
+          continue;
+        }
         auto hfParticle = cand.template mcParticle_as<T>();
-        if (jethfutilities::isDaughterParticle(hfParticle, particle.globalIndex()) || (hfParticle.globalIndex() == particle.globalIndex())) {
+        if (jethfutilities::isDaughterParticle(hfParticle, particle.globalIndex())) {
           continue;
         }
       }

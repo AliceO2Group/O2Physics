@@ -50,7 +50,7 @@ DECLARE_SOA_TABLE(AssocPions, "AOD", "ASSOCPIONS", o2::soa::Index<>, assocPions:
 namespace assocV0s
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                       //!
-DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data);                             //!
+DECLARE_SOA_INDEX_COLUMN(V0Core, v0Core);                             //!
 DECLARE_SOA_COLUMN(CompatibleK0Short, compatibleK0Short, bool);       // compatible with K0Short
 DECLARE_SOA_COLUMN(CompatibleLambda, compatibleLambda, bool);         // compatible with Lambda
 DECLARE_SOA_COLUMN(CompatibleAntiLambda, compatibleAntiLambda, bool); // compatible with AntiLambda
@@ -102,7 +102,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MCTrue, mcTrue,
                            });
 } // namespace assocV0s
 DECLARE_SOA_TABLE(AssocV0s, "AOD", "ASSOCV0S", o2::soa::Index<>,
-                  assocV0s::CollisionId, assocV0s::V0DataId,
+                  assocV0s::CollisionId, assocV0s::V0CoreId,
                   assocV0s::CompatibleK0Short,
                   assocV0s::CompatibleLambda,
                   assocV0s::CompatibleAntiLambda,

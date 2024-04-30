@@ -157,6 +157,8 @@ bool dca2Dcut = false;
 float maxDCAz = 1e6f;
 float maxDCAxy = 1e6f;
 
+float minPIDSigma = 3.0;
+
 inline void initializeTrackSelection()
 {
   switch (tracktype) {
@@ -609,6 +611,7 @@ inline bool centralitySelection(CollisionObject const&, float&)
 template <>
 inline bool centralitySelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent const& collision, float& centmult)
 {
+
   return centralitySelectionMult(collision, centmult);
 }
 
@@ -616,6 +619,7 @@ inline bool centralitySelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent
 template <>
 inline bool centralitySelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSelRun2Cent const& collision, float& centmult)
 {
+
   return centralitySelectionMult(collision, centmult);
 }
 
@@ -623,6 +627,7 @@ inline bool centralitySelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSel
 template <>
 inline bool centralitySelection<aod::CollisionEvSel>(aod::CollisionEvSel const& collision, float& centmult)
 {
+
   return centralitySelectionNoMult(collision, centmult);
 }
 
@@ -630,6 +635,7 @@ inline bool centralitySelection<aod::CollisionEvSel>(aod::CollisionEvSel const& 
 template <>
 inline bool centralitySelection<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator const& collision, float& centmult)
 {
+
   return centralitySelectionNoMult(collision, centmult);
 }
 
@@ -637,6 +643,7 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSel, aod::McCollision
 template <>
 inline bool centralitySelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator const& collision, float& centmult)
 {
+
   return centralitySelectionMult(collision, centmult);
 }
 
@@ -674,7 +681,6 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
-
   return trigsel && zvtxsel && centmultsel;
 }
 

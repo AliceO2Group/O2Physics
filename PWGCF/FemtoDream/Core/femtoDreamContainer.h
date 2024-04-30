@@ -25,11 +25,11 @@
 
 #include "Framework/HistogramRegistry.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include "TDatabasePDG.h"
 
 using namespace o2::framework;
 
@@ -73,7 +73,7 @@ class FemtoDreamContainer
   template <typename T>
   void init_base(std::string folderName, std::string femtoObs,
                  T& femtoObsAxis, T& pTAxis, T& kTAxis, T& mTAxis, T& multAxis, T& multPercentileAxis,
-                 T& kstarAxis4D, T& mTAxis4D, T& multAxis4D, T& multPercentileAxis4D,
+                 T& /*kstarAxis4D*/, T& mTAxis4D, T& multAxis4D, T& multPercentileAxis4D,
                  bool use4dplots, bool extendedplots)
   {
 
@@ -133,7 +133,7 @@ class FemtoDreamContainer
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T>
   void init(HistogramRegistry* registry,
-            T& kstarBins, T& pTBins, T& kTBins, T& mTBins, T& multBins, T& multPercentileBins,
+            T& kstarBins, T& pTBins, T& kTBins, T& mTBins, T& multBins, T& /*multPercentileBins*/,
             T& kstarBins4D, T& mTBins4D, T& multBins4D, T& multPercentileBins4D,
             bool isMC, bool use4dplots, bool extendedplots,
             float highkstarCut,
@@ -178,8 +178,8 @@ class FemtoDreamContainer
   /// \param pdg2 PDG code of particle two
   void setPDGCodes(const int pdg1, const int pdg2)
   {
-    mMassOne = TDatabasePDG::Instance()->GetParticle(pdg1)->Mass();
-    mMassTwo = TDatabasePDG::Instance()->GetParticle(pdg2)->Mass();
+    mMassOne = o2::analysis::femtoDream::getMass(pdg1);
+    mMassTwo = o2::analysis::femtoDream::getMass(pdg2);
     mPDGOne = pdg1;
     mPDGTwo = pdg2;
   }

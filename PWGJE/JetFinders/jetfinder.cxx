@@ -61,6 +61,8 @@ struct JetFinderTask {
   Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
   Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
   Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  Configurable<float> jetEWSPtMin{"jetEWSPtMin", 0.0, "minimum event-wise subtracted jet pT"};
+  Configurable<float> jetEWSPtMax{"jetEWSPtMax", 1000.0, "maximum event-wise subtracted jet pT"};
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
   Configurable<int> jetAlgorithm{"jetAlgorithm", 2, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
@@ -86,8 +88,6 @@ struct JetFinderTask {
 
     jetFinder.etaMin = trackEtaMin;
     jetFinder.etaMax = trackEtaMax;
-    jetFinder.jetPtMin = jetPtMin;
-    jetFinder.jetPtMax = jetPtMax;
     jetFinder.jetEtaMin = jetEtaMin;
     jetFinder.jetEtaMax = jetEtaMax;
     if (jetEtaMin < -98.0) {
@@ -118,7 +118,7 @@ struct JetFinderTask {
     }
     inputParticles.clear();
     jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
 
   PROCESS_SWITCH(JetFinderTask, processChargedJets, "Data and reco level jet finding for charged jets", false);
@@ -131,7 +131,7 @@ struct JetFinderTask {
     }
     inputParticles.clear();
     jetfindingutilities::analyseTracks<soa::Filtered<JetTracksSub>, soa::Filtered<JetTracksSub>::iterator>(inputParticles, tracks, trackSelection);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsEvtWiseSubTable, constituentsEvtWiseSubTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetEWSPtMin, jetEWSPtMax, jetRadius, jetAreaFractionMin, collision, jetsEvtWiseSubTable, constituentsEvtWiseSubTable);
   }
 
   PROCESS_SWITCH(JetFinderTask, processChargedEvtWiseSubJets, "Data and reco level jet finding for charged jets with event-wise constituent subtraction", false);
@@ -144,7 +144,7 @@ struct JetFinderTask {
     }
     inputParticles.clear();
     jetfindingutilities::analyseClusters(inputParticles, &clusters);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
   PROCESS_SWITCH(JetFinderTask, processNeutralJets, "Data and reco level jet finding for neutral jets", false);
 
@@ -158,7 +158,7 @@ struct JetFinderTask {
     inputParticles.clear();
     jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection);
     jetfindingutilities::analyseClusters(inputParticles, &clusters);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
   PROCESS_SWITCH(JetFinderTask, processFullJets, "Data and reco level jet finding for full and neutral jets", false);
 
@@ -167,7 +167,7 @@ struct JetFinderTask {
     // TODO: MC event selection?
     inputParticles.clear();
     jetfindingutilities::analyseParticles<soa::Filtered<JetParticles>, soa::Filtered<JetParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelChargedJets, "Particle level charged jet finding", false);
 
@@ -176,7 +176,7 @@ struct JetFinderTask {
     // TODO: MC event selection?
     inputParticles.clear();
     jetfindingutilities::analyseParticles<soa::Filtered<JetParticles>, soa::Filtered<JetParticles>::iterator>(inputParticles, particleSelection, 2, particles, pdgDatabase);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelNeutralJets, "Particle level neutral jet finding", false);
 
@@ -185,7 +185,7 @@ struct JetFinderTask {
     // TODO: MC event selection?
     inputParticles.clear();
     jetfindingutilities::analyseParticles<soa::Filtered<JetParticles>, soa::Filtered<JetParticles>::iterator>(inputParticles, particleSelection, 0, particles, pdgDatabase);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
 
   PROCESS_SWITCH(JetFinderTask, processParticleLevelFullJets, "Particle level full jet finding", false);

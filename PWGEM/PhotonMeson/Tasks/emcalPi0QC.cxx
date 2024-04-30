@@ -248,7 +248,7 @@ struct Pi0QCTask {
   PresliceUnsorted<selectedClusters> perCollision = o2::aod::emcalcluster::collisionId;
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollision(MyBCs const& bcs, MyCollisions const& collisions, selectedClusters const& clusters, o2::soa::Filtered<o2::aod::Calos> const& cells)
+  void processCollision(MyBCs const&, MyCollisions const& collisions, selectedClusters const& clusters, o2::soa::Filtered<o2::aod::Calos> const& cells)
   {
     std::unordered_map<uint64_t, int> cellGlobalBCs;
     // Build map of number of cells for corrected BCs using global BCs

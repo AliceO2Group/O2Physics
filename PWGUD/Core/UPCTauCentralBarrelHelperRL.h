@@ -134,22 +134,22 @@ float invariantMass(float E, float px, float py, float pz)
 }
 
 float phi(float px, float py)
-// Just a simple function to return azimuthal angle
+// Just a simple function to return azimuthal angle from 0 to 2pi
 {
   if (px != 0)
-    return std::atan(py / px);
+    return (std::atan2(py, px) + o2::constants::math::PI);
   return -999.;
 }
 
 float eta(float px, float py, float pz)
 // Just a simple function to return pseudorapidity
 {
-  float eta = -999.;
+  float arg = -2.; // outside valid range for std::atanh
   float mom = momentum(px, py, pz);
   if (mom != 0)
-    eta = std::atanh(pz / mom);
-  if (-1. < eta && eta < 1.)
-    return eta;
+    arg = pz / mom;
+  if (-1. < arg && arg < 1.)
+    return std::atanh(arg); // definition of eta
   return -999.;
 }
 

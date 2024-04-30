@@ -132,7 +132,7 @@ struct gammaSelection {
     LOG(info) << "|\t TM |phi|: |phi| <= " << PHOS_TM_Phi << std::endl;
   }
 
-  void processRec(aod::EMReducedEvents const&, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& matchedtracks, aod::PHOSClusters const& phosclusters)
+  void processRec(aod::EMEvents const&, aod::SkimEMCClusters const& emcclusters, aod::SkimEMCMTs const& matchedtracks, aod::PHOSClusters const& phosclusters)
   {
     for (const auto& emccluster : emcclusters) { // loop of EMC clusters
       uint64_t EMC_CutBit = doPhotonCutsEMC(EMC_CutModeBit, emccluster, matchedtracks, perEMCClusterMT, EMCHistos);

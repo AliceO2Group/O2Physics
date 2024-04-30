@@ -27,6 +27,7 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -110,15 +111,9 @@ struct skimmerGammaConversion {
     {kMotherHasNoDaughter, "kMotherHasNoDaughter"},
     {kGoodMcMother, "kGoodMcMother"}};
 
-  struct recalculatedVertexParameters {
-    float recalculatedConversionPoint[3];
-    float KFParticleChi2DividedByNDF;
-  };
-
   Produces<aod::V0PhotonsKF> v0photonskf;
   Produces<aod::V0Legs> v0legs;
   Produces<aod::McGammasTrue> fFuncTableMcGammasFromConfirmedV0s;
-  Produces<aod::V0Recalculation> fFuncTableV0Recalculated;
   Produces<aod::V0DaughterMcParticles> fFuncTableMCTrackInformation;
   Produces<aod::MCParticleIndex> fIndexTableMCTrackIndex;
 
@@ -193,14 +188,6 @@ struct skimmerGammaConversion {
            theTrack.x(), theTrack.y(), theTrack.z(), theTrack.tgl());
   }
 
-  void fillV0RecalculatedTable(recalculatedVertexParameters recalculatedVertex)
-  {
-    fFuncTableV0Recalculated(
-      recalculatedVertex.recalculatedConversionPoint[0],
-      recalculatedVertex.recalculatedConversionPoint[1],
-      recalculatedVertex.recalculatedConversionPoint[2]);
-  }
-
   template <typename TTRACK>
   void fillfFuncTableMCTrackInformation(TTRACK theTrack, bool sameMother)
   {
@@ -244,10 +231,6 @@ struct skimmerGammaConversion {
 
     float xyz[3] = {0.f, 0.f, 0.f};
     Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz);
-    recalculatedVertexParameters recalculatedVertex;
-    recalculatedVertex.recalculatedConversionPoint[0] = xyz[0];
-    recalculatedVertex.recalculatedConversionPoint[1] = xyz[1];
-    recalculatedVertex.recalculatedConversionPoint[2] = xyz[2];
 
     KFPTrack kfp_track_pos = createKFPTrackFromTrack(pos);
     KFPTrack kfp_track_ele = createKFPTrackFromTrack(ele);
@@ -264,7 +247,6 @@ struct skimmerGammaConversion {
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);
 
-    // float xyz[3] = {recalculatedVertex.recalculatedConversionPoint[0], recalculatedVertex.recalculatedConversionPoint[1], recalculatedVertex.recalculatedConversionPoint[2]};
     //  LOGF(info, "recalculated vtx : x = %f , y = %f , z = %f", xyz[0], xyz[1], xyz[2]);
     //  LOGF(info, "primary vtx : x = %f , y = %f , z = %f", collision.posX(), collision.posY(), collision.posZ());
 
@@ -286,10 +268,10 @@ struct skimmerGammaConversion {
     kfp_pos_DecayVtx.TransportToPoint(xyz);
     kfp_ele_DecayVtx.TransportToPoint(xyz);
 
-    KFParticle kfp_pos_PV = kfp_pos_DecayVtx;
-    KFParticle kfp_ele_PV = kfp_ele_DecayVtx;
-    kfp_pos_PV.SetProductionVertex(KFPV);
-    kfp_ele_PV.SetProductionVertex(KFPV);
+    // KFParticle kfp_pos_PV = kfp_pos_DecayVtx;
+    // KFParticle kfp_ele_PV = kfp_ele_DecayVtx;
+    // kfp_pos_PV.SetProductionVertex(KFPV);
+    // kfp_ele_PV.SetProductionVertex(KFPV);
 
     // LOGF(info, "ele px = %f (original) , %f (KF at init) , %f (KF at PV) , %f (KF at SV)", ele.px(), kfp_ele.GetPx(), kfp_ele_PV.GetPx(), kfp_ele_DecayVtx.GetPx());
     // LOGF(info, "pos px = %f (original) , %f (KF at init) , %f (KF at PV) , %f (KF at SV)", pos.px(), kfp_pos.GetPx(), kfp_pos_PV.GetPx(), kfp_pos_DecayVtx.GetPx());
@@ -330,7 +312,6 @@ struct skimmerGammaConversion {
 
     fillTrackTable(pos, kfp_pos_DecayVtx);
     fillTrackTable(ele, kfp_ele_DecayVtx);
-    fillV0RecalculatedTable(recalculatedVertex);
   }
 
   // ============================ FUNCTION DEFINITIONS ====================================================
@@ -338,9 +319,9 @@ struct skimmerGammaConversion {
   PresliceUnsorted<aod::V0Datas> perCollision = aod::v0data::collisionId;
 
   void processRec(aod::Collisions const& collisions,
-                  aod::BCsWithTimestamps const& bcs,
+                  aod::BCsWithTimestamps const&,
                   aod::V0Datas const& V0s,
-                  tracksAndTPCInfo const& theTracks)
+                  tracksAndTPCInfo const&)
   {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -368,9 +349,9 @@ struct skimmerGammaConversion {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   void processMc(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions,
                  aod::McCollisions const&,
-                 aod::BCsWithTimestamps const& bcs,
+                 aod::BCsWithTimestamps const&,
                  aod::V0Datas const& theV0s,
-                 tracksAndTPCInfoMC const& theTracks,
+                 tracksAndTPCInfoMC const&,
                  aod::McParticles const& mcTracks)
   {
     for (auto& collision : collisions) {
@@ -414,7 +395,7 @@ struct skimmerGammaConversion {
   PROCESS_SWITCH(skimmerGammaConversion, processMc, "process reconstructed and mc info ", false);
 
   template <typename TV0, typename TTRACK>
-  eV0Confirmation isTrueV0(TV0 const& theV0,
+  eV0Confirmation isTrueV0(TV0 const& /*theV0*/,
                            TTRACK const& theTrackPos,
                            TTRACK const& theTrackNeg)
   {

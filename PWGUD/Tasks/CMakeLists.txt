@@ -14,6 +14,31 @@ o2physics_add_dpl_workflow(upc
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sg-spectra
+                           SOURCES sgSpectraAnalyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-fourpi
+                           SOURCES sgFourPiAnalyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-twopi
+                           SOURCES sgTwoPiAnalyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-d0
+                           SOURCES sgD0Analyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-fit
+                           SOURCES sgFITAnalyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(upc-forward
                            SOURCES upcForward.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
@@ -35,17 +60,17 @@ o2physics_add_dpl_workflow(diff-qa
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dgcand-analyzer
-                           SOURCES DGCandAnalyzer.cxx
+                           SOURCES dgCandAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder O2Physics::UDGoodRunSelector O2Physics::DGPIDSelector O2Physics::UDFSParser
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upccand-analyzer
-                           SOURCES UPCCandidateAnalyzer.cxx
+                           SOURCES upcCandidateAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upccand-producer-qa
-                           SOURCES UPCCandidateProducerQa.cpp
+                           SOURCES upcCandidateProducerQa.cpp
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
@@ -69,6 +94,21 @@ o2physics_add_dpl_workflow(upc-tau-rl
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(polarisation-rho
-                           SOURCES PolarisationRho.cxx
+                           SOURCES polarisationRho.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-jpsi-corr
+                           SOURCES upcJpsiCentralBarrelCorr.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(exclusive-phi
+                           SOURCES exclusivePhi.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-photonuclear-jmg
+                           SOURCES upcPhotonuclearAnalysisJMG.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
                            COMPONENT_NAME Analysis)

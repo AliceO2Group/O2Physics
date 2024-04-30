@@ -15,6 +15,7 @@
 /// \author Rutuparna Rath <rutuparna.rath@cern.ch> and Giovanni Malfattore <giovanni.malfattore@cern.ch>
 ///
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 
@@ -31,6 +32,8 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(CentFV0M, centFV0M, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_DYNAMIC_COLUMN(Selection_Bit, selection_bit, //! Dummy
+                           [](o2::aod::evsel::EventSelectionFlags /*v*/) -> bool { return true; });
 } // namespace fullEvent
 DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
                   o2::soa::Index<>,
@@ -41,7 +44,8 @@ DECLARE_SOA_TABLE(LfNuclEvents, "AOD", "LFNUCLEvent",
                   fullEvent::CentFV0M,
                   fullEvent::CentFT0M,
                   fullEvent::IsEventReject,
-                  fullEvent::RunNumber);
+                  fullEvent::RunNumber,
+                  fullEvent::Selection_Bit<>);
 using LfNuclEvent = LfNuclEvents::iterator;
 
 namespace full
@@ -109,39 +113,39 @@ DECLARE_SOA_COLUMN(GetProcess, getProcess, int);
 namespace dummy
 {
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPi, tpcNSigmaPi,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaKa, tpcNSigmaKa,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr, tpcNSigmaPr,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaTr, tpcNSigmaTr,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaAl, tpcNSigmaAl,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPi, tofNSigmaPi,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaKa, tofNSigmaKa,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr, tofNSigmaPr,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaTr, tofNSigmaTr,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaAl, tofNSigmaAl,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffDe, tpcExpSignalDiffDe,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffHe, tpcExpSignalDiffHe,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDiffPr, tofExpSignalDiffPr,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDiffDe, tofExpSignalDiffDe,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDiffHe, tofExpSignalDiffHe,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpMom, tofExpMom,
-                           [](bool b) -> float { return 0.f; });
+                           [](bool /*b*/) -> float { return 0.f; });
 } // namespace dummy
 
 /*

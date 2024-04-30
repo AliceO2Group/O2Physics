@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <algorithm>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -286,17 +287,17 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
  * @param tracks the track table
  */
 template <typename T, typename U, typename V>
-bool isDaughterTrack(T& track, U& candidate, V const& tracks)
+bool isDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
 {
 
   if constexpr (isD0Candidate<U>()) {
-    if (candidate.template prong0_as<V>().globalIndex() == track.globalIndex() || candidate.template prong1_as<V>().globalIndex() == track.globalIndex()) {
+    if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex()) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isLcCandidate<U>()) {
-    if (candidate.template prong0_as<V>().globalIndex() == track.globalIndex() || candidate.template prong1_as<V>().globalIndex() == track.globalIndex() || candidate.template prong2_as<V>().globalIndex() == track.globalIndex()) {
+    if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex() || candidate.prong2Id() == track.globalIndex()) {
       return true;
     } else {
       return false;
@@ -354,7 +355,7 @@ auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candid
 }
 
 template <typename T>
-int getCandidatePDG(T const& candidate)
+int getCandidatePDG(T const& /*candidate*/)
 {
 
   if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
@@ -388,7 +389,7 @@ int getTablePDG()
 }
 
 template <typename T>
-float getCandidatePDGMass(T const& candidate)
+float getCandidatePDGMass(T const& /*candidate*/)
 {
 
   if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
@@ -424,27 +425,39 @@ float getTablePDGMass()
 template <typename T, typename U>
 void fillD0CollisionTable(T const& collision, U& D0CollisionTable, int32_t& D0CollisionTableIndex)
 {
-
-  D0CollisionTable(collision.numContrib(), collision.isEventReject(), collision.runNumber());
+  D0CollisionTable(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFV0A(), collision.multZeqNTracksPV());
   D0CollisionTableIndex = D0CollisionTable.lastIndex();
 }
 
+template <typename T, typename U>
+void fillLcCollisionTable(T const& collision, U& LcCollisionTable, int32_t& LcCollisionTableIndex)
+{
+
+  LcCollisionTable(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFV0A(), collision.multZeqNTracksPV());
+  LcCollisionTableIndex = LcCollisionTable.lastIndex();
+}
+
 template <typename T, typename U, typename V>
-void fillHFCollisionTable(T const& collision, U const& candidates, V& HFCollisionTable, int32_t& HFCollisionTableIndex)
+void fillHFCollisionTable(T const& collision, U const& /*candidates*/, V& HFCollisionTable, int32_t& HFCollisionTableIndex)
 {
   if constexpr (isD0Table<U>()) {
     fillD0CollisionTable(collision, HFCollisionTable, HFCollisionTableIndex);
   }
+  if constexpr (isLcTable<U>()) {
+    fillLcCollisionTable(collision, HFCollisionTable, HFCollisionTableIndex);
+  }
 }
 
-template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O>
-void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseTable, V& D0ParTable, M& D0ParETable, N& D0SelectionFlagTable, O& D0MCDTable, int32_t& D0CandidateTableIndex)
+template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseTable, V& D0ParTable, M& D0ParETable, N& D0SelectionFlagTable, O& D0MlTable, P& D0MCDTable, int32_t& D0CandidateTableIndex)
 {
 
   D0BaseTable(collisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.m());
 
   D0ParTable(
     candidate.chi2PCA(),
+    candidate.cpa(),
+    candidate.cpaXY(),
     candidate.decayLength(),
     candidate.decayLengthXY(),
     candidate.decayLengthNormalised(),
@@ -467,8 +480,6 @@ void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseT
     candidate.nSigTofKa1(),
     candidate.nSigTpcTofPi1(),
     candidate.nSigTpcTofKa1(),
-    candidate.cpa(),
-    candidate.cpaXY(),
     candidate.maxNormalisedDeltaIP(),
     candidate.impactParameterProduct());
 
@@ -501,14 +512,102 @@ void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseT
     D0MCDTable(candidate.flagMcMatchRec(), candidate.originMcRec());
   }
 
+  std::vector<float> mlScoresVector;
+  auto mlScoresSpan = candidate.mlScores();
+  std::copy(mlScoresSpan.begin(), mlScoresSpan.end(), std::back_inserter(mlScoresVector));
+  D0MlTable(mlScoresVector);
+
   D0CandidateTableIndex = D0BaseTable.lastIndex();
 }
 
-template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O>
-void fillCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseTable, V& HFParTable, M& HFParETable, N& HFSelectionFlagTable, O& HFMCDTable, int32_t& HFCandidateTableIndex)
+template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+void fillLcCandidateTable(T const& candidate, int32_t collisionIndex, U& LcBaseTable, V& LcParTable, M& LcParETable, N& LcSelectionFlagTable, O& LcMlTable, P& LcMCDTable, int32_t& LcCandidateTableIndex)
+{
+
+  LcBaseTable(collisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.m());
+
+  LcParTable(
+    candidate.chi2PCA(),
+    candidate.nProngsContributorsPV(),
+    candidate.cpa(),
+    candidate.cpaXY(),
+    candidate.decayLength(),
+    candidate.decayLengthXY(),
+    candidate.decayLengthNormalised(),
+    candidate.decayLengthXYNormalised(),
+    candidate.ptProng0(),
+    candidate.ptProng1(),
+    candidate.ptProng2(),
+    candidate.impactParameter0(),
+    candidate.impactParameter1(),
+    candidate.impactParameter2(),
+    candidate.impactParameterNormalised0(),
+    candidate.impactParameterNormalised1(),
+    candidate.impactParameterNormalised2(),
+    candidate.nSigTpcPi0(),
+    candidate.nSigTpcPr0(),
+    candidate.nSigTofPi0(),
+    candidate.nSigTofPr0(),
+    candidate.nSigTpcTofPi0(),
+    candidate.nSigTpcTofPr0(),
+    candidate.nSigTpcKa1(),
+    candidate.nSigTofKa1(),
+    candidate.nSigTpcTofKa1(),
+    candidate.nSigTpcPi2(),
+    candidate.nSigTpcPr2(),
+    candidate.nSigTofPi2(),
+    candidate.nSigTofPr2(),
+    candidate.nSigTpcTofPi2(),
+    candidate.nSigTpcTofPr2());
+
+  LcParETable(
+    candidate.posX(),
+    candidate.posY(),
+    candidate.posZ(),
+    candidate.xSecondaryVertex(),
+    candidate.ySecondaryVertex(),
+    candidate.zSecondaryVertex(),
+    candidate.errorDecayLength(),
+    candidate.errorDecayLengthXY(),
+    candidate.rSecondaryVertex(),
+    candidate.pProng0(),
+    candidate.pProng1(),
+    candidate.pProng2(),
+    candidate.pxProng0(),
+    candidate.pyProng0(),
+    candidate.pzProng0(),
+    candidate.pxProng1(),
+    candidate.pyProng1(),
+    candidate.pzProng1(),
+    candidate.pxProng2(),
+    candidate.pyProng2(),
+    candidate.pzProng2(),
+    candidate.errorImpactParameter0(),
+    candidate.errorImpactParameter1(),
+    candidate.errorImpactParameter2(),
+    candidate.ct());
+
+  LcSelectionFlagTable(candidate.candidateSelFlag());
+  if constexpr (isMc) {
+    LcMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.isCandidateSwapped());
+  }
+
+  std::vector<float> mlScoresVector;
+  auto mlScoresSpan = candidate.mlScores();
+  std::copy(mlScoresSpan.begin(), mlScoresSpan.end(), std::back_inserter(mlScoresVector));
+  LcMlTable(mlScoresVector);
+
+  LcCandidateTableIndex = LcBaseTable.lastIndex();
+}
+
+template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+void fillCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseTable, V& HFParTable, M& HFParETable, N& HFSelectionFlagTable, O& HFMlTable, P& HFMCDTable, int32_t& HFCandidateTableIndex)
 {
   if constexpr (isD0Candidate<T>()) {
-    fillD0CandidateTable<isMc>(candidate, collisionIndex, HFBaseTable, HFParTable, HFParETable, HFSelectionFlagTable, HFMCDTable, HFCandidateTableIndex);
+    fillD0CandidateTable<isMc>(candidate, collisionIndex, HFBaseTable, HFParTable, HFParETable, HFSelectionFlagTable, HFMlTable, HFMCDTable, HFCandidateTableIndex);
+  }
+  if constexpr (isLcCandidate<T>()) {
+    fillLcCandidateTable<isMc>(candidate, collisionIndex, HFBaseTable, HFParTable, HFParETable, HFSelectionFlagTable, HFMlTable, HFMCDTable, HFCandidateTableIndex);
   }
 }
 
@@ -518,6 +617,12 @@ void fillD0CandidateMcTable(T const& candidate, U& D0PBaseTable, int32_t& D0Cand
   D0PBaseTable(candidate.pt(), candidate.eta(), candidate.phi(), candidate.flagMcMatchGen(), candidate.originMcGen());
   D0CandidateTableIndex = D0PBaseTable.lastIndex();
 }
+template <typename T, typename U>
+void fillLcCandidateMcTable(T const& candidate, U& LcPBaseTable, int32_t& LcCandidateTableIndex)
+{
+  LcPBaseTable(candidate.pt(), candidate.eta(), candidate.phi(), candidate.flagMcMatchGen(), candidate.originMcGen());
+  LcCandidateTableIndex = LcPBaseTable.lastIndex();
+}
 
 template <typename T, typename U>
 void fillCandidateMcTable(T const& candidate, U& BaseMcTable, int32_t& candidateTableIndex)
@@ -525,13 +630,18 @@ void fillCandidateMcTable(T const& candidate, U& BaseMcTable, int32_t& candidate
   if constexpr (isD0McCandidate<T>()) {
     fillD0CandidateMcTable(candidate, BaseMcTable, candidateTableIndex);
   }
+  if constexpr (isLcMcCandidate<T>()) {
+    fillLcCandidateMcTable(candidate, BaseMcTable, candidateTableIndex);
+  }
 }
 
 template <typename T, typename U>
-auto getCandidateCollision(T const& candidate, U const& candidateCollisions)
+auto getCandidateCollision(T const& candidate, U const& /*candidateCollisions*/)
 {
   if constexpr (isD0Candidate<T>()) { // make sure this actually is working
     return candidate.template hfD0CollBase_as<U>();
+  } else if constexpr (isLcCandidate<T>()) { // make sure this actually is working
+    return candidate.template hf3PCollBase_as<U>();
   } else {
     return candidate.template hfD0CollBase_as<U>();
   }

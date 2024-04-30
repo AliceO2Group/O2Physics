@@ -31,12 +31,6 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 
-/// Struct to extend TracksPid tables
-struct HfCandidateSelectorD0Expressions {
-  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
-  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
-};
-
 /// Struct for applying D0 selection cuts
 struct HfCandidateSelectorD0 {
   Produces<aod::HfSelD0> hfSelD0Candidate;
@@ -85,7 +79,7 @@ struct HfCandidateSelectorD0 {
   TrackSelectorKa selectorKaon;
   HfHelper hfHelper;
 
-  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPiExt, aod::TracksPidKaExt>;
+  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   // Define histograms
   AxisSpec axisMassDmeson{200, 1.7f, 2.1f};
@@ -93,7 +87,7 @@ struct HfCandidateSelectorD0 {
   AxisSpec axisSelStatus{2, -0.5f, 1.5f};
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     std::array<bool, 2> doprocess{doprocessWithDCAFitterN, doprocessWithKFParticle};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
@@ -425,7 +419,5 @@ struct HfCandidateSelectorD0 {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorD0Expressions>(cfgc),
-    adaptAnalysisTask<HfCandidateSelectorD0>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorD0>(cfgc)};
 }

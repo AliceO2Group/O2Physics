@@ -27,9 +27,10 @@
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Common/DataModel/Qvectors.h"
+#include "PWGLF/DataModel/EPCalibrationTables.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -63,12 +64,11 @@ static const std::vector<std::string> centDetectorNames{"FV0A", "FT0M", "FT0A", 
 enum qVecDetectors {
   kFT0C = 0,
   kFT0A,
-  kFV0A,
-  kBpos,
-  kBneg,
+  kTPCl,
+  kTPCr,
   kNqVecDetectors
 };
-static const std::vector<std::string> qVecDetectorNames{"FT0C", "FT0A", "FV0A", "Bpos", "Bneg"};
+static const std::vector<std::string> qVecDetectorNames{"FT0C", "FT0A", "TPCl", "TPCr"};
 
 std::shared_ptr<TH3> hQxQy[kNqVecDetectors];
 std::shared_ptr<TH3> hNormQxQy[kNqVecDetectors];
@@ -99,7 +99,8 @@ struct flowQC {
   float mBz = 0.f;
 
   // Flow analysis
-  using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>::iterator;
+  using CollWithEP = soa::Join<aod::Collisions,
+                               aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables>::iterator;
 
   HistogramRegistry flow{"flow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -205,11 +206,15 @@ struct flowQC {
     }
   }
 
-  void process(CollWithQvec const& collision, aod::BCsWithTimestamps const&)
+  void process(CollWithEP const& collision, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     gRandom->SetSeed(bc.timestamp());
+
+    if (!eventSelection(collision)) {
+      return;
+    }
 
     flow.fill(HIST("hRecVtxZData"), collision.posZ());
 
@@ -222,35 +227,30 @@ struct flowQC {
 
     float centrality = getCentrality(collision);
 
-    float QxFT0C = collision.qvecFT0CRe();
-    float QyFT0C = collision.qvecFT0CIm();
-    float QmodFT0C = std::hypot(QxFT0C, QyFT0C);
-    float psiFT0C = std::atan2(QyFT0C, QxFT0C);
-
-    float QxFT0A = collision.qvecFT0ARe();
-    float QyFT0A = collision.qvecFT0AIm();
+    float psiFT0A = collision.psiFT0A();
+    float QxFT0A = std::cos(2 * psiFT0A);
+    float QyFT0A = std::sin(2 * psiFT0A);
     float QmodFT0A = std::hypot(QxFT0A, QyFT0A);
-    float psiFT0A = std::atan2(QyFT0A, QxFT0A);
 
-    float QxFV0A = collision.qvecFV0ARe();
-    float QyFV0A = collision.qvecFV0AIm();
-    float QmodFV0A = std::hypot(QxFV0A, QyFV0A);
-    float psiFV0A = std::atan2(QyFV0A, QxFV0A);
+    float psiFT0C = collision.psiFT0C();
+    float QxFT0C = std::cos(2 * psiFT0C);
+    float QyFT0C = std::sin(2 * psiFT0C);
+    float QmodFT0C = std::hypot(QxFT0C, QyFT0C);
 
-    float QxBpos = collision.qvecBPosRe();
-    float QyBpos = collision.qvecBPosIm();
-    float QmodBpos = std::hypot(QxBpos, QyBpos);
-    float psiBpos = std::atan2(QyBpos, QxBpos);
+    float psiTPCl = collision.psiTPCL();
+    float QxTPCl = std::cos(2 * psiTPCl);
+    float QyTPCl = std::sin(2 * psiTPCl);
+    float QmodTPCl = std::hypot(QxTPCl, QyTPCl);
 
-    float QxBneg = collision.qvecBNegRe();
-    float QyBneg = collision.qvecBNegIm();
-    float QmodBneg = std::hypot(QxBneg, QyBneg);
-    float psiBneg = std::atan2(QyBneg, QxBneg);
+    float psiTPCr = collision.psiTPCR();
+    float QxTPCr = std::cos(2 * psiTPCr);
+    float QyTPCr = std::sin(2 * psiTPCr);
+    float QmodTPCr = std::hypot(QxTPCr, QyTPCr);
 
-    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qx = {QxFT0C, QxFT0A, QxFV0A, QxBpos, QxBneg};
-    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qy = {QyFT0C, QyFT0A, QyFV0A, QyBpos, QyBneg};
-    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qmod = {QmodFT0C, QmodFT0A, QmodFV0A, QmodBpos, QmodBneg};
-    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qpsi = {psiFT0C, psiFT0A, psiFV0A, psiBpos, psiBneg};
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qx = {QxFT0C, QxFT0A, QxTPCl, QxTPCr};
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qy = {QyFT0C, QyFT0A, QyTPCl, QyTPCr};
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qmod = {QmodFT0C, QmodFT0A, QmodTPCl, QmodTPCr};
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qpsi = {psiFT0C, psiFT0A, psiTPCl, psiTPCr};
 
     for (int iQvecDet = 0; iQvecDet < qVecDetectors::kNqVecDetectors; iQvecDet++) {
       hQxQy[iQvecDet]->Fill(centrality, vec_Qx[iQvecDet], vec_Qy[iQvecDet]);
@@ -258,7 +258,7 @@ struct flowQC {
       hPsi[iQvecDet]->Fill(centrality, vec_Qpsi[iQvecDet]);
       for (int jQvecDet = iQvecDet + 1; jQvecDet < qVecDetectors::kNqVecDetectors; jQvecDet++) {
         // Q-vector azimuthal-angle differences
-        hDeltaPsi[iQvecDet][jQvecDet]->Fill(centrality, vec_Qpsi[iQvecDet]);
+        hDeltaPsi[iQvecDet][jQvecDet]->Fill(centrality, vec_Qpsi[iQvecDet] - vec_Qpsi[jQvecDet]);
         // Scalar-product histograms
         auto getSP = [&](int iDet1, int iDet2) {
           return vec_Qx[iDet1] * vec_Qx[iDet2] + vec_Qy[iDet1] * vec_Qy[iDet2];

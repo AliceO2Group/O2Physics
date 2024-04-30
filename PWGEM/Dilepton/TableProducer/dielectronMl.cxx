@@ -207,7 +207,7 @@ struct DielectronMlSingleTrack {
     if (abs(track.dcaXY()) > 1.) {
       return false;
     }
-    if (abs(track.dcaZ() > 1.)) {
+    if (abs(track.dcaZ()) > 1.) {
       return false;
     }
     return true;
