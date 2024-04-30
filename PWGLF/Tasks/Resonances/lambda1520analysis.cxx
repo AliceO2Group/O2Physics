@@ -355,7 +355,7 @@ struct lambda1520analysis {
       bool tpcPIDPassed{false}, tofPIDPassed{false};
       if (std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
         if (cUseRejNsigma) {
-          if (candidate.tpcNSigmaPi() > cRejNsigmaTpc && candidate.tpcNSigmaKa() > cRejNsigmaTpc) {
+          if (std::abs(candidate.tpcNSigmaPi()) > cRejNsigmaTpc && std::abs(candidate.tpcNSigmaKa()) > cRejNsigmaTpc) {
             tpcPIDPassed = true;
           }
         } else if (!cUseRejNsigma) {
@@ -365,15 +365,15 @@ struct lambda1520analysis {
       if (candidate.hasTOF()) {
         if ((nsigmaCutCombinedProton > 0) && ((candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (nsigmaCutCombinedProton * nsigmaCutCombinedProton))) {
           if (cUseRejNsigma) {
-            if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaKa() > cRejNsigmaTof) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaKa()) > cRejNsigmaTof) {
               tofPIDPassed = true;
             }
           } else if (!cUseRejNsigma) {
             tofPIDPassed = true;
           }
-        } else if (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton) {
+        } else if ((nsigmaCutCombinedProton <= 0) && (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton)) {
           if (cUseRejNsigma) {
-            if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaKa() > cRejNsigmaTof) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaKa()) > cRejNsigmaTof) {
               tofPIDPassed = true;
             }
           } else if (!cUseRejNsigma) {
@@ -404,7 +404,7 @@ struct lambda1520analysis {
       bool tpcPIDPassed{false}, tofPIDPassed{false};
       if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
         if (cUseRejNsigma) {
-          if (candidate.tpcNSigmaPi() > cRejNsigmaTpc && candidate.tpcNSigmaPr() > cRejNsigmaTpc) {
+          if (std::abs(candidate.tpcNSigmaPi()) > cRejNsigmaTpc && std::abs(candidate.tpcNSigmaPr()) > cRejNsigmaTpc) {
             tpcPIDPassed = true;
           }
         } else if (!cUseRejNsigma) {
@@ -412,18 +412,17 @@ struct lambda1520analysis {
         }
       }
       if (candidate.hasTOF()) {
-        if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
+        if ((nsigmaCutCombinedKaon > 0) && ((candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < (nsigmaCutCombinedKaon * nsigmaCutCombinedKaon))) {
           if (cUseRejNsigma) {
-            if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaPr() > cRejNsigmaTof) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaPr()) > cRejNsigmaTof) {
               tofPIDPassed = true;
             }
           } else if (!cUseRejNsigma) {
             tofPIDPassed = true;
           }
-        }
-        if ((nsigmaCutCombinedKaon > 0) && ((candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < (nsigmaCutCombinedKaon * nsigmaCutCombinedKaon))) {
+        } else if ((nsigmaCutCombinedKaon <= 0) && (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
           if (cUseRejNsigma) {
-            if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaPr() > cRejNsigmaTof) {
+            if (std::abs(candidate.tofNSigmaPi()) > cRejNsigmaTof && std::abs(candidate.tofNSigmaPr()) > cRejNsigmaTof) {
               tofPIDPassed = true;
             }
           } else if (!cUseRejNsigma) {
