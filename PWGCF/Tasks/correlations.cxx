@@ -809,13 +809,20 @@ struct CorrelationTask {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
       float eventWeight = 1.0f / it.currentWindowNeighbours();
 
+      // check if collision1 has at least one reconstructed collision
+      auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
+      if (cfgVerbosity > 0) {
+        LOGF(info, "Found %d related collisions", groupedCollisions.size());
+      }
+
       if (cfgCentBinsForMC > 0) {
-        for (auto& collision : collisions) {
+        for (auto& collision : groupedCollisions) {
           multiplicity = collision.multiplicity();
         }
       }
-      else
+      else {
         multiplicity = collision1.multiplicity();
+      }
 
       if (cfgVerbosity > 0) {
         int bin = configurableBinning.getBin({collision1.posZ(), multiplicity});
@@ -828,11 +835,6 @@ struct CorrelationTask {
       }
       fillCorrelations<CorrelationContainer::kCFStepAll>(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), 0, eventWeight);
 
-      // check if collision1 has at least one reconstructed collision
-      auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
-      if (cfgVerbosity > 0) {
-        LOGF(info, "Found %d related collisions", groupedCollisions.size());
-      }
       if (groupedCollisions.size() == 0) {
         continue;
       }
