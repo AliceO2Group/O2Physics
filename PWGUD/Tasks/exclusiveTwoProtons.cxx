@@ -41,9 +41,9 @@ struct ExclusiveTwoProtons {
     registry.add("hITSCluster", "N_{cluster}", kTH1F, {{100, -0.5, 99.5}});
     registry.add("hChi2ITSTrkSegment", "N_{cluster}", kTH1F, {{100, -0.5, 99.5}});
     registry.add("hTPCCluster", "N_{cluster}", kTH1F, {{200, -0.5, 199.5}});
-    registry.add("hdEdx",  "p vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {1000, 0.0, 2000.0}});
+    registry.add("hdEdx", "p vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {1000, 0.0, 2000.0}});
     registry.add("hdEdx2", "p vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {1000, 0.0, 2000.0}});
-    registry.add("hdSigmaProton",  "p vs dE/dx sigma proton", kTH2F, {{100, 0.0, 3.0}, {1000, -500.0, 500.0}});
+    registry.add("hdSigmaProton", "p vs dE/dx sigma proton", kTH2F, {{100, 0.0, 3.0}, {1000, -500.0, 500.0}});
     registry.add("hdSigmaProton2", "p vs dE/dx sigma proton", kTH2F, {{100, 0.0, 3.0}, {1000, -500.0, 500.0}});
     registry.add("hdSigmaProton3", "p vs dE/dx sigma proton", kTH2F, {{100, 0.0, 3.0}, {1000, -500.0, 500.0}});
     registry.add("hNsigEvsKa1", "NSigma(t1) vs NSigma (t2);n#sigma_{1};n#sigma_{2}", kTH2F, {{100, -15., 15.}, {100, -15., 15}});
@@ -73,7 +73,6 @@ struct ExclusiveTwoProtons {
     registry.add("PP/hMassUnlike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{1000, 0., 10.}});
     registry.add("PP/hUnlikePt", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hCoherentMass", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
@@ -119,13 +118,12 @@ struct ExclusiveTwoProtons {
 
       int clusterSize[7];
       double averageClusterSize = 0.;
-      for(int i=0;i<7;i++) { // info stored in 4 bits
-	      clusterSize[i] = (((1 << 4) - 1) & (trk.itsClusterSizes() >> 4*i));
-        averageClusterSize += (double) clusterSize[i];
+      for (int i = 0; i < 7; i++) { // info stored in 4 bits
+        clusterSize[i] = (((1 << 4) - 1) & (trk.itsClusterSizes() >> 4 * i));
+        averageClusterSize += (double)clusterSize[i];
       }
       averageClusterSize /= 7.;
       registry.fill(HIST("hClusterSizeAllTracks"), averageClusterSize);
-
 
       double momentum = TMath::Sqrt(trk.px() * trk.px() + trk.py() * trk.py() + trk.pz() * trk.pz());
       double dEdx = trk.tpcSignal();
@@ -138,20 +136,20 @@ struct ExclusiveTwoProtons {
       auto nSigmaPr = trk.tpcNSigmaPr();
       auto nSigmaPrTOF = trk.tofNSigmaPr();
 
-      if(trk.hasTOF()) {
+      if (trk.hasTOF()) {
         registry.fill(HIST("hdSigmaProton"), momentum, nSigmaPrTOF);
-      }  
+      }
       if (fabs(nSigmaPr) < 4.) {
         registry.fill(HIST("hdEdx2"), momentum, dEdx);
         registry.fill(HIST("hdSigmaProton2"), momentum, nSigmaPr);
         registry.fill(HIST("hMomentum"), momentum);
-        if ( trk.hasTOF() && fabs(nSigmaPrTOF) < 4.) {
+        if (trk.hasTOF() && fabs(nSigmaPrTOF) < 4.) {
           registry.fill(HIST("hdSigmaProton3"), momentum, nSigmaPrTOF);
           registry.fill(HIST("hClusterSizeProtonsTOF"), averageClusterSize);
           onlyProtonTracksTOF.push_back(proton);
           onlyProtonSigmaTOF.push_back(nSigmaPrTOF);
           rawProtonTracksTOF.push_back(trk);
-        } else if(!trk.hasTOF()) {
+        } else if (!trk.hasTOF()) {
           onlyProtonTracks.push_back(proton);
           onlyProtonSigma.push_back(nSigmaPr);
           rawProtonTracks.push_back(trk);
@@ -159,8 +157,6 @@ struct ExclusiveTwoProtons {
         registry.fill(HIST("hSelectionCounter"), 4);
         registry.fill(HIST("hClusterSizeProtonsTPC"), averageClusterSize);
       }
-
-      
 
     } // trk loop
 
@@ -170,9 +166,9 @@ struct ExclusiveTwoProtons {
 
       int signSum = -999.;
       double sigmaTotal = -999.;
-      if(onlyProtonTracksTOF.size() == 1) {
+      if (onlyProtonTracksTOF.size() == 1) {
 
-        if(!(fabs(onlyProtonTracks[0].Eta()) < 0.8 && fabs(onlyProtonTracksTOF[0].Eta()) < 0.8)){
+        if (!(fabs(onlyProtonTracks[0].Eta()) < 0.8 && fabs(onlyProtonTracksTOF[0].Eta()) < 0.8)) {
           return;
         }
         registry.fill(HIST("hEta1"), onlyProtonTracks[0].Eta());
@@ -180,17 +176,17 @@ struct ExclusiveTwoProtons {
         resonance += onlyProtonTracks[0];
         resonance += onlyProtonTracksTOF[0];
         sigmaTotal = 0;
-        sigmaTotal = onlyProtonSigma[0]*onlyProtonSigma[0]+onlyProtonSigmaTOF[0]*onlyProtonSigmaTOF[0];;
+        sigmaTotal = onlyProtonSigma[0] * onlyProtonSigma[0] + onlyProtonSigmaTOF[0] * onlyProtonSigmaTOF[0];
+        ;
         registry.fill(HIST("hNsigEvsKa1"), onlyProtonSigma[0], onlyProtonSigmaTOF[0]);
-        signSum = rawProtonTracks[0].sign()+rawProtonTracksTOF[0].sign();
-        if(signSum == 0) {
+        signSum = rawProtonTracks[0].sign() + rawProtonTracksTOF[0].sign();
+        if (signSum == 0) {
           registry.fill(HIST("PP/hPtProtonVsProton"), onlyProtonTracks[0].Pt(), onlyProtonTracksTOF[0].Pt());
-        }  
+        }
 
+      } else if (onlyProtonTracksTOF.size() == 2) {
 
-      } else if(onlyProtonTracksTOF.size() == 2) {
-
-        if(!(fabs(onlyProtonTracksTOF[0].Eta()) < 0.8 && fabs(onlyProtonTracksTOF[1].Eta()) < 0.8)){
+        if (!(fabs(onlyProtonTracksTOF[0].Eta()) < 0.8 && fabs(onlyProtonTracksTOF[1].Eta()) < 0.8)) {
           return;
         }
         registry.fill(HIST("hEta1"), onlyProtonTracksTOF[0].Eta());
@@ -198,26 +194,25 @@ struct ExclusiveTwoProtons {
         resonance += onlyProtonTracksTOF[0];
         resonance += onlyProtonTracksTOF[1];
         sigmaTotal = 0;
-        sigmaTotal = onlyProtonSigmaTOF[0]*onlyProtonSigmaTOF[0]+onlyProtonSigmaTOF[1]*onlyProtonSigmaTOF[1];;
+        sigmaTotal = onlyProtonSigmaTOF[0] * onlyProtonSigmaTOF[0] + onlyProtonSigmaTOF[1] * onlyProtonSigmaTOF[1];
+        ;
         registry.fill(HIST("hNsigEvsKa1"), onlyProtonSigmaTOF[0], onlyProtonSigmaTOF[1]);
-        signSum = rawProtonTracksTOF[0].sign()+rawProtonTracksTOF[1].sign();
-        if(signSum == 0) {
+        signSum = rawProtonTracksTOF[0].sign() + rawProtonTracksTOF[1].sign();
+        if (signSum == 0) {
           registry.fill(HIST("PP/hPtProtonVsProton"), onlyProtonTracksTOF[0].Pt(), onlyProtonTracksTOF[1].Pt());
-        }  
+        }
       }
 
-
-      if(sigmaTotal > 16.){
+      if (sigmaTotal > 16.) {
         return;
       }
-      if(onlyProtonTracksTOF.size() == 1) {
+      if (onlyProtonTracksTOF.size() == 1) {
         registry.fill(HIST("hNsigEvsKa2"), onlyProtonSigma[0], onlyProtonSigmaTOF[0]);
-      } else if(onlyProtonTracksTOF.size() == 2) {
+      } else if (onlyProtonTracksTOF.size() == 2) {
         registry.fill(HIST("hNsigEvsKa2"), onlyProtonSigmaTOF[0], onlyProtonSigmaTOF[1]);
       }
 
-
-      if(signSum != 0){
+      if (signSum != 0) {
         registry.fill(HIST("hMassPtLikeSignProton"), resonance.M(), resonance.Pt());
         registry.fill(HIST("hSelectionCounter"), 7);
         registry.fill(HIST("hPtLikeSignProton"), resonance.Pt());
@@ -228,13 +223,11 @@ struct ExclusiveTwoProtons {
         registry.fill(HIST("PP/hUnlikePt"), resonance.Pt());
         registry.fill(HIST("PP/hMassUnlike"), resonance.M());
         registry.fill(HIST("PP/hRapidity"), resonance.Rapidity());
-        if(resonance.Pt() < 0.15) {
+        if (resonance.Pt() < 0.15) {
           registry.fill(HIST("PP/hCoherentMass"), resonance.M());
         }
       }
-
     }
-
 
   } // end of process
 
