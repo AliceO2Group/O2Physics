@@ -11,8 +11,11 @@
 
 include_guard()
 
-# Set warnings for both gcc and clang.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-error \
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-error")
+# Treat warnings as errors in CI tests.
+if(DEFINED ENV{ALIBUILD_O2PHYSICS_TESTS})
+  # Set warnings for both gcc and clang.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
 -Werror=NSObject-attribute \
 -Werror=address \
 -Werror=address-of-packed-member \
@@ -92,9 +95,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-error \
 -Werror=varargs \
 -Werror=vexing-parse \
 ")
-# Add warnings for clang only.
-if(APPLE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
+  # Add warnings for clang only.
+  if(APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
 -Werror=#pragma-messages \
 -Werror=#warnings \
 -Werror=CFString-literal \
@@ -638,9 +641,9 @@ if(APPLE)
 -Werror=write-strings \
 -Werror=xor-used-as-pow \
 ")
-# Add warnings for gcc only.
-elseif(UNIX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
+  # Add warnings for gcc only.
+  elseif(UNIX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
 -Werror=aggressive-loop-optimizations \
 -Werror=analyzer-double-fclose \
 -Werror=analyzer-double-free \
@@ -733,6 +736,7 @@ elseif(UNIX)
 -Werror=volatile-register-var \
 -Werror=zero-length-bounds \
 ")
+  endif()
 endif()
 
 IF (ENABLE_TIMETRACE)
