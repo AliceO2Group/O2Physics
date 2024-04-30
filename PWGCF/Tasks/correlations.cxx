@@ -768,11 +768,11 @@ struct CorrelationTask {
       LOGF(info, "processMCSameDerived. MC collision: %d, particles: %d, collisions: %d", mcCollision.globalIndex(), mcParticles.size(), collisions.size());
     }
 
-    if (cfgCentBinsForMC > 0 && collisions.size() == 0) {
-      return;
-    }
     auto multiplicity = mcCollision.multiplicity();
     if (cfgCentBinsForMC > 0) {
+      if (collisions.size() == 0) {
+        return;
+      }
       for (auto& collision : collisions) {
         multiplicity = collision.multiplicity();
       }
@@ -812,22 +812,7 @@ struct CorrelationTask {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
       float eventWeight = 1.0f / it.currentWindowNeighbours();
 
-      // check if collision1 has at least one reconstructed collision
-      auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
-      if (cfgVerbosity > 0) {
-        LOGF(info, "Found %d related collisions", groupedCollisions.size());
-      }
-      if (cfgCentBinsForMC > 0 && groupedCollisions.size() == 0) {
-        return;
-      }
-      if (cfgCentBinsForMC > 0) {
-        for (auto& collision : groupedCollisions) {
-          multiplicity = collision.multiplicity();
-        }
-      } else {
-        multiplicity = collision1.multiplicity();
-      }
-
+      multiplicity = collision1.multiplicity();
       if (cfgVerbosity > 0) {
         int bin = configurableBinning.getBin({collision1.posZ(), multiplicity});
         LOGF(info, "processMCMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
@@ -838,9 +823,18 @@ struct CorrelationTask {
         mixed->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
       }
       fillCorrelations<CorrelationContainer::kCFStepAll>(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), 0, eventWeight);
-
+      // check if collision1 has at least one reconstructed collision
+      auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
+      if (cfgVerbosity > 0) {
+        LOGF(info, "Found %d related collisions", groupedCollisions.size());
+      }
       if (groupedCollisions.size() == 0) {
         continue;
+      }
+      if (cfgCentBinsForMC > 0) {
+        for (auto& collision : groupedCollisions) {
+          multiplicity = collision.multiplicity();
+        }
       }
 
       // STEP 2, 4, 5
