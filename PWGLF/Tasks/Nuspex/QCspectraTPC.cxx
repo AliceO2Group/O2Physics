@@ -40,7 +40,6 @@ double eta2y(double pt, double m, double eta)
   return asinh(pt / mt * sinh(eta));
 }
 
-
 struct QCspectraTPC {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<int> cfgAverageClusterSize{"cfgAverageClusterSize", 1, "Min Average Cluster Size"};
@@ -58,7 +57,7 @@ struct QCspectraTPC {
   Configurable<int> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
   Configurable<int> minTPCNClsFound{"minTPCNClsFound", 70, "Additional cut on the minimum value of the number of found clusters in the TPC"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
-    Configurable<int> multiplicityEstimator{"multiplicityEstimator", 8, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M, 10 CentralityFV0A"};
+  Configurable<int> multiplicityEstimator{"multiplicityEstimator", 8, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M, 10 CentralityFV0A"};
   Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 100, "Additional cut on the minimum number of crossed rows in the TPC"};
   Configurable<int> ITSNCls{"ITSNCls", 7, "Additional cut on the minimum number of ITS clusters"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
@@ -416,14 +415,14 @@ struct QCspectraTPC {
       }
     }
   } // process_mc loop end
-using CollisionCandidateMCRec = soa::Join<aod::Collisions,  aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
-void processTrackHistograms_MC(CollisionCandidateMCRec::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  using CollisionCandidateMCRec = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
+  void processTrackHistograms_MC(CollisionCandidateMCRec::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
-const float multiplicity = collision.centFT0C();
-for (auto& track : tracks) {
+    const float multiplicity = collision.centFT0C();
+    for (auto& track : tracks) {
 
-const auto& mcParticle = track.mcParticle();
-if (abs(track.eta()) > cfgCutEta) {
+      const auto& mcParticle = track.mcParticle();
+      if (abs(track.eta()) > cfgCutEta) {
         return;
       }
       if (track.tpcNClsCrossedRows() < minTPCNClsFound)
@@ -438,284 +437,279 @@ if (abs(track.eta()) > cfgCutEta) {
         continue;
       if (abs(track.dcaZ()) > cfgCutDCAZ)
         continue;
-if (mcParticle.isPhysicalPrimary()) {
-  //pions
-  if (mcParticle.pdgCode() == 211) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/pi/pos/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
-if (track.hasTOF()) {
-histos.fill(HIST("MC/pi/pos/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
-  }
-}
-if (mcParticle.pdgCode() == -211) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/pi/neg/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
-if (track.hasTOF()) {
-histos.fill(HIST("MC/pi/neg/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
-  }
-}
-//kaons
-  if (mcParticle.pdgCode() == 321) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/ka/pos/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
-if (track.hasTOF()) {
-histos.fill(HIST("MC/ka/pos/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
-  }
-}
-if (mcParticle.pdgCode() == -321) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/ka/neg/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
-if (track.hasTOF()) {
-histos.fill(HIST("MC/ka/neg/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
-  }
-}
-  //Protons
-  if (mcParticle.pdgCode() == 2212) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/pr/pos/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
-if (track.hasTOF()) {
-histos.fill(HIST("MC/pr/pos/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
-  }
-}
-//Anti-Protons
-  if (mcParticle.pdgCode() == -2212) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/pr/neg/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
-if (track.hasTOF()) {
-histos.fill(HIST("MC/pr/neg/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
-  }
-}
-}// primaries
-if (!mcParticle.isPhysicalPrimary()) {// secondaries loop start
-    if (mcParticle.pdgCode() == 211) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/pi/pos/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
-        if (track.hasTOF()) {
-            histos.fill(HIST("MC/pi/pos/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+      if (mcParticle.isPhysicalPrimary()) {
+        // pions
+        if (mcParticle.pdgCode() == 211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
           }
-        } else {
-           histos.fill(HIST("MC/pi/pos/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
-           if (track.hasTOF()) {
-            histos.fill(HIST("MC/pi/pos/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          histos.fill(HIST("MC/pi/pos/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/pi/pos/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
           }
         }
-       }
-      if (mcParticle.pdgCode() == -211) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/pi/neg/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
-        if (track.hasTOF()) {
-            histos.fill(HIST("MC/pi/neg/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+        if (mcParticle.pdgCode() == -211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
           }
-        } else {
-           histos.fill(HIST("MC/pi/neg/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
-           if (track.hasTOF()) {
-            histos.fill(HIST("MC/pi/neg/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          histos.fill(HIST("MC/pi/neg/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/pi/neg/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
           }
         }
-       }
-    if (mcParticle.pdgCode() == 321) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/ka/pos/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
-        if (track.hasTOF()) {
-            histos.fill(HIST("MC/ka/pos/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+        // kaons
+        if (mcParticle.pdgCode() == 321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
           }
-        } else {
-           histos.fill(HIST("MC/ka/pos/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
-           if (track.hasTOF()) {
-            histos.fill(HIST("MC/ka/pos/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          histos.fill(HIST("MC/ka/pos/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/ka/pos/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
           }
         }
-       }
-       if (mcParticle.pdgCode() == -321) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/ka/neg/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
-        if (track.hasTOF()) {
-            histos.fill(HIST("MC/ka/neg/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+        if (mcParticle.pdgCode() == -321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
           }
-        } else {
-           histos.fill(HIST("MC/ka/neg/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
-           if (track.hasTOF()) {
-            histos.fill(HIST("MC/ka/neg/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          histos.fill(HIST("MC/ka/neg/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/ka/neg/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
           }
         }
-       }
-     if (mcParticle.pdgCode() == 2212) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/pr/pos/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
-        if (track.hasTOF()) {
-            histos.fill(HIST("MC/pr/pos/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+        // Protons
+        if (mcParticle.pdgCode() == 2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
           }
-        } else {
-           histos.fill(HIST("MC/pr/pos/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
-           if (track.hasTOF()) {
-            histos.fill(HIST("MC/pr/pos/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          histos.fill(HIST("MC/pr/pos/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/pr/pos/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
           }
         }
-       }
-       if (mcParticle.pdgCode() == -2212) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/pr/neg/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
-        if (track.hasTOF()) {
-            histos.fill(HIST("MC/pr/neg/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+        // Anti-Protons
+        if (mcParticle.pdgCode() == -2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
           }
-        } else {
-           histos.fill(HIST("MC/pr/neg/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
-           if (track.hasTOF()) {
-            histos.fill(HIST("MC/pr/neg/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          histos.fill(HIST("MC/pr/neg/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/pr/neg/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
           }
         }
-       }
-     }// secondaries loop end
+      }                                      // primaries
+      if (!mcParticle.isPhysicalPrimary()) { // secondaries loop start
+        if (mcParticle.pdgCode() == 211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/pi/pos/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pi/pos/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/pi/pos/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pi/pos/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+        if (mcParticle.pdgCode() == -211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/pi/neg/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pi/neg/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/pi/neg/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pi/neg/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+        if (mcParticle.pdgCode() == 321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/ka/pos/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/ka/pos/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/ka/pos/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/ka/pos/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+        if (mcParticle.pdgCode() == -321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/ka/neg/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/ka/neg/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/ka/neg/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/ka/neg/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+        if (mcParticle.pdgCode() == 2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/pr/pos/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pr/pos/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/pr/pos/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pr/pos/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+        if (mcParticle.pdgCode() == -2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/pr/neg/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pr/neg/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/pr/neg/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pr/neg/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+      } // secondaries loop end
     }
   }
-PROCESS_SWITCH(QCspectraTPC, processTrackHistograms_MC, "process MC Reconstructed tracks", true);
+  PROCESS_SWITCH(QCspectraTPC, processTrackHistograms_MC, "process MC Reconstructed tracks", true);
 
-void processParticleHistograms_MC(CollisionCandidateMCRec::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra,
-                           aod::TracksDCA, aod::McTrackLabels,
-                           aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
-                           aod::TrackSelection> const& tracks,
-                 aod::McParticles const& mcParticles,
-                 aod::McCollisions const& mcCollision)
+  void processParticleHistograms_MC(CollisionCandidateMCRec::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection> const& tracks,
+                                    aod::McParticles const& mcParticles,
+                                    aod::McCollisions const& mcCollision)
   {
 
+    const float multiplicity = collision.centFT0C();
+    for (auto& track : tracks) {
+      const auto& mcParticle = track.mcParticle();
+      if (mcParticle.isPhysicalPrimary()) {
+        // pions
+        if (mcParticle.pdgCode() == 211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pi/pos/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+        if (mcParticle.pdgCode() == -211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pi/neg/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+        if (mcParticle.pdgCode() == 321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/ka/pos/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+        if (mcParticle.pdgCode() == -321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/ka/neg/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
 
-const float multiplicity = collision.centFT0C();
-  for (auto& track : tracks) {
-  const auto& mcParticle = track.mcParticle();
-  if (mcParticle.isPhysicalPrimary()) {
-  //pions
-  if (mcParticle.pdgCode() == 211) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/pi/pos/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
-}
-if (mcParticle.pdgCode() == -211) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/pi/neg/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
-
-  }
-if (mcParticle.pdgCode() == 321) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/ka/pos/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
-}
-  if (mcParticle.pdgCode() == -321) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/ka/neg/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
-}
-
-if (mcParticle.pdgCode() == 2212) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/pr/pos/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
-}
-  if (mcParticle.pdgCode() == -2212) {
-    if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-histos.fill(HIST("MC/pr/neg/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
-}
-if (!mcParticle.isPhysicalPrimary()) {// secondaries loop start
-    if (mcParticle.pdgCode() == 211) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/pi/pos/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           } else {
-           histos.fill(HIST("MC/pi/pos/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           }
-       }
-         if (mcParticle.pdgCode() == -211) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/pi/neg/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           } else {
-           histos.fill(HIST("MC/pi/neg/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           }
-       }
+        if (mcParticle.pdgCode() == 2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pr/pos/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+        if (mcParticle.pdgCode() == -2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pr/neg/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+        if (!mcParticle.isPhysicalPrimary()) { // secondaries loop start
+          if (mcParticle.pdgCode() == 211) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/pi/pos/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/pi/pos/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+          if (mcParticle.pdgCode() == -211) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/pi/neg/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/pi/neg/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
           if (mcParticle.pdgCode() == 321) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/ka/pos/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/ka/pos/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+          if (mcParticle.pdgCode() == -321) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/ka/neg/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/ka/neg/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+          if (mcParticle.pdgCode() == 2212) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/pr/pos/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/pr/pos/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+          if (mcParticle.pdgCode() == -2212) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/pr/neg/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/pr/neg/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        } // secondaries loop end
       }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/ka/pos/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           } else {
-           histos.fill(HIST("MC/ka/pos/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           }
-       }
-           if (mcParticle.pdgCode() == -321) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/ka/neg/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           } else {
-           histos.fill(HIST("MC/ka/neg/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           }
-       }
-       if (mcParticle.pdgCode() == 2212) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/pr/pos/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           } else {
-           histos.fill(HIST("MC/pr/pos/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           }
-       }
-           if (mcParticle.pdgCode() == -2212) {
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        return;
-      }
-      if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST("MC/pr/neg/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           } else {
-           histos.fill(HIST("MC/pr/neg/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
-           }
-       }
-      } // secondaries loop end
-  }
-}
+    }
   } // process_mc loop end
   PROCESS_SWITCH(QCspectraTPC, processParticleHistograms_MC, "process MC Generated tracks", true);
   void processParticleGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
@@ -724,49 +718,48 @@ if (!mcParticle.isPhysicalPrimary()) {// secondaries loop start
     for (auto& mcParticleGen : mcParticles) {
       bool isPhysPrim = mcParticleGen.isPhysicalPrimary();
       if (doProcessMC) {
-      if (isPhysPrim) {
-        if (mcParticleGen.pdgCode() == 2212) {
-        if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
-        continue;
-      }
-          histos.fill(HIST("MC/test/pr/pos/prm/pt/den"), mcParticleGen.pt());
+        if (isPhysPrim) {
+          if (mcParticleGen.pdgCode() == 2212) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/pr/pos/prm/pt/den"), mcParticleGen.pt());
           }
-        if (mcParticleGen.pdgCode() == -2212) {
-        if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
-        continue;
-      }
-          histos.fill(HIST("MC/test/pr/neg/prm/pt/den"), mcParticleGen.pt());
+          if (mcParticleGen.pdgCode() == -2212) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/pr/neg/prm/pt/den"), mcParticleGen.pt());
           }
-        if (mcParticleGen.pdgCode() == 211) {
-        if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
-        continue;
-      }
-          histos.fill(HIST("MC/test/pi/pos/prm/pt/den"), mcParticleGen.pt());
+          if (mcParticleGen.pdgCode() == 211) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/pi/pos/prm/pt/den"), mcParticleGen.pt());
           }
-        if (mcParticleGen.pdgCode() == -211) {
-        if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
-        continue;
-      }
-          histos.fill(HIST("MC/test/pi/neg/prm/pt/den"), mcParticleGen.pt());
+          if (mcParticleGen.pdgCode() == -211) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/pi/neg/prm/pt/den"), mcParticleGen.pt());
           }
-        if (mcParticleGen.pdgCode() == 321) {
-        if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
-        continue;
-      }
-          histos.fill(HIST("MC/test/ka/pos/prm/pt/den"), mcParticleGen.pt());
+          if (mcParticleGen.pdgCode() == 321) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/ka/pos/prm/pt/den"), mcParticleGen.pt());
           }
-        if (mcParticleGen.pdgCode() == -321) {
-        if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
-        continue;
-      }
-          histos.fill(HIST("MC/test/ka/neg/prm/pt/den"), mcParticleGen.pt());
+          if (mcParticleGen.pdgCode() == -321) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/ka/neg/prm/pt/den"), mcParticleGen.pt());
           }
         }
       }
     }
   } // process_mc loop end
-PROCESS_SWITCH(QCspectraTPC, processParticleGen, "process MC Generated tracks", true);
-
+  PROCESS_SWITCH(QCspectraTPC, processParticleGen, "process MC Generated tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
