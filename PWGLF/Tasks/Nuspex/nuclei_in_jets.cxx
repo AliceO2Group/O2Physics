@@ -1041,7 +1041,7 @@ struct nuclei_in_jets {
 
         // Index
         i++;
-          
+
         if (!particle.isPhysicalPrimary())
           continue;
         if (particle.pdgCode() != -2212)
