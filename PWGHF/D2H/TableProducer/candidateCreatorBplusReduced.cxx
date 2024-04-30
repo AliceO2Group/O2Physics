@@ -27,11 +27,13 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_trkcandsel;
 
 /// Reconstruction of B+ candidates
 struct HfCandidateCreatorBplusReduced {
@@ -61,6 +63,7 @@ struct HfCandidateCreatorBplusReduced {
   Preslice<soa::Join<aod::HfRed2Prongs, aod::HfRed2ProngsCov>> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRedTracks, aod::HfRedTracksCov>> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
 
+  std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -84,6 +87,10 @@ struct HfCandidateCreatorBplusReduced {
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
+
+    /// candidate monitoring
+    hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
+    setLabelHistoCands(hCandidates);
   }
 
   void process(HfRedCollisionsWithExtras const& collisions,
@@ -124,12 +131,12 @@ struct HfCandidateCreatorBplusReduced {
       auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
       for (const auto& candD0 : candsDThisColl) {
         auto trackParCovD = getTrackParCov(candD0);
-        std::array<float, 3> pVecD0 = {candD0.px(), candD0.py(), candD0.pz()};
+        std::array<float, 3> pVecD0 = candD0.pVector();
 
         auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
         for (const auto& trackPion : tracksPionThisCollision) {
           auto trackParCovPi = getTrackParCov(trackPion);
-          std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+          std::array<float, 3> pVecPion = trackPion.pVector();
 
           // compute invariant mass square and apply selection
           auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecPion}, std::array{massD0, massPi});
@@ -138,9 +145,18 @@ struct HfCandidateCreatorBplusReduced {
           }
           // ---------------------------------
           // reconstruct the 2-prong B+ vertex
-          if (df2.process(trackParCovD, trackParCovPi) == 0) {
+          hCandidates->Fill(SVFitting::BeforeFit);
+          try {
+            if (df2.process(trackParCovD, trackParCovPi) == 0) {
+              continue;
+            }
+          } catch (const std::runtime_error& error) {
+            LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+            hCandidates->Fill(SVFitting::Fail);
             continue;
           }
+          hCandidates->Fill(SVFitting::FitOk);
+
           // D0Pi passed B+ reconstruction
 
           // calculate relevant properties

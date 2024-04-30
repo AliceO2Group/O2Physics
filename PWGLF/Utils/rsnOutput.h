@@ -107,7 +107,7 @@ class Output
     mFillPoint = new double[mCurrentAxisTypes.size()];
 
     LOGF(info, "Number of axis added: %d", mCurrentAxes.size());
-    mPairHisto = new HistogramConfigSpec({HistType::kTHnSparseF}, mCurrentAxes);
+    mPairHisto = new HistogramConfigSpec(HistType::kTHnSparseF, mCurrentAxes);
   };
 
   template <typename T>

@@ -32,7 +32,7 @@ class DGSelector
   ~DGSelector() { delete fPDG; }
 
   template <typename CC, typename BCs, typename TCs, typename FWs>
-  int Print(DGCutparHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
+  int Print(DGCutparHolder /*diffCuts*/, CC& collision, BCs& /*bcRange*/, TCs& /*tracks*/, FWs& /*fwdtracks*/)
   {
     LOGF(info, "Size of array %i", collision.size());
     return 1;
@@ -182,6 +182,14 @@ class DGSelector
     // is ITS-TPC track
     if (sels[4] && !udhelpers::cutIsVertexITSTPC(collision)) {
       return 17;
+    }
+    // is ITS-TPC track
+    if (sels[5] && !udhelpers::cutIsVertexTRDmatched(collision)) {
+      return 18;
+    }
+    // is ITS-TPC track
+    if (sels[6] && !udhelpers::cutIsVertexTOFmatched(collision)) {
+      return 19;
     }
 
     // if we arrive here then the event is good!

@@ -118,11 +118,11 @@ struct HfTaskD0ParametrizedPid {
       float maxFiducialY = 0.8;
       float minFiducialY = -0.8;
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
-        if (std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0)) > 4.0) {
+        if (std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > 4.0) {
           continue;
         }
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0);
+        auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0);
         registry.fill(HIST("hGenPtVsY"), ptGen, std::abs(yGen));
         if (ptGen < 5.0) {
           maxFiducialY = -0.2 / 15 * ptGen * ptGen + 1.9 / 15 * ptGen + 0.5;

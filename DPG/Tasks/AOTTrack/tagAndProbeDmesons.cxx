@@ -488,26 +488,31 @@ struct TagTwoProngDisplacedVertices {
         if (std::abs(track.tofNSigmaPi()) < trackNumSigmaTof) {
           return true;
         }
+        break;
       }
       case aod::tagandprobe::TagChannels::DsOrDplusToKKPi: {
         if (std::abs(track.tofNSigmaKa()) < trackNumSigmaTof) {
           return true;
         }
+        break;
       }
       case aod::tagandprobe::TagChannels::DstarPlusToDzeroPi: {
         if ((track.signed1Pt() > 0 && std::abs(track.tofNSigmaPi()) < trackNumSigmaTof) || (track.signed1Pt() < 0 && std::abs(track.tofNSigmaKa()) < trackNumSigmaTof)) {
           return true;
         }
+        break;
       }
       case aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi: {
         if ((track.signed1Pt() < 0 && std::abs(track.tofNSigmaPi()) < trackNumSigmaTof) || (track.signed1Pt() > 0 && std::abs(track.tofNSigmaKa()) < trackNumSigmaTof)) {
           return true;
         }
+        break;
       }
       case aod::tagandprobe::TagChannels::DstarToDzeroToKK: {
         if (std::abs(track.tofNSigmaKa()) < trackNumSigmaTof) {
           return true;
         }
+        break;
       }
     }
     return false;

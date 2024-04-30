@@ -153,9 +153,9 @@ struct HfTreeCreatorChicToJpsiGamma {
     // int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      std::array<float, 3> pvecChic = {candidate.px(), candidate.py(), candidate.pz()};
-      std::array<float, 3> pvecJpsi = {candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()};
-      std::array<float, 3> pvecGamma = {candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()};
+      std::array<float, 3> pvecChic = candidate.pVector();
+      std::array<float, 3> pvecJpsi = candidate.pVectorProng0();
+      std::array<float, 3> pvecGamma = candidate.pVectorProng1();
       auto pchic = RecoDecay::p(pvecChic);
       auto pjpsi = RecoDecay::p(pvecJpsi);
       auto pl1 = std::abs(RecoDecay::dotProd(pvecChic, pvecJpsi)) / pchic;
@@ -217,7 +217,7 @@ struct HfTreeCreatorChicToJpsiGamma {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, massChic),
+          RecoDecay::y(particle.pVector(), massChic),
           0., // put here the jpsi mass
           particle.flagMcMatchGen(),
           particle.originMcGen());

@@ -69,7 +69,7 @@ struct EMPhotonFilterQC {
   std::vector<uint64_t> stored_dielectronIds;
   std::vector<uint64_t> stored_trackIds;
 
-  void processPCM(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const&, aod::DalitzEEs const& dielectrons, aod::EMPrimaryElectrons const&, aod::EMSwtInfosPCM const& swt_pcm, aod::EMSwtInfosPair const& swt_pair)
+  void processPCM(MyCollisions const& collisions, aod::V0PhotonsKF const& /*v0photons*/, aod::V0Legs const&, aod::DalitzEEs const& dielectrons, aod::EMPrimaryElectrons const&, aod::EMSwtInfosPCM const& swt_pcm, aod::EMSwtInfosPair const& swt_pair)
   {
     stored_dielectronIds.reserve(swt_pair.size());
     stored_trackIds.reserve(swt_pair.size() * 2);
@@ -146,9 +146,9 @@ struct EMPhotonFilterQC {
     stored_dielectronIds.shrink_to_fit();
   }
 
-  void processPHOS(MyCollisions const& collisions) {}
-  void processEMC(MyCollisions const& collisions) {}
-  void processDummy(MyCollisions const& collisions) {}
+  void processPHOS(MyCollisions const&) {}
+  void processEMC(MyCollisions const&) {}
+  void processDummy(MyCollisions const&) {}
 
   PROCESS_SWITCH(EMPhotonFilterQC, processPCM, "Process PCM software trigger QC", false);
   PROCESS_SWITCH(EMPhotonFilterQC, processPHOS, "Process PHOS software trigger QC", false);

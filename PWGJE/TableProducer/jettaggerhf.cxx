@@ -40,14 +40,17 @@ struct JetTaggerHFTask {
   Produces<JetTaggingTableMCD> taggingTableMCD;
 
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
-  Configurable<bool> doWShower{"doWShower", false, "find jet origin included gluon spliting"}; // true:: remove gluon spliting
-  Configurable<bool> doTC{"doTC", false, "fill table for track counting algorithm"};
+  Configurable<bool> removeGluonShower{"removeGluonShower", true, "find jet origin removed gluon spliting"}; // true:: remove gluon spliting
+  Configurable<bool> useJetProb{"useJetProb", false, "fill table for track counting algorithm"};
+  Configurable<bool> trackProbQA{"trackProbQA", false, "fill track probability histograms separately for geometric positive and negative tracks for QA"};
   Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
   Configurable<int> numCount{"numCount", 3, "number of track counting"};
-  Configurable<std::vector<float>> paramsResoFunc{"paramsResoFunc", std::vector<float>{1117853.376, -0.092, 0.838, 9.209, 0.408, 9.209, 0.408, 13.501, 1.035}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7))"};
-  Configurable<std::vector<float>> paramsResoFuncMC{"paramsResoFuncMC", std::vector<float>{53473, -0.044, 0.649, 10.152, 1.274, 5.264, 0.438, 6.326, 0.438454, 53473, -0.044, 0.649}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
-  Configurable<float> minSignImpXYSig{"minsIPs", -10.0, "minimum of signed impact parameter significance"};
-  Configurable<float> tagPoint{"tagPoint", 1.0, "tagging working point"};
+  Configurable<std::vector<float>> paramsResoFunc{"paramsResoFunc", std::vector<float>{1306800, -0.1049, 0.861425, 13.7547, 0.977967, 8.96823, 0.151595, 6.94499, 0.0250301}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7))"};
+  Configurable<std::vector<float>> paramsResoFuncMC{"paramsResoFuncMC", std::vector<float>{61145.8, -0.082085, 0.706361, 10.0794, 1.15412, 5.81011, 0.188979, 3.8514, 0.032457}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
+  Configurable<float> minSignImpXYSig{"minsIPs", -40.0, "minimum of signed impact parameter significance"};
+  Configurable<float> tagPoint{"tagPoint", 2.5, "tagging working point"};
+
+  ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
 
   using JetTagTracksData = soa::Join<JetTracks, aod::JTrackPIs, aod::JTracksTag>;
   using JetTagTracksMCD = soa::Join<JetTracksMCD, aod::JTrackPIs, aod::JTracksTag>;
@@ -56,8 +59,8 @@ struct JetTaggerHFTask {
 
   std::unique_ptr<TF1> fSignImpXYSig = nullptr;
   std::vector<float> vecParams;
-  // TF1* fSignImpXYSig = nullptr;
   int maxOrder = -1;
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(InitContext const&)
   {
     maxOrder = numCount + 1; // 0: untagged, >1 : N ordering
@@ -68,9 +71,14 @@ struct JetTaggerHFTask {
       vecParams = (std::vector<float>)paramsResoFuncMC;
     }
     fSignImpXYSig = jettaggingutilities::setResolutionFunction(vecParams);
+    if (trackProbQA) {
+      AxisSpec TrackProbabilityAxis = {binTrackProbability, "Track proability"};
+      registry.add("h_pos_track_probability", "track probability", {HistType::kTH1F, {{TrackProbabilityAxis}}});
+      registry.add("h_neg_track_probability", "track probability", {HistType::kTH1F, {{TrackProbabilityAxis}}});
+    }
   }
 
-  void processDummy(JetCollisions const& collision)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processDummy, "Dummy process", true);
@@ -81,7 +89,7 @@ struct JetTaggerHFTask {
       std::vector<float> jetProb;
       int algorithm2 = 0;
       int algorithm3 = 0;
-      if (doTC) {
+      if (useJetProb) {
         for (int order = 0; order < maxOrder; order++) {
           jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSig, collision, jet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
         }
@@ -97,16 +105,28 @@ struct JetTaggerHFTask {
     for (auto& mcdjet : mcdjets) {
       typename JetTagTracksMCD::iterator hftrack;
       int origin = 0;
-      if (!doWShower)
+      if (removeGluonShower)
         origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR);
       else
         origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack);
       std::vector<float> jetProb;
       int algorithm2 = 0;
       int algorithm3 = 0;
-      if (doTC) {
+      if (useJetProb) {
         for (int order = 0; order < maxOrder; order++) {
           jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSig, collision, mcdjet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
+        }
+        if (trackProbQA) {
+          for (auto& jtrack : mcdjet.template tracks_as<JetTagTracksMCD>()) {
+            auto track = jtrack.template track_as<OriTracksMCD>();
+            auto geoSign = jettaggingutilities::getGeoSign(collision, mcdjet, track);
+            float probTrack = jettaggingutilities::getTrackProbability(fSignImpXYSig, collision, mcdjet, track, minSignImpXYSig);
+            if (geoSign > 0) {
+              registry.fill(HIST("h_pos_track_probability"), probTrack);
+            } else {
+              registry.fill(HIST("h_neg_track_probability"), probTrack);
+            }
+          }
         }
       }
       // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
@@ -115,7 +135,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCD, "Fill tagging decision for mcd jets", false);
 
-  void processTraining(JetCollision const& collision, JetTableMCD const& mcdjets, JetTagTracksMCD const& tracks)
+  void processTraining(JetCollision const& /*collision*/, JetTableMCD const& /*mcdjets*/, JetTagTracksMCD const& /*tracks*/)
   {
     // To create table for ML
   }

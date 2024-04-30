@@ -104,6 +104,10 @@ DECLARE_SOA_COLUMN(MultPercentile, multPerc, float); // Percentiles of multiplic
 DECLARE_SOA_COLUMN(PosZ, posZ, float);               // Vertex of the collision
 DECLARE_SOA_COLUMN(MagField, magField, float);       // Magnetic field corresponding to a collision (in T)
 
+DECLARE_SOA_COLUMN(IsNoSameBunchPileup, isNoSameBunchPileup, bool);
+DECLARE_SOA_COLUMN(IsGoodZvtxFT0vsPV, isGoodZvtxFT0vsPV, bool);
+DECLARE_SOA_COLUMN(IsVertexITSTPC, isVertexITSTPC, bool);
+
 } // namespace singletrackselector
 
 DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SINGLECOLLSEL", // Table of the variables for single track selection.
@@ -112,6 +116,11 @@ DECLARE_SOA_TABLE(SingleCollSels, "AOD", "SINGLECOLLSEL", // Table of the variab
                   singletrackselector::MultPercentile,
                   singletrackselector::PosZ,
                   singletrackselector::MagField);
+
+DECLARE_SOA_TABLE(SingleCollExtras, "AOD", "SINGLECOLLEXTRA", // Joinable collision table with Pile-Up flags
+                  singletrackselector::IsNoSameBunchPileup,
+                  singletrackselector::IsGoodZvtxFT0vsPV,
+                  singletrackselector::IsVertexITSTPC);
 
 namespace singletrackselector
 {
@@ -317,10 +326,10 @@ inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<floa
 }
 
 template <typename TrackType>
-inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts, float const& TPCresidualCut = 5.0f)
+inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts, std::vector<float> const& TPCresidualCut = std::vector<float>{-5.0f, 5.0f})
 {
   int PDG = PIDcuts.first;
-  if (!TPCselection(track, std::make_pair(PDG, std::vector<float>{-TPCresidualCut, TPCresidualCut})))
+  if (!TPCselection(track, std::make_pair(PDG, TPCresidualCut)))
     return false;
 
   float Nsigma = -1000;

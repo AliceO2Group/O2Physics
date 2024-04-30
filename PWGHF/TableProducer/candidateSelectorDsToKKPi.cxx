@@ -123,34 +123,14 @@ struct HfCandidateSelectorDsToKKPi {
   }
 
   /// Single-track cuts
-  /// \param trackPt is the prong pT
-  /// \param dcaXY is the prong dcaXY
-  /// \return true if track passes all cuts
-  bool isSelectedTrackDcaXY(const float& trackPt, const float& dcaXY)
-  {
-    auto pTBinTrack = findBin(binsPtTrack, trackPt);
-    if (pTBinTrack == -1) {
-      return false;
-    }
-
-    if (std::abs(dcaXY) < cutsSingleTrack->get(pTBinTrack, "min_dcaxytoprimary")) {
-      return false; // minimum DCAxy
-    }
-    if (std::abs(dcaXY) > cutsSingleTrack->get(pTBinTrack, "max_dcaxytoprimary")) {
-      return false; // maximum DCAxy
-    }
-    return true;
-  }
-
-  /// Single-track cuts
   /// \param candidate is the Ds candidate
   /// \return true if all the prongs pass the selections
   template <typename T1>
   bool isSelectedCandidateDcaXY(const T1& candidate)
   {
-    if (isSelectedTrackDcaXY(candidate.ptProng0(), candidate.impactParameter0()) &&
-        isSelectedTrackDcaXY(candidate.ptProng1(), candidate.impactParameter1()) &&
-        isSelectedTrackDcaXY(candidate.ptProng2(), candidate.impactParameter2())) {
+    if (isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0()) &&
+        isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1()) &&
+        isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2())) {
       return true;
     }
     return false;
