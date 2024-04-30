@@ -58,7 +58,7 @@ struct phik0shortanalysis {
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
-  
+
   // Configurables for V0 selection
   Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
   Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.06, "DCA Pos To PV"};
@@ -70,24 +70,24 @@ struct phik0shortanalysis {
   // Configurables for phi selection
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
   Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Cut on charge"};
-  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};                
-  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; 
-  Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};  																			
+  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};         
+  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
+  Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
   Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
   Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
- 
+
   Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
-  
+
   // Configurable for event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
- 
+
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
-			
+
   void init(InitContext const&)
   {
     // Axes
@@ -102,13 +102,13 @@ struct phik0shortanalysis {
     // Event information
     eventHist.add("hVertexZRec", "hVertexZRec", kTH1F, {vertexZAxis});
     eventHist.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {multAxis});
-    
+
     // K0s topological/PID cuts
     K0SHist.add("hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {{55, 0.0f, 2.2f}});
     K0SHist.add("hV0CosPA", "hV0CosPA", kTH1F, {{100, 0.95f, 1.f}});
     K0SHist.add("hNSigmaPosPionFromK0S", "hNSigmaPosPionFromK0Short", kTH2F, {{100, -5.f, 5.f}, ptAxis});
     K0SHist.add("hNSigmaNegPionFromK0S", "hNSigmaNegPionFromK0Short", kTH2F, {{100, -5.f, 5.f}, ptAxis});
-    
+
     // Phis tpological/PID cuts
     PhiHist.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
     PhiHist.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
@@ -116,10 +116,10 @@ struct phik0shortanalysis {
     PhiHist.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{100, -10.0f, 10.0f}});
     PhiHist.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{100, -10.0f, 10.0f}});
 
-    // 2D Mass for Phi and K0S 																	
+    // 2D Mass for Phi and K0S
     PhiK0SHist.add("h4PhiK0SInvMassSameEvent", "2D Invariant mass of Phi and K0Short mesons for Same Event", kTHnSparseF, {deltayAxis, multAxis, K0SmassAxis, PhimassAxis});
     PhiK0SHist.add("h4PhiK0SInvMassMixedEvent", "2D Invariant mass of Phi and K0Short mesons for Mixed Event", kTHnSparseF, {deltayAxis, multAxis, K0SmassAxis, PhimassAxis});
-  }																			
+  }
 
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
@@ -150,12 +150,12 @@ struct phik0shortanalysis {
   SliceCache cache;
   Partition<PhiDaughterCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
   Partition<PhiDaughterCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
-																											
+
   // Track selection for Phi reconstruction
   // Topological
   template <typename T>
   bool selectionTrack(const T& track)
-  { 
+  {
     if (std::abs(track.pt()) < cMinPtcut)
       return false;
     if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
@@ -185,23 +185,23 @@ struct phik0shortanalysis {
       return true;
     }
     return false;
-  }											
+  }
 
   TLorentzVector daughter1, daughter2, mother, recPhi, recK0S;
-  						
-  // Reconstruct the Phi 
+
+  // Reconstruct the Phi
   template <typename T1, typename T2>
   TLorentzVector recMother(const T1& candidate1, const T2& candidate2, float masscand1, float masscand2)
   {
     daughter1.SetXYZM(candidate1.px(), candidate1.py(), candidate1.pz(), masscand1); // set the daughter1 4-momentum
     daughter2.SetXYZM(candidate2.px(), candidate2.py(), candidate2.pz(), masscand2); // set the daughter2 4-momentum
     mother = daughter1 + daughter2; // calculate the mother 4-momentum
-  
+
     return mother;
   }
 
   void fillInvMass2D(TLorentzVector mother, TLorentzVector V0, float multiplicity, bool same, bool mix)
-  {																									
+  {
     double mass1 = V0.M();
     double mass2 = mother.M();
     double rapidity1 = V0.Rapidity();
@@ -213,7 +213,7 @@ struct phik0shortanalysis {
     }
     if (mix && std::abs(rapidity1) < 0.8 && std::abs(rapidity2) < 0.8) { // mixed event
       PhiK0SHist.fill(HIST("h4PhiK0SInvMassMixedEvent"), deltay, multiplicity, mass1, mass2);
-    }												
+    }
   }
 
   void processSE(EventCandidates::iterator const& collision, PhiDaughterCandidates const& , V0Candidates const& V0s, V0DaughterCandidates const&)
@@ -228,9 +228,9 @@ struct phik0shortanalysis {
     auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     bool isV0filled = false;
-				
-    // Phi reconstruction				
-    // Loop over positive candidates 
+
+    // Phi reconstruction
+    // Loop over positive candidates
     for (auto track1 : posThisColl) { // loop over all selected tracks
       if (!selectionTrack(track1) || !selectionPID(track1)) {
         continue; // topological and PID selection
@@ -240,11 +240,11 @@ struct phik0shortanalysis {
       PhiHist.fill(HIST("hDcaz"), track1.dcaZ());
       PhiHist.fill(HIST("hNsigmaKaonTPC"), track1.tpcNSigmaKa());
       PhiHist.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
-      
+
       auto track1ID = track1.globalIndex();
 
       // Loop over all negative candidates
-      for (auto track2 : negThisColl) { 
+      for (auto track2 : negThisColl) {
         if (!selectionTrack(track2) || !selectionPID(track2)) {
           continue; // topological and PID selection
         }
@@ -256,16 +256,16 @@ struct phik0shortanalysis {
         recPhi = recMother(track1, track2, massKa, massKa);
         bool same = true;
         bool mix = false;
-       
+
         // V0 already reconstructed by the builder
         for (const auto& v0 : V0s) {
           const auto& posDaughterTrack = v0.posTrack_as<V0DaughterCandidates>();
           const auto& negDaughterTrack = v0.negTrack_as<V0DaughterCandidates>();
-        
+
           // Cut on dynamic columns
           if (v0.v0cosPA() < v0setting_cospa) {
             continue;
-	  }
+          }
           if (v0.v0radius() < v0setting_radius) {
             continue;
           }
@@ -275,7 +275,7 @@ struct phik0shortanalysis {
           if (TMath::Abs(negDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
             continue;
           }
- 
+
           if (!isV0filled) {
             K0SHist.fill(HIST("hDCAV0Daughters"), v0.dcaV0daughters());
             K0SHist.fill(HIST("hV0CosPA"), v0.v0cosPA());
@@ -286,16 +286,16 @@ struct phik0shortanalysis {
               K0SHist.fill(HIST("hNSigmaNegPionFromK0S"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
             }
           }
-       
+
           recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
           fillInvMass2D(recPhi, recK0S, multiplicity, same, mix);
         }
-     
+
         isV0filled = true;
-      }													
-    } 
-  }                             
- 
+      }
+    }
+  }
+
   PROCESS_SWITCH(phik0shortanalysis, processSE, "Process Same Event", true);
 
   void processME(EventCandidates const& collisions, PhiDaughterCandidates const&, V0Candidates const& V0s, V0DaughterCandidates const&)
@@ -307,7 +307,7 @@ struct phik0shortanalysis {
 
       auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
       auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
-												
+
       for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
         if (!selectionTrack(track1) || !selectionPID(track1) || !selectionTrack(track2) || !selectionPID(track2)) {
           continue; // topological and PID selection
@@ -323,7 +323,7 @@ struct phik0shortanalysis {
           // Cut on dynamic columns
           if (v0.v0cosPA() < v0setting_cospa) {
             continue;
-          } 
+          }
           if (v0.v0radius() < v0setting_radius) {
             continue;
           }
@@ -333,14 +333,14 @@ struct phik0shortanalysis {
           if (TMath::Abs(negDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
             continue;
           }
-									
+
           recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
           fillInvMass2D(recPhi, recK0S, multiplicity, same, mix);
-        } 
-      }										
+        }
+      }
     }
-  }																					 
-										
+  }
+
   PROCESS_SWITCH(phik0shortanalysis, processME, "Process Mixed Event", false);
 };
 
