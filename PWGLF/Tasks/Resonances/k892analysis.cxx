@@ -521,7 +521,7 @@ struct k892analysis {
   void processMCLight(ResoMCCols::iterator const& collision,
                       soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
-    if (!collision.isInAfterAllCuts() || (abs(colision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
+    if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
     fillHistograms<true, false>(collision, resotracks, resotracks);
   }
