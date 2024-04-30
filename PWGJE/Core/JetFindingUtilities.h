@@ -182,9 +182,6 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
 
   int nSelectedV0s = 0;
   for (auto const& v0 : v0s) {
-    // if (isnan(candidate.y())) {
-    //   continue;
-    // }
     if constexpr (jetv0utilities::isV0McTable<T>()) {
       v0Mass = v0.m();
       v0Y = v0.y();
@@ -196,6 +193,9 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
         v0Mass = o2::constants::physics::MassLambda0;
       }
       v0Y = v0.rapidity(v0Index);
+    }
+    if (isnan(v0Y)) {
+      continue;
     }
     if (v0Y < v0YMin || v0Y > v0YMax) {
       continue;
