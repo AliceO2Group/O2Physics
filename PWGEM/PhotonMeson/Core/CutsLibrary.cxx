@@ -49,7 +49,7 @@ EMEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
     cut->SetRequireNoITSROFB(false);
     cut->SetRequireNoSameBunchPileup(false);
     cut->SetRequireVertexITSTPC(false);
-    cut->SetRequireIsGoodZvtxFT0vsPV(false);
+    cut->SetRequireGoodZvtxFT0vsPV(false);
     return cut;
   }
 
@@ -61,7 +61,7 @@ EMEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
     cut->SetRequireNoITSROFB(false);
     cut->SetRequireNoSameBunchPileup(false);
     cut->SetRequireVertexITSTPC(false);
-    cut->SetRequireIsGoodZvtxFT0vsPV(false);
+    cut->SetRequireGoodZvtxFT0vsPV(false);
     return cut;
   }
 
@@ -73,7 +73,7 @@ EMEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
     cut->SetRequireNoITSROFB(false); // included in sel8
     cut->SetRequireNoSameBunchPileup(false);
     cut->SetRequireVertexITSTPC(false);
-    cut->SetRequireIsGoodZvtxFT0vsPV(false);
+    cut->SetRequireGoodZvtxFT0vsPV(false);
 
     if (nameStr.find("notfb") != std::string::npos) {
       cut->SetRequireNoTFB(true);
@@ -88,7 +88,7 @@ EMEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
       cut->SetRequireVertexITSTPC(true);
     }
     if (nameStr.find("goodvtx") != std::string::npos) {
-      cut->SetRequireIsGoodZvtxFT0vsPV(true);
+      cut->SetRequireGoodZvtxFT0vsPV(true);
     }
 
     return cut;
