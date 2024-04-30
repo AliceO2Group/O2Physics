@@ -1714,7 +1714,7 @@ struct QaEfficiency {
   SliceCache cache;
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
   Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
-  void processMC(o2::aod::McCollisions const&,
+  void processMC(o2::aod::McCollision const&,
                  o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
                  o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
                  o2::aod::McParticles const& mcParticles)
@@ -1777,8 +1777,13 @@ struct QaEfficiency {
         continue;
       }
 
-      const auto groupedParticles = mcParticles.sliceBy(perCollisionMc, collision.mcCollision().globalIndex());
-      for (const auto& particle : groupedParticles) { // Particle loop
+      for (const auto& particle : mcParticles) { // Particle loop
+
+        /// require generated particle in acceptance
+        if (!isInAcceptance<true, false>(particle, nullptr)) {
+          continue;
+        }
+
         static_for<0, 1>([&](auto pdgSign) {
           fillMCParticleHistograms<pdgSign, o2::track::PID::Electron, true>(particle, doEl);
           fillMCParticleHistograms<pdgSign, o2::track::PID::Muon, true>(particle, doMu);
