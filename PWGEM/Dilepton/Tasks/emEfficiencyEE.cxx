@@ -92,7 +92,7 @@ using MyMCTrackNoSkimmed = soa::Join<aod::McParticles, aod::SmearedTracks>;
 
 constexpr static uint32_t gkEventFillMapNoSkimmed = VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkMCEventFillMapNoSkimmed = VarManager::ObjTypes::CollisionMC;
-constexpr static uint32_t gkTrackFillMapNoSkimmed = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapNoSkimmed = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkParticleMCFillMapNoSkimmed = VarManager::ObjTypes::ParticleMC;
 
 // Skimmed data: works up to dielectron efficiency
@@ -720,6 +720,7 @@ struct AnalysisTrackSelection {
   {
 
     for (auto& mctrack : groupedMCTracks) {
+      VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
       VarManager::FillTrackMC(groupedMCTracks, mctrack);
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
@@ -757,6 +758,8 @@ struct AnalysisTrackSelection {
     for (auto& track : groupedTracks) {
       filterMap = 0;
 
+      VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
+      VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       VarManager::FillTrack<TTrackFillMap>(track); // compute track quantities
 
       // compute MC matched quantities
@@ -1333,6 +1336,7 @@ struct AnalysisSameEventPairing {
         recfidcut = kFALSE;
 
       //
+      VarManager::ResetValues(0, VarManager::kNPairVariables);
       VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2);
 
       // Fill the QA for all passing tracks

@@ -97,7 +97,7 @@ struct JetDerivedDataWriter {
 
   PresliceUnsorted<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels, aod::JChHFTrigSels, aod::JMcCollisionLbs>> CollisionsPerMcCollision = aod::jmccollisionlb::mcCollisionId;
   PresliceUnsorted<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
-  Preslice<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs>> TracksPerCollision = aod::jtrack::collisionId;
+  Preslice<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs>> TracksPerCollision = aod::jtrack::collisionId;
   Preslice<soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks>> ClustersPerCollision = aod::jcluster::collisionId;
   Preslice<CandidatesD0MCD> D0sPerCollision = aod::jd0indices::collisionId;
   Preslice<CandidatesLcMCD> LcsPerCollision = aod::jlcindices::collisionId;
@@ -266,7 +266,7 @@ struct JetDerivedDataWriter {
           storedJClustersParentIndexTable(cluster.clusterId());
 
           std::vector<int> clusterStoredJTrackIDs;
-          for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackPIs>>()) {
+          for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>()) {
             auto JtrackIndex = trackMapping.find(clusterTrack.globalIndex());
             if (JtrackIndex != trackMapping.end()) {
               clusterStoredJTrackIDs.push_back(JtrackIndex->second);
@@ -496,7 +496,7 @@ struct JetDerivedDataWriter {
               storedJClustersParentIndexTable(cluster.clusterId());
 
               std::vector<int> clusterStoredJTrackIDs;
-              for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackPIs>>()) {
+              for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>()) {
                 auto JtrackIndex = trackMapping.find(clusterTrack.globalIndex());
                 if (JtrackIndex != trackMapping.end()) {
                   clusterStoredJTrackIDs.push_back(JtrackIndex->second);

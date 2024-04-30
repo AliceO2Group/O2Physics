@@ -611,7 +611,7 @@ struct QaEfficiency {
       registry->add(hPtEtaGenerated[histogramIndex].data(), "Generated " + tagPtEta, kTH2D, {axisPt, axisEta});
     }
 
-    LOG(info) << "Done with particle: " << partName;
+    LOG(info) << "Done with making histograms for particle: " << partName;
   }
 
   template <int pdgSign, o2::track::PID::ID id>
@@ -731,7 +731,7 @@ struct QaEfficiency {
       makeEfficiency2D("ITS-TPC-TOF_vsPt_vsEta", HIST(hPtEtaItsTpcTof[histogramIndex]));
     }
 
-    LOG(info) << "Done with particle: " << partName << " for efficiencies";
+    LOG(info) << "Done with making histograms for particle: " << partName << " for efficiencies";
   }
 
   void initMC(const AxisSpec& axisSel)
@@ -1301,9 +1301,9 @@ struct QaEfficiency {
       return;
     }
     if constexpr (recoEv) {
-      histos.fill(HIST(hPtGeneratedRecoEv[histogramIndex]), mcParticle.pt());
+      h->fill(HIST(hPtGeneratedRecoEv[histogramIndex]), mcParticle.pt());
       if (isPhysicalPrimary(mcParticle)) {
-        histos.fill(HIST(hPtGeneratedPrmRecoEv[histogramIndex]), mcParticle.pt());
+        h->fill(HIST(hPtGeneratedPrmRecoEv[histogramIndex]), mcParticle.pt());
       }
       return;
     }
@@ -1777,8 +1777,13 @@ struct QaEfficiency {
         continue;
       }
 
-      const auto groupedParticles = mcParticles.sliceBy(perCollisionMc, collision.mcCollision().globalIndex());
-      for (const auto& particle : groupedParticles) { // Particle loop
+      for (const auto& particle : mcParticles) { // Particle loop
+
+        /// require generated particle in acceptance
+        if (!isInAcceptance<true, false>(particle, nullptr)) {
+          continue;
+        }
+
         static_for<0, 1>([&](auto pdgSign) {
           fillMCParticleHistograms<pdgSign, o2::track::PID::Electron, true>(particle, doEl);
           fillMCParticleHistograms<pdgSign, o2::track::PID::Muon, true>(particle, doMu);
