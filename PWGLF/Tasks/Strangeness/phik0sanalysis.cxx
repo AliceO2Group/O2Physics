@@ -70,7 +70,7 @@ struct phik0shortanalysis {
   // Configurables for phi selection
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
   Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Cut on charge"};
-  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};         
+  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
   Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
@@ -195,7 +195,7 @@ struct phik0shortanalysis {
   {
     daughter1.SetXYZM(candidate1.px(), candidate1.py(), candidate1.pz(), masscand1); // set the daughter1 4-momentum
     daughter2.SetXYZM(candidate2.px(), candidate2.py(), candidate2.pz(), masscand2); // set the daughter2 4-momentum
-    mother = daughter1 + daughter2; // calculate the mother 4-momentum
+    mother = daughter1 + daughter2;                                                  // calculate the mother 4-momentum
 
     return mother;
   }
@@ -216,7 +216,7 @@ struct phik0shortanalysis {
     }
   }
 
-  void processSE(EventCandidates::iterator const& collision, PhiDaughterCandidates const& , V0Candidates const& V0s, V0DaughterCandidates const&)
+  void processSE(EventCandidates::iterator const& collision, PhiDaughterCandidates const&, V0Candidates const& V0s, V0DaughterCandidates const&)
   {
     // General information about the event
     eventHist.fill(HIST("hVertexZRec"), collision.posZ());
