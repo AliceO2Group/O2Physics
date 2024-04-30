@@ -1479,6 +1479,21 @@ struct AnalysisSameEventPairing {
                           soa::Filtered<MyBarrelTracksSelected> const& tracks,
                           ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
+    if (events.size()>0 && fCurrentRun != events.begin().runNumber()) {
+      if (fUseRemoteField.value) {
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
+        if (grpmag != nullptr) {
+          mMagField = grpmag->getNominalL3Field();
+        } else {
+          LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+        }
+        VarManager::SetMagneticField(mMagField);
+      } else {
+        VarManager::SetMagneticField(fConfigMagField.value);
+      }
+      fCurrentRun = events.begin().runNumber();
+    }
+
     runPairing<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(events, tracks, eventsMC, tracksMC);
   }
 
@@ -1495,9 +1510,9 @@ struct AnalysisSameEventPairing {
         } else {
           LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", event.timestamp());
         }
-        VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+        VarManager::SetMagneticField(mMagField);
       } else {
-        VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+        VarManager::SetMagneticField(fConfigMagField.value);
       }
       fCurrentRun = event.runNumber();
     }
@@ -1529,9 +1544,9 @@ struct AnalysisSameEventPairing {
         } else {
           LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
         }
-        VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+        VarManager::SetMagneticField(mMagField);
       } else {
-        VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+        VarManager::SetMagneticField(fConfigMagField.value);
       }
       fCurrentRun = bc.runNumber();
     }

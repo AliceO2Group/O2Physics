@@ -3474,7 +3474,7 @@ float VarManager::calculatePhiV(T1 const& t1, T2 const& t2)
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
   float pairPhiV = -999;
-  float bz = fgFitterTwoProngBarrel.getBz();
+  float bz = fgMagField;
 
   bool swapTracks = false;
   if (v1.Pt() < v2.Pt()) { // ordering of track, pt1 > pt2
