@@ -818,7 +818,7 @@ struct CorrelationTask {
         LOGF(info, "Found %d related collisions", groupedCollisions.size());
       }
       if (cfgCentBinsForMC > 0 && groupedCollisions.size() == 0) {
-      return;
+        return;
       }
       if (cfgCentBinsForMC > 0) {
         for (auto& collision : groupedCollisions) {
