@@ -203,7 +203,7 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
     if (v0.pt() < v0PtMin || v0.pt() >= v0PtMax) {
       continue;
     }
-    fastjetutilities::fillTracks(v0, inputParticles, v0.globalIndex(), static_cast<int>(JetConstituentStatus::v0), v0Mass);
+    fastjetutilities::fillTracks(v0, inputParticles, v0.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), v0Mass);
     nSelectedV0s++;
   }
   if (nSelectedV0s > 0) {
@@ -245,7 +245,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       if (doCandidateJetFinding) {
         for (const auto& constituent : jet.constituents()) {
           auto constituentStatus = constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus();
-          if (constituentStatus == static_cast<int>(JetConstituentStatus::candidateHF) || constituentStatus == static_cast<int>(JetConstituentStatus::v0)) { // note currently we cannot run V0 and HF in the same jet. If we ever need to we can seperate the loops
+          if (constituentStatus == static_cast<int>(JetConstituentStatus::candidateHF)) { // note currently we cannot run V0 and HF in the same jet. If we ever need to we can seperate the loops
             isCandidateJet = true;
             break;
           }
@@ -257,7 +257,6 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       std::vector<int> tracks;
       std::vector<int> cands;
       std::vector<int> clusters;
-      std::vector<int> v0s;
       jetsTable(collision.globalIndex(), jet.pt(), jet.eta(), jet.phi(),
                 jet.E(), jet.rapidity(), jet.m(), jet.has_area() ? jet.area() : 0., std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
@@ -270,11 +269,8 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
         if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF)) {
           cands.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
-        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::v0)) {
-          v0s.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
-        }
       }
-      constituentsTable(jetsTable.lastIndex(), tracks, clusters, cands, v0s);
+      constituentsTable(jetsTable.lastIndex(), tracks, clusters, cands);
     }
   }
 }
