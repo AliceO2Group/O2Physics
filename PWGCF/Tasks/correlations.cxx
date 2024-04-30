@@ -804,7 +804,7 @@ struct CorrelationTask {
     BinningTypeMCDerived configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     auto tuple = std::make_tuple(mcParticles);
     SameKindPair<soa::Filtered<aod::CFMcCollisions>, soa::Filtered<aod::CFMcParticles>, BinningTypeMCDerived> pairs{configurableBinning, cfgNoMixedEvents, -1, mcCollisions, tuple, &cache}; // -1 is the number of the bin to skip
-    auto multiplicity = -1;
+    auto multiplicity = -1.0f;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
       float eventWeight = 1.0f / it.currentWindowNeighbours();
