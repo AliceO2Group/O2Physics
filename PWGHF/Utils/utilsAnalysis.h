@@ -73,10 +73,10 @@ template <typename Track>
 bool isItsQualityCuts(Track const& track, int itsNClsFoundMin, float itsChi2PerClusterMax)
 {
   if (track.itsNCls() < itsNClsFoundMin) {
-      return false;
+    return false;
   }
   if (track.itsChi2NCl() > itsChi2PerClusterMax) {
-      return false;
+    return false;
   }
   return true;
 }
@@ -88,16 +88,16 @@ template <typename Track>
 bool isTpcQualityCuts(Track const& track, int tpcNClsFoundMin, int tpcNCrossedRowsMin, float tpcNCrossedRowsOverFindableClustersMin, float tpcChi2PerClusterMax)
 {
   if (track.tpcNClsFound() < tpcNClsFoundMin) {
-      return false;
+    return false;
   }
   if (track.tpcNClsCrossedRows() < tpcNCrossedRowsMin) {
-      return false;
+    return false;
   }
   if (track.tpcCrossedRowsOverFindableCls() < tpcNCrossedRowsOverFindableClustersMin) {
-      return false;
+    return false;
   }
-  if (track.tpcChi2NCl() > tpcChi2PerClusterMax ) {
-      return false;
+  if (track.tpcChi2NCl() > tpcChi2PerClusterMax) {
+    return false;
   }
   return true;
 }

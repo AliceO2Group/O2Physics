@@ -437,7 +437,7 @@ struct HfCandidateSelectorLc {
         }
       }
 
-      if ( pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && isSelectedMlLcToPKPi && topolLcToPKPi && trackQualitySel) {
+      if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && isSelectedMlLcToPKPi && topolLcToPKPi && trackQualitySel) {
         statusLcToPKPi = 1; // identified as LcToPKPi
       }
       if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && isSelectedMlLcToPiKP && topolLcToPiKP && trackQualitySel) {
