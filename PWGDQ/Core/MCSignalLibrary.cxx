@@ -438,7 +438,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eFromLambdaC")) {
     MCProng prong(2, {11, 4122}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "Electrons from Lambda c + decays", {prong}, {-1});
+    signal = new MCSignal(name, "Electrons from Lambda_c decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromHb")) {
@@ -702,6 +702,42 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   // LMEE pair signals for HF
+  // D0->e and D0->e
+  if (!nameStr.compare("eeFromD0")) {
+    MCProng prong(2, {11, 421}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from D0 decays", {prong, prong}, {-1, -1});
+    return signal;
+  }
+  // D0->e and D0->e
+  if (!nameStr.compare("eeFromPi0FromD0")) {
+    MCProng prong(2, {11, 111, 421}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from D0 to Pi0 decays", {prong, prong}, {1, 1});
+    return signal;
+  }
+  // D+/- -> e and D+/- -> e
+  if (!nameStr.compare("eeFromChargedD")) {
+    MCProng prong(2, {11, 421}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from D+/- decays", {prong, prong}, {-1, -1});
+    return signal;
+  }
+  // D_s->e and D_s->e
+  if (!nameStr.compare("eeFromDs")) {
+    MCProng prong(2, {11, 431}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from Ds +/- decays", {prong, prong}, {-1, -1});
+    return signal;
+  }
+  // Lambda_c->e and Lambda_c->e
+  if (!nameStr.compare("eeFromLambdaC")) {
+    MCProng prong(2, {11, 4122}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from Lambda_c ", {prong, prong}, {-1, -1});
+    return signal;
+  }
+
   // c->e and c->e (no check)
   if (!nameStr.compare("eeFromCCNoCheck")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});

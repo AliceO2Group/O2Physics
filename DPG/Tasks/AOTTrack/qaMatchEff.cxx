@@ -2974,12 +2974,13 @@ struct qaMatchEff {
       /// If we are here, the current run was never considered before.
       /// Let's add the TH2 that we need for the monitoring
       /// Let's define the x-axis according to the start-of-run (SOR) and end-of-run (EOR) times
+
       o2::ccdb::CcdbApi ccdb_api;
       ccdb_api.init(ccdburl);
-      std::map<string, string> metadataRCT, headers;
-      headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadataRCT, -1);
-      tsSOR = atol(headers["SOR"].c_str());
-      tsEOR = atol(headers["EOR"].c_str());
+      auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb_api, runNumber);
+      tsSOR = soreor.first;
+      tsEOR = soreor.second;
+
       double minMilliSec = floor(tsSOR); /// round tsSOR to the highest integer lower than tsSOR
       double maxMilliSec = ceil(tsEOR);  /// round tsEOR to the lowest integer higher than tsEOR
       const AxisSpec axisSeconds{static_cast<int>((maxMilliSec - minMilliSec) * 1. / 10.), minMilliSec, maxMilliSec, "time from January 1st, 1970 at UTC (unit: 10 ms)"};

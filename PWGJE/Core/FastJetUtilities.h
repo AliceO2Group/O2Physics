@@ -30,7 +30,8 @@
 enum class JetConstituentStatus {
   track = 0,
   cluster = 1,
-  candidateHF = 2
+  candidateHF = 2,
+  v0 = 3
 };
 
 namespace fastjetutilities
@@ -85,7 +86,7 @@ void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index
 template <typename T>
 void fillTracks(const T& constituent, std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track), float mass = mPion)
 {
-  if (status == static_cast<int>(JetConstituentStatus::track) || status == static_cast<int>(JetConstituentStatus::candidateHF)) {
+  if (status == static_cast<int>(JetConstituentStatus::track) || status == static_cast<int>(JetConstituentStatus::candidateHF) || status == static_cast<int>(JetConstituentStatus::v0)) {
     // auto p = std::sqrt((constituent.px() * constituent.px()) + (constituent.py() * constituent.py()) + (constituent.pz() * constituent.pz()));
     auto energy = std::sqrt((constituent.p() * constituent.p()) + (mass * mass));
     constituents.emplace_back(constituent.px(), constituent.py(), constituent.pz(), energy);
