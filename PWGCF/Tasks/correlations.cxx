@@ -814,7 +814,7 @@ struct CorrelationTask {
           multiplicity = collision.multiplicity();
         }
       }
-      if (cfgCentBinsForMC == 0)
+      else
         multiplicity = collision1.multiplicity();
 
       if (cfgVerbosity > 0) {
