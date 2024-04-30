@@ -48,7 +48,9 @@ enum DecayChannels { DzeroToKPi = 0,
                      nChannels }; // always keep nChannels at the end
 
 static const std::array<int, nChannels> PDGArrayParticle = {o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDStar, o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDPlus,
-                                                            o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus};
+                                                            o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kLambdaCPlus,
+                                                            o2::constants::physics::Pdg::kXiCPlus};
+static const int nMesonChannels = 6;                                                       
 static const std::array<unsigned int, nChannels> nDaughters = {2, 3, 3, 3, 3, 3, 3, 3, 3};
 static const std::array<int, nChannels> maxDepthForSearch = {1, 2, 2, 2, 2, 2, 2, 3, 2};
 // keep coherent indexing with PDGArrayParticle
@@ -81,7 +83,8 @@ struct HfTaskMcValidationGen {
   AxisSpec axisResiduals{100, -0.01, 0.01};
   AxisSpec axisPt{100, 0., 50.};
   AxisSpec axisY{100, -5., 5.};
-  AxisSpec axisSpecies{nChannels, -0.5, static_cast<float>(nChannels) - 0.5};
+  AxisSpec axisMesonSpecies{nMesonChannels, -0.5, static_cast<float>(nMesonChannels) - 0.5};
+  AxisSpec axisBaryonSpecies{nChannels - nMesonChannels, -0.5, static_cast<float>(nChannels - nMesonChannels) - 0.5};
   AxisSpec axisDecLen{100, 0., 10000.};
 
   HistogramRegistry registry{
@@ -98,40 +101,54 @@ struct HfTaskMcValidationGen {
      {"quarks/hCountBbar", "Event counter - Number of anti-beauty quarks; Events Per Collision; entries", {HistType::kTH1F, {axisNquarks}}},
      {"quarks/hPtVsYCharmQuark", "Y vs. Pt - charm quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
      {"quarks/hPtVsYBeautyQuark", "Y vs. Pt - beauty quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
-     {"promptCharmHadrons/hCountPromptDzeroToKPi", "Event counter - Prompt D0 to KPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptDstarToD0Pi", "Event counter - Prompt Dstar to D0Pi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptDplusToKPiPi", "Event counter - Prompt DPlus to KPiPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptDplusToKKPi", "Event counter - Prompt DPlus to PhiPi to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptDsToPhiPiToKKpi", "Event counter - Prompt Ds to PhiPi to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptDsToK0starKToKKPi", "Event counter - Prompt Ds to K0starK to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptLambdaCToPKPi", "Event counter - Prompt LambdaC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptLambdaCToPK0s", "Event counter - Prompt LambdaC to PK0s; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hCountPromptXiCToPKPi", "Event counter - Prompt XiC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptDzeroToKPi", "Event counter - Non-prompt D0 to KPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptDstarToD0Pi", "Event counter - Non-prompt Dstar to D0Pi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptDplusToKPiPi", "Event counter - Non-prompt DPlus to KPiPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptDplusToKKPi", "Event counter - Non-prompt DPlus to PhiPi to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptDsToPhiPiToKKpi", "Event counter - Non-prompt Ds to PhiPi to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptDsToK0starKToKKPi", "Event counter - Non-prompt Ds to K0starK to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptLambdaCToPKPi", "Event counter - Non-prompt LambdaC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptLambdaCToPK0s", "Event counter - Non-prompt LambdaC to PK0s; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"nonPromptCharmHadrons/hCountNonPromptXiCToPKPi", "Event counter - Non-prompt XiC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
-     {"promptCharmHadrons/hPromptPtDistr", "Pt distribution vs prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisSpecies, axisPt}}},
-     {"promptCharmHadrons/hPromptYDistr", "Y distribution vs prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
-     {"promptCharmHadrons/hPromptDecLenDistr", "Decay length distribution vs prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}},
-     {"nonPromptCharmHadrons/hNonPromptPtDistr", "Pt distribution vs non-prompt charm hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisSpecies, axisPt}}},
-     {"nonPromptCharmHadrons/hNonPromptYDistr", "Y distribution vs non-prompt charm hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisSpecies, axisY}}},
-     {"nonPromptCharmHadrons/hNonPromptDecLenDistr", "Decay length distribution vs non-prompt charm hadron; ; decay length (#mum)", {HistType::kTH2F, {axisSpecies, axisDecLen}}}}};
+     {"promptCharmMesons/hCountPromptDzeroToKPi", "Event counter - Prompt D0 to KPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmMesons/hCountPromptDstarToD0Pi", "Event counter - Prompt Dstar to D0Pi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmMesons/hCountPromptDplusToKPiPi", "Event counter - Prompt DPlus to KPiPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmMesons/hCountPromptDplusToKKPi", "Event counter - Prompt DPlus to PhiPi to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmMesons/hCountPromptDsToPhiPiToKKpi", "Event counter - Prompt Ds to PhiPi to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmMesons/hCountPromptDsToK0starKToKKPi", "Event counter - Prompt Ds to K0starK to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmBaryons/hCountPromptLambdaCToPKPi", "Event counter - Prompt LambdaC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmBaryons/hCountPromptLambdaCToPK0s", "Event counter - Prompt LambdaC to PK0s; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmBaryons/hCountPromptXiCToPKPi", "Event counter - Prompt XiC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmMesons/hCountNonPromptDzeroToKPi", "Event counter - Non-prompt D0 to KPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmMesons/hCountNonPromptDstarToD0Pi", "Event counter - Non-prompt Dstar to D0Pi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmMesons/hCountNonPromptDplusToKPiPi", "Event counter - Non-prompt DPlus to KPiPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmMesons/hCountNonPromptDplusToKKPi", "Event counter - Non-prompt DPlus to PhiPi to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmMesons/hCountNonPromptDsToPhiPiToKKpi", "Event counter - Non-prompt Ds to PhiPi to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmMesons/hCountNonPromptDsToK0starKToKKPi", "Event counter - Non-prompt Ds to K0starK to KKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmBaryons/hCountNonPromptLambdaCToPKPi", "Event counter - Non-prompt LambdaC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmBaryons/hCountNonPromptLambdaCToPK0s", "Event counter - Non-prompt LambdaC to PK0s; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"nonPromptCharmBaryons/hCountNonPromptXiCToPKPi", "Event counter - Non-prompt XiC to PKPi; Events Per Collision; entries", {HistType::kTH1F, {axisNhadrons}}},
+     {"promptCharmMesons/hPromptMesonsPtDistr", "Pt distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisMesonSpecies, axisPt}}},
+     {"promptCharmMesons/hPromptMesonsYDistr", "Y distribution vs prompt charm meson; ; #it{y}^{gen}", {HistType::kTH2F, {axisMesonSpecies, axisY}}},
+     {"promptCharmMesons/hPromptMesonsDecLenDistr", "Decay length distribution vs prompt charm meson; ; decay length (#mum)", {HistType::kTH2F, {axisMesonSpecies, axisDecLen}}},
+     {"nonPromptCharmMesons/hNonPromptMesonsPtDistr", "Pt distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisMesonSpecies, axisPt}}},
+     {"nonPromptCharmMesons/hNonPromptMesonsYDistr", "Y distribution vs non-prompt charm meson; ; #it{y}^{gen}", {HistType::kTH2F, {axisMesonSpecies, axisY}}},
+     {"nonPromptCharmMesons/hNonPromptMesonsDecLenDistr", "Decay length distribution vs non-prompt charm meson; ; decay length (#mum)", {HistType::kTH2F, {axisMesonSpecies, axisDecLen}}},
+     {"promptCharmBaryons/hPromptBaryonsPtDistr", "Pt distribution vs prompt charm baryon in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisBaryonSpecies, axisPt}}},
+     {"promptCharmBaryons/hPromptBaryonsYDistr", "Y distribution vs prompt charm baryon; ; #it{y}^{gen}", {HistType::kTH2F, {axisBaryonSpecies, axisY}}},
+     {"promptCharmBaryons/hPromptBaryonsDecLenDistr", "Decay length distribution vs prompt charm baryon; ; decay length (#mum)", {HistType::kTH2F, {axisBaryonSpecies, axisDecLen}}},
+     {"nonPromptCharmBaryons/hNonPromptBaryonsPtDistr", "Pt distribution vs non-prompt charm baryon in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisBaryonSpecies, axisPt}}},
+     {"nonPromptCharmBaryons/hNonPromptBaryonsYDistr", "Y distribution vs non-prompt charm baryon; ; #it{y}^{gen}", {HistType::kTH2F, {axisBaryonSpecies, axisY}}},
+     {"nonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr", "Decay length distribution vs non-prompt charm baryon; ; decay length (#mum)", {HistType::kTH2F, {axisBaryonSpecies, axisDecLen}}}}};
 
   void init(InitContext&)
   {
-    for (auto iBin = 1; iBin <= nChannels; ++iBin) {
-      registry.get<TH2>(HIST("promptCharmHadrons/hPromptPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      registry.get<TH2>(HIST("promptCharmHadrons/hPromptYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      registry.get<TH2>(HIST("promptCharmHadrons/hPromptDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      registry.get<TH2>(HIST("nonPromptCharmHadrons/hNonPromptPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      registry.get<TH2>(HIST("nonPromptCharmHadrons/hNonPromptYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
-      registry.get<TH2>(HIST("nonPromptCharmHadrons/hNonPromptDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+    for (auto iBin = 1; iBin <= nMesonChannels; ++iBin) {
+      registry.get<TH2>(HIST("promptCharmMesons/hPromptMesonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("promptCharmMesons/hPromptMesonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("promptCharmMesons/hPromptMesonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("nonPromptCharmMesons/hNonPromptMesonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("nonPromptCharmMesons/hNonPromptMesonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH2>(HIST("nonPromptCharmMesons/hNonPromptMesonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+    }
+    for (auto iBin = 1; iBin <= nChannels - nMesonChannels; ++iBin) {
+      registry.get<TH2>(HIST("promptCharmBaryons/hPromptBaryonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
+      registry.get<TH2>(HIST("promptCharmBaryons/hPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
+      registry.get<TH2>(HIST("promptCharmBaryons/hPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
+      registry.get<TH2>(HIST("nonPromptCharmBaryons/hNonPromptBaryonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
+      registry.get<TH2>(HIST("nonPromptCharmBaryons/hNonPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
+      registry.get<TH2>(HIST("nonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
     }
   }
 
@@ -279,18 +296,34 @@ struct HfTaskMcValidationGen {
         double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
         double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
         auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
-        if (origin == RecoDecay::OriginType::Prompt) {
-          if (std::abs(particle.y()) < 0.5) {
-            registry.fill(HIST("promptCharmHadrons/hPromptPtDistr"), iD, particle.pt());
+        if (iD < nMesonChannels) {
+          if (origin == RecoDecay::OriginType::Prompt) {
+            if (std::abs(particle.y()) < 0.5) {
+              registry.fill(HIST("promptCharmMesons/hPromptMesonsPtDistr"), iD, particle.pt());
+            }
+            registry.fill(HIST("promptCharmMesons/hPromptMesonsYDistr"), iD, particle.y());
+            registry.fill(HIST("promptCharmMesons/hPromptMesonsDecLenDistr"), iD, decayLength * 10000);
+          } else if (origin == RecoDecay::OriginType::NonPrompt) {
+            if (std::abs(particle.y()) < 0.5) {
+              registry.fill(HIST("nonPromptCharmMesons/hNonPromptMesonsPtDistr"), iD, particle.pt());
+            }
+            registry.fill(HIST("nonPromptCharmMesons/hNonPromptMesonsYDistr"), iD, particle.y());
+            registry.fill(HIST("nonPromptCharmMesons/hNonPromptMesonsDecLenDistr"), iD, decayLength * 10000);
           }
-          registry.fill(HIST("promptCharmHadrons/hPromptYDistr"), iD, particle.y());
-          registry.fill(HIST("promptCharmHadrons/hPromptDecLenDistr"), iD, decayLength * 10000);
-        } else if (origin == RecoDecay::OriginType::NonPrompt) {
-          if (std::abs(particle.y()) < 0.5) {
-            registry.fill(HIST("nonPromptCharmHadrons/hNonPromptPtDistr"), iD, particle.pt());
+        } else {
+          if (origin == RecoDecay::OriginType::Prompt) {
+            if (std::abs(particle.y()) < 0.5) {
+              registry.fill(HIST("promptCharmBaryons/hPromptBaryonsPtDistr"), iD - nMesonChannels, particle.pt());
+            }
+            registry.fill(HIST("promptCharmBaryons/hPromptBaryonsYDistr"), iD - nMesonChannels, particle.y());
+            registry.fill(HIST("promptCharmBaryons/hPromptBaryonsDecLenDistr"), iD - nMesonChannels, decayLength * 10000);
+          } else if (origin == RecoDecay::OriginType::NonPrompt) {
+            if (std::abs(particle.y()) < 0.5) {
+              registry.fill(HIST("nonPromptCharmBaryons/hNonPromptBaryonsPtDistr"), iD - nMesonChannels, particle.pt());
+            }
+            registry.fill(HIST("nonPromptCharmBaryons/hNonPromptBaryonsYDistr"), iD - nMesonChannels, particle.y());
+            registry.fill(HIST("nonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr"), iD - nMesonChannels, decayLength * 10000);
           }
-          registry.fill(HIST("nonPromptCharmHadrons/hNonPromptYDistr"), iD, particle.y());
-          registry.fill(HIST("nonPromptCharmHadrons/hNonPromptDecLenDistr"), iD, decayLength * 10000);
         }
       }
     } // end particles
@@ -299,24 +332,24 @@ struct HfTaskMcValidationGen {
     registry.fill(HIST("quarks/hCountB"), bPerCollision);
     registry.fill(HIST("quarks/hCountCbar"), cBarPerCollision);
     registry.fill(HIST("quarks/hCountBbar"), bBarPerCollision);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptDzeroToKPi"), counterPrompt[DzeroToKPi]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptDstarToD0Pi"), counterPrompt[DstarToDzeroPi]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptDplusToKPiPi"), counterPrompt[DplusToPiKPi]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptDplusToKKPi"), counterPrompt[DplusToPhiPiToKKPi]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptDsToPhiPiToKKpi"), counterPrompt[DsToPhiPiToKKPi]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptDsToK0starKToKKPi"), counterPrompt[DsToK0starKToKKPi]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptLambdaCToPKPi"), counterPrompt[LcToPKPi]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptLambdaCToPK0s"), counterPrompt[LcToPiK0s]);
-    registry.fill(HIST("promptCharmHadrons/hCountPromptXiCToPKPi"), counterPrompt[XicToPKPi]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDzeroToKPi"), counterNonPrompt[DzeroToKPi]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDstarToD0Pi"), counterNonPrompt[DstarToDzeroPi]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDplusToKPiPi"), counterNonPrompt[DplusToPiKPi]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDplusToKKPi"), counterNonPrompt[DplusToPhiPiToKKPi]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDsToPhiPiToKKpi"), counterNonPrompt[DsToPhiPiToKKPi]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptDsToK0starKToKKPi"), counterNonPrompt[DsToK0starKToKKPi]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptLambdaCToPKPi"), counterNonPrompt[LcToPKPi]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptLambdaCToPK0s"), counterNonPrompt[LcToPiK0s]);
-    registry.fill(HIST("nonPromptCharmHadrons/hCountNonPromptXiCToPKPi"), counterNonPrompt[XicToPKPi]);
+    registry.fill(HIST("promptCharmMesons/hCountPromptDzeroToKPi"), counterPrompt[DzeroToKPi]);
+    registry.fill(HIST("promptCharmMesons/hCountPromptDstarToD0Pi"), counterPrompt[DstarToDzeroPi]);
+    registry.fill(HIST("promptCharmMesons/hCountPromptDplusToKPiPi"), counterPrompt[DplusToPiKPi]);
+    registry.fill(HIST("promptCharmMesons/hCountPromptDplusToKKPi"), counterPrompt[DplusToPhiPiToKKPi]);
+    registry.fill(HIST("promptCharmMesons/hCountPromptDsToPhiPiToKKpi"), counterPrompt[DsToPhiPiToKKPi]);
+    registry.fill(HIST("promptCharmMesons/hCountPromptDsToK0starKToKKPi"), counterPrompt[DsToK0starKToKKPi]);
+    registry.fill(HIST("promptCharmBaryons/hCountPromptLambdaCToPKPi"), counterPrompt[LcToPKPi]);
+    registry.fill(HIST("promptCharmBaryons/hCountPromptLambdaCToPK0s"), counterPrompt[LcToPiK0s]);
+    registry.fill(HIST("promptCharmBaryons/hCountPromptXiCToPKPi"), counterPrompt[XicToPKPi]);
+    registry.fill(HIST("nonPromptCharmMesons/hCountNonPromptDzeroToKPi"), counterNonPrompt[DzeroToKPi]);
+    registry.fill(HIST("nonPromptCharmMesons/hCountNonPromptDstarToD0Pi"), counterNonPrompt[DstarToDzeroPi]);
+    registry.fill(HIST("nonPromptCharmMesons/hCountNonPromptDplusToKPiPi"), counterNonPrompt[DplusToPiKPi]);
+    registry.fill(HIST("nonPromptCharmMesons/hCountNonPromptDplusToKKPi"), counterNonPrompt[DplusToPhiPiToKKPi]);
+    registry.fill(HIST("nonPromptCharmMesons/hCountNonPromptDsToPhiPiToKKpi"), counterNonPrompt[DsToPhiPiToKKPi]);
+    registry.fill(HIST("nonPromptCharmMesons/hCountNonPromptDsToK0starKToKKPi"), counterNonPrompt[DsToK0starKToKKPi]);
+    registry.fill(HIST("nonPromptCharmBaryons/hCountNonPromptLambdaCToPKPi"), counterNonPrompt[LcToPKPi]);
+    registry.fill(HIST("nonPromptCharmBaryons/hCountNonPromptLambdaCToPK0s"), counterNonPrompt[LcToPiK0s]);
+    registry.fill(HIST("nonPromptCharmBaryons/hCountNonPromptXiCToPKPi"), counterNonPrompt[XicToPKPi]);
   };
 };
 
