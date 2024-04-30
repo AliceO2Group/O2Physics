@@ -165,21 +165,6 @@ DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when usin
 using DauTrackExtras = DauTrackExtras_001;
 using DauTrackExtra = DauTrackExtras::iterator;
 
-DECLARE_SOA_TABLE(StoredDauTrackExtras, "AOD1", "DAUTRACKEXTRA", //! detector properties of decay daughters
-                  dautrack::DetectorMap, dautrack::ITSClusterSizes,
-                  dautrack::TPCClusters, dautrack::TPCCrossedRows,
-
-                  // Dynamic columns for manipulating information
-                  dautrack::ITSClusterMap<dautrack::ITSClusterSizes>,
-                  dautrack::ITSNCls<dautrack::ITSClusterSizes>,
-                  dautrack::HasITS<dautrack::DetectorMap>,
-                  dautrack::HasTPC<dautrack::DetectorMap>,
-                  dautrack::HasTRD<dautrack::DetectorMap>,
-                  dautrack::HasTOF<dautrack::DetectorMap>,
-                  o2::soa::Marker<1>);
-
-using StoredDauTrackExtra = StoredDauTrackExtras::iterator;
-
 namespace motherParticle
 {
 DECLARE_SOA_COLUMN(Px, px, float);                              //! px
@@ -194,13 +179,6 @@ DECLARE_SOA_TABLE(MotherMCParts, "AOD", "MOTHERMCPART", //! mother MC informatio
                   motherParticle::PDGCode, motherParticle::IsPhysicalPrimary);
 
 using MotherMCPart = MotherMCParts::iterator;
-
-DECLARE_SOA_TABLE(StoredMotherMCParts, "AOD1", "MOTHERMCPART", //! mother MC information, abbreviated name due to size limit
-                  motherParticle::Px, motherParticle::Py, motherParticle::Pz,
-                  motherParticle::PDGCode, motherParticle::IsPhysicalPrimary,
-                  o2::soa::Marker<1>);
-
-using StoredMotherMCPart = StoredMotherMCParts::iterator;
 
 namespace v0data
 {
