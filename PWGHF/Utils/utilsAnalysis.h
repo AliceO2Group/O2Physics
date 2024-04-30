@@ -102,7 +102,6 @@ bool isTpcQualityCuts(Track const& track, int tpcNClsFoundMin, int tpcNCrossedRo
   return true;
 }
 
-
 } // namespace o2::analysis
 
 #endif // PWGHF_UTILS_UTILSANALYSIS_H_
