@@ -23,8 +23,8 @@
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
-//#include "Common/DataModel/PIDResponse.h"
-//#include "PWGUD/Core/RLhelper.h"
+// #include "Common/DataModel/PIDResponse.h"
+// #include "PWGUD/Core/RLhelper.h"
 #include <TString.h>
 #include "TLorentzVector.h"
 using namespace std;
@@ -95,32 +95,32 @@ int trackpid(const T& track, bool use_tof)
 }
 template <typename T>
 bool selectionPIDKaon(const T& candidate, bool use_tof, float nsigmatpc_cut, float nsigmatof_cut)
-  {
-    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
-      return true;
-    }
-    if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
-      return true;
-    }
-    if (!use_tof && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
-      return true;
-    }
-    return false;
+{
+  if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
+    return true;
   }
+  if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
+    return true;
+  }
+  if (!use_tof && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
+    return true;
+  }
+  return false;
+}
 template <typename T>
 bool selectionPIDPion(const T& candidate, bool use_tof, float nsigmatpc_cut, float nsigmatof_cut)
-  {
-    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
-      return true;
-    }
-    if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
-      return true;
-    }
-    if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
-      return true;
-    }
-    return false;
+{
+  if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
+    return true;
   }
+  if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+    return true;
+  }
+  if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+    return true;
+  }
+  return false;
+}
 template <typename T>
 bool selectionPIDMuon(const T& candidate, bool use_tof, float nsigmatpc_cut, float nsigmatof_cut)
 {

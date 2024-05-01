@@ -8,6 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+// \Single Gap Event Analyzer
+// \author Sandeep Dudi, sandeep.dudi3@gmail.com
+// \since  May 2024
 
 #include <cstdlib>
 #include "Framework/runDataProcessing.h"
@@ -118,48 +121,6 @@ struct SGResonanceAnalyzer {
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
   using UDCollisionFull = UDCollisionsFull::iterator;
 
-  template <typename T>
-  bool selectionPIDKaon(const T& candidate)
-  {
-    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
-      return true;
-    }
-    if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
-      return true;
-    }
-    if (!use_tof && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
-      return true;
-    }
-    return false;
-  }
-  template <typename T>
-  bool selectionPIDPion(const T& candidate)
-  {
-    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
-      return true;
-    }
-    if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
-      return true;
-    }
-    if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
-      return true;
-    }
-    return false;
-  }
-  template <typename T>
-  bool selectionPIDMuon(const T& candidate)
-  {
-    if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaMu() * candidate.tofNSigmaMu() + candidate.tpcNSigmaMu() * candidate.tpcNSigmaMu()) < nsigmatof_cut) {
-      return true;
-    }
-    if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaMu()) < nsigmatpc_cut) {
-      return true;
-    }
-    if (!use_tof && std::abs(candidate.tpcNSigmaMu()) < nsigmatpc_cut) {
-      return true;
-    }
-    return false;
-  }
   void process(UDCollisionFull const& collision, udtracksfull const& tracks)
   {
     TLorentzVector v0;
@@ -199,13 +160,13 @@ struct SGResonanceAnalyzer {
         } else if (std::abs(track1.tpcNSigmaPi()) < 3.0) {
           registry.get<TH2>(HIST("tpc_dedx_pion"))->Fill(v0.P(), track1.tpcSignal());
         }
-        if (selectionPIDKaon(track1)) {
+        if (selectionPIDKaon(track1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
           registry.get<TH2>(HIST("tpc_dedx_kaon_1"))->Fill(v0.P(), track1.tpcSignal());
         }
-        if (selectionPIDKaon(track1) && std::abs(track1.tpcNSigmaPi()) > 3.0) {
+        if (selectionPIDKaon(track1, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(track1.tpcNSigmaPi()) > 3.0) {
           registry.get<TH2>(HIST("tpc_dedx_kaon_2"))->Fill(v0.P(), track1.tpcSignal());
         }
-        if (selectionPIDPion(track1)) {
+        if (selectionPIDPion(track1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
           registry.get<TH2>(HIST("tpc_dedx_pion_1"))->Fill(v0.P(), track1.tpcSignal());
         }
       }
@@ -236,12 +197,10 @@ struct SGResonanceAnalyzer {
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
       if (!trackselector(t0, parameters) && !trackselector(t1, parameters))
         continue;
-      if (phi && selectionPIDKaon(t0) && selectionPIDKaon(t1)) {
+      if (phi && selectionPIDKaon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDKaon(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
         // Apply kaon hypothesis and create pairs
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
-        if (v0.Eta() > std::abs(1.0) || v1.Eta() > std::abs(1.0))
-          continue;
         v01 = v0 + v1;
         // Opposite sign pairs
         if (t0.sign() != t1.sign()) {
@@ -268,11 +227,9 @@ struct SGResonanceAnalyzer {
           }
         }
       }
-      if (rho && selectionPIDPion(t0) && selectionPIDPion(t1)) {
+      if (rho && selectionPIDPion(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
-        if (v0.Eta() > std::abs(1.0) || v1.Eta() > std::abs(1.0))
-          continue;
         v01 = v0 + v1;
         // Opposite sign pairs
         if (t0.sign() != t1.sign()) {
@@ -298,11 +255,9 @@ struct SGResonanceAnalyzer {
           }
         }
       }
-      if (kstar && selectionPIDKaon(t0) && std::abs(t0.tpcNSigmaPi()) > 3.0 && selectionPIDPion(t1)) {
+      if (kstar && selectionPIDKaon(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && std::abs(t0.tpcNSigmaPi()) > 3.0 && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
-        if (v0.Eta() > std::abs(1.0) || v1.Eta() > std::abs(1.0))
-          continue;
         v01 = v0 + v1;
         // Opposite sign pairs
         if (t0.sign() != t1.sign()) {
