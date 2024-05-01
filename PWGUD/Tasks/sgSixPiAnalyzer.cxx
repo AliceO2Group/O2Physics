@@ -37,8 +37,9 @@ using namespace o2::framework::expressions;
 #define mpion 0.1396
 #define mkaon 0.4937
 #define mproton 0.9383
-struct SGTwoPiAnalyzer {
+struct SGSixPiAnalyzer {
   SGSelector sgSelector;
+  // Adjusted Gap thresholds
   Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
   Configurable<float> FT0A_cut{"FT0A", 150., "FT0A threshold"};
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
@@ -60,30 +61,30 @@ struct SGTwoPiAnalyzer {
       {"GapSide", "Gap Side; Entries", {HistType::kTH1F, {{4, -1.5, 2.5}}}},
       {"TrueGapSide", "Gap Side; Entries", {HistType::kTH1F, {{4, -1.5, 2.5}}}},
       {"ITSNCls", "ITS Clusters", {HistType::kTH1F, {{10, -.5, 9.5}}}},
-      {"os_2Pi_pT", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_2Pi_eTa", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"os_2Pi_invm", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_2Pi_pT", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_2Pi_eTa", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"ss_2Pi_invm", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_2Pi_pT_1", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_2Pi_eTa_1", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"os_2Pi_invm_1", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_2Pi_pT_1", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_2Pi_eTa_1", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"ss_2Pi_invm_1", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_2Pi_pT_0", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_2Pi_eTa_0", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"os_2Pi_invm_0", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_2Pi_pT_0", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_2Pi_eTa_0", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"ss_2Pi_invm_0", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_2Pi_pT_2", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"os_2Pi_eTa_2", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"os_2Pi_invm_2", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_2Pi_pT_2", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
-      {"ss_2Pi_eTa_2", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-      {"ss_2Pi_invm_2", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_6Pi_pT", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_6Pi_eTa", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"os_6Pi_invm", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_6Pi_pT", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_6Pi_eTa", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"ss_6Pi_invm", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_6Pi_pT_1", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_6Pi_eTa_1", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"os_6Pi_invm_1", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_6Pi_pT_1", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_6Pi_eTa_1", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"ss_6Pi_invm_1", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_6Pi_pT_0", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_6Pi_eTa_0", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"os_6Pi_invm_0", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_6Pi_pT_0", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_6Pi_eTa_0", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"ss_6Pi_invm_0", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_6Pi_pT_2", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"os_6Pi_eTa_2", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"os_6Pi_invm_2", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_6Pi_pT_2", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
+      {"ss_6Pi_eTa_2", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -2., 2.}}}},
+      {"ss_6Pi_invm_2", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{1000, 0, 10}}}},
     }};
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
@@ -108,7 +109,6 @@ struct SGTwoPiAnalyzer {
     registry.fill(HIST("TrueGapSide"), truegapSide);
     gapSide = truegapSide;
     std::vector<TLorentzVector> goodTracks;
-    // Look for D0 and D0bar
     float sign = 0;
     for (auto t : tracks) {
       int itsNCls = t.itsNCls();
@@ -123,7 +123,7 @@ struct SGTwoPiAnalyzer {
       }
     }
     //    std::cout << goodTracks.size()<<std::endl;
-    if (goodTracks.size() == 2) {
+    if (goodTracks.size() == 6) {
       for (auto pion : goodTracks) {
         v01 += pion;
       }
@@ -131,50 +131,50 @@ struct SGTwoPiAnalyzer {
       // Opposite sign pairs
 
       if (sign == 0) {
-        registry.fill(HIST("os_2Pi_pT"), v01.Pt());
-        registry.fill(HIST("os_2Pi_eTa"), v01.Eta());
+        registry.fill(HIST("os_6Pi_pT"), v01.Pt());
+        registry.fill(HIST("os_6Pi_eTa"), v01.Eta());
         if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-          registry.fill(HIST("os_2Pi_invm"), v01.M());
+          registry.fill(HIST("os_6Pi_invm"), v01.M());
         if (gapSide == 0) {
-          registry.fill(HIST("os_2Pi_pT_0"), v01.Pt());
-          registry.fill(HIST("os_2Pi_eTa_0"), v01.Eta());
+          registry.fill(HIST("os_6Pi_pT_0"), v01.Pt());
+          registry.fill(HIST("os_6Pi_eTa_0"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("os_2Pi_invm_0"), v01.M());
+            registry.fill(HIST("os_6Pi_invm_0"), v01.M());
         }
         if (gapSide == 1) {
-          registry.fill(HIST("os_2Pi_pT_1"), v01.Pt());
-          registry.fill(HIST("os_2Pi_eTa_1"), v01.Eta());
+          registry.fill(HIST("os_6Pi_pT_1"), v01.Pt());
+          registry.fill(HIST("os_6Pi_eTa_1"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("os_2Pi_invm_1"), v01.M());
+            registry.fill(HIST("os_6Pi_invm_1"), v01.M());
         }
         if (gapSide == 2) {
-          registry.fill(HIST("os_2Pi_pT_2"), v01.Pt());
-          registry.fill(HIST("os_2Pi_eTa_2"), v01.Eta());
+          registry.fill(HIST("os_6Pi_pT_2"), v01.Pt());
+          registry.fill(HIST("os_6Pi_eTa_2"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("os_2Pi_invm_2"), v01.M());
+            registry.fill(HIST("os_6Pi_invm_2"), v01.M());
         }
       } else {
-        registry.fill(HIST("ss_2Pi_pT"), v01.Pt());
-        registry.fill(HIST("ss_2Pi_eTa"), v01.Eta());
+        registry.fill(HIST("ss_6Pi_pT"), v01.Pt());
+        registry.fill(HIST("ss_6Pi_eTa"), v01.Eta());
         if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-          registry.fill(HIST("ss_2Pi_invm"), v01.M());
+          registry.fill(HIST("ss_6Pi_invm"), v01.M());
         if (gapSide == 0) {
-          registry.fill(HIST("ss_2Pi_pT_0"), v01.Pt());
-          registry.fill(HIST("ss_2Pi_eTa_0"), v01.Eta());
+          registry.fill(HIST("ss_6Pi_pT_0"), v01.Pt());
+          registry.fill(HIST("ss_6Pi_eTa_0"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("ss_2Pi_invm_0"), v01.M());
+            registry.fill(HIST("ss_6Pi_invm_0"), v01.M());
         }
         if (gapSide == 1) {
-          registry.fill(HIST("ss_2Pi_pT_1"), v01.Pt());
-          registry.fill(HIST("ss_2Pi_eTa_1"), v01.Eta());
+          registry.fill(HIST("ss_6Pi_pT_1"), v01.Pt());
+          registry.fill(HIST("ss_6Pi_eTa_1"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("ss_2Pi_invm_1"), v01.M());
+            registry.fill(HIST("ss_6Pi_invm_1"), v01.M());
         }
         if (gapSide == 2) {
-          registry.fill(HIST("ss_2Pi_pT_2"), v01.Pt());
-          registry.fill(HIST("ss_2Pi_eTa_2"), v01.Eta());
+          registry.fill(HIST("ss_6Pi_pT_2"), v01.Pt());
+          registry.fill(HIST("ss_6Pi_eTa_2"), v01.Eta());
           if (TMath::Abs(v01.Eta() < 0.9) && v01.Pt() < .15)
-            registry.fill(HIST("ss_2Pi_invm_2"), v01.M());
+            registry.fill(HIST("ss_6Pi_invm_2"), v01.M());
         }
       }
     }
@@ -184,5 +184,5 @@ struct SGTwoPiAnalyzer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SGTwoPiAnalyzer>(cfgc)};
+    adaptAnalysisTask<SGSixPiAnalyzer>(cfgc)};
 }

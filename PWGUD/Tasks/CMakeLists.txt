@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(sg-fourpi
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sg-sixpi
+                           SOURCES sgSixPiAnalyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(sg-twopi
                            SOURCES sgTwoPiAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
@@ -98,6 +103,7 @@ o2physics_add_dpl_workflow(polarisation-rho
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
+
 o2physics_add_dpl_workflow(upc-jpsi-corr
                            SOURCES upcJpsiCentralBarrelCorr.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
@@ -122,3 +128,4 @@ o2physics_add_dpl_workflow(inclusive-phikstar-sd
                            SOURCES sginclusivePhiKstarSD.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
+
