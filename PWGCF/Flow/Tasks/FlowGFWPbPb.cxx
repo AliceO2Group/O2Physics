@@ -77,12 +77,12 @@ struct FlowGFWPbPb
   TRandom3* fRndm = new TRandom3(0);
   TAxis* fPtAxis;
   std::vector<std::vector<std::shared_ptr<TProfile>>> BootstrapArray; //TProfile is a shared pointer
-    
+
   enum ExtraProfile {
-      
+
         // here are TProfiles for vn-pt correlations that are not implemented in GFW
         kc22, kc24, kc26, kc28, kc22etagap,
-      
+
         // Count the total number of enum
         kCount_ExtraProfile
       };
@@ -124,12 +124,12 @@ struct FlowGFWPbPb
         BootstrapArray[i][kc28] = registry.add<TProfile>(Form("BootstrapContainer_%d/c28", i), ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisMultiplicity}});
         BootstrapArray[i][kc22etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagap", i), ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisMultiplicity}});
         }
-      
+
       o2::framework::AxisSpec axis = axisPt;
       int nPtBins = axis.binEdges.size() - 1;
       double* PtBins = &(axis.binEdges)[0];
       fPtAxis = new TAxis(nPtBins, PtBins);
-      
+
       // add in FlowContainer to Get boostrap sample automatically
      TObjArray* oba = new TObjArray();
      fFC->SetXAxis(fPtAxis);
@@ -156,7 +156,7 @@ struct FlowGFWPbPb
   {
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)  
+    if (dnx == 0)
         return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
@@ -166,8 +166,8 @@ struct FlowGFWPbPb
     }
     return;
   }
-    
-    
+
+
     void FillProfile(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile> tarName, const double& cent)
     {
       double dnx, val;
@@ -183,8 +183,8 @@ struct FlowGFWPbPb
       }
       return;
     }
-    
-    
+
+
     void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
       {
         double dnx, val;
@@ -208,7 +208,7 @@ struct FlowGFWPbPb
         return;
       }
 
-    
+
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
@@ -228,7 +228,7 @@ struct FlowGFWPbPb
 
     const auto cent = collision.centFT0C();
     float weff = 1, wacc = 1;
-      
+
     for (auto& track : tracks) {
       registry.fill(HIST("hPhi"), track.phi());
       registry.fill(HIST("hEta"), track.eta());
@@ -242,7 +242,7 @@ struct FlowGFWPbPb
     FillProfile(corrconfigs.at(2), HIST("c26"), cent);
     FillProfile(corrconfigs.at(3), HIST("c28"), cent);
     FillProfile(corrconfigs.at(4), HIST("c22etagap"), cent);
-      
+
     //Filling Bootstrap Samples
     int SampleIndex = static_cast<int>(cfgNbootstrap * l_Random);
     FillProfile(corrconfigs.at(0), BootstrapArray[SampleIndex][kc22], cent);
@@ -250,16 +250,16 @@ struct FlowGFWPbPb
     FillProfile(corrconfigs.at(2), BootstrapArray[SampleIndex][kc26], cent);
     FillProfile(corrconfigs.at(3), BootstrapArray[SampleIndex][kc28], cent);
     FillProfile(corrconfigs.at(4), BootstrapArray[SampleIndex][kc22etagap], cent);
-    
-      
-      
+
+
+
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
     FillFC(corrconfigs.at(l_ind), cent, l_Random);
     }
-      
-      
-      
+
+
+
   } // End of process
 }; // end of struct
 
