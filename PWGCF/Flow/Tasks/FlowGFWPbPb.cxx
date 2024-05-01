@@ -32,7 +32,6 @@
 #include <TF1.h>
 #include <iostream>
 
-using namespace std;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
