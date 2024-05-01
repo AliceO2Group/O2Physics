@@ -831,11 +831,6 @@ struct CorrelationTask {
       if (groupedCollisions.size() == 0) {
         continue;
       }
-      if (cfgCentBinsForMC > 0) {
-        for (auto& collision : groupedCollisions) {
-          multiplicity = collision.multiplicity();
-        }
-      }
 
       // STEP 2, 4, 5
       if (it.isNewWindow()) {
