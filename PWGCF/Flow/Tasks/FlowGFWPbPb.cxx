@@ -37,8 +37,7 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct FlowGFWPbPb
-{
+struct FlowGFWPbPb {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
@@ -56,7 +55,6 @@ struct FlowGFWPbPb
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
 
-
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
@@ -70,32 +68,33 @@ struct FlowGFWPbPb
   HistogramRegistry registry{"registry"};
 
   // define global variables
-  GFW* fGFW = new GFW();  // GFW class used from main src
+  GFW* fGFW = new GFW(); // GFW class used from main src
   std::vector<GFW::CorrConfig> corrconfigs;
   TRandom3* fRndm = new TRandom3(0);
   TAxis* fPtAxis;
-  std::vector<std::vector<std::shared_ptr<TProfile>>> BootstrapArray; //TProfile is a shared pointer
+  std::vector<std::vector<std::shared_ptr<TProfile>>> BootstrapArray; // TProfile is a shared pointer
 
   enum ExtraProfile {
 
-        // here are TProfiles for vn-pt correlations that are not implemented in GFW
-        kc22, kc24, kc26, kc28, kc22etagap,
+    // here are TProfiles for vn-pt correlations that are not implemented in GFW
+    kc22,
+    kc24,
+    kc26,
+    kc28,
+    kc22etagap,
 
-        // Count the total number of enum
-        kCount_ExtraProfile
-      };
+    // Count the total number of enum
+    kCount_ExtraProfile
+  };
 
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;  // collisions filter
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;  // tracks filter
+  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;   // collisions filter
+  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>; // tracks filter
 
-
-
-  void init(InitContext const&)  // Initialization
+  void init(InitContext const&) // Initialization
   {
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(nolaterthan.value);
-
 
     // Add some output objects to the histogram registry
     registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{1, 0, 1}}});
@@ -113,29 +112,29 @@ struct FlowGFWPbPb
     // initial array
     BootstrapArray.resize(cfgNbootstrap);
     for (int i = 0; i < cfgNbootstrap; i++) {
-    BootstrapArray[i].resize(kCount_ExtraProfile);
+      BootstrapArray[i].resize(kCount_ExtraProfile);
     }
     for (int i = 0; i < cfgNbootstrap; i++) {
-        BootstrapArray[i][kc22] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22", i), ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile, {axisMultiplicity}});
-        BootstrapArray[i][kc24] = registry.add<TProfile>(Form("BootstrapContainer_%d/c24", i), ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisMultiplicity}});
-        BootstrapArray[i][kc26] = registry.add<TProfile>(Form("BootstrapContainer_%d/c26", i), ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisMultiplicity}});
-        BootstrapArray[i][kc28] = registry.add<TProfile>(Form("BootstrapContainer_%d/c28", i), ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisMultiplicity}});
-        BootstrapArray[i][kc22etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagap", i), ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisMultiplicity}});
-        }
+      BootstrapArray[i][kc22] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22", i), ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile, {axisMultiplicity}});
+      BootstrapArray[i][kc24] = registry.add<TProfile>(Form("BootstrapContainer_%d/c24", i), ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisMultiplicity}});
+      BootstrapArray[i][kc26] = registry.add<TProfile>(Form("BootstrapContainer_%d/c26", i), ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisMultiplicity}});
+      BootstrapArray[i][kc28] = registry.add<TProfile>(Form("BootstrapContainer_%d/c28", i), ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisMultiplicity}});
+      BootstrapArray[i][kc22etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagap", i), ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisMultiplicity}});
+    }
 
-      o2::framework::AxisSpec axis = axisPt;
-      int nPtBins = axis.binEdges.size() - 1;
-      double* PtBins = &(axis.binEdges)[0];
-      fPtAxis = new TAxis(nPtBins, PtBins);
+    o2::framework::AxisSpec axis = axisPt;
+    int nPtBins = axis.binEdges.size() - 1;
+    double* PtBins = &(axis.binEdges)[0];
+    fPtAxis = new TAxis(nPtBins, PtBins);
 
-      // add in FlowContainer to Get boostrap sample automatically
-     TObjArray* oba = new TObjArray();
-     fFC->SetXAxis(fPtAxis);
-     fFC->SetName("FlowContainer");
-     fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
-     delete oba;
+    // add in FlowContainer to Get boostrap sample automatically
+    TObjArray* oba = new TObjArray();
+    fFC->SetXAxis(fPtAxis);
+    fFC->SetName("FlowContainer");
+    fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
+    delete oba;
 
-    fGFW->AddRegion("full", -0.8, 0.8, 1, 1);  // eta region -0.8 to 0.8
+    fGFW->AddRegion("full", -0.8, 0.8, 1, 1); // eta region -0.8 to 0.8
     fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1);
     fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
 
@@ -145,7 +144,7 @@ struct FlowGFWPbPb
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 2  -2 -2 -2 -2}", "ChFull28", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE));
 
-    fGFW->CreateRegions();  // finalize the initialization
+    fGFW->CreateRegions(); // finalize the initialization
 
   } // end of Initialization
 
@@ -155,7 +154,7 @@ struct FlowGFWPbPb
     double dnx, val;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
     if (dnx == 0)
-        return;
+      return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (TMath::Abs(val) < 1)
@@ -165,57 +164,56 @@ struct FlowGFWPbPb
     return;
   }
 
-
-    void FillProfile(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile> tarName, const double& cent)
-    {
-      double dnx, val;
-      dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-      if (dnx == 0)
-        return;
-      if (!corrconf.pTDif) {
-        val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-        if (TMath::Abs(val) < 1) {
-            tarName->Fill(cent, val, dnx);
-        }
-        return;
+  void FillProfile(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile> tarName, const double& cent)
+  {
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1) {
+        tarName->Fill(cent, val, dnx);
       }
       return;
     }
+    return;
+  }
 
-
-    void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
-      {
-        double dnx, val;
-        dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
-        if (dnx == 0)
-          return;
-        if (!corrconf.pTDif) {
-          val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-          if (TMath::Abs(val) < 1)
-            fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
-          return;
-        }
-        for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
-          dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
-          if (dnx == 0)
-            continue;
-          val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
-          if (TMath::Abs(val) < 1)
-            fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
-        }
-        return;
-      }
-
+  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
+  {
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+      return;
+    }
+    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+      dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
+      if (dnx == 0)
+        continue;
+      val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+    }
+    return;
+  }
 
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
-    if (!collision.sel8()) return;
+    if (!collision.sel8())
+      return;
 
     int Ntot = tracks.size();
-    if (Ntot < 1)  return;
+    if (Ntot < 1)
+      return;
 
-   // if (!collision.sel7())  return;
+    // if (!collision.sel7())  return;
 
     float vtxz = collision.posZ();
     float l_Random = fRndm->Rndm();
@@ -241,7 +239,7 @@ struct FlowGFWPbPb
     FillProfile(corrconfigs.at(3), HIST("c28"), cent);
     FillProfile(corrconfigs.at(4), HIST("c22etagap"), cent);
 
-    //Filling Bootstrap Samples
+    // Filling Bootstrap Samples
     int SampleIndex = static_cast<int>(cfgNbootstrap * l_Random);
     FillProfile(corrconfigs.at(0), BootstrapArray[SampleIndex][kc22], cent);
     FillProfile(corrconfigs.at(1), BootstrapArray[SampleIndex][kc24], cent);
@@ -249,17 +247,13 @@ struct FlowGFWPbPb
     FillProfile(corrconfigs.at(3), BootstrapArray[SampleIndex][kc28], cent);
     FillProfile(corrconfigs.at(4), BootstrapArray[SampleIndex][kc22etagap], cent);
 
-
-
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-    FillFC(corrconfigs.at(l_ind), cent, l_Random);
+      FillFC(corrconfigs.at(l_ind), cent, l_Random);
     }
 
-
-
   } // End of process
-}; // end of struct
+};  // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
