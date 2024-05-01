@@ -119,6 +119,6 @@ o2physics_add_dpl_workflow(exclusive-two-protons
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(inclusive-phikstar-sd
-                           SOURCES sginclusivePhiKstar.cxx
+                           SOURCES sginclusivePhiKstarSD.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
