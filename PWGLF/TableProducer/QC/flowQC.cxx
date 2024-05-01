@@ -86,6 +86,7 @@ std::shared_ptr<TH2> hScalarProduct[kNmethods][kNqVecDetectors][kNqVecDetectors]
 std::shared_ptr<TH2> hNormalisedScalarProduct[kNmethods][kNqVecDetectors][kNqVecDetectors];
 
 std::shared_ptr<TH2> hPsiComp[kNqVecDetectors];
+std::shared_ptr<TH2> hCosPsiComp[kNqVecDetectors];
 } // namespace
 
 struct flowQC {
@@ -99,6 +100,7 @@ struct flowQC {
   ConfigurableAxis cfgQvecBins{"cfgQvecBins", {100, -2.f, 2.f}, "Binning for scalar product"};
   ConfigurableAxis cfgPhiBins{"cfgPhiBins", {140, -3.5f, 3.5f}, "Binning for azimuthal angle"};
   ConfigurableAxis cfgDeltaPhiBins{"cfgDeltaPhiBins", {280, -7.f, 7.f}, "Binning for azimuthal-angle differences"};
+  ConfigurableAxis cfgCosPhiBins{"cfgCosPhiBins", {220, -1.1f, 1.1f}, "Binning for consinus of azimuthal angle"};
 
   // CCDB options
   Configurable<double> cfgBz{"cfgBz", -999, "bz field, -999 is automatic"};
@@ -176,6 +178,7 @@ struct flowQC {
 
     const AxisSpec psiAxis{cfgPhiBins, "#psi_{2}"};
     const AxisSpec psiCompAxis{cfgPhiBins, "#psi_{2}^{EP} - #psi_{2}^{Qvec}"};
+    const AxisSpec cosPsiCompAxis{cfgCosPhiBins, "cos[2(#psi_{2}^{EP} - #psi_{2}^{Qvec})]"};
 
     // z vertex histogram
     general.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
@@ -212,6 +215,7 @@ struct flowQC {
     }
     for (int iQvecDet = 0; iQvecDet < qVecDetectors::kNqVecDetectors; iQvecDet++) {
       hPsiComp[iQvecDet] = flow_comp.add<TH2>(Form("hPsiComp_%s", qVecDetectorNames[iQvecDet].c_str()), "", HistType::kTH2F, {centAxis, psiCompAxis});
+      hCosPsiComp[iQvecDet] = flow_comp.add<TH2>(Form("hCosPsiComp_%s", qVecDetectorNames[iQvecDet].c_str()), "", HistType::kTH2F, {centAxis, cosPsiCompAxis});
     }
   }
 
@@ -323,6 +327,7 @@ struct flowQC {
     }
     for (int iQvecDet = 0; iQvecDet < qVecDetectors::kNqVecDetectors; iQvecDet++) {
       hPsiComp[iQvecDet]->Fill(centrality, vec_Qpsi[methods::kEP][iQvecDet] - vec_Qpsi[methods::kQvec][iQvecDet]);
+      hCosPsiComp[iQvecDet]->Fill(centrality, std::cos(2 * (vec_Qpsi[methods::kEP][iQvecDet] - vec_Qpsi[methods::kQvec][iQvecDet])));
     }
   }
 };
