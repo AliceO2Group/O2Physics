@@ -30,7 +30,6 @@
 #include <TProfile.h>
 #include <TRandom3.h>
 #include <TF1.h>
-#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
