@@ -120,6 +120,8 @@ struct : ConfigurableGroup {
 struct : ConfigurableGroup {
   Configurable<vector<int>> cfApplyNUAPDF{"cfApplyNUAPDF", {0, 0, 0}, "Apply (1) or do not apply (0) NUA on variable, ordering is the same as in enum eNUAPDF (phi, pt, eta)"};
   Configurable<vector<int>> cfUseDefaultNUAPDF{"cfUseDefaultNUAPDF", {1, 1, 1}, "Use (1) or do not use (0) default NUA profile, ordering is the same as in enum eNUAPDF (phi, pt, eta)"};
+  Configurable<vector<string>> cfCustomNUAPDFHistNames{"cfCustomNUAPDFHistNames", {"a", "bb", "ccc"}, "the names of histograms holding custom NUA in an external file."};
+  Configurable<string> cfFileWithCustomNUA{"cfFileWithCustomNUA", "/home/abilandz/DatasetsO2/customNUA.root", "path to external ROOT file which holds all histograms with custom NUA"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
 } cf_nua;
 
 // *) Internal validation:
