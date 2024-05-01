@@ -122,7 +122,7 @@ struct flowQC {
   template <class collision_t>
   bool eventSelection(collision_t& collision)
   {
-    return collision.sel8() && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.triggereventep();
+    return collision.sel8() && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.triggereventep() && collision.selection_bit(aod::evsel::kNoSameBunchPileup);
   }
 
   float computeEventPlane(float y, float x)
