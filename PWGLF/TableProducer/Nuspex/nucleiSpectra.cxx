@@ -628,7 +628,7 @@ struct nucleiSpectra {
     if (!eventSelection(collision)) {
       return;
     }
-    if (!collision.triggereventep()) {
+    if (!collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return;
     }
     fillDataInfo(collision, tracks);
@@ -646,6 +646,9 @@ struct nucleiSpectra {
     nuclei::candidates.clear();
     nuclei::candidates_flow.clear();
     if (!eventSelection(collision)) {
+      return;
+    }
+    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return;
     }
     fillDataInfo(collision, tracks);
