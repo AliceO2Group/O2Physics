@@ -49,7 +49,7 @@ struct SGFITAnalyzer { // UDTutorial01
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
-  // Track Selections
+  //Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -326,7 +326,7 @@ struct SGFITAnalyzer { // UDTutorial01
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; // UDCollisions
   // using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions>; // UDCollisions
   using UDCollisionFull = UDCollisionsFull::iterator;
-  // using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  //using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
   using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   //  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksFlags>;
 
@@ -341,13 +341,13 @@ struct SGFITAnalyzer { // UDTutorial01
     // int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
-    int truegapSide = sgSelector.trueGap(dgcand, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
+    int truegapSide = sgSelector.trueGap(dgcand, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     registry.get<TH1>(HIST("collisions/TrueGapSide"))->Fill(truegapSide, 1.);
     // select PV contributors
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
     PVContributors.bindTable(dgtracks);
-    //    if (PVContributors.size() > 50)
-    //     return;
+//    if (PVContributors.size() > 50)
+ //     return;
     registry.get<TH1>(HIST("collisions/multiplicityPVC"))->Fill(PVContributors.size(), 1.);
     bool tof = false;
     // relative BC number
@@ -375,22 +375,19 @@ struct SGFITAnalyzer { // UDTutorial01
       if (trackselector(t, parameters)) {
         sign += t.sign();
         goodTracks.push_back(a);
-        if (std::abs(t.tpcNSigmaMu()) < 3)
-          muonTracks.push_back(b);
+        if (std::abs(t.tpcNSigmaMu()) < 3) muonTracks.push_back(b);
       }
     }
     if (goodTracks.size() == 2) {
       for (auto pion : goodTracks) {
         rho += pion;
       }
-      if (sign == 0 && TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.1)
-        coh_rho0 = true;
+      if (sign == 0 && TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.1) coh_rho0 = true;
       if (muonTracks.size() == 2) {
         for (auto muon : muonTracks) {
           jpsi += muon;
         }
-        if (sign == 0 && TMath::Abs(jpsi.Rapidity()) < .9 && jpsi.M() > 2.8 && jpsi.M() < 3.35 && jpsi.Pt() < 0.1)
-          coh_jpsi = true;
+        if (sign == 0 && TMath::Abs(jpsi.Rapidity()) < .9 && jpsi.M() > 2.8 && jpsi.M() < 3.35 && jpsi.Pt() < 0.1) coh_jpsi = true;
       }
     }
     int pva = 0;
