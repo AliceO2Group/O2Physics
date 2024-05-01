@@ -857,12 +857,16 @@ struct reso2initializer {
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg010);
     if (isSel8)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kTrig);
+    if (isSel8 && inVtx10)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kTrig10);
     if (isSel8 && isTrueINELgt0)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg0Trig);
     if (isSel8 && isTrueINELgt0 && inVtx10)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg010Trig);
     if (isSelected)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kSel);
+    if (isSelected && inVtx10)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kSel10);
     if (isSelected && isTrueINELgt0)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg0Sel);
     if (isSelected && isTrueINELgt0 && inVtx10)

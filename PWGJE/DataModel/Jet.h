@@ -28,10 +28,13 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
+#include "PWGJE/DataModel/JetReducedDataV0.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 namespace o2::aod
 {
@@ -165,6 +168,7 @@ DECLARE_JET_TABLES_LEVELS(Neutral, JTrackSub, HfD0Bases, HfD0PBases, "N");
 DECLARE_JET_TABLES_LEVELS(D0Charged, JTrackD0Sub, HfD0Bases, HfD0PBases, "D0");
 DECLARE_JET_TABLES_LEVELS(LcCharged, JTrackLcSub, Hf3PBases, Hf3PPBases, "Lc");
 DECLARE_JET_TABLES_LEVELS(BplusCharged, JTrackBplusSub, HfCandBplus, HfD0PBases, "BPl");
+DECLARE_JET_TABLES_LEVELS(V0Charged, JTrackSub, V0Cores, V0Cores, "V0");
 
 } // namespace o2::aod
 
@@ -195,5 +199,10 @@ using JetTracksSubBplus = o2::aod::JTrackBplusSubs;
 using CandidatesLcData = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMls, o2::aod::JLcIds>;
 using CandidatesLcMCD = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMls, o2::aod::Hf3PMcs, o2::aod::JLcIds>;
 using JetTracksSubLc = o2::aod::JTrackLcSubs;
+
+using CandidatesV0Data = o2::soa::Join<o2::aod::V0Cores, o2::aod::JV0Ids>;
+using CandidatesV0MCD = o2::soa::Join<o2::aod::V0Cores, o2::aod::V0MCCores, o2::aod::JV0Ids>;
+// using V0Daughters = o2::aod::DauTrackExtras;                                                                                      // we need to add the V0Extras table to CandiatesV0Data if we want to use this. Will wait for an analysis use case
+using CandidatesV0MCP = o2::aod::JV0McParticles;
 
 #endif // PWGJE_DATAMODEL_JET_H_

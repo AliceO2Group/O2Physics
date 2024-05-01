@@ -395,6 +395,7 @@ DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
 DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);    //!
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
@@ -472,6 +473,7 @@ DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
                   track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                   track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
                   track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                  emprimaryelectron::P<track::Pt, track::Eta>,
                   emprimaryelectron::Px<track::Pt, track::Phi>,
                   emprimaryelectron::Py<track::Pt, track::Phi>,
                   emprimaryelectron::Pz<track::Pt, track::Eta>,
@@ -527,6 +529,7 @@ DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
 DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);    //!
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
@@ -604,6 +607,7 @@ DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                   track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
                   track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                  emprimarymuon::P<track::Pt, track::Eta>,
                   emprimarymuon::Px<track::Pt, track::Phi>,
                   emprimarymuon::Py<track::Pt, track::Phi>,
                   emprimarymuon::Pz<track::Pt, track::Eta>,

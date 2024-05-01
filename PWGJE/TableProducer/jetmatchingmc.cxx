@@ -129,6 +129,12 @@ using LcChargedJetMatching = JetMatchingMc<soa::Join<aod::LcChargedMCDetectorLev
                                               aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets,
                                               CandidatesBplusMCD,
                                               CandidatesBplusMCP>;*/
+using V0ChargedJetMatching = JetMatchingMc<soa::Join<aod::V0ChargedMCDetectorLevelJets, aod::V0ChargedMCDetectorLevelJetConstituents>,
+                                           soa::Join<aod::V0ChargedMCParticleLevelJets, aod::V0ChargedMCParticleLevelJetConstituents>,
+                                           aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets,
+                                           aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets,
+                                           CandidatesV0MCD,
+                                           CandidatesV0MCP>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -138,6 +144,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-d0-ch"}));
   tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-lc-ch"}));
   // tasks.emplace_back(adaptAnalysisTask<BplusChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-bplus-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<V0ChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-v0-ch"}));
 
   return WorkflowSpec{tasks};
 }

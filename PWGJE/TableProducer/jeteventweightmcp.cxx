@@ -49,6 +49,7 @@ using FullMCJetsEventWeight = JetEventWeightMCPTask<aod::FullMCParticleLevelJet,
 using D0ChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::D0ChargedMCParticleLevelJet, aod::D0ChargedMCParticleLevelJetEventWeights>;
 using LcChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::LcChargedMCParticleLevelJet, aod::LcChargedMCParticleLevelJetEventWeights>;
 using BplusChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::BplusChargedMCParticleLevelJet, aod::BplusChargedMCParticleLevelJetEventWeights>;
+using V0ChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::V0ChargedMCParticleLevelJet, aod::V0ChargedMCParticleLevelJetEventWeights>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -78,6 +79,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(
     adaptAnalysisTask<BplusChargedMCJetsEventWeight>(cfgc,
                                                      SetDefaultProcesses{}, TaskName{"jet-bplus-eventweight-mcp-charged"}));
+
+  tasks.emplace_back(
+    adaptAnalysisTask<V0ChargedMCJetsEventWeight>(cfgc,
+                                                  SetDefaultProcesses{}, TaskName{"jet-v0-eventweight-mcp-charged"}));
 
   return WorkflowSpec{tasks};
 }

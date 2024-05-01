@@ -456,6 +456,7 @@ struct QaEfficiency {
     Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
     Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
     Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
+    Configurable<float> maxDcaXY{"maxDcaXY", 10000.f, "Additional cut on the maximum abs value of the DCA xy"};
     Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum abs value of the DCA z"};
     Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
   } cfgCustomTrackCuts;
@@ -1126,7 +1127,7 @@ struct QaEfficiency {
       customTrackCuts.SetMinNCrossedRowsTPC(cfgCustomTrackCuts.minNCrossedRowsTPC);
       customTrackCuts.SetMinNClustersTPC(cfgCustomTrackCuts.minTPCNClsFound);
       customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(cfgCustomTrackCuts.minNCrossedRowsOverFindableClustersTPC);
-      customTrackCuts.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; }); // No DCAxy cut will be used, this is done via the member function of the task
+      customTrackCuts.SetMaxDcaXYPtDep([&](float /*pt*/) { return cfgCustomTrackCuts.maxDcaXY; }); // No DCAxy cut will be used, this is done via the member function of the task
       customTrackCuts.SetMaxDcaZ(cfgCustomTrackCuts.maxDcaZ);
       customTrackCuts.print();
     }

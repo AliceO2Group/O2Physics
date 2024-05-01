@@ -78,15 +78,11 @@ struct MultiplicityExtraTable {
     int localBC = bc.globalBC() % nBCsPerOrbit;
 
     if (newRunNumber != oldRunNumber) {
-      uint64_t ts{};
-      std::map<string, string> metadataRCT, headers;
-      headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
-      ts = atol(headers["SOR"].c_str());
+      auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, newRunNumber);
+      auto ts = soreor.first;
 
       LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
       oldRunNumber = newRunNumber;
-      std::map<std::string, std::string> mapMetadata;
-      std::map<std::string, std::string> mapHeader;
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
     } // new run number

@@ -1039,13 +1039,13 @@ struct nuclei_in_jets {
       // Generated Particles
       for (auto& particle : mcParticles_per_coll) {
 
+        // Index
+        i++;
+
         if (!particle.isPhysicalPrimary())
           continue;
         if (particle.pdgCode() != -2212)
           continue;
-
-        // Index
-        i++;
 
         // Find pt Leading
         if (particle.pt() > pt_max) {
