@@ -611,7 +611,7 @@ DECLARE_SOA_COLUMN(DeDxTunedMc, mcTunedTPCSignal, float); //! TPC signal after T
 } // namespace mcpidtpc
 
 DECLARE_SOA_TABLE(mcTPCTuneOnData, "AOD", "MCTPCTUNEONDATA", mcpidtpc::DeDxTunedMc);
-DECLARE_SOA_TABLE(mcTPCTuneOnDataTiny, "AOD", "MCTPCTUNEONDATATINY", mcpidtpc::DeDxTunedMc, o2::soa::Mark<1>);
+DECLARE_SOA_TABLE(mcTPCTuneOnDataTiny, "AOD", "MCTPCTUNEONDATATINY", mcpidtpc::DeDxTunedMc, o2::soa::Marker<1>);
 
 namespace pidtpc
 {
