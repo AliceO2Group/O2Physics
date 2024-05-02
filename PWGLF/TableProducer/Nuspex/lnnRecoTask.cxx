@@ -50,8 +50,8 @@ constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNames{"3H"};
 
-constexpr int h3DauPdg{1000010030};
-constexpr int lnnPdg{1010000030};
+constexpr int h3DauPdg{1000010030}; // PDG Triton
+constexpr int lnnPdg{1010000030};   // PDG Lnn
 
 std::shared_ptr<TH1> hEvents;
 std::shared_ptr<TH1> hZvtx;
@@ -119,7 +119,7 @@ struct lnnRecoTask {
   Configurable<float> masswidth{"lnnmasswidth", 0.06, "Mass width (GeV/c^2)"};
   Configurable<float> dcav0dau{"lnndcaDau", 1.0, "DCA V0 Daughters"};
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the lnncandidate"};
-  Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.5, "Minimum rigidity of the triton candidate"};
+  Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 1, "Minimum rigidity of the triton candidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
   Configurable<float> nSigmaMax3H{"nSigmaMax3H", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
@@ -197,7 +197,7 @@ struct lnnRecoTask {
     hNsigma3HSel = qaRegistry.add<TH2>("hNsigma3HSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HAxis});
     hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hdEdxTot = qaRegistry.add<TH2>("hdEdxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
-    hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{3, -0.5, 2.5}});
+    hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
     hEvents->GetXaxis()->SetBinLabel(3, "z vtx");
@@ -283,15 +283,21 @@ struct lnnRecoTask {
       // temporary fix: tpcInnerParam() returns the momentum in all the software tags before: https://github.com/AliceO2Group/AliceO2/pull/12521
       bool posTritonPID = posTrack.pidForTracking() == o2::track::PID::Triton;
       bool negTritonPID = negTrack.pidForTracking() == o2::track::PID::Triton;
-      float posRigidity = posTritonPID ? posTrack.tpcInnerParam() / 2 : posTrack.tpcInnerParam();
-      float negRigidity = negTritonPID ? negTrack.tpcInnerParam() / 2 : negTrack.tpcInnerParam();
+      float posRigidity = posTrack.tpcInnerParam();
+      float negRigidity = negTrack.tpcInnerParam();
 
-      hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
-      hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
+      if (posTritonPID) {
+        hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
+      }
+
+      if (negTritonPID) {
+        hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
+      }
 
       // Bethe-Bloch calcution for 3H
-      double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity * 2 / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
-      double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity * 2 / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
+      double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
+
+      double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
 
       // nSigma calculation
       double expSigmaPos{expBethePos * mBBparams3H[5]};
@@ -345,11 +351,6 @@ struct lnnRecoTask {
       auto& piPropTrack = lnnCand.isMatter ? fitter.getTrack(1) : fitter.getTrack(0);
       h3PropTrack.getPxPyPzGlo(lnnCand.mom3H);
       piPropTrack.getPxPyPzGlo(lnnCand.momPi);
-
-      // the momentum has to be multiplied by 2 (charge)
-      for (int i = 0; i < 3; i++) {
-        lnnCand.mom3H[i] *= 2;
-      }
 
       // Definition of relativistic momentum and energy to triton and pion and total energy
       float h3P2 = lnnCand.mom3H[0] * lnnCand.mom3H[0] + lnnCand.mom3H[1] * lnnCand.mom3H[1] + lnnCand.mom3H[2] * lnnCand.mom3H[2];
