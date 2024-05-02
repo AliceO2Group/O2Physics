@@ -512,7 +512,7 @@ struct femtoDreamPairTaskTrackTrack {
       if (Option.SameSpecies.value && Option.MixEventWithPairs.value) {
         // in case of mixing the same species and events that contain pairs, check for bitmask of particle two
         // when same species is set to true the bit of particle two is only set if the event contains at least two selected particles
-        Partition<CollisionType> PartitionMaskedCol1 = ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo,BitMask) && aod::femtodreamcollision::downsample == true;
+        Partition<CollisionType> PartitionMaskedCol1 = ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask) && aod::femtodreamcollision::downsample == true;
         PartitionMaskedCol1.bindTable(cols);
         MixEvents(PartitionMaskedCol1);
       } else if (Option.SameSpecies.value && !Option.MixEventWithPairs.value) {
