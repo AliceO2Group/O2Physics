@@ -62,7 +62,7 @@ static const std::array<int, nChannels> maxDepthForSearch = {1, 2, 2, 2, 2, 2, 2
 static const std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{+kPiPlus, -kKPlus}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}};
 static const std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kPiPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {}, {}, {}, {}}};
 static const std::array<std::array<int, 4>, nChannels> arrPDGFinal4Prong = {{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {+kPiPlus, -kKPlus, -kPiPlus, +kProton}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}}};
-static const std::array<std::array<int, 5>, nChannels> arrPDGFinal5Prong = {{{}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, +kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {}, {}, {}, {}}};
+static const std::array<std::array<int, 5>, nChannels> arrPDGFinal5Prong = {{{}, {}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, +kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {}, {}, {}}};
 static const std::array<std::string, nChannels> labels = {"D^{0} #rightarrow K#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{+} #rightarrow K#pi#pi", "D^{+} #rightarrow KK#pi", "D_{s}^{+} #rightarrow #Phi#pi #rightarrow KK#pi",
                                                           "D_{s}^{+} #rightarrow #bar{K}^{*0}K #rightarrow KK#pi", "#Lambda_{c}^{+} #rightarrow pK#pi", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s}", "#Xi_{c}^{+} #rightarrow pK#pi",
                                                           "#Xi_{c}^{+} #rightarrow #Xi#pi#pi", "#Xi_{c}^{0} #rightarrow #Xi#pi", "#Omega_{c}^{0} #rightarrow #Omega#pi", "#Omega_{c}^{0} #rightarrow #Xi#pi"};
@@ -273,10 +273,22 @@ struct HfTaskMcValidationGen {
           if (!RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal4Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
             continue;
           }
+          if ((iD == XiCzeroToXiPi || iD == OmegaCToXiPi) &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+kXiMinus, +kPiPlus}, true)) {
+            continue;
+          }
+          if (iD == OmegaCToOmegaPi &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+kOmegaMinus, +kPiPlus}, true)) {
+            continue;
+          }
         }
 
         if (nDaughters[iD] == 5) {
           if (!RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal5Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
+            continue;
+          }
+          if (iD == XiCplusToXiPiPi &&
+              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, nullptr, 2)) {
             continue;
           }
         }
