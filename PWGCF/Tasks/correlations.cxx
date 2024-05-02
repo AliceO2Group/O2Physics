@@ -728,7 +728,7 @@ struct CorrelationTask {
     auto multiplicity = mcCollision.multiplicity();
     if (cfgCentBinsForMC > 0) {
       if (collisions.size() == 0) {
-          return;
+        return;
       }
       for (auto& collision : collisions) {
         multiplicity = collision.multiplicity();
