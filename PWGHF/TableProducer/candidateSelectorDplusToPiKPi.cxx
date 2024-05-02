@@ -164,7 +164,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     if (std::abs(candidate.maxNormalisedDeltaIP()) > cuts->get(pTBin, "max normalized deltaIP")) {
       return false;
     }
-    if (!isSelectedCandidateDca(candidate)) {
+    if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }
     return true;
@@ -174,7 +174,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   /// \param candidate is the Ds candidate
   /// \return true if all the prongs pass the selections
   template <typename T1>
-  bool isSelectedCandidateDca(const T1& candidate)
+  bool isSelectedCandidateProngDca(const T1& candidate)
   {
     return (isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
             isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()) &&

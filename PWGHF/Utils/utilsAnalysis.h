@@ -69,10 +69,10 @@ bool isSelectedTrackDca(T1 const& binsPt, T2 const& cuts, const float pt, const 
 /// Single-track cut on ITS track properties
 /// \param track track that has to satisfy the selection criteria
 /// \return true if track passes all cuts
-template <typename Track>
-bool isItsQualityCuts(Track const& track, int itsNClsFoundMin, float itsChi2PerClusterMax)
+template <typename T>
+bool isSelectedTrackItsQuality(T const& track, int itsNClustersFoundMin, float itsChi2PerClusterMax)
 {
-  if (track.itsNCls() < itsNClsFoundMin) {
+  if (track.itsNCls() < itsNClustersFoundMin) {
     return false;
   }
   if (track.itsChi2NCl() > itsChi2PerClusterMax) {
@@ -84,10 +84,10 @@ bool isItsQualityCuts(Track const& track, int itsNClsFoundMin, float itsChi2PerC
 /// Single-track cut on TPC track properties
 /// \param track track that has to satisfy the selection criteria
 /// \return true if track passes all cuts
-template <typename Track>
-bool isTpcQualityCuts(Track const& track, int tpcNClsFoundMin, int tpcNCrossedRowsMin, float tpcNCrossedRowsOverFindableClustersMin, float tpcChi2PerClusterMax)
+template <typename T>
+bool isSelectedTrackTpcQuality(T const& track, int tpcNClustersFoundMin, int tpcNCrossedRowsMin, float tpcNCrossedRowsOverFindableClustersMin, float tpcChi2PerClusterMax)
 {
-  if (track.tpcNClsFound() < tpcNClsFoundMin) {
+  if (track.tpcNClsFound() < tpcNClustersFoundMin) {
     return false;
   }
   if (track.tpcNClsCrossedRows() < tpcNCrossedRowsMin) {

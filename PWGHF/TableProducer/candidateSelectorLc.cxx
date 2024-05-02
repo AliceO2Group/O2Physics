@@ -58,11 +58,11 @@ struct HfCandidateSelectorLc {
   // Combined PID options
   Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Bool to decide how to combine TPC and TOF PID: true = both (if present, only one otherwise); false = one is enough"};
   // Single track cuts
-  Configurable<int> tpcNClsFoundMin{"tpcNClsFoundMin", 0, "min number of found TPC clusters"};
+  Configurable<int> tpcNClustersFoundMin{"tpcNClustersFoundMin", 0, "min number of found TPC clusters"};
   Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 0, "min number of crossed rows in TPC"};
   Configurable<float> tpcNCrossedRowsOverFindableClustersMin{"tpcNCrossedRowsOverFindableClustersMin", 0., "min ratio crossed rows / findable clusters"};
   Configurable<float> tpcChi2PerClusterMax{"tpcChi2PerClusterMax", 1e10f, "max tpc fit chi2 per TPC cluster"};
-  Configurable<int> itsNClsFoundMin{"itsNClsFoundMin", 0, "min. number of found ITS clusters"};
+  Configurable<int> itsNClustersFoundMin{"itsNClustersFoundMin", 0, "min. number of found ITS clusters"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 1e10f, "max its fit chi2 per ITS cluster"};
   // DCA track cuts
   Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA XY/Z pT-dependent cut"};
@@ -145,16 +145,16 @@ struct HfCandidateSelectorLc {
   /// \param track is track
   /// \return true if track passes all cuts
   template <typename T>
-  bool selectionTrackQuality(const T& trackPos1, const T& trackNeg, const T& trackPos2, int tpcNClsFoundMin, int tpcNCrossedRowsMin, float tpcNCrossedRowsOverFindableClustersMin, float tpcChi2PerClusterMax, int itsNClsFoundMin, float itsChi2PerClusterMax)
+  bool isSelectedCandidateProngQuality(const T& trackPos1, const T& trackNeg, const T& trackPos2, int tpcNClustersFoundMin, int tpcNCrossedRowsMin, float tpcNCrossedRowsOverFindableClustersMin, float tpcChi2PerClusterMax, int itsNClustersFoundMin, float itsChi2PerClusterMax)
   {
-    if (!isTpcQualityCuts(trackPos1, tpcNClsFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax) &&
-        !isTpcQualityCuts(trackNeg, tpcNClsFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax) &&
-        !isTpcQualityCuts(trackPos2, tpcNClsFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax)) {
+    if (!isSelectedTrackTpcQuality(trackPos1, tpcNClustersFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax) &&
+        !isSelectedTrackTpcQuality(trackNeg, tpcNClustersFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax) &&
+        !isSelectedTrackTpcQuality(trackPos2, tpcNClustersFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax)) {
       return false;
     }
-    if (!isItsQualityCuts(trackPos1, itsNClsFoundMin, itsChi2PerClusterMax) &&
-        !isItsQualityCuts(trackNeg, itsNClsFoundMin, itsChi2PerClusterMax) &&
-        !isItsQualityCuts(trackPos2, itsNClsFoundMin, itsChi2PerClusterMax)) {
+    if (!isSelectedTrackItsQuality(trackPos1, itsNClustersFoundMin, itsChi2PerClusterMax) ||
+        !isSelectedTrackItsQuality(trackNeg, itsNClustersFoundMin, itsChi2PerClusterMax) ||
+        !isSelectedTrackItsQuality(trackPos2, itsNClustersFoundMin, itsChi2PerClusterMax)) {
       return false;
     }
     return true;
@@ -192,7 +192,7 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
-    if (!isSelectedCandidateDca(candidate)) {
+    if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }
 
@@ -237,7 +237,7 @@ struct HfCandidateSelectorLc {
   /// \param candidate is the Lc candidate
   /// \return true if all the prongs pass the selections
   template <typename T1>
-  bool isSelectedCandidateDca(const T1& candidate)
+  bool isSelectedCandidateProngDca(const T1& candidate)
   {
     return (isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
             isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()) &&
@@ -245,16 +245,15 @@ struct HfCandidateSelectorLc {
   }
 
   /// Apply PID selection
-  /// \param pidTrackPos1 is the PID status of trackPos1 (prong0 of Lc candidate)
-  /// \param pidTrackNeg is the PID status of trackNeg (prong1 of Lc candidate)
-  /// \param pidTrackPos2 is the PID status of trackPos2 (prong2 of Lc candidate)
+  /// \param pidTrackProton is the PID status of proton candidate track
+  /// \param pidTrackKaon is the PID status of kaon candidate track
+  /// \param pidTrackPion is the PID status of pion candidate track
   /// \return true if prongs pass all selections
-  template <typename T = int>
-  bool isSelectedPID(const T& pidTrackPos1, const T& pidTrackNeg, const T& pidTrackPos2)
+  bool isSelectedPID(const TrackSelectorPID::Status pidTrackProton, const TrackSelectorPID::Status pidTrackKaon, const TrackSelectorPID::Status pidTrackPion)
   {
-    if (pidTrackPos1 == TrackSelectorPID::Rejected ||
-        pidTrackNeg == TrackSelectorPID::Rejected ||
-        pidTrackPos2 == TrackSelectorPID::Rejected) {
+    if (pidTrackProton == TrackSelectorPID::Rejected ||
+        pidTrackKaon == TrackSelectorPID::Rejected ||
+        pidTrackPion == TrackSelectorPID::Rejected) {
       return false;
     }
     return true;
@@ -297,7 +296,7 @@ struct HfCandidateSelectorLc {
       // implement filter bit 4 cut - should be done before this task at the track selection level
 
       // track quality selection
-      bool trackQualitySel = selectionTrackQuality(trackPos1, trackNeg, trackPos2, tpcNClsFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax, itsNClsFoundMin, itsChi2PerClusterMax);
+      bool trackQualitySel = isSelectedCandidateProngQuality(trackPos1, trackNeg, trackPos2, tpcNClustersFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax, itsNClustersFoundMin, itsChi2PerClusterMax);
       if (!trackQualitySel) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         if (applyMl) {
@@ -342,11 +341,11 @@ struct HfCandidateSelectorLc {
         pidLcToPiKP = 1;
       } else {
         // track-level PID selection
-        int pidTrackPos1Proton = 999;
-        int pidTrackPos2Proton = 999;
-        int pidTrackPos1Pion = 999;
-        int pidTrackPos2Pion = 999;
-        int pidTrackNegKaon = 999;
+        TrackSelectorPID::Status pidTrackPos1Proton = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos2Proton = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos1Pion = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackPos2Pion = TrackSelectorPID::Accepted;
+        TrackSelectorPID::Status pidTrackNegKaon = TrackSelectorPID::Accepted;
         if (usePidTpcAndTof) {
           pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1);
           pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2);
@@ -378,11 +377,11 @@ struct HfCandidateSelectorLc {
         pidBayesLcToPKPi = 1;
         pidBayesLcToPiKP = 1;
       } else {
-        int pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
-        int pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
-        int pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
-        int pidBayesTrackPos2Pion = selectorPion.statusBayes(trackPos2);
-        int pidBayesTrackNegKaon = selectorKaon.statusBayes(trackNeg);
+        TrackSelectorPID::Status pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
+        TrackSelectorPID::Status pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
+        TrackSelectorPID::Status pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
+        TrackSelectorPID::Status pidBayesTrackPos2Pion = selectorPion.statusBayes(trackPos2);
+        TrackSelectorPID::Status pidBayesTrackNegKaon = selectorKaon.statusBayes(trackNeg);
 
         if (isSelectedPID(pidBayesTrackPos1Proton, pidBayesTrackNegKaon, pidBayesTrackPos2Pion)) {
           pidBayesLcToPKPi = 1; // accept LcToPKPi

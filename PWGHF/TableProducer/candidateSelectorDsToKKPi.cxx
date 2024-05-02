@@ -126,7 +126,7 @@ struct HfCandidateSelectorDsToKKPi {
   /// \param candidate is the Ds candidate
   /// \return true if all the prongs pass the selections
   template <typename T1>
-  bool isSelectedCandidateDca(const T1& candidate)
+  bool isSelectedCandidateProngDca(const T1& candidate)
   {
     if (isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
         isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()) &&
@@ -169,7 +169,7 @@ struct HfCandidateSelectorDsToKKPi {
     if (candidate.chi2PCA() > cuts->get(pTBin, "chi2PCA")) {
       return false;
     }
-    if (!isSelectedCandidateDca(candidate)) {
+    if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }
     return true;
