@@ -330,7 +330,7 @@ struct HfCandidateSelectorLc {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoTopol, candidate.pt());
       }
 
-      // PID not applied
+      // PID not applied, accepted by default
       auto pidLcToPKPi = 1;
       auto pidLcToPiKP = 1;
       auto pidBayesLcToPKPi = 1;
@@ -357,14 +357,10 @@ struct HfCandidateSelectorLc {
           pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
         }
 
-        if (isSelectedPID(pidTrackPos1Proton, pidTrackNegKaon, pidTrackPos2Pion)) {
-          pidLcToPKPi = 1; // accept LcToPKPi
-        } else {
+        if (!isSelectedPID(pidTrackPos1Proton, pidTrackNegKaon, pidTrackPos2Pion)) {
           pidLcToPKPi = 0; // reject LcToPKPi
         }
-        if (isSelectedPID(pidTrackPos2Proton, pidTrackNegKaon, pidTrackPos1Pion)) {
-          pidLcToPiKP = 1; // accept LcToPiKP
-        } else {
+        if (!isSelectedPID(pidTrackPos2Proton, pidTrackNegKaon, pidTrackPos1Pion)) {
           pidLcToPiKP = 0; // accept LcToPiKP
         }
       }
@@ -376,15 +372,11 @@ struct HfCandidateSelectorLc {
         TrackSelectorPID::Status pidBayesTrackPos2Pion = selectorPion.statusBayes(trackPos2);
         TrackSelectorPID::Status pidBayesTrackNegKaon = selectorKaon.statusBayes(trackNeg);
 
-        if (isSelectedPID(pidBayesTrackPos1Proton, pidBayesTrackNegKaon, pidBayesTrackPos2Pion)) {
-          pidBayesLcToPKPi = 1; // accept LcToPKPi
-        } else {
+        if (!isSelectedPID(pidBayesTrackPos1Proton, pidBayesTrackNegKaon, pidBayesTrackPos2Pion)) {
           pidBayesLcToPKPi = 0; // reject LcToPKPi
         }
 
-        if (isSelectedPID(pidBayesTrackPos2Proton, pidBayesTrackNegKaon, pidBayesTrackPos1Pion)) {
-          pidBayesLcToPiKP = 1; // accept LcToPiKP
-        } else {
+        if (!isSelectedPID(pidBayesTrackPos2Proton, pidBayesTrackNegKaon, pidBayesTrackPos1Pion)) {
           pidBayesLcToPiKP = 0; // reject LcToPiKP
         }
       }
