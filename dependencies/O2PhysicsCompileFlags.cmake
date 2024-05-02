@@ -12,8 +12,8 @@
 include_guard()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-error")
-# Treat warnings as errors in CI tests.
-if(DEFINED ENV{ALIBUILD_O2PHYSICS_TESTS})
+# Treat warnings as errors.
+if(O2PHYSICS_WARNINGS_AS_ERRORS)
   # Set warnings for both gcc and clang.
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
 -Werror=NSObject-attribute \
