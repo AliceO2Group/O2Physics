@@ -624,7 +624,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("pionNegPID2")) {
     cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
-    cut->AddCut(GetAnalysisCut("nosTrack"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
     return cut;
   }
 
@@ -633,6 +633,19 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("primaryVertexContributor"));
     return cut;
   }
+
+  if (!nameStr.compare("protonPosPID")) {
+    cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("protonNegPID")) {
+    cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    return cut;
+  }
+
   // NOTE Below there are several TPC pid cuts used for studies of the Run3 TPC post PID calib.
   if (!nameStr.compare("Jpsi_TPCPost_calib_debug1")) {
     cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
@@ -2763,6 +2776,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairTauxyzProjected1")) {
+    cut->AddCut(GetAnalysisCut("pairTauxyzProjected1"));
+    return cut;
+  }
+
   // -------------------------------------------------------------------------------------------------
   //
   // Below are a list of single electron single muon and in order or optimize the trigger
@@ -4151,6 +4169,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("pionPID_TPCnTOF")) {
     cut->AddCut(VarManager::kTPCnSigmaPi, -3.0, 3.0);
     cut->AddCut(VarManager::kTOFnSigmaPi, -3.0, 3.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("protonPID_TPCnTOF")) {
+    cut->AddCut(VarManager::kTPCnSigmaPr, -3.0, 3.0);
+    cut->AddCut(VarManager::kTOFnSigmaPr, -3.0, 3.0);
     return cut;
   }
 

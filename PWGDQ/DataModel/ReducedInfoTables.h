@@ -569,6 +569,7 @@ DECLARE_SOA_COLUMN(Eta, eta, float);                                     //!
 DECLARE_SOA_COLUMN(Phi, phi, float);                                     //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                                     //!
 DECLARE_SOA_BITMAP_COLUMN(FilterMap, filterMap, 32);                     //!
+DECLARE_SOA_BITMAP_COLUMN(PairFilterMap, pairFilterMap, 32);             //!
 DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                    //!
 DECLARE_SOA_COLUMN(Tauz, tauz, float);                                   //! Longitudinal pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);                             //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
@@ -739,6 +740,24 @@ using DileptonFlow = DileptonsFlow::iterator;
 using DileptonInfo = DileptonsInfo::iterator;
 using DielectronAll = DielectronsAll::iterator;
 using DimuonAll = DimuonsAll::iterator;
+
+// Tables for using analysis-dilepton-track with analysis-asymmetric-pairing
+DECLARE_SOA_TABLE_FULL(Ditracks, "Ditracks", "AOD", "RTDITRACK", //!
+                       o2::soa::Index<>, reducedpair::ReducedEventId,
+                       reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                       reducedpair::FilterMap, reducedpair::PairFilterMap,
+                       reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                       reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
+                       reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
+                       reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
+                       reducedpair::P<reducedpair::Pt, reducedpair::Eta>);
+
+DECLARE_SOA_TABLE(DitracksExtra, "AOD", "RTDITRKEXTRA", //!
+                  reducedpair::Index0Id, reducedpair::Index1Id,
+                  reducedpair::Tauz,
+                  reducedpair::Lz,
+                  reducedpair::Lxy,
+                  o2::soa::Marker<1>);
 
 // mft PID reduced data model
 namespace fwdpid
