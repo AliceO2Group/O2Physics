@@ -134,19 +134,20 @@ class SGSelector
     } else if (gap == 2) {
       if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut))
         true_gap = -1;
-      else if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut)&&(FT0C <= fit_cut[2] && ZNC <= zdc_cut))
+      else if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C <= fit_cut[2] && ZNC <= zdc_cut))
         true_gap = 1;
-      else if ((FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut)&&(FT0C > fit_cut[2] || ZNC > zdc_cut))
+      else if ((FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut))
         true_gap = 0;
       else if (FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut && FT0C <= fit_cut[2] && ZNC <= zdc_cut)
         true_gap = 2;
       else {
-	      std::cout<<"Something wrong with DG"<<"\t";
-	      std::cout<<FV0A<<"\t";
-	      std::cout<<FT0A<<"\t";
-	      std::cout<<FT0C<<"\t";
-	      std::cout<<ZNA<<"\t";
-	      std::cout<<ZNC<<std::endl;
+        std::cout << "Something wrong with DG"
+                  << "\t";
+        std::cout << FV0A << "\t";
+        std::cout << FT0A << "\t";
+        std::cout << FT0C << "\t";
+        std::cout << ZNA << "\t";
+        std::cout << ZNC << std::endl;
       }
     }
     return true_gap;
