@@ -17,7 +17,6 @@
 // The skimming can optionally produce just the barrel, muon, or both barrel and muon tracks
 // The event filtering, centrality, and V0Bits (from v0-selector) can be switched on/off by selecting one
 //  of the process functions
-#include <iostream>
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -55,9 +54,6 @@
 #include "TGeoGlobalMagField.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
-
-using std::cout;
-using std::endl;
 
 using namespace o2;
 using namespace o2::framework;
@@ -393,7 +389,7 @@ struct TableMaker {
     fStatsList.setObject(new TList());
     fStatsList->SetOwner(kTRUE);
     std::vector<TString> eventLabels{"BCs", "Collisions before filtering", "Before cuts", "After cuts"};
-    TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, o2::aod::evsel::kNsel + 1, -0.5, double(o2::aod::evsel::kNsel) + 0.5);
+    TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, o2::aod::evsel::kNsel + 1, -0.5, static_cast<double>(o2::aod::evsel::kNsel) + 0.5);
     int ib = 1;
     for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ib++) {
       histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());
