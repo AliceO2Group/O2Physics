@@ -18,6 +18,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "TH1F.h"
@@ -57,6 +58,10 @@ struct centralityStudy {
   ConfigurableAxis axisMultITSOnly{"axisMultITSOnly", {200, 0, 6000}, "Number of ITS only tracks"};
   ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
 
+  // For centrality studies if requested
+  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile"};
+  ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
+
   void init(InitContext&)
   {
     if (doprocessCollisions) {
@@ -86,10 +91,22 @@ struct centralityStudy {
       histos.add("hFT0CvsNContribs", "hFT0CvsNContribs", kTH2F, {axisMultPVContributors, axisMultFT0C});
       histos.add("hMatchedVsITSOnly", "hMatchedVsITSOnly", kTH2F, {axisMultITSOnly, axisMultITSTPC});
     }
+
+    if (doprocessCollisionsWithCentrality) {
+      // in case requested: do vs centrality debugging
+      histos.add("hNContribsVsCentrality", "hNContribsVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
+      histos.add("hNITSTPCTracksVsCentrality", "hNITSTPCTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
+      histos.add("hNITSOnlyTracksVsCentrality", "hNITSOnlyTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
+      histos.add("hNGlobalTracksVsCentrality", "hNGlobalTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
+      histos.add("hPVChi2VsCentrality", "hPVChi2VsCentrality", kTH2F, {axisCentrality, axisPVChi2});
+    }
   }
 
-  void processCollisions(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections>::iterator const& collision)
+  template <typename TCollision>
+  void genericProcessCollision(TCollision collision)
+  // process this collisions
   {
+
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
     if (applySel8 && !collision.multSel8())
       return;
@@ -143,6 +160,27 @@ struct centralityStudy {
       histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C());
       histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
     }
+
+    // if the table has centrality information
+    if constexpr (requires { collision.centFT0C(); }) {
+      // process FT0C centrality plots
+      histos.fill(HIST("hNContribsVsCentrality"), collision.centFT0C(), collision.multPVTotalContributors());
+      histos.fill(HIST("hNITSTPCTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
+      histos.fill(HIST("hNITSOnlyTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
+      histos.fill(HIST("hNGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
+      histos.fill(HIST("hPVChi2VsCentrality"), collision.centFT0C(), collision.multPVChi2());
+
+    }
+  }
+
+  void processCollisions(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections>::iterator const& collision)
+  {
+    genericProcessCollision(collision);
+  }
+
+  void processCollisionsWithCentrality(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>::iterator const& collision)
+  {
+    genericProcessCollision(collision);
   }
 
   void processBCs(aod::MultsBC::iterator const& multbc)
@@ -165,6 +203,7 @@ struct centralityStudy {
   }
 
   PROCESS_SWITCH(centralityStudy, processCollisions, "per-collision analysis", true);
+  PROCESS_SWITCH(centralityStudy, processCollisionsWithCentrality, "per-collision analysis", true);
   PROCESS_SWITCH(centralityStudy, processBCs, "per-BC analysis", true);
 };
 
