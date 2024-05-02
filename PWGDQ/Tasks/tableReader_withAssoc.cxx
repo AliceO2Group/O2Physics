@@ -17,9 +17,6 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/Configurable.h>
-#include <Framework/OutputObjHeader.h>
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
@@ -27,6 +24,9 @@
 #include <TString.h>
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "Framework/AnalysisHelpers.h"
+#include "Framework/Configurable.h"
+#include "Framework/OutputObjHeader.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
