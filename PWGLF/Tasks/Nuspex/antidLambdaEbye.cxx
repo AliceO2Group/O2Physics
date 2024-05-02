@@ -748,13 +748,13 @@ struct antidLambdaEbye {
       }
 
       float dcaV0Pv = CalculateDCAStraightToPV(
-      vtx[0], vtx[1], vtx[2],
-      momPos[0] + momNeg[0],
-      momPos[1] + momNeg[1],
-      momPos[2] + momNeg[2],
-      collision.posX(), collision.posY(), collision.posZ());
+        vtx[0], vtx[1], vtx[2],
+        momPos[0] + momNeg[0],
+        momPos[1] + momNeg[1],
+        momPos[2] + momNeg[2],
+        collision.posX(), collision.posY(), collision.posZ());
       histos.fill(HIST("QA/dcaV0PvBeforeCut"), dcaV0Pv);
-      if (std::abs(dcaV0Pv) >  v0setting_dcav0pv) {
+      if (std::abs(dcaV0Pv) > v0setting_dcav0pv) {
         continue;
       }
 
