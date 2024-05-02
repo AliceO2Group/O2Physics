@@ -962,14 +962,14 @@ struct EventSelectionQaTask {
       }
 
       // find for each collision all collisions within the defined time window
-      std::vector<std::vector<int>> vPerTimCol;
+      std::vector<std::vector<int>> vCollsInTimeWin;
       for (auto& col : cols) {
         int32_t colIndex = col.globalIndex();
         std::vector<int> vAssocToThisCol;
 
         // protection against the TF borders
         if (!vIsFullInfoForOccupancy[colIndex]) {
-          vPerTimCol.push_back(vAssocToThisCol);
+          vCollsInTimeWin.push_back(vAssocToThisCol);
           continue;
         }
 
@@ -1017,7 +1017,7 @@ struct EventSelectionQaTask {
           maxColIndex++;
         }
 
-        vPerTimCol.push_back(vAssocToThisCol);
+        vCollsInTimeWin.push_back(vAssocToThisCol);
       }
 
       // perform the occupancy calculation in the pre-defined time window
@@ -1029,7 +1029,7 @@ struct EventSelectionQaTask {
         if (!vIsFullInfoForOccupancy[colIndex])
           continue;
 
-        std::vector<int> vAssocToThisCol = vPerTimCol[colIndex];
+        std::vector<int> vAssocToThisCol = vCollsInTimeWin[colIndex];
         LOGP(debug, "  >> vAssocToThisCol.size={}", vAssocToThisCol.size());
 
         int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
