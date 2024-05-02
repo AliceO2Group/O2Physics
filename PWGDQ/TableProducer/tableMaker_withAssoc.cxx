@@ -154,10 +154,6 @@ struct TableMaker {
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
 
-  // DEBUG
-  OutputObj<TH1I> fHasZdc{TH1I("hasZDC", "", 2, -0.5, 1.5)};
-  OutputObj<TH1F> fZdcEnergyCommonZNA{TH1F("energyCommonZNA", "", 1000, 0., 200.)};
-
   HistogramManager* fHistMan;
 
   // Event and track AnalysisCut configurables
@@ -496,12 +492,9 @@ struct TableMaker {
       VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
       if constexpr ((TEventFillMap & VarManager::ObjTypes::Zdc) > 0) {
         if (bcEvSel.has_zdc()) {
-          // DEBUG histogram
-          fHasZdc->Fill(1);
           auto bc_zdc = bcEvSel.zdc();
           VarManager::FillZDC(bc_zdc);
           energyCommonZNA = bc_zdc.energyCommonZNA();
-          fZdcEnergyCommonZNA->Fill(energyCommonZNA);
           energyCommonZNC = bc_zdc.energyCommonZNC();
           energyCommonZPA = bc_zdc.energyCommonZPA();
           energyCommonZPC = bc_zdc.energyCommonZPC();
@@ -510,8 +503,6 @@ struct TableMaker {
           timeZPA = bc_zdc.timeZPA();
           timeZPC = bc_zdc.timeZPC();
         } else {
-          // DEBUG histogram
-          fHasZdc->Fill(0);
           energyCommonZNA = -1.0;
           energyCommonZNC = -1.0;
           energyCommonZPA = -1.0;
