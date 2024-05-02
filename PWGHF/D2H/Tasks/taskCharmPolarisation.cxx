@@ -603,7 +603,8 @@ struct TaskPolarisationCharmHadrons {
   /// \param numPvContributors is the number of PV contributors
   /// \param nCands is the number of candidates associated to a collision
   /// \param nCandsInMass is the number of candidates in the signal mass region associated to a colslision
-  void fillMultHistos(int numPvContributors, int nCands, int nCandsInMass) {
+  void fillMultHistos(int numPvContributors, int nCands, int nCandsInMass)
+  {
     registry.fill(HIST("hNumPvContributorsAll"), numPvContributors);
     if (nCands > 0) {
       registry.fill(HIST("hNumPvContributorsCand"), numPvContributors);
@@ -627,7 +628,7 @@ struct TaskPolarisationCharmHadrons {
         return true;
       }
     }
-  
+
     return false;
   }
 
