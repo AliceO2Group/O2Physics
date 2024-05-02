@@ -543,6 +543,86 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
     return cut;
   }
+
+  if (!nameStr.compare("kaonPID4")) {
+    cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonPID5")) {
+    cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonPosPID4")) {
+    cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonPosPID5")) {
+    cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonNegPID4")) {
+    cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonNegPID5")) {
+    cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonPID4_PVC")) {
+    cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("primaryVertexContributor"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionPID")) {
+    cut->AddCut(GetAnalysisCut("pionPID_TPCnTOF"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionPID2")) {
+    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionPosPID")) {
+    cut->AddCut(GetAnalysisCut("pionPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionPosPID2")) {
+    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionNegPID")) {
+    cut->AddCut(GetAnalysisCut("pionPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionNegPID2")) {
+    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
+    cut->AddCut(GetAnalysisCut("nosTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionPID_PVC")) {
+    cut->AddCut(GetAnalysisCut("pionPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("primaryVertexContributor"));
+    return cut;
+  }
   // NOTE Below there are several TPC pid cuts used for studies of the Run3 TPC post PID calib.
   if (!nameStr.compare("Jpsi_TPCPost_calib_debug1")) {
     cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
@@ -2269,6 +2349,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairPtLow5")) {
+    cut->AddCut(GetAnalysisCut("pairPtLow5"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairMassLow3")) {
     cut->AddCut(GetAnalysisCut("pairMassLow3"));
     return cut;
@@ -2553,6 +2638,24 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("pairCoherentRho0")) {
     cut->AddCut(GetAnalysisCut("pairPtLow3"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairD0HighPt1")) {
+    cut->AddCut(GetAnalysisCut("pairLxyzProjected3sigma"));
+    cut->AddCut(GetAnalysisCut("pairPtLow5"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairD0HighPt2")) {
+    cut->AddCut(GetAnalysisCut("pairTauxyzProjected1"));
+    cut->AddCut(GetAnalysisCut("pairPtLow5"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairD0HighPt3")) {
+    cut->AddCut(GetAnalysisCut("pairTauxyzProjected1sigma"));
+    cut->AddCut(GetAnalysisCut("pairPtLow5"));
     return cut;
   }
 
@@ -3920,6 +4023,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pionPID_TPCnTOF")) {
+    cut->AddCut(VarManager::kTPCnSigmaPi, -3.0, 3.0);
+    cut->AddCut(VarManager::kTOFnSigmaPi, -3.0, 3.0);
+    return cut;
+  }
+
   if (!nameStr.compare("tpc_pion_rejection")) {
     TF1* f1maxPi = new TF1("f1maxPi", "[0]+[1]*x", 0, 10);
     f1maxPi->SetParameters(85, -50);
@@ -4676,6 +4785,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairPtLow5")) {
+    cut->AddCut(VarManager::kPt, 0.8, 1000.0);
+    return cut;
+  }
+
   if (!nameStr.compare("pairRapidityForward")) {
     cut->AddCut(VarManager::kRap, 2.5, 4.0);
     return cut;
@@ -4708,6 +4822,21 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("excludePairLowMass")) {
     cut->AddCut(VarManager::kMass, 0., 0.1, true);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairLxyzProjected3sigma")) {
+    cut->AddCut(VarManager::kVertexingLxyzProjected, 0.015, 10.);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairTauxyzProjected1")) {
+    cut->AddCut(VarManager::kVertexingTauxyzProjected, 0.0005, 10.);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairTauxyzProjected1sigma")) {
+    cut->AddCut(VarManager::kVertexingTauxyzProjected, 0.003, 10.);
     return cut;
   }
 

@@ -95,6 +95,8 @@ class VarManager : public TObject
     CollisionQvect = BIT(13),
     ReducedEventQvectorExtra = BIT(14),
     ReducedEventRefFlow = BIT(15),
+    Zdc = BIT(16),
+    ReducedZdc = BIT(17),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -134,6 +136,7 @@ class VarManager : public TObject
     kXtoJpsiPiPi,               // e.g. X(3872)      -> J/psi pi+ pi-
     kChictoJpsiEE,              // e.g. Chi_c1      -> J/psi e+ e-
     kTripleCandidateToEEPhoton, // e.g. chi_c   -> e+ e- photon or pi0 -> e+ e- photon
+    kDecayToKPi,                // e.g. D0           -> K+ pi- or cc.
     kNMaxCandidateTypes
   };
 
@@ -301,6 +304,14 @@ class VarManager : public TObject
     kTwoEvDeltaX, // distance in x between collisions
     kTwoEvDeltaY, // distance in y between collisions
     kTwoEvDeltaR, // distance in (x,y) plane between collisions
+    kEnergyCommonZNA,
+    kEnergyCommonZNC,
+    kEnergyCommonZPA,
+    kEnergyCommonZPC,
+    kTimeZNA,
+    kTimeZNC,
+    kTimeZPA,
+    kTimeZPC,
     kNEventWiseVariables,
     kQ2X0A1,
     kQ2X0A2,
@@ -501,6 +512,7 @@ class VarManager : public TObject
     kVertexingTauzProjected,
     kVertexingTauxyProjected,
     kVertexingTauxyProjectedNs,
+    kVertexingTauxyzProjected,
     kVertexingTauz,
     kVertexingTauzErr,
     kVertexingPz,
@@ -849,6 +861,8 @@ class VarManager : public TObject
   static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int candidateType, typename T1, typename T2, typename T3>
   static void FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T3 const& hadron2, float* values = nullptr);
+  template <typename T>
+  static void FillZDC(const T& zdc, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
@@ -1444,6 +1458,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kIsSingleGapA] = (event.eventFilter() & (uint64_t(1) << kSingleGapA)) > 0;
     values[kIsSingleGapC] = (event.eventFilter() & (uint64_t(1) << kSingleGapC)) > 0;
     values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
+  }
+
+  if constexpr ((fillMap & ReducedZdc) > 0) {
+    FillZDC(event, values);
   }
 
   FillEventDerived(values);
@@ -2126,6 +2144,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassPionCharged;
   }
 
+  if constexpr (pairType == kDecayToKPi) {
+    m1 = o2::constants::physics::MassKaonCharged;
+    m2 = o2::constants::physics::MassPionCharged;
+  }
+
   if constexpr (pairType == kElectronMuon) {
     m2 = o2::constants::physics::MassMuon;
   }
@@ -2408,6 +2431,10 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   }
   float m1 = o2::constants::physics::MassElectron;
   float m2 = o2::constants::physics::MassElectron;
+  if constexpr (pairType == kDecayToKPi) {
+    m1 = o2::constants::physics::MassKaonCharged;
+    m2 = o2::constants::physics::MassPionCharged;
+  }
   if constexpr (pairType == kDecayToMuMu && muonHasCov) {
     m1 = o2::constants::physics::MassMuon;
     m2 = o2::constants::physics::MassMuon;
@@ -2424,7 +2451,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     // auto pars1 = getTrackParCov(t1);
     // auto pars2 = getTrackParCov(t2);
     // We need to hide the cov data members from the cases when no cov table is provided
-    if constexpr ((pairType == kDecayToEE) && trackHasCov) {
+    if constexpr ((pairType == kDecayToEE || pairType == kDecayToKPi) && trackHasCov) {
       std::array<float, 5> t1pars = {t1.y(), t1.z(), t1.snp(), t1.tgl(), t1.signed1Pt()};
       std::array<float, 15> t1covs = {t1.cYY(), t1.cZY(), t1.cZZ(), t1.cSnpY(), t1.cSnpZ(),
                                       t1.cSnpSnp(), t1.cTglY(), t1.cTglZ(), t1.cTglSnp(), t1.cTglTgl(),
@@ -2490,7 +2517,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       // auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
 
-      if constexpr (pairType == kDecayToEE && trackHasCov) {
+      if constexpr ((pairType == kDecayToEE || pairType == kDecayToKPi) && trackHasCov) {
         secondaryVertex = fgFitterTwoProngBarrel.getPCACandidate();
         covMatrixPCA = fgFitterTwoProngBarrel.calcPCACovMatrixFlat();
         auto chi2PCA = fgFitterTwoProngBarrel.getChi2AtPCACandidate();
@@ -2560,12 +2587,13 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.P());
       values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
       values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / (v12.P());
+      values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v12.M() / (v12.P());
     }
   } else {
     KFParticle trk0KF;
     KFParticle trk1KF;
     KFParticle KFGeoTwoProng;
-    if constexpr ((pairType == kDecayToEE) && trackHasCov) {
+    if constexpr ((pairType == kDecayToEE || pairType == kDecayToKPi) && trackHasCov) {
       KFPTrack kfpTrack0 = createKFPTrackFromTrack(t1);
       trk0KF = KFParticle(kfpTrack0, -11 * t1.sign());
       KFPTrack kfpTrack1 = createKFPTrackFromTrack(t2);
@@ -3282,6 +3310,23 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kCORR2POI] = (P2 * conj(Q21)).real() / values[kM01POI];
     values[kCORR4POI] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POI];
   }
+}
+
+template <typename T>
+void VarManager::FillZDC(T const& zdc, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  values[kEnergyCommonZNA] = zdc.energyCommonZNA();
+  values[kEnergyCommonZNC] = zdc.energyCommonZNC();
+  values[kEnergyCommonZPA] = zdc.energyCommonZPA();
+  values[kEnergyCommonZPC] = zdc.energyCommonZPC();
+  values[kTimeZNA] = zdc.timeZNA();
+  values[kTimeZNC] = zdc.timeZNC();
+  values[kTimeZPA] = zdc.timeZPA();
+  values[kTimeZPC] = zdc.timeZPC();
 }
 
 template <typename T1, typename T2>
