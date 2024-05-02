@@ -62,6 +62,7 @@ struct HfCandidateSelectorLc {
   Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 0, "min number of crossed rows in TPC"};
   Configurable<float> tpcNCrossedRowsOverFindableClustersMin{"tpcNCrossedRowsOverFindableClustersMin", 0., "min ratio crossed rows / findable clusters"};
   Configurable<float> tpcChi2PerClusterMax{"tpcChi2PerClusterMax", 1e10f, "max tpc fit chi2 per TPC cluster"};
+  // ITS quality track cuts
   Configurable<int> itsNClustersFoundMin{"itsNClustersFoundMin", 0, "min. number of found ITS clusters"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 1e10f, "max its fit chi2 per ITS cluster"};
   // DCA track cuts
