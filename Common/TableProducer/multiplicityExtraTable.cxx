@@ -32,6 +32,7 @@ const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
 struct MultiplicityExtraTable {
   Produces<aod::MultsBC> multBC;
+  Produces<aod::MultNeighs> multNeigh;
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -50,7 +51,7 @@ struct MultiplicityExtraTable {
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-  void process(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&)
+  void processBCs(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&)
   {
     bool Tvx = false;
     bool isFV0OrA = false;
@@ -153,6 +154,33 @@ struct MultiplicityExtraTable {
 
     multBC(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
   }
+
+  void processCollisionNeighbors(aod::Collisions const& collisions)
+  {
+    std::vector<float> timeArray;
+    timeArray.resize(collisions.size(), 1e+3);
+
+    for (const auto& collision : collisions) {
+      timeArray[collision.globalIndex()] = collision.collisionTime(); 
+    }
+
+    float deltaPrevious = 1e+6, deltaPrePrevious = 1e+6; 
+    float deltaNext = 1e+6, deltaNeNext = 1e+6; 
+    for (const auto& collision : collisions) {
+      int ii = collision.globalIndex();
+
+      if(ii-1>=0) deltaPrevious = timeArray[ii]-timeArray[ii-1];
+      if(ii-2>=0) deltaPrePrevious = timeArray[ii]-timeArray[ii-2];
+      if(ii+1<collisions.size()) deltaNext = timeArray[ii+1]-timeArray[ii];
+      if(ii+2<collisions.size()) deltaNeNext = timeArray[ii+2]-timeArray[ii];
+
+      multNeigh(deltaPrePrevious, deltaPrevious, deltaNext, deltaNeNext);
+    }
+  }
+
+  // Process switches
+  PROCESS_SWITCH(MultiplicityExtraTable, processBCs, "Produce BC tables", true);
+  PROCESS_SWITCH(MultiplicityExtraTable, processCollisionNeighbors, "Produce neighbor timing tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

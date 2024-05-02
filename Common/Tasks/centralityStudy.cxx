@@ -46,6 +46,7 @@ struct centralityStudy {
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", true, "require events with at least one of vertex contributors matched to TOF"};
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", true, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
+  Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
 
   // Configurable Axes
   ConfigurableAxis axisMultFT0C{"axisMultFT0C", {2000, 0, 100000}, "FT0C amplitude"};
@@ -61,12 +62,13 @@ struct centralityStudy {
   // For centrality studies if requested
   ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile"};
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
+  ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
 
   void init(InitContext&)
   {
     if (doprocessCollisions) {
       const AxisSpec axisCollisions{100, -0.5f, 99.5f, "Number of collisions"};
-      histos.add("hCollisionSelection", "hCollisionSelection", kTH1D, {{10, -0.5f, +9.5f}});
+      histos.add("hCollisionSelection", "hCollisionSelection", kTH1D, {{20, -0.5f, +19.5f}});
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
@@ -77,6 +79,7 @@ struct centralityStudy {
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(11, "Neighbour rejection");
 
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
       histos.add("hNPVContributors", "hNPVContributors", kTH1D, {axisMultUltraFinePVContributors});
@@ -99,6 +102,7 @@ struct centralityStudy {
       histos.add("hNITSOnlyTracksVsCentrality", "hNITSOnlyTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hNGlobalTracksVsCentrality", "hNGlobalTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hPVChi2VsCentrality", "hPVChi2VsCentrality", kTH2F, {axisCentrality, axisPVChi2});
+      histos.add("hDeltaTimeVsCentrality", "hDeltaTimeVsCentrality", kTH2F, {axisCentrality, axisDeltaTime});
     }
   }
 
@@ -152,6 +156,19 @@ struct centralityStudy {
     }
     histos.fill(HIST("hCollisionSelection"), 9 /* Not at same bunch pile-up */);
 
+    //do this only if information is available
+    if constexpr (requires { collision.timeToNext(); }) {
+      float timeToNeighbour = TMath::Min(
+        std::abs(collision.timeToNext()),
+        std::abs(collision.timeToPrevious())
+        );
+      histos.fill(HIST("hDeltaTimeVsCentrality"), collision.centFT0C(), timeToNeighbour);
+      if(timeToNeighbour<minTimeDelta){
+        return;
+      }
+      histos.fill(HIST("hCollisionSelection"), 10 /* has suspicious neighbour */);
+    }
+
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
@@ -177,7 +194,7 @@ struct centralityStudy {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentrality(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>::iterator const& collision)
+  void processCollisionsWithCentrality(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs>::iterator const& collision)
   {
     genericProcessCollision(collision);
   }
