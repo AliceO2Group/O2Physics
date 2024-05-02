@@ -1748,9 +1748,9 @@ struct AnalysisAsymmetricPairing {
               } // end loop (pair cuts)
             }
           } // end loop (cuts)
-        } // end inner assoc loop (leg A)
-      } // end outer assoc loop (leg B)
-    } // end event loop
+        }   // end inner assoc loop (leg A)
+      }     // end outer assoc loop (leg B)
+    }       // end event loop
   }
 
   void processKaonPionSkimmed(MyEventsVtxCovZdcSelected const& events,

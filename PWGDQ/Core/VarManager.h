@@ -136,7 +136,7 @@ class VarManager : public TObject
     kXtoJpsiPiPi,               // e.g. X(3872)      -> J/psi pi+ pi-
     kChictoJpsiEE,              // e.g. Chi_c1      -> J/psi e+ e-
     kTripleCandidateToEEPhoton, // e.g. chi_c   -> e+ e- photon or pi0 -> e+ e- photon
-    kDecayToKPi,    // e.g. D0           -> K+ pi- or cc.
+    kDecayToKPi,                // e.g. D0           -> K+ pi- or cc.
     kNMaxCandidateTypes
   };
 
