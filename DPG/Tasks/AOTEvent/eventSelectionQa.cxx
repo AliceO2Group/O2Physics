@@ -43,9 +43,9 @@ struct EventSelectionQaTask {
   Configurable<bool> confFlagDoOccupancyStudy{"FlagDoOccupancyStudy", false, "0 - no, 1 - yes"};
   Configurable<float> confTimeIntervalForOccupancyCalculation{"TimeIntervalForOccupancyCalculation", 100, "Time interval for TPC occupancy calculation, us"};
   Configurable<float> confExclusionIntervalForOccupancyCalculation{"ExclusionIntervalForOccupancyCalculation", 0, "Exclusion time interval for TPC occupancy calculation, us"};
-  Configurable<float> confOccupancyHistCoeffNtracks{"OccupancyHistCoeffNtracks", 1., "Coefficient before max nTracks in occupancy histos"};
-  Configurable<float> confOccupancyHistCoeffNbins2D{"OccupancyHistCoeffNbins2D", 1., "Coefficient before nBins in occupancy 2D histos"};
-  Configurable<float> confOccupancyHistCoeffNbins3D{"OccupancyHistCoeffNbins3D", 1., "Coefficient before nBins in occupancy 3D histos"};
+  Configurable<float> confOccupancyHistCoeffNtracks{"OccupancyHistCoeffNtracks", 1., "Coefficient for max nTracks in occupancy histos"};
+  Configurable<float> confOccupancyHistCoeffNbins2D{"OccupancyHistCoeffNbins2D", 1., "Coefficient for nBins in occupancy 2D histos"};
+  Configurable<float> confOccupancyHistCoeffNbins3D{"OccupancyHistCoeffNbins3D", 1., "Coefficient for nBins in occupancy 3D histos"};
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
