@@ -42,7 +42,7 @@ using namespace o2::aod::photonpair;
 using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMMCEventLabels, aod::EMEventsBz>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -60,7 +60,9 @@ using MyEMCCluster = MyEMCClusters::iterator;
 struct Pi0EtaToGammaGammaMC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
   using MyMCElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronMCLabels, aod::EMPrimaryElectronsPrefilterBit>;
+  using MyMCElectron = MyMCElectrons::iterator;
   using MyMCMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMPrimaryMuonMCLabels, aod::EMPrimaryMuonsPrefilterBit>;
+  using MyMCMuon = MyMCMuons::iterator;
 
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
@@ -432,6 +434,7 @@ struct Pi0EtaToGammaGammaMC {
               if (!IsSelectedPair<pairtype>(g1, g2, cut, cut)) {
                 continue;
               }
+
               if (!paircut.IsSelected(g1, g2)) {
                 continue;
               }
@@ -511,9 +514,20 @@ struct Pi0EtaToGammaGammaMC {
           for (auto& cut2 : cuts2) {
             for (auto& paircut : paircuts) {
               for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_coll, photons2_coll))) {
-                if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
-                  continue;
+
+                if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == PairType::kPCMDalitzMuMu) { // check 4 legs
+                  auto pos2 = g2.template posTrack_as<MyMCElectrons>();
+                  auto ele2 = g2.template negTrack_as<MyMCElectrons>();
+                  std::tuple<MyMCElectron, MyMCElectron, float> pair2 = std::make_tuple(pos2, ele2, collision.bz());
+                  if (!IsSelectedPair<pairtype>(g1, pair2, cut1, cut2)) {
+                    continue;
+                  }
+                } else {
+                  if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+                    continue;
+                  }
                 }
+
                 if (!paircut.IsSelected(g1, g2)) {
                   continue;
                 }
