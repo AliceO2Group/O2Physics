@@ -1001,7 +1001,7 @@ struct TaskPolarisationCharmHadrons {
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarWithMl, "Process Dstar candidates with ML", false);
 
   // Dstar in MC with rectangular cuts
-  void processDstarMc(aod::McCollisions const& mcCollisions,
+  void processDstarMc(aod::McCollisions::iterator const&,
                       McParticlesDstarMatched const& mcParticles,
                       CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
                       FilteredCandDstarWSelFlagAndMc const& dstarCandidates)
@@ -1033,7 +1033,7 @@ struct TaskPolarisationCharmHadrons {
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarMc, "Process Dstar candidates in MC without ML", false);
 
   // Dstar in MC with ML cuts
-  void processDstarMcWithMl(aod::McCollisions const& mcCollisions,
+  void processDstarMcWithMl(aod::McCollisions::iterator const&,
                             McParticlesDstarMatched const& mcParticles,
                             CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
                             FilteredCandDstarWSelFlagAndMcAndMl const& dstarCandidates)
@@ -1121,7 +1121,7 @@ struct TaskPolarisationCharmHadrons {
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiWithMl, "Process Lc candidates with ML", false);
 
   // Lc->pKpi in MC with rectangular cuts
-  void processLcToPKPiMc(aod::McCollisions::iterator const& mcCollision,
+  void processLcToPKPiMc(aod::McCollisions::iterator const&,
                          McParticles3ProngMatched const& mcParticles,
                          CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
                          FilteredCandLcToPKPiWSelFlagAndMc const& lcCandidates)
@@ -1153,7 +1153,7 @@ struct TaskPolarisationCharmHadrons {
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiMc, "Process Lc candidates in MC without ML", false);
 
   // Lc->pKpi in MC with ML cuts
-  void processLcToPKPiMcWithMl(aod::McCollisions::iterator const& mcCollision,
+  void processLcToPKPiMcWithMl(aod::McCollisions::iterator const&,
                                McParticles3ProngMatched const& mcParticles,
                                CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroups
                                FilteredCandLcToPKPiWSelFlagAndMcAndMl const& lcCandidates)
