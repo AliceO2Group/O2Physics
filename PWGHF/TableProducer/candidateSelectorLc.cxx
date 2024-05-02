@@ -145,16 +145,16 @@ struct HfCandidateSelectorLc {
   /// \param track is track
   /// \return true if track passes all cuts
   template <typename T>
-  bool isSelectedCandidateProngQuality(const T& trackPos1, const T& trackNeg, const T& trackPos2, int tpcNClustersFoundMin, int tpcNCrossedRowsMin, float tpcNCrossedRowsOverFindableClustersMin, float tpcChi2PerClusterMax, int itsNClustersFoundMin, float itsChi2PerClusterMax)
+  bool isSelectedCandidateProngQuality(const T& trackPos1, const T& trackNeg, const T& trackPos2)
   {
-    if (!isSelectedTrackTpcQuality(trackPos1, tpcNClustersFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax) &&
-        !isSelectedTrackTpcQuality(trackNeg, tpcNClustersFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax) &&
-        !isSelectedTrackTpcQuality(trackPos2, tpcNClustersFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax)) {
+    if (!isSelectedTrackTpcQuality(trackPos1, tpcNClustersFoundMin.value, tpcNCrossedRowsMin.value, tpcNCrossedRowsOverFindableClustersMin.value, tpcChi2PerClusterMax.value) ||
+        !isSelectedTrackTpcQuality(trackNeg, tpcNClustersFoundMin.value, tpcNCrossedRowsMin.value, tpcNCrossedRowsOverFindableClustersMin.value, tpcChi2PerClusterMax.value) ||
+        !isSelectedTrackTpcQuality(trackPos2, tpcNClustersFoundMin.value, tpcNCrossedRowsMin.value, tpcNCrossedRowsOverFindableClustersMin.value, tpcChi2PerClusterMax.value)) {
       return false;
     }
-    if (!isSelectedTrackItsQuality(trackPos1, itsNClustersFoundMin, itsChi2PerClusterMax) ||
-        !isSelectedTrackItsQuality(trackNeg, itsNClustersFoundMin, itsChi2PerClusterMax) ||
-        !isSelectedTrackItsQuality(trackPos2, itsNClustersFoundMin, itsChi2PerClusterMax)) {
+    if (!isSelectedTrackItsQuality(trackPos1, itsNClustersFoundMin.value, itsChi2PerClusterMax.value) ||
+        !isSelectedTrackItsQuality(trackNeg, itsNClustersFoundMin.value, itsChi2PerClusterMax.value) ||
+        !isSelectedTrackItsQuality(trackPos2, itsNClustersFoundMin.value, itsChi2PerClusterMax.value)) {
       return false;
     }
     return true;
@@ -296,7 +296,7 @@ struct HfCandidateSelectorLc {
       // implement filter bit 4 cut - should be done before this task at the track selection level
 
       // track quality selection
-      bool trackQualitySel = isSelectedCandidateProngQuality(trackPos1, trackNeg, trackPos2, tpcNClustersFoundMin, tpcNCrossedRowsMin, tpcNCrossedRowsOverFindableClustersMin, tpcChi2PerClusterMax, itsNClustersFoundMin, itsChi2PerClusterMax);
+      bool trackQualitySel = isSelectedCandidateProngQuality(trackPos1, trackNeg, trackPos2);
       if (!trackQualitySel) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         if (applyMl) {
