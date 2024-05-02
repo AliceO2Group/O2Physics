@@ -2625,7 +2625,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("pairPtLow3"));
     return cut;
   }
-  
+
   if (!nameStr.compare("pairD0HighPt1")) {
     cut->AddCut(GetAnalysisCut("pairLxyzProjected3sigma"));
     cut->AddCut(GetAnalysisCut("pairPtLow5"));
