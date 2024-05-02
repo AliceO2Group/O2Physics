@@ -130,6 +130,7 @@ DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);                           //! D
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin for the MixedEvent
 DECLARE_SOA_COLUMN(TrackTPCNClsCrossedRows, trackTPCNClsCrossedRows, int); //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                              //! Used in MC-Rec, Ds Signal
+DECLARE_SOA_COLUMN(IsDecayChan, isDecayChan, bool);                        //! Used in MC-Rec, Ds decay channel check
 DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! Used in MC-Rec, Ds Prompt or Non-Prompt
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! Used in MC-Rec, primary associated particles
 } // namespace hf_correlation_ds_hadron
@@ -143,7 +144,8 @@ DECLARE_SOA_TABLE(DsHadronPair, "AOD", "DSHPAIR", //! Ds-Hadrons pairs Informati
 
 DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs Reconstructed Information
                   aod::hf_correlation_ds_hadron::MD,
-                  aod::hf_correlation_ds_hadron::IsSignal);
+                  aod::hf_correlation_ds_hadron::IsSignal,
+                  aod::hf_correlation_ds_hadron::IsDecayChan);
 
 DECLARE_SOA_TABLE(DsHadronGenInfo, "AOD", "DSHGENINFO", //! Ds-Hadrons pairs Generated Information
                   aod::hf_correlation_ds_hadron::IsPrompt,

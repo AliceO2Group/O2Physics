@@ -41,6 +41,7 @@
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetV0Utilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 
@@ -304,6 +305,12 @@ bool isDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
     }
   } else if constexpr (isBplusCandidate<U>()) {
     if (candidate.template prong0_as<o2::aod::HfCand2Prong>().template prong0_as<V>().globalIndex() == track.globalIndex() || candidate.template prong0_as<o2::aod::HfCand2Prong>().template prong1_as<V>().globalIndex() == track.globalIndex() || candidate.template prong1_as<V>().globalIndex() == track.globalIndex()) {
+      return true;
+    } else {
+      return false;
+    }
+  } else if constexpr (jetv0utilities::isV0Candidate<U>()) {
+    if (candidate.posTrackId() == track.globalIndex() || candidate.negTrackId() == track.globalIndex()) {
       return true;
     } else {
       return false;

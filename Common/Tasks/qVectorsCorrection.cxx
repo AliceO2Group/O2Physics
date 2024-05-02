@@ -36,12 +36,15 @@
 #include "Framework/StaticFor.h"
 
 #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/Core/EventPlaneHelper.h"
 
 // o2 includes.
 
 using namespace o2;
 using namespace o2::framework;
+
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
 
 struct qVectorsCorrection {
   // No correction = recenter, recentered Qvectors = twist, twisted Qvectors = rescale.
@@ -57,6 +60,7 @@ struct qVectorsCorrection {
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgRefAName{"cfgRefAName", "BPos", "The name of detector for reference A"};
   Configurable<std::string> cfgRefBName{"cfgRefBName", "BNeg", "The name of detector for reference B"};
+  Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "event selection"};
 
   ConfigurableAxis cfgaxisQvecF{"cfgaxisQvecF", {100, -1, 1}, ""};
   ConfigurableAxis cfgaxisQvec{"cfgaxisQvec", {100, -3, 3}, ""};
@@ -194,9 +198,16 @@ struct qVectorsCorrection {
     }
   }
 
-  void process(aod::Qvector const& qVec)
+  void process(MyCollisions::iterator const& qVec)
   {
     histosQA.fill(HIST("histCentFull"), qVec.cent());
+    if (cfgAddEvtSel && (!qVec.sel8() ||
+                         !qVec.selection_bit(aod::evsel::kNoTimeFrameBorder) ||
+                         !qVec.selection_bit(aod::evsel::kNoTimeFrameBorder) ||
+                         !qVec.selection_bit(aod::evsel::kNoITSROFrameBorder) ||
+                         !qVec.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
     fillHistosQvec(qVec);
   } // End void process(...)
 };

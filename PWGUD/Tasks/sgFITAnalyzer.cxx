@@ -341,7 +341,7 @@ struct SGFITAnalyzer { // UDTutorial01
     // int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
-    int truegapSide = sgSelector.trueGap(dgcand, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
+    int truegapSide = sgSelector.trueGap(dgcand, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     registry.get<TH1>(HIST("collisions/TrueGapSide"))->Fill(truegapSide, 1.);
     // select PV contributors
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
