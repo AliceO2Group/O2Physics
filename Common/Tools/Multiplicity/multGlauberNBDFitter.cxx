@@ -369,7 +369,7 @@ Double_t multGlauberNBDFitter::ContinuousNBD(Double_t n, Double_t mu, Double_t k
   return F;
 }
 
-void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F *hPercentileMap)
+void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap)
 {
   cout << "Calculating <Npart>, <Ncoll> in centrality bins..." << endl;
 
@@ -405,13 +405,13 @@ void multGlauberNBDFitter::CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCol
         lMult = fAncestorMode != 2 ? fNBD->Eval(lMultValue) : ContinuousNBD(lMultValue, lThisMu, lThisk);
       Double_t lProbability = lNancestorCount * lMult;
       Double_t lMultValueToFill = lMultValue;
-      if(hPercentileMap) 
+      if (hPercentileMap)
         lMultValueToFill = hPercentileMap->GetBinContent(hPercentileMap->FindBin(lMultValue));
       lNPartProf->Fill(lMultValueToFill, fNpart[ibin], lProbability);
       lNCollProf->Fill(lMultValueToFill, fNcoll[ibin], lProbability);
-      if(lNPart2DPlot) 
+      if (lNPart2DPlot)
         lNPart2DPlot->Fill(lMultValueToFill, fNpart[ibin], lProbability);
-      if(lNColl2DPlot) 
+      if (lNColl2DPlot)
         lNColl2DPlot->Fill(lMultValueToFill, fNcoll[ibin], lProbability);
     }
   }
