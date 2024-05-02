@@ -271,13 +271,13 @@ struct PidONNXModel {
       Ort::RunOptions runOptions;
       std::vector<const char*> inputNamesChar(mInputNames.size(), nullptr);
       std::transform(std::begin(mInputNames), std::end(mInputNames), std::begin(inputNamesChar),
-		     [&](const std::string& str) { return str.c_str(); });
+                     [&](const std::string& str) { return str.c_str(); });
 
       std::vector<const char*> outputNamesChar(mOutputNames.size(), nullptr);
       std::transform(std::begin(mOutputNames), std::end(mOutputNames), std::begin(outputNamesChar),
-		     [&](const std::string& str) { return str.c_str(); });
+                     [&](const std::string& str) { return str.c_str(); });
       auto outputTensors = mSession->Run(runOptions, inputNamesChar.data(), inputTensors.data(), inputTensors.size(), outputNamesChar.data(), outputNamesChar.size());
-#endif      
+#endif
 
       // Double-check the dimensions of the output tensors
       // The number of output tensors is equal to the number of output nodes specified in the Run() call

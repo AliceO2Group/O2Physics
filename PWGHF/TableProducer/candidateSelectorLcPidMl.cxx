@@ -127,10 +127,10 @@ struct HfCandidateSelectorLcPidMl {
         auto inputShapes = session->GetInputShapes();
 #else
         std::vector<std::vector<int64_t>> inputShapes;
-	Ort::AllocatorWithDefaultOptions tmpAllocator;
-	for (size_t i = 0; i < session->GetInputCount(); ++i) {
-	  inputShapes.emplace_back(session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
-	}
+        Ort::AllocatorWithDefaultOptions tmpAllocator;
+        for (size_t i = 0; i < session->GetInputCount(); ++i) {
+          inputShapes.emplace_back(session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
+        }
 #endif
         if (inputShapes[0][0] < 0) {
           LOGF(warning, "Model for Lc with negative input shape likely because converted with hummingbird, setting it to 1.");

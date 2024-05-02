@@ -164,19 +164,19 @@ struct mftmchMatchingML {
     output_names = onnx_session->GetOutputNames();
     output_shapes = onnx_session->GetOutputShapes();
 #else
-  Ort::AllocatorWithDefaultOptions tmpAllocator;
-  for (size_t i = 0; i < onnx_session->GetInputCount(); ++i) {
-    input_names.push_back(onnx_session->GetInputNameAllocated(i, tmpAllocator).get());
-  }
-  for (size_t i = 0; i < onnx_session->GetInputCount(); ++i) {
-    input_shapes.emplace_back(onnx_session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
-  }
-  for (size_t i = 0; i < onnx_session->GetOutputCount(); ++i) {
-    output_names.push_back(onnx_session->GetOutputNameAllocated(i, tmpAllocator).get());
-  }
-  for (size_t i = 0; i < onnx_session->GetOutputCount(); ++i) {
-    output_shapes.emplace_back(onnx_session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
-  }
+    Ort::AllocatorWithDefaultOptions tmpAllocator;
+    for (size_t i = 0; i < onnx_session->GetInputCount(); ++i) {
+      input_names.push_back(onnx_session->GetInputNameAllocated(i, tmpAllocator).get());
+    }
+    for (size_t i = 0; i < onnx_session->GetInputCount(); ++i) {
+      input_shapes.emplace_back(onnx_session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
+    }
+    for (size_t i = 0; i < onnx_session->GetOutputCount(); ++i) {
+      output_names.push_back(onnx_session->GetOutputNameAllocated(i, tmpAllocator).get());
+    }
+    for (size_t i = 0; i < onnx_session->GetOutputCount(); ++i) {
+      output_shapes.emplace_back(onnx_session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
+    }
 #endif
 
     auto input_shape = input_shapes[0];
@@ -193,17 +193,17 @@ struct mftmchMatchingML {
       std::vector<Ort::Value> output_tensors = onnx_session->Run(input_names, input_tensors, output_names);
 #else
       Ort::MemoryInfo mem_info =
-	Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+        Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
       input_tensors.push_back(Ort::Value::CreateTensor<float>(mem_info, input_tensor_values.data(), input_tensor_values.size(), input_shape.data(), input_shape.size()));
 
       Ort::RunOptions runOptions;
       std::vector<const char*> inputNamesChar(input_names.size(), nullptr);
       std::transform(std::begin(input_names), std::end(input_names), std::begin(inputNamesChar),
-		     [&](const std::string& str) { return str.c_str(); });
+                     [&](const std::string& str) { return str.c_str(); });
 
       std::vector<const char*> outputNamesChar(output_names.size(), nullptr);
       std::transform(std::begin(output_names), std::end(output_names), std::begin(outputNamesChar),
-		     [&](const std::string& str) { return str.c_str(); });
+                     [&](const std::string& str) { return str.c_str(); });
 
       std::vector<Ort::Value> output_tensors = onnx_session->Run(runOptions, inputNamesChar.data(), input_tensors.data(), input_tensors.size(), outputNamesChar.data(), outputNamesChar.size());
 #endif
