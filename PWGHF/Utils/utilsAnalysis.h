@@ -68,9 +68,11 @@ bool isSelectedTrackDca(T1 const& binsPt, T2 const& cuts, const float pt, const 
 
 /// Single-track cut on ITS track properties
 /// \param track track that has to satisfy the selection criteria
+/// \param itsNClustersFoundMin is the minimum number of ITS clusters
+/// \param itsChi2PerClusterMax is the maximum value of chi2 fit over ITS clusters
 /// \return true if track passes all cuts
 template <typename T>
-bool isSelectedTrackItsQuality(T const& track, int itsNClustersFoundMin, float itsChi2PerClusterMax)
+bool isSelectedTrackItsQuality(T const& track, const int itsNClustersFoundMin, const float itsChi2PerClusterMax)
 {
   if (track.itsNCls() < itsNClustersFoundMin) {
     return false;
@@ -83,9 +85,13 @@ bool isSelectedTrackItsQuality(T const& track, int itsNClustersFoundMin, float i
 
 /// Single-track cut on TPC track properties
 /// \param track track that has to satisfy the selection criteria
+/// \param tpcNClustersFoundMin is the minimum number of TPC clusters
+/// \param tpcNCrossedRowsMin is the minimum number of crossed TPC rows
+/// \param tpcNCrossedRowsOverFindableClustersMin is the minimum of TPC CrossedRows/FindableClusters value
+/// \param tpcChi2PerClusterMax is the maximum value of chi2 fit over TPC clusters
 /// \return true if track passes all cuts
 template <typename T>
-bool isSelectedTrackTpcQuality(T const& track, int tpcNClustersFoundMin, int tpcNCrossedRowsMin, float tpcNCrossedRowsOverFindableClustersMin, float tpcChi2PerClusterMax)
+bool isSelectedTrackTpcQuality(T const& track, const int tpcNClustersFoundMin, const int tpcNCrossedRowsMin, const float tpcNCrossedRowsOverFindableClustersMin, const float tpcChi2PerClusterMax)
 {
   if (track.tpcNClsFound() < tpcNClustersFoundMin) {
     return false;
