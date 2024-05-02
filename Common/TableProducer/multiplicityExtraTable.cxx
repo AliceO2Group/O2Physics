@@ -161,18 +161,22 @@ struct MultiplicityExtraTable {
     timeArray.resize(collisions.size(), 1e+3);
 
     for (const auto& collision : collisions) {
-      timeArray[collision.globalIndex()] = collision.collisionTime(); 
+      timeArray[collision.globalIndex()] = collision.collisionTime();
     }
 
-    float deltaPrevious = 1e+6, deltaPrePrevious = 1e+6; 
-    float deltaNext = 1e+6, deltaNeNext = 1e+6; 
+    float deltaPrevious = 1e+6, deltaPrePrevious = 1e+6;
+    float deltaNext = 1e+6, deltaNeNext = 1e+6;
     for (const auto& collision : collisions) {
       int ii = collision.globalIndex();
 
-      if(ii-1>=0) deltaPrevious = timeArray[ii]-timeArray[ii-1];
-      if(ii-2>=0) deltaPrePrevious = timeArray[ii]-timeArray[ii-2];
-      if(ii+1<collisions.size()) deltaNext = timeArray[ii+1]-timeArray[ii];
-      if(ii+2<collisions.size()) deltaNeNext = timeArray[ii+2]-timeArray[ii];
+      if (ii - 1 >= 0)
+        deltaPrevious = timeArray[ii] - timeArray[ii - 1];
+      if (ii - 2 >= 0)
+        deltaPrePrevious = timeArray[ii] - timeArray[ii - 2];
+      if (ii + 1 < collisions.size())
+        deltaNext = timeArray[ii + 1] - timeArray[ii];
+      if (ii + 2 < collisions.size())
+        deltaNeNext = timeArray[ii + 2] - timeArray[ii];
 
       multNeigh(deltaPrePrevious, deltaPrevious, deltaNext, deltaNeNext);
     }

@@ -77,9 +77,9 @@ DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
 
 // even further QA: timing information for neighboring events
 DECLARE_SOA_COLUMN(TimeToPrePrevious, timeToPrePrevious, float); //!
-DECLARE_SOA_COLUMN(TimeToPrevious, timeToPrevious, float); //!
-DECLARE_SOA_COLUMN(TimeToNext, timeToNext, float); //!
-DECLARE_SOA_COLUMN(TimeToNeNext, timeToNeNext, float); //!
+DECLARE_SOA_COLUMN(TimeToPrevious, timeToPrevious, float);       //!
+DECLARE_SOA_COLUMN(TimeToNext, timeToNext, float);               //!
+DECLARE_SOA_COLUMN(TimeToNeNext, timeToNeNext, float);           //!
 
 } // namespace mult
 DECLARE_SOA_TABLE(FV0Mults, "AOD", "FV0MULT", //! Multiplicity with the FV0 detector
@@ -116,7 +116,7 @@ DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::BCNumber);
 
 DECLARE_SOA_TABLE(MultNeighs, "AOD", "MULTNEIGH", //!
-                  mult::TimeToPrePrevious, mult::TimeToPrevious, 
+                  mult::TimeToPrePrevious, mult::TimeToPrevious,
                   mult::TimeToNext, mult::TimeToNeNext);
 
 // for QA purposes

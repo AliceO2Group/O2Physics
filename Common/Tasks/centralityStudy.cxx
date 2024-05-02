@@ -156,14 +156,13 @@ struct centralityStudy {
     }
     histos.fill(HIST("hCollisionSelection"), 9 /* Not at same bunch pile-up */);
 
-    //do this only if information is available
+    // do this only if information is available
     if constexpr (requires { collision.timeToNext(); }) {
       float timeToNeighbour = TMath::Min(
         std::abs(collision.timeToNext()),
-        std::abs(collision.timeToPrevious())
-        );
+        std::abs(collision.timeToPrevious()));
       histos.fill(HIST("hDeltaTimeVsCentrality"), collision.centFT0C(), timeToNeighbour);
-      if(timeToNeighbour<minTimeDelta){
+      if (timeToNeighbour < minTimeDelta) {
         return;
       }
       histos.fill(HIST("hCollisionSelection"), 10 /* has suspicious neighbour */);
