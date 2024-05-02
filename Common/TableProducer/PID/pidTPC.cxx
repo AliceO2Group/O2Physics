@@ -71,7 +71,7 @@ struct tpcPid {
   Produces<o2::aod::pidTPCTr> tablePIDTr;
   Produces<o2::aod::pidTPCHe> tablePIDHe;
   Produces<o2::aod::pidTPCAl> tablePIDAl;
-  Produces<o2::aod::mcTPCTuneOnData> tableTuneOnData;
+  Produces<o2::aod::mcTPCTuneOnDataTiny> tableTuneOnData;
 
   // TPC PID Response
   o2::pid::tpc::Response* response;
