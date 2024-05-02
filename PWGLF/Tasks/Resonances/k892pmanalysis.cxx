@@ -66,7 +66,7 @@ struct k892pmanalysis {
   Configurable<double> cMaxTPCnSigmaV0Pion{"cMaxTPCnSigmaV0Pion", 5.0, "TPC nSigma cut for V0 Pion"};         // TPC, secondary pions
   Configurable<double> cMaxTOFnSigmaV0Pion{"cMaxTOFnSigmaV0Pion", 5.0, "TOF nSigma cut for V0 Pion"};         // TOF, secondary pions
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};  // Combined
-  Configurable<double> nsigmaCutCombinedV0Pion{"nsigmaCutCombinedV0Pion", -999, "Combined nSigma cut for V0 Pion"};  // Combined, secondary pions
+  Configurable<double> nsigmaCutCombinedV0Pion{"nsigmaCutCombinedV0Pion", -999, "Combined nSigma cut for V0 Pion"}; // Combined, secondary pions
   Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"}; // Use only TOF track for Pion PID selection
   Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
   // Track selections
