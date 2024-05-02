@@ -330,16 +330,13 @@ struct HfCandidateSelectorLc {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoTopol, candidate.pt());
       }
 
-      auto pidLcToPKPi = -1;
-      auto pidLcToPiKP = -1;
-      auto pidBayesLcToPKPi = -1;
-      auto pidBayesLcToPiKP = -1;
+      // PID not applied
+      auto pidLcToPKPi = 1;
+      auto pidLcToPiKP = 1;
+      auto pidBayesLcToPKPi = 1;
+      auto pidBayesLcToPiKP = 1;
 
-      if (!usePid) {
-        // PID non applied
-        pidLcToPKPi = 1;
-        pidLcToPiKP = 1;
-      } else {
+      if (usePid) {
         // track-level PID selection
         TrackSelectorPID::Status pidTrackPos1Proton = TrackSelectorPID::Accepted;
         TrackSelectorPID::Status pidTrackPos2Proton = TrackSelectorPID::Accepted;
@@ -372,11 +369,7 @@ struct HfCandidateSelectorLc {
         }
       }
 
-      if (!usePidBayes) {
-        // PID non applied
-        pidBayesLcToPKPi = 1;
-        pidBayesLcToPiKP = 1;
-      } else {
+      if (usePidBayes) {
         TrackSelectorPID::Status pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
         TrackSelectorPID::Status pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
         TrackSelectorPID::Status pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
