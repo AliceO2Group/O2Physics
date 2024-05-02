@@ -40,9 +40,12 @@ struct EventSelectionQaTask {
   Configurable<int> nOrbitsConf{"nOrbits", 10000, "number of orbits"};
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
 
-  Configurable<float> confFlagDoOccupancyStudy{"FlagDoOccupancyStudy", 0, "0 - no, 1 - yes"};
+  Configurable<bool> confFlagDoOccupancyStudy{"FlagDoOccupancyStudy", false, "0 - no, 1 - yes"};
   Configurable<float> confTimeIntervalForOccupancyCalculation{"TimeIntervalForOccupancyCalculation", 100, "Time interval for TPC occupancy calculation, us"};
   Configurable<float> confExclusionIntervalForOccupancyCalculation{"ExclusionIntervalForOccupancyCalculation", 0, "Exclusion time interval for TPC occupancy calculation, us"};
+  Configurable<float> confOccupancyHistCoeffNtracks{"OccupancyHistCoeffNtracks", 1., "Coefficient before max nTracks in occupancy histos"};
+  Configurable<float> confOccupancyHistCoeffNbins2D{"OccupancyHistCoeffNbins2D", 1., "Coefficient before nBins in occupancy 2D histos"};
+  Configurable<float> confOccupancyHistCoeffNbins3D{"OccupancyHistCoeffNbins3D", 1., "Coefficient before nBins in occupancy 3D histos"};
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -337,21 +340,26 @@ struct EventSelectionQaTask {
 
       histos.add("occupancyInTimeWindow/hNumUniqueBCInTimeWindow", ";n collisions;n events", kTH1D, {{201, -0.5, 200.5}});
 
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_TracksPerColl", ";n tracks this collision;n tracks in time window", kTH2D, {{200, 0, 10000}, {250, 0, 25000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_TracksPerColl_withoutThisCol", ";n tracks this collision;n tracks in time window", kTH2D, {{200, 0, 10000}, {250, 0, 25000}});
-      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_TracksPerColl", ";n tracks this collision;n tracks in time window", kTH2D, {{200, 0, 10000}, {200, 0, 25000}});
-      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_TracksPerColl_withoutThisCol", ";n tracks this collision;n tracks in time window", kTH2D, {{200, 0, 10000}, {250, 0, 25000}});
+      double kMax = confOccupancyHistCoeffNtracks;
+      int nBins2D = 200 * confOccupancyHistCoeffNbins2D;
+      int nBins3D = 80 * confOccupancyHistCoeffNbins3D;
+      int nBins3DoccupancyAxis = 100 * confOccupancyHistCoeffNbins3D;
 
-      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_FT0Campl", ";FT0C ampl. sum in time window;n ITS tracks with 5,6,7 hits in time window", kTH2D, {{250, 0, 250000}, {250, 0, 25000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_FT0Campl", ";FT0C ampl. sum in time window;n ITS-TPC tracks in time window", kTH2D, {{250, 0, 250000}, {200, 0, 20000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_ITS567tracks", ";n ITS tracks with 5,6,7 hits in time window;n ITS-TPC tracks in time window", kTH2D, {{250, 0, 25000}, {250, 0, 25000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_TracksPerColl", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, 8000}, {nBins2D, 0, kMax * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_TracksPerColl_withoutThisCol", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, 8000}, {nBins2D, 0, kMax * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_TracksPerColl", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, 8000}, {nBins2D, 0, kMax * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_TracksPerColl_withoutThisCol", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, 8000}, {nBins2D, 0, kMax * 25000}});
 
-      histos.add("occupancyInTimeWindow/hNumITS567tracks_vs_FT0Campl_ThisEvent", ";FT0C ampl.;n ITS tracks with 5,6,7 hits", kTH2D, {{100, 0, 100000}, {160, 0, 8000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracks_vs_FT0Campl_ThisEvent", ";FT0C ampl.;n ITS-TPC tracks", kTH2D, {{100, 0, 100000}, {160, 0, 8000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracks_vs_ITS567tracks_ThisEvent", ";n ITS tracks with 5,6,7 hits;n ITS-TPC tracks", kTH2D, {{160, 0, 8000}, {160, 0, 8000}});
+      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_FT0Campl", ";FT0C ampl. sum in time window;n ITS tracks with 5,6,7 hits in time window", kTH2D, {{nBins2D, 0, kMax * 250000}, {nBins2D, 0, kMax * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_FT0Campl", ";FT0C ampl. sum in time window;n ITS-TPC tracks in time window", kTH2D, {{nBins2D, 0, kMax * 250000}, {nBins2D, 0, kMax * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_ITS567tracks", ";n ITS tracks with 5,6,7 hits in time window;n ITS-TPC tracks in time window", kTH2D, {{nBins2D, 0, kMax * 25000}, {nBins2D, 0, kMax * 25000}});
 
-      histos.add("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_FT0CamplInTimeWindow", ";n ITS tracks with 5,6,7 hits in time window;n ITS-TPC tracks in time window;;FT0C ampl. sum in time window", kTH3D, {{80, 0, 8000}, {80, 0, 8000}, {100, 0, 200000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_ITS567tracksInTimeWindow", ";n ITS tracks with 5,6,7 hits in time window;n ITS-TPC tracks in time window;;ITS tracks in time window", kTH3D, {{80, 0, 8000}, {80, 0, 8000}, {100, 0, 25000}});
+      histos.add("occupancyInTimeWindow/hNumITS567tracks_vs_FT0Campl_ThisEvent", ";FT0C ampl.;n ITS tracks with 5,6,7 hits", kTH2D, {{nBins2D, 0, 100000}, {nBins2D, 0, 8000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracks_vs_FT0Campl_ThisEvent", ";FT0C ampl.;n ITS-TPC tracks", kTH2D, {{nBins2D, 0, 100000}, {nBins2D, 0, 8000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracks_vs_ITS567tracks_ThisEvent", ";n ITS tracks with 5,6,7 hits;n ITS-TPC tracks", kTH2D, {{nBins2D, 0, 8000}, {nBins2D, 0, 8000}});
+
+      histos.add("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_FT0CamplInTimeWindow", ";n ITS tracks with 5,6,7 hits in time window;n ITS-TPC tracks in time window;;FT0C ampl. sum in time window", kTH3D, {{nBins3D, 0, 8000}, {nBins3D, 0, 8000}, {nBins3DoccupancyAxis, 0, kMax * 250000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_ITS567tracksInTimeWindow", ";n ITS tracks with 5,6,7 hits in time window;n ITS-TPC tracks in time window;;ITS tracks in time window", kTH3D, {{nBins3D, 0, 8000}, {nBins3D, 0, 8000}, {nBins3DoccupancyAxis, 0, kMax * 25000}});
     }
   }
 
