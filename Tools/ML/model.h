@@ -30,6 +30,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <algorithm>
 
 // ROOT includes
 #include "TSystem.h"
@@ -114,7 +115,10 @@ class OnnxModel
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
   void resetSession() { mSession.reset(new Ort::Experimental::Session{*mEnv, modelPath, sessionOptions}); }
 #else
-  void resetSession() { mSession.reset(new Ort::Session{*mEnv, modelPath.c_str(), sessionOptions}); }
+  void resetSession()
+  {
+    mSession.reset(new Ort::Session{*mEnv, modelPath.c_str(), sessionOptions});
+  }
 #endif
 
   // Getters & Setters
@@ -122,7 +126,10 @@ class OnnxModel
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
   std::shared_ptr<Ort::Experimental::Session> getSession() { return mSession; }
 #else
-  std::shared_ptr<Ort::Session> getSession() { return mSession; }
+  std::shared_ptr<Ort::Session> getSession()
+  {
+    return mSession;
+  }
 #endif
   int getNumInputNodes() const { return mInputShapes[0][1]; }
   int getNumOutputNodes() const { return mOutputShapes[0][1]; }
