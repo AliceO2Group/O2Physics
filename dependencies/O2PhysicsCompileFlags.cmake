@@ -12,6 +12,7 @@
 include_guard()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-error")
+message(STATUS "O2PHYSICS_WARNINGS_AS_ERRORS: ${O2PHYSICS_WARNINGS_AS_ERRORS}")
 # Treat warnings as errors.
 if(O2PHYSICS_WARNINGS_AS_ERRORS)
   # Set warnings for both gcc and clang.
