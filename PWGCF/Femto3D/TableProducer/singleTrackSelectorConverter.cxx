@@ -30,7 +30,7 @@ struct singleTrackSelectorConverter {
 
   void init(InitContext&) {}
 
-  void processTracks(o2::aod::SingleTrackSels_v0 const& tracks)
+  void process(o2::aod::SingleTrackSels_v0 const& tracks)
   {
     tableRow.reserve(tracks.size());
     for (auto const& track : tracks) {
@@ -47,7 +47,7 @@ struct singleTrackSelectorConverter {
                track.sign(),
                track.tpcNClsFound(),
                track.tpcNClsShared(),
-               0,
+               itsClsMap,
                itsClusterSizes,
 
                singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaXY()),
@@ -64,11 +64,6 @@ struct singleTrackSelectorConverter {
                singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
                singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()));
     }
-  }
-  PROCESS_SWITCH(singleTrackSelectorConverter, processTracks, "process tracks", true);
-
-  void process(aod::BCsWithTimestamps const&)
-  {
   }
 };
 
