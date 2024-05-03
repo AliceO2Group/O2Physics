@@ -71,6 +71,7 @@ struct kstarqa {
   Configurable<bool> QAafter{"QAafter", true, "QAafter"};
   Configurable<bool> onlyTOF{"onlyTOF", false, "only TOF tracks"};
   Configurable<bool> onlyTOFHIT{"onlyTOFHIT", false, "accept only TOF hit tracks at high pt"};
+  Configurable<bool> onlyTPC{"onlyTPC", false, "only TPC tracks"};
 
   // Configurables for track selections
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2f, "PT cut on daughter track"};
@@ -116,7 +117,9 @@ struct kstarqa {
   Configurable<int> nBinspT{"nBinspT", 200, "N bins in pT histos"};
   Configurable<float> pTbinlow{"pTbinlow", 0.0, "pT bin low"};
   Configurable<float> pTbinhigh{"pTbinhigh", 20.0, "pT bin high"};
-  ConfigurableAxis binsMultPlot{"binsCent", {200, 0.0f, 200.0f}, "Binning of the centrality axis for plots"};
+  ConfigurableAxis binsMultPlot{"binsCent", {201, -0.5f, 200.5f}, "Binning of the centrality axis for plots"};
+  Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
+
 
   void init(InitContext const&)
   {
@@ -149,6 +152,7 @@ struct kstarqa {
     // KStar histograms
     histos.add("h3KstarInvMassUnlikeSign", "Invariant mass of kstar meson Unlike Sign", kTHnSparseF, {{binsMultPlot}, {ptAxis}, {invmassAxis}}, true);
     histos.add("h3KstarInvMasslikeSign", "Invariant mass of kstar meson like Sign", kTHnSparseF, {{binsMultPlot}, {ptAxis}, {invmassAxis}}, true);
+    histos.add("h3KstarInvMassRotated", "Invariant mass of kstar meson rotated", kTHnSparseF, {{binsMultPlot}, {ptAxis}, {invmassAxis}}, true);
     histos.add("h3KstarInvMassMixed", "Invariant mass of kstar meson Mixed", kTHnSparseF, {{binsMultPlot}, {ptAxis}, {invmassAxis}}, true);
 
     // MC generated histograms
@@ -157,18 +161,23 @@ struct kstarqa {
     // Reconstructed MC histogram
     histos.add("h3KstarRec", "pT of reconstructed kstar", kTH1D, {ptAxis});
     histos.add("h1KstarRecMass", "Invariant mass of kstar meson", kTH1D, {invmassAxis});
-    // histos.add("h1KstarRecpt", "pT of kstar meson", kTH1D, {ptAxis});
+    histos.add("h1KstarRecpt", "pT of kstar meson", kTH1D, {ptAxis});
     histos.add("h1genmass", "Invariant mass of generated kstar meson", kTH1D, {invmassAxis});
     histos.add("h1recpt", "pT of generated kstar meson", kTH1D, {ptAxis});
     histos.add("events_check", "No. of events in the reconstructed and generated MC", kTH1F, {{6, 0, 6}});
 
     // Multplicity distribution
     histos.add("multdist", "FT0M multiplicity distribution", kTH1F, {{1000, 0, 10000}});
+    histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
+    histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
+    histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
   }
 
   double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass(); // FIXME: Get from the common header
   double massKa = o2::constants::physics::MassKPlus;
   ROOT::Math::PtEtaPhiMVector CKSVector;
+  ROOT::Math::PtEtaPhiMVector CKSVectorRot1;
+  ROOT::Math::PtEtaPhiMVector CKSVectorRot2;
 
   template <typename T>
   bool selectionTrack(const T& candidate)
@@ -230,6 +239,11 @@ struct kstarqa {
             std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
           return true;
         }
+      } else if (onlyTPC) {
+        // LOG(info) << "************I am inside ONLYTPC****************";
+        if (std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
+          return true;
+        }
       } else {
         // LOG(info) << "************I am neither in ONLYTOF or ONLYTOFHIT****************";
         if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (nsigmaCutCombined * nsigmaCutCombined)) {
@@ -249,6 +263,10 @@ struct kstarqa {
           return true;
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
+          return true;
+        }
+      } else if (onlyTPC) {
+        if (std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
           return true;
         }
       } else {
@@ -279,6 +297,10 @@ struct kstarqa {
             std::abs(candidate.tpcNSigmaPi()) < 3.0) {
           return true;
         }
+      } else if (onlyTPC) {
+        if (std::abs(candidate.tpcNSigmaPi()) < 3.0) {
+          return true;
+        }
       } else {
         // LOG(info) << "************I am neither in ONLYTOF or ONLYTOFHIT****************";
         if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (3.0 * 3.0)) {
@@ -300,6 +322,10 @@ struct kstarqa {
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < 3.0) {
           return true;
         }
+      } else if (onlyTPC) {
+        if (std::abs(candidate.tpcNSigmaKa()) < 3.0) {
+          return true;
+        }
       } else {
         if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (3.0 * 3.0)) {
           return true;
@@ -318,6 +344,10 @@ struct kstarqa {
           return true;
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < 3.0) {
+          return true;
+        }
+      } else if (onlyTPC) {
+        if (std::abs(candidate.tpcNSigmaPr()) < 3.0) {
           return true;
         }
       } else {
@@ -394,7 +424,7 @@ struct kstarqa {
       return;
     }
 
-    std::vector<ROOT::Math::PtEtaPhiMVector> pions, kaons;
+    std::vector<ROOT::Math::PtEtaPhiMVector> pions, kaons, pionsrot, kaonsrot;
     std::vector<int64_t> PionIndex = {};
     std::vector<int64_t> KaonIndex = {};
     std::vector<int64_t> PioncollIndex = {};
@@ -412,17 +442,13 @@ struct kstarqa {
     std::vector<double_t> KaonP = {};
 
     float multiplicity = 0.0f;
-    /*  if (cfgMultFT0)
-      multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
-    if (cfgMultFT0 == 0 && cfgCentFT0C == 1)
-      multiplicity = collision.centFT0C();
-      if (cfgMultFT0 == 0 && cfgCentFT0C == 0)*/
     multiplicity = collision.centFT0M();
 
     // Fill the event counter
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
     rEventSelection.fill(HIST("hmult"), multiplicity);
     histos.fill(HIST("multdist"), collision.multFT0M());
+    histos.fill(HIST("hNcontributor"), collision.numContrib());
 
     for (auto track1 : tracks) {
 
@@ -435,6 +461,8 @@ struct kstarqa {
       if (!selectionTrack(track1)) {
         continue;
       }
+      histos.fill(HIST("hDcaxy"), track1.dcaXY());
+      histos.fill(HIST("hDcaz"), track1.dcaZ());
       if (!selectionPID(track1, 1)) // kaon
         continue;
 
@@ -456,7 +484,10 @@ struct kstarqa {
       totmomka = TMath::Sqrt(track1.px() * track1.px() + track1.py() * track1.py() + track1.pz() * track1.pz());
 
       ROOT::Math::PtEtaPhiMVector temp1(track1.pt(), track1.eta(), track1.phi(), massKa);
+      ROOT::Math::PtEtaPhiMVector temp1rot(track1.pt(), track1.eta(), track1.phi() + TMath::Pi(), massKa);
+      
       kaons.push_back(temp1);
+      kaonsrot.push_back(temp1rot);
       KaonIndex.push_back(track1.globalIndex());
       KaoncollIndex.push_back(track1.collisionId());
       KaonSign.push_back(track1.sign());
@@ -493,7 +524,9 @@ struct kstarqa {
       totmompi = TMath::Sqrt(track2.px() * track2.px() + track2.py() * track2.py() + track2.pz() * track2.pz());
 
       ROOT::Math::PtEtaPhiMVector temp2(track2.pt(), track2.eta(), track2.phi(), massPi);
+      ROOT::Math::PtEtaPhiMVector temp2rot(track2.pt(), track2.eta(), track2.phi() + TMath::Pi(), massPi);
       pions.push_back(temp2);
+      pionsrot.push_back(temp2rot);
       PionIndex.push_back(track2.globalIndex());
       PioncollIndex.push_back(track2.collisionId());
       PionSign.push_back(track2.sign());
@@ -513,6 +546,8 @@ struct kstarqa {
             if (PionIndex.at(i3) <= KaonIndex.at(i1))
               continue;
             CKSVector = kaons.at(i1) + pions.at(i3);
+            CKSVectorRot1 = kaonsrot.at(i1) + pions.at(i3);
+            CKSVectorRot2 = kaons.at(i1) + pionsrot.at(i3);
 
             // openingangle = TMath::Abs((PionPx.at(i3) * KaonPx.at(i1) + PionPy.at(i3) * KaonPy.at(i1) + PionPz.at(i3) * KaonPz.at(i1)) / (PionP.at(i3) * KaonP.at(i1)));
 
@@ -520,8 +555,11 @@ struct kstarqa {
             // LOG(info) << "opening angle" << openingangle;
 
             if (TMath::Abs(CKSVector.Rapidity()) < 0.5) {
-              if (PionSign.at(i3) * KaonSign.at(i1) < 0)
+              if (PionSign.at(i3) * KaonSign.at(i1) < 0){
                 histos.fill(HIST("h3KstarInvMassUnlikeSign"), multiplicity, CKSVector.Pt(), CKSVector.M());
+                histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, CKSVectorRot1.Pt(), CKSVectorRot1.M());
+                histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, CKSVectorRot2.Pt(), CKSVectorRot2.M());
+                }
               else if (PionSign.at(i3) * KaonSign.at(i1) > 0)
                 histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, CKSVector.Pt(), CKSVector.M());
             }
@@ -619,17 +657,17 @@ struct kstarqa {
     if (std::abs(mcCollision.posZ()) < cutzvertex) {
       histos.fill(HIST("events_check"), 1.5);
     }
-    // int Nchinel = 0;
-    // for (auto& mcParticle : mcParticles) {
-    //   auto pdgcode = std::abs(mcParticle.pdgCode());
-    //   if (mcParticle.isPhysicalPrimary() && (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11 || pdgcode == 13)) {
-    //     if (std::abs(mcParticle.eta()) < 1.0) {
-    //       Nchinel = Nchinel + 1;
-    //     }
-    //   }
-    // }
-    // if (Nchinel > 0 && std::abs(mcCollision.posZ()) < cutzvertex)
-    //   histos.fill(HIST("events_check"), 2.5);
+    int Nchinel = 0;
+    for (auto& mcParticle : mcParticles) {
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (mcParticle.isPhysicalPrimary() && (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11 || pdgcode == 13)) {
+        if (std::abs(mcParticle.eta()) < 1.0) {
+          Nchinel = Nchinel + 1;
+        }
+      }
+    }
+    if (Nchinel > 0 && std::abs(mcCollision.posZ()) < cutzvertex)
+      histos.fill(HIST("events_check"), 2.5);
     std::vector<int64_t> SelectedEvents(collisions.size());
     int nevts = 0;
     for (const auto& collision : collisions) {
@@ -717,8 +755,8 @@ struct kstarqa {
       return;
     }
 
-    // histos.fill(HIST("events_check"), 5.5);
-    // auto oldindex = -999;
+    histos.fill(HIST("events_check"), 5.5);
+    auto oldindex = -999;
     for (auto track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
@@ -779,11 +817,11 @@ struct kstarqa {
               continue;
             }
 
-            // if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
-            //   histos.fill(HIST("h1PhiRecsplit"), mothertrack1.pt());
-            //   continue;
-            // }
-            // oldindex = mothertrack1.globalIndex();
+            if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
+              histos.fill(HIST("h1PhiRecsplit"), mothertrack1.pt());
+              continue;
+            }
+            oldindex = mothertrack1.globalIndex();
             pvec0 = array{track1.px(), track1.py(), track1.pz()};
             pvec1 = array{track2.px(), track2.py(), track2.pz()};
             auto arrMomrec = array{pvec0, pvec1};
@@ -791,14 +829,14 @@ struct kstarqa {
             auto motherE = mothertrack1.e();
             auto genMass = std::sqrt(motherE * motherE - motherP * motherP);
             auto recMass = RecoDecay::m(arrMomrec, array{massKa, massPi});
-            // auto recpt = TMath::Sqrt((track1.px() + track2.px()) * (track1.px() + track2.px()) + (track1.py() + track2.py()) * (track1.py() + track2.py()));
+            auto recpt = TMath::Sqrt((track1.px() + track2.px()) * (track1.px() + track2.px()) + (track1.py() + track2.py()) * (track1.py() + track2.py()));
             //// Resonance reconstruction
             lDecayDaughter1.SetXYZM(track1.px(), track1.py(), track1.pz(), massPi);
             lDecayDaughter2.SetXYZM(track2.px(), track2.py(), track2.pz(), massKa);
             lResonance = lDecayDaughter1 + lDecayDaughter2;
             histos.fill(HIST("h3KstarRec"), motherP);
             histos.fill(HIST("h1KstarRecMass"), recMass);
-            // histos.fill(HIST("h1KstarRecpt"), recpt);
+            histos.fill(HIST("h1KstarRecpt"), recpt);
             histos.fill(HIST("h1genmass"), genMass);
             histos.fill(HIST("h1recpt"), lResonance.Pt());
           }
