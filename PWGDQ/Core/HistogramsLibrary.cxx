@@ -868,10 +868,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("multiplicity-fvoa")) {
         int varsFV0AMulHE[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int varsFV0AMulCS[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaCS, VarManager::kPhiCS};
-        int binspT[4] = {100, 20, 20, 20};
         int binsMul[4] = {100, 20, 20, 20};
-        double xminpT[4] = {1., 0., -1., -3.14};
-        double xmaxpT[4] = {5., 20., 1., +3.14};
         double xminMul[4] = {1., 0., -1., -3.14};
         double xmaxMul[4] = {5., 5000., 1., +3.14};
         hm->AddHistogram(histClass, "Mass_MultFV0A_cosThetaHE_phiHE", "", 4, varsFV0AMulHE, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
@@ -880,10 +877,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("multiplicity-tpc")) {
         int varsTPCMulHE[4] = {VarManager::kMass, VarManager::kMultTPC, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int varsTPCMulCS[4] = {VarManager::kMass, VarManager::kMultTPC, VarManager::kCosThetaCS, VarManager::kPhiCS};
-        int binspT[4] = {100, 20, 20, 20};
         int binsMul[4] = {100, 20, 20, 20};
-        double xminpT[4] = {1., 0., -1., -3.14};
-        double xmaxpT[4] = {5., 20., 1., +3.14};
         double xminMul[4] = {1., 0., -1., -3.14};
         double xmaxMul[4] = {5., 2000., 1., +3.14};
         hm->AddHistogram(histClass, "Mass_MultTPC_cosThetaCS_phiCS", "", 4, varsTPCMulCS, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
