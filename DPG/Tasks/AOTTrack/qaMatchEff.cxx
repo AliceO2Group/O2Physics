@@ -261,7 +261,7 @@ struct qaMatchEff {
         LOG(info) << "### Changing analysis eta cut to " << etaMinCut << " - " << etaMaxCut;
       }
       if (isChangeAnalysisCutDcaXY) {
-        //clear the pt dependence of DCAXY 
+        // clear the pt dependence of DcaXY
         cutObject.SetMaxDcaXYPtDep(nullptr);
         LOG(info) << "### DcaXY cut pt dependence cleared";
         cutObject.SetMaxDcaXY(dcaMaxCut->get("TrVtx", "dcaXY"));
