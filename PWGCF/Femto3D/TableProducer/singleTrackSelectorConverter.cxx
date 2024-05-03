@@ -48,7 +48,7 @@ struct singleTrackSelectorConverter {
                track.tpcNClsFound(),
                track.tpcNClsShared(),
                0,
-               clsSizes,
+               itsClusterSizes,
 
                singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaXY()),
                singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaZ()),
