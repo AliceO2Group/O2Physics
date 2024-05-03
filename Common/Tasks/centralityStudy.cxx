@@ -66,7 +66,7 @@ struct centralityStudy {
 
   void init(InitContext&)
   {
-    if (doprocessCollisions) {
+    if (doprocessCollisions || doprocessCollisionsWithCentrality) {
       const AxisSpec axisCollisions{100, -0.5f, 99.5f, "Number of collisions"};
       histos.add("hCollisionSelection", "hCollisionSelection", kTH1D, {{20, -0.5f, +19.5f}});
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
