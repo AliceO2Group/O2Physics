@@ -705,6 +705,7 @@ struct hadronnucleicorrelation {
         registry.fill(HIST("hReco_EtaPhiPtMC_Deuteron"), track.eta_MC(), track.phi_MC(), track.pt_MC() * -1);
         registry.fill(HIST("hResPt_AntiDeuteron"), track.pt_MC(), (track.pt() - track.pt_MC()) / track.pt_MC());
         registry.fill(HIST("hResEta_AntiDeuteron"), track.eta_MC(), (track.eta() - track.eta_MC()) / track.eta_MC());
+        registry.fill(HIST("hResPhi_AntiDeuteron"), track.phi_MC(), (track.phi() - track.phi_MC()) / track.phi_MC());
 
         if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF) {
           registry.fill(HIST("hReco_PID_EtaPhiPt_Deuteron"), track.eta(), track.phi(), track.pt() * -1);
