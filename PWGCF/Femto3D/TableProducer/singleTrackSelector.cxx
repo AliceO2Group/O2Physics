@@ -66,6 +66,8 @@ struct singleTrackSelector {
   Configurable<float> _eta{"eta", 100.f, "abs eta value limit"};
   Configurable<float> _dcaXY{"dcaXY", 1000.f, "Maximum dca of track in xy"};
   Configurable<float> _dcaZ{"dcaZ", 1000.f, "Maximum dca of track in xy"};
+  Configurable<float> _dcaXYmin{"dcaXYmin", -1000.f, "Minimum dca of track in xy"};
+  Configurable<float> _dcaZmin{"dcaZmin", -1000.f, "Minimum dca of track in xy"};
   Configurable<float> _maxTofChi2{"maxTofChi2", 10.f, "Maximum TOF Chi2 value -> to remove mismatched tracks"};
   Configurable<float> _vertexZ{"VertexZ", 15.0, "abs vertexZ value limit"};
   Configurable<std::pair<float, float>> _centCut{"centCut", std::pair<float, float>{0.f, 100.f}, "[min., max.] centrality range to keep events within"};
@@ -95,7 +97,8 @@ struct singleTrackSelector {
 
   Filter pFilter = o2::aod::track::p > _min_P&& o2::aod::track::p < _max_P;
   Filter etaFilter = nabs(o2::aod::track::eta) < _eta;
-  Filter dcaFilter = (o2::aod::track::dcaXY <= _dcaXY) && (o2::aod::track::dcaZ <= _dcaZ);
+  Filter dcaFilter = ((nabs(o2::aod::track::dcaXY) <= _dcaXY) && (nabs(o2::aod::track::dcaZ) <= _dcaZ)) &&
+                     ((o2::aod::track::dcaXY >= _dcaXYmin) && (o2::aod::track::dcaZ >= _dcaZmin));
   Filter tofChi2Filter = o2::aod::track::tofChi2 < _maxTofChi2;
 
   int mRunNumber = 0;
