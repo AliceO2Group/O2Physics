@@ -526,7 +526,7 @@ struct nuclei_in_jets {
 
     // Reduced Event
     std::vector<int> particle_ID;
-    int leading_ID;
+    int leading_ID = 0;
     bool containsParticleOfInterest(false);
     float pt_max(0);
 
@@ -1071,7 +1071,7 @@ struct nuclei_in_jets {
 
       // Reduced Event
       std::vector<int> particle_ID;
-      int leading_ID;
+      int leading_ID = 0;
       float pt_max(0);
 
       // Track Index Initialization
@@ -1308,7 +1308,7 @@ struct nuclei_in_jets {
 
       // Reduced Event
       std::vector<int> particle_ID;
-      int leading_ID;
+      int leading_ID = 0;
       float pt_max(0);
 
       // Specific Flags
