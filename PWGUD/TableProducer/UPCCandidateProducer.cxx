@@ -387,12 +387,14 @@ struct UpcCandProducer {
     for (const auto& cls : fwdTrkCls) {
       clustersPerTrack[cls.fwdtrackId()].push_back(cls.globalIndex());
     }
+    int newId = 0;
     for (auto trackId : trackIds) {
       const auto& clusters = clustersPerTrack.at(trackId);
       for (auto clsId : clusters) {
         const auto& clsInfo = fwdTrkCls.iteratorAt(clsId);
-        udFwdTrkClusters(trackId, clsInfo.x(), clsInfo.y(), clsInfo.z(), clsInfo.clInfo());
+        udFwdTrkClusters(newId, clsInfo.x(), clsInfo.y(), clsInfo.z(), clsInfo.clInfo());
       }
+      newId++;
     }
   }
 
