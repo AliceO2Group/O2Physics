@@ -73,8 +73,9 @@ struct binningParent {
 };
 
 using nsigma = binningParent<-10.0f, 10.0f>;
-using dca = binningParent<-1.0f, 1.0f>;
+using dca_v0 = binningParent<-1.0f, 1.0f>;
 using dca_v1 = binningParent<-1.0f, 1.0f, int16_t>;
+using dca = dca_v1;
 using chi2 = binningParent<0.0f, 10.0f>;
 using rowsOverFindable = binningParent<0.0f, 3.0f>;
 } // namespace binning
@@ -111,7 +112,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int16_t);   // Number of TPC clusters
 DECLARE_SOA_COLUMN(TPCNClsShared, tpcNClsShared, uint8_t); // Number of shared TPC clusters
-DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);             // Number of ITS clusters
+DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);             // Number of ITS clusters (only stored in v0)
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNClsDyn, itsNCls, [](uint32_t itsClusterSizes) -> uint8_t {
   uint8_t itsNcls = 0;
   for (int layer = 0; layer < 7; layer++) {
@@ -123,8 +124,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(ITSNClsDyn, itsNCls, [](uint32_t itsClusterSizes) -> 
 DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
 DECLARE_SOA_COLUMN(ITSclusterSizes, itsClusterSizes, uint32_t);
 
-DECLARE_SOA_COLUMN(StoredDcaXY, storedDcaXY, binning::dca::binned_t);                                                              // impact parameter of the track with 8 bits (v0)
-DECLARE_SOA_COLUMN(StoredDcaZ, storedDcaZ, binning::dca::binned_t);                                                                // impact parameter of the track with 8 bits (v0)
+DECLARE_SOA_COLUMN(StoredDcaXY, storedDcaXY, binning::dca_v0::binned_t);                                                           // impact parameter of the track with 8 bits (v0)
+DECLARE_SOA_COLUMN(StoredDcaZ, storedDcaZ, binning::dca_v0::binned_t);                                                             // impact parameter of the track with 8 bits (v0)
 DECLARE_SOA_COLUMN(StoredDcaXY_v1, storedDcaXY_v1, binning::dca_v1::binned_t);                                                     // impact parameter of the track with 16 bits (v1)
 DECLARE_SOA_COLUMN(StoredDcaZ_v1, storedDcaZ_v1, binning::dca_v1::binned_t);                                                       // impact parameter of the track with 16 bits (v1)
 DECLARE_SOA_COLUMN(StoredTPCChi2NCl, storedTpcChi2NCl, binning::chi2::binned_t);                                                   // TPC chi2
@@ -154,10 +155,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(PhiStar, phiStar,
                              }
                            });
 
-DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY,
-                           [](binning::dca::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca>(dca_binned); });
-DECLARE_SOA_DYNAMIC_COLUMN(DcaZ, dcaZ,
-                           [](binning::dca::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca>(dca_binned); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaXY_v0, dcaXY,
+                           [](binning::dca_v0::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca_v0>(dca_binned); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZ_v0, dcaZ,
+                           [](binning::dca_v0::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca_v0>(dca_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(DcaXY_v1, dcaXY,
                            [](binning::dca_v1::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca_v1>(dca_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(DcaZ_v1, dcaZ,
@@ -229,8 +230,8 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels_v0, "SelTracks", "AOD", "SINGLETRACKSEL",
                        singletrackselector::StoredTOFNSigmaDe,
                        singletrackselector::StoredTPCNSigmaDe,
 
-                       singletrackselector::DcaXY<singletrackselector::StoredDcaXY>,
-                       singletrackselector::DcaZ<singletrackselector::StoredDcaZ>,
+                       singletrackselector::DcaXY_v0<singletrackselector::StoredDcaXY>,
+                       singletrackselector::DcaZ_v0<singletrackselector::StoredDcaZ>,
                        singletrackselector::TPCChi2NCl<singletrackselector::StoredTPCChi2NCl>,
                        singletrackselector::ITSChi2NCl<singletrackselector::StoredITSChi2NCl>,
                        singletrackselector::TPCCrossedRowsOverFindableCls<singletrackselector::StoredTPCCrossedRowsOverFindableCls>,
