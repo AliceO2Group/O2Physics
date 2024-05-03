@@ -194,7 +194,9 @@ struct singleTrackSelector {
                    track.sign(),
                    track.tpcNClsFound(),
                    track.tpcNClsShared(),
-                   track.itsNCls(),
+                   track.itsClusterMap(),
+                   track.itsClusterSizes(),
+
                    singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaXY()),
                    singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaZ()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.tpcChi2NCl()),

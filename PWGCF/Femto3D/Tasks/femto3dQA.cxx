@@ -137,8 +137,11 @@ struct QAHistograms {
         break;
     }
 
+    const AxisSpec axisMult{5001, -0.5, 5000.5, "mult."};
+    const AxisSpec axisPerc{101, -0.5, 100.5, "percentile"};
     registry.add("posZ", "posZ", kTH1F, {{300, -16., 16., "posZ"}});
-    registry.add("mult", "mult", kTH1F, {{5001, -0.5, 5000.5, "mult."}});
+    registry.add("mult", "mult", kTH1F, {axisMult});
+    registry.add("MultVsCent", "MultVsCent", kTH2F, {axisMult, axisPerc});
   }
 
   template <bool FillExtra, typename ColsType, typename TracksType>
@@ -156,6 +159,7 @@ struct QAHistograms {
 
       registry.fill(HIST("posZ"), collision.posZ());
       registry.fill(HIST("mult"), collision.mult());
+      registry.fill(HIST("MultVsCent"), collision.mult(), collision.multPerc());
     }
 
     for (auto& track : tracks) {
