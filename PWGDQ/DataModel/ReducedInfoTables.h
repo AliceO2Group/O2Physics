@@ -458,10 +458,11 @@ namespace smearedtrack
 DECLARE_SOA_COLUMN(PtSmeared, ptSmeared, float);
 DECLARE_SOA_COLUMN(EtaSmeared, etaSmeared, float);
 DECLARE_SOA_COLUMN(PhiSmeared, phiSmeared, float);
+DECLARE_SOA_COLUMN(Efficiency, efficiency, float);
 } // namespace smearedtrack
 
 DECLARE_SOA_TABLE(SmearedTracks, "AOD", "SMEAREDTRACK", // use like this Join<ReducedMCTracks, SmearedTracks>
-                  smearedtrack::PtSmeared, smearedtrack::EtaSmeared, smearedtrack::PhiSmeared);
+                  smearedtrack::PtSmeared, smearedtrack::EtaSmeared, smearedtrack::PhiSmeared, smearedtrack::Efficiency);
 using SmearedTrack = SmearedTracks::iterator;
 
 namespace dilepton_track_index
