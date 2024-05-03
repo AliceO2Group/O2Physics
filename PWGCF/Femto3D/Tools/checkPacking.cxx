@@ -30,14 +30,18 @@ bool process(std::string outputName, int nevents = 100000)
   {
    public:
     Container() {}
-    void operator()(const int8_t& packed) { mPacked = packed; }
-    int8_t mPacked = 0;
-    float unpack() { return aod::pidutils::unPackInTable<T>(mPacked); };
+    void operator()(const float toPack) { mPacked = aod::singletrackselector::packInTable<T>(toPack); }
+    T::binned_t mPacked = 0;
+    float unpack() { return aod::singletrackselector::unPack<T>(mPacked); }
   } container;
 
-  TH1F* hgaus = new TH1F("hgaus", "", 20 / T::bin_width,
-                         -10 + T::bin_width * 0.5,
-                         10 + T::bin_width * 0.5);
+  T::print();
+  const float min = T::binned_min - 2;
+  const float max = T::binned_max + 2;
+  LOG(info) << "Min = " << min << " Max = " << max;
+  TH1F* hgaus = new TH1F("hgaus", "", (max - min) / T::bin_width,
+                         min, max);
+  hgaus->Print();
   LOG(info) << "Bin width = " << T::bin_width << " vs histo " << hgaus->GetXaxis()->GetBinWidth(1);
   hgaus->SetLineColor(2);
   hgaus->SetLineStyle(1);
