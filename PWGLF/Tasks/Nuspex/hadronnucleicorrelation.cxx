@@ -648,7 +648,7 @@ struct hadronnucleicorrelation {
           if (track.pt() < pTthrpr_TOF) {
             registry.fill(HIST("hReco_PID_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt());
           } else if (TMath::Abs(track.tofNSigmaPr()) < nsigmaTOF) {
-              registry.fill(HIST("hReco_PID_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt());
+            registry.fill(HIST("hReco_PID_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt());
           }
         }
         registry.fill(HIST("hnSigmaTPCVsPt_Pr_MC"), track.pt(), track.tpcNSigmaPr());
@@ -660,9 +660,9 @@ struct hadronnucleicorrelation {
 
         if (TMath::Abs(track.tpcNSigmaPr()) < nsigmaTPC) {
           if (track.pt() < pTthrpr_TOF) {
-            registry.fill(HIST("hReco_PID_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt()*-1);
+            registry.fill(HIST("hReco_PID_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * -1);
           } else if (TMath::Abs(track.tofNSigmaPr()) < nsigmaTOF) {
-            registry.fill(HIST("hReco_PID_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt()*-1);
+            registry.fill(HIST("hReco_PID_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * -1);
           }
         }
         registry.fill(HIST("hnSigmaTPCVsPt_Pr_MC"), track.pt() * -1, track.tpcNSigmaPr());
