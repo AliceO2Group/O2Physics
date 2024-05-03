@@ -58,6 +58,7 @@ using FullMCJetsEventWeight = JetEventWeightMCDTask<aod::FullMCDetectorLevelJet,
 using D0ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::D0ChargedMCDetectorLevelJet, aod::D0ChargedMCDetectorLevelJetEventWeights, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJet, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using LcChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::LcChargedMCDetectorLevelJet, aod::LcChargedMCDetectorLevelJetEventWeights, aod::LcChargedMCDetectorLevelEventWiseSubtractedJet, aod::LcChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using BplusChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::BplusChargedMCDetectorLevelJet, aod::BplusChargedMCDetectorLevelJetEventWeights, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJet, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
+using V0ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::V0ChargedMCDetectorLevelJet, aod::V0ChargedMCDetectorLevelJetEventWeights, aod::V0ChargedMCDetectorLevelEventWiseSubtractedJet, aod::V0ChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -87,6 +88,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(
     adaptAnalysisTask<BplusChargedMCJetsEventWeight>(cfgc,
                                                      SetDefaultProcesses{}, TaskName{"jet-bplus-eventweight-mcd-charged"}));
+
+  tasks.emplace_back(
+    adaptAnalysisTask<V0ChargedMCJetsEventWeight>(cfgc,
+                                                  SetDefaultProcesses{}, TaskName{"jet-v0-eventweight-mcd-charged"}));
 
   return WorkflowSpec{tasks};
 }

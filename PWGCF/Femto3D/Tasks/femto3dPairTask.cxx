@@ -69,14 +69,14 @@ struct FemtoCorrelations {
   Configurable<std::vector<float>> _tpcNSigma_1{"tpcNSigma_1", std::vector<float>{-3.0f, 3.0f}, "first particle PID: Nsigma range in TPC before the TOF is used"};
   Configurable<float> _PIDtrshld_1{"PIDtrshld_1", 10.0, "first particle PID: value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma_1{"tofNSigma_1", std::vector<float>{-3.0f, 3.0f}, "first particle PID: Nsigma range in TOF"};
-  Configurable<float> _tpcNSigmaResidual_1{"tpcNSigmaResidual_1", 5, "first particle PID: residual TPC Nsigma cut (abs. value) to use with the TOF"};
+  Configurable<std::vector<float>> _tpcNSigmaResidual_1{"tpcNSigmaResidual_1", std::vector<float>{-5.0f, 5.0f}, "first particle PID: residual TPC Nsigma cut to use with the TOF"};
 
   Configurable<int> _sign_2{"sign_2", 1, "sign of the second particle in a pair"};
   Configurable<int> _particlePDG_2{"particlePDG_2", 2212, "PDG code of the second particle in a pair to perform PID for (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> _tpcNSigma_2{"tpcNSigma_2", std::vector<float>{-3.0f, 3.0f}, "second particle PID: Nsigma range in TPC before the TOF is used"};
   Configurable<float> _PIDtrshld_2{"PIDtrshld_2", 10.0, "second particle PID: value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma_2{"tofNSigma_2", std::vector<float>{-3.0f, 3.0f}, "second particle PID: Nsigma range in TOF"};
-  Configurable<float> _tpcNSigmaResidual_2{"tpcNSigmaResidual_2", 5, "second particle PID: residual TPC Nsigma cut (abs. value) to use with the TOF"};
+  Configurable<std::vector<float>> _tpcNSigmaResidual_2{"tpcNSigmaResidual_2", std::vector<float>{-5.0f, 5.0f}, "second particle PID: residual TPC Nsigma cut to use with the TOF"};
 
   Configurable<int> _particlePDGtoReject{"particlePDGtoRejectFromSecond", 0, "applied only if the particles are non-identical and only to the second particle in the pair!!!"};
   Configurable<std::vector<float>> _rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-0.0f, 0.0f}, "TOF rejection Nsigma range for the particle specified with PDG to be rejected"};
@@ -92,7 +92,7 @@ struct FemtoCorrelations {
   ConfigurableAxis CFkStarBinning{"CFkStarBinning", {500, 0.005, 5.005}, "k* binning of the CF (Nbins, lowlimit, uplimit)"};
 
   Configurable<bool> _fill3dCF{"fill3dCF", false, "flag for filling 3D LCMS histos: true -- fill; false -- not"};
-  Configurable<bool> _fillDetaDphi{"fillDetaDphi", false, "flag for filling dEta(dPhi*) histos: true -- fill; false -- not; note: they're filled before the double track cut"};
+  Configurable<int> _fillDetaDphi{"fillDetaDphi", -1, "flag for filling dEta(dPhi*) histos: '-1' -- don't fill; '0' -- fill before the cut; '1' -- fill after the cut; '2' -- fill before & after the cut"};
   ConfigurableAxis CF3DqLCMSBinning{"CF3DqLCMSBinning", {60, -0.3, 0.3}, "q_out/side/long binning of the CF 3D in LCMS (Nbins, lowlimit, uplimit)"};
   // the next configarable is responsible for skipping (pseudo)randomly chosen ($value -1) pairs of events in the mixing process
   // migth be useful (for the sake of execution time and the output file size ...) in case of too many events per DF since in the SE thacks are mixed in N_ev and in the ME 0.5*N_ev*(N_ev - 1)
@@ -147,8 +147,11 @@ struct FemtoCorrelations {
   std::vector<std::vector<std::shared_ptr<TH3>>> MEhistos_3D;
   std::vector<std::vector<std::shared_ptr<TH3>>> qLCMSvskStar;
 
-  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_SE_histos;
-  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_ME_histos;
+  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_SE_histos_BC; // BC -- before cutting
+  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_ME_histos_BC; // BC -- before cutting
+
+  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_SE_histos_AC; // AC -- after cutting
+  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_ME_histos_AC; // AC -- after cutting
 
   void init(o2::framework::InitContext&)
   {
@@ -214,19 +217,33 @@ struct FemtoCorrelations {
         qLCMSvskStar.push_back(std::move(qLCMSvskStarperMult));
       }
 
-      if (_fillDetaDphi) {
-        std::vector<std::shared_ptr<TH2>> DoubleTrack_SE_histos_perMult;
-        std::vector<std::shared_ptr<TH2>> DoubleTrack_ME_histos_perMult;
+      if (_fillDetaDphi > -1) {
+        TString suffix[] = {"_nocut", "_cut"};
 
-        for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
-          auto hDblTrk_SE = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_SE_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j), kTH2F, {{600, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
-          auto hDblTrk_ME = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_ME_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j), kTH2F, {{600, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+        for (int f = 0; f < 2; f++) {
+          std::vector<std::shared_ptr<TH2>> DoubleTrack_SE_histos_perMult;
+          std::vector<std::shared_ptr<TH2>> DoubleTrack_ME_histos_perMult;
 
-          DoubleTrack_SE_histos_perMult.push_back(std::move(hDblTrk_SE));
-          DoubleTrack_ME_histos_perMult.push_back(std::move(hDblTrk_ME));
+          if (_fillDetaDphi == 0 && f == 1)
+            continue;
+          if (_fillDetaDphi == 1 && f == 0)
+            continue;
+
+          for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
+            auto hDblTrk_SE = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/SE_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{628, -M_PI / 2.0, M_PI / 2.0, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+            auto hDblTrk_ME = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/ME_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{628, -M_PI / 2.0, M_PI / 2.0, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+
+            DoubleTrack_SE_histos_perMult.push_back(std::move(hDblTrk_SE));
+            DoubleTrack_ME_histos_perMult.push_back(std::move(hDblTrk_ME));
+          }
+          if (f == 0) {
+            DoubleTrack_SE_histos_BC.push_back(std::move(DoubleTrack_SE_histos_perMult)); // BC -- before cutting
+            DoubleTrack_ME_histos_BC.push_back(std::move(DoubleTrack_ME_histos_perMult));
+          } else {
+            DoubleTrack_SE_histos_AC.push_back(std::move(DoubleTrack_SE_histos_perMult)); // AC -- after cutting
+            DoubleTrack_ME_histos_AC.push_back(std::move(DoubleTrack_ME_histos_perMult));
+          }
         }
-        DoubleTrack_SE_histos.push_back(std::move(DoubleTrack_SE_histos_perMult));
-        DoubleTrack_ME_histos.push_back(std::move(DoubleTrack_ME_histos_perMult));
       }
     }
 
@@ -263,10 +280,14 @@ struct FemtoCorrelations {
         if (_fill3dCF && kTbin > SEhistos_3D[multBin].size())
           LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
 
-        if (_fillDetaDphi)
-          DoubleTrack_SE_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        if (_fillDetaDphi % 2 == 0)
+          DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+
         if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
           continue;
+
+        if (_fillDetaDphi > 0)
+          DoubleTrack_SE_histos_AC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
 
         kThistos[multBin][kTbin]->Fill(pair_kT);
         mThistos[multBin][kTbin]->Fill(Pair->GetMt());       // test
@@ -305,15 +326,22 @@ struct FemtoCorrelations {
         if (_fill3dCF && kTbin > SEhistos_3D[multBin].size())
           LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
 
-        if (_fillDetaDphi) {
+        if (_fillDetaDphi % 2 == 0) {
           if (!SE_or_ME)
-            DoubleTrack_SE_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+            DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
           else
-            DoubleTrack_ME_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+            DoubleTrack_ME_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         }
 
         if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
           continue;
+
+        if (_fillDetaDphi > 0) {
+          if (!SE_or_ME)
+            DoubleTrack_SE_histos_AC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+          else
+            DoubleTrack_ME_histos_AC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        }
 
         if (!SE_or_ME) {
           SEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar());
@@ -359,7 +387,7 @@ struct FemtoCorrelations {
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() < *_centBins.value.begin() || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() >= *(_centBins.value.end() - 1))
         continue;
 
-      if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1))) { // filling the map: eventID <-> selected particles1
+      if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1.value))) { // filling the map: eventID <-> selected particles1
         selectedtracks_1[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         registry.fill(HIST("p_first"), track.p());
@@ -383,7 +411,7 @@ struct FemtoCorrelations {
 
       if (IsIdentical) {
         continue;
-      } else if (track.sign() != _sign_2 && !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2, _tpcNSigmaResidual_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
+      } else if (track.sign() != _sign_2 && !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2, _tpcNSigmaResidual_2.value))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
         selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         registry.fill(HIST("p_second"), track.p());

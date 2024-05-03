@@ -54,6 +54,8 @@ struct femtoDreamPairTaskTrackV0 {
     Configurable<bool> CPRPlotPerRadii{"Option.CPRPlotPerRadii", false, "Plot CPR per radii"};
     Configurable<float> CPRdeltaPhiMax{"Option.CPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
     Configurable<float> CPRdeltaEtaMax{"Option.CPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+    Configurable<bool> DCACutPtDep{"Option.DCACutPtDep", false, "Use pt dependent dca cut"};
+    Configurable<bool> MixEventWithPairs{"Option.MixEventWithPairs", false, "Only use events that contain particle 1 and partile 2 for the event mixing"};
     Configurable<bool> smearingByOrigin{"Option.smearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption. Use with care!"};
     ConfigurableAxis Dummy{"Option.Dummy", {1, 0, 1}, "Dummy axis"};
   } Option;
@@ -74,7 +76,7 @@ struct femtoDreamPairTaskTrackV0 {
   using FilteredMaskedMCCollisions = soa::Filtered<soa::Join<FDCollisions, aod::FDMCCollLabels, FDColMasks, FDDownSample>>;
   using FilteredMaskedMCCollision = FilteredMaskedMCCollisions::iterator;
 
-  femtodreamcollision::BitMaskType BitMask = -1;
+  femtodreamcollision::BitMaskType BitMask = 1;
 
   /// Particle 1 (track)
   struct : ConfigurableGroup {
@@ -96,8 +98,9 @@ struct femtoDreamPairTaskTrackV0 {
   Filter trackPtFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt < Track1.PtMax, true);
   Filter trackEtaFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta > Track1.EtaMin, true);
   Filter trackEtaFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta < Track1.EtaMax, true);
-  Filter trackTempFitVarFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::tempFitVar > Track1.TempFitVarMin, true);
-  Filter trackTempFitVarFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::tempFitVar < Track1.TempFitVarMax, true);
+  Filter trackTempFitVarFilterUp = !Option.DCACutPtDep && ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::tempFitVar > Track1.TempFitVarMin, true);
+  Filter trackTempFitVarFilterLow = !Option.DCACutPtDep && ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::tempFitVar < Track1.TempFitVarMax, true);
+  Filter trackTempFitVarFilterPtDep = Option.DCACutPtDep && ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f)), true);
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -330,7 +333,7 @@ struct femtoDreamPairTaskTrackV0 {
 
   void processSameEventMasked(FilteredMaskedCollision const& col, FilteredFDParticles const& parts)
   {
-    if ((col.bitmaskTrackOne() & BitMask) != BitMask && (col.bitmaskTrackTwo() & BitMask) != BitMask) {
+    if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
       return;
     }
     eventHisto.fillQA<false>(col);
@@ -355,40 +358,77 @@ struct femtoDreamPairTaskTrackV0 {
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
   void doMixedEvent_Masked(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
   {
-    Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
-    Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
-    PartitionMaskedCol1.bindTable(cols);
-    PartitionMaskedCol2.bindTable(cols);
 
-    // use *Partition.mFiltered when passing the partition to mixing object
-    // there is an issue when the partition is passed directly
-    // workaround for now, change back once it is fixed
-    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, Mixing.Depth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol2.mFiltered))) {
-      // make sure that tracks in same events are not mixed
-      if (collision1.globalIndex() == collision2.globalIndex()) {
-        continue;
-      }
-      auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
-      auto SliceV02 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceV02))) {
-        const auto& posChild = parts.iteratorAt(p2.index() - 2);
-        const auto& negChild = parts.iteratorAt(p2.index() - 1);
-        // check cuts on V0 children
-        if (((posChild.cut() & V02.ChildPos_CutBit) == V02.ChildPos_CutBit) &&
-            ((posChild.pidcut() & V02.ChildPos_TPCBit) == V02.ChildPos_TPCBit) &&
-            ((negChild.cut() & V02.ChildNeg_CutBit) == V02.ChildNeg_CutBit) &&
-            ((negChild.pidcut() & V02.ChildNeg_TPCBit) == V02.ChildNeg_TPCBit)) {
+    if (Option.MixEventWithPairs.value) {
+      Partition<CollisionType> PartitionMaskedCol = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, BitMask) && ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask) && aod::femtodreamcollision::downsample == true;
+      PartitionMaskedCol.bindTable(cols);
+      // use *Partition.mFiltered when passing the partition to mixing object
+      // there is an issue when the partition is passed directly
+      // workaround for now, change back once it is fixed
+      for (auto const& [collision1, collision2] : selfCombinations(policy, Mixing.Depth.value, -1, *PartitionMaskedCol.mFiltered, *PartitionMaskedCol.mFiltered)) {
+        // make sure that tracks in same events are not mixed
+        if (collision1.globalIndex() == collision2.globalIndex()) {
           continue;
         }
-        if (Option.CPROn.value) {
-          if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
+        auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto SliceV02 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+        for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceV02))) {
+          const auto& posChild = parts.iteratorAt(p2.index() - 2);
+          const auto& negChild = parts.iteratorAt(p2.index() - 1);
+          // check cuts on V0 children
+          if (((posChild.cut() & V02.ChildPos_CutBit) == V02.ChildPos_CutBit) &&
+              ((posChild.pidcut() & V02.ChildPos_TPCBit) == V02.ChildPos_TPCBit) &&
+              ((negChild.cut() & V02.ChildNeg_CutBit) == V02.ChildNeg_CutBit) &&
+              ((negChild.pidcut() & V02.ChildNeg_TPCBit) == V02.ChildNeg_TPCBit)) {
             continue;
           }
+          if (Option.CPROn.value) {
+            if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
+              continue;
+            }
+          }
+          if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+            continue;
+          }
+          mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.smearingByOrigin);
         }
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+      }
+    } else {
+      Partition<CollisionType> PartitionMaskedCol1 = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, BitMask) && aod::femtodreamcollision::downsample == true;
+      Partition<CollisionType> PartitionMaskedCol2 = ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask) && aod::femtodreamcollision::downsample == true;
+      PartitionMaskedCol1.bindTable(cols);
+      PartitionMaskedCol2.bindTable(cols);
+
+      // use *Partition.mFiltered when passing the partition to mixing object
+      // there is an issue when the partition is passed directly
+      // workaround for now, change back once it is fixed
+      for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, Mixing.Depth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol2.mFiltered))) {
+        // make sure that tracks in same events are not mixed
+        if (collision1.globalIndex() == collision2.globalIndex()) {
           continue;
         }
-        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.smearingByOrigin);
+        auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto SliceV02 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+        for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceV02))) {
+          const auto& posChild = parts.iteratorAt(p2.index() - 2);
+          const auto& negChild = parts.iteratorAt(p2.index() - 1);
+          // check cuts on V0 children
+          if (((posChild.cut() & V02.ChildPos_CutBit) == V02.ChildPos_CutBit) &&
+              ((posChild.pidcut() & V02.ChildPos_TPCBit) == V02.ChildPos_TPCBit) &&
+              ((negChild.cut() & V02.ChildNeg_CutBit) == V02.ChildNeg_CutBit) &&
+              ((negChild.pidcut() & V02.ChildNeg_TPCBit) == V02.ChildNeg_TPCBit)) {
+            continue;
+          }
+          if (Option.CPROn.value) {
+            if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
+              continue;
+            }
+          }
+          if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+            continue;
+          }
+          mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.smearingByOrigin);
+        }
       }
     }
   }

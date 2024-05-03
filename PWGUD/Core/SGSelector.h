@@ -93,7 +93,7 @@ class SGSelector
         }
       }
       if (newdgabc != newdgcbc) {
-        if (ampc / diffCuts.FITAmpLimits()[2] > ampa / diffCuts.FITAmpLimits()[2])
+        if (ampc / diffCuts.FITAmpLimits()[2] > ampa / diffCuts.FITAmpLimits()[1])
           newdgabc = newdgcbc;
       }
       newbc = newdgabc;
@@ -119,19 +119,29 @@ class SGSelector
     float fit_cut[3] = {fv0, ft0a, ft0c};
     int gap = collision.gapSide();
     int true_gap = gap;
+    float FV0A, FT0A, FT0C, ZNA, ZNC;
+    FV0A = collision.totalFV0AmplitudeA();
+    FT0A = collision.totalFT0AmplitudeA();
+    FT0C = collision.totalFT0AmplitudeC();
+    ZNA = collision.energyCommonZNA();
+    ZNC = collision.energyCommonZNC();
     if (gap == 0) {
-      if (collision.totalFV0AmplitudeA() > fit_cut[0] || collision.totalFT0AmplitudeA() > fit_cut[1] || collision.energyCommonZNA() > zdc_cut)
+      if (FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut)
         true_gap = -1;
     } else if (gap == 1) {
-      if (collision.totalFT0AmplitudeC() > fit_cut[2] || collision.energyCommonZNC() > zdc_cut)
+      if (FT0C > fit_cut[2] || ZNC > zdc_cut)
         true_gap = -1;
     } else if (gap == 2) {
-      if ((collision.totalFV0AmplitudeA() > fit_cut[0] || collision.totalFT0AmplitudeA() > fit_cut[1] || collision.energyCommonZNA() > zdc_cut) && (collision.totalFT0AmplitudeC() > fit_cut[2] || collision.energyCommonZNC() > zdc_cut))
+      if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut))
         true_gap = -1;
-      else if (collision.totalFV0AmplitudeA() > fit_cut[0] || collision.totalFT0AmplitudeA() > fit_cut[1] || collision.energyCommonZNA() > zdc_cut)
+      else if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C <= fit_cut[2] && ZNC <= zdc_cut))
         true_gap = 1;
-      else if (collision.totalFT0AmplitudeC() > fit_cut[2] || collision.energyCommonZNC() > zdc_cut)
+      else if ((FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut))
         true_gap = 0;
+      else if (FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut && FT0C <= fit_cut[2] && ZNC <= zdc_cut)
+        true_gap = 2;
+      else
+        std::cout << "Something wrong with DG" << std::endl;
     }
     return true_gap;
   }
