@@ -147,6 +147,26 @@ DECLARE_SOA_TABLE(ReducedMCEventLabels, "AOD", "REMCCOLLBL", //! Table joined to
                   reducedeventlabel::ReducedMCEventId, reducedeventlabel::McMask);
 using ReducedMCEventLabel = ReducedMCEventLabels::iterator;
 
+namespace reducedzdc
+{
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float); //!
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float); //!
+DECLARE_SOA_COLUMN(EnergyCommonZPA, energyCommonZPA, float); //!
+DECLARE_SOA_COLUMN(EnergyCommonZPC, energyCommonZPC, float); //!
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);                 //!
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);                 //!
+DECLARE_SOA_COLUMN(TimeZPA, timeZPA, float);                 //!
+DECLARE_SOA_COLUMN(TimeZPC, timeZPC, float);                 //!
+} // namespace reducedzdc
+
+DECLARE_SOA_TABLE(ReducedZdcs, "AOD", "REDUCEDZDC", //!   Event ZDC information
+                  reducedzdc::EnergyCommonZNA, reducedzdc::EnergyCommonZNC,
+                  reducedzdc::EnergyCommonZPA, reducedzdc::EnergyCommonZPC,
+                  reducedzdc::TimeZNA, reducedzdc::TimeZNC,
+                  reducedzdc::TimeZPA, reducedzdc::TimeZPC);
+
+using ReducedZdc = ReducedZdcs::iterator;
+
 namespace reducedtrack
 {
 // basic track information

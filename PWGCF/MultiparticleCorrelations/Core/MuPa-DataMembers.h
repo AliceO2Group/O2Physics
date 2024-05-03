@@ -168,13 +168,15 @@ struct NestedLoops {
 
 // *) Toy NUA (can be applied both in real data analysis and in analysis 'on-the-fly'):
 struct NUA {
-  TList* fNUAList = NULL;                        // list to hold all NUA objects
-  TProfile* fNUAFlagsPro = NULL;                 // profile to hold all flags for NUA objects
-  Bool_t fApplyNUAPDF[eNUAPDF_N] = {kFALSE};     // apply NUA to particular kine variable (see the corresponding enum eNUAPDF)
-  Bool_t fUseDefaultNUAPDF[eNUAPDF_N] = {kTRUE}; // by default, use simple hardcoded expressions for NUA acceptance profile
-  TF1* fDefaultNUAPDF[eNUAPDF_N] = {NULL};       // default distributions used as pdfs to simulate events on-the-fly
-  TH1D* fCustomNUAPDF[eNUAPDF_N] = {NULL};       // custom, user-supplied distributions used to simulate NUA
-  Double_t fMaxValuePDF[eNUAPDF_N] = {0.};       // see algorithm used in Accept(...). I implemented it as a data member, so that it is not calculated again and again at each particle call
+  TList* fNUAList = NULL;                              // list to hold all NUA objects
+  TProfile* fNUAFlagsPro = NULL;                       // profile to hold all flags for NUA objects
+  Bool_t fApplyNUAPDF[eNUAPDF_N] = {kFALSE};           // apply NUA to particular kine variable (see the corresponding enum eNUAPDF)
+  Bool_t fUseDefaultNUAPDF[eNUAPDF_N] = {kTRUE};       // by default, use simple hardcoded expressions for NUA acceptance profile
+  TF1* fDefaultNUAPDF[eNUAPDF_N] = {NULL};             // default distributions used as pdfs to simulate events on-the-fly
+  TH1D* fCustomNUAPDF[eNUAPDF_N] = {NULL};             // custom, user-supplied distributions used to simulate NUA
+  TString* fCustomNUAPDFHistNames[eNUAPDF_N] = {NULL}; // these are the names of histograms holding custom NUA in an external file. There is a configurable for this one.
+  TString fFileWithCustomNUA = "";                     // path to external ROOT file which holds all histograms with custom NUA
+  Double_t fMaxValuePDF[eNUAPDF_N] = {0.};             // see algorithm used in Accept(...). I implemented it as a data member, so that it is not calculated again and again at each particle call
 } nua;
 
 // *) Internal validation:
