@@ -68,13 +68,20 @@ struct HfTaskMcEfficiencyToXiPi {
                        kNTrackableSteps };
 
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
-  using CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfToXiPiMCRec, aod::HfSelToXiPi>;
-  using ParticleInfo = soa::Join<aod::McParticles, aod::HfToXiPiMCGen>;
+  using Xic0CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfXicToXiPiMCRec, aod::HfSelToXiPi>;
+  using Omegac0CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfOmegacToXiPiMCRec, aod::HfSelToXiPi>;
+  using ParticleInfo = soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
+    if (!doprocessOmegac0 && !doprocessXic0) {
+      LOGF(fatal, "Neither processOmegac0 nor processXic0 enabled, please choose one!");
+    } else if (doprocessOmegac0 && doprocessXic0){
+      LOGF(fatal, "Both processOmegac0 and processXic0 enabled, please choose ONLY one!");
+    }
+
     auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
     hCandidates->GetAxis(1)->SetTitle("#it{m}_{inv} (GeV/#it{c}^{2})");
@@ -112,9 +119,9 @@ struct HfTaskMcEfficiencyToXiPi {
 
     int decayFlag = 0;
     if (pdgCode == Pdg::kXiC0) {
-      decayFlag = 1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi;
+      decayFlag = 1 << aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi;
     } else if (pdgCode == Pdg::kOmegaC0) {
-      decayFlag = 1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi;
+      decayFlag = 1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi;
     } else {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
     }
@@ -193,10 +200,10 @@ struct HfTaskMcEfficiencyToXiPi {
     int decayFlagGen = 0;
 
     if (pdgCode == Pdg::kXiC0) {
-      decayFlagGen = 1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi;
+      decayFlagGen = 1 << aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi;
       mass = MassXiC0;
     } else if (pdgCode == Pdg::kOmegaC0) {
-      decayFlagGen = 1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi;
+      decayFlagGen = 1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi;
       mass = MassOmegaC0;
     } else {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
@@ -364,21 +371,23 @@ struct HfTaskMcEfficiencyToXiPi {
   }   // close candidateMcLoop
 
   // process functions
-  void process(CandidateInfo const& candidates,
-               ParticleInfo const& genParticles,
-               TracksWithSelectionMC const& tracks,
-               aod::McCollisionLabels const& colls)
+  void processXic0(Xic0CandidateInfo const& candidates,
+                  ParticleInfo const& genParticles,
+                  TracksWithSelectionMC const& tracks,
+                  aod::McCollisionLabels const& colls)
   {
-    if (matchXic && matchOmegac) {
-      LOGP(fatal, "Can't match Omegac0 and Xic0 at the same time, please choose one");
-    } else if (!matchXic && !matchOmegac) {
-      LOGP(fatal, "Please match either Omegac0 or Xic0");
-    } else if (matchXic) {
-      candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kXiC0);
-    } else if (matchOmegac) {
-      candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kOmegaC0);
-    }
+    candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kXiC0);
   }
+  PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processXic0, "Enable Xic0 efficiency process", true);
+
+  void processOmegac0(Omegac0CandidateInfo const& candidates,
+                  ParticleInfo const& genParticles,
+                  TracksWithSelectionMC const& tracks,
+                  aod::McCollisionLabels const& colls)
+  {
+    candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kOmegaC0);
+  }
+  PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processOmegac0, "Enable Omegac0 efficiency process", false);
 
 }; // close struct
 
