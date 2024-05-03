@@ -120,7 +120,6 @@ struct kstarqa {
   ConfigurableAxis binsMultPlot{"binsCent", {201, -0.5f, 200.5f}, "Binning of the centrality axis for plots"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
 
-
   void init(InitContext const&)
   {
     // Axes
@@ -485,7 +484,6 @@ struct kstarqa {
 
       ROOT::Math::PtEtaPhiMVector temp1(track1.pt(), track1.eta(), track1.phi(), massKa);
       ROOT::Math::PtEtaPhiMVector temp1rot(track1.pt(), track1.eta(), track1.phi() + TMath::Pi(), massKa);
-      
       kaons.push_back(temp1);
       kaonsrot.push_back(temp1rot);
       KaonIndex.push_back(track1.globalIndex());
@@ -555,12 +553,11 @@ struct kstarqa {
             // LOG(info) << "opening angle" << openingangle;
 
             if (TMath::Abs(CKSVector.Rapidity()) < 0.5) {
-              if (PionSign.at(i3) * KaonSign.at(i1) < 0){
+              if (PionSign.at(i3) * KaonSign.at(i1) < 0) {
                 histos.fill(HIST("h3KstarInvMassUnlikeSign"), multiplicity, CKSVector.Pt(), CKSVector.M());
                 histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, CKSVectorRot1.Pt(), CKSVectorRot1.M());
                 histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, CKSVectorRot2.Pt(), CKSVectorRot2.M());
-                }
-              else if (PionSign.at(i3) * KaonSign.at(i1) > 0)
+              } else if (PionSign.at(i3) * KaonSign.at(i1) > 0)
                 histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, CKSVector.Pt(), CKSVector.M());
             }
           }
