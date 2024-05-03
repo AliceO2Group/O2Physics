@@ -9,21 +9,16 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-include_guard()
+find_package(ONNXRuntime::ONNXRuntime CONFIG)
+if (ONNXRuntime::ONNXRuntime_FOUND)
+  set(onnxruntime_FOUND 1)
+  add_library(onnxruntime::onnxruntime ALIAS ONNXRuntime::ONNXRuntime)
+endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_MODULE_PATH})
+if (NOT ONNXRuntime::ONNXRuntime_FOUND)
+  find_package(onnxruntime CONFIG)
+  if (onnxruntime_FOUND)
+    add_library(ONNXRuntime::ONNXRuntime ALIAS onnxruntime::onnxruntime)
+  endif()
+endif()
 
-include(FeatureSummary)
-
-find_package(O2 CONFIG)
-set_package_properties(O2 PROPERTIES TYPE REQUIRED)
-
-find_package(KFParticle)
-set_package_properties(KFParticle PROPERTIES TYPE REQUIRED)
-
-find_package(fjcontrib)
-set_package_properties(fjcontrib PROPERTIES TYPE REQUIRED)
-
-find_package(ONNXRuntime)
-
-feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
