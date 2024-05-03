@@ -143,7 +143,7 @@ class FemtoDreamContainer
             T& kstarBins4D, T& mTBins4D, T& multBins4D, T& multPercentileBins4D,
             bool isMC, bool use4dplots, bool extendedplots,
             float highkstarCut,
-            bool smearingByOrigin = false, ConfigurableAxis invMassBin = {"invMassBin", {1, 1.5, 3.5}, "InvMass binning"})
+            bool smearingByOrigin = false, ConfigurableAxis invMassBin = {"invMassBin", {250, 2.0, 2.5}, "InvMass binning"})
   {
     mHistogramRegistry = registry;
     std::string femtoObs;
@@ -204,7 +204,12 @@ class FemtoDreamContainer
   {
     const float kT = FemtoDreamMath::getkT(part1, mMassOne, part2, mMassTwo);
     if constexpr (isHF) {
-      const float mP2 = part2.m();
+      float mP2;
+      if (part2.candidateSelFlag() == 1) {
+        mP2 = part2.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+      } else {
+        mP2 = part2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
+      }
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmP2"), femtoObs, mP2);
     }
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairDist"), femtoObs);

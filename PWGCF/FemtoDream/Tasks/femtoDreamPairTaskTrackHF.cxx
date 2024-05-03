@@ -88,23 +88,22 @@ struct femtoDreamPairTaskTrackHF {
 
   /// Particle 2 (HF)
   Configurable<int> ConfHF_PDGCode{"ConfHF_PDGCode", 4122, "PDG code of particle 2 Charm Hadron"};
+  Configurable<int8_t> ConfHF_CandSel{"ConfHF_CandSel", 1, "candidate selection for charm hadron"};
   Configurable<float> ConfHF_minInvMass{"ConfHF_minInvMass", 2.15, "Minimum invariant mass of Charm Hadron (particle 2)"};
   Configurable<float> ConfHF_maxInvMass{"ConfHF_maxInvMass", 2.45, "Maximum invariant mass of Charm Hadron (particle 2)"};
   Configurable<float> ConfHF_minPt{"ConfHF_minPt", 0., "Minimum pT of Charm Hadron (particle 2)"};
   Configurable<float> ConfHF_maxPt{"ConfHF_maxPt", 999., "Maximum pT of Charm Hadron (particle 2)"};
-  Configurable<float> ConfHF_minEta{"ConfHF_minEta", -10., "Minimum eta of Charm Hadron (particle 2)"};
-  Configurable<float> ConfHF_maxEta{"ConfHF_maxEta", 10., "Maximum eta of Charm Hadron (particle 2)"};
   Configurable<float> ConfHF_promptBDT{"ConfHF_promptBDT", 0., "Minimum prompt bdt score Charm Hadron (particle 2)"};
   Configurable<float> ConfHF_fdBDT{"ConfHF_fdBDT", 0., "Minimum feed-down bdt score Charm Hadron (particle 2)"};
   Configurable<float> ConfHF_bkgBDT{"ConfHF_bkgBDT", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
 
-  Filter hfMassFilterUp = aod::fdhf::m > ConfHF_minInvMass;
-  Filter hfMassFilterLow = aod::fdhf::m < ConfHF_maxInvMass;
-  Filter hfPtFilterUp = aod::fdhf::pt > ConfHF_minPt;
-  Filter hfPtFilterLow = aod::fdhf::pt < ConfHF_maxPt;
-  Filter hfEtaFilterUp = aod::fdhf::eta > ConfHF_minEta;
-  Filter hfEtaFilterLow = aod::fdhf::eta < ConfHF_maxEta;
-
+  // Filter hfMassFilterUp = aod::fdhf::charmM > ConfHF_minInvMass;
+  // Filter hfMassFilterLow = aod::fdhf::m < ConfHF_maxInvMass;
+  // Filter hfPtFilterUp = aod::fdhf::pt > ConfHF_minPt;
+  // Filter hfPtFilterLow = aod::fdhf::Pt < ConfHF_maxPt;
+  // Filter hfEtaFilterUp = aod::fdhf::Eta > ConfHF_minEta;
+  // Filter hfEtaFilterLow = aod::fdhf::Eta < ConfHF_maxEta;
+  Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= ConfHF_CandSel;
   /// Histogramming for particle 2
   // FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCharmHadron, 2> trackHistoPartTwo;
 
@@ -247,9 +246,20 @@ struct femtoDreamPairTaskTrackHF {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
+      float invMass;
+      if (p2.candidateSelFlag() == 1) {
+        invMass = p2.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+      } else {
+        invMass = p2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
+      }
+
+      if (invMass < ConfHF_minInvMass || invMass > ConfHF_maxInvMass)
+        continue;
+      if (p2.pt() < ConfHF_minPt || p2.pt() > ConfHF_maxPt)
+        continue;
 
       fillFemtoResult(
-        p2.m(),
+        invMass,
         p2.pt(),
         p1.pt(),
         p2.bdtBkg(),
@@ -306,9 +316,20 @@ struct femtoDreamPairTaskTrackHF {
         } else {
           partSign = 1 << 1;
         }
-
+        // if(p2.candidateSelFlag()==1)std::cout<<p2.lcm(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus})<<"     "<<p2.m()<<std::endl;
+        // std::cout<<"mom "<<p2.lcp()<<"   "<<p2.p()<<std::endl;
+        // std::cout<<"pt "<<p2.lcpt()<<"   "<<p2.pt()<<std::endl;
+        // std::cout<<"Y "<<p2.lcy()<<"   "<<p2.y()<<std::endl;
+        // std::cout<<"Eta "<<p2.lceta()<<"   "<<p2.eta()<<std::endl;
+        // std::cout<<"Phi "<<p2.lcphi()<<"   "<<p2.phi()<<std::endl;
+        float invMass;
+        if (p2.candidateSelFlag() == 1) {
+          invMass = p2.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+        } else {
+          invMass = p2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
+        }
         fillFemtoResult(
-          p2.m(),
+          invMass,
           p2.pt(),
           p1.pt(),
           p2.bdtBkg(),
