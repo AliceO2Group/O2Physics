@@ -14,12 +14,12 @@ o2physics_add_dpl_workflow(jfluc-analysis
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(flow-spc-task
+o2physics_add_dpl_workflow(flow-spc
                     SOURCES flowJSPCAnalysisTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(flow-nuacreation-task
+o2physics_add_dpl_workflow(flow-nuacreation
                     SOURCES flowJNUACreationTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)

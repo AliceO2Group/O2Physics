@@ -16,9 +16,7 @@
 #define PWGCF_JCORRAN_CORE_FLOWJSPCOBSERVABLES_H_
 
 // O2 headers. //
-// #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
-// #include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -99,5 +97,4 @@ class FlowJSPCObservables
  private:
   ClassDefNV(FlowJSPCObservables, 1);
 };
-}
 #endif // PWGCF_JCORRAN_CORE_FLOWJSPCOBSERVABLES_H_

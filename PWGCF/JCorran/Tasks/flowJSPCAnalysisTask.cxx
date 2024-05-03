@@ -36,15 +36,14 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "PWGCF/Flow/Core/FlowJSPCAnalysis.h"
-#include "PWGCF/Flow/Core/FlowJSPCObservables.h"
+#include "PWGCF/JCorran/Core/FlowJSPCAnalysis.h"
+#include "PWGCF/JCorran/Core/FlowJSPCObservables.h"
 #include "PWGCF/JCorran/Core/FlowJHistManager.h"
 
 // Namespaces and definitions.
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::analysis::PWGCF::jspc;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                aod::FT0sCorrected, aod::CentFT0Ms,

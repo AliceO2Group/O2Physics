@@ -29,7 +29,6 @@
 
 // O2 headers. //
 #include "Framework/HistogramRegistry.h"
-// #include "Framework/StaticFor.h"
 
 // O2 Physics headers.
 
@@ -288,15 +287,15 @@ class FlowJHistManager
                             track.dcaZ());
     }
 
-    // if (mDebugLog) {
-    //   LOGF(info, "The ThisTrackQA has been filled for cBin = %d and mode = %d.",cBin, mode);
-    // }
+    if (mDebugLog) {
+      LOGF(info, "The ThisTrackQA has been filled for cBin = %d and mode = %d.", cBin, mode);
+    }
   }
 
  private:
   HistogramRegistry* mHistRegistryQA = nullptr; ///< For the QA output.
 
-  bool mDebugLog = true;           ///< Enable to print additional log for debug.
+  bool mDebugLog = false;          ///< Enable to print additional log for debug.
   bool mObtainNUA = false;         ///< Enable to get the 3D Zvtx-eta-phi distribution for NUA.
   bool mSaveAllQA = false;         ///< Save the additional QA (true for QA task).
   bool mSaveQABefore = false;      ///< Save the QA output before any selection.

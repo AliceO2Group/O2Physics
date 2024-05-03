@@ -23,10 +23,8 @@
 #include <TProfile.h>
 
 // O2 headers. //
-// #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
 #include "PWGCF/JCorran/Core/JQVectors.h"
-// #include "Framework/StaticFor.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -77,7 +75,6 @@ class FlowJSPCAnalysis
  private:
   const Int_t mNqHarmos = 113; ///< Highest harmo for Q(n,p): (v8*14part)+1.
   const Int_t mNqPowers = 15;  ///< Max power for Q(n,p): 14part+1.
-  // array<array<TComplex, mNqPowers>,mNqHarmos> cQvectors;
   const JQVectorsT* qvecs;
 
   HistogramRegistry* mHistRegistry = nullptr;
