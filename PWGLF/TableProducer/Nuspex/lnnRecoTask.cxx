@@ -50,8 +50,8 @@ constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNames{"3H"};
 
-constexpr int h3DauPdg{1000010030}; //PDG Triton
-constexpr int lnnPdg{1010000030}; //PDG Lnn
+constexpr int h3DauPdg{1000010030}; // PDG Triton
+constexpr int lnnPdg{1010000030}; // PDG Lnn
 
 std::shared_ptr<TH1> hEvents;
 std::shared_ptr<TH1> hZvtx;
@@ -119,7 +119,7 @@ struct lnnRecoTask {
   Configurable<float> masswidth{"lnnmasswidth", 0.06, "Mass width (GeV/c^2)"};
   Configurable<float> dcav0dau{"lnndcaDau", 1.0, "DCA V0 Daughters"};
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the lnncandidate"};
-  Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 1, "Minimum rigidity of the triton candidate"};
+  Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.5, "Minimum rigidity of the triton candidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
   Configurable<float> nSigmaMax3H{"nSigmaMax3H", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
@@ -290,7 +290,6 @@ struct lnnRecoTask {
       if (posTritonPID) {
         hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
       }
-
       if (negTritonPID) {
         hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
       }
@@ -342,7 +341,7 @@ struct lnnRecoTask {
         nCand = fitter.process(posTrackCov, negTrackCov);
       } catch (...) {
         LOG(error) << "Exception caught in DCA fitter process call!";
-        continue;
+        continue; 
       }
       if (nCand == 0) {
         continue;
@@ -397,6 +396,7 @@ struct lnnRecoTask {
 
       for (int i = 0; i < 3; i++) {
         lnnCand.decVtx[i] = lnnCand.decVtx[i] - primVtx[i];
+        LOG(info) << lnnCand.decVtx[i];
       }
 
       // if survived all selections, propagate decay daughters to PV
