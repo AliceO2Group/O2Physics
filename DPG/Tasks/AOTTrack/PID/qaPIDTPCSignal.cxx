@@ -36,7 +36,6 @@ struct tpcPidQaSignal {
   Configurable<bool> runPerRunOutput{"runPerRunOutput", false, "Flag to produce run by run output for e.g. lite calibration purposes"};
   Configurable<bool> enabledEdxPerID{"enabledEdxPerID", false, "Flag to produce dE/dx per particle ID histograms"};
   Configurable<int> trdSelection{"trdSelection", 0, "Flag for the TRD selection: -1 no TRD, 0 no selection, 1 TRD"};
-  Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1f, "Downsampling factor for the events for derived data"};
   Configurable<float> minP{"minP", 0.01, "Minimum momentum in range"};
   Configurable<float> maxEta{"maxEta", 0.8, "Maximum eta in range"};
   Configurable<float> maxITSChi2{"maxITSChi2", 36, "Maximum chi2 in range"};
@@ -50,9 +49,12 @@ struct tpcPidQaSignal {
   ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
   Configurable<float> minTPCNcls{"minTPCNcls", 0.f, "Minimum number or TPC Clusters for tracks"};
   Configurable<float> minNClsCrossedRows{"minNClsCrossedRows", 70.f, "Minimum number or TPC crossed rows for tracks"};
+  Configurable<bool> enableITS{"enableITS", false, "Enable ITS plots"};
 
-  std::shared_ptr<TH3> hdedx;
-  std::array<std::shared_ptr<TH3>, 9> hdedx_perID;
+  std::array<std::shared_ptr<TH2>, 2> hdedx;
+  std::array<std::array<std::shared_ptr<TH2>, 9>, 2> hdedx_perID;
+  std::array<std::shared_ptr<TH3>, 2> hdedx_its;
+  std::array<std::array<std::shared_ptr<TH3>, 9>, 2> hdedx_perID_its;
   int lastRun = -1;
   unsigned int randomSeed = 0;
   void init(o2::framework::InitContext&)
@@ -64,7 +66,6 @@ struct tpcPidQaSignal {
       pAxis.makeLogarithmic();
     }
     const AxisSpec dedxAxis{dEdxBins, "d#it{E}/d#it{x} Arb. units"};
-    const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
 
     // Event properties
     auto h = histos.add<TH1>("event/evsel", "", kTH1D, {{10, 0.5, 10.5, "Ev. Sel."}});
@@ -72,7 +73,7 @@ struct tpcPidQaSignal {
     h->GetXaxis()->SetBinLabel(2, "Passed ev. sel.");
     h->GetXaxis()->SetBinLabel(3, "Passed vtx Z");
 
-    // Event properties
+    // Track properties
     h = histos.add<TH1>("trksel", "", kTH1D, {{10, 0.5, 10.5, "Trk. Sel."}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, Form("Has > %i ITS clusters", minITSCls.value));
@@ -92,12 +93,30 @@ struct tpcPidQaSignal {
     }
 
     histos.add("event/vertexz", "", kTH1D, {vtxZAxis});
-    hdedx = histos.add<TH3>("event/tpcsignal", "", kTH3D, {pAxis, dedxAxis, chargeAxis});
-    if (enabledEdxPerID) {
-      for (int i = 0; i < 9; i++) {
-        hdedx_perID[i] = histos.add<TH3>(Form("event/tpcsignal_%i", i), "", kTH3D, {pAxis, dedxAxis, chargeAxis});
+
+    const AxisSpec itsAxis{20, -0.5, 19.5, "<ITS cluster size>"};
+    if (enableITS) {
+      if (enabledEdxPerID) {
+        for (int i = 0; i < 9; i++) {
+          hdedx_perID_its[0][i] = histos.add<TH3>(Form("event/tpcsignalPos_%i", i), "", kTH3F, {pAxis, dedxAxis, itsAxis});
+          hdedx_perID_its[1][i] = histos.add<TH3>(Form("event/tpcsignalNeg_%i", i), "", kTH3F, {pAxis, dedxAxis, itsAxis});
+        }
+      } else {
+        hdedx_its[0] = histos.add<TH3>("event/tpcsignalPos", "", kTH3F, {pAxis, dedxAxis, itsAxis});
+        hdedx_its[1] = histos.add<TH3>("event/tpcsignalNeg", "", kTH3F, {pAxis, dedxAxis, itsAxis});
+      }
+    } else {
+      if (enabledEdxPerID) {
+        for (int i = 0; i < 9; i++) {
+          hdedx_perID[0][i] = histos.add<TH2>(Form("event/tpcsignalPos_%i", i), "", kTH2D, {pAxis, dedxAxis});
+          hdedx_perID[1][i] = histos.add<TH2>(Form("event/tpcsignalNeg_%i", i), "", kTH2D, {pAxis, dedxAxis});
+        }
+      } else {
+        hdedx[0] = histos.add<TH2>("event/tpcsignalPos", "", kTH2D, {pAxis, dedxAxis});
+        hdedx[1] = histos.add<TH2>("event/tpcsignalNeg", "", kTH2D, {pAxis, dedxAxis});
       }
     }
+
     LOG(info) << "QA PID TPC histograms:";
     histos.print();
   }
@@ -158,10 +177,6 @@ struct tpcPidQaSignal {
                     soa::Filtered<TrackCandidates> const& tracks,
                     aod::BCs const&)
   {
-    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
-      return;
-    }
-
     histos.fill(HIST("event/evsel"), 1);
     if (!collision.sel8()) {
       return;
@@ -195,19 +210,10 @@ struct tpcPidQaSignal {
         default:
           LOG(fatal) << "Invalid TRD selection";
       }
-      if (runPerRunOutput.value == true && lastRun != collision.bc().runNumber()) {
-        lastRun = collision.bc().runNumber();
-        AxisSpec pAxis{nBinsP, minP, maxP, "#it{p}/|Z| (GeV/#it{c})"};
-        if (logAxis) {
-          pAxis.makeLogarithmic();
-        }
-        const AxisSpec dedxAxis{dEdxBins, "d#it{E}/d#it{x} Arb. units"};
-        const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
-        hdedx = histos.add<TH3>(Form("Run%i/tpcsignal", lastRun), "", kTH3D, {pAxis, dedxAxis, chargeAxis});
-      }
-      hdedx->Fill(t.tpcInnerParam(), t.tpcSignal(), t.sign());
+      const int signIdx = t.sign() > 0 ? 0 : 1;
+      hdedx[signIdx]->Fill(t.tpcInnerParam(), t.tpcSignal());
       if (enabledEdxPerID) {
-        hdedx_perID[t.pidForTracking()]->Fill(t.tpcInnerParam(), t.tpcSignal(), t.sign());
+        hdedx_perID[signIdx][t.pidForTracking()]->Fill(t.tpcInnerParam(), t.tpcSignal());
       }
     }
   }
@@ -215,10 +221,6 @@ struct tpcPidQaSignal {
 
   void processNoEvSel(soa::Filtered<TrackCandidates> const& tracks, aod::Collisions const& collisions)
   {
-    if (fractionOfEvents < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled
-      return;
-    }
-
     histos.fill(HIST("event/evsel"), 1, collisions.size());
 
     for (const auto& t : tracks) {
@@ -232,9 +234,30 @@ struct tpcPidQaSignal {
         continue;
       }
 
-      hdedx->Fill(t.tpcInnerParam(), t.tpcSignal(), t.sign());
-      if (enabledEdxPerID) {
-        hdedx_perID[t.pidForTracking()]->Fill(t.tpcInnerParam(), t.tpcSignal(), t.sign());
+      const int signIdx = t.sign() > 0 ? 0 : 1;
+      if (enableITS) {
+        float average = 0;
+        int n = 0;
+        for (int i = 0; i < 7; i++) {
+          if (t.itsClsSizeInLayer(i) <= 0) {
+            continue;
+          }
+          average += t.itsClsSizeInLayer(i);
+          n++;
+        }
+        average = n > 0 ? average / n : 0;
+        average *= cos(atan(t.tgl()));
+        if (enabledEdxPerID) {
+          hdedx_perID_its[signIdx][t.pidForTracking()]->Fill(t.tpcInnerParam(), t.tpcSignal(), average);
+        } else {
+          hdedx_its[signIdx]->Fill(t.tpcInnerParam(), t.tpcSignal(), average);
+        }
+      } else {
+        if (enabledEdxPerID) {
+          hdedx_perID[signIdx][t.pidForTracking()]->Fill(t.tpcInnerParam(), t.tpcSignal());
+        } else {
+          hdedx[signIdx]->Fill(t.tpcInnerParam(), t.tpcSignal());
+        }
       }
     }
   }
