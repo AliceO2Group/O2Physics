@@ -47,6 +47,7 @@ using namespace o2::framework::expressions;
 
 struct phosNonlin {
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
+  Configurable<int> mParamType{"mParamType", 0, "Functional form 0: a-la data, 1: a-la MC"};
   Configurable<float> mMinCluE{"mMinCluE", 0.1, "Minimum cluster energy for analysis"};
   Configurable<float> mMinCluTime{"minCluTime", -25.e-9, "Min. cluster time"};
   Configurable<float> mMaxCluTime{"maxCluTime", 25.e-9, "Max. cluster time"};
@@ -248,15 +249,26 @@ struct phosNonlin {
   {
     if (en <= 0.)
       return 0.;
-    const Double_t a = mA + mdAi * (i - mNp / 2) + mdAj * (j - mNp / 2);
-    const Double_t b = mB + mdBi * (i - mNp / 2) + mdBj * (j - mNp / 2);
-    const Double_t c = mC + mdCi * (i - mNp / 2) + mdCj * (j - mNp / 2);
-    const Double_t d = mD + mdDk * (k - mNp / 2) + mdDl * (l - mNp / 2);
-    const Double_t e = mE + mdEk * (k - mNp / 2) + mdEl * (l - mNp / 2);
-    const Double_t f = mF + mdFk * (k - mNp / 2) + mdFl * (l - mNp / 2);
-    const Double_t g = mG + mdGk * (k - mNp / 2) + mdGl * (l - mNp / 2);
-    const Double_t s = mS + mdSi * (i - mNp / 2) + mdSj * (j - mNp / 2);
-    return a + b / en + c / (en * en) + d / ((en - e) * (en - e) + f * f) + g * en + s / (en * en * en * en);
+    if (mParamType == 0) {
+      const Double_t a = mA + mdAi * (i - mNp / 2) + mdAj * (j - mNp / 2);
+      const Double_t b = mB + mdBi * (i - mNp / 2) + mdBj * (j - mNp / 2);
+      const Double_t c = mC + mdCi * (i - mNp / 2) + mdCj * (j - mNp / 2);
+      const Double_t d = mD + mdDk * (k - mNp / 2) + mdDl * (l - mNp / 2);
+      const Double_t e = mE + mdEk * (k - mNp / 2) + mdEl * (l - mNp / 2);
+      const Double_t f = mF + mdFk * (k - mNp / 2) + mdFl * (l - mNp / 2);
+      const Double_t g = mG + mdGk * (k - mNp / 2) + mdGl * (l - mNp / 2);
+      const Double_t s = mS + mdSi * (i - mNp / 2) + mdSj * (j - mNp / 2);
+      return a + b / en + c / (en * en) + d / ((en - e) * (en - e) + f * f) + g * en + s / (en * en * en * en);
+    }
+    if (mParamType == 1) {
+      const Double_t a = mA + mdAi * (i - mNp / 2) + mdAj * (j - mNp / 2);
+      const Double_t b = mB + mdBi * (i - mNp / 2) + mdBj * (j - mNp / 2);
+      const Double_t c = mC + mdCi * (i - mNp / 2) + mdCj * (j - mNp / 2);
+      const Double_t d = mD + mdDk * (k - mNp / 2) + mdDl * (l - mNp / 2);
+      const Double_t e = mE + mdEk * (k - mNp / 2) + mdEl * (l - mNp / 2);
+      return a + b / en + c / en / en + d / TMath::Sqrt(en) + e / en / TMath::Sqrt(en);
+    }
+    return 0.;
   }
 };
 
