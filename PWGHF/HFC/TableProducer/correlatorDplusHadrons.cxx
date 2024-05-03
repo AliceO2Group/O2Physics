@@ -100,11 +100,11 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   {
     bool isDplusFound = 0;
     if (candidates.size() > 0) {
-     for (const auto& candidate : candidates) {
+      for (const auto& candidate : candidates) {
         if (std::abs(hfHelper.yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin) {
           continue;
         }
-       isDplusFound = 1;
+        isDplusFound = 1;
         break;
       }
     }
@@ -117,7 +117,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   {
     bool isDplusFound = 0;
     for (const auto& particle1 : mcParticles) {
-      if (std::abs(particle1.pdgCode()) != Pdg::kDPlus){
+      if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
       double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
@@ -235,7 +235,7 @@ struct HfCorrelatorDplusHadrons {
       int nTracks = 0;
       if (collision.numContrib() > 1) {
         for (const auto& track : tracks) {
-          if (std::abs(track.eta()) >= etaTrackMax || std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax ) {
+          if (std::abs(track.eta()) >= etaTrackMax || std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
             continue;
           }
           nTracks++;
@@ -357,7 +357,7 @@ struct HfCorrelatorDplusHadrons {
 
         for (const auto& track : tracks) {
           // apply track selection
-          if (!track.isGlobalTrackWoDCA()) { 
+          if (!track.isGlobalTrackWoDCA()) {
             continue;
           }
           // Removing Dplus daughters by checking track indices
