@@ -62,15 +62,25 @@ struct tpcPidFull {
   using CollMC = soa::Join<aod::Collisions, aod::PIDMults, aod::McCollisionLabels>;
 
   // Tables to produce
-  Produces<o2::aod::pidTPCFullEl> tablePIDEl;
-  Produces<o2::aod::pidTPCFullMu> tablePIDMu;
-  Produces<o2::aod::pidTPCFullPi> tablePIDPi;
-  Produces<o2::aod::pidTPCFullKa> tablePIDKa;
-  Produces<o2::aod::pidTPCFullPr> tablePIDPr;
-  Produces<o2::aod::pidTPCFullDe> tablePIDDe;
-  Produces<o2::aod::pidTPCFullTr> tablePIDTr;
-  Produces<o2::aod::pidTPCFullHe> tablePIDHe;
-  Produces<o2::aod::pidTPCFullAl> tablePIDAl;
+  Produces<o2::aod::pidTPCFullEl> tablePIDFullEl;
+  Produces<o2::aod::pidTPCFullMu> tablePIDFullMu;
+  Produces<o2::aod::pidTPCFullPi> tablePIDFullPi;
+  Produces<o2::aod::pidTPCFullKa> tablePIDFullKa;
+  Produces<o2::aod::pidTPCFullPr> tablePIDFullPr;
+  Produces<o2::aod::pidTPCFullDe> tablePIDFullDe;
+  Produces<o2::aod::pidTPCFullTr> tablePIDFullTr;
+  Produces<o2::aod::pidTPCFullHe> tablePIDFullHe;
+  Produces<o2::aod::pidTPCFullAl> tablePIDFullAl;
+
+  Produces<o2::aod::pidTPCEl> tablePIDTinyEl;
+  Produces<o2::aod::pidTPCMu> tablePIDTinyMu;
+  Produces<o2::aod::pidTPCPi> tablePIDTinyPi;
+  Produces<o2::aod::pidTPCKa> tablePIDTinyKa;
+  Produces<o2::aod::pidTPCPr> tablePIDTinyPr;
+  Produces<o2::aod::pidTPCDe> tablePIDTinyDe;
+  Produces<o2::aod::pidTPCTr> tablePIDTinyTr;
+  Produces<o2::aod::pidTPCHe> tablePIDTinyHe;
+  Produces<o2::aod::pidTPCAl> tablePIDTinyAl;
   Produces<o2::aod::mcTPCTuneOnData> tableTuneOnData;
 
   // TPC PID Response
@@ -99,15 +109,24 @@ struct tpcPidFull {
   Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
   Configurable<int> networkSetNumThreads{"networkSetNumThreads", 0, "Especially important for running on a SLURM cluster. Sets the number of threads used for execution."};
   // Configuration flags to include and exclude particle hypotheses
-  Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidPi{"pid-pi", -1, {"Produce PID information for the Pion mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidKa{"pid-ka", -1, {"Produce PID information for the Kaon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidPr{"pid-pr", -1, {"Produce PID information for the Proton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidDe{"pid-de", -1, {"Produce PID information for the Deuterons mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidFullEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidFullMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidFullPi{"pid-pi", -1, {"Produce PID information for the Pion mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidFullKa{"pid-ka", -1, {"Produce PID information for the Kaon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidFullPr{"pid-pr", -1, {"Produce PID information for the Proton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidFullDe{"pid-de", -1, {"Produce PID information for the Deuterons mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidFullTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidFullHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidFullAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidTinyEl{"pid-tiny-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidTinyMu{"pid-tiny-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidTinyPi{"pid-tiny-pi", -1, {"Produce PID information for the Pion mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidTinyKa{"pid-tiny-ka", -1, {"Produce PID information for the Kaon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidTinyPr{"pid-tiny-pr", -1, {"Produce PID information for the Proton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidTinyDe{"pid-tiny-de", -1, {"Produce PID information for the Deuterons mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidTinyTr{"pid-tiny-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidTinyHe{"pid-tiny-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> pidTinyAl{"pid-tiny-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> enableTuneOnDataTable{"enableTuneOnDataTable", -1, {"Produce tuned dE/dx signal table for MC to be used as raw signal in other tasks (default -1, 'only if needed'"}};
   Configurable<int> useNetworkEl{"useNetworkEl", 1, {"Switch for applying neural network on the electron mass hypothesis (if network enabled) (set to 0 to disable)"}};
   Configurable<int> useNetworkMu{"useNetworkMu", 1, {"Switch for applying neural network on the muon mass hypothesis (if network enabled) (set to 0 to disable)"}};
@@ -132,17 +151,28 @@ struct tpcPidFull {
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
-      enableFlagIfTableRequired(initContext, "pidTPCFull" + particle, flag);
+      enableFlagIfTableRequired(initContext, "pidTPC" + particle, flag);
     };
-    enableFlag("El", pidEl);
-    enableFlag("Mu", pidMu);
-    enableFlag("Pi", pidPi);
-    enableFlag("Ka", pidKa);
-    enableFlag("Pr", pidPr);
-    enableFlag("De", pidDe);
-    enableFlag("Tr", pidTr);
-    enableFlag("He", pidHe);
-    enableFlag("Al", pidAl);
+    enableFlag("FullEl", pidFullEl);
+    enableFlag("FullMu", pidFullMu);
+    enableFlag("FullPi", pidFullPi);
+    enableFlag("FullKa", pidFullKa);
+    enableFlag("FullPr", pidFullPr);
+    enableFlag("FullDe", pidFullDe);
+    enableFlag("FullTr", pidFullTr);
+    enableFlag("FullHe", pidFullHe);
+    enableFlag("FullAl", pidFullAl);
+
+    enableFlag("El", pidTinyEl);
+    enableFlag("Mu", pidTinyMu);
+    enableFlag("Pi", pidTinyPi);
+    enableFlag("Ka", pidTinyKa);
+    enableFlag("Pr", pidTinyPr);
+    enableFlag("De", pidTinyDe);
+    enableFlag("Tr", pidTinyTr);
+    enableFlag("He", pidTinyHe);
+    enableFlag("Al", pidTinyAl);
+
     if (doprocessMcTuneOnData) {
       enableFlagIfTableRequired(initContext, "mcTPCTuneOnData", enableTuneOnDataTable);
     }
@@ -350,15 +380,25 @@ struct tpcPidFull {
     };
 
     // Prepare memory for enabled tables
-    reserveTable(pidEl, tablePIDEl);
-    reserveTable(pidMu, tablePIDMu);
-    reserveTable(pidPi, tablePIDPi);
-    reserveTable(pidKa, tablePIDKa);
-    reserveTable(pidPr, tablePIDPr);
-    reserveTable(pidDe, tablePIDDe);
-    reserveTable(pidTr, tablePIDTr);
-    reserveTable(pidHe, tablePIDHe);
-    reserveTable(pidAl, tablePIDAl);
+    reserveTable(pidFullEl, tablePIDFullEl);
+    reserveTable(pidFullMu, tablePIDFullMu);
+    reserveTable(pidFullPi, tablePIDFullPi);
+    reserveTable(pidFullKa, tablePIDFullKa);
+    reserveTable(pidFullPr, tablePIDFullPr);
+    reserveTable(pidFullDe, tablePIDFullDe);
+    reserveTable(pidFullTr, tablePIDFullTr);
+    reserveTable(pidFullHe, tablePIDFullHe);
+    reserveTable(pidFullAl, tablePIDFullAl);
+
+    reserveTable(pidTinyEl, tablePIDTinyEl);
+    reserveTable(pidTinyMu, tablePIDTinyMu);
+    reserveTable(pidTinyPi, tablePIDTinyPi);
+    reserveTable(pidTinyKa, tablePIDTinyKa);
+    reserveTable(pidTinyPr, tablePIDTinyPr);
+    reserveTable(pidTinyDe, tablePIDTinyDe);
+    reserveTable(pidTinyTr, tablePIDTinyTr);
+    reserveTable(pidTinyHe, tablePIDTinyHe);
+    reserveTable(pidTinyAl, tablePIDTinyAl);
 
     const uint64_t tracksForNet_size = (skipTPCOnly) ? notTPCStandaloneTracks.size() : tracksWithTPC.size();
     std::vector<float> network_prediction;
@@ -391,7 +431,7 @@ struct tpcPidFull {
       }
 
       // Check and fill enabled tables
-      auto makeTablePid = [&trk, &collisions, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flag, auto& table, const o2::track::PID::ID pid) {
+      auto makeTablePidFull = [&trk, &collisions, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flag, auto& table, const o2::track::PID::ID pid) {
         if (flag != 1) {
           return;
         } else {
@@ -440,15 +480,69 @@ struct tpcPidFull {
         }
       };
 
-      makeTablePid(pidEl, tablePIDEl, o2::track::PID::Electron);
-      makeTablePid(pidMu, tablePIDMu, o2::track::PID::Muon);
-      makeTablePid(pidPi, tablePIDPi, o2::track::PID::Pion);
-      makeTablePid(pidKa, tablePIDKa, o2::track::PID::Kaon);
-      makeTablePid(pidPr, tablePIDPr, o2::track::PID::Proton);
-      makeTablePid(pidDe, tablePIDDe, o2::track::PID::Deuteron);
-      makeTablePid(pidTr, tablePIDTr, o2::track::PID::Triton);
-      makeTablePid(pidHe, tablePIDHe, o2::track::PID::Helium3);
-      makeTablePid(pidAl, tablePIDAl, o2::track::PID::Alpha);
+      makeTablePidFull(pidFullEl, tablePIDFullEl, o2::track::PID::Electron);
+      makeTablePidFull(pidFullMu, tablePIDFullMu, o2::track::PID::Muon);
+      makeTablePidFull(pidFullPi, tablePIDFullPi, o2::track::PID::Pion);
+      makeTablePidFull(pidFullKa, tablePIDFullKa, o2::track::PID::Kaon);
+      makeTablePidFull(pidFullPr, tablePIDFullPr, o2::track::PID::Proton);
+      makeTablePidFull(pidFullDe, tablePIDFullDe, o2::track::PID::Deuteron);
+      makeTablePidFull(pidFullTr, tablePIDFullTr, o2::track::PID::Triton);
+      makeTablePidFull(pidFullHe, tablePIDFullHe, o2::track::PID::Helium3);
+      makeTablePidFull(pidFullAl, tablePIDFullAl, o2::track::PID::Alpha);
+
+      auto makeTablePidTiny = [&trk, &collisions, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flag, auto& table, const o2::track::PID::ID pid) {
+        if (flag != 1) {
+          return;
+        } else {
+          if (!trk.hasTPC()) {
+            table(aod::pidtpc_tiny::binning::underflowBin);
+            return;
+          }
+          if (skipTPCOnly) {
+            if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
+              table(aod::pidtpc_tiny::binning::underflowBin);
+              return;
+            }
+          }
+          auto expSignal = response->GetExpectedSignal(trk, pid);
+          auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid) : 0.07 * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
+          if (expSignal < 0. || expSigma < 0.) {                                                                                                   // skip if expected signal invalid
+            table(aod::pidtpc_tiny::binning::underflowBin);
+            return;
+          }
+          auto bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid];
+
+          if (useNetworkCorrection && speciesNetworkFlags[pid] && trk.has_collision() && bg > networkBetaGammaCutoff) {
+            // Here comes the application of the network. The output-dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
+            // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
+            if (network.getNumOutputNodes() == 1) {
+              aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() - network_prediction[count_tracks + tracksForNet_size * pid] * expSignal) / expSigma, table);
+            } else if (network.getNumOutputNodes() == 2) {
+              aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / expSignal - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]), table);
+            } else if (network.getNumOutputNodes() == 3) {
+              if (trk.tpcSignal() / expSignal >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
+                aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]), table);
+              } else {
+                aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]), table);
+              }
+            } else {
+              LOGF(fatal, "Network output-dimensions incompatible!");
+            }
+          } else {
+            aod::pidutils::packInTable<aod::pidtpc_tiny::binning>(response->GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid), table);
+          }
+        }
+      };
+
+      makeTablePidTiny(pidTinyEl, tablePIDTinyEl, o2::track::PID::Electron);
+      makeTablePidTiny(pidTinyMu, tablePIDTinyMu, o2::track::PID::Muon);
+      makeTablePidTiny(pidTinyPi, tablePIDTinyPi, o2::track::PID::Pion);
+      makeTablePidTiny(pidTinyKa, tablePIDTinyKa, o2::track::PID::Kaon);
+      makeTablePidTiny(pidTinyPr, tablePIDTinyPr, o2::track::PID::Proton);
+      makeTablePidTiny(pidTinyDe, tablePIDTinyDe, o2::track::PID::Deuteron);
+      makeTablePidTiny(pidTinyTr, tablePIDTinyTr, o2::track::PID::Triton);
+      makeTablePidTiny(pidTinyHe, tablePIDTinyHe, o2::track::PID::Helium3);
+      makeTablePidTiny(pidTinyAl, tablePIDTinyAl, o2::track::PID::Alpha);
 
       if (trk.hasTPC() && (!skipTPCOnly || trk.hasITS() || trk.hasTRD() || trk.hasTOF())) {
         count_tracks++; // Increment network track counter only if track has TPC, and (not skipping TPConly) or (is not TPConly)
@@ -474,17 +568,27 @@ struct tpcPidFull {
     };
 
     // Prepare memory for enabled tables
-    reserveTable(pidEl, tablePIDEl);
-    reserveTable(pidMu, tablePIDMu);
-    reserveTable(pidPi, tablePIDPi);
-    reserveTable(pidKa, tablePIDKa);
-    reserveTable(pidPr, tablePIDPr);
-    reserveTable(pidDe, tablePIDDe);
-    reserveTable(pidTr, tablePIDTr);
-    reserveTable(pidHe, tablePIDHe);
-    reserveTable(pidAl, tablePIDAl);
-    tableTuneOnData.reserve(outTable_size);
-    // reserveTable(enableTuneOnDataTable, tableTuneOnData); // Only produce the table of tuned dE/dx if the signal is requested by another task
+    reserveTable(pidFullEl, tablePIDFullEl);
+    reserveTable(pidFullMu, tablePIDFullMu);
+    reserveTable(pidFullPi, tablePIDFullPi);
+    reserveTable(pidFullKa, tablePIDFullKa);
+    reserveTable(pidFullPr, tablePIDFullPr);
+    reserveTable(pidFullDe, tablePIDFullDe);
+    reserveTable(pidFullTr, tablePIDFullTr);
+    reserveTable(pidFullHe, tablePIDFullHe);
+    reserveTable(pidFullAl, tablePIDFullAl);
+
+    reserveTable(pidTinyEl, tablePIDTinyEl);
+    reserveTable(pidTinyMu, tablePIDTinyMu);
+    reserveTable(pidTinyPi, tablePIDTinyPi);
+    reserveTable(pidTinyKa, tablePIDTinyKa);
+    reserveTable(pidTinyPr, tablePIDTinyPr);
+    reserveTable(pidTinyDe, tablePIDTinyDe);
+    reserveTable(pidTinyTr, tablePIDTinyTr);
+    reserveTable(pidTinyHe, tablePIDTinyHe);
+    reserveTable(pidTinyAl, tablePIDTinyAl);
+
+    reserveTable(enableTuneOnDataTable, tableTuneOnData); // Only produce the table of tuned dE/dx if the signal is requested by another task
 
     const uint64_t tracksForNet_size = (skipTPCOnly) ? mcnotTPCStandaloneTracks.size() : mctracksWithTPC.size();
     std::vector<float> network_prediction;
@@ -549,7 +653,7 @@ struct tpcPidFull {
       tableTuneOnData(mcTunedTPCSignal);
 
       // Check and fill enabled nsigma tables
-      auto makeTablePid = [&trk, &collisionsMc, &network_prediction, &count_tracks, &tracksForNet_size, &mcTunedTPCSignal, this](const int flag, auto& table, const o2::track::PID::ID pid) {
+      auto makeTablePidFull = [&trk, &collisionsMc, &network_prediction, &count_tracks, &tracksForNet_size, &mcTunedTPCSignal, this](const int flag, auto& table, const o2::track::PID::ID pid) {
         if (flag != 1) {
           return;
         }
@@ -599,15 +703,73 @@ struct tpcPidFull {
         }
       };
 
-      makeTablePid(pidEl, tablePIDEl, o2::track::PID::Electron);
-      makeTablePid(pidMu, tablePIDMu, o2::track::PID::Muon);
-      makeTablePid(pidPi, tablePIDPi, o2::track::PID::Pion);
-      makeTablePid(pidKa, tablePIDKa, o2::track::PID::Kaon);
-      makeTablePid(pidPr, tablePIDPr, o2::track::PID::Proton);
-      makeTablePid(pidDe, tablePIDDe, o2::track::PID::Deuteron);
-      makeTablePid(pidTr, tablePIDTr, o2::track::PID::Triton);
-      makeTablePid(pidHe, tablePIDHe, o2::track::PID::Helium3);
-      makeTablePid(pidAl, tablePIDAl, o2::track::PID::Alpha);
+      makeTablePidFull(pidFullEl, tablePIDFullEl, o2::track::PID::Electron);
+      makeTablePidFull(pidFullMu, tablePIDFullMu, o2::track::PID::Muon);
+      makeTablePidFull(pidFullPi, tablePIDFullPi, o2::track::PID::Pion);
+      makeTablePidFull(pidFullKa, tablePIDFullKa, o2::track::PID::Kaon);
+      makeTablePidFull(pidFullPr, tablePIDFullPr, o2::track::PID::Proton);
+      makeTablePidFull(pidFullDe, tablePIDFullDe, o2::track::PID::Deuteron);
+      makeTablePidFull(pidFullTr, tablePIDFullTr, o2::track::PID::Triton);
+      makeTablePidFull(pidFullHe, tablePIDFullHe, o2::track::PID::Helium3);
+      makeTablePidFull(pidFullAl, tablePIDFullAl, o2::track::PID::Alpha);
+
+      auto makeTablePidTiny = [&trk, &collisionsMc, &network_prediction, &count_tracks, &tracksForNet_size, &mcTunedTPCSignal, this](const int flag, auto& table, const o2::track::PID::ID pid) {
+        if (flag != 1) {
+          return;
+        }
+
+        if (!trk.hasTPC() || mcTunedTPCSignal < 0.f) {
+          table(aod::pidtpc_tiny::binning::underflowBin);
+          return;
+        }
+        if (skipTPCOnly) {
+          if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
+            table(aod::pidtpc_tiny::binning::underflowBin);
+            return;
+          }
+        }
+        auto expSignal = response->GetExpectedSignal(trk, pid);
+        auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisionsMc.iteratorAt(trk.collisionId()), trk, pid) : 0.07 * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
+        if (expSignal < 0. || expSigma < 0.) {                                                                                                     // skip if expected signal invalid
+          table(aod::pidtpc_tiny::binning::underflowBin);
+          return;
+        }
+        float bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid]; // estimated beta-gamma for network cutoff
+
+        if (useNetworkCorrection && speciesNetworkFlags[pid] && trk.has_collision() && bg > networkBetaGammaCutoff) {
+
+          // Here comes the application of the network. The output--dimensions of the network determine the application: 1: mean, 2: sigma, 3: sigma asymmetric
+          // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
+          if (network.getNumOutputNodes() == 1) {
+            aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((mcTunedTPCSignal - network_prediction[count_tracks + tracksForNet_size * pid] * expSignal) / expSigma, table);
+          } else if (network.getNumOutputNodes() == 2) {
+            aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((mcTunedTPCSignal / expSignal - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]), table);
+          } else if (network.getNumOutputNodes() == 3) {
+            if (mcTunedTPCSignal / expSignal >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
+              aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((mcTunedTPCSignal / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]), table);
+            } else {
+              aod::pidutils::packInTable<aod::pidtpc_tiny::binning>((mcTunedTPCSignal / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]), table);
+            }
+
+          } else {
+            LOGF(fatal, "Network output-dimensions incompatible!");
+          }
+
+        } else {
+          aod::pidutils::packInTable<aod::pidtpc_tiny::binning>(response->GetNumberOfSigmaMCTuned(collisionsMc.iteratorAt(trk.collisionId()), trk, pid, mcTunedTPCSignal), table);
+        }
+      };
+
+      makeTablePidTiny(pidTinyEl, tablePIDTinyEl, o2::track::PID::Electron);
+      makeTablePidTiny(pidTinyMu, tablePIDTinyMu, o2::track::PID::Muon);
+      makeTablePidTiny(pidTinyPi, tablePIDTinyPi, o2::track::PID::Pion);
+      makeTablePidTiny(pidTinyKa, tablePIDTinyKa, o2::track::PID::Kaon);
+      makeTablePidTiny(pidTinyPr, tablePIDTinyPr, o2::track::PID::Proton);
+      makeTablePidTiny(pidTinyDe, tablePIDTinyDe, o2::track::PID::Deuteron);
+      makeTablePidTiny(pidTinyTr, tablePIDTinyTr, o2::track::PID::Triton);
+      makeTablePidTiny(pidTinyHe, tablePIDTinyHe, o2::track::PID::Helium3);
+      makeTablePidTiny(pidTinyAl, tablePIDTinyAl, o2::track::PID::Alpha);
+
       if (trk.hasTPC() && (!skipTPCOnly || trk.hasITS() || trk.hasTRD() || trk.hasTOF())) {
         count_tracks++; // Increment network track counter only if track has TPC, and (not skipping TPConly) or (is not TPConly)
       }
