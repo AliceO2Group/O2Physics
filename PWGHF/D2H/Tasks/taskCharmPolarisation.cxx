@@ -106,7 +106,7 @@ struct TaskPolarisationCharmHadrons {
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
 
-  using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+  using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>>;
 
   using McParticlesDstarMatched = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
   using McParticles3ProngMatched = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
@@ -134,10 +134,6 @@ struct TaskPolarisationCharmHadrons {
   Preslice<FilteredCandLcToPKPiWSelFlagAndMl> lcToPKPiWithMlPerCollision = aod::hf_cand::collisionId;
   Preslice<FilteredCandLcToPKPiWSelFlagAndMc> lcToPKPiWithMcPerCollision = aod::hf_cand::collisionId;
   Preslice<FilteredCandLcToPKPiWSelFlagAndMcAndMl> lcToPKPiWithMcAndMlPerCollision = aod::hf_cand::collisionId;
-
-  Preslice<CollisionsWithMcLabels> collisionsPerMcCollision = o2::aod::mccollisionlabel::mcCollisionId;
-  Preslice<McParticlesDstarMatched> mcParticlesDstarMatchPerMcCollision = o2::aod::mcparticle::mcCollisionId;
-  Preslice<McParticles3ProngMatched> mcParticlesLcToPKPiMatchPerMcCollision = o2::aod::mcparticle::mcCollisionId;
 
   HfHelper hfHelper;
   HistogramRegistry registry{"registry", {}};
@@ -1005,16 +1001,21 @@ struct TaskPolarisationCharmHadrons {
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarWithMl, "Process Dstar candidates with ML", false);
 
   // Dstar in MC with rectangular cuts
-  void processDstarMc(CollisionsWithMcLabels const& collisions,
-                      FilteredCandDstarWSelFlagAndMc const& dstarCandidates,
-                      aod::McCollisions const& mcCollisions,
-                      McParticlesDstarMatched const& mcParticles)
+  void processDstarMc(aod::McCollisions::iterator const&,
+                      McParticlesDstarMatched const& mcParticles,
+                      CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
+                      FilteredCandDstarWSelFlagAndMc const& dstarCandidates)
   {
-    for (const auto& collision : collisions) {
+    int numPvContributorsGen{0};
+    for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       auto thisCollId = collision.globalIndex();
       int numPvContributors = collision.numContrib();
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMcPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
+
+      if (numPvContributors > numPvContributorsGen) { // we take the associated reconstructed collision with higher number of PV contributors
+        numPvContributorsGen = numPvContributors;
+      }
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
@@ -1025,36 +1026,28 @@ struct TaskPolarisationCharmHadrons {
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
     }
 
-    for (const auto& mcCollision : mcCollisions) {
-      auto thisMcCollId = mcCollision.globalIndex();
-
-      auto groupedRecoCollisions = collisions.sliceBy(collisionsPerMcCollision, thisMcCollId);
-      int numPvContributors{0};
-      for (const auto& collision : groupedRecoCollisions) {
-        if (collision.numContrib() > numPvContributors) { // we take the associated reconstructed collision with higher number of PV contributors
-          numPvContributors = collision.numContrib();
-        }
-      }
-
-      auto groupedMcParticles = mcParticles.sliceBy(mcParticlesDstarMatchPerMcCollision, thisMcCollId);
-      for (const auto& mcParticle : groupedMcParticles) {
-        runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcParticle, mcParticles, numPvContributors);
-      }
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcParticle, mcParticles, numPvContributorsGen);
     }
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarMc, "Process Dstar candidates in MC without ML", false);
 
   // Dstar in MC with ML cuts
-  void processDstarMcWithMl(CollisionsWithMcLabels const& collisions,
-                            FilteredCandDstarWSelFlagAndMcAndMl const& dstarCandidates,
-                            aod::McCollisions const& mcCollisions,
-                            McParticlesDstarMatched const& mcParticles)
+  void processDstarMcWithMl(aod::McCollisions::iterator const&,
+                            McParticlesDstarMatched const& mcParticles,
+                            CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
+                            FilteredCandDstarWSelFlagAndMcAndMl const& dstarCandidates)
   {
-    for (const auto& collision : collisions) {
+    int numPvContributorsGen{0};
+    for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       auto thisCollId = collision.globalIndex();
       int numPvContributors = collision.numContrib();
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMcAndMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
+
+      if (numPvContributors > numPvContributorsGen) { // we take the associated reconstructed collision with higher number of PV contributors
+        numPvContributorsGen = numPvContributors;
+      }
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
@@ -1065,21 +1058,8 @@ struct TaskPolarisationCharmHadrons {
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
     }
 
-    for (const auto& mcCollision : mcCollisions) {
-      auto thisMcCollId = mcCollision.globalIndex();
-
-      auto groupedRecoCollisions = collisions.sliceBy(collisionsPerMcCollision, thisMcCollId);
-      int numPvContributors{0};
-      for (const auto& collision : groupedRecoCollisions) {
-        if (collision.numContrib() > numPvContributors) { // we take the associated reconstructed collision with higher number of PV contributors
-          numPvContributors = collision.numContrib();
-        }
-      }
-
-      auto groupedMcParticles = mcParticles.sliceBy(mcParticlesDstarMatchPerMcCollision, thisMcCollId);
-      for (const auto& mcParticle : groupedMcParticles) {
-        runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcParticle, mcParticles, numPvContributors);
-      }
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcParticle, mcParticles, numPvContributorsGen);
     }
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarMcWithMl, "Process Dstar candidates in MC with ML", false);
@@ -1141,18 +1121,23 @@ struct TaskPolarisationCharmHadrons {
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiWithMl, "Process Lc candidates with ML", false);
 
   // Lc->pKpi in MC with rectangular cuts
-  void processLcToPKPiMc(CollisionsWithMcLabels const& collisions,
-                         FilteredCandLcToPKPiWSelFlagAndMc const& lcCandidates,
-                         aod::McCollisions const& mcCollisions,
-                         McParticles3ProngMatched const& mcParticles)
+  void processLcToPKPiMc(aod::McCollisions::iterator const&,
+                         McParticles3ProngMatched const& mcParticles,
+                         CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
+                         FilteredCandLcToPKPiWSelFlagAndMc const& lcCandidates)
   {
-    for (const auto& collision : collisions) {
+    int numPvContributorsGen{0};
+    for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       auto thisCollId = collision.globalIndex();
       int numPvContributors = collision.numContrib();
-      auto groupedLcCandidates = lcCandidates.sliceBy(lcToPKPiWithMcPerCollision, thisCollId);
+      auto groupedLcCandidates = lcCandidates.sliceBy(lcToPKPiWithMcAndMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
-      for (const auto& lcCandidate : lcCandidates) {
+      if (numPvContributors > numPvContributorsGen) { // we take the associated reconstructed collision with higher number of PV contributors
+        numPvContributorsGen = numPvContributors;
+      }
+
+      for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
         if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, true>(lcCandidate, 0, numPvContributors)) {
           nCandsInSignalRegion++;
@@ -1161,38 +1146,30 @@ struct TaskPolarisationCharmHadrons {
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
     }
 
-    for (const auto& mcCollision : mcCollisions) {
-      auto thisMcCollId = mcCollision.globalIndex();
-
-      auto groupedRecoCollisions = collisions.sliceBy(collisionsPerMcCollision, thisMcCollId);
-      int numPvContributors{0};
-      for (const auto& collision : groupedRecoCollisions) {
-        if (collision.numContrib() > numPvContributors) { // we take the associated reconstructed collision with higher number of PV contributors
-          numPvContributors = collision.numContrib();
-        }
-      }
-
-      auto groupedMcParticles = mcParticles.sliceBy(mcParticlesLcToPKPiMatchPerMcCollision, thisMcCollId);
-      for (const auto& mcParticle : groupedMcParticles) {
-        runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi>(mcParticle, mcParticles, numPvContributors);
-      }
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi>(mcParticle, mcParticles, numPvContributorsGen);
     }
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiMc, "Process Lc candidates in MC without ML", false);
 
   // Lc->pKpi in MC with ML cuts
-  void processLcToPKPiMcWithMl(CollisionsWithMcLabels const& collisions,
-                               FilteredCandLcToPKPiWSelFlagAndMcAndMl const& lcCandidates,
-                               aod::McCollisions const& mcCollisions,
-                               McParticles3ProngMatched const& mcParticles)
+  void processLcToPKPiMcWithMl(aod::McCollisions::iterator const&,
+                               McParticles3ProngMatched const& mcParticles,
+                               CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroups
+                               FilteredCandLcToPKPiWSelFlagAndMcAndMl const& lcCandidates)
   {
-    for (const auto& collision : collisions) {
+    int numPvContributorsGen{0};
+    for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       auto thisCollId = collision.globalIndex();
       int numPvContributors = collision.numContrib();
       auto groupedLcCandidates = lcCandidates.sliceBy(lcToPKPiWithMcAndMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
-      for (const auto& lcCandidate : lcCandidates) {
+      if (numPvContributors > numPvContributorsGen) { // we take the associated reconstructed collision with higher number of PV contributors
+        numPvContributorsGen = numPvContributors;
+      }
+
+      for (const auto& lcCandidate : groupedLcCandidates) {
         nCands++;
         if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, true>(lcCandidate, 0, numPvContributors)) {
           nCandsInSignalRegion++;
@@ -1201,21 +1178,8 @@ struct TaskPolarisationCharmHadrons {
       fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
     }
 
-    for (const auto& mcCollision : mcCollisions) {
-      auto thisMcCollId = mcCollision.globalIndex();
-
-      auto groupedRecoCollisions = collisions.sliceBy(collisionsPerMcCollision, thisMcCollId);
-      int numPvContributors{0};
-      for (const auto& collision : groupedRecoCollisions) {
-        if (collision.numContrib() > numPvContributors) { // we take the associated reconstructed collision with higher number of PV contributors
-          numPvContributors = collision.numContrib();
-        }
-      }
-
-      auto groupedMcParticles = mcParticles.sliceBy(mcParticlesLcToPKPiMatchPerMcCollision, thisMcCollId);
-      for (const auto& mcParticle : groupedMcParticles) {
-        runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi>(mcParticle, mcParticles, numPvContributors);
-      }
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi>(mcParticle, mcParticles, numPvContributorsGen);
     }
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiMcWithMl, "Process Lc candidates in MC with ML", false);

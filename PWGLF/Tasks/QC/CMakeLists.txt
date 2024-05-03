@@ -44,6 +44,11 @@ o2physics_add_dpl_workflow(its-tpc-matching-qa
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(mc-signal-loss
+    SOURCES mcSignalLoss.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lfpropstudy
     SOURCES lfpropStudy.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

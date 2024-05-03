@@ -92,7 +92,7 @@ struct FemtoCorrelations {
   ConfigurableAxis CFkStarBinning{"CFkStarBinning", {500, 0.005, 5.005}, "k* binning of the CF (Nbins, lowlimit, uplimit)"};
 
   Configurable<bool> _fill3dCF{"fill3dCF", false, "flag for filling 3D LCMS histos: true -- fill; false -- not"};
-  Configurable<bool> _fillDetaDphi{"fillDetaDphi", false, "flag for filling dEta(dPhi*) histos: true -- fill; false -- not; note: they're filled before the double track cut"};
+  Configurable<int> _fillDetaDphi{"fillDetaDphi", -1, "flag for filling dEta(dPhi*) histos: '-1' -- don't fill; '0' -- fill before the cut; '1' -- fill after the cut; '2' -- fill before & after the cut"};
   ConfigurableAxis CF3DqLCMSBinning{"CF3DqLCMSBinning", {60, -0.3, 0.3}, "q_out/side/long binning of the CF 3D in LCMS (Nbins, lowlimit, uplimit)"};
   // the next configarable is responsible for skipping (pseudo)randomly chosen ($value -1) pairs of events in the mixing process
   // migth be useful (for the sake of execution time and the output file size ...) in case of too many events per DF since in the SE thacks are mixed in N_ev and in the ME 0.5*N_ev*(N_ev - 1)
@@ -147,8 +147,11 @@ struct FemtoCorrelations {
   std::vector<std::vector<std::shared_ptr<TH3>>> MEhistos_3D;
   std::vector<std::vector<std::shared_ptr<TH3>>> qLCMSvskStar;
 
-  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_SE_histos;
-  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_ME_histos;
+  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_SE_histos_BC; // BC -- before cutting
+  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_ME_histos_BC; // BC -- before cutting
+
+  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_SE_histos_AC; // AC -- after cutting
+  std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_ME_histos_AC; // AC -- after cutting
 
   void init(o2::framework::InitContext&)
   {
@@ -214,19 +217,33 @@ struct FemtoCorrelations {
         qLCMSvskStar.push_back(std::move(qLCMSvskStarperMult));
       }
 
-      if (_fillDetaDphi) {
-        std::vector<std::shared_ptr<TH2>> DoubleTrack_SE_histos_perMult;
-        std::vector<std::shared_ptr<TH2>> DoubleTrack_ME_histos_perMult;
+      if (_fillDetaDphi > -1) {
+        TString suffix[] = {"_nocut", "_cut"};
 
-        for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
-          auto hDblTrk_SE = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_SE_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j), kTH2F, {{628, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
-          auto hDblTrk_ME = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_ME_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j), kTH2F, {{628, -M_PI, M_PI, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+        for (int f = 0; f < 2; f++) {
+          std::vector<std::shared_ptr<TH2>> DoubleTrack_SE_histos_perMult;
+          std::vector<std::shared_ptr<TH2>> DoubleTrack_ME_histos_perMult;
 
-          DoubleTrack_SE_histos_perMult.push_back(std::move(hDblTrk_SE));
-          DoubleTrack_ME_histos_perMult.push_back(std::move(hDblTrk_ME));
+          if (_fillDetaDphi == 0 && f == 1)
+            continue;
+          if (_fillDetaDphi == 1 && f == 0)
+            continue;
+
+          for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
+            auto hDblTrk_SE = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/SE_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{628, -M_PI / 2.0, M_PI / 2.0, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+            auto hDblTrk_ME = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/ME_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{628, -M_PI / 2.0, M_PI / 2.0, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+
+            DoubleTrack_SE_histos_perMult.push_back(std::move(hDblTrk_SE));
+            DoubleTrack_ME_histos_perMult.push_back(std::move(hDblTrk_ME));
+          }
+          if (f == 0) {
+            DoubleTrack_SE_histos_BC.push_back(std::move(DoubleTrack_SE_histos_perMult)); // BC -- before cutting
+            DoubleTrack_ME_histos_BC.push_back(std::move(DoubleTrack_ME_histos_perMult));
+          } else {
+            DoubleTrack_SE_histos_AC.push_back(std::move(DoubleTrack_SE_histos_perMult)); // AC -- after cutting
+            DoubleTrack_ME_histos_AC.push_back(std::move(DoubleTrack_ME_histos_perMult));
+          }
         }
-        DoubleTrack_SE_histos.push_back(std::move(DoubleTrack_SE_histos_perMult));
-        DoubleTrack_ME_histos.push_back(std::move(DoubleTrack_ME_histos_perMult));
       }
     }
 
@@ -263,10 +280,14 @@ struct FemtoCorrelations {
         if (_fill3dCF && kTbin > SEhistos_3D[multBin].size())
           LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
 
-        if (_fillDetaDphi)
-          DoubleTrack_SE_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        if (_fillDetaDphi % 2 == 0)
+          DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+
         if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
           continue;
+
+        if (_fillDetaDphi > 0)
+          DoubleTrack_SE_histos_AC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
 
         kThistos[multBin][kTbin]->Fill(pair_kT);
         mThistos[multBin][kTbin]->Fill(Pair->GetMt());       // test
@@ -305,15 +326,22 @@ struct FemtoCorrelations {
         if (_fill3dCF && kTbin > SEhistos_3D[multBin].size())
           LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins (3D)");
 
-        if (_fillDetaDphi) {
+        if (_fillDetaDphi % 2 == 0) {
           if (!SE_or_ME)
-            DoubleTrack_SE_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+            DoubleTrack_SE_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
           else
-            DoubleTrack_ME_histos[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+            DoubleTrack_ME_histos_BC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         }
 
         if (Pair->IsClosePair(_deta, _dphi, _radiusTPC))
           continue;
+
+        if (_fillDetaDphi > 0) {
+          if (!SE_or_ME)
+            DoubleTrack_SE_histos_AC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+          else
+            DoubleTrack_ME_histos_AC[multBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        }
 
         if (!SE_or_ME) {
           SEhistos_1D[multBin][kTbin]->Fill(Pair->GetKstar());
