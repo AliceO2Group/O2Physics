@@ -1578,11 +1578,9 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle();
         auto pdgInfo = pdgDB->GetParticle(particle.pdgCode());
-        int charge = 0;
         int sign = 0;
         if (pdgInfo != nullptr) {
           sign = pdgInfo->Charge() / abs(pdgInfo->Charge());
-          charge = pdgInfo->Charge();
         }
         // resolution plots
         if (doExtraPIDqa && track.pidForTracking() != std::abs(PartIdentifier)) {
