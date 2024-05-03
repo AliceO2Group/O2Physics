@@ -557,8 +557,9 @@ struct kstarqa {
                 histos.fill(HIST("h3KstarInvMassUnlikeSign"), multiplicity, CKSVector.Pt(), CKSVector.M());
                 histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, CKSVectorRot1.Pt(), CKSVectorRot1.M());
                 histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, CKSVectorRot2.Pt(), CKSVectorRot2.M());
-              } else if (PionSign.at(i3) * KaonSign.at(i1) > 0)
+              } else if (PionSign.at(i3) * KaonSign.at(i1) > 0) {
                 histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, CKSVector.Pt(), CKSVector.M());
+              }
             }
           }
         }
