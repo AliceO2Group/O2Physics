@@ -37,6 +37,7 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
   Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
+  Configurable<int> decayChannel{"decayChannel", 1, "Decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
@@ -131,7 +132,9 @@ struct HfTaskCorrelationDsHadrons {
     registry.add("hDeltaPhiPtIntSignalRegionMcRec", "Ds-h deltaPhi signal region MC reco", {HistType::kTH1F, {axisDetlaPhi}});
     registry.add("hCorrel2DVsPtSignalRegionMcRec", "Ds-h correlations signal region MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
     registry.add("hCorrel2DVsPtPhysicalPrimaryMcRec", "Ds-h correlations signal region (only true primary particles) MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}}});
+    registry.add("hCorrel2DVsPtPhysicalPrimaryWDecayChanMcRec", "Ds-h correlations signal region (only true primary particles) w decay chan MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}}});
     registry.add("hCorrel2DVsPtSignalRegionMcRecPromptDivision", "Ds-h correlations signal region Prompt-NonPrompt MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisDsPrompt}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtSignalRegionWDecayChanMcRec", "Ds-h correlations signal region w decay chan MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
     registry.add("hDeltaEtaPtIntSidebandLeftMcRec", "Ds-h deltaEta sideband left region MC reco", {HistType::kTH1F, {axisDetlaEta}});
     registry.add("hDeltaPhiPtIntSidebandLeftMcRec", "Ds-h deltaPhi sideband left region MC reco", {HistType::kTH1F, {axisDetlaPhi}});
     registry.add("hCorrel2DVsPtSidebandLeftMcRec", "Ds-h correlations sideband left region MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
@@ -285,6 +288,12 @@ struct HfTaskCorrelationDsHadrons {
           if (isPhysicalPrimary) {
             registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
           }
+          if (pairEntry.isDecayChan()) {
+            registry.fill(HIST("hCorrel2DVsPtSignalRegionWDecayChanMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+            if (isPhysicalPrimary) {
+              registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryWDecayChanMcRec"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+            }
+          }
         }
       }
       // in sideband left region
@@ -385,7 +394,7 @@ struct HfTaskCorrelationDsHadrons {
         auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
         multiplicity = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
         hCandidates->Fill(kCandidateStepMcGenAll, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
-        if (std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
+        if ((std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
           hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
           auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
           if (std::abs(yDs) <= yCandGenMax) {
@@ -429,7 +438,7 @@ struct HfTaskCorrelationDsHadrons {
       }
       auto collision = candidate.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults>>();
       multiplicity = collision.multFT0M();
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
+      if ((std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (candidate.flagMcDecayChanRec() == decayChannel)) {
         auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
         // DsToKKPi and DsToPiKK division
         if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
@@ -452,7 +461,7 @@ struct HfTaskCorrelationDsHadrons {
   /// Ds-Hadron correlation - for calculating associated particle tracking efficiency using MC reco-level analysis
   void processMcTrackEfficiency(soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels> const&,
                                 soa::Join<aod::McCollisions, aod::MultsExtraMC> const&,
-                                CandDsMcGen const& mcParticles,
+                                aod::McParticles const& mcParticles,
                                 TracksWithMc const& tracksData)
   {
     auto hAssocTracks = registry.get<StepTHn>(HIST("hAssocTracks"));
@@ -488,7 +497,7 @@ struct HfTaskCorrelationDsHadrons {
         posZ = collision.posZ();
         hAssocTracks->Fill(kAssocTrackStepRecoAll, track.eta(), track.pt(), multiplicity, posZ);
         if (track.has_mcParticle()) {
-          auto mcParticle = track.template mcParticle_as<CandDsMcGen>();
+          auto mcParticle = track.template mcParticle_as<aod::McParticles>();
           auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
           if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
             continue;

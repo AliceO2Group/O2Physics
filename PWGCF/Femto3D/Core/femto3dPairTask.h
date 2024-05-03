@@ -205,8 +205,10 @@ bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi, con
     return true;
   if (_magfield1 * _magfield2 == 0)
     return true;
-  if (abs(GetEtaDiff()) < deta && abs(GetPhiStarDiff(radius)) < dphi)
+  if (std::pow(abs(GetEtaDiff()) / deta, 2) + std::pow(abs(GetPhiStarDiff(radius)) / dphi, 2) < 1.0f)
     return true;
+  // if (abs(GetEtaDiff()) < deta && abs(GetPhiStarDiff(radius)) < dphi)
+  //   return true;
 
   return false;
 }

@@ -443,11 +443,13 @@ struct lambdav2 {
       auto negtrack = v0.template negTrack_as<TrackCandidates>();
       double nTPCSigmaPos[1]{postrack.tpcNSigmaPr()};
       double nTPCSigmaNeg[1]{negtrack.tpcNSigmaPi()};
+      double nTPCSigmaPos2[1]{postrack.tpcNSigmaPi()};
+      double nTPCSigmaNeg2[1]{negtrack.tpcNSigmaPr()};
 
-      if (!isSelectedV0Daughter(postrack, 1, nTPCSigmaPos[0])) {
+      if (!isSelectedV0Daughter(postrack, 1, nTPCSigmaPos[0]) && !isSelectedV0Daughter(postrack, 1, nTPCSigmaPos2[0])) {
         continue;
       }
-      if (!isSelectedV0Daughter(negtrack, -1, nTPCSigmaNeg[0])) {
+      if (!isSelectedV0Daughter(negtrack, -1, nTPCSigmaNeg[0]) && !isSelectedV0Daughter(negtrack, -1, nTPCSigmaNeg2[0])) {
         continue;
       }
 
