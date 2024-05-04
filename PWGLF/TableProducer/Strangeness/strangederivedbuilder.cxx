@@ -218,8 +218,14 @@ struct strangederivedbuilder {
 
     histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", kTH2D, {axisCentrality, axisNVertices});
 
-    if (doprocessV0FoundTags || doprocessCascFoundTags) {
-      histos.add("hFoundTagsCounters", "hFoundTagsCounters", kTH1D, {{4, -0.5f, 3.5f}});
+    if( doprocessV0FoundTags || doprocessCascFoundTags){
+      auto h = histos.add<TH1>("hFoundTagsCounters", "hFoundTagsCounters", kTH1D, {{6, -0.5f, 5.5f}});
+      h->GetXaxis()->SetBinLabel(1, "Found V0s");
+      h->GetXaxis()->SetBinLabel(2, "Findable V0s");
+      h->GetXaxis()->SetBinLabel(3, "Findable & found V0s");
+      h->GetXaxis()->SetBinLabel(4, "Found Cascades");
+      h->GetXaxis()->SetBinLabel(5, "Findable Cascades");
+      h->GetXaxis()->SetBinLabel(6, "Findable & found Cascades");
     }
 
     // for QA and test purposes
@@ -815,6 +821,7 @@ struct strangederivedbuilder {
       for (uint32_t ic = 0; ic < foundV0s.size(); ic++) {
         if (indexPack == foundV0sPacked[ic]) {
           hasBeenFound = true;
+          histos.fill(HIST("hFoundTagsCounters"), 2.0f);
           break;
         }
       }
@@ -830,8 +837,8 @@ struct strangederivedbuilder {
 
   void processCascFoundTags(aod::Cascades const& foundCascades, aod::CascDatas const& findableCascades, aod::V0s const&, aod::FindableCascades const& /* added to avoid troubles */)
   {
-    histos.fill(HIST("hFoundTagsCounters"), 2.0f, foundCascades.size());
-    histos.fill(HIST("hFoundTagsCounters"), 3.0f, findableCascades.size());
+    histos.fill(HIST("hFoundTagsCounters"), 3.0f, foundCascades.size());
+    histos.fill(HIST("hFoundTagsCounters"), 4.0f, findableCascades.size());
 
     // pack the found V0s in a long long
     std::vector<uint128_t> foundCascadesPacked;
@@ -847,6 +854,7 @@ struct strangederivedbuilder {
       for (uint32_t ic = 0; ic < foundCascades.size(); ic++) {
         if (indexPack == foundCascadesPacked[ic]) {
           hasBeenFound = true;
+          histos.fill(HIST("hFoundTagsCounters"), 5.0f);
           break;
         }
       }
