@@ -77,13 +77,17 @@ struct QualityAssurance {
 
 // *) Event histograms:
 struct EventHistograms {
-  TList* fEventHistogramsList = NULL;                            //!<! list to hold all control event histograms
-  TProfile* fEventHistogramsPro = NULL;                          //!<! keeps flags relevant for the control event histograms
-  TH1D* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum eEventHistograms ][reco,sim][before, after event cuts]
-  Bool_t fFillEventHistograms = kTRUE;                           // if kFALSE, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled
-  Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};     // book or not this histogram, see SetBookEventHistograms
-  Double_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}}; // [nBins,min,max]
-} eh;                                                            // "eh" labels an instance of group of histograms "EventHistograms"
+  TList* fEventHistogramsList = NULL;                                     //!<! list to hold all control event histograms
+  TProfile* fEventHistogramsPro = NULL;                                   //!<! keeps flags relevant for the control event histograms
+  TH1D* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}};          //! [ type - see enum eEventHistograms ][reco,sim][before, after event cuts]
+  Bool_t fFillEventHistograms = kTRUE;                                    // if kFALSE, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled
+  Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};              // book or not this histogram, see SetBookEventHistograms
+  Double_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}};          // [nBins,min,max]
+  TH2D* fEventHistograms2D[eEventHistograms2D_N][2][2] = {{{NULL}}};      //! [ type - see enum eEventHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillEventHistograms2D = kTRUE;                                  // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookEventHistograms2D[eEventHistograms2D_N] = {kTRUE};          // book or not this 2D histogram, see configurable cfBookEventHistograms2D
+  Double_t fEventHistogramsBins2D[eEventHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
+} eh;                                                                     // "eh" labels an instance of group of histograms "EventHistograms"
 
 // *) Event cuts:
 struct EventCuts {
@@ -102,7 +106,6 @@ struct ParticleHistograms {
   Bool_t fFillParticleHistograms = kTRUE;                                       // if kFALSE, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled
   Bool_t fBookParticleHistograms[eParticleHistograms_N] = {kTRUE};              // book or not the particular particle histogram, see configurable cfBookParticleHistograms
   Double_t fParticleHistogramsBins[eParticleHistograms_N][3] = {{0.}};          // [nBins,min,max]
-  Double_t fParticleCuts[eParticleHistograms_N][2] = {{0.}};                    // [min,max]
   TH2D* fParticleHistograms2D[eParticleHistograms2D_N][2][2] = {{{NULL}}};      //! [ type - see enum eParticleHistograms2D ][reco,sim][before, after particle cuts]
   Bool_t fFillParticleHistograms2D = kTRUE;                                     // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled
   Bool_t fBookParticleHistograms2D[eParticleHistograms2D_N] = {kTRUE};          // book or not this 2D histogram, see configurable cfBookParticleHistograms2D
