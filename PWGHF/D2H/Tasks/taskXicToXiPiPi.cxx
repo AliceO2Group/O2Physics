@@ -64,14 +64,13 @@ struct HfTaskXicToXiPiPi {
     registry.add("hCPAxy", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
     registry.add("hMass", "#Xi^{#plus}_{c} candidates;inv. mass #Xi^{#mp} #pi^{#pm} #pi^{#pm} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassXic, axisPt}});
     registry.add("hDecLength", "#Xi^{#plus}_{c} candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, axisPt}});
-    registry.add("hDecLenErr", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, axisPt}});
+    registry.add("hErrDecLength", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, axisPt}});
     registry.add("hDecLengthXY", "#Xi^{#plus}_{c} candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 0.4}, axisPt}});
-    registry.add("hDecLenXYErr", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, axisPt}});
+    registry.add("hErrDecLengthXY", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, axisPt}});
     registry.add("hd0Prong0", "#Xi^{#plus}_{c} candidates;prong 0 (#Xi^{#mp}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, axisPt}});
     registry.add("hd0Prong1", "#Xi^{#plus}_{c} candidates;prong 1 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, axisPt}});
     registry.add("hd0Prong2", "#Xi^{#plus}_{c} candidates;prong 2 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -0.05, 0.05}, axisPt}});
-    registry.add("hImpParErr", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, axisPt}});
-    //registry.add("hInvMassXi", "#Xi^{#plus}_{c} candidates;prong 0 (#Xi^{#mp}) inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0, 5}, axisPt}});
+    registry.add("hImpParErr", "#Xi^{#plus}_{c} candidates;prongs impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, axisPt}});
     registry.add("hChi2PCA", "#Xi^{#plus}_{c} candidates (matched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, axisPt}});
     registry.add("hCPAXi", "#Xi^{#plus}_{c} candidates;#Xi^{#minus} candidate cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
     registry.add("hCPAxyXi", "#Xi^{#plus}_{c} candidates;#Xi^{#minus} candidate cosine of pointing angle xy;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, axisPt}});
@@ -101,20 +100,20 @@ struct HfTaskXicToXiPiPi {
     registry.add("hMassRecBg", "#Xi^{#plus}_{c} candidates (unmatched);inv. mass  #Xi^{#mp} #pi^{#pm} #pi^{#pm} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 4.0, 7.0}, axisPt}});
     registry.add("hDecLengthRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#plus}_{c} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
     registry.add("hDecLengthRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#plus}_{c} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
-    // DecLenghtErr
+    registry.add("hErrDecLengthRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#plus}_{c} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
+    registry.add("hErrDecLengthRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#plus}_{c} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
     registry.add("hDecLengthXYRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#plus}_{c} candidate decay length xy (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
     registry.add("hDecLengthXYRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#plus}_{c} candidate decay length xy(cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
-    // DecLengthXYErr
-    //registry.add("hDecLengthNormRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#plus}_{c} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
-    //registry.add("hDecLengthNormRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#plus}_{c} candidate decay length (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
+    registry.add("hErrDecLengthXYRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#plus}_{c} candidate decay length xy (cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
+    registry.add("hErrDecLengthXYRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#plus}_{c} candidate decay length xy(cm);entries", {HistType::kTH2F, {{100, 0., 0.5}, axisPt}});
     registry.add("hd0Prong0RecSig", "#Xi^{#plus}_{c} candidates (matched);prong 0 (#Xi^{#mp}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
     registry.add("hd0Prong0RecBg", "#Xi^{#plus}_{c} candidates (unmatched);prong 0 (#Xi^{#mp}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
     registry.add("hd0Prong1RecSig", "#Xi^{#plus}_{c} candidates (matched);prong 1 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
     registry.add("hd0Prong1RecBg", "#Xi^{#plus}_{c} candidates (unmatched);prong 1 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
     registry.add("hd0Prong2RecSig", "#Xi^{#plus}_{c} candidates (matched);prong 2 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
     registry.add("hd0Prong2RecBg", "#Xi^{#plus}_{c} candidates (unmatched);prong 2 (#pi^{#pm}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{200, -0.05, 0.05}, axisPt}});
-    // ImpParErr
-    // InvMassXi
+    registry.add("hImpParErrRecSig", "#Xi^{#plus}_{c} candidates (matched);prongs impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, axisPt}});
+    registry.add("hImpParErrRecBg", "#Xi^{#plus}_{c} candidates (unmatched);prongs impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, axisPt}});
     registry.add("hChi2PCARecSig", "#Xi^{#plus}_{c} candidates (matched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, axisPt}});
     registry.add("hChi2PCARecBg", "#Xi^{#plus}_{c} candidates (unmatched);sum of distances of the secondary vertex to its prongs;entries", {HistType::kTH2F, {{240, -0.01, 0.1}, axisPt}});
     registry.add("hCPAXiRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#minus} cosine of pointing angle;entries", {HistType::kTH2F, {{220, 0., 1.1}, axisPt}});
@@ -191,9 +190,9 @@ struct HfTaskXicToXiPiPi {
       registry.fill(HIST("hCPAxy"), candidate.cpaXY(), ptCandXic);
       registry.fill(HIST("hMass"), candidate.invMassXic(), ptCandXic);
       registry.fill(HIST("hDecLength"), candidate.decayLength(), ptCandXic);
-      registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), ptCandXic);
+      registry.fill(HIST("hErrDecLength"), candidate.errorDecayLength(), ptCandXic);
       registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), ptCandXic);
-      registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), ptCandXic);
+      registry.fill(HIST("hErrDecLengthXY"), candidate.errorDecayLengthXY(), ptCandXic);
       registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), ptCandXic);
       registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), ptCandXic);
       registry.fill(HIST("hd0Prong2"), candidate.impactParameter2(), ptCandXic);
@@ -241,15 +240,15 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hCPAxyRecSig"), candidate.cpaXY(), ptCandXic);
         registry.fill(HIST("hMassRecSig"), candidate.invMassXic(), ptCandXic);
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), ptCandXic);
-        //registry.fill(HIST("hDecLenErrRecSig"), candidate.errorDecayLength(), ptCandXic);
+        registry.fill(HIST("hErrDecLengthRecSig"), candidate.errorDecayLength(), ptCandXic);
         registry.fill(HIST("hDecLengthXYRecSig"), candidate.decayLengthXY(), ptCandXic);
-        //registry.fill(HIST("hDecLenXYErrRecSig"), candidate.errorDecayLengthXY(), ptCandXic);
+        registry.fill(HIST("hErrDecLengthXYRecSig"), candidate.errorDecayLengthXY(), ptCandXic);
         registry.fill(HIST("hd0Prong0RecSig"), candidate.impactParameter0(), ptCandXic);
         registry.fill(HIST("hd0Prong1RecSig"), candidate.impactParameter1(), ptCandXic);
         registry.fill(HIST("hd0Prong2RecSig"), candidate.impactParameter2(), ptCandXic);
-        //registry.fill(HIST("hImpParErrRecSig"), candidate.errorImpactParameter0(), ptCandXic);
-        //registry.fill(HIST("hImpParErrRecSig"), candidate.errorImpactParameter1(), ptCandXic);
-        //registry.fill(HIST("hImpParErrRecSig"), candidate.errorImpactParameter2(), ptCandXic);
+        registry.fill(HIST("hImpParErrRecSig"), candidate.errorImpactParameter0(), ptCandXic);
+        registry.fill(HIST("hImpParErrRecSig"), candidate.errorImpactParameter1(), ptCandXic);
+        registry.fill(HIST("hImpParErrRecSig"), candidate.errorImpactParameter2(), ptCandXic);
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), ptCandXic);
         registry.fill(HIST("hCPAXiRecSig"), candidate.cosPaXi(), ptCandXic);
         registry.fill(HIST("hCPAxyXiRecSig"), candidate.cosPaXYXi(), ptCandXic);
@@ -270,15 +269,15 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hCPAxyRecBg"), candidate.cpaXY(), ptCandXic);
         registry.fill(HIST("hMassRecBg"), candidate.invMassXic(), ptCandXic);
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), ptCandXic);
-        //registry.fill(HIST("hDecLenErrRecBg"), candidate.errorDecayLength(), ptCandXic);
+        registry.fill(HIST("hErrDecLengthRecBg"), candidate.errorDecayLength(), ptCandXic);
         registry.fill(HIST("hDecLengthXYRecBg"), candidate.decayLengthXY(), ptCandXic);
-        //registry.fill(HIST("hDecLenXYErrRecBg"), candidate.errorDecayLengthXY(), ptCandXic);
+        registry.fill(HIST("hErrDecLengthXYRecBg"), candidate.errorDecayLengthXY(), ptCandXic);
         registry.fill(HIST("hd0Prong0RecBg"), candidate.impactParameter0(), ptCandXic);
         registry.fill(HIST("hd0Prong1RecBg"), candidate.impactParameter1(), ptCandXic);
         registry.fill(HIST("hd0Prong2RecBg"), candidate.impactParameter2(), ptCandXic);
-        //registry.fill(HIST("hImpParErrRecBg"), candidate.errorImpactParameter0(), ptCandXic);
-        //registry.fill(HIST("hImpParErrRecBg"), candidate.errorImpactParameter1(), ptCandXic);
-        //registry.fill(HIST("hImpParErrRecBg"), candidate.errorImpactParameter2(), ptCandXic);
+        registry.fill(HIST("hImpParErrRecBg"), candidate.errorImpactParameter0(), ptCandXic);
+        registry.fill(HIST("hImpParErrRecBg"), candidate.errorImpactParameter1(), ptCandXic);
+        registry.fill(HIST("hImpParErrRecBg"), candidate.errorImpactParameter2(), ptCandXic);
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandXic);
         registry.fill(HIST("hCPAXiRecBg"), candidate.cosPaXi(), ptCandXic);
         registry.fill(HIST("hCPAxyXiRecBg"), candidate.cosPaXYXi(), ptCandXic);

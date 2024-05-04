@@ -21,7 +21,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -39,26 +38,26 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Xi, xi, int, Tracks, "_pi0");
 DECLARE_SOA_INDEX_COLUMN_FULL(Pi0, pi0, int, Tracks, "_pi0");
 DECLARE_SOA_INDEX_COLUMN_FULL(Pi1, pi1, int, Tracks, "_pi1");
 //vertices
-DECLARE_SOA_COLUMN(PvX, pvX, float);
-DECLARE_SOA_COLUMN(PvY, pvY, float);  
-DECLARE_SOA_COLUMN(PvZ, pvZ, float);
-DECLARE_SOA_COLUMN(PvErrX, pvErrX, float);
-DECLARE_SOA_COLUMN(PvErrY, pvErrY, float);  
-DECLARE_SOA_COLUMN(PvErrZ, pvErrZ, float);    
-DECLARE_SOA_COLUMN(SvX, svX, float);  
-DECLARE_SOA_COLUMN(SvY, svY, float);  
-DECLARE_SOA_COLUMN(SvZ, svZ, float);
+DECLARE_SOA_COLUMN(XPv, xPv, float);
+DECLARE_SOA_COLUMN(YPv, yPv, float);  
+DECLARE_SOA_COLUMN(ZPv, zPv, float);
+DECLARE_SOA_COLUMN(XPvErr, xPvErr, float);
+DECLARE_SOA_COLUMN(YPvErr, yPvErr, float);  
+DECLARE_SOA_COLUMN(ZPvErr, zPvErr, float);    
+DECLARE_SOA_COLUMN(XSv, xSv, float);  
+DECLARE_SOA_COLUMN(YSv, ySv, float);  
+DECLARE_SOA_COLUMN(ZSv, zSv, float);
 DECLARE_SOA_COLUMN(Chi2Sv, chi2Sv, float);
-DECLARE_SOA_COLUMN(SvErrX, svErrX, float);  
-DECLARE_SOA_COLUMN(SvErrY, svErrY, float);  
-DECLARE_SOA_COLUMN(SvErrZ, svErrZ, float);
-DECLARE_SOA_COLUMN(DecVtxXiX, decVtxXiX, float);  
-DECLARE_SOA_COLUMN(DecVtxXiY, decVtxXiY, float);  
-DECLARE_SOA_COLUMN(DecVtxXiZ, decVtxXiZ, float);
-DECLARE_SOA_COLUMN(Chi2XiVtx, xhi2XiVtx, float);
-DECLARE_SOA_COLUMN(DecVtxLamX, decVtxLamX, float);  
-DECLARE_SOA_COLUMN(DecVtxLamY, decVtxLamY, float);  
-DECLARE_SOA_COLUMN(DecVtxLamZ, decVtxLamZ, float);
+DECLARE_SOA_COLUMN(XSvErr, xSvErr, float);  
+DECLARE_SOA_COLUMN(YSvErr, ySvErr, float);  
+DECLARE_SOA_COLUMN(ZSvErr, zSvErr, float);
+DECLARE_SOA_COLUMN(XDecVtxXi, xDecVtxXi, float);  
+DECLARE_SOA_COLUMN(YDecVtxXi, yDecVtxXi, float);  
+DECLARE_SOA_COLUMN(ZDecVtxXi, zDecVtxXi, float);
+DECLARE_SOA_COLUMN(Chi2XiVtx, chi2XiVtx, float);
+DECLARE_SOA_COLUMN(XDecVtxLam, xDecVtxLam, float);  
+DECLARE_SOA_COLUMN(YDecVtxLam, yDecVtxLam, float);  
+DECLARE_SOA_COLUMN(ZDecVtxLam, zDecVtxLam, float);
 DECLARE_SOA_COLUMN(Chi2LamVtx, chi2LamVtx, float);
 // properties of XicPlus
 DECLARE_SOA_COLUMN(Sign, sign, float);
@@ -107,12 +106,12 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   full::Pi0Id,
                   full::Pi1Id,
                   full::CandidateSelFlag,
-                  full::PvX,
-                  full::PvY,
-                  full::PvZ,
-                  full::SvX,
-                  full::SvY,
-                  full::SvZ,
+                  full::XPv,
+                  full::YPv,
+                  full::ZPv,
+                  full::XSv,
+                  full::YSv,
+                  full::ZSv,
                   full::Chi2Sv,
                   full::Sign,
                   full::E,
@@ -137,9 +136,48 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   full::CpaXYXi,
                   full::CpaLam,
                   full::CpaXYLam,
-                  //full::DcaPi0Pi1,
-                  //full::DcaPi0Xi,
-                  //full::DcaPi1Xi,
+                  hf_cand_xictoxipipi::FlagMcMatchRec);
+
+DECLARE_SOA_TABLE(HfCandXicLiteKfs, "AOD", "HFCANDXICLITEKF",
+                  full::XiId,
+                  full::Pi0Id,
+                  full::Pi1Id,
+                  full::CandidateSelFlag,
+                  full::XPv,
+                  full::YPv,
+                  full::ZPv,
+                  full::XSv,
+                  full::YSv,
+                  full::ZSv,
+                  full::Chi2Sv,
+                  full::Sign,
+                  full::E,
+                  full::M,
+                  full::P,
+                  full::Pt,
+                  full::Y,
+                  full::Eta,
+                  full::Phi,
+                  full::Ct,
+                  full::DecayLength,
+                  full::DecayLengthXY,
+                  full::Cpa,
+                  full::CpaXY,
+                  full::PtXi,
+                  full::PtPi0,
+                  full::PtPi1,
+                  full::ImpactParameterXi,
+                  full::ImpactParameterPi0,
+                  full::ImpactParameterPi1,
+                  full::CpaXi,
+                  full::CpaXYXi,
+                  full::CpaLam,
+                  full::CpaXYLam,
+                  full::Chi2XiVtx,
+                  full::Chi2LamVtx,
+                  full::DcaPi0Pi1,
+                  full::DcaPi0Xi,
+                  full::DcaPi1Xi,
                   hf_cand_xictoxipipi::FlagMcMatchRec);
 
 DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
@@ -147,27 +185,25 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::Pi0Id,
                   full::Pi1Id,
                   full::CandidateSelFlag,
-                  full::PvX,
-                  full::PvY,
-                  full::PvZ,
-                  full::PvErrX,
-                  full::PvErrY,
-                  full::PvErrZ,
-                  full::SvX,
-                  full::SvY,
-                  full::SvZ,
+                  full::XPv,
+                  full::YPv,
+                  full::ZPv,
+                  full::XPvErr,
+                  full::YPvErr,
+                  full::ZPvErr,
+                  full::XSv,
+                  full::YSv,
+                  full::ZSv,
                   full::Chi2Sv,
-                  full::SvErrX,
-                  full::SvErrY,
-                  full::SvErrZ,
-                  full::DecVtxXiX,
-                  full::DecVtxXiY,
-                  full::DecVtxXiZ,
-                  //full::Chi2XiVtx,
-                  full::DecVtxLamX,
-                  full::DecVtxLamY,
-                  full::DecVtxLamZ,
-                  //full::Chi2LamVtx,
+                  full::XSvErr,
+                  full::YSvErr,
+                  full::ZSvErr,
+                  full::XDecVtxXi,
+                  full::YDecVtxXi,
+                  full::ZDecVtxXi,
+                  full::XDecVtxLam,
+                  full::YDecVtxLam,
+                  full::ZDecVtxLam,
                   full::Sign,
                   full::E,
                   full::M,
@@ -197,9 +233,66 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::CpaXYXi,
                   full::CpaLam,
                   full::CpaXYLam,
-                  //full::DcaPi0Pi1,
-                  //full::DcaPi0Xi,
-                  //full::DcaPi1Xi,
+                  hf_cand_xictoxipipi::FlagMcMatchRec);
+
+DECLARE_SOA_TABLE(HfCandXicFullKfs, "AOD", "HFCANDXICFULLKF",
+                  full::XiId,
+                  full::Pi0Id,
+                  full::Pi1Id,
+                  full::CandidateSelFlag,
+                  full::XPv,
+                  full::YPv,
+                  full::ZPv,
+                  full::XPvErr,
+                  full::YPvErr,
+                  full::ZPvErr,
+                  full::XSv,
+                  full::YSv,
+                  full::ZSv,
+                  full::Chi2Sv,
+                  full::XSvErr,
+                  full::YSvErr,
+                  full::ZSvErr,
+                  full::XDecVtxXi,
+                  full::YDecVtxXi,
+                  full::ZDecVtxXi,
+                  full::XDecVtxLam,
+                  full::YDecVtxLam,
+                  full::ZDecVtxLam,
+                  full::Sign,
+                  full::E,
+                  full::M,
+                  full::P,
+                  full::Pt,
+                  full::Y,
+                  full::Eta,
+                  full::Phi,
+                  full::Ct,
+                  full::DecayLength,
+                  full::DecayLengthNormalised,
+                  full::DecayLengthXY,
+                  full::DecayLengthXYNormalised,
+                  full::Cpa,
+                  full::CpaXY,
+                  full::PtXi,
+                  full::PtPi0,
+                  full::PtPi1,
+                  full::ImpactParameterXi,
+                  full::ImpactParameterNormalisedXi,
+                  full::ImpactParameterPi0,
+                  full::ImpactParameterNormalisedPi0,
+                  full::ImpactParameterPi1,
+                  full::ImpactParameterNormalisedPi1,
+                  full::MaxNormalisedDeltaIP,
+                  full::CpaXi,
+                  full::CpaXYXi,
+                  full::CpaLam,
+                  full::CpaXYLam,
+                  full::Chi2XiVtx,
+                  full::Chi2LamVtx,
+                  full::DcaPi0Pi1,
+                  full::DcaPi0Xi,
+                  full::DcaPi1Xi,
                   hf_cand_xictoxipipi::FlagMcMatchRec);
 
 DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
@@ -223,7 +316,9 @@ DECLARE_SOA_TABLE(HfCandXicFullPs, "AOD", "HFCANDXICFULLP",
 /// Writes the full information in an output TTree
 struct HfTreeCreatorXicToXiPiPi {
   Produces<o2::aod::HfCandXicLites> rowCandidateLite;
+  Produces<o2::aod::HfCandXicLiteKfs> rowCandidateLiteKf;
   Produces<o2::aod::HfCandXicFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandXicFullKfs> rowCandidateFullKf;
   Produces<o2::aod::HfCandXicFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandXicFullPs> rowCandidateFullParticles;
 
@@ -235,13 +330,18 @@ struct HfTreeCreatorXicToXiPiPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
   
+  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>>;
+  using SelectedCandidatesKf = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi>>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicMcRec, aod::HfSelXicToXiPiPi>>;
+  using SelectedCandidatesKfMc = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfCandXicMcRec, aod::HfSelXicToXiPiPi>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic;
 
   Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
   Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
+  Partition<SelectedCandidatesKfMc> recSigKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
+  Partition<SelectedCandidatesKfMc> recBgKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
 
   void init(InitContext const&)
   {
@@ -261,118 +361,216 @@ struct HfTreeCreatorXicToXiPiPi {
       );
   }
 
-  template <bool doMc = false, typename T>
+  template <bool doMc = false, bool noKf = true, typename T>
   void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
     if constexpr (doMc) {
       flagMc = candidate.flagMcMatchRec();
     }
-    if (fillCandidateLiteTable) {
-      rowCandidateLite(
-        candidate.cascadeId(),
-        candidate.pi0Id(),
-        candidate.pi1Id(),
-        candidate.isSelXicToXiPiPi(),
-        candidate.posX(),
-        candidate.posY(),
-        candidate.posZ(),
-        candidate.xSecondaryVertex(),
-        candidate.ySecondaryVertex(),
-        candidate.zSecondaryVertex(),
-        candidate.chi2PCA(),
-        candidate.sign(),
-        candidate.e(o2::constants::physics::MassXiCPlus),
-        candidate.invMassXic(),
-        candidate.p(),
-        candidate.pt(),
-        candidate.y(o2::constants::physics::MassXiCPlus),
-        candidate.eta(),
-        candidate.phi(),
-        candidate.ct(o2::constants::physics::MassXiCPlus),
-        candidate.decayLength(),
-        candidate.decayLengthXY(),
-        candidate.cpa(),
-        candidate.cpaXY(),
-        candidate.ptProng0(),
-        candidate.ptProng1(),
-        candidate.ptProng2(),
-        candidate.impactParameter0(),
-        candidate.impactParameter1(),
-        candidate.impactParameter2(),
-        candidate.cosPaXi(),
-        candidate.cosPaXYXi(),
-        candidate.cosPaLambda(),
-        candidate.cosPaXYLambda(),
-        //candidate.dcaPi0Pi1(),
-        //candidate.dcaPi0Xi(),
-        //candidate.dcaPi1Xi(),
-        flagMc);
+    if constexpr (noKf){
+      if (fillCandidateLiteTable) {
+        rowCandidateLite(
+          candidate.cascadeId(),
+          candidate.pi0Id(),
+          candidate.pi1Id(),
+          candidate.isSelXicToXiPiPi(),
+          candidate.posX(),
+          candidate.posY(),
+          candidate.posZ(),
+          candidate.xSecondaryVertex(),
+          candidate.ySecondaryVertex(),
+          candidate.zSecondaryVertex(),
+          candidate.chi2PCA(),
+          candidate.sign(),
+          candidate.e(o2::constants::physics::MassXiCPlus),
+          candidate.invMassXic(),
+          candidate.p(),
+          candidate.pt(),
+          candidate.y(o2::constants::physics::MassXiCPlus),
+          candidate.eta(),
+          candidate.phi(),
+          candidate.ct(o2::constants::physics::MassXiCPlus),
+          candidate.decayLength(),
+          candidate.decayLengthXY(),
+          candidate.cpa(),
+          candidate.cpaXY(),
+          candidate.ptProng0(),
+          candidate.ptProng1(),
+          candidate.ptProng2(),
+          candidate.impactParameter0(),
+          candidate.impactParameter1(),
+          candidate.impactParameter2(),
+          candidate.cosPaXi(),
+          candidate.cosPaXYXi(),
+          candidate.cosPaLambda(),
+          candidate.cosPaXYLambda(),
+          flagMc);
+      } else {
+        rowCandidateFull(
+          candidate.cascadeId(),
+          candidate.pi0Id(),
+          candidate.pi1Id(),
+          candidate.isSelXicToXiPiPi(),
+          candidate.posX(),
+          candidate.posY(),
+          candidate.posZ(),
+          candidate.xPvErr(),
+          candidate.yPvErr(),
+          candidate.zPvErr(),
+          candidate.xSecondaryVertex(),
+          candidate.ySecondaryVertex(),
+          candidate.zSecondaryVertex(),
+          candidate.chi2PCA(),
+          candidate.xSvErr(),
+          candidate.ySvErr(),
+          candidate.zSvErr(),
+          candidate.xDecayVtxXi(),
+          candidate.yDecayVtxXi(),
+          candidate.zDecayVtxXi(),
+          candidate.xDecayVtxLambda(),
+          candidate.yDecayVtxLambda(),
+          candidate.zDecayVtxLambda(),
+          candidate.sign(),
+          candidate.e(o2::constants::physics::MassXiCPlus),
+          candidate.invMassXic(),
+          candidate.p(),
+          candidate.pt(),
+          candidate.y(o2::constants::physics::MassXiCPlus),
+          candidate.eta(),
+          candidate.phi(),
+          candidate.ct(o2::constants::physics::MassXiCPlus),
+          candidate.decayLength(),
+          candidate.decayLengthNormalised(),
+          candidate.decayLengthXY(),
+          candidate.decayLengthXYNormalised(),
+          candidate.cpa(),
+          candidate.cpaXY(),
+          candidate.ptProng0(),
+          candidate.ptProng1(),
+          candidate.ptProng2(),
+          candidate.impactParameter0(),
+          candidate.impactParameterNormalised0(),
+          candidate.impactParameter1(),
+          candidate.impactParameterNormalised1(),
+          candidate.impactParameter2(),
+          candidate.impactParameterNormalised2(),
+          candidate.maxNormalisedDeltaIP(),
+          candidate.cosPaXi(),
+          candidate.cosPaXYXi(),
+          candidate.cosPaLambda(),
+          candidate.cosPaXYLambda(),
+          flagMc);
+      }
     } else {
-      rowCandidateFull(
-        candidate.cascadeId(),
-        candidate.pi0Id(),
-        candidate.pi1Id(),
-        candidate.isSelXicToXiPiPi(),
-        candidate.posX(),
-        candidate.posY(),
-        candidate.posZ(),
-        candidate.xPvErr(),
-        candidate.yPvErr(),
-        candidate.zPvErr(),
-        candidate.xSecondaryVertex(),
-        candidate.ySecondaryVertex(),
-        candidate.zSecondaryVertex(),
-        candidate.chi2PCA(),
-        candidate.xSvErr(),
-        candidate.ySvErr(),
-        candidate.zSvErr(),
-        candidate.xDecayVtxXi(),
-        candidate.yDecayVtxXi(),
-        candidate.zDecayVtxXi(),
-        //candidate.kfCascadeChi2(),
-        candidate.xDecayVtxLambda(),
-        candidate.yDecayVtxLambda(),
-        candidate.zDecayVtxLambda(),
-        //candidate.kfV0Chi2(),
-        candidate.sign(),
-        candidate.e(o2::constants::physics::MassXiCPlus),
-        candidate.invMassXic(),
-        candidate.p(),
-        candidate.pt(),
-        candidate.y(o2::constants::physics::MassXiCPlus),
-        candidate.eta(),
-        candidate.phi(),
-        candidate.ct(o2::constants::physics::MassXiCPlus),
-        candidate.decayLength(),
-        candidate.decayLengthNormalised(),
-        candidate.decayLengthXY(),
-        candidate.decayLengthXYNormalised(),
-        candidate.cpa(),
-        candidate.cpaXY(),
-        candidate.ptProng0(),
-        candidate.ptProng1(),
-        candidate.ptProng2(),
-        candidate.impactParameter0(),
-        candidate.impactParameterNormalised0(),
-        candidate.impactParameter1(),
-        candidate.impactParameterNormalised1(),
-        candidate.impactParameter2(),
-        candidate.impactParameterNormalised2(),
-        candidate.maxNormalisedDeltaIP(),
-        candidate.cosPaXi(),
-        candidate.cosPaXYXi(),
-        candidate.cosPaLambda(),
-        candidate.cosPaXYLambda(),
-        //candidate.dcaPi0Pi1(),
-        //candidate.dcaPi0Xi(),
-        //candidate.dcaPi1Xi(),
-        flagMc);
+      if (fillCandidateLiteTable) {
+        rowCandidateLiteKf(
+          candidate.cascadeId(),
+          candidate.pi0Id(),
+          candidate.pi1Id(),
+          candidate.isSelXicToXiPiPi(),
+          candidate.posX(),
+          candidate.posY(),
+          candidate.posZ(),
+          candidate.xSecondaryVertex(),
+          candidate.ySecondaryVertex(),
+          candidate.zSecondaryVertex(),
+          candidate.chi2PCA(),
+          candidate.sign(),
+          candidate.e(o2::constants::physics::MassXiCPlus),
+          candidate.invMassXic(),
+          candidate.p(),
+          candidate.pt(),
+          candidate.y(o2::constants::physics::MassXiCPlus),
+          candidate.eta(),
+          candidate.phi(),
+          candidate.ct(o2::constants::physics::MassXiCPlus),
+          candidate.decayLength(),
+          candidate.decayLengthXY(),
+          candidate.cpa(),
+          candidate.cpaXY(),
+          candidate.ptProng0(),
+          candidate.ptProng1(),
+          candidate.ptProng2(),
+          candidate.impactParameter0(),
+          candidate.impactParameter1(),
+          candidate.impactParameter2(),
+          candidate.cosPaXi(),
+          candidate.cosPaXYXi(),
+          candidate.cosPaLambda(),
+          candidate.cosPaXYLambda(),
+          candidate.kfCascadeChi2(),
+          candidate.kfV0Chi2(),
+          candidate.dcaPi0Pi1(),
+          candidate.dcaPi0Xi(),
+          candidate.dcaPi1Xi(),
+          flagMc);
+      } else {
+        rowCandidateFullKf(
+          candidate.cascadeId(),
+          candidate.pi0Id(),
+          candidate.pi1Id(),
+          candidate.isSelXicToXiPiPi(),
+          candidate.posX(),
+          candidate.posY(),
+          candidate.posZ(),
+          candidate.xPvErr(),
+          candidate.yPvErr(),
+          candidate.zPvErr(),
+          candidate.xSecondaryVertex(),
+          candidate.ySecondaryVertex(),
+          candidate.zSecondaryVertex(),
+          candidate.chi2PCA(),
+          candidate.xSvErr(),
+          candidate.ySvErr(),
+          candidate.zSvErr(),
+          candidate.xDecayVtxXi(),
+          candidate.yDecayVtxXi(),
+          candidate.zDecayVtxXi(),
+          candidate.xDecayVtxLambda(),
+          candidate.yDecayVtxLambda(),
+          candidate.zDecayVtxLambda(),
+          candidate.sign(),
+          candidate.e(o2::constants::physics::MassXiCPlus),
+          candidate.invMassXic(),
+          candidate.p(),
+          candidate.pt(),
+          candidate.y(o2::constants::physics::MassXiCPlus),
+          candidate.eta(),
+          candidate.phi(),
+          candidate.ct(o2::constants::physics::MassXiCPlus),
+          candidate.decayLength(),
+          candidate.decayLengthNormalised(),
+          candidate.decayLengthXY(),
+          candidate.decayLengthXYNormalised(),
+          candidate.cpa(),
+          candidate.cpaXY(),
+          candidate.ptProng0(),
+          candidate.ptProng1(),
+          candidate.ptProng2(),
+          candidate.impactParameter0(),
+          candidate.impactParameterNormalised0(),
+          candidate.impactParameter1(),
+          candidate.impactParameterNormalised1(),
+          candidate.impactParameter2(),
+          candidate.impactParameterNormalised2(),
+          candidate.maxNormalisedDeltaIP(),
+          candidate.cosPaXi(),
+          candidate.cosPaXYXi(),
+          candidate.cosPaLambda(),
+          candidate.cosPaXYLambda(),
+          candidate.kfCascadeChi2(),
+          candidate.kfV0Chi2(),
+          candidate.dcaPi0Pi1(),
+          candidate.dcaPi0Xi(),
+          candidate.dcaPi1Xi(),
+          flagMc);
+      }
     }
   }
 
   void processData(aod::Collisions const& collisions,
-                   soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>> const& candidates,
+                   SelectedCandidates const& candidates,
                    TracksWPid const&)
   {
     // Filling event properties
@@ -382,9 +580,10 @@ struct HfTreeCreatorXicToXiPiPi {
     }
 
     // Filling candidate properties
-    rowCandidateFull.reserve(candidates.size());
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
+    } else {
+      rowCandidateFull.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
       if (fillOnlyBackground && downSampleBkgFactor < 1.) {
@@ -396,8 +595,35 @@ struct HfTreeCreatorXicToXiPiPi {
       fillCandidateTable(candidate);
     }
   }
-
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processData, "Process data", true);
+
+  void processDataKf(aod::Collisions const& collisions,
+                     SelectedCandidatesKf const& candidates,
+                     TracksWPid const&)
+  {
+    // Filling event properties
+    rowCandidateFullEvents.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, 0, 1);
+    }
+
+    // Filling candidate properties
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidates.size());
+    } else {
+      rowCandidateFull.reserve(candidates.size());
+    }
+    for (const auto& candidate : candidates) {
+      if (fillOnlyBackground && downSampleBkgFactor < 1.) {
+        float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
+        if (pseudoRndm >= downSampleBkgFactor && candidate.pt() < ptMaxForDownSample) {
+          continue;
+        }
+      }
+      fillCandidateTable<false,false>(candidate);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processDataKf, "Process data with KF Particle reconstruction", false);
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
@@ -413,32 +639,35 @@ struct HfTreeCreatorXicToXiPiPi {
 
     // Filling candidate properties
     if (fillOnlySignal) {
-      rowCandidateFull.reserve(recSig.size());
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(recSig.size());
+      } else {
+        rowCandidateFull.reserve(recSig.size());
       }
       for (const auto& candidate : recSig) {
-        fillCandidateTable<true>(candidate);
+        fillCandidateTable<true,true>(candidate);
       }
     } else if (fillOnlyBackground) {
-      rowCandidateFull.reserve(recBg.size());
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(recBg.size());
+      } else {
+        rowCandidateFull.reserve(recBg.size());
       }
       for (const auto& candidate : recBg) {
         float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
-        fillCandidateTable<true>(candidate);
+        fillCandidateTable<true,true>(candidate);
       }
     } else {
-      rowCandidateFull.reserve(candidates.size());
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(candidates.size());
+      } else {
+        rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        fillCandidateTable<true>(candidate);
+        fillCandidateTable<true,true>(candidate);
       }
     }
 
@@ -456,10 +685,70 @@ struct HfTreeCreatorXicToXiPiPi {
       }
     }
   }
-
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMc, "Process MC", false);
-};
 
+  void processMcKf(aod::Collisions const& collisions,
+                 aod::McCollisions const&,
+                 SelectedCandidatesKfMc const& candidates,
+                 soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles,
+                 TracksWPid const&)
+  {
+    // Filling event properties
+    rowCandidateFullEvents.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, 0, 1);
+    }
+
+    // Filling candidate properties
+    if (fillOnlySignal) {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(recSigKf.size());
+      } else {
+        rowCandidateFull.reserve(recSigKf.size());
+      }
+      for (const auto& candidate : recSigKf) {
+        fillCandidateTable<true,false>(candidate);
+      }
+    } else if (fillOnlyBackground) {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(recBgKf.size());
+      } else {
+        rowCandidateFull.reserve(recBgKf.size());
+      }
+      for (const auto& candidate : recBgKf) {
+        float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+          continue;
+        }
+        fillCandidateTable<true,false>(candidate);
+      }
+    } else {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(candidates.size());
+      } else {
+        rowCandidateFull.reserve(candidates.size());
+      }
+      for (const auto& candidate : candidates) {
+        fillCandidateTable<true,false>(candidate);
+      }
+    }
+
+    // Filling particle properties
+    rowCandidateFullParticles.reserve(particles.size());
+    for (const auto& particle : particles) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi)) {
+        rowCandidateFullParticles(
+          particle.mcCollision().bcId(),
+          particle.pt(),
+          particle.eta(),
+          particle.phi(),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCPlus),
+          particle.flagMcMatchGen());
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMcKf, "Process MC with KF Particle reconstruction", false);
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
