@@ -107,27 +107,29 @@ struct cascademcbuilder {
 
                 // if we got to this level, it means the mother particle exists and is the same
                 // now we have to go one level up and compare to the bachelor mother too
-                for (auto& lV0Mother : lNegMother.template mothers_as<aod::McParticles>()) {
-                  for (auto& lBachMother : lMCBachTrack.template mothers_as<aod::McParticles>()) {
-                    if (lV0Mother == lBachMother) {
-                      lLabel = lV0Mother.globalIndex();
-                      pdgCode = lV0Mother.pdgCode();
-                      isPhysicalPrimary = lV0Mother.isPhysicalPrimary();
-                      xmc = lMCBachTrack.vx();
-                      ymc = lMCBachTrack.vy();
-                      zmc = lMCBachTrack.vz();
-                      px = lV0Mother.px();
-                      py = lV0Mother.py();
-                      pz = lV0Mother.pz();
-                      if (lV0Mother.has_mothers()) {
-                        for (auto& lV0GrandMother : lV0Mother.template mothers_as<aod::McParticles>()) {
-                          pdgCodeMother = lV0GrandMother.pdgCode();
-                          lMotherLabel = lV0GrandMother.globalIndex();
+                if (lNegMother.has_mothers() && lMCBachTrack.has_mothers()) {
+                  for (auto& lV0Mother : lNegMother.template mothers_as<aod::McParticles>()) {
+                    for (auto& lBachMother : lMCBachTrack.template mothers_as<aod::McParticles>()) {
+                      if (lV0Mother == lBachMother) {
+                        lLabel = lV0Mother.globalIndex();
+                        pdgCode = lV0Mother.pdgCode();
+                        isPhysicalPrimary = lV0Mother.isPhysicalPrimary();
+                        xmc = lMCBachTrack.vx();
+                        ymc = lMCBachTrack.vy();
+                        zmc = lMCBachTrack.vz();
+                        px = lV0Mother.px();
+                        py = lV0Mother.py();
+                        pz = lV0Mother.pz();
+                        if (lV0Mother.has_mothers()) {
+                          for (auto& lV0GrandMother : lV0Mother.template mothers_as<aod::McParticles>()) {
+                            pdgCodeMother = lV0GrandMother.pdgCode();
+                            lMotherLabel = lV0GrandMother.globalIndex();
+                          }
                         }
                       }
                     }
-                  }
-                } // end conditional V0-bach pair
+                  } // end conditional V0-bach pair
+                } // end has mothers
               }   // end neg = pos mother conditional
             }
           } // end loop neg/pos mothers

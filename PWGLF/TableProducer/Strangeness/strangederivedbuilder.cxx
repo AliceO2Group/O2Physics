@@ -218,6 +218,10 @@ struct strangederivedbuilder {
 
     histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", kTH2D, {axisCentrality, axisNVertices});
 
+    if( doprocessV0FoundTags || doprocessCascFoundTags){
+    histos.add("hFoundTagsCounters", "hFoundTagsCounters", kTH1D, {{4, -0.5f, 3.5f}});
+    }
+
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
 
@@ -795,6 +799,9 @@ struct strangederivedbuilder {
 
   void processV0FoundTags(aod::V0s const& foundV0s, aod::V0Datas const& findableV0s, aod::FindableV0s const& /* added to avoid troubles */)
   {
+    histos.fill(HIST("hFoundTagsCounters"), 0.0f, foundV0s.size());
+    histos.fill(HIST("hFoundTagsCounters"), 1.0f, findableV0s.size());
+
     // pack the found V0s in a long long
     std::vector<uint64_t> foundV0sPacked; 
     foundV0sPacked.reserve(foundV0s.size());
@@ -802,15 +809,14 @@ struct strangederivedbuilder {
       foundV0sPacked[foundV0.globalIndex()] = combineProngIndices(foundV0.posTrackId(), foundV0.negTrackId());
     }
 
-    // sort for speed, will do lots of searching
-    std::sort(foundV0sPacked.begin(), foundV0sPacked.end());
-
     bool hasBeenFound = false;
     for (auto const& findableV0 : findableV0s) {
       uint64_t indexPack = combineProngIndices(findableV0.posTrackId(), findableV0.negTrackId());
-      if (std::binary_search(foundV0sPacked.begin(), foundV0sPacked.end(), indexPack)){
-        // found this element, please mark it as reconstructed
-        hasBeenFound = true;
+      for(uint32_t ic=0; ic<foundV0s.size(); ic++){ 
+        if(indexPack==foundV0sPacked[ic]) { 
+          hasBeenFound = true;
+          break;
+        }
       }
       v0FoundTags(hasBeenFound);
     }
@@ -824,6 +830,9 @@ struct strangederivedbuilder {
 
   void processCascFoundTags(aod::Cascades const& foundCascades, aod::CascDatas const& findableCascades, aod::V0s const&, aod::FindableCascades const& /* added to avoid troubles */)
   {
+    histos.fill(HIST("hFoundTagsCounters"), 2.0f, foundCascades.size());
+    histos.fill(HIST("hFoundTagsCounters"), 3.0f, findableCascades.size());
+
     // pack the found V0s in a long long
     std::vector<uint128_t> foundCascadesPacked; 
     foundCascadesPacked.reserve(foundCascades.size());
@@ -832,15 +841,14 @@ struct strangederivedbuilder {
       foundCascadesPacked[foundCascade.globalIndex()] = combineProngIndices128(v0.posTrackId(), v0.negTrackId(), foundCascade.bachelorId());
     }
 
-    // sort for speed, will do lots of searching
-    std::sort(foundCascadesPacked.begin(), foundCascadesPacked.end());
-
     bool hasBeenFound = false;
     for (auto const& findableCascade : findableCascades) {
       uint128_t indexPack = combineProngIndices128(findableCascade.posTrackId(), findableCascade.negTrackId(), findableCascade.bachelorId());
-      if (std::binary_search(foundCascadesPacked.begin(), foundCascadesPacked.end(), indexPack)){
-        // found this element, please mark it as reconstructed
-        hasBeenFound = true;
+      for(uint32_t ic=0; ic<foundCascades.size(); ic++){ 
+        if(indexPack==foundCascadesPacked[ic]) { 
+          hasBeenFound = true;
+          break;
+        }
       }
       cascFoundTags(hasBeenFound);
     }

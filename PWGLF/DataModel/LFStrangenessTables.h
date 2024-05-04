@@ -1262,11 +1262,12 @@ using KFCascadeLinked = KFCascadesLinked::iterator;
 
 namespace cascdata 
 {
+DECLARE_SOA_INDEX_COLUMN(FindableV0, findableV0);                                   //! V0 index
 DECLARE_SOA_COLUMN(IsFound, isFound, bool); //! is this FindableCascade actually in the Cascades table?
 }
 
 DECLARE_SOA_TABLE(FindableCascades, "AOD", "FINDABLECASCS", //! Run 3 cascade table
-                            o2::soa::Index<>, cascade::CollisionId, cascade::V0Id, cascade::BachelorId, o2::soa::Marker<1>);
+                            o2::soa::Index<>, cascade::CollisionId, cascdata::FindableV0Id, cascade::BachelorId, o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(CascFoundTags, "AOD", "CascFoundTag", //! found or not? 
                   cascdata::IsFound);

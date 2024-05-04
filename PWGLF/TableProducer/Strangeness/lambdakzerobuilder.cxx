@@ -529,11 +529,17 @@ struct lambdakzeroBuilder {
       LOGF(info, "LUT load done!");
     }
 
-    if (doprocessRun2 == false && doprocessRun3 == false) {
-      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
+    if (doprocessRun2 == false && doprocessRun3 == false && doprocessFindableRun3 == false) {
+      LOGF(fatal, "Neither processRun2 nor processRun3 nor processFindableRun3 enabled. Please choose one.");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
+    }
+    if (doprocessRun2 == true && doprocessFindableRun3 == true) {
+      LOGF(fatal, "Cannot enable processRun2 and processFindableRun3 at the same time. Please choose one.");
+    }
+    if (doprocessRun3 == true && doprocessFindableRun3 == true) {
+      LOGF(fatal, "Cannot enable processRun3 and processFindableRun3 at the same time. Please choose one.");
     }
 
     if (d_UseAutodetectMode) {
@@ -1297,7 +1303,7 @@ struct lambdakzeroBuilder {
     initCCDB(bc);
     buildStrangenessTables<FullTracksExtIU>(V0s);
   }
-  PROCESS_SWITCH(lambdakzeroBuilder, processFindableRun3, "Produce Run 3 V0 tables with all findable candidates", true);
+  PROCESS_SWITCH(lambdakzeroBuilder, processFindableRun3, "Produce Run 3 V0 tables with all findable candidates", false);
 };
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -1361,11 +1367,11 @@ struct lambdakzeroPreselector {
     if (doprocessBuildAll == false && doprocessBuildMCAssociated == false && doprocessBuildValiddEdx == false && doprocessBuildValiddEdxMCAssociated == false && doprocessBuildFindable == false) {
       LOGF(fatal, "No processBuild function enabled. Please choose one.");
     }
-    
-    if (static_cast<int>(doprocessBuildAll) + static_cast<int>(doprocessBuildMCAssociated) + static_cast<int>(doprocessBuildValiddEdx)
-  + static_cast<int>(doprocessBuildValiddEdxMCAssociated) + static_cast<int>(doprocessBuildFindable)) {
-      LOGF(fatal, "More than one processBuild function enabled. Please choose only one.");
-    }
+    LOGF(info, "Process function processBuildAll status: %i", static_cast<int>(doprocessBuildAll));
+    LOGF(info, "Process function doprocessBuildMCAssociated status: %i", static_cast<int>(doprocessBuildMCAssociated));
+    LOGF(info, "Process function doprocessBuildValiddEdx status: %i", static_cast<int>(doprocessBuildValiddEdx));
+    LOGF(info, "Process function doprocessBuildValiddEdxMCAssociated status: %i", static_cast<int>(doprocessBuildValiddEdxMCAssociated));
+    LOGF(info, "Process function doprocessBuildFindable status: %i", static_cast<int>(doprocessBuildFindable));
 
     auto h = histos.add<TH1>("hPreselectorStatistics", "hPreselectorStatistics", kTH1D, {{6, -0.5f, 5.5f}});
     h->GetXaxis()->SetBinLabel(1, "All");
