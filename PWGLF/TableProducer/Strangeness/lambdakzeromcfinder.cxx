@@ -68,7 +68,7 @@ using LabeledTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLab
 using FullMcParticles = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
 
 struct lambdakzeromcfinder {
-  Produces<aod::V0s> v0;
+  Produces<aod::FindableV0s> v0;
   Produces<aod::McFullV0Labels> fullv0labels;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};

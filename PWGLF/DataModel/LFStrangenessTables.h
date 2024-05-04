@@ -703,6 +703,27 @@ DECLARE_SOA_TABLE(V0MCRefs, "AOD", "V0MCREF", //! index table when using AO2Ds
 using V0sLinked = soa::Join<V0s, V0DataLink>;
 using V0Linked = V0sLinked::iterator;
 
+namespace v0data 
+{
+DECLARE_SOA_COLUMN(IsFound, isFound, bool); //! is this FindableV0 actually in the V0s table?
+}
+
+// Major bypass for simultaneous found vs findable study 
+DECLARE_SOA_TABLE(FindableV0s, "AOD", "FindableV0", //! Will store findable
+                  o2::soa::Index<>, v0::CollisionId,
+                  v0::PosTrackId, v0::NegTrackId,
+                  v0::V0Type,
+                  v0::IsStandardV0<v0::V0Type>,
+                  v0::IsPhotonV0<v0::V0Type>,
+                  v0::IsCollinearV0<v0::V0Type>,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(V0FoundTags, "AOD", "V0FoundTag", //! found or not? 
+                  v0data::IsFound);
+
+using FindableV0sLinked = soa::Join<FindableV0s, V0DataLink>;
+using FindableV0Linked = FindableV0sLinked::iterator;
+
 // helper for building
 namespace v0tag
 {
@@ -1238,6 +1259,20 @@ using CascadesLinked = soa::Join<Cascades, CascDataLink>;
 using CascadeLinked = CascadesLinked::iterator;
 using KFCascadesLinked = soa::Join<Cascades, KFCascDataLink>;
 using KFCascadeLinked = KFCascadesLinked::iterator;
+
+namespace cascdata 
+{
+DECLARE_SOA_COLUMN(IsFound, isFound, bool); //! is this FindableCascade actually in the Cascades table?
+}
+
+DECLARE_SOA_TABLE(FindableCascades, "AOD", "FINDABLECASCS", //! Run 3 cascade table
+                            o2::soa::Index<>, cascade::CollisionId, cascade::V0Id, cascade::BachelorId, o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(CascFoundTags, "AOD", "CascFoundTag", //! found or not? 
+                  cascdata::IsFound);
+
+using FindableCascadesLinked = soa::Join<FindableCascades, CascDataLink>;
+using FindableCascadeLinked = FindableCascadesLinked::iterator;
 
 namespace casctag
 {

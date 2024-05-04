@@ -125,6 +125,11 @@ struct strangederivedbuilder {
   Produces<aod::GeOmegaMinus> geOmegaMinus;
   Produces<aod::GeOmegaPlus> geOmegaPlus;
 
+  //__________________________________________________
+  // Found tags for findable exercise
+  Produces<aod::V0FoundTags> v0FoundTags;
+  Produces<aod::CascFoundTags> cascFoundTags;
+
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -783,6 +788,64 @@ struct strangederivedbuilder {
     StraFV0AQVs(collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A());
   }
 
+  uint64_t combineProngIndices(uint32_t low, uint32_t high)
+  {
+      return (((uint64_t) high) << 32) | ((uint64_t) low);
+  }
+
+  void processV0FoundTags(aod::V0s const& foundV0s, aod::V0Datas const& findableV0s, aod::FindableV0s const& /* added to avoid troubles */)
+  {
+    // pack the found V0s in a long long
+    std::vector<uint64_t> foundV0sPacked; 
+    foundV0sPacked.reserve(foundV0s.size());
+    for (auto const& foundV0 : foundV0s) {
+      foundV0sPacked[foundV0.globalIndex()] = combineProngIndices(foundV0.posTrackId(), foundV0.negTrackId());
+    }
+
+    // sort for speed, will do lots of searching
+    std::sort(foundV0sPacked.begin(), foundV0sPacked.end());
+
+    bool hasBeenFound = false;
+    for (auto const& findableV0 : findableV0s) {
+      uint64_t indexPack = combineProngIndices(findableV0.posTrackId(), findableV0.negTrackId());
+      if (std::binary_search(foundV0sPacked.begin(), foundV0sPacked.end(), indexPack)){
+        // found this element, please mark it as reconstructed
+        hasBeenFound = true;
+      }
+      v0FoundTags(hasBeenFound);
+    }
+  }
+
+  using uint128_t = __uint128_t;
+  uint128_t combineProngIndices128(uint32_t pos, uint32_t neg, uint32_t bach)
+  {
+      return (((uint128_t) pos) << 64) | (((uint128_t) neg) << 32) | ((uint128_t) bach);
+  }
+
+  void processCascFoundTags(aod::Cascades const& foundCascades, aod::CascDatas const& findableCascades, aod::V0s const&, aod::FindableCascades const& /* added to avoid troubles */)
+  {
+    // pack the found V0s in a long long
+    std::vector<uint128_t> foundCascadesPacked; 
+    foundCascadesPacked.reserve(foundCascades.size());
+    for (auto const& foundCascade : foundCascades) {
+      auto v0 = foundCascade.v0();
+      foundCascadesPacked[foundCascade.globalIndex()] = combineProngIndices128(v0.posTrackId(), v0.negTrackId(), foundCascade.bachelorId());
+    }
+
+    // sort for speed, will do lots of searching
+    std::sort(foundCascadesPacked.begin(), foundCascadesPacked.end());
+
+    bool hasBeenFound = false;
+    for (auto const& findableCascade : findableCascades) {
+      uint128_t indexPack = combineProngIndices128(findableCascade.posTrackId(), findableCascade.negTrackId(), findableCascade.bachelorId());
+      if (std::binary_search(foundCascadesPacked.begin(), foundCascadesPacked.end(), indexPack)){
+        // found this element, please mark it as reconstructed
+        hasBeenFound = true;
+      }
+      cascFoundTags(hasBeenFound);
+    }
+  }
+
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsV0sOnly, "Produce collisions (V0s only)", true);
   PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions (V0s + casc)", true);
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsMC, "Produce collisions (V0s + casc)", false);
@@ -795,11 +858,17 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processPureSimulation, "Produce pure simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processReconstructedSimulation, "Produce reco-ed simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processBinnedGenerated, "Produce binned generated information", false);
+
+  // event plane information
   PROCESS_SWITCH(strangederivedbuilder, processFT0AQVectors, "Produce FT0A Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectors, "Produce FT0C Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectorsLF, "Produce FT0C Q-vectors table using LF temporary calibration", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0MQVectors, "Produce FT0M Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
+
+  // dedicated findable functionality
+  PROCESS_SWITCH(strangederivedbuilder, processV0FoundTags, "Produce FoundV0Tags for findable exercise", false);
+  PROCESS_SWITCH(strangederivedbuilder, processCascFoundTags, "Produce FoundCascTags for findable exercise", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

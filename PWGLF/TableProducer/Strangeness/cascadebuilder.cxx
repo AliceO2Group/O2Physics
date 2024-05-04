@@ -99,6 +99,7 @@ using TracksExtraWithPIDandLabels = soa::Join<aod::TracksExtra, aod::pidTPCFullP
 using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
 using V0fCfull = soa::Join<aod::V0fCDatas, aod::V0fCCovs>;
 using TaggedCascades = soa::Join<aod::Cascades, aod::CascTags>;
+using TaggedFindableCascades = soa::Join<aod::FindableCascades, aod::CascTags>;
 
 // For MC association in pre-selection
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
@@ -251,6 +252,7 @@ struct cascadeBuilder {
 
   // For manual sliceBy
   Preslice<aod::Cascades> perCollision = o2::aod::cascade::collisionId;
+  Preslice<aod::FindableCascades> perCollisionFindable = o2::aod::cascade::collisionId;
   Preslice<aod::TrackedCascades> perCascade = o2::aod::strangenesstracking::cascadeId;
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
@@ -1890,6 +1892,20 @@ struct cascadeBuilder {
   }
   PROCESS_SWITCH(cascadeBuilder, processRun3, "Produce Run 3 cascade tables", true);
 
+  void processFindableRun3(aod::Collisions const& collisions, aod::FindableV0sLinked const&, V0full const&, soa::Filtered<TaggedFindableCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  {
+    for (const auto& collision : collisions) {
+      // Fire up CCDB
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = collision.globalIndex();
+      auto CascadeTable_thisCollision = cascades.sliceBy(perCollisionFindable, collIdx);
+      buildStrangenessTables<FullTracksExtIU>(CascadeTable_thisCollision);
+    }
+  }
+  PROCESS_SWITCH(cascadeBuilder, processFindableRun3, "Produce Run 3 findable cascade tables", true);
+
   void processRun3withKFParticle(aod::Collisions const& collisions, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::V0s const&)
   {
     for (const auto& collision : collisions) {
@@ -1970,6 +1986,16 @@ struct cascadePreselector {
 
   void init(InitContext const&)
   {
+  //   //check settings and stop if not viable
+  //   if (doprocessBuildAll == false && doprocessBuildMCAssociated == false && doprocessBuildValiddEdx == false && doprocessBuildValiddEdxMCAssociated == false && doprocessBuildFindableRun3 == false) {
+  //     LOGF(fatal, "No processBuild function enabled. Please choose one.");
+  //   }
+    
+  //   if (static_cast<int>(doprocessBuildAll) + static_cast<int>(doprocessBuildMCAssociated) + static_cast<int>(doprocessBuildValiddEdx)
+  // + static_cast<int>(doprocessBuildValiddEdxMCAssociated) + static_cast<int>(doprocessBuildFindableRun3)) {
+  //     LOGF(fatal, "More than one processBuild function enabled. Please choose only one.");
+  //   }
+
     auto h = histos.add<TH1>("hPreselectorStatistics", "hPreselectorStatistics", kTH1D, {{5, -0.5f, 4.5f}});
     h->GetXaxis()->SetBinLabel(1, "All");
     h->GetXaxis()->SetBinLabel(2, "Tracks OK");
@@ -2238,6 +2264,17 @@ struct cascadePreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// This process function ensures that all findable cascades are built.
+  /// Not to be used with processSkip.
+  void processBuildFindable(aod::FindableCascades const& cascades, aod::FindableV0s const&, aod::V0Datas const&, aod::TracksExtra const&)
+  {
+    initializeMasks(cascades.size());
+    for (auto& casc : cascades) {
+      checkTrackQuality<aod::TracksExtra>(casc, selectionMask[casc.globalIndex()], true);
+    }
+    checkAndFinalize();
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function checks for the use of Cascades in strangeness tracked cascades
   /// They are then marked appropriately; the user could then operate
   /// the cascadebuilder to construct only those Cascades.
@@ -2254,6 +2291,7 @@ struct cascadePreselector {
   PROCESS_SWITCH(cascadePreselector, processBuildMCAssociated, "Switch to build MC-associated cascades", false);
   PROCESS_SWITCH(cascadePreselector, processBuildValiddEdx, "Switch to build cascades with dE/dx preselection", false);
   PROCESS_SWITCH(cascadePreselector, processBuildValiddEdxMCAssociated, "Switch to build MC-associated cascades with dE/dx preselection", false);
+  PROCESS_SWITCH(cascadePreselector, processBuildFindable, "Switch to build all findable cascades", false);
   /// skipper option (choose in addition to a processBuild if you like)
   PROCESS_SWITCH(cascadePreselector, processSkipCascadesNotUsedInTrackedCascades, "Switch to skip cascades not used in cascade tracking", false);
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
@@ -2273,7 +2311,7 @@ struct cascadeLinkBuilder {
   void init(InitContext const&) {}
 
   // build Cascade -> CascData link table
-  void process(aod::Cascades const& casctable, aod::CascDatas const& cascdatatable)
+  void processFound(aod::Cascades const& casctable, aod::CascDatas const& cascdatatable)
   {
     std::vector<int> lIndices;
     lIndices.reserve(casctable.size());
@@ -2286,6 +2324,24 @@ struct cascadeLinkBuilder {
       cascdataLink(lIndices[ii]);
     }
   }
+
+    // build Cascade -> CascData link table
+  void processFindable(aod::FindableCascades const& casctable, aod::CascDatas const& cascdatatable)
+  {
+    std::vector<int> lIndices;
+    lIndices.reserve(casctable.size());
+    for (int ii = 0; ii < casctable.size(); ii++)
+      lIndices[ii] = -1;
+    for (auto& cascdata : cascdatatable) {
+      lIndices[cascdata.cascadeId()] = cascdata.globalIndex();
+    }
+    for (int ii = 0; ii < casctable.size(); ii++) {
+      cascdataLink(lIndices[ii]);
+    }
+  }
+
+  PROCESS_SWITCH(cascadeLinkBuilder, processFound, "process found Cascades (default)", true);
+  PROCESS_SWITCH(cascadeLinkBuilder, processFindable, "process findable Cascades", false);
 };
 
 struct kfcascadeLinkBuilder {
