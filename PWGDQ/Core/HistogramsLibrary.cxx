@@ -965,7 +965,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         // every 0.2 GeV/c from 0 to 10 GeV/c
         double phiv_bins[101];
         for (int i = 0; i <= 100; i++)
-          phiv_bins[i] = TMath::Pi()/100. * i;
+          phiv_bins[i] = TMath::Pi() / 100. * i;
         int nbins_phiv = sizeof(phiv_bins) / sizeof(*phiv_bins) - 1;
 
         // 3D histo
