@@ -218,7 +218,7 @@ struct strangederivedbuilder {
 
     histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", kTH2D, {axisCentrality, axisNVertices});
 
-    if( doprocessV0FoundTags || doprocessCascFoundTags){
+    if (doprocessV0FoundTags || doprocessCascFoundTags) {
       auto h = histos.add<TH1>("hFoundTagsCounters", "hFoundTagsCounters", kTH1D, {{6, -0.5f, 5.5f}});
       h->GetXaxis()->SetBinLabel(1, "Found V0s");
       h->GetXaxis()->SetBinLabel(2, "Findable V0s");
