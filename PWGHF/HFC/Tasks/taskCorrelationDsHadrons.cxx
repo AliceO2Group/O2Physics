@@ -324,7 +324,7 @@ struct HfTaskCorrelationDsHadrons {
             registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
             if (statusDsPrompt == 1 && statusPromptHadron == 1) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-            } else if (statusDsPrompt == 0 && !statusPromptHadron == 2) {
+            } else if (statusDsPrompt == 0 && statusPromptHadron == 2) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
             }
           }
@@ -464,7 +464,7 @@ struct HfTaskCorrelationDsHadrons {
             registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
             if (statusDsPrompt == 1 && statusPromptHadron == 1) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-            } else if (statusDsPrompt == 0 && !statusPromptHadron == 2) {
+            } else if (statusDsPrompt == 0 && statusPromptHadron == 2) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
             }
           }
