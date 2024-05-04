@@ -34,6 +34,7 @@ using namespace o2::framework::expressions;
 struct HfTaskCorrelationDsHadrons {
   Configurable<bool> applyEfficiency{"applyEfficiency", false, "Flag for applying efficiency weights"};
   Configurable<bool> useSel8ForTrackEff{"useSel8ForTrackEff", true, "Flag for applying sel8 for collision selection"};
+  Configurable<bool> doMcCollisionCheck{"doMcCollisionCheck", false, "Flag for applying the collision check and selection based on MC collision info"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
   Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
@@ -41,6 +42,8 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
+  Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
+  Configurable<float> ptCandMax{"ptCandMax", 50., "max. cand pT"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
   Configurable<float> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
@@ -128,13 +131,14 @@ struct HfTaskCorrelationDsHadrons {
     registry.add("hCorrel2DVsPtSidebandLeft", "Ds-h correlations sideband left region", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
     registry.add("hCorrel2DVsPtSidebandRight", "Ds-h correlations sideband right region", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
     // Histograms for MC Reco analysis
+    registry.add("hMassPromptDsVsPt", "Ds prompt candidates massVsPt", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
+    registry.add("hMassNonPromptDsVsPt", "Ds non prompt candidates massVsPt", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hDeltaEtaPtIntSignalRegionMcRec", "Ds-h deltaEta signal region MC reco", {HistType::kTH1F, {axisDetlaEta}});
     registry.add("hDeltaPhiPtIntSignalRegionMcRec", "Ds-h deltaPhi signal region MC reco", {HistType::kTH1F, {axisDetlaPhi}});
-    registry.add("hCorrel2DVsPtSignalRegionMcRec", "Ds-h correlations signal region MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
-    registry.add("hCorrel2DVsPtPhysicalPrimaryMcRec", "Ds-h correlations signal region (only true primary particles) MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}}});
-    registry.add("hCorrel2DVsPtPhysicalPrimaryWDecayChanMcRec", "Ds-h correlations signal region (only true primary particles) w decay chan MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}}});
-    registry.add("hCorrel2DVsPtSignalRegionMcRecPromptDivision", "Ds-h correlations signal region Prompt-NonPrompt MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisDsPrompt}, {axisPoolBin}}});
-    registry.add("hCorrel2DVsPtSignalRegionWDecayChanMcRec", "Ds-h correlations signal region w decay chan MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtSignalRegionMcRec", "Ds-h correlations signal region Prompt-NonPrompt MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisDsPrompt}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec", "Ds-h correlations signal region Prompt-NonPrompt MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec", "Ds-h correlations signal region Prompt-NonPrompt MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtPhysicalPrimaryMcRec", "Ds-h correlations signal region (only true primary particles) MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisDsPrompt}, {axisPoolBin}}});
     registry.add("hDeltaEtaPtIntSidebandLeftMcRec", "Ds-h deltaEta sideband left region MC reco", {HistType::kTH1F, {axisDetlaEta}});
     registry.add("hDeltaPhiPtIntSidebandLeftMcRec", "Ds-h deltaPhi sideband left region MC reco", {HistType::kTH1F, {axisDetlaPhi}});
     registry.add("hCorrel2DVsPtSidebandLeftMcRec", "Ds-h correlations sideband left region MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
@@ -145,7 +149,10 @@ struct HfTaskCorrelationDsHadrons {
     registry.add("hDeltaEtaPtIntMcGen", "Ds-h deltaEta MC Gen", {HistType::kTH1F, {axisDetlaEta}});
     registry.add("hDeltaPhiPtIntMcGen", "Ds-h deltaPhi MC Gen", {HistType::kTH1F, {axisDetlaPhi}});
     registry.add("hCorrel2DVsPtMcGen", "Ds-h correlations MC Gen", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
-    registry.add("hCorrel2DVsPtMcGenPromptDivision", "Ds-h correlations Prompt-NonPrompt MC Gen", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisDsPrompt}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtMcGenPrompt", "Ds-h correlations Prompt MC Gen", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtMcGenPromptDsPromptHadron", "Ds-h correlations prompt Ds prompt h MC Gen", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtMcGenNonPromptDsNonPromptHadron", "Ds-h correlations non prompt Ds non prompt h MC Gen", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtMcGenNonPrompt", "Ds-h correlations NonPrompt MC Gen", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
     // Histograms for efficiencies
     registry.add("hPtCandMcRecPrompt", "Ds prompt candidates pt", {HistType::kTH1F, {axisPtD}});
     registry.add("hPtCandMcRecNonPrompt", "Ds non prompt candidates pt", {HistType::kTH1F, {axisPtD}});
@@ -170,11 +177,12 @@ struct HfTaskCorrelationDsHadrons {
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandLeft"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandRight"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMcRec"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandLeftMcRec"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandRightMcRec"))->Sumw2();
-    registry.get<THnSparse>(HIST("hCorrel2DVsPtSignalRegionMcRecPromptDivision"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGen"))->Sumw2();
-    registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenPromptDivision"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenPrompt"))->Sumw2();
+    registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGenNonPrompt"))->Sumw2();
   }
 
   void processData(DsHadronPairFullWithMl const& pairEntries,
@@ -248,8 +256,35 @@ struct HfTaskCorrelationDsHadrons {
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processData, "Process data", true);
 
   /// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
-  void processMcRec(DsHadronPairFullWithMl const& pairEntries)
+  void processMcRec(DsHadronPairFullWithMl const& pairEntries,
+                    soa::Join<aod::DsCandRecoInfo, aod::DsCandGenInfo> const& candidates)
   {
+    for (const auto& candidate : candidates) {
+      float massD = candidate.mD();
+      float ptD = candidate.ptD();
+      float bdtScorePrompt = candidate.mlScorePrompt();
+      float bdtScoreBkg = candidate.mlScoreBkg();
+      int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+      bool isDsPrompt = candidate.isPrompt();
+
+      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+        continue;
+      }
+      double efficiencyWeightD = 1.;
+      if (applyEfficiency) {
+        efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
+      }
+      if (isDsPrompt) {
+        registry.fill(HIST("hMassPromptDsVsPt"), massD, ptD, efficiencyWeightD);
+        registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
+        registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
+      } else {
+        registry.fill(HIST("hMassNonPromptDsVsPt"), massD, ptD, efficiencyWeightD);
+        registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
+        registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
+      }
+    }
+
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
@@ -264,6 +299,7 @@ struct HfTaskCorrelationDsHadrons {
       int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
       int poolBin = pairEntry.poolBin();
       int statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
+      int statusPromptHadron = pairEntry.trackOrigin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
 
@@ -279,19 +315,17 @@ struct HfTaskCorrelationDsHadrons {
       }
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-        registry.fill(HIST("hDeltaEtaPtIntSignalRegionMcRec"), deltaEta, efficiencyWeight);
-        registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
         // prompt and non-prompt division
-        if (pairEntry.isSignal()) {
-          registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRecPromptDivision"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
+        if (pairEntry.isSignal() && pairEntry.isDecayChan()) {
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegionMcRec"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
+          registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
           if (isPhysicalPrimary) {
-            registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
-          }
-          if (pairEntry.isDecayChan()) {
-            registry.fill(HIST("hCorrel2DVsPtSignalRegionWDecayChanMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-            if (isPhysicalPrimary) {
-              registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryWDecayChanMcRec"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+            registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
+            if (statusDsPrompt == 1 && statusPromptHadron == 1) {
+              registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+            } else if (statusDsPrompt == 0 && !statusPromptHadron == 2) {
+              registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
             }
           }
         }
@@ -322,12 +356,23 @@ struct HfTaskCorrelationDsHadrons {
       float ptD = pairEntry.ptD();
       float ptHadron = pairEntry.ptHadron();
       int poolBin = pairEntry.poolBin();
-      int statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
+      int statusPromptHadron = pairEntry.trackOrigin();
+      bool isDsPrompt = pairEntry.isPrompt();
 
       registry.fill(HIST("hCorrel2DVsPtMcGen"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-      registry.fill(HIST("hCorrel2DVsPtMcGenPromptDivision"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin);
       registry.fill(HIST("hDeltaEtaPtIntMcGen"), deltaEta);
       registry.fill(HIST("hDeltaPhiPtIntMcGen"), deltaPhi);
+      if (isDsPrompt) {
+        registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
+        if (statusPromptHadron == 1) {
+          registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDsNonPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
+        }
+      } else {
+        registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
+        if (statusPromptHadron == 2) {
+          registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDsNonPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
+        }
+      }
     }
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcGen, "Process MC Gen mode", false);
@@ -377,6 +422,70 @@ struct HfTaskCorrelationDsHadrons {
   }
   PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processDataME, "Process data ME", false);
 
+  /// D-Hadron correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
+  void processMcRecME(DsHadronPairFullWithMl const& pairEntries)
+  {
+    for (const auto& pairEntry : pairEntries) {
+      // define variables for widely used quantities
+      float deltaPhi = pairEntry.deltaPhi();
+      float deltaEta = pairEntry.deltaEta();
+      float ptD = pairEntry.ptD();
+      float ptHadron = pairEntry.ptHadron();
+      float massD = pairEntry.mD();
+      float bdtScorePrompt = pairEntry.mlScorePrompt();
+      float bdtScoreBkg = pairEntry.mlScoreBkg();
+      float trackDcaXY = pairEntry.trackDcaXY();
+      float trackDcaZ = pairEntry.trackDcaZ();
+      int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
+      int poolBin = pairEntry.poolBin();
+      int statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
+      int statusPromptHadron = pairEntry.trackOrigin();
+      int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+      bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
+
+      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+        continue;
+      }
+      if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
+        continue;
+      }
+      double efficiencyWeight = 1.;
+      if (applyEfficiency) {
+        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
+      }
+      // in signal region
+      if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
+        // prompt and non-prompt division
+        if (pairEntry.isSignal() && pairEntry.isDecayChan()) {
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegionMcRec"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
+          registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
+          if (isPhysicalPrimary) {
+            registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
+            if (statusDsPrompt == 1 && statusPromptHadron == 1) {
+              registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+            } else if (statusDsPrompt == 0 && !statusPromptHadron == 2) {
+              registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+            }
+          }
+        }
+      }
+      // in sideband left region
+      if (massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) {
+        registry.fill(HIST("hCorrel2DVsPtSidebandLeftMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSidebandLeftMcRec"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSidebandLeftMcRec"), deltaPhi, efficiencyWeight);
+      }
+      // in sideband right region
+      if (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)) {
+        registry.fill(HIST("hCorrel2DVsPtSidebandRightMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hDeltaEtaPtIntSidebandRightMcRec"), deltaEta, efficiencyWeight);
+        registry.fill(HIST("hDeltaPhiPtIntSidebandRightMcRec"), deltaPhi, efficiencyWeight);
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTaskCorrelationDsHadrons, processMcRecME, "Process MC Reco ME", false);
+
   /// Ds-Hadron correlation - for calculating candidate reconstruction efficiency using MC reco-level analysis
   void processMcCandEfficiency(soa::Join<aod::Collisions, aod::FT0Mults> const&,
                                soa::Join<aod::McCollisions, aod::MultsExtraMC> const&,
@@ -423,6 +532,9 @@ struct HfTaskCorrelationDsHadrons {
 
     // recontructed candidates loop
     for (const auto& candidate : candidates) {
+      if (candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
+        continue;
+      }
       std::vector<float> outputMl = {-1., -1., -1.};
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -498,20 +610,32 @@ struct HfTaskCorrelationDsHadrons {
         hAssocTracks->Fill(kAssocTrackStepRecoAll, track.eta(), track.pt(), multiplicity, posZ);
         if (track.has_mcParticle()) {
           auto mcParticle = track.template mcParticle_as<aod::McParticles>();
-          auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
-          if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
-            continue;
-          }
-          hAssocTracks->Fill(kAssocTrackStepRecoMcMatch, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
-          if (mcParticle.isPhysicalPrimary()) {
-            hAssocTracks->Fill(kAssocTrackStepRecoPrimaries, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
-            registry.fill(HIST("hPtParticleAssocMcRec"), track.pt());
-            if ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton)) {
-              hAssocTracks->Fill(kAssocTrackStepRecoSpecies, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
-              registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
-              if (mcParticle.mcCollisionId() == track.collisionId()) {
-                hAssocTracks->Fill(kAssocTrackStepRecoCollMatch, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
-                registry.fill(HIST("hPtParticleAssocCollMatchMcRec"), track.pt());
+          if (doMcCollisionCheck) {
+            auto mcCollision = track.template mcParticle_as<aod::McParticles>().template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
+            if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+              continue;
+            }
+            hAssocTracks->Fill(kAssocTrackStepRecoMcMatch, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+            if (mcParticle.isPhysicalPrimary()) {
+              hAssocTracks->Fill(kAssocTrackStepRecoPrimaries, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+              registry.fill(HIST("hPtParticleAssocMcRec"), track.pt());
+              if ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton)) {
+                hAssocTracks->Fill(kAssocTrackStepRecoSpecies, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+                registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
+                if (mcParticle.mcCollisionId() == track.collisionId()) {
+                  hAssocTracks->Fill(kAssocTrackStepRecoCollMatch, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+                  registry.fill(HIST("hPtParticleAssocCollMatchMcRec"), track.pt());
+                }
+              }
+            }
+          } else {
+            hAssocTracks->Fill(kAssocTrackStepRecoMcMatch, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+            if (mcParticle.isPhysicalPrimary()) {
+              hAssocTracks->Fill(kAssocTrackStepRecoPrimaries, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+              registry.fill(HIST("hPtParticleAssocMcRec"), track.pt());
+              if ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton)) {
+                hAssocTracks->Fill(kAssocTrackStepRecoSpecies, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+                registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
               }
             }
           }

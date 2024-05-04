@@ -129,6 +129,7 @@ DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);                         //! D
 DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);                           //! DCA z of the track
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin for the MixedEvent
 DECLARE_SOA_COLUMN(TrackTPCNClsCrossedRows, trackTPCNClsCrossedRows, int); //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(TrackOrigin, trackOrigin, int);                         //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                              //! Used in MC-Rec, Ds Signal
 DECLARE_SOA_COLUMN(IsDecayChan, isDecayChan, bool);                        //! Used in MC-Rec, Ds decay channel check
 DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! Used in MC-Rec, Ds Prompt or Non-Prompt
@@ -149,7 +150,8 @@ DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs R
 
 DECLARE_SOA_TABLE(DsHadronGenInfo, "AOD", "DSHGENINFO", //! Ds-Hadrons pairs Generated Information
                   aod::hf_correlation_ds_hadron::IsPrompt,
-                  aod::hf_correlation_ds_hadron::IsPhysicalPrimary);
+                  aod::hf_correlation_ds_hadron::IsPhysicalPrimary,
+                  aod::hf_correlation_ds_hadron::TrackOrigin);
 
 DECLARE_SOA_TABLE(DsHadronMlInfo, "AOD", "DSHMLINFO", //! Ds-Hadrons pairs Machine Learning Information
                   aod::hf_correlation_ds_hadron::MlScorePrompt,
@@ -160,6 +162,9 @@ DECLARE_SOA_TABLE(DsCandRecoInfo, "AOD", "DSCANDRECOINFO", //! Ds candidates Rec
                   aod::hf_correlation_ds_hadron::PtD,
                   aod::hf_correlation_ds_hadron::MlScorePrompt,
                   aod::hf_correlation_ds_hadron::MlScoreBkg);
+
+DECLARE_SOA_TABLE(DsCandGenInfo, "AOD", "DSCANDGENOINFO", //! Ds candidates Generated Information
+                  aod::hf_correlation_ds_hadron::IsPrompt);
 
 DECLARE_SOA_TABLE(TrackRecoInfo, "AOD", "TRACKRECOINFO", //! Tracks Reconstructed Information
                   aod::hf_correlation_ds_hadron::TrackDcaXY,
