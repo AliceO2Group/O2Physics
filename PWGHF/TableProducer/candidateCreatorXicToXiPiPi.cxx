@@ -449,11 +449,11 @@ struct HfCandidateCreatorXic {
       int signXicPlus = casc.sign() < 0 ? +1 : -1;
 
       // get impact parameters of XicPlus daughters
-      float impactParameter0XY = 0., errImpactParameter0XY = 0.;
-      float impactParameter1XY = 0., errImpactParameter1XY = 0.;
+      float impactParameterPi0XY = 0., errImpactParameterPi0XY = 0.;
+      float impactParameterPi1XY = 0., errImpactParameterPi1XY = 0.;
       float impactParameterXiXY = 0., errImpactParameterXiXY = 0.;
-      kfPion0.GetDistanceFromVertexXY(KFPV, impactParameter0XY, errImpactParameter0XY);
-      kfPion1.GetDistanceFromVertexXY(KFPV, impactParameter1XY, errImpactParameter1XY);
+      kfPion0.GetDistanceFromVertexXY(KFPV, impactParameterPi0XY, errImpactParameterPi0XY);
+      kfPion1.GetDistanceFromVertexXY(KFPV, impactParameterPi1XY, errImpactParameterPi1XY);
       kfXi.GetDistanceFromVertexXY(KFPV, impactParameterXiXY, errImpactParameterXiXY);
 
       // calculate cosine of pointing angle
@@ -483,8 +483,8 @@ struct HfCandidateCreatorXic {
         hCovSVXZ->Fill(covMatrixXicPlus[3]);
         hCovSVZZ->Fill(covMatrixXicPlus[5]);
         // DCAs of prongs
-        hDcaXYProngs->Fill(kfPion0.GetPt(), impactParameter0XY);
-        hDcaXYProngs->Fill(kfPion1.GetPt(), impactParameter1XY);
+        hDcaXYProngs->Fill(kfPion0.GetPt(), impactParameterPi0XY);
+        hDcaXYProngs->Fill(kfPion1.GetPt(), impactParameterPi1XY);
         hDcaXYProngs->Fill(kfXi.GetPt(), impactParameterXiXY);
       }
       // fill candidate table rows
@@ -501,8 +501,8 @@ struct HfCandidateCreatorXic {
                        kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
                        kfPion0.GetPx(), kfPion0.GetPy(), kfPion0.GetPz(),
                        kfPion1.GetPx(), kfPion1.GetPy(), kfPion1.GetPz(),
-                       impactParameterXiXY, impactParameter0XY, impactParameter1XY,
-                       errImpactParameter0XY, errImpactParameter1XY, errImpactParameterXiXY,
+                       impactParameterXiXY, impactParameterPi0XY, impactParameterPi1XY,
+                       errImpactParameterXiXY, errImpactParameterPi0XY, errImpactParameterPi1XY,
                        hfFlag,
                        /*cascade specific columns*/
                        casc.x(), casc.y(), casc.z(),
