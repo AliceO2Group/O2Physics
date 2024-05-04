@@ -62,7 +62,7 @@ using namespace o2::framework::expressions;
 using std::array;
 using namespace ROOT::Math;
 
-// WARNING: the cascade findable uses findable V0s as well 
+// WARNING: the cascade findable uses findable V0s as well
 using LabeledTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
 using LabeledFullV0s = soa::Join<aod::FindableV0s, aod::McFullV0Labels>;
 

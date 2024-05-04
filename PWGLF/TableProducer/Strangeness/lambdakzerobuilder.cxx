@@ -1363,7 +1363,7 @@ struct lambdakzeroPreselector {
 
   void init(InitContext const&)
   {
-    //check settings and stop if not viable
+    // check settings and stop if not viable
     if (doprocessBuildAll == false && doprocessBuildMCAssociated == false && doprocessBuildValiddEdx == false && doprocessBuildValiddEdxMCAssociated == false && doprocessBuildFindable == false) {
       LOGF(fatal, "No processBuild function enabled. Please choose one.");
     }

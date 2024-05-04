@@ -703,12 +703,12 @@ DECLARE_SOA_TABLE(V0MCRefs, "AOD", "V0MCREF", //! index table when using AO2Ds
 using V0sLinked = soa::Join<V0s, V0DataLink>;
 using V0Linked = V0sLinked::iterator;
 
-namespace v0data 
+namespace v0data
 {
 DECLARE_SOA_COLUMN(IsFound, isFound, bool); //! is this FindableV0 actually in the V0s table?
 }
 
-// Major bypass for simultaneous found vs findable study 
+// Major bypass for simultaneous found vs findable study
 DECLARE_SOA_TABLE(FindableV0s, "AOD", "FindableV0", //! Will store findable
                   o2::soa::Index<>, v0::CollisionId,
                   v0::PosTrackId, v0::NegTrackId,
@@ -718,7 +718,7 @@ DECLARE_SOA_TABLE(FindableV0s, "AOD", "FindableV0", //! Will store findable
                   v0::IsCollinearV0<v0::V0Type>,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(V0FoundTags, "AOD", "V0FoundTag", //! found or not? 
+DECLARE_SOA_TABLE(V0FoundTags, "AOD", "V0FoundTag", //! found or not?
                   v0data::IsFound);
 
 using FindableV0sLinked = soa::Join<FindableV0s, V0DataLink>;
@@ -1260,16 +1260,16 @@ using CascadeLinked = CascadesLinked::iterator;
 using KFCascadesLinked = soa::Join<Cascades, KFCascDataLink>;
 using KFCascadeLinked = KFCascadesLinked::iterator;
 
-namespace cascdata 
+namespace cascdata
 {
-DECLARE_SOA_INDEX_COLUMN(FindableV0, findableV0);                                   //! V0 index
-DECLARE_SOA_COLUMN(IsFound, isFound, bool); //! is this FindableCascade actually in the Cascades table?
-}
+DECLARE_SOA_INDEX_COLUMN(FindableV0, findableV0); //! V0 index
+DECLARE_SOA_COLUMN(IsFound, isFound, bool);       //! is this FindableCascade actually in the Cascades table?
+} // namespace cascdata
 
 DECLARE_SOA_TABLE(FindableCascades, "AOD", "FINDABLECASCS", //! Run 3 cascade table
-                            o2::soa::Index<>, cascade::CollisionId, cascdata::FindableV0Id, cascade::BachelorId, o2::soa::Marker<1>);
+                  o2::soa::Index<>, cascade::CollisionId, cascdata::FindableV0Id, cascade::BachelorId, o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(CascFoundTags, "AOD", "CascFoundTag", //! found or not? 
+DECLARE_SOA_TABLE(CascFoundTags, "AOD", "CascFoundTag", //! found or not?
                   cascdata::IsFound);
 
 using FindableCascadesLinked = soa::Join<FindableCascades, CascDataLink>;

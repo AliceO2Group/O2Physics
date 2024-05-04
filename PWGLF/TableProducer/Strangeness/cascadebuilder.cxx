@@ -1525,7 +1525,8 @@ struct cascadeBuilder {
   }
 
   template <class TTrackTo, typename TV0Index, typename TCascade>
-  void processCascadeCandidate(TV0Index const& v0index, TCascade const& cascade){
+  void processCascadeCandidate(TV0Index const& v0index, TCascade const& cascade)
+  {
     bool validCascadeCandidate = false;
     if (v0index.has_v0Data()) {
       // this V0 passed both standard V0 and cascade V0 selections
@@ -1549,17 +1550,17 @@ struct cascadeBuilder {
             cascadecandidate.positiveId, cascadecandidate.negativeId,
             cascadecandidate.bachelorId, cascade.collisionId());
     cascdata(cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
-              cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
-              cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
-              cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
-              cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
-              cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
-              cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
-              cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
-              cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
-              cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
-              cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
-              cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz); // <--- no corresponding stratrack information available
+             cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
+             cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
+             cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
+             cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
+             cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
+             cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
+             cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
+             cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
+             cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
+             cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
+             cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz); // <--- no corresponding stratrack information available
     if (createCascTrackXs) {
       cascTrackXs(cascadecandidate.positiveX, cascadecandidate.negativeX, cascadecandidate.bachelorX);
     }
@@ -1599,7 +1600,7 @@ struct cascadeBuilder {
     for (auto& cascade : cascades) {
       // de-reference from V0 pool, either specific for cascades or general
       // use templatizing to avoid code duplication
-      
+
       auto v0index = cascade.template v0_as<aod::V0sLinked>();
       processCascadeCandidate<TTrackTo>(v0index, cascade);
     }
@@ -1615,7 +1616,7 @@ struct cascadeBuilder {
     for (auto& cascade : cascades) {
       // de-reference from V0 pool, either specific for cascades or general
       // use templatizing to avoid code duplication
-      
+
       auto v0index = cascade.template findableV0_as<aod::FindableV0sLinked>();
       processCascadeCandidate<TTrackTo>(v0index, cascade);
     }
@@ -2007,7 +2008,7 @@ struct cascadePreselector {
 
   void init(InitContext const&)
   {
-    //check settings and stop if not viable
+    // check settings and stop if not viable
     if (doprocessBuildAll == false && doprocessBuildMCAssociated == false && doprocessBuildValiddEdx == false && doprocessBuildValiddEdxMCAssociated == false && doprocessBuildFindable == false) {
       LOGF(fatal, "No processBuild function enabled. Please choose one.");
     }
@@ -2344,7 +2345,7 @@ struct cascadeLinkBuilder {
     }
   }
 
-    // build Cascade -> CascData link table
+  // build Cascade -> CascData link table
   void processFindable(aod::FindableCascades const& casctable, aod::CascDatas const& cascdatatable)
   {
     std::vector<int> lIndices;

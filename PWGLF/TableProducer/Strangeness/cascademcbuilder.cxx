@@ -56,7 +56,8 @@ struct cascademcbuilder {
   void init(InitContext const&) {}
 
   template <typename TCascadeTable>
-  void generateCascadeMCinfo(TCascadeTable cascTable){
+  void generateCascadeMCinfo(TCascadeTable cascTable)
+  {
     for (auto& casc : cascTable) {
       int pdgCode = -1, pdgCodeMother = -1;
       int pdgCodePositive = -1, pdgCodeNegative = -1, pdgCodeBachelor = -1, pdgCodeV0 = -1;
@@ -129,7 +130,7 @@ struct cascademcbuilder {
                       }
                     }
                   } // end conditional V0-bach pair
-                } // end has mothers
+                }   // end has mothers
               }   // end neg = pos mother conditional
             }
           } // end loop neg/pos mothers

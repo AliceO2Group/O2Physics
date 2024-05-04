@@ -218,8 +218,8 @@ struct strangederivedbuilder {
 
     histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", kTH2D, {axisCentrality, axisNVertices});
 
-    if( doprocessV0FoundTags || doprocessCascFoundTags){
-    histos.add("hFoundTagsCounters", "hFoundTagsCounters", kTH1D, {{4, -0.5f, 3.5f}});
+    if (doprocessV0FoundTags || doprocessCascFoundTags) {
+      histos.add("hFoundTagsCounters", "hFoundTagsCounters", kTH1D, {{4, -0.5f, 3.5f}});
     }
 
     // for QA and test purposes
@@ -794,7 +794,7 @@ struct strangederivedbuilder {
 
   uint64_t combineProngIndices(uint32_t low, uint32_t high)
   {
-      return (((uint64_t) high) << 32) | ((uint64_t) low);
+    return (((uint64_t)high) << 32) | ((uint64_t)low);
   }
 
   void processV0FoundTags(aod::V0s const& foundV0s, aod::V0Datas const& findableV0s, aod::FindableV0s const& /* added to avoid troubles */)
@@ -803,7 +803,7 @@ struct strangederivedbuilder {
     histos.fill(HIST("hFoundTagsCounters"), 1.0f, findableV0s.size());
 
     // pack the found V0s in a long long
-    std::vector<uint64_t> foundV0sPacked; 
+    std::vector<uint64_t> foundV0sPacked;
     foundV0sPacked.reserve(foundV0s.size());
     for (auto const& foundV0 : foundV0s) {
       foundV0sPacked[foundV0.globalIndex()] = combineProngIndices(foundV0.posTrackId(), foundV0.negTrackId());
@@ -812,8 +812,8 @@ struct strangederivedbuilder {
     bool hasBeenFound = false;
     for (auto const& findableV0 : findableV0s) {
       uint64_t indexPack = combineProngIndices(findableV0.posTrackId(), findableV0.negTrackId());
-      for(uint32_t ic=0; ic<foundV0s.size(); ic++){ 
-        if(indexPack==foundV0sPacked[ic]) { 
+      for (uint32_t ic = 0; ic < foundV0s.size(); ic++) {
+        if (indexPack == foundV0sPacked[ic]) {
           hasBeenFound = true;
           break;
         }
@@ -825,7 +825,7 @@ struct strangederivedbuilder {
   using uint128_t = __uint128_t;
   uint128_t combineProngIndices128(uint32_t pos, uint32_t neg, uint32_t bach)
   {
-      return (((uint128_t) pos) << 64) | (((uint128_t) neg) << 32) | ((uint128_t) bach);
+    return (((uint128_t)pos) << 64) | (((uint128_t)neg) << 32) | ((uint128_t)bach);
   }
 
   void processCascFoundTags(aod::Cascades const& foundCascades, aod::CascDatas const& findableCascades, aod::V0s const&, aod::FindableCascades const& /* added to avoid troubles */)
@@ -834,7 +834,7 @@ struct strangederivedbuilder {
     histos.fill(HIST("hFoundTagsCounters"), 3.0f, findableCascades.size());
 
     // pack the found V0s in a long long
-    std::vector<uint128_t> foundCascadesPacked; 
+    std::vector<uint128_t> foundCascadesPacked;
     foundCascadesPacked.reserve(foundCascades.size());
     for (auto const& foundCascade : foundCascades) {
       auto v0 = foundCascade.v0();
@@ -844,8 +844,8 @@ struct strangederivedbuilder {
     bool hasBeenFound = false;
     for (auto const& findableCascade : findableCascades) {
       uint128_t indexPack = combineProngIndices128(findableCascade.posTrackId(), findableCascade.negTrackId(), findableCascade.bachelorId());
-      for(uint32_t ic=0; ic<foundCascades.size(); ic++){ 
-        if(indexPack==foundCascadesPacked[ic]) { 
+      for (uint32_t ic = 0; ic < foundCascades.size(); ic++) {
+        if (indexPack == foundCascadesPacked[ic]) {
           hasBeenFound = true;
           break;
         }
