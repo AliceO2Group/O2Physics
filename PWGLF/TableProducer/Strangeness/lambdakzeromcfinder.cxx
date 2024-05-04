@@ -178,9 +178,8 @@ struct lambdakzeromcfinder {
   {
     int nPosReco = 0;
     int nNegReco = 0;
-    const int maxReco = 20;
-    int trackIndexPositive[maxReco];
-    int trackIndexNegative[maxReco];
+    int trackIndexPositive[20];
+    int trackIndexNegative[20];
 
     int positivePdg = 211;
     int negativePdg = -211;
