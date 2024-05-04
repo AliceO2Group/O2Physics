@@ -940,6 +940,40 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("phiv")) {
         hm->AddHistogram(histClass, "Mass_Pt_PhiV", "", false, 20, 0.0, 0.2, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 100, 0.0, TMath::Pi(), VarManager::kPairPhiv);
       }
+      if (subGroupStr.Contains("largemass-phi-v")) {
+        // binning for mee at large scales:
+        // every 10 MeV from 0 to 0.2 GeV/c2
+        // every 100 MeV from 0.2 to 1. GeV/c2
+        // every 500 GeV from 1 to 5 GeV/c2
+        double mee_bins[37];
+        for (int i = 0; i <= 20; i++)
+          mee_bins[i] = 0.01 * i;
+        for (int i = 1; i <= 8; i++)
+          mee_bins[20 + i] = 0.2 + 0.1 * i;
+        for (int i = 1; i <= 8; i++)
+          mee_bins[28 + i] = 1. + 0.5 * i;
+        int nbins_mee = sizeof(mee_bins) / sizeof(*mee_bins) - 1;
+
+        // binning for ptee at large scales:
+        // every 0.2 GeV/c from 0 to 10 GeV/c
+        double ptee_bins[51];
+        for (int i = 0; i <= 50; i++)
+          ptee_bins[i] = 0.2 * i;
+        int nbins_ptee = sizeof(ptee_bins) / sizeof(*ptee_bins) - 1;
+
+        // binning for phiv:
+        // every 0.2 GeV/c from 0 to 10 GeV/c
+        double phiv_bins[101];
+        for (int i = 0; i <= 100; i++)
+          phiv_bins[i] = TMath::Pi()/100. * i;
+        int nbins_phiv = sizeof(phiv_bins) / sizeof(*phiv_bins) - 1;
+
+        // 3D histo
+        hm->AddHistogram(histClass, "Mass_Pt_PhiV", "", false, nbins_mee, mee_bins, VarManager::kMass, nbins_ptee, ptee_bins, VarManager::kPt, nbins_phiv, phiv_bins, VarManager::kPairPhiv);
+      }
+      if (subGroupStr.Contains("meeptee")) {
+        hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 5.0, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt);
+      }
       if (subGroupStr.Contains("lmee")) {
         hm->AddHistogram(histClass, "Mass_Pt_PhiV", "", false, 20, 0.0, 0.2, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 100, 0.0, TMath::Pi(), VarManager::kPairPhiv);
         hm->AddHistogram(histClass, "Mass_QuadDCAsigXY", "", false, 50, 0.0, 5.0, VarManager::kMass, 50, 0.0, 20.0, VarManager::kQuadDCAsigXY);
