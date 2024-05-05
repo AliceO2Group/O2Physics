@@ -63,7 +63,7 @@ struct lambdakzeromcbuilder {
     }
 
     // for storing basic statistics
-    histos.add("hBuildingStatistics", "hBuildingStatistics", kTH1F, {{2,-0.5,1.5f}});
+    histos.add("hBuildingStatistics", "hBuildingStatistics", kTH1F, {{10,-0.5,9.5f}});
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -96,10 +96,9 @@ struct lambdakzeromcbuilder {
   {
     // to be used if using the populateV0MCCoresAsymmetric mode, kept empty otherwise
     std::vector<mcV0info> mcV0infos; // V0MCCore information
-    uint64_t packedIndices;
 
     for (auto& v0 : v0table) {
-      packedIndices = combineProngIndices(v0.negTrackId(), v0.posTrackId());
+      thisInfo.packedTrackIndices = combineProngIndices(v0.negTrackId(), v0.posTrackId());
       auto lNegTrack = v0.negTrack_as<aod::McTrackLabels>();
       auto lPosTrack = v0.posTrack_as<aod::McTrackLabels>();
 
@@ -163,13 +162,15 @@ struct lambdakzeromcbuilder {
         // step 1: check if this element is already provided in the table
         //         using the packedIndices variable calculated above
         for(uint32_t ii=0; ii<mcV0infos.size(); ii++){ 
-          if(packedIndices == mcV0infos[ii].packedTrackIndices){
+          if(thisInfo.packedTrackIndices == mcV0infos[ii].packedTrackIndices){
             thisV0MCCoreIndex = ii; 
+            histos.fill(HIST("hBuildingStatistics"), 3.0f); // found
             break; // this exists already in list
           }
         }
         if(thisV0MCCoreIndex<0){ 
           // this V0MCCore does not exist yet. Create it and reference it 
+          histos.fill(HIST("hBuildingStatistics"), 4.0f); // new
           thisV0MCCoreIndex = mcV0infos.size();
           mcV0infos.push_back(thisInfo);
         }
