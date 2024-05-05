@@ -64,7 +64,7 @@ struct lambdakzeromcbuilder {
     }
 
     // for storing basic statistics
-    auto h = histos.add<TH1>("hBuildingStatistics", "hBuildingStatistics", kTH1F, {{4,-0.5,3.5f}});
+    auto h = histos.add<TH1>("hBuildingStatistics", "hBuildingStatistics", kTH1F, {{4, -0.5, 3.5f}});
     h->GetXaxis()->SetBinLabel(1, "V0Cores population");
     h->GetXaxis()->SetBinLabel(2, "V0MCCores population");
     h->GetXaxis()->SetBinLabel(3, "x check: duplicates");
@@ -167,15 +167,15 @@ struct lambdakzeromcbuilder {
         int thisV0MCCoreIndex = -1;
         // step 1: check if this element is already provided in the table
         //         using the packedIndices variable calculated above
-        for(uint32_t ii=0; ii<mcV0infos.size(); ii++){ 
-          if(thisInfo.packedMcParticleIndices == mcV0infos[ii].packedMcParticleIndices && mcV0infos[ii].packedMcParticleIndices > 0){
-            thisV0MCCoreIndex = ii; 
+        for (uint32_t ii = 0; ii < mcV0infos.size(); ii++) {
+          if (thisInfo.packedMcParticleIndices == mcV0infos[ii].packedMcParticleIndices && mcV0infos[ii].packedMcParticleIndices > 0) {
+            thisV0MCCoreIndex = ii;
             histos.fill(HIST("hBuildingStatistics"), 2.0f); // found
-            break; // this exists already in list
+            break;                                          // this exists already in list
           }
         }
-        if(thisV0MCCoreIndex<0){ 
-          // this V0MCCore does not exist yet. Create it and reference it 
+        if (thisV0MCCoreIndex < 0) {
+          // this V0MCCore does not exist yet. Create it and reference it
           histos.fill(HIST("hBuildingStatistics"), 3.0f); // new
           thisV0MCCoreIndex = mcV0infos.size();
           mcV0infos.push_back(thisInfo);
