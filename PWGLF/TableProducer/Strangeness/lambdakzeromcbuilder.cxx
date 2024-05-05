@@ -64,7 +64,11 @@ struct lambdakzeromcbuilder {
     }
 
     // for storing basic statistics
-    histos.add("hBuildingStatistics", "hBuildingStatistics", kTH1F, {{10, -0.5, 9.5f}});
+    auto h = histos.add<TH1>("hBuildingStatistics", "hBuildingStatistics", kTH1F, {{4,-0.5,3.5f}});
+    h->GetXaxis()->SetBinLabel(1, "V0Cores population");
+    h->GetXaxis()->SetBinLabel(2, "V0MCCores population");
+    h->GetXaxis()->SetBinLabel(3, "x check: duplicates");
+    h->GetXaxis()->SetBinLabel(4, "x check: unique");
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -80,7 +84,7 @@ struct lambdakzeromcbuilder {
     std::array<float, 3> xyz;
     std::array<float, 3> posP;
     std::array<float, 3> negP;
-    uint64_t packedTrackIndices;
+    uint64_t packedMcParticleIndices;
   };
   mcV0info thisInfo;
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -99,13 +103,14 @@ struct lambdakzeromcbuilder {
     std::vector<mcV0info> mcV0infos; // V0MCCore information
 
     for (auto& v0 : v0table) {
-      thisInfo.packedTrackIndices = combineProngIndices(v0.negTrackId(), v0.posTrackId());
+      thisInfo.packedMcParticleIndices = 0; // not de-referenced properly yet
       auto lNegTrack = v0.negTrack_as<aod::McTrackLabels>();
       auto lPosTrack = v0.posTrack_as<aod::McTrackLabels>();
 
       // Association check
       // There might be smarter ways of doing this in the future
       if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
+        thisInfo.packedMcParticleIndices = combineProngIndices(lPosTrack.mcParticleId(), lNegTrack.mcParticleId());
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
         thisInfo.pdgCodePositive = lMCPosTrack.pdgCode();
@@ -162,16 +167,16 @@ struct lambdakzeromcbuilder {
         int thisV0MCCoreIndex = -1;
         // step 1: check if this element is already provided in the table
         //         using the packedIndices variable calculated above
-        for (uint32_t ii = 0; ii < mcV0infos.size(); ii++) {
-          if (thisInfo.packedTrackIndices == mcV0infos[ii].packedTrackIndices) {
-            thisV0MCCoreIndex = ii;
-            histos.fill(HIST("hBuildingStatistics"), 3.0f); // found
-            break;                                          // this exists already in list
+        for(uint32_t ii=0; ii<mcV0infos.size(); ii++){ 
+          if(thisInfo.packedMcParticleIndices == mcV0infos[ii].packedMcParticleIndices && mcV0infos[ii].packedMcParticleIndices > 0){
+            thisV0MCCoreIndex = ii; 
+            histos.fill(HIST("hBuildingStatistics"), 2.0f); // found
+            break; // this exists already in list
           }
         }
-        if (thisV0MCCoreIndex < 0) {
-          // this V0MCCore does not exist yet. Create it and reference it
-          histos.fill(HIST("hBuildingStatistics"), 4.0f); // new
+        if(thisV0MCCoreIndex<0){ 
+          // this V0MCCore does not exist yet. Create it and reference it 
+          histos.fill(HIST("hBuildingStatistics"), 3.0f); // new
           thisV0MCCoreIndex = mcV0infos.size();
           mcV0infos.push_back(thisInfo);
         }
