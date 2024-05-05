@@ -301,8 +301,8 @@ struct hadronnucleicorrelation {
         float deltaPhi = it2->phi() - it1->phi();
         deltaPhi = getDeltaPhi(deltaPhi);
 
-        [[maybe_unused]] float deltaEtaGen = -999.;
-        [[maybe_unused]] float deltaPhiGen = -999.;
+        float deltaEtaGen = -999.;
+        float deltaPhiGen = -999.;
         if constexpr (MCqa) {
           deltaEtaGen = it2->eta_MC() - it1->eta_MC();
           deltaPhiGen = it2->phi_MC() - it1->phi_MC();
@@ -695,10 +695,9 @@ struct hadronnucleicorrelation {
       if (abs(track.pdgCode()) != pdgProton && abs(track.pdgCode()) != pdgDeuteron)
         continue;
 
-      [[maybe_unused]] bool isPr = false;
-      [[maybe_unused]] bool isAntiPr = false;
-      [[maybe_unused]] bool isDeTPCTOF = false;
-      [[maybe_unused]] bool isAntiDeTPCTOF = false;
+       bool isPr = false;
+       bool isAntiPr = false;
+      bool isAntiDeTPCTOF = false;
 
       if (track.pdgCode() == pdgProton) {
         registry.fill(HIST("hReco_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt());
@@ -744,7 +743,6 @@ struct hadronnucleicorrelation {
         registry.fill(HIST("hResPhi_Deuteron"), track.phi_MC(), (track.phi() - track.phi_MC()) / track.phi_MC());
 
         if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF) {
-          isDeTPCTOF = true;
           registry.fill(HIST("hReco_PID_EtaPhiPt_Deuteron"), track.eta(), track.phi(), track.pt());
         }
         registry.fill(HIST("hnSigmaTPCVsPt_De_MC"), track.pt(), track.tpcNSigmaDe());
