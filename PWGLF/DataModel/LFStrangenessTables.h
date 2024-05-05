@@ -693,12 +693,15 @@ namespace v0data
 DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data);                         //! Index to V0Data entry
 DECLARE_SOA_INDEX_COLUMN(V0fCData, v0fCData);                     //! Index to V0Data entry
 DECLARE_SOA_INDEX_COLUMN_FULL(V0MC, v0MC, int, V0MCCores, "_MC"); //!
+DECLARE_SOA_INDEX_COLUMN(V0MCCore, v0MCCore);
 } // namespace v0data
 
 DECLARE_SOA_TABLE(V0DataLink, "AOD", "V0DATALINK", //! Joinable table with V0s which links to V0Data which is not produced for all entries
                   o2::soa::Index<>, v0data::V0DataId, v0data::V0fCDataId);
 DECLARE_SOA_TABLE(V0MCRefs, "AOD", "V0MCREF", //! index table when using AO2Ds
                   o2::soa::Index<>, v0data::V0MCId);
+DECLARE_SOA_TABLE(V0CoreMCLabels, "AOD", "V0COREMCLABEL", //! optional table to refer to V0MCCores if not joinable
+                  o2::soa::Index<>, v0data::V0MCCoreId);
 
 using V0sLinked = soa::Join<V0s, V0DataLink>;
 using V0Linked = V0sLinked::iterator;
