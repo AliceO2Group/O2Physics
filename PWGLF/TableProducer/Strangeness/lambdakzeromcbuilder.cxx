@@ -158,6 +158,11 @@ struct lambdakzeromcbuilder {
           thisInfo.isPhysicalPrimary, thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2],
           thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
           thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2]);
+        
+        // n.b. placing the interlink index here allows for the writing of 
+        //      code that is agnostic with respect to the joinability of 
+        //      V0Cores and V0MCCores (always dereference -> safe)
+        v0CoreMCLabels(v0.globalIndex()); // interlink index 
       }
       // ---] Asymmetric populate [---
       // in this approach, V0Cores will NOT be joinable with V0MCCores.
