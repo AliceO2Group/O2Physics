@@ -369,14 +369,14 @@ struct HfCandidateSelectorD0 {
           statusD0bar = 1; // identified as D0bar
         }
         statusPID = 1;
-        } else {
+      } else {
           if (topolD0) {
           statusD0 = 1; // identified as D0
           }
         if (topolD0bar) {
           statusD0bar = 1; // identified as D0bar
           }
-        }
+      }
 
       if (applyMl) {
         // ML selections
