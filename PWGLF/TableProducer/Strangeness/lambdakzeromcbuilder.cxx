@@ -51,28 +51,29 @@ struct lambdakzeromcbuilder {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(InitContext const&) {
-    if(populateV0MCCoresAsymmetric){ 
+  void init(InitContext const&)
+  {
+    if (populateV0MCCoresAsymmetric) {
       LOGF(info, "Asymmetric V0MCCores filling enabled!");
     }
-    if(populateV0MCCoresSymmetric){ 
+    if (populateV0MCCoresSymmetric) {
       LOGF(info, "Symmetric V0MCCores filling enabled!");
     }
-    if(populateV0MCCoresAsymmetric && populateV0MCCoresSymmetric){ 
+    if (populateV0MCCoresAsymmetric && populateV0MCCoresSymmetric) {
       LOGF(fatal, "Error in configuration: please select only one out of populateV0MCCoresAsymmetric and populateV0MCCoresSymmetric! Crashing!");
     }
 
     // for storing basic statistics
-    histos.add("hBuildingStatistics", "hBuildingStatistics", kTH1F, {{10,-0.5,9.5f}});
+    histos.add("hBuildingStatistics", "hBuildingStatistics", kTH1F, {{10, -0.5, 9.5f}});
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // Helper struct to contain V0MCCore information prior to filling
-  struct mcV0info{
+  struct mcV0info {
     int label;
     int motherLabel;
-    int pdgCode; 
-    int pdgCodeMother; 
+    int pdgCode;
+    int pdgCodeMother;
     int pdgCodePositive;
     int pdgCodeNegative;
     bool isPhysicalPrimary;
@@ -147,7 +148,7 @@ struct lambdakzeromcbuilder {
       // and it might use more disk space unnecessarily.
       if (populateV0MCCoresSymmetric) {
         v0mccores(
-          thisInfo.label, thisInfo.pdgCode, 
+          thisInfo.label, thisInfo.pdgCode,
           thisInfo.pdgCodeMother, thisInfo.pdgCodePositive, thisInfo.pdgCodeNegative,
           thisInfo.isPhysicalPrimary, thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2],
           thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
@@ -155,21 +156,21 @@ struct lambdakzeromcbuilder {
       }
       // ---] Asymmetric populate [---
       // in this approach, V0Cores will NOT be joinable with V0MCCores.
-      // an additional reference to V0MCCore that IS joinable with V0Cores 
+      // an additional reference to V0MCCore that IS joinable with V0Cores
       // will be provided to the user.
       if (populateV0MCCoresAsymmetric) {
         int thisV0MCCoreIndex = -1;
         // step 1: check if this element is already provided in the table
         //         using the packedIndices variable calculated above
-        for(uint32_t ii=0; ii<mcV0infos.size(); ii++){ 
-          if(thisInfo.packedTrackIndices == mcV0infos[ii].packedTrackIndices){
-            thisV0MCCoreIndex = ii; 
+        for (uint32_t ii = 0; ii < mcV0infos.size(); ii++) {
+          if (thisInfo.packedTrackIndices == mcV0infos[ii].packedTrackIndices) {
+            thisV0MCCoreIndex = ii;
             histos.fill(HIST("hBuildingStatistics"), 3.0f); // found
-            break; // this exists already in list
+            break;                                          // this exists already in list
           }
         }
-        if(thisV0MCCoreIndex<0){ 
-          // this V0MCCore does not exist yet. Create it and reference it 
+        if (thisV0MCCoreIndex < 0) {
+          // this V0MCCore does not exist yet. Create it and reference it
           histos.fill(HIST("hBuildingStatistics"), 4.0f); // new
           thisV0MCCoreIndex = mcV0infos.size();
           mcV0infos.push_back(thisInfo);
@@ -180,9 +181,9 @@ struct lambdakzeromcbuilder {
 
     // now populate V0MCCores if in asymmetric mode
     if (populateV0MCCoresAsymmetric) {
-      for( auto info : mcV0infos ){
+      for (auto info : mcV0infos) {
         v0mccores(
-          info.label, info.pdgCode, 
+          info.label, info.pdgCode,
           info.pdgCodeMother, info.pdgCodePositive, info.pdgCodeNegative,
           info.isPhysicalPrimary, info.xyz[0], info.xyz[1], info.xyz[2],
           info.posP[0], info.posP[1], info.posP[2],
