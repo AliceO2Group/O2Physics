@@ -262,6 +262,10 @@ struct HeavyIonMultiplicity {
       return;
     }
 
+    if (std::abs(collision.posZ()) > VtxRange) {
+      return;
+    }
+
     histos.fill(HIST("VtxZHist"), collision.posZ());
     auto NchTracks = 0;
     for (auto& track : tracks) {
@@ -348,6 +352,10 @@ struct HeavyIonMultiplicity {
   {
 
     if (!IsEventSelected(collision)) {
+      return;
+    }
+
+    if (std::abs(collision.posZ()) > VtxRange) {
       return;
     }
 
