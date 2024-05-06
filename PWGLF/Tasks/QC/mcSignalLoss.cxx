@@ -128,7 +128,6 @@ struct mcsignalloss {
               histos.fill(HIST("mcGenV0sRecoColl"), mcPart.pt(), calcDecL(mcPart, particlesMC), i);
             }
           }
-
         }
       }
     }
