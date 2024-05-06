@@ -35,7 +35,6 @@ bool process(std::string outputName, int nevents = 100000)
     float unpack() { return aod::singletrackselector::unPack<T>(mPacked); }
   } container;
 
-  T::print();
   const float min = T::binned_min - 2;
   const float max = T::binned_max + 2;
   LOG(info) << "Min = " << min << " Max = " << max;
