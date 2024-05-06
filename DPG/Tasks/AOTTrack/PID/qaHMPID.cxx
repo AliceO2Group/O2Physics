@@ -32,31 +32,9 @@ struct pidHmpidQa {
   Configurable<float> maxDistance{"maxDistance", 5.f, "Maximum HMPID distance between the track and the cluster (cm)"};
   Configurable<float> minCharge{"minCharge", 120.f, "Minimum HMPID charge collected in the cluster"};
 
-  OutputObj<TTree> pTree{"pTree", OutputObjHandlingPolicy::AnalysisObject};
-
-  float xTrack, yTrack, xMip, yMip, pHmp, qMip, px, py, pz;
-  int chamber, nPhotons, clusSize;
-  std::vector<float> photCharge;
-
   void init(o2::framework::InitContext&)
   {
     AxisSpec momAxis{nBinsP, minP, maxP};
-
-    pTree.setObject(new TTree("pTree", "Tree with data"));
-
-    pTree->Branch("chamber", &chamber);
-    pTree->Branch("xTrack", &xTrack);
-    pTree->Branch("yTrack", &yTrack);
-    pTree->Branch("xMip", &xMip);
-    pTree->Branch("yMip", &yMip);
-    pTree->Branch("nPhotons", &nPhotons);
-    pTree->Branch("clusSize", &clusSize);
-    pTree->Branch("pHmp", &pHmp);
-    pTree->Branch("qMip", &qMip);
-    pTree->Branch("px", &px);
-    pTree->Branch("py", &py);
-    pTree->Branch("pz", &pz);
-    pTree->Branch("photCharge", &photCharge);
 
     histos.add("hmpidSignal", "hmpidSignal", kTH1F, {{1000, 0, 1}});
     histos.add("hmpidMomvsTrackMom", "hmpidMomvsTrackMom", kTH2F, {{1200, 0, 30, "Track #it{p} (GeV/#it{c})"}, {1200, 0, 30, "HMP #it{p} (GeV/#it{c})"}});
@@ -125,23 +103,6 @@ struct pidHmpidQa {
       for (int i = 0; i < 10; i++) {
         if (t.hmpidPhotsCharge()[i] > 0)
           histos.fill(HIST("hmpidPhotsCharge"), t.hmpidPhotsCharge()[i]);
-      }
-
-      chamber = t.hmpidClusSize() / 1000000;
-      xTrack = t.hmpidXTrack();
-      yTrack = t.hmpidYTrack();
-      xMip = t.hmpidXMip();
-      yMip = t.hmpidYMip();
-      nPhotons = t.hmpidNPhotons();
-      clusSize = (t.hmpidClusSize() % 1000000) / 1000;
-      pHmp = t.hmpidMom();
-      qMip = t.hmpidQMip();
-      px = t.track_as<TrackCandidates>().px();
-      py = t.track_as<TrackCandidates>().py();
-      pz = t.track_as<TrackCandidates>().pz();
-      for (int i = 0; i < 10; i++) {
-        if (t.hmpidPhotsCharge()[i] > 0)
-          photCharge.push_back(t.hmpidPhotsCharge()[i]);
       }
 
       if (t.hmpidClusSize() / 1000000 == 0) {
@@ -269,9 +230,6 @@ struct pidHmpidQa {
             histos.fill(HIST("hmpidPhotsCharge6"), t.hmpidPhotsCharge()[i]);
         }
       }
-
-      pTree->Fill();
-      photCharge.clear();
     }
   }
 };
