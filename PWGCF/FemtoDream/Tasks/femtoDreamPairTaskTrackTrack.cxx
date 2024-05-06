@@ -62,6 +62,7 @@ struct femtoDreamPairTaskTrackTrack {
     Configurable<bool> CPRPlotPerRadii{"Option.CPRPlotPerRadii", false, "Plot CPR per radii"};
     Configurable<float> CPRdeltaPhiMax{"Option.CPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
     Configurable<float> CPRdeltaEtaMax{"Option.CPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+    Configurable<bool> DCACutPtDep{"Option.DCACutPtDep", false, "Use pt dependent dca cut"};
     ConfigurableAxis Dummy{"Option.Dummy", {1, 0, 1}, "Dummy axis"};
     Configurable<bool> SmearingByOrigin{"Option.SmearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption"};
   } Option;
@@ -79,9 +80,15 @@ struct femtoDreamPairTaskTrackTrack {
 
   using FilteredCollisions = soa::Filtered<FDCollisions>;
   using FilteredCollision = FilteredCollisions::iterator;
+  using FilteredMCCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDMCCollLabels>>;
+  using FilteredMCCollision = FilteredMCCollisions::iterator;
+
   using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, FDDownSample>>;
   using FilteredMaskedCollision = FilteredMaskedCollisions::iterator;
-  femtodreamcollision::BitMaskType BitMask = -1;
+  using FilteredMaskedMCCollisions = soa::Filtered<soa::Join<FDCollisions, aod::FDMCCollLabels, FDColMasks, FDDownSample>>;
+  using FilteredMaskedMCCollision = FilteredMaskedMCCollisions::iterator;
+
+  femtodreamcollision::BitMaskType BitMask = 0;
 
   /// Track 1
   struct : ConfigurableGroup {
@@ -100,25 +107,29 @@ struct femtoDreamPairTaskTrackTrack {
   } Track1;
 
   /// Partition for particle 1
-  Partition<aod::FDParticles> PartitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                              (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
-                                              ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
-                                              (aod::femtodreamparticle::pt > Track1.PtMin) &&
-                                              (aod::femtodreamparticle::pt < Track1.PtMax) &&
-                                              (aod::femtodreamparticle::eta > Track1.EtaMin) &&
-                                              (aod::femtodreamparticle::eta < Track1.EtaMax) &&
-                                              (aod::femtodreamparticle::tempFitVar > Track1.TempFitVarMin) &&
-                                              (aod::femtodreamparticle::tempFitVar < Track1.TempFitVarMax);
+  Partition<aod::FDParticles> PartitionTrk1 =
+    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
+    ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
+    (aod::femtodreamparticle::pt >= Track1.PtMin) &&
+    (aod::femtodreamparticle::pt <= Track1.PtMax) &&
+    (aod::femtodreamparticle::eta >= Track1.EtaMin) &&
+    (aod::femtodreamparticle::eta <= Track1.EtaMax) &&
+    ifnode(Option.DCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+           ((aod::femtodreamparticle::tempFitVar >= Track1.TempFitVarMin) &&
+            (aod::femtodreamparticle::tempFitVar <= Track1.TempFitVarMax)));
 
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                                                            (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
-                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
-                                                                            (aod::femtodreamparticle::pt > Track1.PtMin) &&
-                                                                            (aod::femtodreamparticle::pt < Track1.PtMax) &&
-                                                                            (aod::femtodreamparticle::eta > Track1.EtaMin) &&
-                                                                            (aod::femtodreamparticle::eta < Track1.EtaMax) &&
-                                                                            (aod::femtodreamparticle::tempFitVar > Track1.TempFitVarMin) &&
-                                                                            (aod::femtodreamparticle::tempFitVar < Track1.TempFitVarMax);
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk1 =
+    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
+    ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
+    (aod::femtodreamparticle::pt >= Track1.PtMin) &&
+    (aod::femtodreamparticle::pt <= Track1.PtMax) &&
+    (aod::femtodreamparticle::eta >= Track1.EtaMin) &&
+    (aod::femtodreamparticle::eta < Track1.EtaMax) &&
+    ifnode(Option.DCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+           ((aod::femtodreamparticle::tempFitVar >= Track1.TempFitVarMin) &&
+            (aod::femtodreamparticle::tempFitVar <= Track1.TempFitVarMax)));
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -140,25 +151,29 @@ struct femtoDreamPairTaskTrackTrack {
   } Track2;
 
   /// Partition for track 2
-  Partition<aod::FDParticles> PartitionTrk2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                              (ncheckbit(aod::femtodreamparticle::cut, Track2.CutBit)) &&
-                                              ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track2.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCBit) && ((aod::femtodreamparticle::pidcut & Track2.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCTOFBit)) &&
-                                              (aod::femtodreamparticle::pt > Track2.PtMin) &&
-                                              (aod::femtodreamparticle::pt < Track2.PtMax) &&
-                                              (aod::femtodreamparticle::eta > Track2.EtaMin) &&
-                                              (aod::femtodreamparticle::eta < Track2.EtaMax) &&
-                                              (aod::femtodreamparticle::tempFitVar > Track2.TempFitVarMin) &&
-                                              (aod::femtodreamparticle::tempFitVar < Track2.TempFitVarMax);
+  Partition<aod::FDParticles> PartitionTrk2 =
+    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (ncheckbit(aod::femtodreamparticle::cut, Track2.CutBit)) &&
+    ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track2.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCBit) && ((aod::femtodreamparticle::pidcut & Track2.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCTOFBit)) &&
+    (aod::femtodreamparticle::pt >= Track2.PtMin) &&
+    (aod::femtodreamparticle::pt <= Track2.PtMax) &&
+    (aod::femtodreamparticle::eta >= Track2.EtaMin) &&
+    (aod::femtodreamparticle::eta <= Track2.EtaMax) &&
+    ifnode(Option.DCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+           ((aod::femtodreamparticle::tempFitVar >= Track2.TempFitVarMin) &&
+            (aod::femtodreamparticle::tempFitVar <= Track2.TempFitVarMax)));
 
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                                                            (ncheckbit(aod::femtodreamparticle::cut, Track2.CutBit)) &&
-                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track2.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCBit) && ((aod::femtodreamparticle::pidcut & Track2.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCTOFBit)) &&
-                                                                            (aod::femtodreamparticle::pt > Track2.PtMin) &&
-                                                                            (aod::femtodreamparticle::pt < Track2.PtMax) &&
-                                                                            (aod::femtodreamparticle::eta > Track2.EtaMin) &&
-                                                                            (aod::femtodreamparticle::eta < Track2.EtaMax) &&
-                                                                            (aod::femtodreamparticle::tempFitVar > Track2.TempFitVarMin) &&
-                                                                            (aod::femtodreamparticle::tempFitVar < Track2.TempFitVarMax);
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk2 =
+    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (ncheckbit(aod::femtodreamparticle::cut, Track2.CutBit)) &&
+    ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track2.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCBit) && ((aod::femtodreamparticle::pidcut & Track2.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCTOFBit)) &&
+    (aod::femtodreamparticle::pt >= Track2.PtMin) &&
+    (aod::femtodreamparticle::pt <= Track2.PtMax) &&
+    (aod::femtodreamparticle::eta > Track2.EtaMin) &&
+    (aod::femtodreamparticle::eta < Track2.EtaMax) &&
+    ifnode(Option.DCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+           ((aod::femtodreamparticle::tempFitVar >= Track2.TempFitVarMin) &&
+            (aod::femtodreamparticle::tempFitVar <= Track2.TempFitVarMax)));
 
   /// Histogramming for track 2
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
@@ -216,7 +231,7 @@ struct femtoDreamPairTaskTrackTrack {
     if (Option.RandomizePair.value) {
       random = new TRandom3(0);
     }
-    eventHisto.init(&qaRegistry);
+    eventHisto.init(&qaRegistry, Option.IsMC);
     trackHistoPartOne.init(&qaRegistry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
     if (!Option.SameSpecies) {
       trackHistoPartTwo.init(&qaRegistry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track2.PDGCode);
@@ -248,7 +263,9 @@ struct femtoDreamPairTaskTrackTrack {
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       if (device.name.find("femto-dream-pair-task-track-track") != std::string::npos) {
-        if (containsNameValuePair(device.options, "Track1.CutBit", Track1.CutBit.value) &&
+        if (containsNameValuePair(device.options, "Option.DCACutPtDep", Option.DCACutPtDep.value) &&
+            containsNameValuePair(device.options, "Option.SameSpecies", Option.SameSpecies.value) &&
+            containsNameValuePair(device.options, "Track1.CutBit", Track1.CutBit.value) &&
             containsNameValuePair(device.options, "Track1.TPCBit", Track1.TPCBit.value) &&
             containsNameValuePair(device.options, "Track1.TPCTOFBit", Track1.TPCTOFBit.value) &&
             containsNameValuePair(device.options, "Track1.PIDThres", Track1.PIDThres.value) &&
@@ -286,10 +303,10 @@ struct femtoDreamPairTaskTrackTrack {
     }
   };
 
-  template <typename CollisionType>
+  template <bool isMC, typename CollisionType>
   void fillCollision(CollisionType col)
   {
-    eventHisto.fillQA(col);
+    eventHisto.fillQA<isMC>(col);
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -358,7 +375,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// \param parts subscribe to the femtoDreamParticleTable
   void processSameEvent(FilteredCollision& col, o2::aod::FDParticles& parts)
   {
-    fillCollision(col);
+    fillCollision<false>(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     if (SliceTrk1.size() == 0 && SliceTrk2.size() == 0) {
@@ -375,11 +392,11 @@ struct femtoDreamPairTaskTrackTrack {
         return;
       }
     } else {
-      if ((col.bitmaskTrackOne() & BitMask) != BitMask && (col.bitmaskTrackTwo() & BitMask) != BitMask) {
+      if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
         return;
       }
     }
-    fillCollision(col);
+    fillCollision<false>(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<false>(SliceTrk1, SliceTrk2, parts, col);
@@ -390,10 +407,12 @@ struct femtoDreamPairTaskTrackTrack {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
   /// \param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(FilteredCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+  void processSameEventMC(FilteredMCCollision& col,
+                          o2::aod::FDMCCollisions&,
+                          soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                           o2::aod::FDMCParticles&)
   {
-    fillCollision(col);
+    fillCollision<true>(col);
     auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMCTrk2 = PartitionMCTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     if (SliceMCTrk1.size() == 0 && SliceMCTrk2.size() == 0) {
@@ -403,7 +422,7 @@ struct femtoDreamPairTaskTrackTrack {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
-  void processSameEventMCMasked(FilteredMaskedCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+  void processSameEventMCMasked(FilteredMaskedMCCollision& col, o2::aod::FDMCCollisions&, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                                 o2::aod::FDMCParticles&)
   {
     if (Option.SameSpecies.value) {
@@ -415,7 +434,7 @@ struct femtoDreamPairTaskTrackTrack {
         return;
       }
     }
-    fillCollision(col);
+    fillCollision<true>(col);
     auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMCTrk2 = PartitionMCTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<true>(SliceMCTrk1, SliceMCTrk2, parts, col);
@@ -445,31 +464,9 @@ struct femtoDreamPairTaskTrackTrack {
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
   void doMixedEvent_Masked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
   {
-    if (Option.SameSpecies.value) {
-      Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
-      PartitionMaskedCol1.bindTable(cols);
-      // use *Partition.mFiltered when passing the partition to mixing object
-      // there is an issue when the partition is passed directly
-      // workaround for now, change back once it is fixed
-      for (auto const& [collision1, collision2] : selfCombinations(policy, Mixing.Depth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol1.mFiltered)) {
-        // selfCombinations policy should not allow for same events
-        // print a warning to be on the safe side
-        if (collision1.globalIndex() == collision2.globalIndex()) {
-          LOG(warn) << "Global Collision index " << collision1.globalIndex() << " clashing!";
-          continue;
-        }
-        auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
-        auto SliceTrk2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
-        for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
-          if (Option.CPROn.value) {
-            if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
-              continue;
-            }
-          }
-          mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
-        }
-      }
-    } else {
+    if (!Option.SameSpecies.value && !Option.MixEventWithPairs.value) {
+      // If the two particles are not the same species and the events which are mixed should contain at least one particle of interest, create two paritition of collisions that contain at least one of the two particle of interest and mix them
+      // Make sure there is a check that we do not mix a event with itself in case it contains both partilces
       Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
       PartitionMaskedCol1.bindTable(cols);
       Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
@@ -484,6 +481,7 @@ struct femtoDreamPairTaskTrackTrack {
         }
         auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
         auto SliceTrk2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+
         for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
           if (Option.CPROn.value) {
             if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
@@ -492,6 +490,41 @@ struct femtoDreamPairTaskTrackTrack {
           }
           mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
         }
+      }
+    } else {
+      // In the other case where the two particles are not the same species and we do not mix event with pairs,  we only need to define one partition of collisions and make self combinations
+
+      // define a lambda function for the mixing with selfCombinations policy
+      auto MixEvents = [policy, &part1, &part2, parts, this](auto& partition) {
+        for (auto const& [collision1, collision2] : selfCombinations(policy, Mixing.Depth.value, -1, *partition.mFiltered, *partition.mFiltered)) {
+          auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
+          auto SliceTrk2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+          for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
+            if (Option.CPROn.value) {
+              if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
+                continue;
+              }
+            }
+            mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D.value, Option.ExtendedPlots.value, Option.SmearingByOrigin.value);
+          }
+        }
+      };
+      if (Option.SameSpecies.value && Option.MixEventWithPairs.value) {
+        // in case of mixing the same species and events that contain pairs, check for bitmask of particle two
+        // when same species is set to true the bit of particle two is only set if the event contains at least two selected particles
+        Partition<CollisionType> PartitionMaskedCol1 = ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask) && aod::femtodreamcollision::downsample == true;
+        PartitionMaskedCol1.bindTable(cols);
+        MixEvents(PartitionMaskedCol1);
+      } else if (Option.SameSpecies.value && !Option.MixEventWithPairs.value) {
+        // in case of mixing the same species and events that contain at least one selected paritcle, check for bitmask of particle one
+        Partition<CollisionType> PartitionMaskedCol1 = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, BitMask) && aod::femtodreamcollision::downsample == true;
+        PartitionMaskedCol1.bindTable(cols);
+        MixEvents(PartitionMaskedCol1);
+      } else if (!Option.SameSpecies.value && Option.MixEventWithPairs.value) {
+        // in case of mixing different species and events that contain a pair of selected paritcles, check for both bitmasks of paritcle one and particle two
+        Partition<CollisionType> PartitionMaskedCol1 = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, BitMask) && ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask) && aod::femtodreamcollision::downsample == true;
+        PartitionMaskedCol1.bindTable(cols);
+        MixEvents(PartitionMaskedCol1);
       }
     }
   }
@@ -539,7 +572,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
   /// @param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(FilteredCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  void processMixedEventMC(FilteredMCCollisions& cols, o2::aod::FDMCCollisions&, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     switch (Mixing.Policy.value) {
       case femtodreamcollision::kMult:
@@ -557,7 +590,7 @@ struct femtoDreamPairTaskTrackTrack {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEventMC, "Enable processing mixed events MC", false);
 
-  void processMixedEventMCMasked(FilteredMaskedCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  void processMixedEventMCMasked(FilteredMaskedMCCollisions& cols, o2::aod::FDMCCollisions&, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     switch (Mixing.Policy.value) {
       case femtodreamcollision::kMult:

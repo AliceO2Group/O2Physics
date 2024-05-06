@@ -129,7 +129,7 @@ struct UpcCandAnalyzer {
 
   void init(InitContext&)
   {
-    const AxisSpec axisSel{kNSelectors, 0., double(kNSelectors), ""};
+    const AxisSpec axisSel{kNSelectors, 0.0, static_cast<double>(kNSelectors), ""};
     registry.add("Selection/SelCounter", "", kTH1F, {axisSel});
     registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelIdealPID + 1, "kSelIdealPID");
     registry.get<TH1>(HIST("Selection/SelCounter"))->GetXaxis()->SetBinLabel(kSelIsNotFake + 1, "kSelIsNotFake");
@@ -179,7 +179,7 @@ struct UpcCandAnalyzer {
   }
 
   template <typename TTrack>
-  bool checkTPCPID(TTrack& tr1, TTrack& tr2, float& m1, float& m2, bool* pidFlags, int32_t pdg1 = -1, int32_t pdg2 = -1)
+  bool checkTPCPID(TTrack& tr1, TTrack& tr2, float& m1, float& m2, bool* pidFlags, int32_t /*pdg1*/ = -1, int32_t /*pdg2*/ = -1)
   {
     bool pass = false;
 

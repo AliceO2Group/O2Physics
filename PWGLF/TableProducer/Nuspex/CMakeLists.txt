@@ -29,6 +29,11 @@ o2physics_add_dpl_workflow(hypertriton-reco-task
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lnn-reco-task
+    SOURCES lnnRecoTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hypertriton3bodyfinder
     SOURCES hypertriton3bodyfinder.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -38,6 +43,7 @@ o2physics_add_dpl_workflow(nucleustreecreator
     SOURCES LFTreeCreatorNuclei.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lithium4analysis
     SOURCES lithium4analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

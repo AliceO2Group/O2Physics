@@ -27,6 +27,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -53,6 +54,9 @@ using namespace o2::dataformats;
 struct qaEventTrack {
   SliceCache cache;
 
+  // for particle charges
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
   // general steering settings
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"}; // TODO: derive this from metadata once possible to get rid of the flag
   Configurable<bool> overwriteAxisRangeForPbPb{"overwriteAxisRangeForPbPb", false, "Global switch to easily set the most relaxed default axis ranges of multiplicity and PVcontribs for PbPb"};
@@ -76,6 +80,7 @@ struct qaEventTrack {
   Configurable<float> maxEta{"maxEta", 2.0f, "Maximum eta of accepted tracks"};
   Configurable<float> minPhi{"minPhi", -1.f, "Minimum phi of accepted tracks"};
   Configurable<float> maxPhi{"maxPhi", 10.f, "Maximum phi of accepted tracks"};
+  Configurable<float> minTPCcrossedRows{"minTPCcrossedRows", 70, "Minimum number of TPC crossed rows of accepted tracks"};
 
   // option to check PID for tracking before filling resolution histogras
   Configurable<bool> checkPIDforTracking{"checkPIDforTracking", false, "check for PID in tracking"};
@@ -88,7 +93,9 @@ struct qaEventTrack {
   // configurable binning of histograms
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
   ConfigurableAxis binsInvPt{"binsInvPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
+  ConfigurableAxis binsSigned1Pt{"binsSigned1Pt", {300, -5., 5.}, ""};
   ConfigurableAxis binsDeltaPt{"binsDeltaPt", {100, -0.495, 0.505}, ""};
+  ConfigurableAxis binsDeltaSigned1Pt{"binsDeltaSigned1Pt", {100, -0.495, 0.505}, ""};
 
   ConfigurableAxis binsVertexPosZ{"binsVertexPosZ", {100, -20., 20.}, ""}; // TODO: do we need this to be configurable?
   ConfigurableAxis binsVertexPosXY{"binsVertexPosXY", {500, -1., 1.}, ""}; // TODO: do we need this to be configurable?
@@ -105,7 +112,7 @@ struct qaEventTrack {
                        ((trackSelection.node() == 6) && requireGlobalTrackWoTPCClusterInFilter()) ||
                        ((trackSelection.node() == 7) && requireGlobalTrackWoDCATPCClusterInFilter());
 
-  using TrackIUTable = soa::Join<aod::TracksIU, aod::TrackSelection, aod::TrackSelectionExtension>;
+  using TrackIUTable = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>;
   Partition<TrackIUTable> tracksIUFiltered = (trackSelection.node() == 0) ||
                                              ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
                                              ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
@@ -179,6 +186,7 @@ struct qaEventTrack {
 
     const AxisSpec axisPt{binsPt, "#it{p}_{T} [GeV/c]"};
     const AxisSpec axisInvPt{binsInvPt, "1/#it{p}_{T, gen} [GeV/c]^{-1}"};
+    const AxisSpec axisSigned1Pt{binsSigned1Pt, "Q/#it{p}_{T, gen} [GeV/c]^{-1}"};
     const AxisSpec axisEta{180, -0.9, 0.9, "#it{#eta}"};
     const AxisSpec axisPhi{180, 0., 2 * M_PI, "#it{#varphi} [rad]"};
     const AxisSpec axisVertexNumContrib{(overwriteAxisRangeForPbPb ? vecBinsVertexNumContribDefaultPbPb : vecBinsVertexNumContrib), "Number Of contributors to the PV"};
@@ -192,12 +200,15 @@ struct qaEventTrack {
     const AxisSpec axisParY{200, -0.5, 0.5, "#it{y} [cm]"};
     const AxisSpec axisParZ{200, -11., 11., "#it{z} [cm]"};
     const AxisSpec axisParAlpha{36, -M_PI, M_PI, "#alpha [rad]"};
-    const AxisSpec axisParSigned1Pt{200, -8, 8, "#it{q}/#it{p}_{T}"};
+    const AxisSpec axisParSigned1Pt{500, -8, 8, "#it{q}/#it{p}_{T}"};
     const AxisSpec axisParSnp{11, -0.1, 0.1, "snp"};
     const AxisSpec axisParTgl{200, -1., 1., "tgl"};
 
     const AxisSpec axisDeltaPt{binsDeltaPt, "#it{p}_{T, rec} - #it{p}_{T, gen} [GeV/c]"};
+    const AxisSpec axisDeltaPtScaled{binsDeltaPt, "(#it{p}_{T, rec} - #it{p}_{T, gen}) / #it{p}_{T, gen}"};
     const AxisSpec axisDeltaInvPt{binsDeltaPt, "1/#it{p}_{T, rec} - 1/#it{p}_{T, gen} [GeV/c]^{-1}"};
+    const AxisSpec axisDeltaSigned1Pt{binsDeltaSigned1Pt, "Q/#it{p}_{T, rec} - Q/#it{p}_{T, gen} [GeV/c]^{-1}"};
+    const AxisSpec axisDeltaSigned1PtScaled{binsDeltaSigned1Pt, "(Q/#it{p}_{T, rec} - Q/#it{p}_{T, gen}) / Q/#it{p}_{T, gen}"};
     const AxisSpec axisPullInvPt{100, -4., 4., "(1/#it{p}_{T, rec} - 1/#it{p}_{T, gen})/#sigma_{1/#it{p}_{T}}"};
     const AxisSpec axisDeltaEta{100, -0.1, 0.1, "#eta_{rec} - #eta_{gen}"};
     const AxisSpec axisDeltaPhi{100, -0.1, 0.1, "#varphi_{rec} - #varphi_{gen}"};
@@ -259,6 +270,9 @@ struct qaEventTrack {
       histos.add<TH2>("Tracks/Kine/resoPtVsptmc", "", kTH2D, {axisDeltaPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoPtVsptmcEtaPlus", "", kTH2D, {axisDeltaPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoPtVsptmcEtaMinus", "", kTH2D, {axisDeltaPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoPtVsptmcScaled", "", kTH2D, {axisDeltaPtScaled, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoPtVsptmcScaledEtaPlus", "", kTH2D, {axisDeltaPtScaled, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoPtVsptmcScaledEtaMinus", "", kTH2D, {axisDeltaPtScaled, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmc", "", kTH2D, {axisPullInvPt, axisInvPt});
       histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmcEtaPlus", "", kTH2D, {axisPullInvPt, axisInvPt});
       histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmcEtaMinus", "", kTH2D, {axisPullInvPt, axisInvPt});
@@ -271,13 +285,21 @@ struct qaEventTrack {
       histos.add<TH2>("Tracks/Kine/resoInvPt", "", kTH2D, {axisDeltaInvPt, axisInvPt});
       histos.add<TH2>("Tracks/Kine/resoInvPtEtaPlus", "", kTH2D, {axisDeltaInvPt, axisInvPt});
       histos.add<TH2>("Tracks/Kine/resoInvPtEtaMinus", "", kTH2D, {axisDeltaInvPt, axisInvPt});
+      histos.add<TH2>("Tracks/Kine/resoSigned1Pt", "", kTH2D, {axisDeltaSigned1Pt, axisSigned1Pt});
+      histos.add<TH2>("Tracks/Kine/resoSigned1PtVsPt", "", kTH2D, {axisDeltaSigned1Pt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoSigned1PtScaled", "", kTH2D, {axisDeltaSigned1PtScaled, axisSigned1Pt});
+      histos.add<TH2>("Tracks/Kine/resoSigned1PtVsPtScaled", "", kTH2D, {axisDeltaSigned1PtScaled, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/ptVsptmc", "", kTH2D, {axisPt, axisPt})->GetXaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/Signed1PtVsSigned1Ptmc", "", kTH2D, {axisSigned1Pt, axisSigned1Pt})->GetYaxis()->SetTitle("Q/#it{p}_{T, rec} [GeV/c]^{-1}");
       histos.add<TH2>("Tracks/Kine/resoEta", "", kTH2D, {axisDeltaEta, axisEta})->GetYaxis()->SetTitle("#eta_{rec}");
       histos.add<TH2>("Tracks/Kine/resoPhi", "", kTH2D, {axisDeltaPhi, axisPhi})->GetYaxis()->SetTitle("#varphi_{rec}");
 
       histos.add<TH2>("Tracks/Kine/resoPtVsptmcWrongPIDinTrk", "", kTH2D, {axisDeltaPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoPtVsptmcEtaPlusWrongPIDinTrk", "", kTH2D, {axisDeltaPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/resoPtVsptmcEtaMinusWrongPIDinTrk", "", kTH2D, {axisDeltaPt, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoPtVsptmcScaledWrongPIDinTrk", "", kTH2D, {axisDeltaPtScaled, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoPtVsptmcScaledEtaPlusWrongPIDinTrk", "", kTH2D, {axisDeltaPtScaled, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
+      histos.add<TH2>("Tracks/Kine/resoPtVsptmcScaledEtaMinusWrongPIDinTrk", "", kTH2D, {axisDeltaPtScaled, axisPt})->GetYaxis()->SetTitle("#it{p}_{T, gen} [GeV/c]");
       histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmcWrongPIDinTrk", "", kTH2D, {axisPullInvPt, axisInvPt});
       histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmcEtaPlusWrongPIDinTrk", "", kTH2D, {axisPullInvPt, axisInvPt});
       histos.add<TH2>("Tracks/Kine/pullInvPtVsInvPtmcEtaMinusWrongPIDinTrk", "", kTH2D, {axisPullInvPt, axisInvPt});
@@ -436,6 +458,9 @@ struct qaEventTrack {
     histos.add("Tracks/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{60, 0.7, 1.3}});
     histos.add("Tracks/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
     histos.add("Tracks/TPC/hasTPC", "pt distribution of tracks crossing TPC", kTH1D, {axisPt});
+    auto h6 = histos.add<TH2>("Tracks/TPC/tpcdEdxVsTPCmom", "Energy loss", kTH2D, {axisParSigned1Pt, {500, 0., 1000.}});
+    h6->GetXaxis()->SetTitle("#it{p}_{TPC}/z (GeV/#it{c})");
+    h6->GetYaxis()->SetTitle("dE/dx");
 
     // tracks vs tracks @ IU
     if (doprocessDataIU) {
@@ -613,6 +638,9 @@ struct qaEventTrack {
       return false;
     }
     if (track.phi() < minPhi || track.phi() > maxPhi) { // Extra Phi selection
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < minTPCcrossedRows) { // Extra TPC crossed rows selection
       return false;
     }
     if (selectCharge && (selectCharge != track.sign())) {
@@ -997,7 +1025,7 @@ struct qaEventTrack {
   using TrackTableMC = soa::Join<TrackTableData, aod::McTrackLabels>;
   void processMC(CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, soa::Join<aod::FullTracks, aod::McTrackLabels> const& tracksUnfiltered,
                  aod::AmbiguousTracks const& ambitracks,
-                 aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+                 aod::McParticles const&, aod::McCollisions const&)
   {
     /// work with all filtered tracks
     fillRecoHistogramsAllTracks<true, true>(tracks, ambitracks);
@@ -1084,7 +1112,7 @@ struct qaEventTrack {
 
   /// process for run 2 converted MC
   void processRun2ConvertedMC(CollisionTableMC const& collisions, soa::Filtered<TrackTableMC> const& tracks, soa::Join<aod::FullTracks, aod::McTrackLabels> const& tracksUnfiltered,
-                              aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+                              aod::McParticles const&, aod::McCollisions const&)
   {
     /// work with collision grouping
     for (auto const& collision : collisions) {
@@ -1549,10 +1577,16 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     if constexpr (IS_MC) {
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle();
+        auto pdgInfo = pdgDB->GetParticle(particle.pdgCode());
+        int sign = 0;
+        if (pdgInfo != nullptr) {
+          sign = pdgInfo->Charge() / abs(pdgInfo->Charge());
+        }
         // resolution plots
         if (doExtraPIDqa && track.pidForTracking() != std::abs(PartIdentifier)) {
           // full eta range
           histos.fill(HIST("Tracks/Kine/resoPtVsptmcWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt());
+          histos.fill(HIST("Tracks/Kine/resoPtVsptmcScaledWrongPIDinTrk"), (track.pt() - particle.pt()) / particle.pt(), particle.pt());
           histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
           histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
           if (particle.pt() > 0.f) {
@@ -1562,14 +1596,16 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
           // split eta range
           if (eta > 0) { // positive eta
             histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaPlusWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt());
+            histos.fill(HIST("Tracks/Kine/resoPtVsptmcScaledEtaPlusWrongPIDinTrk"), (track.pt() - particle.pt()) / particle.pt(), particle.pt());
             histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcEtaPlusWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
             histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcEtaPlusWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
             if (particle.pt() > 0.f) {
               histos.fill(HIST("Tracks/Kine/resoInvPtEtaPlusWrongPIDinTrk"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
             }
             histos.fill(HIST("Tracks/Kine/resoInvPtVsPtEtaPlusWrongPIDinTrk"), track.signed1Pt() - 1.f / particle.pt(), particle.pt());
-          } else {                                                                                                         // negative eta
-            histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaMinusWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt()); //
+          } else { // negative eta
+            histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaMinusWrongPIDinTrk"), track.pt() - particle.pt(), particle.pt());
+            histos.fill(HIST("Tracks/Kine/resoPtVsptmcScaledEtaMinusWrongPIDinTrk"), (track.pt() - particle.pt()) / particle.pt(), particle.pt());
             histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcEtaMinusWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
             histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcEtaMinusWrongPIDinTrk"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
             if (particle.pt() > 0.f) {
@@ -1584,22 +1620,35 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
           continue;
         }
 
+        // TPC energy loss
+        histos.fill(HIST("Tracks/TPC/tpcdEdxVsTPCmom"), track.tpcInnerParam() / track.sign(), track.tpcSignal());
+
+        // Kine plots
         // full eta range
         histos.fill(HIST("Tracks/Kine/resoPt"), track.pt() - particle.pt(), track.pt());
         histos.fill(HIST("Tracks/Kine/resoPtVsptmc"), track.pt() - particle.pt(), particle.pt());
-        histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmc"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
-        histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmc"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
+        histos.fill(HIST("Tracks/Kine/resoPtVsptmcScaled"), (track.pt() - particle.pt()) / particle.pt(), particle.pt());
         if (particle.pt() > 0.f) {
           histos.fill(HIST("Tracks/Kine/resoInvPt"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), 1.f / particle.pt());
+          histos.fill(HIST("Tracks/Kine/resoInvPtVsPt"), std::abs(track.signed1Pt()) - 1.f / particle.pt(), particle.pt());
+          histos.fill(HIST("Tracks/Kine/resoSigned1Pt"), track.signed1Pt() - sign / particle.pt(), sign / particle.pt());
+          histos.fill(HIST("Tracks/Kine/resoSigned1PtVsPt"), track.signed1Pt() - sign / particle.pt(), particle.pt());
+          histos.fill(HIST("Tracks/Kine/resoSigned1PtScaled"), (track.signed1Pt() - sign / particle.pt()) / (sign / particle.pt()), sign / particle.pt());
+          histos.fill(HIST("Tracks/Kine/resoSigned1PtVsPtScaled"), (track.signed1Pt() - sign / particle.pt()) / (sign / particle.pt()), particle.pt());
         }
-        histos.fill(HIST("Tracks/Kine/resoInvPtVsPt"), track.signed1Pt() - 1.f / particle.pt(), particle.pt());
+        histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmc"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
+        histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmc"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
+
         histos.fill(HIST("Tracks/Kine/ptVsptmc"), particle.pt(), track.pt());
+        histos.fill(HIST("Tracks/Kine/Signed1PtVsSigned1Ptmc"), sign / particle.pt(), track.signed1Pt());
         histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
         histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
+
         // split eta range
         if (eta > 0) { // positive eta
           histos.fill(HIST("Tracks/Kine/resoPtEtaPlus"), track.pt() - particle.pt(), track.pt());
           histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaPlus"), track.pt() - particle.pt(), particle.pt());
+          histos.fill(HIST("Tracks/Kine/resoPtVsptmcScaledEtaPlus"), (track.pt() - particle.pt()) / particle.pt(), particle.pt());
           histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcEtaPlus"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
           histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcEtaPlus"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
           if (particle.pt() > 0.f) {
@@ -1609,6 +1658,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
         } else { // negative eta
           histos.fill(HIST("Tracks/Kine/resoPtEtaMinus"), track.pt() - particle.pt(), track.pt());
           histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaMinus"), track.pt() - particle.pt(), particle.pt());
+          histos.fill(HIST("Tracks/Kine/resoPtVsptmcScaledEtaMinus"), (track.pt() - particle.pt()) / particle.pt(), particle.pt());
           histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcEtaMinus"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
           histos.fill(HIST("Tracks/Kine/pullInvPtVsPtmcEtaMinus"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), particle.pt());
           if (particle.pt() > 0.f) {

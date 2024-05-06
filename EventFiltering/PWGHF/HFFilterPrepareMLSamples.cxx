@@ -18,7 +18,11 @@
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, Strasbourg University
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 
+#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h> // needed for HFFilterHelpers, to be fixed
+#else
+#include <onnxruntime_cxx_api.h>
+#endif
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -100,8 +104,8 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto trackParNeg = getTrackPar(trackNeg);
       o2::gpu::gpustd::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
       o2::gpu::gpustd::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
-      std::array<float, 3> pVecPos{trackPos.px(), trackPos.py(), trackPos.pz()};
-      std::array<float, 3> pVecNeg{trackNeg.px(), trackNeg.py(), trackNeg.pz()};
+      std::array<float, 3> pVecPos{trackPos.pVector()};
+      std::array<float, 3> pVecNeg{trackNeg.pVector()};
       if (trackPos.collisionId() != thisCollId) {
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParPos, 2.f, noMatCorr, &dcaPos);
         getPxPyPz(trackParPos, pVecPos);
@@ -162,9 +166,9 @@ struct HfFilterPrepareMlSamples { // Main struct
       o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
       o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
       o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
-      std::array<float, 3> pVecFirst{trackFirst.px(), trackFirst.py(), trackFirst.pz()};
-      std::array<float, 3> pVecSecond{trackSecond.px(), trackSecond.py(), trackSecond.pz()};
-      std::array<float, 3> pVecThird{trackThird.px(), trackThird.py(), trackThird.pz()};
+      std::array<float, 3> pVecFirst{trackFirst.pVector()};
+      std::array<float, 3> pVecSecond{trackSecond.pVector()};
+      std::array<float, 3> pVecThird{trackThird.pVector()};
       if (trackFirst.collisionId() != thisCollId) {
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFirst, 2.f, noMatCorr, &dcaFirst);
         getPxPyPz(trackParFirst, pVecFirst);

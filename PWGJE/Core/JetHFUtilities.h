@@ -41,6 +41,7 @@
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetV0Utilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 
@@ -287,7 +288,7 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
  * @param tracks the track table
  */
 template <typename T, typename U, typename V>
-bool isDaughterTrack(T& track, U& candidate, V const& tracks)
+bool isDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
 {
 
   if constexpr (isD0Candidate<U>()) {
@@ -304,6 +305,12 @@ bool isDaughterTrack(T& track, U& candidate, V const& tracks)
     }
   } else if constexpr (isBplusCandidate<U>()) {
     if (candidate.template prong0_as<o2::aod::HfCand2Prong>().template prong0_as<V>().globalIndex() == track.globalIndex() || candidate.template prong0_as<o2::aod::HfCand2Prong>().template prong1_as<V>().globalIndex() == track.globalIndex() || candidate.template prong1_as<V>().globalIndex() == track.globalIndex()) {
+      return true;
+    } else {
+      return false;
+    }
+  } else if constexpr (jetv0utilities::isV0Candidate<U>()) {
+    if (candidate.posTrackId() == track.globalIndex() || candidate.negTrackId() == track.globalIndex()) {
       return true;
     } else {
       return false;
@@ -355,7 +362,7 @@ auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candid
 }
 
 template <typename T>
-int getCandidatePDG(T const& candidate)
+int getCandidatePDG(T const& /*candidate*/)
 {
 
   if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
@@ -389,7 +396,7 @@ int getTablePDG()
 }
 
 template <typename T>
-float getCandidatePDGMass(T const& candidate)
+float getCandidatePDGMass(T const& /*candidate*/)
 {
 
   if constexpr (isD0Candidate<T>() || isD0McCandidate<T>()) {
@@ -438,7 +445,7 @@ void fillLcCollisionTable(T const& collision, U& LcCollisionTable, int32_t& LcCo
 }
 
 template <typename T, typename U, typename V>
-void fillHFCollisionTable(T const& collision, U const& candidates, V& HFCollisionTable, int32_t& HFCollisionTableIndex)
+void fillHFCollisionTable(T const& collision, U const& /*candidates*/, V& HFCollisionTable, int32_t& HFCollisionTableIndex)
 {
   if constexpr (isD0Table<U>()) {
     fillD0CollisionTable(collision, HFCollisionTable, HFCollisionTableIndex);
@@ -636,7 +643,7 @@ void fillCandidateMcTable(T const& candidate, U& BaseMcTable, int32_t& candidate
 }
 
 template <typename T, typename U>
-auto getCandidateCollision(T const& candidate, U const& candidateCollisions)
+auto getCandidateCollision(T const& candidate, U const& /*candidateCollisions*/)
 {
   if constexpr (isD0Candidate<T>()) { // make sure this actually is working
     return candidate.template hfD0CollBase_as<U>();

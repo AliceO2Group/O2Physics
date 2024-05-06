@@ -136,6 +136,12 @@ static constexpr std::string_view hpt_numtof_prm[NpCharge] = {"MC/el/pos/prm/pt/
                                                               "MC/el/neg/prm/pt/numtof", "MC/mu/neg/prm/pt/numtof", "MC/pi/neg/prm/pt/numtof",
                                                               "MC/ka/neg/prm/pt/numtof", "MC/pr/neg/prm/pt/numtof", "MC/de/neg/prm/pt/numtof",
                                                               "MC/tr/neg/prm/pt/numtof", "MC/he/neg/prm/pt/numtof", "MC/al/neg/prm/pt/numtof"};
+static constexpr std::string_view hpt_numtofgoodmatch_prm[NpCharge] = {"MC/el/pos/prm/pt/numtofgoodmatch", "MC/mu/pos/prm/pt/numtofgoodmatch", "MC/pi/pos/prm/pt/numtofgoodmatch",
+                                                                       "MC/ka/pos/prm/pt/numtofgoodmatch", "MC/pr/pos/prm/pt/numtofgoodmatch", "MC/de/pos/prm/pt/numtofgoodmatch",
+                                                                       "MC/tr/pos/prm/pt/numtofgoodmatch", "MC/he/pos/prm/pt/numtofgoodmatch", "MC/al/pos/prm/pt/numtofgoodmatch",
+                                                                       "MC/el/neg/prm/pt/numtofgoodmatch", "MC/mu/neg/prm/pt/numtofgoodmatch", "MC/pi/neg/prm/pt/numtofgoodmatch",
+                                                                       "MC/ka/neg/prm/pt/numtofgoodmatch", "MC/pr/neg/prm/pt/numtofgoodmatch", "MC/de/neg/prm/pt/numtofgoodmatch",
+                                                                       "MC/tr/neg/prm/pt/numtofgoodmatch", "MC/he/neg/prm/pt/numtofgoodmatch", "MC/al/neg/prm/pt/numtofgoodmatch"};
 
 //********************************************RD**********************************************************************************************
 static constexpr std::string_view hpt_numtof_str[NpCharge] = {"MC/el/pos/str/pt/numtof", "MC/mu/pos/str/pt/numtof", "MC/pi/pos/str/pt/numtof",

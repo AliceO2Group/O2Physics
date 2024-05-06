@@ -118,10 +118,12 @@ DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Sign, sign, int);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(MassXi, massxi, float);
 DECLARE_SOA_COLUMN(MassOmega, massomega, float);
 DECLARE_SOA_COLUMN(V2A, v2A, float);
 DECLARE_SOA_COLUMN(V2C, v2C, float);
+DECLARE_SOA_COLUMN(PsiT0C, psiT0C, float);
 DECLARE_SOA_COLUMN(BDTResponseXi, bdtResponseXi, float);
 DECLARE_SOA_COLUMN(BDTResponseOmega, bdtResponseOmega, float);
 
@@ -152,7 +154,7 @@ DECLARE_SOA_TABLE(CascTraining, "AOD", "CascTraining", o2::soa::Index<>,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::BachBaryonCosPA, mycascades::BachBaryonDCAxyToPV, mycascades::McPdgCode);
 
 DECLARE_SOA_TABLE(CascAnalysis, "AOD", "CascAnalysis", o2::soa::Index<>,
-                  cascadesflow::CentFT0C, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::MassXi, cascadesflow::MassOmega, cascadesflow::V2C, cascadesflow::BDTResponseXi, cascadesflow::BDTResponseOmega);
+                  cascadesflow::CentFT0C, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::Phi, cascadesflow::MassXi, cascadesflow::MassOmega, cascadesflow::V2C, cascadesflow::PsiT0C, cascadesflow::BDTResponseXi, cascadesflow::BDTResponseOmega);
 
 namespace myMCcascades
 {

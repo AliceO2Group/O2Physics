@@ -108,6 +108,7 @@ struct ExclusivePhi {
     registry.add("TrueGapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
 
     registry.add("hTracks", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
+    registry.add("hTracksITSonly", "N_{tracks ITS only}", kTH1F, {{100, -0.5, 99.5}});
     registry.add("hITSCluster", "N_{cluster}", kTH1F, {{100, -0.5, 99.5}});
     registry.add("hChi2ITSTrkSegment", "N_{cluster}", kTH1F, {{100, -0.5, 99.5}});
     registry.add("hTPCCluster", "N_{cluster}", kTH1F, {{200, -0.5, 199.5}});
@@ -116,9 +117,15 @@ struct ExclusivePhi {
     registry.add("hdEdxKaon", "p_{#ka} vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {1000, 0.0, 2000.0}});
     registry.add("hdEdxKaon2", "p_{#ka} vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {1000, 0.0, 2000.0}});
     registry.add("hdEdxKaon3", "p_{#ka} vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {1000, 0.0, 2000.0}});
+    registry.add("hdEdxKaon4", "p_{#ka} vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {1000, 0.0, 2000.0}});
+    registry.add("hdEdxKaon5", "p_{#ka} vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {1000, 0.0, 2000.0}});
     registry.add("hNsigEvsKa1", "NSigmaKa(t1) vs NSigmaKa (t2);n#sigma_{1};n#sigma_{2}", kTH2F, {{100, -15., 15.}, {100, -15., 15}});
     registry.add("hNsigEvsKa2", "NSigmaKa(t1) vs NSigmaKa (t2);n#sigma_{1};n#sigma_{2}", kTH2F, {{100, -15., 15.}, {100, -15., 15}});
     registry.add("hMomentum", "p_{#ka};#it{p_{trk}}, GeV/c;", kTH1F, {{100, 0., 3.}});
+    registry.add("hClusterSizeAllTracks", "ClusterSizeAllTracks;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
+    registry.add("hClusterSizeMomentumCut", "ClusterSizeMomentumCut;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
+    registry.add("hClusterSizeOnlyIdentifiedKaons", "ClusterSizeOnlyIdentifiedKaons;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
+    registry.add("hClusterSizeOnlyITS", "ClusterSizeOnlyITS;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
     registry.add("hEta1", "#eta_{#ka};#it{#eta_{trk}}, GeV/c;", kTH1F, {{100, -2., 2.}});
     registry.add("hEta2", "#eta_{#ka};#it{#eta_{trk}}, GeV/c;", kTH1F, {{100, -2., 2.}});
     registry.add("hPtPhi", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
@@ -148,6 +155,10 @@ struct ExclusivePhi {
     registry.add("PHI/hCostheta_Phi", "Phi vs Costheta;#it{#phi};#it{Cos#Theta};", kTH2F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}, {100, -2, 2}});
     registry.add("PHI/hMassPhiWithoutPIDPionHypothesis", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1D, {{400, 0., 4.}});
     registry.add("PHI/hPtPhiWithoutPIDPionHypothesis", "Pt;#it{p_{t}}, GeV/c;", kTH1D, {{500, 0., 5.}});
+
+    // DIfferent phi topologies, 2 identified kaons, 1 identified kaon + 1 ITS track with correct selections and 4 ITS clusters
+    registry.add("PHI/hMassPtPhiIdentifiedKaons", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};Pt;#it{p_{t}}, GeV/c;", kTH2F, {{400, 0., 4.}, {400, 0., 4.}});
+    registry.add("PHI/hMassPtPhiIdentifiedKaonAndITSkaon", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};Pt;#it{p_{t}}, GeV/c;", kTH2F, {{400, 0., 4.}, {400, 0., 4.}});
 
     registry.add("PHI/hMassLike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{400, 0., 4.}});
     registry.add("PHI/hMassUnlike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{400, 0., 4.}});
@@ -317,9 +328,13 @@ struct ExclusivePhi {
     //_____________________________________
     // Create kaons WITHOUT PID
     std::vector<decltype(tracks.begin())> onlyTwoTracks;
+    std::vector<decltype(tracks.begin())> onlyKaonBandPID;
+    std::vector<decltype(tracks.begin())> onlyITS;
     std::vector<TLorentzVector> allTracksAreKaons;
     std::vector<TLorentzVector> allTracksArePions;
     std::vector<TLorentzVector> allTracksAreKaonsWrongMomentum;
+    std::vector<TLorentzVector> allTracksAreKaonsBandPID;
+    std::vector<TLorentzVector> allTracksAreITSonlyAndFourITSclusters;
 
     int counter = 0;
     for (auto t : tracks) {
@@ -342,6 +357,15 @@ struct ExclusivePhi {
            continue;
        } // not working*/
 
+      int clusterSize[7];
+      double averageClusterSize = 0.;
+      for (int i = 0; i < 7; i++) { // info stored in 4 bits
+        clusterSize[i] = (((1 << 4) - 1) & (t.itsClusterSizes() >> 4 * i));
+        averageClusterSize += static_cast<double>(clusterSize[i]);
+      }
+      averageClusterSize /= 7.;
+      registry.fill(HIST("hClusterSizeAllTracks"), averageClusterSize);
+
       int NFindable = t.tpcNClsFindable();
       int NMinusFound = t.tpcNClsFindableMinusFound();
       int NCluster = NFindable - NMinusFound;
@@ -357,6 +381,7 @@ struct ExclusivePhi {
       }
 
       registry.fill(HIST("hdEdxKaon3"), momentum, dEdx);
+      registry.fill(HIST("hClusterSizeMomentumCut"), averageClusterSize);
 
       onlyTwoTracks.push_back(t);
 
@@ -367,8 +392,8 @@ struct ExclusivePhi {
       TLorentzVector a2;
       a2.SetXYZM(-1. * t.px(), -1. * t.py(), -1. * t.pz(), o2::constants::physics::MassKaonCharged);
 
-      if (-0.6 > a.Eta() || a.Eta() > 0.6)
-        continue;
+      //   if (-0.6 > a.Eta() || a.Eta() > 0.6)
+      //     continue;
 
       allTracksAreKaons.push_back(a);
       allTracksArePions.push_back(b);
@@ -379,37 +404,29 @@ struct ExclusivePhi {
         allTracksAreKaonsWrongMomentum.push_back(a2);
       }
       counter += 1;
+
+      bool kaonBand = false;
+      if ((momentum > 0.180) && (momentum < 0.220) && (dEdx > 300)) {
+        kaonBand = true;
+      } else if ((momentum > 0.220) && (momentum < 0.300) && (dEdx > 180)) {
+        kaonBand = true;
+      } else if ((momentum > 0.300) && (momentum < 0.500) && (dEdx > 110)) {
+        kaonBand = true;
+      }
+      if (kaonBand == true) {
+        allTracksAreKaonsBandPID.push_back(a);
+        onlyKaonBandPID.push_back(t);
+        registry.fill(HIST("hdEdxKaon4"), momentum, dEdx);
+        registry.fill(HIST("hClusterSizeOnlyIdentifiedKaons"), averageClusterSize);
+      }
+
+      if (NFindable < 1 && t.itsNCls() < 6) {
+        // if(NFindable < 1 && t.itsNCls() == 4){
+        allTracksAreITSonlyAndFourITSclusters.push_back(a);
+        onlyITS.push_back(t);
+      }
+
     } // track loop
-
-    //_____________________________________
-    // Creating phis and saving all the information
-    // in the case that there are ONLY 2 PV
-    /* int hasITS[2] = {-1, -1};
-     int hasTPC[2] = {-1, -1};
-     int hasTOF[2] = {-1, -1};
-     bool goodFirstTrack = false;
-     bool goodSecondTrack = false;
-     bool goodEvent = false;
-     if (onlyTwoTracks.size() == 2) {
-         hasITS[0] = onlyTwoTracks[0].hasITS();
-         hasTPC[0] = onlyTwoTracks[0].hasTPC();
-         hasTOF[0] = onlyTwoTracks[0].hasTOF();
-         hasITS[1] = onlyTwoTracks[1].hasITS();
-         hasTPC[1] = onlyTwoTracks[1].hasTPC();
-         hasTOF[1] = onlyTwoTracks[1].hasTOF();
-         if ((hasITS[0]) && (hasTPC[0]) && (!hasTOF[0])) {
-             goodFirstTrack = true;
-         }
-
-         if ((hasITS[1]) && (hasTPC[1]) && (!hasTOF[1])) {
-             goodSecondTrack = true;
-         }
-
-         if (goodFirstTrack || goodSecondTrack) {
-            goodEvent = true;
-        }
-
-     }*/
 
     //  if (gapSide == 2) {
     if (allTracksAreKaons.size() == 2) {
@@ -432,19 +449,6 @@ struct ExclusivePhi {
       registry.fill(HIST("hEta1"), allTracksAreKaons[0].Eta());
       registry.fill(HIST("hEta2"), allTracksAreKaons[1].Eta());
 
-      /* if (-0.6 > allTracksAreKaons[0].Eta() || allTracksAreKaons[0].Eta() > 0.6)
-          return;
-        if (-0.6 > allTracksAreKaons[1].Eta() || allTracksAreKaons[1].Eta() > 0.6)
-          return;*/
-
-      // kaons[0].SetXYZM(onlyTwoTracks[0].px(), onlyTwoTracks[0].py(), onlyTwoTracks[0].pz(), o2::constants::physics::MassKaonCharged);
-      // kaons[1].SetXYZM(onlyTwoTracks[1].px(), onlyTwoTracks[1].py(), onlyTwoTracks[1].pz(), o2::constants::physics::MassKaonCharged);
-
-      // phiWithoutPID += kaons[0];
-      // phiWithoutPID += kaons[1];
-      /*phiLikeSignWithoutPID += kaonsLikeSign[0];
-      phiLikeSignWithoutPID += kaonsLikeSign[1];*/
-
       auto costhetaPhi = CosThetaHelicityFrame(allTracksAreKaons[0], allTracksAreKaons[1], phiWithoutPID);
       auto phiPhi = 1. * TMath::Pi() + PhiHelicityFrame(allTracksAreKaons[0], allTracksAreKaons[1], phiWithoutPID);
 
@@ -454,8 +458,6 @@ struct ExclusivePhi {
       registry.fill(HIST("hMassPhiWrongMomentumWithoutPID"), phiWrongMomentaWithoutPID.M());
 
       // Phi peak region
-      // if ((phiWithoutPID.Rapidity()>-0.6)&&(phiWithoutPID.Rapidity()<0.6)){
-      // if ((phiWithoutPID.M() > 0.98) && (phiWithoutPID.M() < 1.06)) {
       registry.fill(HIST("PHI/hPtPhiWithoutPID"), phiWithoutPID.Pt());
       registry.fill(HIST("PHI/hMassVsPt"), phiWithoutPID.M(), phiWithoutPID.Pt());
       registry.fill(HIST("PHI/hRapidityPhiWithoutPID"), phiWithoutPID.Rapidity());
@@ -575,8 +577,43 @@ struct ExclusivePhi {
       }
     } // end of two tracks only loop
 
-    // } // double gap
-    // }
+    if (allTracksAreKaonsBandPID.size() == 2) {
+
+      TLorentzVector reallyPhi;
+      for (auto kaon : allTracksAreKaonsBandPID) {
+        reallyPhi += kaon;
+      }
+      registry.fill(HIST("PHI/hMassPtPhiIdentifiedKaons"), reallyPhi.M(), reallyPhi.Pt());
+    }
+    if (allTracksAreKaonsBandPID.size() == 1) {
+      double momentum = TMath::Sqrt(onlyKaonBandPID[0].px() * onlyKaonBandPID[0].px() + onlyKaonBandPID[0].py() * onlyKaonBandPID[0].py() + onlyKaonBandPID[0].pz() * onlyKaonBandPID[0].pz());
+      double dEdx = onlyKaonBandPID[0].tpcSignal();
+      registry.fill(HIST("hdEdxKaon5"), momentum, dEdx);
+
+      registry.fill(HIST("hTracksITSonly"), allTracksAreITSonlyAndFourITSclusters.size());
+
+      // TLorentzVector reallyPhi[allTracksAreITSonlyAndFourITSclusters.size()];
+      for (int kaon = 0; kaon < allTracksAreITSonlyAndFourITSclusters.size(); kaon++) {
+
+        int clusterSize[7];
+        double averageClusterSize = 0.;
+        for (int i = 0; i < 7; i++) { // info stored in 4 bits
+          clusterSize[i] = (((1 << 4) - 1) & (onlyITS[kaon].itsClusterSizes() >> 4 * i));
+          averageClusterSize += static_cast<double>(clusterSize[i]);
+        }
+        averageClusterSize /= 7.;
+        registry.fill(HIST("hClusterSizeOnlyITS"), averageClusterSize);
+
+        TLorentzVector reallyPhi;
+        // reallyPhi[kaon] += allTracksAreKaonsBandPID[0];
+        // reallyPhi[kaon] += allTracksAreITSonlyAndFourITSclusters[kaon];
+        reallyPhi += allTracksAreKaonsBandPID[0];
+        reallyPhi += allTracksAreITSonlyAndFourITSclusters[kaon];
+        registry.fill(HIST("PHI/hMassPtPhiIdentifiedKaonAndITSkaon"), reallyPhi.M(), reallyPhi.Pt());
+        // registry.fill(HIST("PHI/hMassPtPhiIdentifiedKaonAndITSkaon"), reallyPhi[kaon].M(), reallyPhi[kaon].Pt());
+      }
+    }
+
   } // end of process
 
 }; // end of struct

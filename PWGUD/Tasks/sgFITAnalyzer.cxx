@@ -17,21 +17,42 @@
 #include "Framework/AnalysisTask.h"
 
 #include "TVector3.h"
+#include "TTree.h"
+#include "TFile.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/SGTrackSelector.h"
+#define mpion 0.1396
+#define mmuon 0.1057
+#define mkaon 0.4937
+#define mproton 0.9383
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct SG_FIT_Analyzer { // UDTutorial01
+namespace bcNtr
+{
+DECLARE_SOA_COLUMN(BC, bc, uint64_t);
+DECLARE_SOA_COLUMN(PV, pv, int);
+DECLARE_SOA_COLUMN(GS, gs, int);
+} // namespace bcNtr
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(BcPvGs, "AOD", "BCPVGS",
+                  bcNtr::BC, bcNtr::PV, bcNtr::GS);
+}
+struct SGFITAnalyzer {
+  Produces<o2::aod::BcPvGs> bcNtr;
   SGSelector sgSelector;
 
   // configurables
   Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
   ConfigurableAxis ptAxis{"ptAxis", {250, 0.0, 2.5}, "p_T axis"};
+  // ConfigurableAxis BCAxis{"BCAxis", {1000000000000, 0.5, 1000000000000.5}, "BC axis"};
+  ConfigurableAxis BCAxis{"BCAxis", {100000000000, 500000000000.5, 600000000000.5}, "BC axis"};
   ConfigurableAxis etaAxis{"etaAxis", {300, -1.5, 1.5}, ""};
   ConfigurableAxis sigTPCAxis{"sigTPCAxis", {100, -100.0, 100.0}, ""};
   ConfigurableAxis sigTOFAxis{"sigTOFAxis", {100, -100.0, 100.0}, ""};
@@ -40,7 +61,19 @@ struct SG_FIT_Analyzer { // UDTutorial01
   ConfigurableAxis ZDCAxis{"ZDCAxis", {1000, -2.5, 199.5}, ""};
   Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
-
+  Configurable<float> FT0A_cut{"FT0A", 100., "FT0A threshold"};
+  Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
+  Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
+  Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
+  // Track Selections
+  Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
+  Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
+  Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
+  Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};
+  Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
+  Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
+  Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
+  Configurable<std::string> outputFileName{"outputFileName", "AnalysisResults.root", "Output file name"};
   // initialize histogram registry
   HistogramRegistry registry{
     "registry",
@@ -49,12 +82,16 @@ struct SG_FIT_Analyzer { // UDTutorial01
   void init(InitContext&)
   {
     const AxisSpec axispt{ptAxis, "p_{T}"};
+    const AxisSpec axisBC{BCAxis, "BC"};
     const AxisSpec axiseta{etaAxis, "#eta"};
     const AxisSpec axismult{multAxis, "N_{tracks}"};
     const AxisSpec axisfit{FitAxis, "FIT Amplitude"};
     const AxisSpec axiszdc{ZDCAxis, "ZDC Amplitude"};
     // Collision histograms
     registry.add("collisions/BC", "Relative BC number; Relative BC; Collisions", {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
+    registry.add("collisions/BC_PVCA", "Global BC; Global BC; Multiplicity", {HistType::kTH2F, {axisBC, axismult}});
+    registry.add("collisions/BC_PVCC", "Global BC; Global BC; Multiplicity", {HistType::kTH2F, {axisBC, axismult}});
+    registry.add("collisions/BC_PVCAC", "Global BC; Global BC; Multiplicity", {HistType::kTH2F, {axisBC, axismult}});
     registry.add("collisions/multiplicityAll", "Multiplicity of all tracks; Tracks; Tracks", {HistType::kTH1F, {{axismult}}});
     registry.add("collisions/multiplicityPVC", "Multiplicity of PV contributors; PV contributors; Tracks", {HistType::kTH1F, {{axismult}}});
     registry.add("collisions/multiplicityPVCA", "Multiplicity of PV contributors A-side; PV contributors; Tracks", {HistType::kTH1F, {{axismult}}});
@@ -108,9 +145,21 @@ struct SG_FIT_Analyzer { // UDTutorial01
     registry.add("ZDC/AZNA", "Amplitude ZNA, A Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/CZNA", "Amplitude ZNA, C Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/ACZNA", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/ACZNA_CR", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/AZNA_CR", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/CZNA_CR", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/ACZNA_CM", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/AZNA_CM", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/CZNA_CM", "Amplitude ZNA, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/AZNC", "Amplitude ZNC, A Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/CZNC", "Amplitude ZNC, C Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/ACZNC", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/ACZNC_CR", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/AZNC_CR", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/CZNC_CR", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/ACZNC_CM", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/AZNC_CM", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
+    registry.add("ZDC/CZNC_CM", "Amplitude ZNC, AC Gap", {HistType::kTH1F, {{axiszdc}}});
     registry.add("ZDC/tAZNA", "Time ZNA", {HistType::kTH1F, {{100, -19.5, 19.5}}});
     registry.add("ZDC/tAZNC", "Time ZNC", {HistType::kTH1F, {{100, -19.5, 19.5}}});
     registry.add("ZDC/tCZNA", "Time ZNA", {HistType::kTH1F, {{100, -19.5, 19.5}}});
@@ -171,6 +220,36 @@ struct SG_FIT_Analyzer { // UDTutorial01
     registry.add("FIT/CFDDA3", "Amplitude FDDA 3n", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/CFDDA4", "Amplitude FDDA 4n", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/CFDDC", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFV0A_CR", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFT0A_CR", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFT0C_CR", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFDDA_CR", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFDDC_CR", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFV0A_CR", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFT0A_CR", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFT0C_CR", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFDDA_CR", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFDDC_CR", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFV0A_CR", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFT0A_CR", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFT0C_CR", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFDDA_CR", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFDDC_CR", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFV0A_CM", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFT0A_CM", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFT0C_CM", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFDDA_CM", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/ACFDDC_CM", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFV0A_CM", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFT0A_CM", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFT0C_CM", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFDDA_CM", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/AFDDC_CM", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFV0A_CM", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFT0A_CM", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFT0C_CM", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFDDA_CM", "Amplitude FDDA", {HistType::kTH1F, {{axisfit}}});
+    registry.add("FIT/CFDDC_CM", "Amplitude FDDC", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFV0A", "Amplitude FV0A", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFT0A", "Amplitude FT0A", {HistType::kTH1F, {{axisfit}}});
     registry.add("FIT/ACFT0C", "Amplitude FT0C", {HistType::kTH1F, {{axisfit}}});
@@ -268,7 +347,8 @@ struct SG_FIT_Analyzer { // UDTutorial01
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; // UDCollisions
   // using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions>; // UDCollisions
   using UDCollisionFull = UDCollisionsFull::iterator;
-  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  // using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   //  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksFlags>;
 
   void process(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
@@ -279,23 +359,62 @@ struct SG_FIT_Analyzer { // UDTutorial01
 
     // fill collision histograms
     registry.get<TH1>(HIST("collisions/GapSide"))->Fill(dgcand.gapSide(), 1.);
-    int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
+    // int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
+    float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
+    // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
+    int truegapSide = sgSelector.trueGap(dgcand, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
+    int gs = truegapSide;
     registry.get<TH1>(HIST("collisions/TrueGapSide"))->Fill(truegapSide, 1.);
     // select PV contributors
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
     PVContributors.bindTable(dgtracks);
-    if (PVContributors.size() > 50)
-      return;
+    //    if (PVContributors.size() > 50)
+    //     return;
     registry.get<TH1>(HIST("collisions/multiplicityPVC"))->Fill(PVContributors.size(), 1.);
+    int pv = PVContributors.size();
     bool tof = false;
     // relative BC number
     auto bcnum = dgcand.globalBC() % o2::constants::lhc::LHCMaxBunches;
+    uint64_t bc = dgcand.globalBC();
     registry.get<TH1>(HIST("collisions/BC"))->Fill(bcnum, 1.);
-
     // fill track histograms
     if (verbose) {
       LOGF(info, "<UDTutorial01sg>   Number of tracks %d", dgtracks.size());
       LOGF(info, "<UDTutorial01sg>   Number of PV contributors %d", PVContributors.size());
+    }
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut};
+    // check rho0 signals
+    bool coh_rho0 = false;
+    bool coh_jpsi = false;
+    TLorentzVector rho, jpsi;
+    std::vector<TLorentzVector> goodTracks;
+    std::vector<TLorentzVector> muonTracks;
+    float sign = 0;
+    for (auto t : dgtracks) {
+      TLorentzVector a;
+      TLorentzVector b;
+      a.SetXYZM(t.px(), t.py(), t.pz(), mpion);
+      b.SetXYZM(t.px(), t.py(), t.pz(), mmuon);
+      if (trackselector(t, parameters)) {
+        sign += t.sign();
+        goodTracks.push_back(a);
+        if (std::abs(t.tpcNSigmaMu()) < 3)
+          muonTracks.push_back(b);
+      }
+    }
+    if (goodTracks.size() == 2) {
+      for (auto pion : goodTracks) {
+        rho += pion;
+      }
+      if (sign == 0 && TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.1)
+        coh_rho0 = true;
+      if (muonTracks.size() == 2) {
+        for (auto muon : muonTracks) {
+          jpsi += muon;
+        }
+        if (sign == 0 && TMath::Abs(jpsi.Rapidity()) < .9 && jpsi.M() > 2.8 && jpsi.M() < 3.35 && jpsi.Pt() < 0.1)
+          coh_jpsi = true;
+      }
     }
     int pva = 0;
     int pvc = 0;
@@ -391,6 +510,24 @@ struct SG_FIT_Analyzer { // UDTutorial01
       registry.get<TH1>(HIST("ZDC/tCZNC"))->Fill(dgcand.timeZNC(), 1.);
     }
     if (truegapSide == 0) {
+      if (coh_rho0) {
+        registry.get<TH1>(HIST("ZDC/AZNA_CR"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/AZNC_CR"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/AFT0A_CR"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFT0C_CR"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/AFV0A_CR"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFDDA_CR"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFDDC_CR"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
+      if (coh_jpsi) {
+        registry.get<TH1>(HIST("ZDC/AZNA_CM"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/AZNC_CM"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/AFT0A_CM"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFT0C_CM"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/AFV0A_CM"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFDDA_CM"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/AFDDC_CM"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
       registry.get<TH1>(HIST("ZDC/tAZNA"))->Fill(dgcand.timeZNA(), 1.);
       registry.get<TH1>(HIST("ZDC/tAZNC"))->Fill(dgcand.timeZNC(), 1.);
       registry.get<TH1>(HIST("ZDC/AZNA"))->Fill(zna, 1.);
@@ -453,6 +590,24 @@ struct SG_FIT_Analyzer { // UDTutorial01
       registry.get<TH2>(HIST("ZDC/MAZNC"))->Fill(PVContributors.size(), znc);
     }
     if (truegapSide == 1) {
+      if (coh_rho0) {
+        registry.get<TH1>(HIST("ZDC/CZNA_CR"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/CZNC_CR"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/CFT0A_CR"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFT0C_CR"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/CFV0A_CR"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFDDA_CR"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFDDC_CR"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
+      if (coh_jpsi) {
+        registry.get<TH1>(HIST("ZDC/CZNA_CM"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/CZNC_CM"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/CFT0A_CM"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFT0C_CM"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/CFV0A_CM"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFDDA_CM"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/CFDDC_CM"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
       registry.get<TH1>(HIST("ZDC/CZNA"))->Fill(zna, 1.);
       registry.get<TH1>(HIST("ZDC/CZNC"))->Fill(znc, 1.);
       registry.get<TH2>(HIST("ZDC/CZNAC"))->Fill(zna, znc);
@@ -529,6 +684,24 @@ struct SG_FIT_Analyzer { // UDTutorial01
       registry.get<TH2>(HIST("FIT/ACFT0"))->Fill(totalA, totalC);
       registry.get<TH1>(HIST("FIT/ACFITA"))->Fill(totalA, 1.);
       registry.get<TH1>(HIST("FIT/ACFITC"))->Fill(totalC, 1.);
+      if (coh_rho0) {
+        registry.get<TH1>(HIST("ZDC/ACZNA_CR"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/ACZNC_CR"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/ACFT0A_CR"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFT0C_CR"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFV0A_CR"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFDDA_CR"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFDDC_CR"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
+      if (coh_jpsi) {
+        registry.get<TH1>(HIST("ZDC/ACZNA_CM"))->Fill(zna, 1.);
+        registry.get<TH1>(HIST("ZDC/ACZNC_CM"))->Fill(znc, 1.);
+        registry.get<TH1>(HIST("FIT/ACFT0A_CM"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFT0C_CM"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFV0A_CM"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFDDA_CM"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
+        registry.get<TH1>(HIST("FIT/ACFDDC_CM"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
+      }
       registry.get<TH1>(HIST("FIT/ACFT0A"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
       registry.get<TH1>(HIST("FIT/ACFT0C"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
       registry.get<TH1>(HIST("FIT/ACFV0A"))->Fill(dgcand.totalFV0AmplitudeA(), 1.);
@@ -537,7 +710,6 @@ struct SG_FIT_Analyzer { // UDTutorial01
       registry.get<TH2>(HIST("ZDC/MACZNA"))->Fill(PVContributors.size(), zna);
       registry.get<TH2>(HIST("ZDC/MACZNC"))->Fill(PVContributors.size(), znc);
     }
-
     for (auto track : dgtracks) {
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(0., 1.);
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(1., track.hasITS() * 1.);
@@ -646,12 +818,14 @@ struct SG_FIT_Analyzer { // UDTutorial01
       registry.get<TH1>(HIST("FIT/BBFDDA"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDApf(), bit));
       registry.get<TH1>(HIST("FIT/BBFDDC"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDCpf(), bit));
     }
+    // Fill Table here
+    bcNtr(bc, pv, gs);
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SG_FIT_Analyzer>(cfgc, TaskName{"sgfitanalyzer"}),
+    adaptAnalysisTask<SGFITAnalyzer>(cfgc, TaskName{"sgfitanalyzer"}),
   };
 }

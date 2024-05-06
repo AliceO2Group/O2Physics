@@ -41,11 +41,13 @@ class FemtoDreamDetaDphiStar
   /// Destructor
   virtual ~FemtoDreamDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii, int meORse = 0, bool oldversion = true)
+  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii, int meORse = 0, bool oldversion = true, float Q3Limit = 8., bool isMELambda = false)
   {
     deltaPhiMax = ldeltaPhiMax;
     deltaEtaMax = ldeltaEtaMax;
     plotForEveryRadii = lplotForEveryRadii;
+    upperQ3LimitForPlotting = Q3Limit;
+    isMixedEventLambda = isMELambda;
     runOldVersion = oldversion;
     mHistogramRegistry = registry;
     mHistogramRegistryQA = registryQA;
@@ -75,7 +77,7 @@ class FemtoDreamDetaDphiStar
   }
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
-  bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield)
+  bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield, float Q3 = 999.)
   {
     magfield = lmagfield;
 
@@ -87,12 +89,25 @@ class FemtoDreamDetaDphiStar
         return false;
       }
       auto deta = part1.eta() - part2.eta();
-      auto dphiAvg = AveragePhiStar(part1, part2, 0);
-      histdetadpi[0][0]->Fill(deta, dphiAvg);
-      if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-        return true;
+      bool sameCharge = false;
+      auto dphiAvg = AveragePhiStar(part1, part2, 0, &sameCharge);
+      if (Q3 == 999) {
+        histdetadpi[0][0]->Fill(deta, dphiAvg);
+      } else if (Q3 < upperQ3LimitForPlotting) {
+        histdetadpi[0][0]->Fill(deta, dphiAvg);
+      }
+      if (sameCharge) {
+        if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          return true;
+        } else {
+          if (Q3 == 999) {
+            histdetadpi[0][1]->Fill(deta, dphiAvg);
+          } else if (Q3 < upperQ3LimitForPlotting) {
+            histdetadpi[0][1]->Fill(deta, dphiAvg);
+          }
+          return false;
+        }
       } else {
-        histdetadpi[0][1]->Fill(deta, dphiAvg);
         return false;
       }
 
@@ -106,15 +121,31 @@ class FemtoDreamDetaDphiStar
 
       bool pass = false;
       for (int i = 0; i < 2; i++) {
-        auto indexOfDaughter = part2.index() - 2 + i;
+        int indexOfDaughter;
+        if (isMixedEventLambda) {
+          indexOfDaughter = part2.globalIndex() - 2 + i;
+        } else {
+          indexOfDaughter = part2.index() - 2 + i;
+        }
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
-        auto dphiAvg = AveragePhiStar(part1, *daughter, i);
-        histdetadpi[i][0]->Fill(deta, dphiAvg);
-        if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-          pass = true;
-        } else {
-          histdetadpi[i][1]->Fill(deta, dphiAvg);
+        bool sameCharge = false;
+        auto dphiAvg = AveragePhiStar(part1, *daughter, i, &sameCharge);
+        if (Q3 == 999) {
+          histdetadpi[i][0]->Fill(deta, dphiAvg);
+        } else if (Q3 < upperQ3LimitForPlotting) {
+          histdetadpi[i][0]->Fill(deta, dphiAvg);
+        }
+        if (sameCharge) {
+          if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            pass = true;
+          } else {
+            if (Q3 == 999) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+            } else if (Q3 < upperQ3LimitForPlotting) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+            }
+          }
         }
       }
       return pass;
@@ -153,6 +184,8 @@ class FemtoDreamDetaDphiStar
   float deltaEtaMax;
   float magfield;
   bool plotForEveryRadii = false;
+  bool isMixedEventLambda = false;
+  float upperQ3LimitForPlotting = 8.;
   // a possible bug was found, but this must be tested on hyperloop with larger statistics
   // possiboility to run old code is turned on so a proper comparison of both code versions can be done
   bool runOldVersion = true;
@@ -163,12 +196,12 @@ class FemtoDreamDetaDphiStar
   ///  Calculate phi at all required radii stored in tmpRadiiTPC
   /// Magnetic field to be provided in Tesla
   template <typename T>
-  void PhiAtRadiiTPC(const T& part, std::vector<float>& tmpVec)
+  int PhiAtRadiiTPC(const T& part, std::vector<float>& tmpVec)
   {
 
     float phi0 = part.phi();
     // Start: Get the charge from cutcontainer using masks
-    float charge = 0.;
+    int charge = 0.;
     if ((part.cut() & kSignMinusMask) == kValue0 && (part.cut() & kSignPlusMask) == kValue0) {
       charge = 0;
     } else if ((part.cut() & kSignPlusMask) == kSignPlusMask) {
@@ -194,16 +227,20 @@ class FemtoDreamDetaDphiStar
         }
       }
     }
+    return charge;
   }
 
   ///  Calculate average phi
   template <typename T1, typename T2>
-  float AveragePhiStar(const T1& part1, const T2& part2, int iHist)
+  float AveragePhiStar(const T1& part1, const T2& part2, int iHist, bool* sameCharge)
   {
     std::vector<float> tmpVec1;
     std::vector<float> tmpVec2;
-    PhiAtRadiiTPC(part1, tmpVec1);
-    PhiAtRadiiTPC(part2, tmpVec2);
+    auto charge1 = PhiAtRadiiTPC(part1, tmpVec1);
+    auto charge2 = PhiAtRadiiTPC(part2, tmpVec2);
+    if (charge1 == charge2) {
+      *sameCharge = true;
+    }
     int num = tmpVec1.size();
     int meaningfulEntries = num;
     float dPhiAvg = 0;

@@ -792,13 +792,13 @@ struct prefilterPrimaryElectron {
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
 
-  std::map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
-
-  Partition<aod::EMPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > 0;
-  Partition<aod::EMPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < 0;
+  Partition<aod::EMPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > int8_t(0);
+  Partition<aod::EMPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
 
   void processPrefilter_TTCA(aod::Collisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const&, aod::EMPrimaryElectrons const& primaryelectrons, aod::TrackAssoc const& trackIndices)
   {
+    std::map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
+
     for (auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -873,6 +873,8 @@ struct prefilterPrimaryElectron {
 
   void processPrefilter_SA(aod::Collisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const&, aod::EMPrimaryElectrons const& primaryelectrons)
   {
+    std::map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
+
     for (auto& collision : collisions) {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);

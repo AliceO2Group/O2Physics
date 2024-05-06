@@ -294,13 +294,15 @@ struct phosPi0 {
             if (part.pdgCode() == 111) {
               double pt = part.pt();
               mHistManager.fill(HIST("hMCPi0SpAll"), pt);
-              double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
-              double phiVtx = atan2(part.vy(), part.vx());
-              mHistManager.fill(HIST("hMCPi0SecVtx"), r, phiVtx);
-              if (r < 0.5) {
-                mHistManager.fill(HIST("hMCPi0SpPrim"), pt);
-                mHistManager.fill(HIST("hMCPi0RapPrim"), part.y());
-                mHistManager.fill(HIST("hMCPi0PhiPrim"), part.phi());
+              if (abs(part.y()) < .5) {
+                double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
+                double phiVtx = atan2(part.vy(), part.vx());
+                mHistManager.fill(HIST("hMCPi0SecVtx"), r, phiVtx);
+                if (r < 0.5) {
+                  mHistManager.fill(HIST("hMCPi0SpPrim"), pt);
+                  mHistManager.fill(HIST("hMCPi0RapPrim"), part.y());
+                  mHistManager.fill(HIST("hMCPi0PhiPrim"), part.phi());
+                }
               }
             }
           }
