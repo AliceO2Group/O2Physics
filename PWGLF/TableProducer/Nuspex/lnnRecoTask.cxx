@@ -52,7 +52,7 @@ static const std::vector<std::string> particleNames{"3H"};
 
 constexpr int h3DauPdg{1000010030}; // PDG Triton
 <<<<<<< HEAD
-constexpr int lnnPdg{1010000030}; // PDG Lnn
+constexpr int lnnPdg{1010000030};   // PDG Lnn
 =======
 constexpr int lnnPdg{1010000030};   // PDG Lnn
 >>>>>>> 9e174dd3098a29bdb595fdd5a512d28550e44adb
@@ -201,8 +201,7 @@ struct lnnRecoTask {
     const AxisSpec zVtxAxis{zVtxBins, "z_{vtx} (cm)"};
     const AxisSpec centAxis{centBins, "Centrality"};
     const AxisSpec PAxis{nBinsP, "#it{p}^{TPC}"};
-    const AxisSpec SignalAxis {signalBins, "({}^{3}H)^{TPC_signal}"};
-    
+    const AxisSpec SignalAxis{signalBins, "({}^{3}H)^{TPC_signal}"};
 
     hNsigma3HSel = qaRegistry.add<TH2>("hNsigma3HSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HAxis});
     hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
@@ -291,7 +290,7 @@ struct lnnRecoTask {
 
       if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax)
         continue;
-      
+
       float posRigidity = posTrack.tpcInnerParam();
       float negRigidity = negTrack.tpcInnerParam();
 
@@ -339,7 +338,7 @@ struct lnnRecoTask {
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
       hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
-      
+
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
 
@@ -351,7 +350,7 @@ struct lnnRecoTask {
         nCand = fitter.process(posTrackCov, negTrackCov);
       } catch (...) {
         LOG(error) << "Exception caught in DCA fitter process call!";
-        continue; 
+        continue;
       }
       if (nCand == 0) {
         continue;
