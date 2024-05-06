@@ -93,6 +93,9 @@ struct k892analysis {
   Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
+  Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
+  Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
+  Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
   // MC Event selection
   Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
 
@@ -255,6 +258,12 @@ struct k892analysis {
     if (track.itsChi2NCl() >= cfgITSChi2NCl)
       return false;
     if (track.tpcChi2NCl() >= cfgTPCChi2NCl)
+      return false;
+    if (cfgHasITS && !track.hasITS())
+      return false;
+    if (cfgHasTPC && !track.hasTPC())
+      return false;
+    if (cfgHasTOF && !track.hasTOF())
       return false;
     if (cfgUseITSRefit && !track.passedITSRefit())
       return false;

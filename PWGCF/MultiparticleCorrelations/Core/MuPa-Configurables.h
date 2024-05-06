@@ -38,6 +38,8 @@ struct : ConfigurableGroup {
 struct : ConfigurableGroup {
   Configurable<bool> cfFillEventHistograms{"cfFillEventHistograms", true, "if false, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled"};
   Configurable<vector<int>> cfBookEventHistograms{"cfBookEventHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) event histogram, ordering is the same as in enum eEventHistograms"};
+  Configurable<bool> cfFillEventHistograms2D{"cfFillEventHistograms2D", true, "if false, all 2D event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms2D[...] is kTRUE, are filled"};
+  Configurable<vector<int>> cfBookEventHistograms2D{"cfBookEventHistograms2D", {1, 1}, "Book (1) or do not book (0) this 2D event histogram, ordering is the same as in enum eEventHistograms2D"};
 } cf_eh;
 
 // *) Event cuts:
@@ -62,9 +64,9 @@ struct : ConfigurableGroup {
 // *) Particle histograms:
 struct : ConfigurableGroup {
   Configurable<bool> cfFillParticleHistograms{"cfFillParticleHistograms", true, "if false, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled"};
-  Configurable<vector<int>> cfBookParticleHistograms{"cfBookParticleHistograms", {1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms"};
+  Configurable<vector<int>> cfBookParticleHistograms{"cfBookParticleHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms"};
   Configurable<bool> cfFillParticleHistograms2D{"cfFillParticleHistograms2D", true, "if false, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled"};
-  Configurable<vector<int>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms2D"};
+  Configurable<vector<int>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {1, 1}, "Book (1) or do not book (0) this 2D particle histogram, ordering is the same as in enum eParticleHistograms2D"};
 } cf_ph;
 
 // *) Particle cuts:
@@ -73,7 +75,18 @@ struct : ConfigurableGroup {
   Configurable<vector<float>> cfPhi{"cfPhi", {0.0, TMath::TwoPi()}, "phi range: {min, max}[rad], with convention: min <= phi < max"};
   Configurable<vector<float>> cfPt{"cfPt", {0.2, 5.0}, "pt range: {min, max}[GeV], with convention: min <= pt < max"};
   Configurable<vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range: {min, max}, with convention: min <= eta < max"};
-  // TBI 20240426 add suport for etpcNClsCrossedRows, eDCA_xy, eDCA_z, eDPG, ...
+  Configurable<vector<float>> cftpcNClsFindable{"cftpcNClsFindable", {-1000., 1000.}, "tpcNClsFindable range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcNClsShared{"cftpcNClsShared", {-1000., 1000.}, "tpcNClsShared range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcNClsFound{"cftpcNClsFound", {-1000., 1000.}, "tpcNClsFound range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcNClsCrossedRows{"cftpcNClsCrossedRows", {-1000., 1000.}, "tpcNClsCrossedRows range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfitsNCls{"cfitsNCls", {-1000., 1000.}, "itsNCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfitsNClsInnerBarrel{"cfitsNClsInnerBarrel", {-1000., 1000.}, "itsNClsInnerBarrel range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcCrossedRowsOverFindableCls{"cftpcCrossedRowsOverFindableCls", {-1000., 1000.}, "tpcCrossedRowsOverFindableCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcFoundOverFindableCls{"cftpcFoundOverFindableCls", {-1000., 1000.}, "tpcFoundOverFindableCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcFractionSharedCls{"cftpcFractionSharedCls", {-1000., 1000.}, "tpcFractionSharedCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfDCA_xy{"cfDCA_xy", {-1000., 1000.}, "DCA_xy range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfDCA_z{"cfDCA_z", {-1000., 1000.}, "DCA_z range: {min, max}, with convention: min <= eta < max"};
+  // TBI 20240504 eDPG, ...
   // TBI 20240426 do I need to add separate support for booleans to use each specific cut?
 } cf_pc;
 

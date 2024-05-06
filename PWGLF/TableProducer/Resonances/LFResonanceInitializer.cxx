@@ -464,6 +464,8 @@ struct reso2initializer {
                 track.dcaZ(),
                 track.x(),
                 track.alpha(),
+                track.hasITS(),
+                track.hasTPC(),
                 track.hasTOF(),
                 track.tpcNSigmaPi(),
                 track.tpcNSigmaKa(),

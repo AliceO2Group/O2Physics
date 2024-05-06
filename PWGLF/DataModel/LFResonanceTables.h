@@ -110,6 +110,8 @@ DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);    //! Is glob
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);              //! Is global track
 DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);            //! Is primary track
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);          //! Is primary vertex contributor
+DECLARE_SOA_COLUMN(HasITS, hasITS, bool);                            //! Has ITS
+DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                            //! Has TPC
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                            //! Has TOF
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);               //! DCA between daughters
@@ -156,6 +158,8 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::aod::track::DcaZ,
                   o2::aod::track::X,
                   o2::aod::track::Alpha,
+                  resodaughter::HasITS,
+                  resodaughter::HasTPC,
                   resodaughter::HasTOF,
                   o2::aod::pidtpc::TPCNSigmaPi,
                   o2::aod::pidtpc::TPCNSigmaKa,

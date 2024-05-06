@@ -90,6 +90,7 @@ using TracksExtraWithPIDandLabels = soa::Join<aod::TracksExtra, aod::pidTPCFullE
 
 // Pre-selected V0s
 using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
+using TaggedFindableV0s = soa::Join<aod::FindableV0s, aod::V0Tags>;
 
 // For MC association in pre-selection
 using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
@@ -528,11 +529,17 @@ struct lambdakzeroBuilder {
       LOGF(info, "LUT load done!");
     }
 
-    if (doprocessRun2 == false && doprocessRun3 == false) {
-      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
+    if (doprocessRun2 == false && doprocessRun3 == false && doprocessFindableRun3 == false) {
+      LOGF(fatal, "Neither processRun2 nor processRun3 nor processFindableRun3 enabled. Please choose one.");
     }
     if (doprocessRun2 == true && doprocessRun3 == true) {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
+    }
+    if (doprocessRun2 == true && doprocessFindableRun3 == true) {
+      LOGF(fatal, "Cannot enable processRun2 and processFindableRun3 at the same time. Please choose one.");
+    }
+    if (doprocessRun3 == true && doprocessFindableRun3 == true) {
+      LOGF(fatal, "Cannot enable processRun3 and processFindableRun3 at the same time. Please choose one.");
     }
 
     if (d_UseAutodetectMode) {
@@ -1283,6 +1290,20 @@ struct lambdakzeroBuilder {
     buildStrangenessTables<FullTracksExtIU>(V0s);
   }
   PROCESS_SWITCH(lambdakzeroBuilder, processRun3, "Produce Run 3 V0 tables", true);
+
+  void processFindableRun3(aod::Collisions const& collisions, soa::Filtered<TaggedFindableV0s> const& V0s, FullTracksExtIU const&, aod::BCsWithTimestamps const& bcs)
+  {
+    statisticsRegistry.eventCounter += collisions.size();
+    // Fire up CCDB
+    auto bc = collisions.size() ? collisions.begin().bc_as<aod::BCsWithTimestamps>() : bcs.begin();
+    if (!bcs.size()) {
+      LOGF(warn, "No BC found, skipping this DF.");
+      return;
+    }
+    initCCDB(bc);
+    buildStrangenessTables<FullTracksExtIU>(V0s);
+  }
+  PROCESS_SWITCH(lambdakzeroBuilder, processFindableRun3, "Produce Run 3 V0 tables with all findable candidates", false);
 };
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -1342,6 +1363,16 @@ struct lambdakzeroPreselector {
 
   void init(InitContext const&)
   {
+    // check settings and stop if not viable
+    if (doprocessBuildAll == false && doprocessBuildMCAssociated == false && doprocessBuildValiddEdx == false && doprocessBuildValiddEdxMCAssociated == false && doprocessBuildFindable == false) {
+      LOGF(fatal, "No processBuild function enabled. Please choose one.");
+    }
+    LOGF(info, "Process function processBuildAll status: %i", static_cast<int>(doprocessBuildAll));
+    LOGF(info, "Process function doprocessBuildMCAssociated status: %i", static_cast<int>(doprocessBuildMCAssociated));
+    LOGF(info, "Process function doprocessBuildValiddEdx status: %i", static_cast<int>(doprocessBuildValiddEdx));
+    LOGF(info, "Process function doprocessBuildValiddEdxMCAssociated status: %i", static_cast<int>(doprocessBuildValiddEdxMCAssociated));
+    LOGF(info, "Process function doprocessBuildFindable status: %i", static_cast<int>(doprocessBuildFindable));
+
     auto h = histos.add<TH1>("hPreselectorStatistics", "hPreselectorStatistics", kTH1D, {{6, -0.5f, 5.5f}});
     h->GetXaxis()->SetBinLabel(1, "All");
     h->GetXaxis()->SetBinLabel(2, "Tracks OK");
@@ -1581,6 +1612,16 @@ struct lambdakzeroPreselector {
       checkAndFinalize();
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  /// This process function ensures that all findable V0s are built.
+  void processBuildFindable(aod::FindableV0s const& v0table, aod::TracksExtra const&)
+  {
+    initializeMasks(v0table.size());
+    for (auto const& v0 : v0table) {
+      checkTrackQuality<aod::TracksExtra>(v0, selectionMask[v0.globalIndex()], true);
+    }
+    checkAndFinalize();
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function checks for the use of V0s in cascades
   /// They are then marked appropriately; the user could then operate
   /// the lambdakzerobuilder to construct only those V0s.
@@ -1609,6 +1650,7 @@ struct lambdakzeroPreselector {
   PROCESS_SWITCH(lambdakzeroPreselector, processBuildMCAssociated, "Switch to build MC-associated V0s", false);
   PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdx, "Switch to build V0s with dE/dx preselection", false);
   PROCESS_SWITCH(lambdakzeroPreselector, processBuildValiddEdxMCAssociated, "Switch to build MC-associated V0s with dE/dx preselection", false);
+  PROCESS_SWITCH(lambdakzeroPreselector, processBuildFindable, "Switch to build findable V0s. Requires lambdakzeromcfinder", false);
   /// skippers options (choose one in addition to a processBuild if you like)
   PROCESS_SWITCH(lambdakzeroPreselector, processSkipV0sNotUsedInCascades, "skip all V0s not used in cascades", false);
   PROCESS_SWITCH(lambdakzeroPreselector, processSkipV0sNotUsedInTrackedCascades, "skip all V0s not used in tracked cascades", false);
@@ -1623,7 +1665,7 @@ struct lambdakzeroV0DataLinkBuilder {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build V0 -> V0Data link table
-  void process(aod::V0s const& v0table, aod::V0Datas const& v0datatable, aod::V0fCDatas const& v0fcdatatable)
+  void processFound(aod::V0s const& v0table, aod::V0Datas const& v0datatable, aod::V0fCDatas const& v0fcdatatable)
   {
     std::vector<int> lIndices, lfCIndices;
     lIndices.reserve(v0table.size());
@@ -1643,6 +1685,24 @@ struct lambdakzeroV0DataLinkBuilder {
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // build V0Findable -> V0Data link table
+  void processFindable(aod::FindableV0s const& v0table, aod::V0Datas const& v0datatable)
+  {
+    std::vector<int> lIndices;
+    lIndices.reserve(v0table.size());
+    for (int ii = 0; ii < v0table.size(); ii++) {
+      lIndices[ii] = -1;
+    }
+    for (auto& v0data : v0datatable) {
+      lIndices[v0data.v0Id()] = v0data.globalIndex();
+    }
+    for (int ii = 0; ii < v0table.size(); ii++) {
+      v0dataLink(lIndices[ii], -1);
+    }
+  }
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  PROCESS_SWITCH(lambdakzeroV0DataLinkBuilder, processFound, "process found V0s (default)", true);
+  PROCESS_SWITCH(lambdakzeroV0DataLinkBuilder, processFindable, "process findable V0s", false);
 };
 
 // Extends the v0data table with expression columns

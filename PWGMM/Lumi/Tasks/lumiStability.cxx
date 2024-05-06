@@ -28,7 +28,6 @@ using namespace o2;
 using namespace o2::framework;
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
-using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 int nBCsPerOrbit = 3564;
 
