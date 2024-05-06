@@ -737,13 +737,12 @@ struct HfTaskMcValidationRec {
       }
 
       // determine which kind of candidate it is
+      // FIXME: add D* and decays with cascades
       bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DplusToPiKPi);
-      bool isDStarSel = false; // FIXME: add proper check when D* will be added in HF vertexing
       bool isDsSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DsToKKPi);
       bool isLcSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::LcToPKPi);
-      bool isLcToPK0sSel = false; // FIXME: add in case of integration with cascades
       bool isXicSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::XicToPKPi);
-      if (!isDPlusSel && !isDStarSel && !isDsSel && !isLcSel && !isLcToPK0sSel && !isXicSel) {
+      if (!isDPlusSel && !isDsSel && !isLcSel && !isXicSel) {
         continue;
       }
       int whichHad = -1;
@@ -752,6 +751,9 @@ struct HfTaskMcValidationRec {
       } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DsToKKPi)) {
         if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi) {
           whichHad = DsToPhiPiToKKPi;
+        }
+        if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToK0starK) {
+          whichHad = DsToK0starKToKKPi;
         }
         if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi) {
           whichHad = DplusToPhiPiToKKPi;
