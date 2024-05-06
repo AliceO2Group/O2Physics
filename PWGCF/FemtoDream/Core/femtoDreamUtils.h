@@ -121,6 +121,9 @@ inline float getMass(int pdgCode)
     case 3122: // Lambda
       Mass = o2::constants::physics::MassLambda;
       break;
+    case 4122: // Charm Lambda
+      Mass = o2::constants::physics::MassLambdaCPlus;
+      break;
     case 1000010020: // Deuteron
       Mass = o2::constants::physics::MassDeuteron;
       break;

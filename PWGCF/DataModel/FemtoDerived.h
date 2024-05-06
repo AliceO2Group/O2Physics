@@ -16,6 +16,9 @@
 #include "Framework/ASoA.h"
 #include "MathUtils/Utils.h"
 #include "Framework/DataTypes.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Expressions.h"
@@ -92,6 +95,7 @@ enum ParticleType {
   kV0Child,         //! Child track of a V0
   kCascade,         //! Cascade
   kCascadeBachelor, //! Bachelor track of a cascade
+  kCharmHadron,     //! Bachelor track of a cascade
   kNParticleTypes   //! Number of particle types
 };
 
@@ -101,7 +105,7 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
 static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
@@ -174,6 +178,108 @@ DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! Y position of the decay
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay vertex
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
 } // namespace femtodreamparticle
+
+namespace fdhf
+{
+DECLARE_SOA_COLUMN(TrackId, trackId, int);
+DECLARE_SOA_COLUMN(Charge, charge, int8_t);
+DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);
+DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);
+DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);
+DECLARE_SOA_COLUMN(Prong0Pt, prong0Pt, float);
+DECLARE_SOA_COLUMN(Prong1Pt, prong1Pt, float);
+DECLARE_SOA_COLUMN(Prong2Pt, prong2Pt, float);
+DECLARE_SOA_COLUMN(Prong0Eta, prong0Eta, float);
+DECLARE_SOA_COLUMN(Prong1Eta, prong1Eta, float);
+DECLARE_SOA_COLUMN(Prong2Eta, prong2Eta, float);
+DECLARE_SOA_COLUMN(Prong0Phi, prong0Phi, float);
+DECLARE_SOA_COLUMN(Prong1Phi, prong1Phi, float);
+DECLARE_SOA_COLUMN(Prong2Phi, prong2Phi, float);
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
+DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);
+DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);
+DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
+DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
+DECLARE_SOA_COLUMN(IsMCSignal, isMCSignal, bool);
+DECLARE_SOA_COLUMN(PtAssoc, ptAssoc, float);
+DECLARE_SOA_COLUMN(Correlation, correlation, float);
+DECLARE_SOA_COLUMN(KT, kT, float);
+DECLARE_SOA_COLUMN(MT, mT, float);
+DECLARE_SOA_COLUMN(CharmM, charmM, float);
+DECLARE_SOA_COLUMN(CharmPt, charmPt, float);
+DECLARE_SOA_COLUMN(Mult, mult, int);
+DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);
+DECLARE_SOA_COLUMN(PartPairSign, partPairSign, int8_t);
+DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);
+DECLARE_SOA_DYNAMIC_COLUMN(M, m, //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2, const std::array<double, 3>& m) -> float { return RecoDecay::m(std::array{std::array{pt0 * std::cos(phi0), pt0 * std::sin(phi0), pt0 * std::sinh(eta0)}, std::array{pt1 * std::cos(phi1), pt1 * std::sin(phi1), pt1 * std::sinh(eta1)}, std::array{pt2 * std::cos(phi2), pt2 * std::sin(phi2), pt2 * std::sinh(eta2)}}, m); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::p(RecoDecay::pVec(std::array{pt0 * std::cos(phi0), pt0 * std::sin(phi0), pt0 * std::sinh(eta0)}, std::array{pt1 * std::cos(phi1), pt1 * std::sin(phi1), pt1 * std::sinh(eta1)}, std::array{pt2 * std::cos(phi2), pt2 * std::sin(phi2), pt2 * std::sinh(eta2)})); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
+                           [](float pt0, float phi0, float pt1, float phi1, float pt2, float phi2) -> float { return RecoDecay::pt(std::array{pt0 * std::cos(phi0), pt0 * std::sin(phi0)}, std::array{pt1 * std::cos(phi1), pt1 * std::sin(phi1)}, std::array{pt2 * std::cos(phi2), pt2 * std::sin(phi2)}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::phi(std::array{(pt0 * std::cos(phi0) + pt1 * std::cos(phi1) + pt2 * std::cos(phi2)), (pt0 * std::sin(phi0) + pt1 * std::sin(phi1) + pt2 * std::sin(phi2)), (pt0 * std::sinh(eta0) + pt1 * std::sinh(eta1) + pt2 * std::sinh(eta2))}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::y(std::array{(pt0 * std::cos(phi0) + pt1 * std::cos(phi1) + pt2 * std::cos(phi2)), (pt0 * std::sin(phi0) + pt1 * std::sin(phi1) + pt2 * std::sin(phi2)), (pt0 * std::sinh(eta0) + pt1 * std::sinh(eta1) + pt2 * std::sinh(eta2))}, o2::constants::physics::MassLambdaCPlus); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //!
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::eta(std::array{(pt0 * std::cos(phi0) + pt1 * std::cos(phi1) + pt2 * std::cos(phi2)), (pt0 * std::sin(phi0) + pt1 * std::sin(phi1) + pt2 * std::sin(phi2)), (pt0 * std::sinh(eta0) + pt1 * std::sinh(eta1) + pt2 * std::sinh(eta2))}); });
+
+} // namespace fdhf
+
+DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND",
+                  o2::soa::Index<>,
+                  femtodreamparticle::FDCollisionId,
+                  fdhf::Charge,
+                  fdhf::Prong0Id,
+                  fdhf::Prong1Id,
+                  fdhf::Prong2Id,
+                  fdhf::Prong0Pt,
+                  fdhf::Prong1Pt,
+                  fdhf::Prong2Pt,
+                  fdhf::Prong0Eta,
+                  fdhf::Prong1Eta,
+                  fdhf::Prong2Eta,
+                  fdhf::Prong0Phi,
+                  fdhf::Prong1Phi,
+                  fdhf::Prong2Phi,
+                  fdhf::CandidateSelFlag,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD,
+                  fdhf::M<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf::P<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf::Y<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf::Eta<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong2Pt, fdhf::Prong2Phi>);
+
+DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF",
+                  fdhf::CharmM,
+                  fdhf::CharmPt,
+                  fdhf::PtAssoc,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD,
+                  fdhf::Correlation,
+                  fdhf::KT,
+                  fdhf::MT,
+                  fdhf::Mult,
+                  fdhf::MultPercentile,
+                  fdhf::PartPairSign,
+                  fdhf::ProcessType);
+
+DECLARE_SOA_TABLE(FDHfCandMC, "AOD", "FDHFCANDMC",
+                  o2::soa::Index<>,
+                  fdhf::IsMCSignal,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcRec);
+
+DECLARE_SOA_TABLE(FDParticlesIndex, "AOD", "FDPARTICLEINDEX",
+                  o2::soa::Index<>,
+                  fdhf::TrackId);
 
 DECLARE_SOA_TABLE(FDParticles, "AOD", "FDPARTICLE",
                   o2::soa::Index<>,
@@ -294,6 +400,14 @@ DECLARE_SOA_INDEX_COLUMN(FDExtMCParticle, fdExtMCParticle); //! MC particle for 
 } // namespace mcfdextlabel
 DECLARE_SOA_TABLE(FDExtMCLabels, "AOD", "FDExtMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
                   mcfdextlabel::FDExtMCParticleId);
+DECLARE_SOA_TABLE(FDHfCandMCGen, "AOD", "FDHFCANDMCGEN",
+                  mcfdlabel::FDMCParticleId,
+                  fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong2Pt, fdhf::Prong2Phi>,
+                  fdhf::Eta<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf::Y<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcGen);
 
 /// Hash
 namespace hash
