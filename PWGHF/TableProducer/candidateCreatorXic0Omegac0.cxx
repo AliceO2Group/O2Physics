@@ -98,10 +98,6 @@ struct HfCandidateCreatorXic0Omegac0 {
   using CascadesLinked = soa::Join<Cascades, CascDataLink>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
 
-  Partition<aod::HfCascLf2Prongs> skimToXiPiCandidates = aod::hf_track_index::hfflag == static_cast<uint8_t>(hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi);
-  Partition<aod::HfCascLf2Prongs> skimToOmegaPiCandidates = aod::hf_track_index::hfflag == static_cast<uint8_t>(hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi);
-  Partition<aod::HfCascLf2Prongs> skimToOmegaKCandidates = aod::hf_track_index::hfflag == static_cast<uint8_t>(hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK);
-
   std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
   std::shared_ptr<TH1> hInvMassCharmBaryonToXiPi, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaK, hFitterStatusToXiPi, hFitterStatusToOmegaPi, hFitterStatusToOmegaK, hCandidateCounterToXiPi, hCandidateCounterToOmegaPi, hCandidateCounterToOmegaK, hCascadesCounterToXiPi, hCascadesCounterToOmegaPi, hCascadesCounterToOmegaK;
 
@@ -357,7 +353,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       } else {
         mCasc = casc.mOmega();
       }
-      const std::array<double, 2> arrMassCharmBaryon = {0., 0.};
+      auto arrMassCharmBaryon = std::array{0., 0.};
       if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi){
         arrMassCharmBaryon = {massXiFromPDG, massPionFromPDG};
       } else if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi){
@@ -720,8 +716,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
 
 
-  template <typename MyRecoCand, int decayChannel>
-  void runXic0Omegac0Mc(MyRecoCand const& candidates,
+  template <int decayChannel, typename TMyRecoCand>
+  void runXic0Omegac0Mc(TMyRecoCand const& candidates,
                         aod::TracksWMc const&,
                         aod::McParticles const& mcParticles,
                         aod::McCollisionLabels const&)
@@ -760,15 +756,15 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       debug = 0;
       collisionMatched = false;
 
-      auto arrayDaughters = std::array{candidate.bachelorFromCharmBaryon_as<aod::TracksWMc>(), // bachelor <- charm baryon
-                                       candidate.bachelor_as<aod::TracksWMc>(),                // bachelor <- cascade
-                                       candidate.posTrack_as<aod::TracksWMc>(),                // p <- lambda
-                                       candidate.negTrack_as<aod::TracksWMc>()};               // pi <- lambda
-      auto arrayDaughtersCasc = std::array{candidate.bachelor_as<aod::TracksWMc>(),
-                                           candidate.posTrack_as<aod::TracksWMc>(),
-                                           candidate.negTrack_as<aod::TracksWMc>()};
-      auto arrayDaughtersV0 = std::array{candidate.posTrack_as<aod::TracksWMc>(),
-                                         candidate.negTrack_as<aod::TracksWMc>()};
+      auto arrayDaughters = std::array{candidate.template bachelorFromCharmBaryon_as<aod::TracksWMc>(), // bachelor <- charm baryon
+                                       candidate.template bachelor_as<aod::TracksWMc>(),                // bachelor <- cascade
+                                       candidate.template posTrack_as<aod::TracksWMc>(),                // p <- lambda
+                                       candidate.template negTrack_as<aod::TracksWMc>()};               // pi <- lambda
+      auto arrayDaughtersCasc = std::array{candidate.template bachelor_as<aod::TracksWMc>(),
+                                           candidate.template posTrack_as<aod::TracksWMc>(),
+                                           candidate.template negTrack_as<aod::TracksWMc>()};
+      auto arrayDaughtersV0 = std::array{candidate.template posTrack_as<aod::TracksWMc>(),
+                                         candidate.template negTrack_as<aod::TracksWMc>()};
       // Xic0 -> xi pi matching
       if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi){
         // Xic → pi pi pi p
@@ -791,7 +787,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi);
-              collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
+              collisionMatched = candidate.template collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
         }
@@ -827,7 +823,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi);
-              collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
+              collisionMatched = candidate.template collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
         }
@@ -863,7 +859,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi);
-              collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
+              collisionMatched = candidate.template collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
         }
@@ -899,7 +895,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK);
-              collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
+              collisionMatched = candidate.template collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
         }
