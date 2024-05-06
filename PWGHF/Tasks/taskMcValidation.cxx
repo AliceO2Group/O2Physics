@@ -78,7 +78,6 @@ static constexpr std::string_view originNames[nOriginTypes] = {"Prompt", "NonPro
 /// - Number of HF quarks produced per collision
 /// - Number of candidates per collision
 /// - Momentum Conservation for these particles
-
 struct HfTaskMcValidationGen {
   Configurable<double> xVertexMin{"xVertexMin", -100., "min. x of generated primary vertex [cm]"};
   Configurable<double> xVertexMax{"xVertexMax", 100., "max. x of generated primary vertex [cm]"};
@@ -419,10 +418,10 @@ struct HfTaskMcValidationRec {
      {"histYvtxReco", "Position of reco PV in #it{Y};#it{Y}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histZvtxReco", "Position of reco PV in #it{Z};#it{Z}^{reco} (cm);entries", {HistType::kTH1F, {{200, -20, 20.}}}},
      {"histDeltaZvtx", "Residual distribution of PV in #it{Z} as a function of number of contributors;number of contributors;#it{Z}^{reco} - #it{Z}^{gen} (cm);entries", {HistType::kTH2F, {{100, -0.5, 99.5}, {1000, -0.5, 0.5}}}},
-     {"trackToCollChecks/histAmbiguousTrackNumCollisions", "Number of collisions associated to an ambiguous track;number of collisions;entries", {HistType::kTH1F, {{30, -0.5, 29.5}}}},
-     {"trackToCollChecks/histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}},
-     {"trackToCollChecks/histFracGoodContributors", "Fraction of PV contributors originating from the correct collision;fraction;entries", {HistType::kTH1F, {{101, 0., 1.01}}}},
-     {"trackToCollChecks/histCollisionsSameBC", "Collisions in same BC;number of contributors collision 1;number of contributors collision 2;#it{R}_{xy} collision 1 (cm);#it{R}_{xy} collision 2 (cm);number of contributors from beauty collision 1;number of contributors from beauty collision 2;", {HistType::kTHnSparseF, {axisMult, axisMult, axisR, axisR, axisSmallNum, axisSmallNum}}}}};
+     {"TrackToCollChecks/histAmbiguousTrackNumCollisions", "Number of collisions associated to an ambiguous track;number of collisions;entries", {HistType::kTH1F, {{30, -0.5, 29.5}}}},
+     {"TrackToCollChecks/histAmbiguousTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track;RMS(#it{Z}^{reco}) (cm);entries", {HistType::kTH1F, {{100, 0., 0.5}}}},
+     {"TrackToCollChecks/histFracGoodContributors", "Fraction of PV contributors originating from the correct collision;fraction;entries", {HistType::kTH1F, {{101, 0., 1.01}}}},
+     {"TrackToCollChecks/histCollisionsSameBC", "Collisions in same BC;number of contributors collision 1;number of contributors collision 2;#it{R}_{xy} collision 1 (cm);#it{R}_{xy} collision 2 (cm);number of contributors from beauty collision 1;number of contributors from beauty collision 2;", {HistType::kTHnSparseF, {axisMult, axisMult, axisR, axisR, axisSmallNum, axisSmallNum}}}}};
 
   /// RMS calculation
   /// \param vec  vector of values to compute RMS
@@ -479,17 +478,17 @@ struct HfTaskMcValidationRec {
 
   void init(InitContext&)
   {
-    histOriginTracks[0] = registry.add<THnSparse>("trackToCollChecks/histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});           // tracks not associated to any collision
-    histOriginTracks[1] = registry.add<THnSparse>("trackToCollChecks/histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});              // tracks associasted to a collision
-    histOriginTracks[2] = registry.add<THnSparse>("trackToCollChecks/histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
-    histOriginTracks[3] = registry.add<THnSparse>("trackToCollChecks/histOriginGoodAssociatedTracksAmbiguous", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits}); // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
+    histOriginTracks[0] = registry.add<THnSparse>("TrackToCollChecks/histOriginNonAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});           // tracks not associated to any collision
+    histOriginTracks[1] = registry.add<THnSparse>("TrackToCollChecks/histOriginAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});              // tracks associasted to a collision
+    histOriginTracks[2] = registry.add<THnSparse>("TrackToCollChecks/histOriginGoodAssociatedTracks", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits});          // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
+    histOriginTracks[3] = registry.add<THnSparse>("TrackToCollChecks/histOriginGoodAssociatedTracksAmbiguous", ";origin;#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm); is PV contributor; has TOF; number of ITS hits", HistType::kTHnSparseF, {axisOrigin, axisPt, axisEta, axisDeltaVtx, axisDecision, axisDecision, axisITShits}); // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
     for (std::size_t iHist{0}; iHist < histOriginTracks.size(); ++iHist) {
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(1, "no MC particle");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(2, "no quark");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(3, "charm");
       histOriginTracks[iHist]->GetAxis(0)->SetBinLabel(4, "beauty");
     }
-    histAmbiguousTracks = registry.add<TH2>("trackToCollChecks/histAmbiguousTracks", "Tracks that are ambiguous vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {axisOrigin, axisPt});
+    histAmbiguousTracks = registry.add<TH2>("TrackToCollChecks/histAmbiguousTracks", "Tracks that are ambiguous vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {axisOrigin, axisPt});
     histTracks = registry.add<TH2>("histTracks", "Tracks vs. origin;#it{p}_{T}^{reco} (GeV/#it{c});entries", HistType::kTH2F, {axisOrigin, axisPt});
     histTracks->GetXaxis()->SetBinLabel(1, "no MC particle");
     histTracks->GetXaxis()->SetBinLabel(2, "no quark");
@@ -517,7 +516,7 @@ struct HfTaskMcValidationRec {
         }
       }
     }
-    histContributors = registry.add<TH1>("trackToCollChecks/histContributors", "PV contributors from correct/wrong MC collision;;entries", HistType::kTH1F, {axisDecision});
+    histContributors = registry.add<TH1>("TrackToCollChecks/histContributors", "PV contributors from correct/wrong MC collision;;entries", HistType::kTH1F, {axisDecision});
     histContributors->GetXaxis()->SetBinLabel(1, "correct MC collision");
     histContributors->GetXaxis()->SetBinLabel(2, "wrong MC collision");
   }
@@ -565,7 +564,7 @@ struct HfTaskMcValidationRec {
         }
       }
       float frac = (nContributors > 0) ? static_cast<float>(nGoodContributors) / nContributors : 1.;
-      registry.fill(HIST("trackToCollChecks/histFracGoodContributors"), frac);
+      registry.fill(HIST("TrackToCollChecks/histFracGoodContributors"), frac);
       uint64_t mostProbableBC = collision.bc().globalBC();
       for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
         uint64_t mostProbableBC2 = collision2.bc().globalBC();
@@ -592,7 +591,7 @@ struct HfTaskMcValidationRec {
               }
             }
           }
-          registry.fill(HIST("trackToCollChecks/histCollisionsSameBC"), collision.numContrib(), collision2.numContrib(), radColl1, radColl2, nFromBeautyColl1, nFromBeautyColl2);
+          registry.fill(HIST("TrackToCollChecks/histCollisionsSameBC"), collision.numContrib(), collision2.numContrib(), radColl1, radColl2, nFromBeautyColl1, nFromBeautyColl2);
           break;
         }
       }
@@ -619,7 +618,7 @@ struct HfTaskMcValidationRec {
         histTracks->Fill(origin, track.pt());
         bool isAmbiguous = (track.compatibleCollIds().size() != 1);
         if (isAmbiguous) {
-          registry.fill(HIST("trackToCollChecks/histAmbiguousTrackNumCollisions"), track.compatibleCollIds().size());
+          registry.fill(HIST("TrackToCollChecks/histAmbiguousTrackNumCollisions"), track.compatibleCollIds().size());
           histAmbiguousTracks->Fill(origin, track.pt());
           std::vector<double> ambCollPosZ{};
           for (const auto& collIdx : track.compatibleCollIds()) {
@@ -628,7 +627,7 @@ struct HfTaskMcValidationRec {
           }
           // here we are only interested to tracks associated to multiple vertices
           if (ambCollPosZ.size() > 0) {
-            registry.fill(HIST("trackToCollChecks/histAmbiguousTrackZvtxRMS"), computeRMS(ambCollPosZ));
+            registry.fill(HIST("TrackToCollChecks/histAmbiguousTrackZvtxRMS"), computeRMS(ambCollPosZ));
           }
         }
         float deltaZ = -999.f;
