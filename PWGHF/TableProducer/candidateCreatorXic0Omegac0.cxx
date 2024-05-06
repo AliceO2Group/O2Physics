@@ -797,9 +797,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           LOGF(info, "WARNING: Xic0ToXiPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
         rowMCMatchRecXicToXiPi(flag, debug, origin, collisionMatched);
-      }
-      // Omegac -> xi pi matching
-      else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi) {
+      } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi) { // Omegac -> xi pi matching
         // Omegac → pi pi pi p
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
@@ -833,9 +831,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           LOGF(info, "WARNING: Omegac0ToXiPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
         rowMCMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched);
-      }
-      // Omegac0 -> omega pi matching
-      else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi) {
+      } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi) { // Omegac0 -> omega pi matching
         // Omegac → pi K pi p
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodeKaonMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
@@ -869,9 +865,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           LOGF(info, "WARNING: Omegac0ToOmegaPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
         rowMCMatchRecToOmegaPi(flag, debug, origin, collisionMatched);
-      }
-      // Omegac0 -> omega K matching
-      else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK) {
+      } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK) { // Omegac0 -> omega K matching
         // Omegac → K K pi p
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodeKaonPlus, pdgCodeKaonMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
