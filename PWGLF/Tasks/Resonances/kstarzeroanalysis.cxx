@@ -271,16 +271,13 @@ struct kstarzeroanalysis {
         {
           histos.fill(HIST("h3Kstar0InvMassUnlikeSignPM"), multiplicity, pT, mass);
           histos.fill(HIST("h1Kstar0InvMassUnlikeSignPM"), mass);
-        } else if (trkKa.sign() < 0 && trkPi.sign() > 0) // unlike sign MP
-        {
+        } else if (trkKa.sign() < 0 && trkPi.sign() > 0) { // unlike sign MP
           histos.fill(HIST("h3Kstar0InvMassUnlikeSignMP"), multiplicity, pT, mass);
           histos.fill(HIST("h1Kstar0InvMassUnlikeSignMP"), mass);
-        } else if (trkKa.sign() > 0 && trkPi.sign() > 0) // like sign PP
-        {
+        } else if (trkKa.sign() > 0 && trkPi.sign() > 0) { // like sign PP
           histos.fill(HIST("h3Kstar0InvMassLikeSignPP"), multiplicity, pT, mass);
           histos.fill(HIST("h1Kstar0InvMassLikeSignPP"), mass);
-        } else // like sign MM
-        {
+        } else { // like sign MM
           histos.fill(HIST("h3Kstar0InvMassLikeSignMM"), multiplicity, pT, mass);
           histos.fill(HIST("h1Kstar0InvMassLikeSignMM"), mass);
         }
@@ -289,8 +286,7 @@ struct kstarzeroanalysis {
         {
           histos.fill(HIST("h3Kstar0InvMassMixedUnlikeSignPM"), multiplicity, pT, mass);
           histos.fill(HIST("h1Kstar0InvMassMixedUnlikeSignPM"), mass);
-        } else if (trkKa.sign() < 0 && trkPi.sign() > 0) // unlike sign MP
-        {
+        } else if (trkKa.sign() < 0 && trkPi.sign() > 0) { // unlike sign MP
           histos.fill(HIST("h3Kstar0InvMassMixedUnlikeSignMP"), multiplicity, pT, mass);
           histos.fill(HIST("h1Kstar0InvMassMixedUnlikeSignMP"), mass);
         }
