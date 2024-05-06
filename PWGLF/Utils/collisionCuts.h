@@ -48,7 +48,7 @@ class CollisonCuts
     mCheckOffline = checkOffline;
     mCheckIsRun3 = checkRun3;
     mApplyTFBorderCut = false;
-    mApplyITSTPCmatching = false;
+    mApplyITSTPCvertex = false;
     mApplyZvertexTimedifference = false;
     mApplyPileupRejection = false;
     mApplyNoITSROBorderCut = false;
@@ -68,6 +68,8 @@ class CollisonCuts
       mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/CentFT0C", "; vCentT0C; Entries", kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/posZ_ITSOnly", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
+      mHistogramRegistry->add("Event/posZ_ITSTPC", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
     } else {
       mHistogramRegistry->add("Event/CentRun2V0M", "; vCentV0M; Entries", kTH1F, {{110, 0, 110}});
     }
@@ -86,7 +88,7 @@ class CollisonCuts
   void setApplyTFBorderCut(bool applyTFBorderCut) { mApplyTFBorderCut = applyTFBorderCut; }
 
   /// Set the ITS-TPC matching cut
-  void setApplyITSTPCmatching(bool applyITSTPCmatching) { mApplyITSTPCmatching = applyITSTPCmatching; }
+  void setApplyITSTPCmatching(bool applyITSTPCmatching) { mApplyITSTPCvertex = applyITSTPCmatching; }
 
   /// Set the Z-vertex time difference cut
   void setApplyZvertexTimedifference(bool applyZvertexTimedifference) { mApplyZvertexTimedifference = applyZvertexTimedifference; }
@@ -117,7 +119,7 @@ class CollisonCuts
         LOGF(debug, "Time frame border cut failed");
         return false;
       }
-      if (!col.selection_bit(o2::aod::evsel::kIsVertexITSTPC) && mApplyITSTPCmatching) {
+      if (!col.selection_bit(o2::aod::evsel::kIsVertexITSTPC) && mApplyITSTPCvertex) {
         LOGF(debug, "ITS-TPC matching cut failed");
         return false;
       }
@@ -163,6 +165,11 @@ class CollisonCuts
   {
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/posZ"), col.posZ());
+      if (!col.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        mHistogramRegistry->fill(HIST("Event/posZ_ITSOnly"), col.posZ());
+      } else {
+        mHistogramRegistry->fill(HIST("Event/posZ_ITSTPC"), col.posZ());
+      }
       mHistogramRegistry->fill(HIST("Event/CentFV0A"), col.centFV0A());
       mHistogramRegistry->fill(HIST("Event/CentFT0M"), col.centFT0M());
       mHistogramRegistry->fill(HIST("Event/CentFT0C"), col.centFT0C());
@@ -190,7 +197,7 @@ class CollisonCuts
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   bool mInitialTriggerScan = false;                ///< Check trigger when the event is first selected
   bool mApplyTFBorderCut = false;                  ///< Apply time frame border cut
-  bool mApplyITSTPCmatching = false;               ///< selects collisions with at least one ITS-TPC track
+  bool mApplyITSTPCvertex = false;                 ///< selects collisions with the vertex made up with at least one ITS-TPC track
   bool mApplyZvertexTimedifference = false;        ///< removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference.
   bool mApplyPileupRejection = false;              ///< Pileup rejection
   bool mApplyNoITSROBorderCut = false;             ///< Apply NoITSRO frame border cut
