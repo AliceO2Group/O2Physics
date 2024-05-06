@@ -20,6 +20,7 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
 #include <TPDGCode.h>
+#include <vector>    // std::vector
 
 #include "CommonConstants/PhysicsConstants.h"
 
