@@ -203,11 +203,11 @@ struct K0MixedEvents {
     registry.add("rapidity_first", Form("rapidity_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_1))}});
 
     if (!IsIdentical) {
-      registry.add("p_second", Form("p_%i", (int)_particlePDG_2), kTH1F, {ptAxis});
-      registry.add("dcaXY_second", Form("dca_%i", (int)_particlePDG_2), kTH2F, {ptAxis, dcaXyAxis});
-      registry.add("nsigmaTOF_second", Form("nsigmaTOF_%i", (int)_particlePDG_2), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TOF}(%s))", pdgToSymbol(_particlePDG_2))}});
-      registry.add("nsigmaTPC_second", Form("nsigmaTPC_%i", (int)_particlePDG_2), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TPC}(%s))", pdgToSymbol(_particlePDG_2))}});
-      registry.add("rapidity_second", Form("rapidity_%i", (int)_particlePDG_2), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_2))}});
+      registry.add("p_second", Form("p_%i", _particlePDG_2.value), kTH1F, {ptAxis});
+      registry.add("dcaXY_second", Form("dca_%i", _particlePDG_2.value), kTH2F, {ptAxis, dcaXyAxis});
+      registry.add("nsigmaTOF_second", Form("nsigmaTOF_%i", _particlePDG_2.value), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TOF}(%s))", pdgToSymbol(_particlePDG_2))}});
+      registry.add("nsigmaTPC_second", Form("nsigmaTPC_%i", _particlePDG_2.value), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TPC}(%s))", pdgToSymbol(_particlePDG_2))}});
+      registry.add("rapidity_second", Form("rapidity_%i", _particlePDG_2.value), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_2))}});
     }
   }
 
