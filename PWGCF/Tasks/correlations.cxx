@@ -821,20 +821,17 @@ struct CorrelationTask {
     BinningTypeMCDerived configurableBinning{{getMultiplicity}, {axisVertex, axisMultiplicity}, true};
 
     // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
-    // BinningTypeMCDerived configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     auto tuple = std::make_tuple(mcParticles);
     SameKindPair<soa::Filtered<aod::CFMcCollisions>, soa::Filtered<aod::CFMcParticles>, BinningTypeMCDerived> pairs{configurableBinning, cfgNoMixedEvents, -1, mcCollisions, tuple, &cache}; // -1 is the number of the bin to skip
-    auto multiplicity = -1.0f;
+
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
       float eventWeight = 1.0f / it.currentWindowNeighbours();
 
-      // TODO select right multiplicity here as well
-      multiplicity = collision1.multiplicity();
+      float multiplicity = getMultiplicity(collision1);
       if (cfgVerbosity > 0) {
-        // TODO FIXME doesn't compile
-        //int bin = configurableBinning.getBin({collision1.posZ(), multiplicity});
-        //LOGF(info, "processMCMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
+        int bin = configurableBinning.getBin(std::tuple(collision1.posZ(), multiplicity));
+        LOGF(info, "processMCMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
       }
 
       // STEP 0
