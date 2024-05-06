@@ -226,8 +226,8 @@ struct HfTaskD0 {
       registry.add("hSparseAcc", "Thn for generated D0 from charm and beauty", HistType::kTHnSparseD, {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin});
       registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
 
-      registry.add("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type", "Thn for D0 candidates with BDT scores", HistType::kTHnSparseD, {thnAxisBkgScore, thnAxisNonPromptScore, thnAxisMass, thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin, thnAxisCandType});
-      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"))->Sumw2();
+      registry.add("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type", "Thn for D0 candidates with BDT scores", HistType::kTHnSparseD, {thnAxisBkgScore, thnAxisNonPromptScore, thnAxisMass, thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin, thnAxisCandType});
+      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Sumw2();
     }
   }
 
@@ -293,10 +293,10 @@ struct HfTaskD0 {
 
       if constexpr (applyMl) {
         if (candidate.isSelD0() >= selectionFlagD0) {
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0);
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0);
         }
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
         }
       }
     }
@@ -469,7 +469,7 @@ struct HfTaskD0 {
             if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
               ptB = hfHelper.getBeautyMotherPt(mcParticles, particleMother);
             }
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), SigD0);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), SigD0);
           }
         } else {
           registry.fill(HIST("hPtProng0Bkg"), ptProng0, rapidityCandidate);
@@ -492,7 +492,7 @@ struct HfTaskD0 {
               if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
                 ptB = hfHelper.getBeautyMotherPt(mcParticles, particleMother);
               }
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), ReflectedD0);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), ReflectedD0);
             }
           }
         }
@@ -505,7 +505,7 @@ struct HfTaskD0 {
             if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
               ptB = hfHelper.getBeautyMotherPt(mcParticles, particleMother);
             }
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), SigD0bar);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), SigD0bar);
           }
         } else {
           registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
@@ -515,7 +515,7 @@ struct HfTaskD0 {
               if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
                 ptB = hfHelper.getBeautyMotherPt(mcParticles, particleMother);
               }
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
             }
           }
         }
