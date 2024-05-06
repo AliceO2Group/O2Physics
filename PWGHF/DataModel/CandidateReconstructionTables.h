@@ -1175,7 +1175,7 @@ DECLARE_SOA_COLUMN(PtCharmBaryonGen, ptCharmBaryonGen, float);
 DECLARE_SOA_COLUMN(EtaCharmBaryonGen, etaCharmBaryonGen, float);
 
 // mapping of decay types
-enum DecayType { DecayToXiPi = 0, 
+enum DecayType { DecayToXiPi = 0,
                  DecayToOmegaPi,
                  DecayToOmegaK,
                  XiczeroToXiPi,
@@ -1301,16 +1301,16 @@ DECLARE_SOA_TABLE(HfToOmegaKMCRec, "AOD", "HFTOOMEKMCREC", //!
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfXicToXiPiMCGen, "AOD", "HFXICXIPIMCGEN", //!
-                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda, 
+                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda,
                   hf_cand_xic0omegac0::PtCharmBaryonGen, hf_cand_xic0omegac0::EtaCharmBaryonGen, hf_cand_xic0omegac0::OriginGen, o2::soa::Marker<1>);
 DECLARE_SOA_TABLE(HfOmegacToXiPiMCGen, "AOD", "HFOMECXIPIMCGEN", //!
-                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda, 
+                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda,
                   hf_cand_xic0omegac0::PtCharmBaryonGen, hf_cand_xic0omegac0::EtaCharmBaryonGen, hf_cand_xic0omegac0::OriginGen, o2::soa::Marker<2>);
 DECLARE_SOA_TABLE(HfToOmegaPiMCGen, "AOD", "HFTOOMEPIMCGEN", //!
-                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda, 
+                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda,
                   hf_cand_xic0omegac0::PtCharmBaryonGen, hf_cand_xic0omegac0::EtaCharmBaryonGen, hf_cand_xic0omegac0::OriginGen, o2::soa::Marker<3>);
 DECLARE_SOA_TABLE(HfToOmegaKMCGen, "AOD", "HFTOOMEKMCGEN", //!
-                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda, 
+                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda,
                   hf_cand_xic0omegac0::PtCharmBaryonGen, hf_cand_xic0omegac0::EtaCharmBaryonGen, hf_cand_xic0omegac0::OriginGen, o2::soa::Marker<4>);
 
 // specific chic candidate properties

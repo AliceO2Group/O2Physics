@@ -78,7 +78,7 @@ struct HfTaskMcEfficiencyToXiPi {
   {
     if (!doprocessOmegac0 && !doprocessXic0) {
       LOGF(fatal, "Neither processOmegac0 nor processXic0 enabled, please choose one!");
-    } else if (doprocessOmegac0 && doprocessXic0){
+    } else if (doprocessOmegac0 && doprocessXic0) {
       LOGF(fatal, "Both processOmegac0 and processXic0 enabled, please choose ONLY one!");
     }
 
@@ -372,18 +372,18 @@ struct HfTaskMcEfficiencyToXiPi {
 
   // process functions
   void processXic0(Xic0CandidateInfo const& candidates,
-                  ParticleInfo const& genParticles,
-                  TracksWithSelectionMC const& tracks,
-                  aod::McCollisionLabels const& colls)
+                   ParticleInfo const& genParticles,
+                   TracksWithSelectionMC const& tracks,
+                   aod::McCollisionLabels const& colls)
   {
     candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kXiC0);
   }
   PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processXic0, "Enable Xic0 efficiency process", true);
 
   void processOmegac0(Omegac0CandidateInfo const& candidates,
-                  ParticleInfo const& genParticles,
-                  TracksWithSelectionMC const& tracks,
-                  aod::McCollisionLabels const& colls)
+                      ParticleInfo const& genParticles,
+                      TracksWithSelectionMC const& tracks,
+                      aod::McCollisionLabels const& colls)
   {
     candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kOmegaC0);
   }
