@@ -695,8 +695,8 @@ struct hadronnucleicorrelation {
       if (abs(track.pdgCode()) != pdgProton && abs(track.pdgCode()) != pdgDeuteron)
         continue;
 
-       bool isPr = false;
-       bool isAntiPr = false;
+      bool isPr = false;
+      bool isAntiPr = false;
       bool isAntiDeTPCTOF = false;
 
       if (track.pdgCode() == pdgProton) {
