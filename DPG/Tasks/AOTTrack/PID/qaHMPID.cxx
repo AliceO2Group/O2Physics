@@ -127,7 +127,7 @@ struct pidHmpidQa {
           histos.fill(HIST("hmpidPhotsCharge"), t.hmpidPhotsCharge()[i]);
       }
 
-      chamber = (int)t.hmpidClusSize() / 1000000;
+      chamber = t.hmpidClusSize() / 1000000;
       xTrack = t.hmpidXTrack();
       yTrack = t.hmpidYTrack();
       xMip = t.hmpidXMip();
@@ -144,7 +144,7 @@ struct pidHmpidQa {
           photCharge.push_back(t.hmpidPhotsCharge()[i]);
       }
 
-      if ((int)t.hmpidClusSize() / 1000000 == 0) {
+      if (t.hmpidClusSize() / 1000000 == 0) {
         histos.fill(HIST("hmpidXTrack0"), t.hmpidXTrack());
         histos.fill(HIST("hmpidYTrack0"), t.hmpidYTrack());
         histos.fill(HIST("hmpidXMip0"), t.hmpidXMip());
@@ -162,7 +162,7 @@ struct pidHmpidQa {
         }
       }
 
-      if ((int)t.hmpidClusSize() / 1000000 == 1) {
+      if (t.hmpidClusSize() / 1000000 == 1) {
         histos.fill(HIST("hmpidXTrack1"), t.hmpidXTrack());
         histos.fill(HIST("hmpidYTrack1"), t.hmpidYTrack());
         histos.fill(HIST("hmpidXMip1"), t.hmpidXMip());
@@ -180,7 +180,7 @@ struct pidHmpidQa {
         }
       }
 
-      if ((int)t.hmpidClusSize() / 1000000 == 2) {
+      if (t.hmpidClusSize() / 1000000 == 2) {
         histos.fill(HIST("hmpidXTrack2"), t.hmpidXTrack());
         histos.fill(HIST("hmpidYTrack2"), t.hmpidYTrack());
         histos.fill(HIST("hmpidXMip2"), t.hmpidXMip());
@@ -198,7 +198,7 @@ struct pidHmpidQa {
         }
       }
 
-      if ((int)t.hmpidClusSize() / 1000000 == 3) {
+      if (t.hmpidClusSize() / 1000000 == 3) {
         histos.fill(HIST("hmpidXTrack3"), t.hmpidXTrack());
         histos.fill(HIST("hmpidYTrack3"), t.hmpidYTrack());
         histos.fill(HIST("hmpidXMip3"), t.hmpidXMip());
@@ -216,7 +216,7 @@ struct pidHmpidQa {
         }
       }
 
-      if ((int)t.hmpidClusSize() / 1000000 == 4) {
+      if (t.hmpidClusSize() / 1000000 == 4) {
         histos.fill(HIST("hmpidXTrack4"), t.hmpidXTrack());
         histos.fill(HIST("hmpidYTrack4"), t.hmpidYTrack());
         histos.fill(HIST("hmpidXMip4"), t.hmpidXMip());
@@ -234,7 +234,7 @@ struct pidHmpidQa {
         }
       }
 
-      if ((int)t.hmpidClusSize() / 1000000 == 5) {
+      if (t.hmpidClusSize() / 1000000 == 5) {
         histos.fill(HIST("hmpidXTrack5"), t.hmpidXTrack());
         histos.fill(HIST("hmpidYTrack5"), t.hmpidYTrack());
         histos.fill(HIST("hmpidXMip5"), t.hmpidXMip());
@@ -252,7 +252,7 @@ struct pidHmpidQa {
         }
       }
 
-      if ((int)t.hmpidClusSize() / 1000000 == 6) {
+      if (t.hmpidClusSize() / 1000000 == 6) {
         histos.fill(HIST("hmpidXTrack6"), t.hmpidXTrack());
         histos.fill(HIST("hmpidYTrack6"), t.hmpidYTrack());
         histos.fill(HIST("hmpidXMip6"), t.hmpidXMip());
