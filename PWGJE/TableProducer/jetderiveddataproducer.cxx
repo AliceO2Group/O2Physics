@@ -79,14 +79,6 @@ struct JetDerivedDataProducerTask {
   {
   }
 
-  void processCollisionCounts(aod::Collisions const&)
-  {
-    std::vector<int> readCounts = {0};
-    std::vector<int> writtenCounts = {0};
-    collisionCountsTable(readCounts, writtenCounts);
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionCounts, "produces collision counting table", false);
-
   void processBunchCrossings(soa::Join<aod::BCs, aod::Timestamps>::iterator const& bc)
   {
     jBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp());

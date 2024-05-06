@@ -73,6 +73,7 @@ DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
 DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
 } // namespace jcollision
 
@@ -138,10 +139,12 @@ DECLARE_SOA_TABLE(StoredJCollisionBCs, "AOD1", "JCOLLISIONBC",
 
 DECLARE_SOA_TABLE(CollisionCounts, "AOD", "COLLCOUNT",
                   jcollision::ReadCounts,
+                  jcollision::ReadSelectedCounts,
                   jcollision::WrittenCounts);
 
 DECLARE_SOA_TABLE(StoredCollisionCounts, "AOD1", "COLLCOUNT",
                   jcollision::ReadCounts,
+                  jcollision::ReadSelectedCounts,
                   jcollision::WrittenCounts,
                   o2::soa::Marker<1>);
 
