@@ -148,9 +148,9 @@ struct strangenessFilter {
   Configurable<float> maxNSigmaBachelorTrackedOmega{"maxNSigmaBachelorTrackedOmega", 4., "Max Nsigma for bachelor of tracked Xi (Ka)"};
   Configurable<float> maxNSigmaV0PrTrackedCascade{"maxNSigmaV0PrTrackedCascade", 4., "Max Nsigma for proton from V0 fromtracked Xi"};
   Configurable<float> maxNSigmaV0PiTrackedCascade{"maxNSigmaV0PiTrackedCascade", 4., "Max Nsigma for pion from V0 fromtracked Xi"};
-  Configurable<float> minDcaTrackedXi{"minDcaTrackedXi", 0., "Minimum DCA for tracked cascades"};
+  Configurable<float> minDcaTrackedXi{"minDcaTrackedXi", -1., "Minimum DCA for tracked cascades"};
   Configurable<float> maxCpaTrackedXi{"maxCpaTrackedXi", 1., "Maximum CPA for tracked cascades"};
-  Configurable<float> minDcaTrackedOmega{"minDcaTrackedOmega", 0., "Minimum DCA for tracked cascades (ST)"};
+  Configurable<float> minDcaTrackedOmega{"minDcaTrackedOmega", -1., "Minimum DCA for tracked cascades (ST)"};
   Configurable<float> maxCpaTrackedOmega{"maxCpaTrackedOmega", 1., "Maximum CPA for tracked cascades (ST)"};
   Configurable<LabeledArray<double>> parSigmaMass{
     "parSigmaMass",
@@ -1217,7 +1217,7 @@ struct strangenessFilter {
         // Xi
         const auto deltaMassTrackedXi = useNsigmaCutTrackedXi ? getMassWindow(stfilter::species::Xi, trackCasc.pt(), massWindowTrackedXiNsigma) : massWindowTrackedXi;
         if ((std::abs(massXi - o2::constants::physics::MassXiMinus) < deltaMassTrackedXi) &&
-            (impactParameterTrk.getY() >= minDcaTrackedXi) &&
+            (std::abs(impactParameterTrk.getY()) >= minDcaTrackedXi) &&
             (cpa <= maxCpaTrackedOmega) &&
             (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelorTrackedXi)) {
           keepEvent[7] = true;
@@ -1238,7 +1238,7 @@ struct strangenessFilter {
         const auto deltaMassTrackedOmega = useNsigmaCutTrackedOmega ? getMassWindow(stfilter::species::Omega, trackCasc.pt(), massWindowTrackedOmegaNsigma) : massWindowTrackedOmega;
         if ((std::abs(massOmega - o2::constants::physics::MassOmegaMinus) < deltaMassTrackedOmega) &&
             (std::abs(massXi - o2::constants::physics::MassXiMinus) >= massWindowXiExclTrackedOmega) &&
-            (impactParameterTrk.getY() >= minDcaTrackedOmega) &&
+            (std::abs(impactParameterTrk.getY()) >= minDcaTrackedOmega) &&
             (cpa <= maxCpaTrackedOmega) &&
             (std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelorTrackedOmega)) {
           keepEvent[8] = true;
