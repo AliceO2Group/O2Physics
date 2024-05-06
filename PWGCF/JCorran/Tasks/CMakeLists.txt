@@ -15,11 +15,11 @@ o2physics_add_dpl_workflow(jfluc-analysis
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(flow-spc
-                    SOURCES flowJSPCAnalysisTask.cxx
+                    SOURCES flowJSPCAnalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(flow-nuacreation
-                    SOURCES flowJNUACreationTask.cxx
+                    SOURCES flowJNUACreation.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)
