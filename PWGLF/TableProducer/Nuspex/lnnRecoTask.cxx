@@ -54,7 +54,7 @@ constexpr int h3DauPdg{1000010030}; // PDG Triton
 <<<<<<< HEAD
 constexpr int lnnPdg{1010000030};   // PDG Lnn
 =======
-constexpr int lnnPdg{1010000030};   // PDG Lnn
+constexpr int lnnPdg{1010000030}; // PDG Lnn
 >>>>>>> 9e174dd3098a29bdb595fdd5a512d28550e44adb
 
 std::shared_ptr<TH1> hEvents;
