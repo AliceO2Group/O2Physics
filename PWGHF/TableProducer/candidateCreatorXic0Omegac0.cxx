@@ -105,9 +105,17 @@ struct HfCandidateCreatorXic0Omegac0 {
 
   void init(InitContext const&)
   {
-    std::array<bool, 9> processes = {doprocessNoCentToXiPi, doprocessNoCentToOmegaPi, doprocessNoCentToOmegaK, doprocessCentFT0CToXiPi, doprocessCentFT0CToOmegaPi, doprocessCentFT0CToOmegaK, doprocessCentFT0MToXiPi, doprocessCentFT0MToOmegaPi, doprocessCentFT0MToOmegaK};
-    if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
-      LOGP(fatal, "One and only one process function must be enabled at a time.");
+    std::array<bool, 3> processesToXiPi = {doprocessNoCentToXiPi, doprocessCentFT0CToXiPi, doprocessCentFT0MToXiPi};
+    if (std::accumulate(processesToXiPi.begin(), processesToXiPi.end(), 0) != 1) {
+      LOGP(fatal, "One and only one ToXiPi process function must be enabled at a time.");
+    }
+    std::array<bool, 3> processesToOmegaPi = {doprocessNoCentToOmegaPi, doprocessCentFT0CToOmegaPi, doprocessCentFT0MToOmegaPi};
+    if (std::accumulate(processesToOmegaPi.begin(), processesToOmegaPi.end(), 0) != 1) {
+      LOGP(fatal, "One and only one process ToOmegaPi function must be enabled at a time.");
+    }
+        std::array<bool, 9> processesToOmegaK = {doprocessNoCentToOmegaK, doprocessCentFT0CToOmegaK, doprocessCentFT0MToOmegaK};
+    if (std::accumulate(processesToOmegaK.begin(), processesToOmegaK.end(), 0) != 1) {
+      LOGP(fatal, "One and only one process ToOmegaK function must be enabled at a time.");
     }
 
     std::array<bool, 3> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M};
