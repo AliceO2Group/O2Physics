@@ -21,11 +21,14 @@
 #include <vector>
 #include <utility>
 #include <string>
+// #include "Rtypes.h"
+#include "TNamed.h"
+#include "Math/Vector4D.h"
+
 #include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
-#include "Rtypes.h"
-#include "TNamed.h"
-#include "TMath.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 
 class DalitzEECut : public TNamed
 {
@@ -37,7 +40,7 @@ class DalitzEECut : public TNamed
     // pair cut
     kMee = 0,
     kPairPtRange,
-    kPairEtaRange,
+    kPairYRange,
     kPairDCARange,
     kPhiV,
     // track cut
@@ -77,64 +80,52 @@ class DalitzEECut : public TNamed
     kMuon_lowB = 4,
   };
 
-  template <class TLeg, typename TPair>
+  template <typename T = int, typename TPair>
   bool IsSelected(TPair const& pair) const
   {
-    if (!IsSelectedPair(pair)) {
+    auto t1 = std::get<0>(pair);
+    auto t2 = std::get<1>(pair);
+    float bz = std::get<2>(pair);
+
+    if (!IsSelectedTrack(t1) || !IsSelectedTrack(t2)) {
       return false;
     }
 
-    auto pos = pair.template posTrack_as<TLeg>();
-    auto ele = pair.template negTrack_as<TLeg>();
-
-    for (auto& track : {pos, ele}) {
-      if (!IsSelectedTrack(track)) {
-        return false;
-      }
+    if (!IsSelectedPair(t1, t2, bz)) {
+      return false;
     }
 
-    // apply pair DCA cut here, because leg info are required.
-    float dca_pos_3d = pos.dca3DinSigma();
-    float dca_ele_3d = ele.dca3DinSigma();
-    float dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+    return true;
+  }
 
+  template <typename TTrack1, typename TTrack2>
+  bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
+  {
+    // if(!IsSelectedTrack(t1) || !IsSelectedTrack(t2)){
+    //   return false;
+    // }
+
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+    float dca_t1_3d = t1.dca3DinSigma();
+    float dca_t2_3d = t2.dca3DinSigma();
+    float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
+    float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
+
+    if (v12.M() < mMinMee || mMaxMee < v12.M()) {
+      return false;
+    }
+
+    if (v12.Rapidity() < mMinPairY || mMaxPairY < v12.Rapidity()) {
+      return false;
+    }
+
+    if (mApplyPhiV && ((phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(v12.M()) : mMaxPhivPair) < phiv) ^ mSelectPC)) {
+      return false;
+    }
     if (dca_ee_3d < mMinPairDCA3D || mMaxPairDCA3D < dca_ee_3d) { // in sigma for pair
-      return false;
-    }
-
-    return true;
-  }
-
-  bool IsSelectedPair(const float mass, const float dca_3d_pair, const float phiv) const
-  {
-    if (mass < mMinMee || mMaxMee < mass) {
-      return false;
-    }
-    if (mApplyPhiV && ((phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(mass) : mMaxPhivPair) < phiv) ^ mSelectPC)) {
-      return false;
-    }
-    if (dca_3d_pair < mMinPairDCA3D || mMaxPairDCA3D < dca_3d_pair) { // in sigma for pair
-      return false;
-    }
-    return true;
-  }
-
-  template <typename T>
-  bool IsSelectedPair(T const& pair) const
-  {
-    if (!IsSelectedPair(pair, DalitzEECuts::kPairPtRange)) {
-      return false;
-    }
-    if (!IsSelectedPair(pair, DalitzEECuts::kPairEtaRange)) {
-      return false;
-    }
-    if (!IsSelectedPair(pair, DalitzEECuts::kPairDCARange)) {
-      return false;
-    }
-    if (!IsSelectedPair(pair, DalitzEECuts::kMee)) {
-      return false;
-    }
-    if (mApplyPhiV && !IsSelectedPair(pair, DalitzEECuts::kPhiV)) {
       return false;
     }
     return true;
@@ -208,22 +199,22 @@ class DalitzEECut : public TNamed
   bool PassPID(T const& track) const
   {
     switch (mPIDScheme) {
-      case PIDSchemes::kTOFreq:
+      case static_cast<int>(PIDSchemes::kTOFreq):
         return PassTOFreq(track);
 
-      case PIDSchemes::kTPChadrej:
+      case static_cast<int>(PIDSchemes::kTPChadrej):
         return PassTPChadrej(track);
 
-      case PIDSchemes::kTPChadrejORTOFreq:
+      case static_cast<int>(PIDSchemes::kTPChadrejORTOFreq):
         return PassTPChadrej(track) || PassTOFreq(track);
 
-      case PIDSchemes::kTPConly:
+      case static_cast<int>(PIDSchemes::kTPConly):
         return PassTPConly(track);
 
-      case PIDSchemes::kMuon_lowB:
+      case static_cast<int>(PIDSchemes::kMuon_lowB):
         return PassMuon_lowB(track);
 
-      case PIDSchemes::kUnDef:
+      case static_cast<int>(PIDSchemes::kUnDef):
         return true;
 
       default:
@@ -281,31 +272,6 @@ class DalitzEECut : public TNamed
   }
 
   template <typename T>
-  bool IsSelectedPair(T const& pair, const DalitzEECuts& cut) const
-  {
-    switch (cut) {
-      case DalitzEECuts::kPairPtRange:
-        return pair.pt() >= mMinPairPt && pair.pt() <= mMaxPairPt;
-
-      case DalitzEECuts::kPairEtaRange:
-        return pair.eta() >= mMinPairEta && pair.eta() <= mMaxPairEta;
-
-      case DalitzEECuts::kPairDCARange: {
-        return pair.eta() >= mMinPairEta && pair.eta() <= mMaxPairEta;
-      }
-
-      case DalitzEECuts::kMee:
-        return mMinMee <= pair.mass() && pair.mass() <= mMaxMee;
-
-      case DalitzEECuts::kPhiV:
-        return (mMinPhivPair <= pair.phiv() && pair.phiv() <= (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(pair.mass()) : mMaxPhivPair)) ^ mSelectPC;
-
-      default:
-        return false;
-    }
-  }
-
-  template <typename T>
   bool IsSelectedTrack(T const& track, const DalitzEECuts& cut) const
   {
     switch (cut) {
@@ -355,7 +321,7 @@ class DalitzEECut : public TNamed
 
   // Setters
   void SetPairPtRange(float minPt = 0.f, float maxPt = 1e10f);
-  void SetPairEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
+  void SetPairYRange(float minY = -1e10f, float maxY = 1e10f);
   void SetPairDCARange(float min = 0.f, float max = 1e10f); // 3D DCA in sigma
   void SetMeeRange(float min = 0.f, float max = 0.5);
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
@@ -371,7 +337,7 @@ class DalitzEECut : public TNamed
   void SetChi2PerClusterITS(float min, float max);
   void SetMeanClusterSizeITSob(float min, float max);
 
-  void SetPIDScheme(PIDSchemes scheme);
+  void SetPIDScheme(int scheme);
   void SetMinPinTOF(float min);
   void SetMuonExclusionTPC(bool flag);
   void SetTOFbetaRange(bool flag, float min, float max);
@@ -404,7 +370,7 @@ class DalitzEECut : public TNamed
   // pair cuts
   float mMinMee{0.f}, mMaxMee{1e10f};
   float mMinPairPt{0.f}, mMaxPairPt{1e10f};       // range in pT
-  float mMinPairEta{-1e10f}, mMaxPairEta{1e10f};  // range in eta
+  float mMinPairY{-1e10f}, mMaxPairY{1e10f};      // range in rapidity
   float mMinPairDCA3D{0.f}, mMaxPairDCA3D{1e10f}; // range in 3D DCA in sigma
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
   std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
@@ -433,7 +399,7 @@ class DalitzEECut : public TNamed
   float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // max <its cluster size> x cos(Lmabda)
 
   // pid cuts
-  PIDSchemes mPIDScheme{PIDSchemes::kUnDef};
+  int mPIDScheme{-1};
   float mMinPinTOF{0.0f};        // min pin cut for TOF.
   bool mMuonExclusionTPC{false}; // flag to reject muon in TPC for low B
   bool mApplyTOFbeta{false};     // flag to reject hadron contamination with TOF
