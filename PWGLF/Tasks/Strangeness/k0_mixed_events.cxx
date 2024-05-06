@@ -57,7 +57,7 @@ class ResoPair : public MyFemtoPair
   {
     SetPair(first, second);
   }
-  ResoPair(trkType const& first, trkType const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical){};
+  ResoPair(trkType const& first, trkType const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical) {}
   bool IsClosePair() const { return MyFemtoPair::IsClosePair(_deta, _dphi, _radius); }
   void SetEtaDiff(const float deta) { _deta = deta; }
   void SetPhiStarDiff(const float dphi) { _dphi = dphi; }
@@ -195,12 +195,12 @@ struct K0MixedEvents {
     registry.add("ME", "ME", kTH1F, {invMassAxis});
     registry.add("SEvsPt", "SEvsPt", kTH2D, {invMassAxis, ptAxis});
     registry.add("MEvsPt", "MEvsPt", kTH2D, {invMassAxis, ptAxis});
-    registry.add("eta", Form("eta_%i", (int)_particlePDG_1), kTH2F, {ptAxis, {100, -10., 10., "#eta"}});
-    registry.add("p_first", Form("p_%i", (int)_particlePDG_1), kTH1F, {ptAxis});
-    registry.add("dcaXY_first", Form("dca_%i", (int)_particlePDG_1), kTH2F, {ptAxis, dcaXyAxis});
-    registry.add("nsigmaTOF_first", Form("nsigmaTOF_%i", (int)_particlePDG_1), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TOF}(%s))", pdgToSymbol(_particlePDG_1))}});
-    registry.add("nsigmaTPC_first", Form("nsigmaTPC_%i", (int)_particlePDG_1), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TPC}(%s))", pdgToSymbol(_particlePDG_1))}});
-    registry.add("rapidity_first", Form("rapidity_%i", (int)_particlePDG_1), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_1))}});
+    registry.add("eta", Form("eta_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., "#eta"}});
+    registry.add("p_first", Form("p_%i", _particlePDG_1.value), kTH1F, {ptAxis});
+    registry.add("dcaXY_first", Form("dca_%i", _particlePDG_1.value), kTH2F, {ptAxis, dcaXyAxis});
+    registry.add("nsigmaTOF_first", Form("nsigmaTOF_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TOF}(%s))", pdgToSymbol(_particlePDG_1))}});
+    registry.add("nsigmaTPC_first", Form("nsigmaTPC_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., Form("N#sigma_{TPC}(%s))", pdgToSymbol(_particlePDG_1))}});
+    registry.add("rapidity_first", Form("rapidity_%i", _particlePDG_1.value), kTH2F, {ptAxis, {100, -10., 10., Form("y(%s)", pdgToSymbol(_particlePDG_1))}});
 
     if (!IsIdentical) {
       registry.add("p_second", Form("p_%i", (int)_particlePDG_2), kTH1F, {ptAxis});
@@ -216,8 +216,8 @@ struct K0MixedEvents {
   { // template for identical particles from the same collision
 
     LOG(debug) << "Mixing tracks of the same event";
-    for (long unsigned int ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
-      for (long unsigned int iii = ii + 1; iii < tracks.size(); iii++) {
+    for (uint32_t ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
+      for (uint32_t iii = ii + 1; iii < tracks.size(); iii++) {
 
         Pair->SetPair(tracks[ii], tracks[iii]);
 
@@ -335,11 +335,11 @@ struct K0MixedEvents {
         }
       }
 
-      if (IsIdentical)
+      if (IsIdentical) {
         continue;
-      else if ((track.sign() == _sign_2) &&
-               (_particlePDGtoReject != 0 || !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF))) &&
-               (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
+      } else if ((track.sign() == _sign_2) &&
+                 (_particlePDGtoReject != 0 || !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF))) &&
+                 (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
         selectedtracks_2[track.singleCollSelId()].push_back(std::make_shared<decltype(track)>(track));
 
         registry.fill(HIST("p_second"), track.p());
@@ -384,7 +384,7 @@ struct K0MixedEvents {
 
       for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
 
-        for (long unsigned int indx1 = 0; indx1 < (i->second).size(); indx1++) { // loop over all the events in each vertex&mult bin
+        for (uint32_t indx1 = 0; indx1 < (i->second).size(); indx1++) { // loop over all the events in each vertex&mult bin
 
           auto col1 = (i->second)[indx1];
 
@@ -396,7 +396,7 @@ struct K0MixedEvents {
             continue;
           }
 
-          for (long unsigned int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+          for (uint32_t indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
             auto col2 = (i->second)[indx2];
 
@@ -406,13 +406,13 @@ struct K0MixedEvents {
         }
       }
 
-    } //====================================== end of mixing identical ======================================
-
-    else { //====================================== mixing non-identical ======================================
+      //====================================== end of mixing identical ======================================
+    } else {
+      //====================================== mixing non-identical ======================================
 
       for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
 
-        for (long unsigned int indx1 = 0; indx1 < (i->second).size(); indx1++) { // loop over all the events in each vertex&mult bin
+        for (uint32_t indx1 = 0; indx1 < (i->second).size(); indx1++) { // loop over all the events in each vertex&mult bin
 
           auto col1 = (i->second)[indx1];
 
@@ -424,7 +424,7 @@ struct K0MixedEvents {
             continue;
           }
 
-          for (long unsigned int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+          for (uint32_t indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
             auto col2 = (i->second)[indx2];
 
