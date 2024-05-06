@@ -113,7 +113,7 @@ struct HfCandidateCreatorXic0Omegac0 {
     if (std::accumulate(processesToOmegaPi.begin(), processesToOmegaPi.end(), 0) != 1) {
       LOGP(fatal, "One and only one process ToOmegaPi function must be enabled at a time.");
     }
-        std::array<bool, 9> processesToOmegaK = {doprocessNoCentToOmegaK, doprocessCentFT0CToOmegaK, doprocessCentFT0MToOmegaK};
+    std::array<bool, 9> processesToOmegaK = {doprocessNoCentToOmegaK, doprocessCentFT0CToOmegaK, doprocessCentFT0MToOmegaK};
     if (std::accumulate(processesToOmegaK.begin(), processesToOmegaK.end(), 0) != 1) {
       LOGP(fatal, "One and only one process ToOmegaK function must be enabled at a time.");
     }
