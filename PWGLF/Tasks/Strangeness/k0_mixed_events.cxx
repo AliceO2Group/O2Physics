@@ -13,26 +13,27 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
 
+#include <TParameter.h>
+#include <TH1F.h>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include <TParameter.h>
-#include <TH1F.h>
-
 #include "Framework/ASoA.h"
-#include "MathUtils/Utils.h"
 #include "Framework/DataTypes.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Expressions.h"
-
 #include "Framework/StaticFor.h"
-#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
-#include <vector>
+#include "MathUtils/Utils.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include "PWGCF/Femto3D/DataModel/singletrackselector.h"
+#include "PWGCF/Femto3D/Core/femto3dPairTask.h"
+
 #include "TLorentzVector.h"
 #include "TDatabasePDG.h"
-#include "PWGCF/Femto3D/Core/femto3dPairTask.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -40,11 +41,11 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using FilteredCollisions = aod::SingleCollSels;
-using FilteredTracks = aod::SingleTrackSels;
+using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
+using FilteredTracks = soa::Filtered<aod::SingleTrackSels>;
 
-typedef std::shared_ptr<soa::Filtered<FilteredTracks>::iterator> trkType;
-typedef std::shared_ptr<soa::Filtered<FilteredCollisions>::iterator> colType;
+typedef std::shared_ptr<FilteredTracks::iterator> trkType;
+typedef std::shared_ptr<FilteredCollisions::iterator> colType;
 
 using MyFemtoPair = o2::aod::singletrackselector::FemtoPair<trkType>;
 
@@ -55,7 +56,7 @@ class ResoPair : public MyFemtoPair
   ResoPair(trkType const& first, trkType const& second) : MyFemtoPair(first, second)
   {
     SetPair(first, second);
-  };
+  }
   ResoPair(trkType const& first, trkType const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical){};
   bool IsClosePair() const { return MyFemtoPair::IsClosePair(_deta, _dphi, _radius); }
   void SetEtaDiff(const float deta) { _deta = deta; }
@@ -214,6 +215,7 @@ struct K0MixedEvents {
   void mixTracks(Type const& tracks)
   { // template for identical particles from the same collision
 
+    LOG(debug) << "Mixing tracks of the same event";
     for (long unsigned int ii = 0; ii < tracks.size(); ii++) { // nested loop for all the combinations
       for (long unsigned int iii = ii + 1; iii < tracks.size(); iii++) {
 
@@ -236,6 +238,7 @@ struct K0MixedEvents {
   template <bool isSameEvent = false, typename Type>
   void mixTracks(Type const& tracks1, Type const& tracks2)
   {
+    LOG(debug) << "Mixing tracks of two different events";
     for (auto ii : tracks1) {
       for (auto iii : tracks2) {
 
@@ -262,16 +265,21 @@ struct K0MixedEvents {
     }
   }
 
-  void process(soa::Filtered<FilteredCollisions> const& collisions, soa::Filtered<FilteredTracks> const& tracks)
+  void process(FilteredTracks const& tracks, FilteredCollisions const& collisions)
   {
-    if (_particlePDG_1 == 0 || _particlePDG_2 == 0)
+    LOG(debug) << "Processing " << collisions.size() << " collisions and " << tracks.size() << " tracks";
+
+    if (_particlePDG_1 == 0 || _particlePDG_2 == 0) {
       LOGF(fatal, "One of passed PDG is 0!!!");
+    }
     registry.fill(HIST("Trks"), 2.f, tracks.size());
-    for (auto c : collisions) {
-      registry.fill(HIST("VTXc"), c.posZ());
+    for (auto collision : collisions) {
+      LOG(debug) << "Collision index " << collision.globalIndex();
+      registry.fill(HIST("VTXc"), collision.posZ());
     }
 
     for (auto track : tracks) {
+      LOG(debug) << "Track index " << track.singleCollSelId();
       if (track.itsChi2NCl() > _itsChi2NCl) {
         continue;
       }
@@ -289,8 +297,9 @@ struct K0MixedEvents {
       }
 
       registry.fill(HIST("Trks"), 1);
-      registry.fill(HIST("VTX"), track.singleCollSel().posZ());
-      if (abs(track.singleCollSel().posZ()) > _vertexZ)
+      const float& vtxZ = track.singleCollSel_as<FilteredCollisions>().posZ();
+      registry.fill(HIST("VTX"), vtxZ);
+      if (abs(vtxZ) > _vertexZ)
         continue;
       registry.fill(HIST("eta"), track.pt(), track.eta());
       if (abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {
