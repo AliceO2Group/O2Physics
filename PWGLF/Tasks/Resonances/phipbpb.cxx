@@ -76,6 +76,8 @@ struct phipbpb {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Accepted maximum Centrality"};
   // track
+  Configurable<bool> removefaketrak{"removefaketrack", true, "Remove fake track from momentum difference"};
+  Configurable<float> ConfFakeKaonCut{"ConfFakeKaonCut", 0.1, "Cut based on track from momentum difference"};
   Configurable<bool> fillRapidity{"fillRapidity", false, "fill rapidity bin"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
   Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "cut on Charge"};
@@ -153,9 +155,10 @@ struct phipbpb {
     const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
     const AxisSpec thnAxiscosthetaSA{configThnAxiscosthetaSA, "costhetaSA"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
-    AxisSpec resAxis = {1000, -5, 5, "Res"};
+    AxisSpec resAxis = {2000, -10, 10, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
 
+    histos.add("hTPCglobalmomcorr", "Momentum correlation", kTH3F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}, {8, 0.0f, 80.0f}});
     histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
     histos.add("hFTOCvsTPCNoCut", "Mult correlation FT0C vs. TPC without any cut", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
     histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
@@ -376,6 +379,17 @@ struct phipbpb {
     return delta;
   }
 
+  template <typename T>
+  bool isFakeKaon(T const& track)
+  {
+    const auto pglobal = track.p();
+    const auto ptpc = track.tpcInnerParam();
+    if (std::abs(pglobal - ptpc) > ConfFakeKaonCut) {
+      return true;
+    }
+    return false;
+  }
+
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisEPAngle{"axisEPAngle", {6, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
@@ -439,6 +453,7 @@ struct phipbpb {
 
     histos.fill(HIST("hCentrality"), centrality);
     histos.fill(HIST("hVtxZ"), collision.posZ());
+    int Npostrack = 0;
     for (auto track1 : posThisColl) {
       // track selection
       if (!selectionTrack(track1)) {
@@ -451,6 +466,7 @@ struct phipbpb {
       if (!ispTdepPID && !selectionPID(track1)) {
         continue;
       }
+      histos.fill(HIST("hTPCglobalmomcorr"), track1.p() / track1.sign(), track1.p() - track1.tpcInnerParam(), centrality);
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
       histos.fill(HIST("hDcaz"), track1.dcaZ());
@@ -474,6 +490,15 @@ struct phipbpb {
           continue;
         }
         if (!selectionPair(track1, track2)) {
+          continue;
+        }
+        if (Npostrack == 0) {
+          histos.fill(HIST("hTPCglobalmomcorr"), track2.p() / track2.sign(), track2.p() - track2.tpcInnerParam(), centrality);
+        }
+        if (removefaketrak && isFakeKaon(track1)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(track2)) {
           continue;
         }
         KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
@@ -520,6 +545,7 @@ struct phipbpb {
           histos.fill(HIST("hSparseV2SASameEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
         }
       }
+      Npostrack = Npostrack + 1;
     }
   }
   PROCESS_SWITCH(phipbpb, processSameEvent, "Process Same event", true);
@@ -569,6 +595,12 @@ struct phipbpb {
         }
         if (!selectionPair(track1, track2)) {
           // printf("Mix = %d\n", 8);
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(track1)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(track2)) {
           continue;
         }
         KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
@@ -634,6 +666,7 @@ struct phipbpb {
       auto centrality = collision1.centFT0C();
       auto centrality2 = collision2.centFT0C();
       auto psiFT0C = collision1.psiFT0C();
+      auto QFT0C = collision1.qFT0C();
       if (additionalEvsel && !eventSelected(collision1, centrality)) {
         continue;
       }
@@ -656,6 +689,12 @@ struct phipbpb {
           continue;
         }
         if (!selectionPair(track1, track2)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(track1)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(track2)) {
           continue;
         }
         if (track1.sign() > 0 && track2.sign() < 0) {
@@ -693,6 +732,7 @@ struct phipbpb {
           histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
           histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
           histos.fill(HIST("hSparseV2SAMixedEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_SP"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
         }
         if (fillRapidity) {
           histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);

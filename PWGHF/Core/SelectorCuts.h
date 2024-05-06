@@ -26,7 +26,7 @@ namespace o2::analysis
 namespace hf_cuts_single_track
 {
 static constexpr int nBinsPtTrack = 6;
-static constexpr int nCutVarsTrack = 2;
+static constexpr int nCutVarsTrack = 4;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // common for any candidate type (2-prong, 3-prong)
 // offset by 1 from the bin numbers in cuts array
@@ -40,27 +40,27 @@ constexpr double binsPtTrack[nBinsPtTrack + 1] = {
   1000.0};
 auto vecBinsPtTrack = std::vector<double>{binsPtTrack, binsPtTrack + nBinsPtTrack + 1};
 
-// default values for the cuts of displaced tracks
-constexpr double cutsTrack[nBinsPtTrack][nCutVarsTrack] = {{0.0025, 10.},  /* 0   < pt < 0.5 */
-                                                           {0.0025, 10.},  /* 0.5 < pt < 1 */
-                                                           {0.0025, 10.},  /* 1   < pt < 1.5 */
-                                                           {0.0025, 10.},  /* 1.5 < pt < 2 */
-                                                           {0.0000, 10.},  /* 2   < pt < 3 */
-                                                           {0.0000, 10.}}; /* 3   < pt < 1000 */
+// default values for the dca_xy and dca_z cuts of displaced tracks
+constexpr double cutsTrack[nBinsPtTrack][nCutVarsTrack] = {{0.0025, 10., 0.0000, 100.},  /* 0   < pt < 0.5 */
+                                                           {0.0025, 10., 0.0000, 100.},  /* 0.5 < pt < 1 */
+                                                           {0.0025, 10., 0.0000, 100.},  /* 1   < pt < 1.5 */
+                                                           {0.0025, 10., 0.0000, 100.},  /* 1.5 < pt < 2 */
+                                                           {0.0000, 10., 0.0000, 100.},  /* 2   < pt < 3 */
+                                                           {0.0000, 10., 0.0000, 100.}}; /* 3   < pt < 1000 */
 
-// default values for the cuts of primary tracks (e.g. D* soft pions)
-constexpr double cutsTrackPrimary[nBinsPtTrack][nCutVarsTrack] = {{0.0000, 2.},  /* 0   < pt < 0.5 */
-                                                                  {0.0000, 2.},  /* 0.5 < pt < 1 */
-                                                                  {0.0000, 2.},  /* 1   < pt < 1.5 */
-                                                                  {0.0000, 2.},  /* 1.5 < pt < 2 */
-                                                                  {0.0000, 2.},  /* 2   < pt < 3 */
-                                                                  {0.0000, 2.}}; /* 3   < pt < 1000 */
+// default values for the dca_xy and dca_z cuts of primary tracks (e.g. D* soft pions)
+constexpr double cutsTrackPrimary[nBinsPtTrack][nCutVarsTrack] = {{0.0000, 2., 0.0000, 100.},  /* 0   < pt < 0.5 */
+                                                                  {0.0000, 2., 0.0000, 100.},  /* 0.5 < pt < 1 */
+                                                                  {0.0000, 2., 0.0000, 100.},  /* 1   < pt < 1.5 */
+                                                                  {0.0000, 2., 0.0000, 100.},  /* 1.5 < pt < 2 */
+                                                                  {0.0000, 2., 0.0000, 100.},  /* 2   < pt < 3 */
+                                                                  {0.0000, 2., 0.0000, 100.}}; /* 3   < pt < 1000 */
 
 // row labels
 static const std::vector<std::string> labelsPtTrack{};
 
 // column labels
-static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary"};
+static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary", "min_dcaztoprimary", "max_dcaztoprimary"};
 } // namespace hf_cuts_single_track
 
 namespace hf_presel_pid

@@ -15,7 +15,7 @@ void fastjetutilities::setFastJetUserInfo(std::vector<fastjet::PseudoJet>& const
 {
   fastjet_user_info* user_info = new fastjet_user_info(status, index); // FIXME: can setting this as a pointer be avoided?
   constituents.back().set_user_info(user_info);
-  if (index != -99999999) { // FIXME: needed for constituent subtraction as user_info is not propagated, but need to be quite careful to make sure indices dont overlap between tracks, clusters and HF candidates. Current solution might not be optimal
+  if (index != -99999999) { // FIXME: in principle needed for constituent subtraction, particularly when clusters are added to the subtraction. However since the HF particle is not subtracted then we dont need to check for it in this manner
     int i = index;
     if (status == static_cast<int>(JetConstituentStatus::track)) {
       i = i + 1;

@@ -14,6 +14,7 @@
 #include <cmath>
 #include <TDirectory.h>
 #include <THn.h>
+#include <TFile.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -69,6 +70,8 @@ struct CorrelationTask {
 
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCut, float, -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)");
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCutMinRadius, float, 0.8f, "Two track cut: radius in m from which two track cuts are applied");
+  O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = OFF and 1 = ON for local efficiency");
+  O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
 
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {cfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
@@ -406,14 +409,24 @@ struct CorrelationTask {
       return;
     }
     if (cfgEfficiencyTrigger.value.empty() == false) {
-      cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, timestamp);
+      if (cfgLocalEfficiency > 0) {
+        TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
+        cfg.mEfficiencyTrigger = reinterpret_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
+      } else {
+        cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, timestamp);
+      }
       if (cfg.mEfficiencyTrigger == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), (void*)cfg.mEfficiencyTrigger);
     }
     if (cfgEfficiencyAssociated.value.empty() == false) {
-      cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
+      if (cfgLocalEfficiency > 0) {
+        TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
+        cfg.mEfficiencyAssociated = reinterpret_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
+      } else {
+        cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
+      }
       if (cfg.mEfficiencyAssociated == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgEfficiencyAssociated.value.c_str());
       }
@@ -712,14 +725,21 @@ struct CorrelationTask {
       LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisions.size());
     }
 
-    // Primaries
     auto multiplicity = mcCollision.multiplicity();
+    if (cfgCentBinsForMC > 0) {
+      if (collisions.size() == 0) {
+        return;
+      }
+      for (auto& collision : collisions) {
+        multiplicity = collision.multiplicity();
+      }
+    }
+    // Primaries
     for (auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary() && mcParticle.sign() != 0) {
         same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), GetSpecies(mcParticle.pdgCode()), multiplicity, mcCollision.posZ());
       }
     }
-
     for (auto& collision : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       if (cfgVerbosity > 0) {
@@ -751,21 +771,31 @@ struct CorrelationTask {
       LOGF(info, "processMCSameDerived. MC collision: %d, particles: %d, collisions: %d", mcCollision.globalIndex(), mcParticles.size(), collisions.size());
     }
 
-    same->fillEvent(mcCollision.multiplicity(), CorrelationContainer::kCFStepAll);
-    fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles, mcParticles, mcCollision.multiplicity(), mcCollision.posZ(), 0, 1.0f);
+    auto multiplicity = mcCollision.multiplicity();
+    if (cfgCentBinsForMC > 0) {
+      if (collisions.size() == 0) {
+        return;
+      }
+      for (auto& collision : collisions) {
+        multiplicity = collision.multiplicity();
+      }
+    }
+
+    same->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
+    fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles, mcParticles, multiplicity, mcCollision.posZ(), 0, 1.0f);
 
     if (collisions.size() == 0) {
       return;
     }
 
-    same->fillEvent(mcCollision.multiplicity(), CorrelationContainer::kCFStepVertex);
-    fillCorrelations<CorrelationContainer::kCFStepVertex>(same, mcParticles, mcParticles, mcCollision.multiplicity(), mcCollision.posZ(), 0, 1.0f);
+    same->fillEvent(multiplicity, CorrelationContainer::kCFStepVertex);
+    fillCorrelations<CorrelationContainer::kCFStepVertex>(same, mcParticles, mcParticles, multiplicity, mcCollision.posZ(), 0, 1.0f);
 
-    same->fillEvent(mcCollision.multiplicity(), CorrelationContainer::kCFStepTrackedOnlyPrim);
-    fillCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(same, mcParticles, mcParticles, mcCollision.multiplicity(), mcCollision.posZ(), 0, 1.0f);
+    same->fillEvent(multiplicity, CorrelationContainer::kCFStepTrackedOnlyPrim);
+    fillCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(same, mcParticles, mcParticles, multiplicity, mcCollision.posZ(), 0, 1.0f);
 
-    same->fillEvent(mcCollision.multiplicity(), CorrelationContainer::kCFStepTracked);
-    fillCorrelations<CorrelationContainer::kCFStepTracked>(same, mcParticles, mcParticles, mcCollision.multiplicity(), mcCollision.posZ(), 0, 1.0f);
+    same->fillEvent(multiplicity, CorrelationContainer::kCFStepTracked);
+    fillCorrelations<CorrelationContainer::kCFStepTracked>(same, mcParticles, mcParticles, multiplicity, mcCollision.posZ(), 0, 1.0f);
 
     // NOTE kCFStepReconstructed and kCFStepCorrected are filled in processSameDerived
     //      This also means that if a MC collision had several reconstructed vertices (collisions), all of them are filled
@@ -780,22 +810,22 @@ struct CorrelationTask {
     BinningTypeMCDerived configurableBinning{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     auto tuple = std::make_tuple(mcParticles);
     SameKindPair<soa::Filtered<aod::CFMcCollisions>, soa::Filtered<aod::CFMcParticles>, BinningTypeMCDerived> pairs{configurableBinning, cfgNoMixedEvents, -1, mcCollisions, tuple, &cache}; // -1 is the number of the bin to skip
-
+    auto multiplicity = -1.0f;
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
       float eventWeight = 1.0f / it.currentWindowNeighbours();
 
+      multiplicity = collision1.multiplicity();
       if (cfgVerbosity > 0) {
-        int bin = configurableBinning.getBin({collision1.posZ(), collision1.multiplicity()});
+        int bin = configurableBinning.getBin({collision1.posZ(), multiplicity});
         LOGF(info, "processMCMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
       }
 
       // STEP 0
       if (it.isNewWindow()) {
-        mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepAll);
+        mixed->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
       }
-      fillCorrelations<CorrelationContainer::kCFStepAll>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), 0, eventWeight);
-
+      fillCorrelations<CorrelationContainer::kCFStepAll>(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), 0, eventWeight);
       // check if collision1 has at least one reconstructed collision
       auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
       if (cfgVerbosity > 0) {
@@ -807,13 +837,13 @@ struct CorrelationTask {
 
       // STEP 2, 4, 5
       if (it.isNewWindow()) {
-        mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepVertex);
-        mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepTrackedOnlyPrim);
-        mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepTracked);
+        mixed->fillEvent(multiplicity, CorrelationContainer::kCFStepVertex);
+        mixed->fillEvent(multiplicity, CorrelationContainer::kCFStepTrackedOnlyPrim);
+        mixed->fillEvent(multiplicity, CorrelationContainer::kCFStepTracked);
       }
-      fillCorrelations<CorrelationContainer::kCFStepVertex>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), 0, eventWeight);
-      fillCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), 0, eventWeight);
-      fillCorrelations<CorrelationContainer::kCFStepTracked>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), 0, eventWeight);
+      fillCorrelations<CorrelationContainer::kCFStepVertex>(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), 0, eventWeight);
+      fillCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), 0, eventWeight);
+      fillCorrelations<CorrelationContainer::kCFStepTracked>(mixed, tracks1, tracks2, multiplicity, collision1.posZ(), 0, eventWeight);
 
       // NOTE kCFStepReconstructed and kCFStepCorrected are filled in processMixedDerived
       //      This also means that if a MC collision had several reconstructed vertices (collisions), all of them are filled

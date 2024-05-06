@@ -49,7 +49,7 @@ struct createPCM {
   SliceCache cache;
   Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
   Produces<aod::V0Indices> v0indices;
-  Produces<aod::StoredV0Cores> v0cores;
+  Produces<aod::V0CoresBase> v0cores;
   Produces<aod::V0TrackXs> v0trackXs;
 
   // Basic checks

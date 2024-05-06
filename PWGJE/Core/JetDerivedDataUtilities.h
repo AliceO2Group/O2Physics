@@ -29,7 +29,8 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 enum JCollisionSel {
   sel8 = 0,
   sel8Full = 1,
-  sel7 = 2
+  sel8ForUnanchoredMC = 2,
+  sel7 = 3
 };
 
 template <typename T>
@@ -49,6 +50,9 @@ int initialiseEventSelection(std::string eventSelection)
   if (eventSelection == "sel8Full") {
     return JCollisionSel::sel8Full;
   }
+  if (eventSelection == "sel8ForUnanchoredMC") {
+    return JCollisionSel::sel8ForUnanchoredMC;
+  }
   if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
   }
@@ -64,6 +68,9 @@ uint8_t setEventSelectionBit(T const& collision)
     if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       SETBIT(bit, JCollisionSel::sel8Full);
     }
+  }
+  if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) { // we can look to add kNoSameBunchPileup and kIsGoodZvtxFT0vsPV if deemed suitable
+    SETBIT(bit, JCollisionSel::sel8ForUnanchoredMC);
   }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
@@ -298,7 +305,8 @@ enum JTrackSel {
   trackSign = 0, // warning : this number is hardcoded in the sign coloumn in the JTracks table so should not be changed without changing it there too
   globalTrack = 1,
   qualityTrack = 2,
-  hybridTrack = 3
+  hybridTrack = 3,
+  uniformTrack = 4
 };
 
 template <typename T>
@@ -325,8 +333,10 @@ int initialiseTrackSelection(std::string trackSelection)
     return JTrackSel::globalTrack;
   } else if (trackSelection == "QualityTracks") {
     return JTrackSel::qualityTrack;
-  } else if (trackSelection == "hybridTracksJE") {
+  } else if (trackSelection == "hybridTracks") {
     return JTrackSel::hybridTrack;
+  } else if (trackSelection == "uniformTracks") {
+    return JTrackSel::uniformTrack;
   }
   return -1;
 }
@@ -348,6 +358,11 @@ uint8_t setTrackSelectionBit(T const& track)
   }
   if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrack);
+  }
+  if ((track.passedGoldenChi2()) &&
+      (track.passedITSNCls() && track.passedITSChi2NDF() && track.passedITSHits()) &&
+      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAxy() && track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
+    SETBIT(bit, JTrackSel::uniformTrack);
   }
 
   return bit;

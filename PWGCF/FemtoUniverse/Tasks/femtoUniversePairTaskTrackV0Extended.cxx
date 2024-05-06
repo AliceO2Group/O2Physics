@@ -214,8 +214,8 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event
     for (auto& part : groupPartsTwo) {
-      const auto& posChild = parts.iteratorAt(part.index() - 2);
-      const auto& negChild = parts.iteratorAt(part.index() - 1);
+      const auto& posChild = parts.iteratorAt(part.globalIndex() - 2);
+      const auto& negChild = parts.iteratorAt(part.globalIndex() - 1);
       /// Daughters that do not pass this condition are not selected
       if (!IsParticleTPC(posChild, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild, V0ChildTable[ConfV0Type1][1]))
         continue;
@@ -257,8 +257,8 @@ struct femtoUniversePairTaskTrackV0Extended {
       /// PID using stored binned nsigma
       if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
         continue;
-      const auto& posChild = parts.iteratorAt(p2.index() - 2);
-      const auto& negChild = parts.iteratorAt(p2.index() - 1);
+      const auto& posChild = parts.iteratorAt(p2.globalIndex() - 2);
+      const auto& negChild = parts.iteratorAt(p2.globalIndex() - 1);
 
       /// Daughters that do not pass this condition are not selected
       if (!IsParticleTPC(posChild, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild, V0ChildTable[ConfV0Type1][1]))
@@ -282,8 +282,8 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event
     for (auto& part : groupPartsTwo) {
-      const auto& posChild = parts.iteratorAt(part.index() - 2);
-      const auto& negChild = parts.iteratorAt(part.index() - 1);
+      const auto& posChild = parts.iteratorAt(part.globalIndex() - 2);
+      const auto& negChild = parts.iteratorAt(part.globalIndex() - 1);
 
       /// Check daughters of first V0 particle
       if (IsParticleTPC(posChild, V0ChildTable[ConfV0Type1][0]) && IsParticleTPC(negChild, V0ChildTable[ConfV0Type1][1])) {
@@ -310,14 +310,14 @@ struct femtoUniversePairTaskTrackV0Extended {
           continue;
         }
       }
-      const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
-      const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
+      const auto& posChild1 = parts.iteratorAt(p1.globalIndex() - 2);
+      const auto& negChild1 = parts.iteratorAt(p1.globalIndex() - 1);
       /// Daughters that do not pass this condition are not selected
       if (!IsParticleTPC(posChild1, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild1, V0ChildTable[ConfV0Type1][1]))
         continue;
 
-      const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
-      const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
+      const auto& posChild2 = parts.iteratorAt(p2.globalIndex() - 2);
+      const auto& negChild2 = parts.iteratorAt(p2.globalIndex() - 1);
       /// Daughters that do not pass this condition are not selected
       if (!IsParticleTPC(posChild2, V0ChildTable[ConfV0Type2][0]) || !IsParticleTPC(negChild2, V0ChildTable[ConfV0Type2][1]))
         continue;
@@ -360,8 +360,8 @@ struct femtoUniversePairTaskTrackV0Extended {
         /// PID using stored binned nsigma
         if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
           continue;
-        const auto& posChild = parts.iteratorAt(p2.index() - 2);
-        const auto& negChild = parts.iteratorAt(p2.index() - 1);
+        const auto& posChild = parts.iteratorAt(p2.globalIndex() - 2);
+        const auto& negChild = parts.iteratorAt(p2.globalIndex() - 1);
         /// Daughters that do not pass this condition are not selected
         if (!IsParticleTPC(posChild, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild, V0ChildTable[ConfV0Type1][1]))
           continue;
@@ -402,14 +402,14 @@ struct femtoUniversePairTaskTrackV0Extended {
             continue;
           }
         }
-        const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
-        const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
+        const auto& posChild1 = parts.iteratorAt(p1.globalIndex() - 2);
+        const auto& negChild1 = parts.iteratorAt(p1.globalIndex() - 1);
         /// Daughters that do not pass this condition are not selected
         if (!IsParticleTPC(posChild1, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild1, V0ChildTable[ConfV0Type1][1]))
           continue;
 
-        const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
-        const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
+        const auto& posChild2 = parts.iteratorAt(p2.globalIndex() - 2);
+        const auto& negChild2 = parts.iteratorAt(p2.globalIndex() - 1);
         /// Daughters that do not pass this condition are not selected
         if (!IsParticleTPC(posChild2, V0ChildTable[ConfV0Type2][0]) || !IsParticleTPC(negChild2, V0ChildTable[ConfV0Type2][1]))
           continue;

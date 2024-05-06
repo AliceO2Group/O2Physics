@@ -30,15 +30,16 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 using std::array;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+
 using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -73,90 +74,77 @@ struct vzero_cascade_absorption {
 
   // Configurable Parameters
   Configurable<float> minTPCnClsFound{"minTPCnClsFound", 80.0f, "min number of found TPC clusters"};
-  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of found TPC crossed rows"};
+  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
-  Configurable<float> etaMin{"etaMin", -0.5f, "etaMin"};
-  Configurable<float> etaMax{"etaMax", +0.5f, "etaMax"};
+  Configurable<float> etaMin{"etaMin", -0.5f, "eta min"};
+  Configurable<float> etaMax{"etaMax", +0.5f, "eta max"};
   Configurable<float> pMin_k0postrack{"pMin_k0postrack", 0.3f, "Min Momentum K0 pos track"};
   Configurable<float> pMax_k0postrack{"pMax_k0postrack", 5.0f, "Max Momentum K0 pos track"};
   Configurable<float> pMin_k0negtrack{"pMin_k0negtrack", 0.3f, "Min Momentum K0 neg track"};
   Configurable<float> pMax_k0negtrack{"pMax_k0negtrack", 5.0f, "Max Momentum K0 neg track"};
-  Configurable<float> pMin_Lambda_proton{"pMin_Lambda_proton", 0.3f, "Min Momentum proton from Lambda"};
-  Configurable<float> pMax_Lambda_proton{"pMax_Lambda_proton", 5.0f, "Max Momentum proton from Lambda"};
-  Configurable<float> pMin_Lambda_pion{"pMin_Lambda_pion", 0.2f, "Min Momentum pion from Lambda"};
-  Configurable<float> pMax_Lambda_pion{"pMax_Lambda_pion", 1.0f, "Max Momentum pion from Lambda"};
-  Configurable<bool> requirehitsITS{"requirehitsITS", true, "require ITS hits for daughters"};
-  Configurable<std::vector<float>> hit_requirement_before_target{"hit_requirement_before_target", {0, 0, 0, 1, 1, 1, 1}, "ITS Hits before target"};
-  Configurable<std::vector<float>> hit_requirement_after_target{"hit_requirement_after_target", {0, 0, 0, 0, 0, 1, 1}, "ITS Hits after target"};
-  Configurable<bool> useTOF{"useTOF", true, "use TOF for PID"};
+  Configurable<float> pMin_Lambda_proton{"pMin_Lambda_proton", 0.3f, "Min Momentum proton from (Anti)Lambda"};
+  Configurable<float> pMax_Lambda_proton{"pMax_Lambda_proton", 5.0f, "Max Momentum proton from (Anti)Lambda"};
+  Configurable<float> pMin_Lambda_pion{"pMin_Lambda_pion", 0.2f, "Min Momentum pion from (Anti)Lambda"};
+  Configurable<float> pMax_Lambda_pion{"pMax_Lambda_pion", 1.2f, "Max Momentum pion from (Anti)Lambda"};
   Configurable<float> nsigmaTPCmin{"nsigmaTPCmin", -3.0f, "Minimum nsigma TPC"};
   Configurable<float> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
   Configurable<float> nsigmaTOFmin{"nsigmaTOFmin", -3.0f, "Minimum nsigma TOF"};
   Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
   Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5f, "Minimum V0 Radius"};
   Configurable<float> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius"};
-  Configurable<float> minimumCascRadius{"minimumCascRadius", 0.5f, "Minimum Cascade Radius"};
-  Configurable<float> maximumCascRadius{"maximumCascRadius", 40.0f, "Maximum Cascade Radius"};
   Configurable<float> dcanegtoPVmin{"dcanegtoPVmin", 0.1f, "Minimum DCA Neg To PV"};
   Configurable<float> dcapostoPVmin{"dcapostoPVmin", 0.1f, "Minimum DCA Pos To PV"};
-  Configurable<float> dcaBachelorToPVmin{"dcaBachelorToPVmin", 0.1f, "Minimum DCA bachelor To PV"};
-  Configurable<float> dcaV0ToPVmin{"dcaV0ToPVmin", 0.1f, "Minimum DCA V0 To PV for cascades"};
   Configurable<float> v0cospaMin{"v0cospaMin", 0.99f, "Minimum V0 CosPA"};
-  Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum Cascade CosPA"};
   Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f, "Maximum DCA Daughters"};
-  Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA Cascade Daughters"};
   Configurable<float> Rmin_beforeAbs{"Rmin_beforeAbs", 10.0f, "Rmin before target"};
   Configurable<float> Rmax_beforeAbs{"Rmax_beforeAbs", 15.0f, "Rmax before target"};
   Configurable<float> Rmin_afterAbs{"Rmin_afterAbs", 26.0f, "Rmin after target"};
   Configurable<float> Rmax_afterAbs{"Rmax_afterAbs", 31.0f, "Rmax after target"};
+  Configurable<bool> useTOF{"useTOF", true, "use TOF for PID"};
+  Configurable<bool> requirehitsITS{"requirehitsITS", true, "require ITS hits for daughters"};
+  Configurable<std::vector<float>> hit_req_before_target{"hit_req_before_target", {0, 0, 0, 1, 1, 1, 1}, "ITS Hits before target"};
+  Configurable<std::vector<float>> hit_req_after_target{"hit_req_after_target", {0, 0, 0, 0, 0, 1, 1}, "ITS Hits after target"};
 
   void init(InitContext const&)
   {
-    // Histograms
-    registryQC.add("event_counter_data", "event counter data", HistType::kTH1F, {{5, 0, 5, "number of events"}});
-    registryQC.add("event_counter_mc", "event counter mc", HistType::kTH1F, {{5, 0, 5, "number of events"}});
+    // QC Histograms (event counters)
+    registryQC.add("event_counter_data", "event counter data", HistType::kTH1F, {{5, 0, 5, "number of events data"}});
+    registryQC.add("event_counter_mc", "event counter mc", HistType::kTH1F, {{5, 0, 5, "number of events mc"}});
 
     // K0 short
-    registryData.add("K0_before_target_data", "K0 before target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
-    registryData.add("K0_after_target_data", "K0 after target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
-    registryMC.add("K0_before_target_mc", "K0 before target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
-    registryMC.add("K0_after_target_mc", "K0 after target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
+    registryData.add("K0_before_target_data", "K0 before target data", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
+    registryData.add("K0_after_target_data", "K0 after target data", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
+    registryMC.add("K0_before_target_mc", "K0 before target mc", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
+    registryMC.add("K0_after_target_mc", "K0 after target mc", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {240, 0.44, 0.56, "m (GeV/c^{2})"}});
 
-    // Lambda and Antilambda
-    registryData.add("Lambda_before_target_data", "Lambda before target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryData.add("Lambda_after_target_data", "Lambda after target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryData.add("AntiLambda_before_target_data", "AntiLambda before target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryData.add("AntiLambda_after_target_data", "AntiLambda after target data", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryMC.add("Lambda_before_target_mc", "Lambda before target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryMC.add("Lambda_after_target_mc", "Lambda after target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryMC.add("AntiLambda_before_target_mc", "AntiLambda before target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
-    registryMC.add("AntiLambda_after_target_mc", "AntiLambda after target mc", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    // Lambda
+    registryData.add("Lambda_before_target_data", "Lambda before target data", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    registryData.add("Lambda_after_target_data", "Lambda after target data", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    registryMC.add("Lambda_before_target_mc", "Lambda before target mc", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    registryMC.add("Lambda_after_target_mc", "Lambda after target mc", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+
+    // Antilambda
+    registryData.add("AntiLambda_before_target_data", "AntiLambda before target data", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    registryData.add("AntiLambda_after_target_data", "AntiLambda after target data", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    registryMC.add("AntiLambda_before_target_mc", "AntiLambda before target mc", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
+    registryMC.add("AntiLambda_after_target_mc", "AntiLambda after target mc", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, 1.09, 1.14, "m (GeV/c^{2})"}});
 
     // Generated Distributions
-    registryMC.add("Lambda_before_target_mc_gen", "Lambda before target mc gen", HistType::kTH1F, {{200, 0.0, 10.0, "p (GeV/c)"}});
-    registryMC.add("Lambda_after_target_mc_gen", "Lambda after target mc gen", HistType::kTH1F, {{200, 0.0, 10.0, "p (GeV/c)"}});
-    registryMC.add("AntiLambda_before_target_mc_gen", "AntiLambda before target mc gen", HistType::kTH1F, {{200, 0.0, 10.0, "p (GeV/c)"}});
-    registryMC.add("AntiLambda_after_target_mc_gen", "AntiLambda after target mc gen", HistType::kTH1F, {{200, 0.0, 10.0, "p (GeV/c)"}});
+    registryMC.add("Lambda_before_target_mc_gen", "Lambda before target mc gen", HistType::kTH1F, {{100, 0.0, 10.0, "p (GeV/c)"}});
+    registryMC.add("Lambda_after_target_mc_gen", "Lambda after target mc gen", HistType::kTH1F, {{100, 0.0, 10.0, "p (GeV/c)"}});
+    registryMC.add("AntiLambda_before_target_mc_gen", "AntiLambda before target mc gen", HistType::kTH1F, {{100, 0.0, 10.0, "p (GeV/c)"}});
+    registryMC.add("AntiLambda_after_target_mc_gen", "AntiLambda after target mc gen", HistType::kTH1F, {{100, 0.0, 10.0, "p (GeV/c)"}});
 
     // Resolution
-    registryMC.add("K0_Rresolution_before_target", "K0 Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
-    registryMC.add("K0_Rresolution_after_target", "K0 Rresolution after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
-    registryMC.add("Lambda_Rresolution_before_target", "Lambda Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
-    registryMC.add("Lambda_Rresolution_after_target", "Lambda Rresolution after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
-    registryMC.add("AntiLambda_Rresolution_before_target", "AntiLambda Rresolution before target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
-    registryMC.add("AntiLambda_Rresolution_after_target", "AntiLambda Rresolution after target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {500, -5, 5, "#Delta R (cm)"}});
-
-    /*
-    registryData.add("Csi_before_target", "Csi_before_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.305, 1.34, "m (GeV/c)"}});
-    registryData.add("Csi_after_target", "Csi_after_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.305, 1.34, "m (GeV/c)"}});
-    registryData.add("AntiCsi_before_target", "AntiCsi_before_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.3, 1.35, "m (GeV/c)"}});
-    registryData.add("AntiCsi_after_target", "AntiCsi_after_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.3, 1.35, "m (GeV/c)"}});
-    registryData.add("Omega_before_target", "Omega_before_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.6, 1.75, "m (GeV/c)"}});
-    registryData.add("Omega_after_target", "Omega_after_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.6, 1.75, "m (GeV/c)"}});
-    registryData.add("AntiOmega_before_target", "AntiOmega_before_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.6, 1.75, "m (GeV/c)"}});
-    registryData.add("AntiOmega_after_target", "AntiOmega_after_target", HistType::kTH2F, {{200, 0.0, 10.0, "p (GeV/c)"}, {200, 1.6, 1.75, "m (GeV/c)"}});*/
+    registryMC.add("K0_Rresolution_before_target", "K0 Rresolution before target", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "#Delta R (cm)"}});
+    registryMC.add("K0_Rresolution_after_target", "K0 Rresolution after target", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "#Delta R (cm)"}});
+    registryMC.add("Lambda_Rresolution_before_target", "Lambda Rresolution before target", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "#Delta R (cm)"}});
+    registryMC.add("Lambda_Rresolution_after_target", "Lambda Rresolution after target", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "#Delta R (cm)"}});
+    registryMC.add("AntiLambda_Rresolution_before_target", "AntiLambda Rresolution before target", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "#Delta R (cm)"}});
+    registryMC.add("AntiLambda_Rresolution_after_target", "AntiLambda Rresolution after target", HistType::kTH2F, {{100, 0.0, 10.0, "p (GeV/c)"}, {200, -5, 5, "#Delta R (cm)"}});
   }
 
+  // Hits on ITS Layer
   bool hasHitOnITSlayer(uint8_t itsClsmap, int layer)
   {
     unsigned char test_bit = 1 << layer;
@@ -164,8 +152,8 @@ struct vzero_cascade_absorption {
   }
 
   // Single-Track Selection
-  template <typename T1, typename C>
-  bool passedSingleTrackSelection(const T1& track, const C&)
+  template <typename T1>
+  bool passedSingleTrackSelection(const T1& track)
   {
     // Single-Track Selections
     if (requirehitsITS && (!track.hasITS()))
@@ -186,14 +174,13 @@ struct vzero_cascade_absorption {
   }
 
   // K0s Selections
-  template <typename T1, typename T2, typename C>
-  bool passedK0Selection(const T1& v0, const T2& ntrack, const T2& ptrack,
-                         const C& collision)
+  template <typename V, typename T1, typename T2, typename C>
+  bool passedK0Selection(const V& v0, const T1& ntrack, const T2& ptrack, const C& collision)
   {
     // Single-Track Selections
-    if (!passedSingleTrackSelection(ptrack, collision))
+    if (!passedSingleTrackSelection(ptrack))
       return false;
-    if (!passedSingleTrackSelection(ntrack, collision))
+    if (!passedSingleTrackSelection(ntrack))
       return false;
 
     // Momentum K0 Daughters
@@ -236,14 +223,13 @@ struct vzero_cascade_absorption {
   }
 
   // Lambda Selections
-  template <typename T1, typename T2, typename C>
-  bool passedLambdaSelection(const T1& v0, const T2& ntrack, const T2& ptrack,
-                             const C& collision)
+  template <typename V, typename T1, typename T2, typename C>
+  bool passedLambdaSelection(const V& v0, const T1& ntrack, const T2& ptrack, const C& collision)
   {
     // Single-Track Selections
-    if (!passedSingleTrackSelection(ptrack, collision))
+    if (!passedSingleTrackSelection(ptrack))
       return false;
-    if (!passedSingleTrackSelection(ntrack, collision))
+    if (!passedSingleTrackSelection(ntrack))
       return false;
 
     // Momentum Lambda Daughters
@@ -286,14 +272,13 @@ struct vzero_cascade_absorption {
   }
 
   // AntiLambda Selections
-  template <typename T1, typename T2, typename C>
-  bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack, const T2& ptrack,
-                                 const C& collision)
+  template <typename V, typename T1, typename T2, typename C>
+  bool passedAntiLambdaSelection(const V& v0, const T1& ntrack, const T2& ptrack, const C& collision)
   {
     // Single-Track Selections
-    if (!passedSingleTrackSelection(ptrack, collision))
+    if (!passedSingleTrackSelection(ptrack))
       return false;
-    if (!passedSingleTrackSelection(ntrack, collision))
+    if (!passedSingleTrackSelection(ntrack))
       return false;
 
     // Momentum Lambda Daughters
@@ -355,8 +340,9 @@ struct vzero_cascade_absorption {
     // Event Counter (after cut on z_vtx)
     registryQC.fill(HIST("event_counter_data"), 2.5);
 
-    auto hit_ITS_before_target = static_cast<std::vector<float>>(hit_requirement_before_target);
-    auto hit_ITS_after_target = static_cast<std::vector<float>>(hit_requirement_after_target);
+    // Hits in ITS Layers
+    auto hit_ITS_before_target = static_cast<std::vector<float>>(hit_req_before_target);
+    auto hit_ITS_after_target = static_cast<std::vector<float>>(hit_req_after_target);
 
     // Loop over Reconstructed V0s
     for (auto& v0 : fullV0s) {
@@ -424,15 +410,15 @@ struct vzero_cascade_absorption {
         if (v0.v0radius() > Rmin_afterAbs && v0.v0radius() < Rmax_afterAbs)
           registryData.fill(HIST("AntiLambda_after_target_data"), v0.p(), v0.mAntiLambda());
       }
-    } // end loop on V0s
-  }   // end processData
+    }
+  }
   PROCESS_SWITCH(vzero_cascade_absorption, processData, "Process data", true);
 
   Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
 
   // Process MC Rec
-  void processMCrec(SimCollisions const& collisions, MCTracks const&, aod::V0Datas const& fullV0s, aod::McCollisions const&, const aod::McParticles&)
+  void processMCrec(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::McCollisions const& mcCollisions, const aod::McParticles& mcParticles)
   {
 
     for (const auto& collision : collisions) {
@@ -469,8 +455,8 @@ struct vzero_cascade_absorption {
         if (!negTrack.passedTPCRefit())
           continue;
 
-        auto hit_ITS_before_target = static_cast<std::vector<float>>(hit_requirement_before_target);
-        auto hit_ITS_after_target = static_cast<std::vector<float>>(hit_requirement_after_target);
+        auto hit_ITS_before_target = static_cast<std::vector<float>>(hit_req_before_target);
+        auto hit_ITS_after_target = static_cast<std::vector<float>>(hit_req_after_target);
 
         // ITS Requirement
         bool satisfyITSreq = true;
@@ -502,6 +488,7 @@ struct vzero_cascade_absorption {
           continue;
         }
 
+        // Identification based on PDG
         bool isK0s = false;
         bool isLambda = false;
         bool isAntiLambda = false;
@@ -510,7 +497,6 @@ struct vzero_cascade_absorption {
           for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
             if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == 310)
               isK0s = true;
-
             if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == +3122)
               isLambda = true;
             if (particleMotherOfNeg == particleMotherOfPos && particleMotherOfNeg.pdgCode() == -3122)
@@ -570,10 +556,9 @@ struct vzero_cascade_absorption {
             registryMC.fill(HIST("AntiLambda_Rresolution_after_target"), v0.p(), deltaR);
           }
         }
-
-      } // end loop on V0s
+      }
     }
-  } // end processMC
+  }
 
   void processMCgen(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {

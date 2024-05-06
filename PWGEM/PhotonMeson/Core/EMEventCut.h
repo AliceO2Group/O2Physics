@@ -113,7 +113,7 @@ class EMEventCut : public TNamed
   void SetRequireNoITSROFB(bool flag);
   void SetRequireNoSameBunchPileup(bool flag);
   void SetRequireVertexITSTPC(bool flag);
-  void SetRequireIsGoodZvtxFT0vsPV(bool flag);
+  void SetRequireGoodZvtxFT0vsPV(bool flag);
 
   /// @brief Print the track selection
   void print() const;

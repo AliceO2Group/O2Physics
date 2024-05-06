@@ -326,10 +326,10 @@ inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<floa
 }
 
 template <typename TrackType>
-inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts, float const& TPCresidualCut = 5.0f)
+inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<float>> const& PIDcuts, std::vector<float> const& TPCresidualCut = std::vector<float>{-5.0f, 5.0f})
 {
   int PDG = PIDcuts.first;
-  if (!TPCselection(track, std::make_pair(PDG, std::vector<float>{-TPCresidualCut, TPCresidualCut})))
+  if (!TPCselection(track, std::make_pair(PDG, TPCresidualCut)))
     return false;
 
   float Nsigma = -1000;

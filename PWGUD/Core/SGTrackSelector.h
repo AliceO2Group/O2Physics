@@ -13,17 +13,18 @@
 // \author Sasha Bylinkin, alexander.bylinkin@gmail.com
 // \since  April 2023
 
-#ifndef PWGUD_TASKS_SGTRACKSELECTOR_H_
-#define PWGUD_TASKS_SGTRACKSELECTOR_H_
+#ifndef PWGUD_CORE_SGTRACKSELECTOR_H_
+#define PWGUD_CORE_SGTRACKSELECTOR_H_
 
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
-//#include "Common/DataModel/PIDResponse.h"
-//#include "PWGUD/Core/RLhelper.h"
+// #include "Common/DataModel/PIDResponse.h"
+// #include "PWGUD/Core/RLhelper.h"
 #include <TString.h>
 #include "TLorentzVector.h"
 using namespace std;
@@ -35,19 +36,32 @@ using namespace o2::framework::expressions;
 #define mkaon 0.4937
 #define mproton 0.9383
 template <typename T>
-int trackselector(const T& track)
+int trackselector(const T& track, const std::vector<float>& params)
 {
+  // Ensure the params vector contains all the necessary parameters
+  if (params.size() < 7) {
+    throw std::runtime_error("Insufficient parameters provided");
+  }
   TLorentzVector a;
   a.SetXYZM(track.px(), track.py(), track.pz(), mpion);
-  if (std::abs(track.dcaZ()) > 2.)
+  if (params[0] == 1 && !track.isPVContributor())
     return 0;
-  if (std::abs(track.dcaXY()) > .0105 + .035 / pow(a.Pt(), 1.1))
+  if (std::abs(track.dcaZ()) > params[1])
     return 0;
-  if (track.tpcChi2NCl() > 4)
+  if (!params[2]) {
+    if (std::abs(track.dcaXY()) > .0105 + .035 / pow(a.Pt(), 1.1))
+      return 0;
+  } else {
+    if (std::abs(track.dcaXY()) > params[2])
+      return 0;
+  }
+  if (track.tpcChi2NCl() > params[3])
     return 0;
-  if (track.tpcNClsFindable() < 70)
+  if (track.tpcNClsFindable() < params[4])
     return 0;
-  if (track.itsChi2NCl() > 36)
+  if (track.itsChi2NCl() > params[5])
+    return 0;
+  if (std::abs(a.Eta()) > params[6])
     return 0;
   return 1;
 }
@@ -79,5 +93,46 @@ int trackpid(const T& track, bool use_tof)
   }
   return pid;
 }
-
-#endif // PWGUD_TASKS_SGTRACKSELECTOR_H_
+template <typename T>
+bool selectionPIDKaon(const T& candidate, bool use_tof, float nsigmatpc_cut, float nsigmatof_cut)
+{
+  if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < nsigmatof_cut) {
+    return true;
+  }
+  if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
+    return true;
+  }
+  if (!use_tof && std::abs(candidate.tpcNSigmaKa()) < nsigmatpc_cut) {
+    return true;
+  }
+  return false;
+}
+template <typename T>
+bool selectionPIDPion(const T& candidate, bool use_tof, float nsigmatpc_cut, float nsigmatof_cut)
+{
+  if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < nsigmatof_cut) {
+    return true;
+  }
+  if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+    return true;
+  }
+  if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+    return true;
+  }
+  return false;
+}
+template <typename T>
+bool selectionPIDMuon(const T& candidate, bool use_tof, float nsigmatpc_cut, float nsigmatof_cut)
+{
+  if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaMu() * candidate.tofNSigmaMu() + candidate.tpcNSigmaMu() * candidate.tpcNSigmaMu()) < nsigmatof_cut) {
+    return true;
+  }
+  if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaMu()) < nsigmatpc_cut) {
+    return true;
+  }
+  if (!use_tof && std::abs(candidate.tpcNSigmaMu()) < nsigmatpc_cut) {
+    return true;
+  }
+  return false;
+}
+#endif // PWGUD_CORE_SGTRACKSELECTOR_H_
