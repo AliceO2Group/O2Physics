@@ -521,17 +521,37 @@ struct HfTaskMcValidationRec {
     histContributors->GetXaxis()->SetBinLabel(2, "wrong MC collision");
   }
 
-  void process(HfCand2ProngWithMCRec const& cand2Prongs,
-               HfCand3ProngWithMCRec const& cand3Prongs,
-               TracksWithSel const&,
-               aod::McParticles const& mcParticles,
-               aod::McCollisions const&,
-               CollisionsWithMCLabels const& collisions,
-               aod::BCs const&)
+  void process(CollisionsWithMCLabels::iterator const& collision,
+               aod::McCollisions const&)
+  {
+    // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
+    if (collision.whyRejectColl() != 0) {
+      return;
+    }
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+    auto mcCollision = collision.mcCollision_as<aod::McCollisions>();
+    if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+      return;
+    }
+
+    registry.fill(HIST("histXvtxReco"), collision.posX());
+    registry.fill(HIST("histYvtxReco"), collision.posY());
+    registry.fill(HIST("histZvtxReco"), collision.posZ());
+    registry.fill(HIST("histDeltaZvtx"), collision.numContrib(), collision.posZ() - mcCollision.posZ());
+  } // end process
+
+  void processCollAssoc(CollisionsWithMCLabels const& collisions,
+                        TracksWithSel const&,
+                        aod::McParticles const& mcParticles,
+                        aod::McCollisions const&,
+                        aod::BCs const&)
   {
     // loop over collisions
     for (auto collision = collisions.begin(); collision != collisions.end(); ++collision) {
-      if (collision.whyRejectColl() != 0) { // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
+      // check that collision is selected by hf-track-index-skim-creator-tag-sel-collisions
+      if (collision.whyRejectColl() != 0) {
         continue;
       }
       if (!collision.has_mcCollision()) {
@@ -541,11 +561,6 @@ struct HfTaskMcValidationRec {
       if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
         continue;
       }
-      registry.fill(HIST("histXvtxReco"), collision.posX());
-      registry.fill(HIST("histYvtxReco"), collision.posY());
-      registry.fill(HIST("histZvtxReco"), collision.posZ());
-      auto deltaZ = collision.posZ() - mcCollision.posZ();
-      registry.fill(HIST("histDeltaZvtx"), collision.numContrib(), deltaZ);
       auto tracksGlobalWoDCAColl1 = tracksFilteredGlobalTrackWoDCA->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       registry.fill(HIST("histNtracks"), tracksGlobalWoDCAColl1.size());
       auto tracksColl1 = tracksInAcc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -662,7 +677,16 @@ struct HfTaskMcValidationRec {
         histOriginTracks[index]->Fill(-1.f, track.pt(), track.eta(), -999.f, track.isPVContributor(), track.hasTOF(), nITSlayers);
       }
     }
+  }
+  PROCESS_SWITCH(HfTaskMcValidationRec, processCollAssoc, "Process collision-association information, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
 
+  void processEff(HfCand2ProngWithMCRec const& cand2Prongs,
+                  HfCand3ProngWithMCRec const& cand3Prongs,
+                  aod::TracksWMc const&,
+                  aod::McParticles const& mcParticles,
+                  aod::McCollisions const&,
+                  CollisionsWithMCLabels const& collisions)
+  {
     // loop over 2-prong candidates
     for (const auto& cand2Prong : cand2Prongs) {
 
@@ -691,8 +715,8 @@ struct HfTaskMcValidationRec {
 
       if (whichHad >= 0) {
         int indexParticle = -1;
-        if (cand2Prong.prong0_as<TracksWithSel>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(mcParticles, cand2Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
+        if (cand2Prong.prong0_as<aod::TracksWMc>().has_mcParticle()) {
+          indexParticle = RecoDecay::getMother(mcParticles, cand2Prong.prong0_as<aod::TracksWMc>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         if (indexParticle < 0) {
           continue;
@@ -746,8 +770,8 @@ struct HfTaskMcValidationRec {
 
       if (whichHad >= 0) {
         int indexParticle = -1;
-        if (cand3Prong.prong0_as<TracksWithSel>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(mcParticles, cand3Prong.prong0_as<TracksWithSel>().mcParticle(), PDGArrayParticle[whichHad], true);
+        if (cand3Prong.prong0_as<aod::TracksWMc>().has_mcParticle()) {
+          indexParticle = RecoDecay::getMother(mcParticles, cand3Prong.prong0_as<aod::TracksWMc>().mcParticle(), PDGArrayParticle[whichHad], true);
         }
         if (indexParticle < 0) {
           continue;
@@ -762,7 +786,8 @@ struct HfTaskMcValidationRec {
         histImpactParameterDau[whichHad][whichOrigin][2]->Fill(cand3Prong.impactParameter2());
       }
     } // end loop on 3-prong candidates
-  }   // end process
+  }
+  PROCESS_SWITCH(HfTaskMcValidationRec, processEff, "Compute charm-hadron efficiencies (not all of them are implemented), requires HF candidate creators", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
