@@ -115,7 +115,7 @@ struct qVectorsTable {
 
   std::map<string, bool> useDetector =  {
     {"QvectorFT0Cs",false},
-    {"QvectorFT0Cs",false}, 
+    {"QvectorFT0As",false}, 
     {"QvectorFT0Ms",false},
     {"QvectorFV0As",false},
     {"QvectorBPoss",false},
@@ -479,7 +479,13 @@ struct qVectorsTable {
     qvecAmp.push_back(static_cast<float>(nTrkBNeg));
 
     if (cent < 80) {
-      for (auto i{0u}; i < 6; i++) {
+      int i = 0;
+      for (auto det = useDetector.begin(); det != useDetector.end(); det++) {
+        if (!det.second){
+          i++;
+          continue;
+        }
+
         helperEP.DoRecenter(qvecRe[i * 4 + 1], qvecIm[i * 4 + 1],
                             objQvec->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
 
@@ -494,17 +500,18 @@ struct qVectorsTable {
                          objQvec->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
         helperEP.DoRescale(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3],
                            objQvec->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
+        i++;
       }
     }
 
     // Fill the columns of the Qvectors table.
     qVector(cent, IsCalibrated, qvecRe, qvecIm, qvecAmp);
-    qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + 3], qvecIm[kFT0C * 4 + 3], sumAmplFT0C);
-    qVectorFT0A(IsCalibrated, qvecRe[kFT0A * 4 + 3], qvecIm[kFT0A * 4 + 3], sumAmplFT0A);
-    qVectorFT0M(IsCalibrated, qvecRe[kFT0M * 4 + 3], qvecIm[kFT0M * 4 + 3], sumAmplFT0M);
-    qVectorFV0A(IsCalibrated, qvecRe[kFV0A * 4 + 3], qvecIm[kFV0A * 4 + 3], sumAmplFV0A);
-    qVectorBPos(IsCalibrated, qvecRe[kBPos * 4 + 3], qvecIm[kBPos * 4 + 3], nTrkBPos, TrkBPosLabel);
-    qVectorBNeg(IsCalibrated, qvecRe[kBNeg * 4 + 3], qvecIm[kBNeg * 4 + 3], nTrkBNeg, TrkBNegLabel);
+    if (useDetector["QvectorFT0Cs"]) qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + 3], qvecIm[kFT0C * 4 + 3], sumAmplFT0C);
+    if (useDetector["QvectorFT0As"]) qVectorFT0A(IsCalibrated, qvecRe[kFT0A * 4 + 3], qvecIm[kFT0A * 4 + 3], sumAmplFT0A);
+    if (useDetector["QvectorFT0Ms"]) qVectorFT0M(IsCalibrated, qvecRe[kFT0M * 4 + 3], qvecIm[kFT0M * 4 + 3], sumAmplFT0M);
+    if (useDetector["QvectorFV0As"]) qVectorFV0A(IsCalibrated, qvecRe[kFV0A * 4 + 3], qvecIm[kFV0A * 4 + 3], sumAmplFV0A);
+    if (useDetector["QvectorBPoss"]) qVectorBPos(IsCalibrated, qvecRe[kBPos * 4 + 3], qvecIm[kBPos * 4 + 3], nTrkBPos, TrkBPosLabel);
+    if (useDetector["QvectorBNegs"]) qVectorBNeg(IsCalibrated, qvecRe[kBNeg * 4 + 3], qvecIm[kBNeg * 4 + 3], nTrkBNeg, TrkBNegLabel);
 
   } // End process.
 };
