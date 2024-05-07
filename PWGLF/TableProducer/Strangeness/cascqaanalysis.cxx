@@ -484,7 +484,6 @@ struct cascqaanalysis {
 
     registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, evType);
     registry.fill(HIST("hNchFV0APVContr"), nchFV0, nTracksPVcontr, evType);
-    
 
     if (multQA) {
       registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, evType);
