@@ -1641,26 +1641,14 @@ struct tofSpectra {
           if (evselOptions.removeITSROFrameBorder) {
             isSelected = isSelected && collision.selection_bit(aod::evsel::kNoITSROFrameBorder);
           }
-          if constexpr (fillHistograms) {
-            histos.fill(HIST("evsel"), 4.f);
-          }
           if (evselOptions.removeNoSameBunchPileup) {
             isSelected = isSelected && collision.selection_bit(aod::evsel::kNoSameBunchPileup);
-          }
-          if constexpr (fillHistograms) {
-            histos.fill(HIST("evsel"), 5.f);
           }
           if (evselOptions.requireIsGoodZvtxFT0vsPV) {
             isSelected = isSelected && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
           }
-          if constexpr (fillHistograms) {
-            histos.fill(HIST("evsel"), 6.f);
-          }
           if (evselOptions.requireIsVertexITSTPC) {
             isSelected = isSelected && collision.selection_bit(aod::evsel::kIsVertexITSTPC);
-          }
-          if constexpr (fillHistograms) {
-            histos.fill(HIST("evsel"), 7.f);
           }
           if (evselOptions.removeNoTimeFrameBorder) {
             isSelected = isSelected && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
