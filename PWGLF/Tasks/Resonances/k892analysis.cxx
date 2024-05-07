@@ -102,9 +102,6 @@ struct k892analysis {
   // MC Event selection
   Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
 
-  // event selections
-  Configurable<bool> cfgCentrsel{"cfgCentrsel", false, "enable centrality max cut"};
-  Configurable<int> cMaxCentr{"cMaxCentr", 80, "Maximum centrality of event"};
   // Event selection cuts - Alex (Temporary, need to fix!)
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -264,16 +261,11 @@ struct k892analysis {
     //   // TRD triggered
     //   // return 0;
     // }
-    if (cfgCentrsel) {
-      if (centrality > cMaxCentr)
-        return 0;
-    } else {
-      auto multNTracksPV = collision.multNTracksPV();
-      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-        return 0;
-      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-        return 0;
-    }
+    auto multNTracksPV = collision.multNTracksPV();
+    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      return 0;
+    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      return 0;
     // if (multTrk < fMultCutLow->Eval(centrality))
     //  return 0;
     // if (multTrk > fMultCutHigh->Eval(centrality))
