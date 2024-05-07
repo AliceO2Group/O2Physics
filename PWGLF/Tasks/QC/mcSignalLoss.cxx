@@ -56,7 +56,7 @@ using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod:
 
 namespace
 {
-static const std::vector<int> pdgCodes{211, 321, 2212, 310, 3122};
+static const std::vector<int> pdgCodes{211, 321, 2212, 1000010020, 1000020030, 310, 3122, 1010010030};
 } // namespace
 
 struct mcsignalloss {
@@ -116,8 +116,8 @@ struct mcsignalloss {
       }
 
       for (int i = 0; i < pdgCodes.size(); i++) {
-        if (mcPart.pdgCode() == pdgCodes[i]) {
-          bool fillV0s = i > 2;
+        if (std::abs(mcPart.pdgCode()) == pdgCodes[i]) {
+          bool fillV0s = i > 4;
           histos.fill(HIST("mcGenAll"), mcPart.pt(), i);
           if (fillV0s) {
             histos.fill(HIST("mcGenV0s"), mcPart.pt(), calcDecL(mcPart, particlesMC), i);
