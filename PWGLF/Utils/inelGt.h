@@ -19,6 +19,8 @@
 #ifndef PWGLF_UTILS_INELGT_H_
 #define PWGLF_UTILS_INELGT_H_
 
+#include <vector>
+
 namespace o2
 {
 namespace pwglf
