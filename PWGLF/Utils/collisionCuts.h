@@ -39,13 +39,14 @@ class CollisonCuts
   /// \param checkTrigger whether or not to check for the trigger alias
   /// \param trig Requested trigger alias
   /// \param checkOffline whether or not to check for offline selection criteria
-  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3)
+  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3, bool mbSelection = false)
   {
     mCutsSet = true;
     mZvtxMax = zvtxMax;
     mCheckTrigger = checkTrigger;
     mTrigger = trig;
     mCheckOffline = checkOffline;
+    mMBselection = mbSelection;
     mCheckIsRun3 = checkRun3;
     mApplyTFBorderCut = false;
     mApplyITSTPCvertex = false;
@@ -81,6 +82,9 @@ class CollisonCuts
     LOGF(info, "Debug information for Collison Cuts \n Max. z-vertex: %f \n Check trigger: %d \n Trigger: %d \n Check offline: %d \n", mZvtxMax, mCheckTrigger, mTrigger, mCheckOffline);
   }
 
+  /// Set MB selection
+  void setMBselection(bool mbSelection) { mMBselection = mbSelection; }
+
   /// Scan the trigger alias of the event
   void setInitialTriggerScan(bool checkTrigger) { mInitialTriggerScan = checkTrigger; }
 
@@ -113,6 +117,10 @@ class CollisonCuts
     if (mCheckIsRun3) { // Run3 case
       if (mCheckOffline && !col.sel8()) {
         LOGF(debug, "Offline selection failed (Run3)");
+        return false;
+      }
+      if (mMBselection && !col.selection_bit(aod::evsel::kIsTriggerTVX)) {
+        LOGF(debug, "Offline selection TVX failed (Run3)");
         return false;
       }
       if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) && mApplyTFBorderCut) {
@@ -197,7 +205,7 @@ class CollisonCuts
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   bool mInitialTriggerScan = false;                ///< Check trigger when the event is first selected
   bool mApplyTFBorderCut = false;                  ///< Apply time frame border cut
-  bool mApplyITSTPCvertex = false;                 ///< selects collisions with the vertex made up with at least one ITS-TPC track
+  bool mApplyITSTPCmatching = false;               ///< selects collisions with at least one ITS-TPC track
   bool mApplyZvertexTimedifference = false;        ///< removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference.
   bool mApplyPileupRejection = false;              ///< Pileup rejection
   bool mApplyNoITSROBorderCut = false;             ///< Apply NoITSRO frame border cut

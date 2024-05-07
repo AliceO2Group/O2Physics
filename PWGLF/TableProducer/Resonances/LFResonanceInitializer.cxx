@@ -92,6 +92,7 @@ struct reso2initializer {
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", false, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", 8, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", true, "Evt sel: check for offline selection"};
+  Configurable<bool> ConfEvtMBSelection{"ConfEvtMBSelection", false, "Evt sel: MB selection"};
   Configurable<bool> ConfEvtTFBorderCut{"ConfEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
   Configurable<bool> ConfEvtITSTPCmatching{"ConfEvtITSTPCmatching", false, "Evt sel: apply ITS-TPC matching"};
   Configurable<bool> ConfEvtZvertexTimedifference{"ConfEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
@@ -910,6 +911,7 @@ struct reso2initializer {
       colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, true);
     }
     colCuts.init(&qaRegistry);
+    colCuts.setMBselection(ConfEvtMBSelection);
     colCuts.setApplyTFBorderCut(ConfEvtTFBorderCut);
     colCuts.setApplyITSTPCmatching(ConfEvtITSTPCmatching);
     colCuts.setApplyZvertexTimedifference(ConfEvtZvertexTimedifference);
