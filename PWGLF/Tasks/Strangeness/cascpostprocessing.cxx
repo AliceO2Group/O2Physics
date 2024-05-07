@@ -540,7 +540,7 @@ struct cascpostprocessing {
           break;
       }
 
-      if(TMath::Abs(genCascade.y()) > rap)
+      if (TMath::Abs(genCascade.y()) > rap)
         continue;
 
       // Histos of generated cascades from generated events with accepted z vrtx + chosen event type (evSelFlag) (for signal loss correction)
