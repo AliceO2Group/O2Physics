@@ -729,8 +729,8 @@ struct JetFragmentation {
   template <typename T, typename U, typename V>
   bool V0sAreMatched(T const& v0, U const& particle, V const& /*tracks*/)
   {
-    auto negId = v0.template negTrack_as<V>().template mcParticleId();
-    auto posId = v0.template posTrack_as<V>().template mcParticleId();
+    auto negId = v0.template negTrack_as<V>().mcParticleId();
+    auto posId = v0.template posTrack_as<V>().mcParticleId();
     auto daughters = particle.daughtersIds();
 
     return ((negId == daughters[0] && posId == daughters[1]) || (posId == daughters[0] && negId == daughters[1]));
