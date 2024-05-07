@@ -13,11 +13,6 @@
 /// \author Francesca Ercolessi
 /// \since 21 April 2024
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
 #include <TParameter.h>
 #include <TFile.h>
 #include <TH1F.h>
@@ -27,6 +22,12 @@
 #include <TVector2.h>
 #include <TVector3.h>
 #include "TGrid.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 
 #include "Framework/ASoA.h"
 #include "MathUtils/Utils.h"
@@ -53,6 +54,7 @@ struct hadronnucleicorrelation {
 
   Configurable<bool> doQA{"doQA", true, "save QA histograms"};
   Configurable<bool> isMC{"isMC", false, "is MC"};
+  Configurable<bool> mcCorrelation{"mcCorrelation", false, "true: build the correlation function only for SE"};
   Configurable<bool> disable_pantip{"disable_pantip", false, "disable_pantip"};
   Configurable<bool> docorrection{"docorrection", false, "do efficiency correction"};
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
@@ -117,6 +119,9 @@ struct hadronnucleicorrelation {
   std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_AntiDeAntiPr_SE;
   std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_AntiDeAntiPr_ME;
 
+  std::vector<std::shared_ptr<TH3>> hEtaPhiRec_AntiDeAntiPr_SE;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiDeAntiPr_SE;
+
   int nBins;
   TH2F* hEffpTEta_proton;
   TH2F* hEffpTEta_antiproton;
@@ -154,6 +159,18 @@ struct hadronnucleicorrelation {
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "p-#bar{p}");
 
     nBins = pTBins.value.size() - 1;
+
+    if (mcCorrelation) {
+      for (int i = 0; i < nBins; i++) {
+        auto htempSERec_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiRec_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                         Form("Rec #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptBinnedAxis}});
+        auto htempSEGen_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                         Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptBinnedAxis}});
+        hEtaPhiRec_AntiDeAntiPr_SE.push_back(std::move(htempSERec_AntiDeAntiPr));
+        hEtaPhiGen_AntiDeAntiPr_SE.push_back(std::move(htempSEGen_AntiDeAntiPr));
+      }
+    }
+
     if (!isMC) {
       registry.add("hDebug", "hDebug", {HistType::kTH1I, {{4, 0.f, 4.f}}});
       registry.get<TH1>(HIST("hDebug"))->GetXaxis()->SetBinLabel(1, "all");
@@ -364,11 +381,15 @@ struct hadronnucleicorrelation {
                 if constexpr (MCqa) {
                   registry.fill(HIST("hDeltaPhiAntiDAntiP_GenAndRec_MC"), deltaPhiGen, deltaPhi);
                   registry.fill(HIST("hDeltaEtaAntiDAntiP_GenAndRec_MC"), deltaEtaGen, deltaEta);
+                  if (mcCorrelation) {
+                    hEtaPhiRec_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt());
+                    hEtaPhiGen_AntiDeAntiPr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+                  }
                 }
-              }
+              } // SE
             }
           }
-        }
+        } // nBins loop
       }
     }
   }
@@ -780,8 +801,8 @@ struct hadronnucleicorrelation {
         continue;
       registry.fill(HIST("hNEvents"), 0.5);
 
-      [[maybe_unused]] int vertexBinToMix = std::floor((collision.posZ() + cutzvertex) / (2 * cutzvertex / _vertexNbinsToMix));
-      [[maybe_unused]] int centBinToMix = std::floor(collision.multPerc() / (100.0 / _multNsubBins));
+      int vertexBinToMix = std::floor((collision.posZ() + cutzvertex) / (2 * cutzvertex / _vertexNbinsToMix));
+      int centBinToMix = std::floor(collision.multPerc() / (100.0 / _multNsubBins));
 
       if (selectedtracksMC_antid.find(collision.globalIndex()) != selectedtracksMC_antid.end()) {
         mixbins_antidantip[std::pair<int, float>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
