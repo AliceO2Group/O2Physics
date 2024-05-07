@@ -113,13 +113,13 @@ struct qVectorsTable {
 
   TH3F* objQvec = nullptr;
 
-  std::map<string, bool> useDetector =  {
-    {"QvectorFT0Cs",false},
-    {"QvectorFT0As",false}, 
-    {"QvectorFT0Ms",false},
-    {"QvectorFV0As",false},
+  std::unordered_map<string, bool> useDetector =  {
+    {"QvectorBNegs",false},
     {"QvectorBPoss",false},
-    {"QvectorBNegs",false}
+    {"QvectorFV0As",false}, 
+    {"QvectorFT0Ms",false},
+    {"QvectorFT0As",false},
+    {"QvectorFT0Cs",false}
   };
 
   void init(InitContext& initContext)
@@ -480,8 +480,9 @@ struct qVectorsTable {
 
     if (cent < 80) {
       int i = 0;
-      for (auto det = useDetector.begin(); det != useDetector.end(); det++) {
-        if (!det.second){
+      for (auto det: useDetector) {
+        // Check whether Q-vectors are found for a detector
+        if (!useDetector[det.first.data()]){
           i++;
           continue;
         }
@@ -504,7 +505,7 @@ struct qVectorsTable {
       }
     }
 
-    // Fill the columns of the Qvectors table.
+    // Fill the columns of the Qvectors table if they are found for a detector.
     qVector(cent, IsCalibrated, qvecRe, qvecIm, qvecAmp);
     if (useDetector["QvectorFT0Cs"]) qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + 3], qvecIm[kFT0C * 4 + 3], sumAmplFT0C);
     if (useDetector["QvectorFT0As"]) qVectorFT0A(IsCalibrated, qvecRe[kFT0A * 4 + 3], qvecIm[kFT0A * 4 + 3], sumAmplFT0A);
