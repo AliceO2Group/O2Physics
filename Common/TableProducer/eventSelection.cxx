@@ -680,7 +680,9 @@ struct EventSelectionTask {
       // TODO apply other cuts for sel8
       // TODO introduce sel1 etc?
       // TODO introduce array of sel[0]... sel[8] or similar?
-      bool sel8 = bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder) && bc.selection_bit(kNoITSROFrameBorder);
+      bool sel8 = bc.selection_bit(kIsTriggerTVX);
+      sel8 = sel8 && bc.selection_bit(kNoTimeFrameBorder);
+      sel8 = sel8 && (isMC ? 1 : bc.selection_bit(kNoITSROFrameBorder));
 
       // fill counters
       histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
