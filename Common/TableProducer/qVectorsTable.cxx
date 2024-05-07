@@ -113,14 +113,13 @@ struct qVectorsTable {
 
   TH3F* objQvec = nullptr;
 
-  std::unordered_map<string, bool> useDetector =  {
-    {"QvectorBNegs",false},
-    {"QvectorBPoss",false},
-    {"QvectorFV0As",false}, 
-    {"QvectorFT0Ms",false},
-    {"QvectorFT0As",false},
-    {"QvectorFT0Cs",false}
-  };
+  std::unordered_map<string, bool> useDetector = {
+    {"QvectorBNegs", false},
+    {"QvectorBPoss", false},
+    {"QvectorFV0As", false},
+    {"QvectorFT0Ms", false},
+    {"QvectorFT0As", false},
+    {"QvectorFT0Cs", false}};
 
   void init(InitContext& initContext)
   {
@@ -130,7 +129,7 @@ struct qVectorsTable {
     for (DeviceSpec const& device : workflows.devices) {
       for (auto const& input : device.inputs) {
         LOGF(info, Form("%s", input.matcher.binding.data()));
-        for (auto det: useDetector) {
+        for (auto det : useDetector) {
           if (input.matcher.binding == det.first) {
             useDetector[det.first.data()] = true;
             LOGF(info, Form("Using detector: %s.", det.first.data()));
@@ -292,7 +291,7 @@ struct qVectorsTable {
     /// First check if the collision has a found FT0. If yes, calculate the
     /// Q-vectors for FT0A and FT0C (both real and imaginary parts). If no,
     /// attribute dummy values to the corresponding qVect.
-    if (coll.has_foundFT0() && (useDetector["QvectorFT0As"] || useDetector["QvectorFT0Cs"] || useDetector["QvectorFT0Ms"]) ) {
+    if (coll.has_foundFT0() && (useDetector["QvectorFT0As"] || useDetector["QvectorFT0Cs"] || useDetector["QvectorFT0Ms"])) {
       auto ft0 = coll.foundFT0();
 
       // Check whether FT0-A is being used.
@@ -328,7 +327,6 @@ struct qVectorsTable {
         qVectFT0A[1] = -999.;
       }
 
-
       if (useDetector["QvectorFT0Cs"]) {
         // Repeat the procedure with FT0-C for the found FT0.
         // Start by resetting to zero the intermediate quantities.
@@ -358,8 +356,7 @@ struct qVectorsTable {
       } else {
         qVectFT0C[0] = -999.;
         qVectFT0C[1] = -999.;
-        }
-
+      }
 
       if (sumAmplFT0M > 1e-8 && useDetector["QvectorFT0Ms"]) {
         QvecFT0M /= sumAmplFT0M;
@@ -480,9 +477,9 @@ struct qVectorsTable {
 
     if (cent < 80) {
       int i = 0;
-      for (auto det: useDetector) {
+      for (auto det : useDetector) {
         // Check whether Q-vectors are found for a detector
-        if (!useDetector[det.first.data()]){
+        if (!useDetector[det.first.data()]) {
           i++;
           continue;
         }
@@ -507,12 +504,18 @@ struct qVectorsTable {
 
     // Fill the columns of the Qvectors table if they are found for a detector.
     qVector(cent, IsCalibrated, qvecRe, qvecIm, qvecAmp);
-    if (useDetector["QvectorFT0Cs"]) qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + 3], qvecIm[kFT0C * 4 + 3], sumAmplFT0C);
-    if (useDetector["QvectorFT0As"]) qVectorFT0A(IsCalibrated, qvecRe[kFT0A * 4 + 3], qvecIm[kFT0A * 4 + 3], sumAmplFT0A);
-    if (useDetector["QvectorFT0Ms"]) qVectorFT0M(IsCalibrated, qvecRe[kFT0M * 4 + 3], qvecIm[kFT0M * 4 + 3], sumAmplFT0M);
-    if (useDetector["QvectorFV0As"]) qVectorFV0A(IsCalibrated, qvecRe[kFV0A * 4 + 3], qvecIm[kFV0A * 4 + 3], sumAmplFV0A);
-    if (useDetector["QvectorBPoss"]) qVectorBPos(IsCalibrated, qvecRe[kBPos * 4 + 3], qvecIm[kBPos * 4 + 3], nTrkBPos, TrkBPosLabel);
-    if (useDetector["QvectorBNegs"]) qVectorBNeg(IsCalibrated, qvecRe[kBNeg * 4 + 3], qvecIm[kBNeg * 4 + 3], nTrkBNeg, TrkBNegLabel);
+    if (useDetector["QvectorFT0Cs"])
+      qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + 3], qvecIm[kFT0C * 4 + 3], sumAmplFT0C);
+    if (useDetector["QvectorFT0As"])
+      qVectorFT0A(IsCalibrated, qvecRe[kFT0A * 4 + 3], qvecIm[kFT0A * 4 + 3], sumAmplFT0A);
+    if (useDetector["QvectorFT0Ms"])
+      qVectorFT0M(IsCalibrated, qvecRe[kFT0M * 4 + 3], qvecIm[kFT0M * 4 + 3], sumAmplFT0M);
+    if (useDetector["QvectorFV0As"])
+      qVectorFV0A(IsCalibrated, qvecRe[kFV0A * 4 + 3], qvecIm[kFV0A * 4 + 3], sumAmplFV0A);
+    if (useDetector["QvectorBPoss"])
+      qVectorBPos(IsCalibrated, qvecRe[kBPos * 4 + 3], qvecIm[kBPos * 4 + 3], nTrkBPos, TrkBPosLabel);
+    if (useDetector["QvectorBNegs"])
+      qVectorBNeg(IsCalibrated, qvecRe[kBNeg * 4 + 3], qvecIm[kBNeg * 4 + 3], nTrkBNeg, TrkBNegLabel);
 
   } // End process.
 };
