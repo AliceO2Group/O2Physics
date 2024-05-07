@@ -41,12 +41,16 @@ enum {
   kINELg010,
   kTrig,
   kTrig10,
-  kINELg0Trig,
-  kINELg010Trig,
-  kSel,
-  kSel10,
-  kINELg0Sel,
-  kINELg010Sel, // = 12
+  kTrigINELg0,
+  kTrigINELg010,
+  kSel8,
+  kSel810,
+  kSel8INELg0,
+  kSel8INELg010,
+  kAllCuts,
+  kAllCuts10,
+  kAllCutsINELg0,
+  kAllCutsINELg010,
   kECend,
 };
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (Multiplicity) percentile (Default: FT0M)
@@ -59,6 +63,7 @@ DECLARE_SOA_COLUMN(BMagField, bMagField, float);   //! Magnetic field
 // MC
 DECLARE_SOA_COLUMN(IsVtxIn10, isVtxIn10, bool);               //! Vtx10
 DECLARE_SOA_COLUMN(IsINELgt0, isINELgt0, bool);               //! INEL>0
+DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);         //! TriggerTVX
 DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
 DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
 
@@ -82,6 +87,7 @@ using ResoCollision = ResoCollisions::iterator;
 DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
                   resocollision::IsVtxIn10,
                   resocollision::IsINELgt0,
+                  resocollision::IsTriggerTVX,
                   resocollision::IsInSel8,
                   resocollision::IsInAfterAllCuts);
 using ResoMCCollision = ResoMCCollisions::iterator;
