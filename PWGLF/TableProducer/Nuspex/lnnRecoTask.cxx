@@ -51,7 +51,7 @@ static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3",
 static const std::vector<std::string> particleNames{"3H"};
 
 constexpr int h3DauPdg{1000010030}; // PDG Triton
-constexpr int lnnPdg{1010000030}; // PDG Lnn
+constexpr int lnnPdg{1010000030};   // PDG Lnn
 
 std::shared_ptr<TH1> hEvents;
 std::shared_ptr<TH1> hZvtx;
