@@ -16,14 +16,22 @@
 ///        Based on cascqaanalysis.cxx
 ///
 
+#ifndef PWGLF_UTILS_INELGT_H_
+#define PWGLF_UTILS_INELGT_H_
+
 namespace o2
 {
 namespace pwglf
 {
 
+struct EtaCharge {
+  float eta;
+  int charge;
+};
+
 // Struct for counting charged particles in |eta| region
 template <typename TMcParticles, typename pdgDatabase>
-bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection, pdgDatabase* pdgDB)
+bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection, pdgDatabase pdgDB)
 {
   // INEL > N (at least N+1 charged particles in |eta| < 1.0)
   EtaCharge etaCharge;
@@ -67,3 +75,5 @@ bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection, pdgDatabase*
 
 } // namespace pwglf
 } // namespace o2
+
+#endif
