@@ -859,7 +859,7 @@ struct reso2initializer {
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg0);
     if (inVtx10 && isTrueINELgt0)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg010);
-    
+
     // TVX MB trigger
     if (isTriggerTVX)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kTrig);
@@ -869,7 +869,7 @@ struct reso2initializer {
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kTrigINELg0);
     if (isTriggerTVX && isTrueINELgt0 && inVtx10)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kTrigINELg010);
-    
+
     // Sel8 event selection
     if (isSel8)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kSel8);
