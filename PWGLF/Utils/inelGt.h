@@ -78,4 +78,4 @@ bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection, pdgDatabase 
 } // namespace pwglf
 } // namespace o2
 
-#endif
+#endif PWGLF_UTILS_INELGT_H_
