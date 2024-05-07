@@ -162,10 +162,6 @@ struct sgExclusivePhi {
       hSelectionCounter2->GetXaxis()->SetBinLabel(i + 1, SelectionCuts2[i].Data());
     }
 
-    // TString SelectionCuts[15] = {"NoSelection", "GAPcondition", "PVtracks", "TPCcrossrow", "|nsigmaka|<2", "doublegap", "two tracks", "Phi-peak", "pt<0.2 GeV/c"};
-
-    // now we can set BinLabel in histogram Registry
-
     registry.add("hMassPhiWithoutPID", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1F, {{400, 0., 4.}});
     registry.add("hMassPtPhiWithoutPID", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};Pt;#it{p_{t}}, GeV/c;", kTH2F, {{400, 0., 4.}, {400, 0., 4.}});
     registry.add("hMassPhiWrongMomentumWithoutPID", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1D, {{400, 0., 4.}});
@@ -244,7 +240,6 @@ struct sgExclusivePhi {
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
-  // void process(UDCollisions::iterator const& collision, udtracksfull const& tracks)
   void process(UDCollisionsFull::iterator const& collision, udtracksfull const& tracks)
   {
     registry.fill(HIST("hSelectionCounter"), 0);
@@ -259,7 +254,6 @@ struct sgExclusivePhi {
     registry.fill(HIST("posy"), collision.posY());
     registry.fill(HIST("posz"), collision.posZ());
     int truegapSide = sgSelector.trueGap(collision, FV0_cut, FT0A_cut, FT0C_cut, ZDC_cut);
-    // int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
     gapSide = truegapSide;
