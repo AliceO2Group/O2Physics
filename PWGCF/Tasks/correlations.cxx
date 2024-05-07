@@ -779,6 +779,9 @@ struct CorrelationTask {
       for (auto& collision : collisions) {
         multiplicity = collision.multiplicity();
       }
+      if (cfgVerbosity > 0) {
+        LOGF(info, "  Data multiplicity: %f", multiplicity);
+      }
     }
 
     same->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
@@ -808,7 +811,7 @@ struct CorrelationTask {
   {
     bool useMCMultiplicity = (cfgCentBinsForMC == 0);
     auto getMultiplicity =
-      [&collisions, &useMCMultiplicity, this](aod::CFMcCollision const& col) {
+      [&collisions, &useMCMultiplicity, this](auto& col) {
         if (useMCMultiplicity)
           return col.multiplicity();
         auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, col.globalIndex());
@@ -831,7 +834,7 @@ struct CorrelationTask {
       float multiplicity = getMultiplicity(collision1);
       if (cfgVerbosity > 0) {
         int bin = configurableBinning.getBin(std::tuple(collision1.posZ(), multiplicity));
-        LOGF(info, "processMCMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
+        LOGF(info, "processMCMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), getMultiplicity(collision1), collision2.globalIndex(), collision2.posZ(), getMultiplicity(collision2));
       }
 
       // STEP 0
