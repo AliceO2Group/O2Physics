@@ -241,7 +241,6 @@ struct femtoDreamPairTaskTrackHF {
           continue;
         }
       }
-
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }

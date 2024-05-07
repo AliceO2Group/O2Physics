@@ -74,7 +74,7 @@ class FemtoDreamContainer
   template <bool isHF = false, typename T>
   void init_base(std::string folderName, std::string femtoObs,
                  T& femtoObsAxis, T& pTAxis, T& kTAxis, T& mTAxis, T& multAxis, T& multPercentileAxis,
-                 T& kstarAxis4D, T& mTAxis4D, T& multAxis4D, T& multPercentileAxis4D,
+                 T& /*kstarAxis4D*/, T& mTAxis4D, T& multAxis4D, T& multPercentileAxis4D,
                  bool use4dplots, bool extendedplots, T& mP2Axis)
   {
 
@@ -139,7 +139,7 @@ class FemtoDreamContainer
   // static constexpr ConfigurableAxis ConfBinInvMass{"ConfBinInvMass", {1, 1.5, 3.5}, "InvMass binning"};
   template <bool isHF = false, typename T>
   void init(HistogramRegistry* registry,
-            T& kstarBins, T& pTBins, T& kTBins, T& mTBins, T& multBins, T& multPercentileBins,
+            T& kstarBins, T& pTBins, T& kTBins, T& mTBins, T& multBins, T& /*multPercentileBins*/,
             T& kstarBins4D, T& mTBins4D, T& multBins4D, T& multPercentileBins4D,
             bool isMC, bool use4dplots, bool extendedplots,
             float highkstarCut,
@@ -266,7 +266,6 @@ class FemtoDreamContainer
   template <bool isMC, bool isHF = false, typename T1, typename T2>
   void setPair(T1 const& part1, T2 const& part2, const int mult, const float multPercentile, bool use4dplots, bool extendedplots, bool smearingByOrigin = false)
   {
-
     float femtoObs, femtoObsMC;
     // Calculate femto observable and the mT with reconstructed information
     if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
