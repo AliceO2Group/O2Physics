@@ -315,7 +315,6 @@ struct upcPionAnalysis {
           continue;
         }
 
-        // double momentum = TMath::Sqrt(t.px() * t.px() + t.py() * t.py() + t.pz() * t.pz());
         double dEdx = t.tpcSignal();
 
         if (TMath::Abs(eta(t.px(), t.py(), t.pz()) > 0.9)) {
@@ -349,10 +348,6 @@ struct upcPionAnalysis {
       //_____________________________________
       // Four pions analysis
       if (onlyPionTracks.size() == 4) {
-
-        // if ((onlyPionTracks[0].Eta() > -0.9) && (onlyPionTracks[1].Eta() > -0.9) && (onlyPionTracks[2].Eta() > -0.9) && (onlyPionTracks[3].Eta()> -0.9)) {
-        //   if ((onlyPionTracks[0].Eta() < 0.9) && (onlyPionTracks[1].Eta() < 0.9) && (onlyPionTracks[2].Eta() < 0.9) && (onlyPionTracks[3].Eta()< 0.9)) {
-        //     if ((onlyPionTracks[0].P() > 0.2) && (onlyPionTracks[1].P() > 0.2) && (onlyPionTracks[2].P() > 0.2) && (onlyPionTracks[3].P()> 0.2)) {
 
         registry.fill(HIST("hEta_t1"), onlyPionTracks[0].Eta());
         registry.fill(HIST("hEta_t2"), onlyPionTracks[1].Eta());

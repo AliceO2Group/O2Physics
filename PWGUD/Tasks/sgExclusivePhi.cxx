@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -17,15 +18,13 @@
 #include "TLorentzVector.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/Core/SGSelector.h"
+
 using std::array;
 using namespace std;
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-#define mpion 0.1396   // mass of pion
-#define mkaon 0.493696 // mass of kaon
-// #define mmuon 0.1057 // mass of muon
 
 /// \brief Exclusive phi without PID
 /// \author Simone Ragoni, Creighton
@@ -248,8 +247,6 @@ struct sgExclusivePhi {
     if (gapSide < 0 || gapSide > 2)
       return;
 
-    // registry.fill(HIST("hSelectionCounter"), 1);
-
     registry.fill(HIST("posx"), collision.posX());
     registry.fill(HIST("posy"), collision.posY());
     registry.fill(HIST("posz"), collision.posZ());
@@ -289,7 +286,6 @@ struct sgExclusivePhi {
         registry.fill(HIST("hITSCluster"), trk.itsNCls());
         registry.fill(HIST("hChi2ITSTrkSegment"), trk.itsChi2NCl());
 
-        // double momentum = TMath::Sqrt(trk.px() * trk.px() + trk.py() * trk.py() + trk.pz() * trk.pz());
         double dEdx = trk.tpcSignal();
         registry.fill(HIST("hdEdx"), trk.tpcInnerParam() / trk.sign(), dEdx);
 
@@ -324,14 +320,8 @@ struct sgExclusivePhi {
         onlyKaonTracks.push_back(kaon);
         onlyKaonSigma.push_back(nSigmaKa);
         rawKaonTracks.push_back(trk);
-        // registry.fill(HIST("hdEdxKaon"), momentum, dEdx);
-        // registry.fill(HIST("hSelectionCounter"), 4);
 
       } // trk loop
-
-      // registry.fill(HIST("hTracksKaons"), rawKaonTracks.size());
-      // Creating phis using Kaon PID
-      // registry.fill(HIST("hSelectionCounter"), 5);
 
       if (onlyKaonTracks.size() == 2) {
         registry.fill(HIST("hSelectionCounter"), 7);
@@ -394,20 +384,14 @@ struct sgExclusivePhi {
         registry.fill(HIST("hSelectionCounter2"), 1);
         registry.fill(HIST("hTracks"), t.size());
 
-        /* if(t.itsNCls() < 4) {
-         continue;
-         }*/
-
         double momentum = TMath::Sqrt(t.px() * t.px() + t.py() * t.py() + t.pz() * t.pz());
         double dEdx = t.tpcSignal();
-
-        // registry.fill(HIST("hMomentum"), momentum);
 
         int clusterSize[7];
         double averageClusterSize = 0.;
         for (int i = 0; i < 7; i++) { // info stored in 4 bits
           clusterSize[i] = (((1 << 4) - 1) & (t.itsClusterSizes() >> 4 * i));
-          averageClusterSize += (double)clusterSize[i];
+          averageClusterSize += static_cast<double>(clusterSize[i]);
         }
         averageClusterSize /= 7.;
         registry.fill(HIST("hClusterSizeAllTracks"), averageClusterSize);
@@ -422,10 +406,6 @@ struct sgExclusivePhi {
         }
         registry.fill(HIST("hSelectionCounter2"), 3);
         registry.fill(HIST("hdEdxKaon5"), t.tpcInnerParam() / t.sign(), dEdx);
-
-        /* if (momentum > 0.2) {
-         continue;
-         }*/
 
         if (t.pt() > 0.180) {
           continue;
@@ -659,16 +639,17 @@ struct sgExclusivePhi {
         double dEdx = onlyKaonBandPID[0].tpcSignal();
         registry.fill(HIST("hdEdxKaon9"), momentum, dEdx);
 
-        registry.fill(HIST("hTracksITSonly"), allTracksAreITSonlyAndFourITSclusters.size());
+        auto ksize = allTracksAreITSonlyAndFourITSclusters.size();
+        registry.fill(HIST("hTracksITSonly"), ksize);
 
-        TLorentzVector reallyPhi[allTracksAreITSonlyAndFourITSclusters.size()];
-        for (int kaon = 0; kaon < allTracksAreITSonlyAndFourITSclusters.size(); kaon++) {
+        TLorentzVector reallyPhi[ksize];
+        for (int kaon = 0; kaon < ksize; kaon++) {
 
           int clusterSize[7];
           double averageClusterSize = 0.;
           for (int i = 0; i < 7; i++) { // info stored in 4 bits
             clusterSize[i] = (((1 << 4) - 1) & (onlyITS[kaon].itsClusterSizes() >> 4 * i));
-            averageClusterSize += (double)clusterSize[i];
+            averageClusterSize += static_cast<double>(clusterSize[i]);
           }
           averageClusterSize /= 7.;
           registry.fill(HIST("hClusterSizeOnlyITS"), averageClusterSize);
@@ -681,8 +662,7 @@ struct sgExclusivePhi {
             registry.fill(HIST("KaonBandPHI/hMassPhiIdentifiedKaonAndITSkaon"), reallyPhi[kaon].M());
           }
         }
-      }
-
+      } // Kaon Band
     } // double gap
   } // end of process
 
