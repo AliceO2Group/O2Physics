@@ -65,6 +65,8 @@ std::shared_ptr<TH2> hdEdxTot;
 std::shared_ptr<TH1> hDecayChannel;
 std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
+std::shared_ptr<TH2> hnSigmaTPCp_momentum;
+std::shared_ptr<TH2> hnSigmaTPCn_momentum;
 } // namespace
 
 struct lnnCandidate {
@@ -119,7 +121,7 @@ struct lnnRecoTask {
   Configurable<float> masswidth{"lnnmasswidth", 0.06, "Mass width (GeV/c^2)"};
   Configurable<float> dcav0dau{"lnndcaDau", 1.0, "DCA V0 Daughters"};
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the lnncandidate"};
-  Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 1, "Minimum rigidity of the triton candidate"};
+  Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.5, "Minimum rigidity of the triton candidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
   Configurable<float> nSigmaMax3H{"nSigmaMax3H", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
@@ -146,11 +148,12 @@ struct lnnRecoTask {
   Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
 
   // histogram axes
-  ConfigurableAxis rigidityBins{"rigidityBins", {200, -10.f, 10.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
+  ConfigurableAxis rigidityBins{"rigidityBins", {1000, -10.f, 10.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
   ConfigurableAxis dEdxBins{"dEdxBins", {1000, 0.f, 1000.f}, "Binning for dE/dx"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
   ConfigurableAxis zVtxBins{"zVtxBins", {100, -20.f, 20.f}, "Binning for n sigma"};
   ConfigurableAxis centBins{"centBins", {100, 0.f, 100.f}, "Binning for centrality"};
+  ConfigurableAxis nBinsP{"BinsP", {200, 0.f, 10.f}, "N bins in p histo"};
 
   // std vector of candidates
   std::vector<lnnCandidate> lnnCandidates;
@@ -193,14 +196,17 @@ struct lnnRecoTask {
     const AxisSpec nSigma3HAxis{nSigmaBins, "n_{#sigma}({}^{3}H)"};
     const AxisSpec zVtxAxis{zVtxBins, "z_{vtx} (cm)"};
     const AxisSpec centAxis{centBins, "Centrality"};
+    const AxisSpec PAxis{nBinsP, "#it{p}^{TPC}"};
 
     hNsigma3HSel = qaRegistry.add<TH2>("hNsigma3HSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HAxis});
     hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hdEdxTot = qaRegistry.add<TH2>("hdEdxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+    hnSigmaTPCp_momentum = qaRegistry.add<TH2>("SigmaTPCpos_vs_TPCmomentum", "; p_{TPC}/z (GeV/#it{c}); nSigmaTPCpos", HistType::kTH2F, {PAxis, nSigma3HAxis});
+    hnSigmaTPCn_momentum = qaRegistry.add<TH2>("SigmaTPCneg_vs_TPCmomentum", "; p_{TPC}/z (GeV/#it{c}); nSigmaTPCneg", HistType::kTH2F, {PAxis, nSigma3HAxis});
+
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
-    hEvents->GetXaxis()->SetBinLabel(3, "z vtx");
     if (doprocessMC) {
       hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hDecayChannel->GetXaxis()->SetBinLabel(1, "2-body");
@@ -280,24 +286,15 @@ struct lnnRecoTask {
       if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax)
         continue;
 
-      // temporary fix: tpcInnerParam() returns the momentum in all the software tags before: https://github.com/AliceO2Group/AliceO2/pull/12521
-      bool posTritonPID = posTrack.pidForTracking() == o2::track::PID::Triton;
-      bool negTritonPID = negTrack.pidForTracking() == o2::track::PID::Triton;
       float posRigidity = posTrack.tpcInnerParam();
       float negRigidity = negTrack.tpcInnerParam();
 
-      if (posTritonPID) {
-        hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
-      }
-
-      if (negTritonPID) {
-        hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
-      }
+      hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
+      hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
 
       // Bethe-Bloch calcution for 3H
-      double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
-
-      double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
+      double expBethePos{o2::tpc::BetheBlochAleph(static_cast<float>(posRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
+      double expBetheNeg{o2::tpc::BetheBlochAleph(static_cast<float>(negRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
 
       // nSigma calculation
       double expSigmaPos{expBethePos * mBBparams3H[5]};
@@ -329,6 +326,13 @@ struct lnnRecoTask {
       lnnCand.clusterSizeITSPi = !lnnCand.isMatter ? posTrack.itsClusterSizes() : negTrack.itsClusterSizes();
       lnnCand.mom3HTPC = lnnCand.isMatter ? posRigidity : negRigidity;
       lnnCand.momPiTPC = !lnnCand.isMatter ? posRigidity : negRigidity;
+
+      hnSigmaTPCp_momentum->Fill(posTrack.tpcInnerParam(), nSigmaTPCpos);
+      hnSigmaTPCn_momentum->Fill(negTrack.tpcInnerParam(), nSigmaTPCneg);
+
+      int chargeFactor = -1 + 2 * lnnCand.isMatter;
+      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
+      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
 
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
@@ -394,6 +398,7 @@ struct lnnRecoTask {
 
       for (int i = 0; i < 3; i++) {
         lnnCand.decVtx[i] = lnnCand.decVtx[i] - primVtx[i];
+        LOG(info) << lnnCand.decVtx[i];
       }
 
       // if survived all selections, propagate decay daughters to PV
@@ -409,10 +414,6 @@ struct lnnRecoTask {
       lnnCand.isReco = true;
       lnnCand.posTrackID = posTrack.globalIndex();
       lnnCand.negTrackID = negTrack.globalIndex();
-
-      int chargeFactor = -1 + 2 * lnnCand.isMatter;
-      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
-      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
 
       lnnCandidates.push_back(lnnCand);
     }
