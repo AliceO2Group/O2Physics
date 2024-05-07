@@ -37,7 +37,6 @@
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -60,7 +59,7 @@ struct TrackEfficiencyJets {
   Configurable<double> centralityMin{"centralityMin", -999, ""};
   Configurable<double> centralityMax{"centralityMax", 999, ""};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> trackDcaZmax{"trackDcaZmax", 2, "maximum dcaZ to PV acceptance for tracks"};
+  Configurable<float> uniformTrackDcaZmax{"uniformTrackDcaZmax", 2, "maximum dcaZ to PV acceptance for uniformTracks"};
 
   int eventSelection = -1;
   int trackSelection = -1;
@@ -77,7 +76,13 @@ struct TrackEfficiencyJets {
 
   double maxDcaXYPtDep(double pt) // global track default: see https://github.com/AliceO2Group/O2Physics/blob/master/Common/Core/TrackSelectionDefaults.cxx
   {
-    return 0.0105f + 0.0350f / pow(pt, 1.1f); // could also just re-add this passedDCAxy cut to the uniformTrack selection; studying this cut myself sounds tricky as there are 3 variables
+    return 0.0105f + 0.0350f / pow(pt, 1.1f);
+  }
+
+  template <typename T>
+  bool isPrimaryTrackFromCuts(T const& track)
+  {
+    return track.dcaXY() < maxDcaXYPtDep(track.pt()) || track.dcaZ() < uniformTrackDcaZmax;
   }
 
   void init(o2::framework::InitContext&)
@@ -119,19 +124,17 @@ struct TrackEfficiencyJets {
 
   Preslice<myJetTracksMCD> tracksPerJCollision = o2::aod::jtrack::collisionId;
 
-  void process(JetMcCollision const& mcCollision, 
-              soa::SmallGroups<JetCollisionsMCD> const& collisions, //smallgroups gives only the collisions associated to the current mccollision, thanks to the mccollisionlabel pre-integrated in jetcollisionsmcd
-              soa::Join<myJetTracksMCD, aod::JTrackExtras> const& jetTracks,
-              JetParticlesWithOriginal const& jMcParticles,
-              aod::McParticles const&)
+  void process(JetMcCollision const& mcCollision,
+               soa::SmallGroups<JetCollisionsMCD> const& collisions, // smallgroups gives only the collisions associated to the current mccollision, thanks to the mccollisionlabel pre-integrated in jetcollisionsmcd
+               soa::Join<myJetTracksMCD, aod::JTrackExtras> const& jetTracks,
+               JetParticlesWithOriginal const& jMcParticles,
+               aod::McParticles const&)
   {
     // missing:
     //   * constexpr auto hasCentrality = CollisionMCRecTableCentFT0C::template contains<aod::CentFT0Cs>();
     //           if constexpr (hasCentrality) {
     //   * dividing in centrality bins
     // I should maybe introduce the sel8 cuts on the collisoins (reco, but what about mccoll? maybe not htat way included in efficiency)
-
-
 
     registry.fill(HIST("hMcCollCutsCounts"), 0.5);
     if (!(mcCollision.posZ() < vertexZCut)) {
@@ -149,9 +152,9 @@ struct TrackEfficiencyJets {
 
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    for (auto& collision : collisions){
+    for (auto& collision : collisions) {
       if (jetderiveddatautilities::selectCollision(collision, eventSelection)) { // Skipping MC events whose only reco collision isn't sel8
-        hasSel8Coll = true; // should I actually put this cut after filling the denominator? for now before to try and get same results as Abhi
+        hasSel8Coll = true;                                                      // should I actually put this cut after filling the denominator? for now before to try and get same results as Abhi
       }
       if (!checkCentrality || ((centralityMin < collision.centrality()) && (collision.centrality() < centralityMax))) {
         centralityCheck = true;
@@ -165,7 +168,7 @@ struct TrackEfficiencyJets {
       return;
     }
     registry.fill(HIST("hMcCollCutsCounts"), 5.5);
-    
+
     for (auto& jMcParticle : jMcParticles) {
       auto mcParticle = jMcParticle.mcParticle_as<aod::McParticles>();
 
@@ -189,18 +192,18 @@ struct TrackEfficiencyJets {
       if (checkProducedByGen && !mcParticle.producedByGenerator()) {
         continue;
       }
-      registry.fill(HIST("hMcPartCutsCounts"), 4.5); // producedByGen
+      registry.fill(HIST("hMcPartCutsCounts"), 4.5);                                 // producedByGen
       if (checkHepMCStatusCodeFinalState && jMcParticle.getHepMCStatusCode() != 1) { // a priori shouldn't be checked as we don't care about secondaries given they pollute the jet; to be discussed in a jet meeting to be sure
         continue;
       }
       registry.fill(HIST("hMcPartCutsCounts"), 5.5); // isFinalState
-      
+
       registry.fill(HIST("h3_track_pt_track_eta_track_phi_mcparticles"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi());
     }
 
     std::vector<int> seenMcParticlesVector; // is reset every mc collision
 
-    for (auto& collision : collisions){ // note: only looks at the only collision of the mcCollision as it is checked that collisions.size() == 1; for loop only present because one might want to change the splitting condition later on 
+    for (auto& collision : collisions) { // note: only looks at the only collision of the mcCollision as it is checked that collisions.size() == 1; for loop only present because one might want to change the splitting condition later on
 
       auto collTracks = jetTracks.sliceBy(tracksPerJCollision, collision.globalIndex());
       for (auto& track : collTracks) {
@@ -211,7 +214,7 @@ struct TrackEfficiencyJets {
         }
         registry.fill(HIST("hTrackCutsCounts"), 1.5);
 
-        if (!jetderiveddatautilities::selectTrack(track, trackSelection) || (trackSelections->compare("uniformTracks") == 1 && (track.dcaXY() > maxDcaXYPtDep(track.pt()) || track.dcaZ() > trackDcaZmax))) { /// if track selection is uniformTrack, I need to add dcaXY and dcaZ cuts as they aren't in the selection so that they can be studied here
+        if (!(jetderiveddatautilities::selectTrack(track, trackSelection) && (trackSelections->compare("uniformTracks") != 1 || isPrimaryTrackFromCuts(track)))) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
           continue;
         }
         registry.fill(HIST("hTrackCutsCounts"), 2.5);
@@ -227,13 +230,11 @@ struct TrackEfficiencyJets {
           continue;
         }
 
-
         registry.fill(HIST("hTrackCutsCounts"), 3.5);
-
 
         registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrackSelColl"), track.mcParticle_as<JetParticlesWithOriginal>().pt(), track.mcParticle_as<JetParticlesWithOriginal>().eta(), track.mcParticle_as<JetParticlesWithOriginal>().phi());
 
-        if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), track.mcParticle_as<JetParticlesWithOriginal>().globalIndex()) != seenMcParticlesVector.end()) { 
+        if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), track.mcParticle_as<JetParticlesWithOriginal>().globalIndex()) != seenMcParticlesVector.end()) {
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrackSelCollSplit"), track.mcParticle_as<JetParticlesWithOriginal>().pt(), track.mcParticle_as<JetParticlesWithOriginal>().eta(), track.mcParticle_as<JetParticlesWithOriginal>().phi());
         } else {
           seenMcParticlesVector.push_back(track.mcParticle_as<JetParticlesWithOriginal>().globalIndex());
