@@ -250,7 +250,7 @@ class OutputSparse : public Output
     Output::init(sparseAxes, allAxes, sysAxes, allAxes_sys, produceTrue, eventMixing, produceLikesign, registry);
 
     mHistogramRegistry->add("unlikepm", "Unlike pm", *mPairHisto);
-    //mHistogramRegistry->add("unlikemp", "Unlike mp", *mPairHisto);
+    // mHistogramRegistry->add("unlikemp", "Unlike mp", *mPairHisto);
     if (produceLikesign) {
       mHistogramRegistry->add("likepp", "Like PP", *mPairHisto);
       mHistogramRegistry->add("likemm", "Like MM", *mPairHisto);

@@ -238,7 +238,7 @@ struct phianalysisTHnSparse {
     return pointPair;
   }
 
-  void processData(EventCandidate const& collision, TrackCandidates const&  /*tracks*/)
+  void processData(EventCandidate const& collision, TrackCandidates const& /*tracks*/)
   {
     auto posDauthers = positive->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDauthers = negative->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
