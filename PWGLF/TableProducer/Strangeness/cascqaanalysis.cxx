@@ -46,11 +46,14 @@ struct cascqaanalysis {
   HistogramRegistry registry{"registry"};
 
   // Event selection criteria
-  Configurable<float> cutzvertex{"cutzvertex", 20.0f, "Accepted z-vertex range (cm)"};
-  Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
-  Configurable<bool> isVertexITSTPCCut{"isVertexITSTPCCut", 1, "Select collisions with at least one ITS-TPC track"};
-  Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Same found-by-T0 bunch crossing rejection"};
-  Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 1, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
+  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<bool> isVertexITSTPCCut{"isVertexITSTPCCut", 0, "Select collisions with at least one ITS-TPC track"};
+  Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 0, "Same found-by-T0 bunch crossing rejection"};
+  Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 0, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
+
+  Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "TVX trigger"};
+  Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 1, "TF border cut"};
+  Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "ITS ROF border cut"};
 
   // Cascade selection criteria
   Configurable<float> scalefactor{"scalefactor", 1.0, "Scaling factor"};
@@ -111,9 +114,9 @@ struct cascqaanalysis {
 
     TString hCandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[6] = {"All", "z vrtx", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
-    TString hNEventsLabels[9] = {"All", "sel8", "kIsVertexITSTPC", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "z vrtx", "INEL", "INEL>0", "INEL>1"};
+    TString hNEventsLabels[11] = {"All", "kIsTriggerTVX", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kIsVertexITSTPC", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "z vrtx", "INEL", "INEL>0", "INEL>1"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{9, 0.f, 9.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{11, 0.f, 11.f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
@@ -152,6 +155,7 @@ struct cascqaanalysis {
         registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3F, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
       }
       registry.add("hFT0MFV0Asignal", "hFT0MFV0Asignal", {HistType::kTH2F, {signalFT0MAxis, signalFV0AAxis}});
+      registry.add("hFT0MsignalPVContr", "hFT0MsignalPVContr", {HistType::kTH3F, {signalFT0MAxis, multNTracksAxis, eventTypeAxis}});
     }
   }
 
@@ -238,16 +242,16 @@ struct cascqaanalysis {
   template <typename TCollision>
   int GetEventTypeFlag(TCollision const& collision)
   {
-    // 0 - INEL, 1 - INEL > 0, 2 - INEL>1
+    // 0 - INEL, 1 - INEL>0, 2 - INEL>1
     int evFlag = 0;
-    registry.fill(HIST("hNEvents"), 6.5); // INEL
-    if (collision.multNTracksPVeta1() > 0) {
+    registry.fill(HIST("hNEvents"), 8.5); // INEL
+    if (collision.isInelGt0()) {
       evFlag += 1;
-      registry.fill(HIST("hNEvents"), 7.5); // INEL>0
+      registry.fill(HIST("hNEvents"), 9.5); // INEL>0
     }
-    if (collision.multNTracksPVeta1() > 1) {
+    if (collision.isInelGt1()) {
       evFlag += 1;
-      registry.fill(HIST("hNEvents"), 8.5); // INEL>1
+      registry.fill(HIST("hNEvents"), 10.5); // INEL>1
     }
     return evFlag;
   }
@@ -258,12 +262,32 @@ struct cascqaanalysis {
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hNEvents"), 0.5);
     }
-    // Event selection if required
-    if (sel8 && !collision.sel8()) {
+
+    // kIsTriggerTVX selection
+    if (isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
     }
+
     if (isFillEventSelectionQA) {
       registry.fill(HIST("hNEvents"), 1.5);
+    }
+
+    // kNoTimeFrameBorder selection (DATA only)
+    if (!isMC && isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 2.5);
+    }
+
+    // kNoITSROFrameBorder selection (DATA only)
+    if (!isMC && isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 3.5);
     }
 
     // kIsVertexITSTPC selection
@@ -271,21 +295,21 @@ struct cascqaanalysis {
       return false;
     }
     if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 2.5);
+      registry.fill(HIST("hNEvents"), 4.5);
     }
     // kNoSameBunchPileup selection
     if (isNoSameBunchPileupCut && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 3.5);
+      registry.fill(HIST("hNEvents"), 5.5);
     }
     // kIsGoodZvtxFT0vsPV selection
     if (isGoodZvtxFT0vsPVCut && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 4.5);
+      registry.fill(HIST("hNEvents"), 6.5);
     }
 
     // Z vertex selection
@@ -293,7 +317,7 @@ struct cascqaanalysis {
       return false;
     }
     if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 5.5);
+      registry.fill(HIST("hNEvents"), 7.5);
       registry.fill(HIST("hZCollision"), collision.posZ());
     }
 
@@ -368,6 +392,7 @@ struct cascqaanalysis {
       registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), nTracksGlobal, evType);
       registry.fill(HIST("hFV0AFT0M"), collision.centFV0A(), collision.centFT0M(), evType);
       registry.fill(HIST("hFT0MFV0Asignal"), collision.multFT0A() + collision.multFT0C(), collision.multFV0A());
+      registry.fill(HIST("hFT0MsignalPVContr"), collision.multFT0A() + collision.multFT0C(), nTracksPVcontr, evType);
     }
 
     float lEventScale = scalefactor;
@@ -459,10 +484,12 @@ struct cascqaanalysis {
 
     registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, evType);
     registry.fill(HIST("hNchFV0APVContr"), nchFV0, nTracksPVcontr, evType);
+    
 
     if (multQA) {
       registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, evType);
       registry.fill(HIST("hFT0MFV0Asignal"), collision.multFT0A() + collision.multFT0C(), collision.multFV0A());
+      registry.fill(HIST("hFT0MsignalPVContr"), collision.multFT0A() + collision.multFT0C(), nTracksPVcontr, evType);
     }
 
     float lEventScale = scalefactor;
@@ -587,10 +614,10 @@ struct cascqaanalysis {
       collWithType.index = collision.mcCollision_as<aod::McCollisions>().globalIndex();
       collWithType.typeFlag |= o2::aod::myMCcascades::EvFlags::EvINEL;
 
-      if (collision.multNTracksPVeta1() > 0) {
+      if (collision.isInelGt0()) {
         collWithType.typeFlag |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
       }
-      if (collision.multNTracksPVeta1() > 1) {
+      if (collision.isInelGt1()) {
         collWithType.typeFlag |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
       }
 
