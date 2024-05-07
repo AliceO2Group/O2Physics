@@ -617,7 +617,7 @@ struct sgExclusivePhi {
             }
           }
         } // end of two tracks only loop
-      } // vertex cut
+      }   // vertex cut
 
       if (allTracksAreKaonsBandPID.size() == 2) {
 
@@ -639,11 +639,10 @@ struct sgExclusivePhi {
         double dEdx = onlyKaonBandPID[0].tpcSignal();
         registry.fill(HIST("hdEdxKaon9"), momentum, dEdx);
 
-        auto ksize = allTracksAreITSonlyAndFourITSclusters.size();
-        registry.fill(HIST("hTracksITSonly"), ksize);
+        // auto ksize = allTracksAreITSonlyAndFourITSclusters.size();
+        registry.fill(HIST("hTracksITSonly"), allTracksAreITSonlyAndFourITSclusters.size());
 
-        TLorentzVector reallyPhi[ksize];
-        for (int kaon = 0; kaon < ksize; kaon++) {
+        for (int kaon = 0; kaon < allTracksAreITSonlyAndFourITSclusters.size(); kaon++) {
 
           int clusterSize[7];
           double averageClusterSize = 0.;
@@ -654,17 +653,18 @@ struct sgExclusivePhi {
           averageClusterSize /= 7.;
           registry.fill(HIST("hClusterSizeOnlyITS"), averageClusterSize);
 
-          reallyPhi[kaon] += allTracksAreKaonsBandPID[0];
-          reallyPhi[kaon] += allTracksAreITSonlyAndFourITSclusters[kaon];
-          registry.fill(HIST("KaonBandPHI/hMassPtPhiIdentifiedKaonAndITSkaon"), reallyPhi[kaon].M(), reallyPhi[kaon].Pt());
-          registry.fill(HIST("KaonBandPHI/hPtPhiIdentifiedKaonAndITSkaon"), reallyPhi[kaon].Pt());
-          if (reallyPhi[kaon].Pt() < 0.2) {
-            registry.fill(HIST("KaonBandPHI/hMassPhiIdentifiedKaonAndITSkaon"), reallyPhi[kaon].M());
+          TLorentzVector reallyPhi;
+          reallyPhi += allTracksAreKaonsBandPID[0];
+          reallyPhi += allTracksAreITSonlyAndFourITSclusters[kaon];
+          registry.fill(HIST("KaonBandPHI/hMassPtPhiIdentifiedKaonAndITSkaon"), reallyPhi.M(), reallyPhi.Pt());
+          registry.fill(HIST("KaonBandPHI/hPtPhiIdentifiedKaonAndITSkaon"), reallyPhi.Pt());
+          if (reallyPhi.Pt() < 0.2) {
+            registry.fill(HIST("KaonBandPHI/hMassPhiIdentifiedKaonAndITSkaon"), reallyPhi.M());
           }
         }
       } // Kaon Band
-    } // double gap
-  } // end of process
+    }   // double gap
+  }     // end of process
 
 }; // end of struct
 

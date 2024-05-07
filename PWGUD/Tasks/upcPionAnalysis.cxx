@@ -766,7 +766,7 @@ struct upcPionAnalysis {
         }
       }
     } // double gap
-  } // end of process
+  }   // end of process
 
 }; // end of struct
 
