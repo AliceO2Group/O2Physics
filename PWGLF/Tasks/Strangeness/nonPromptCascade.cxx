@@ -45,6 +45,12 @@ struct NPCascCandidate {
   float cascPt;
   float cascEta;
   float cascPhi;
+  float protonPt;
+  float protonEta;
+  float pionPt;
+  float pionEta;
+  float bachPt;
+  float bachEta;
   float cascDCAxy;
   float cascDCAz;
   float protonDCAxy;
@@ -552,6 +558,7 @@ struct NonPromptCascadeTask {
       candidates.emplace_back(NPCascCandidate{static_cast<int>(track.globalIndex()),
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
+                                              protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
                                               mDCA.DCAxy, mDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
                                               cascCpa, v0Cpa,
                                               massXi, massOmega, v0mass,
@@ -577,6 +584,7 @@ struct NonPromptCascadeTask {
 
       NPCTableMC(c.pvX, c.pvY, c.pvZ,
                  c.cascPt, c.cascEta, c.cascPhi,
+                 c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                  c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
                  c.casccosPA, c.v0cosPA,
                  c.massXi, c.massOmega, c.massV0,
@@ -785,6 +793,7 @@ struct NonPromptCascadeTask {
       candidates.emplace_back(NPCascCandidate{static_cast<int>(track.globalIndex()),
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
+                                              protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
                                               mDCA.DCAxy, mDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
                                               cascCpa, v0Cpa,
                                               massXi, massOmega, v0mass,
@@ -800,6 +809,7 @@ struct NonPromptCascadeTask {
 
       NPCTable(c.pvX, c.pvY, c.pvZ,
                c.cascPt, c.cascEta, c.cascPhi,
+               c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
                c.casccosPA, c.v0cosPA,
                c.massXi, c.massOmega, c.massV0,

@@ -18,7 +18,7 @@
 
 ClassImp(DalitzEECut);
 
-const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairEtaRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "ITSClusterSize", "Prefilter"};
+const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairRapidityRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "ITSClusterSize", "Prefilter"};
 
 void DalitzEECut::SetPairPtRange(float minPt, float maxPt)
 {
@@ -26,11 +26,11 @@ void DalitzEECut::SetPairPtRange(float minPt, float maxPt)
   mMaxPairPt = maxPt;
   LOG(info) << "DalitzEE Cut, set pair pt range: " << mMinPairPt << " - " << mMaxPairPt;
 }
-void DalitzEECut::SetPairEtaRange(float minEta, float maxEta)
+void DalitzEECut::SetPairYRange(float minY, float maxY)
 {
-  mMinPairEta = minEta;
-  mMaxPairEta = maxEta;
-  LOG(info) << "DalitzEE Cut, set pair eta range: " << mMinPairEta << " - " << mMaxPairEta;
+  mMinPairY = minY;
+  mMaxPairY = maxY;
+  LOG(info) << "DalitzEE Cut, set pair eta range: " << mMinPairY << " - " << mMaxPairY;
 }
 void DalitzEECut::SetPairDCARange(float min, float max)
 {
@@ -139,7 +139,7 @@ void DalitzEECut::ApplyPrefilter(bool flag)
   LOG(info) << "DalitzEE Cut, apply prefilter: " << mApplyPF;
 }
 
-void DalitzEECut::SetPIDScheme(PIDSchemes scheme)
+void DalitzEECut::SetPIDScheme(int scheme)
 {
   mPIDScheme = scheme;
   LOG(info) << "DalitzEE Cut, PID scheme: " << static_cast<int>(mPIDScheme);

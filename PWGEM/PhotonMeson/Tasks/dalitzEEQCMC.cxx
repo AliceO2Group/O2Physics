@@ -48,7 +48,9 @@ using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
 using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyTrack = MyTracks::iterator;
 using MyMCTracks = soa::Join<MyTracks, aod::EMPrimaryElectronMCLabels>;
+using MyMCTrack = MyMCTracks::iterator;
 
 struct DalitzEEQCMC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -202,8 +204,8 @@ struct DalitzEEQCMC {
         for (auto& uls_pair : uls_pairs_per_coll) {
           auto pos = uls_pair.template posTrack_as<MyMCTracks>();
           auto ele = uls_pair.template negTrack_as<MyMCTracks>();
-
-          if (!cut.IsSelected<MyMCTracks>(uls_pair)) {
+          std::tuple<MyMCTrack, MyMCTrack, float> uls_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (!cut.IsSelected<MyMCTracks>(uls_pair_tmp)) {
             continue;
           }
 
@@ -330,8 +332,8 @@ struct DalitzEEQCMC {
         for (auto& lspp_pair : lspp_pairs_per_coll) {
           auto pos = lspp_pair.template posTrack_as<MyMCTracks>();
           auto ele = lspp_pair.template negTrack_as<MyMCTracks>();
-
-          if (!cut.IsSelected<MyMCTracks>(lspp_pair)) {
+          std::tuple<MyMCTrack, MyMCTrack, float> lspp_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (!cut.IsSelected<MyMCTracks>(lspp_pair_tmp)) {
             continue;
           }
 
@@ -394,7 +396,8 @@ struct DalitzEEQCMC {
           auto pos = lsmm_pair.template posTrack_as<MyMCTracks>();
           auto ele = lsmm_pair.template negTrack_as<MyMCTracks>();
 
-          if (!cut.IsSelected<MyMCTracks>(lsmm_pair)) {
+          std::tuple<MyMCTrack, MyMCTrack, float> lsmm_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (!cut.IsSelected<MyMCTracks>(lsmm_pair_tmp)) {
             continue;
           }
 

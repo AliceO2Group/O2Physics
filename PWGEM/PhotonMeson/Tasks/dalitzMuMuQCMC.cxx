@@ -46,7 +46,9 @@ using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMEventIds>;
 using MyDalitzMuMu = MyDalitzMuMus::iterator;
 
 using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMPrimaryMuonsPrefilterBit>;
+using MyTrack = MyTracks::iterator;
 using MyMCTracks = soa::Join<MyTracks, aod::EMPrimaryMuonMCLabels>;
+using MyMCTrack = MyMCTracks::iterator;
 
 struct DalitzMuMuQCMC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -189,7 +191,9 @@ struct DalitzMuMuQCMC {
         for (auto& uls_pair : uls_pairs_per_coll) {
           auto pos = uls_pair.template posTrack_as<MyMCTracks>();
           auto ele = uls_pair.template negTrack_as<MyMCTracks>();
-          if (!cut.IsSelected<MyMCTracks>(uls_pair)) {
+
+          std::tuple<MyMCTrack, MyMCTrack, float> uls_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (!cut.IsSelected<MyMCTracks>(uls_pair_tmp)) {
             continue;
           }
           auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();

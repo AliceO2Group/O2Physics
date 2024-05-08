@@ -898,7 +898,7 @@ struct TaskPolarisationCharmHadrons {
 
     float pxDau{-1000.f}, pyDau{-1000.f}, pzDau{-1000.f};
     for (const auto& dauIdx : listDaughters) {
-      auto dauPart = mcParticles.rawIteratorAt(dauIdx);
+      auto dauPart = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
       if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
         if (std::abs(dauPart.pdgCode()) == kPiPlus) {
           pxDau = dauPart.px();
