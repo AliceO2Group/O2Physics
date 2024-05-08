@@ -74,10 +74,10 @@ double wrapDeltaPhi0PI(double phiD, double phiDbar)
 {
   double deltaPhi = 0.0;
   deltaPhi = RecoDecay::constrainAngle(phiDbar - phiD, 0.0);
-  if(deltaPhi < 0.) {
+  if (deltaPhi < 0.) {
     deltaPhi = deltaPhi + o2::constants::math::TwoPI;
   }
-  if(deltaPhi > o2::constants::math::TwoPI) {
+  if (deltaPhi > o2::constants::math::TwoPI) {
     deltaPhi = o2::constants::math::TwoPI - deltaPhi;
   }
   return deltaPhi;
@@ -461,7 +461,7 @@ struct femtoUniversePairTaskTrackD0 {
         if (cand2.mLambda() > 0.0f && cand2.mAntiLambda() < 0.0f) {
           continue;
         }
-        //deltaPhi = getDeltaPhi(cand1.phi(), cand2.phi());
+        // deltaPhi = getDeltaPhi(cand1.phi(), cand2.phi());
         deltaPhi = wrapDeltaPhi0PI(cand1.phi(), cand2.phi());
         deltaEta = cand2.eta() - cand1.eta();
 
