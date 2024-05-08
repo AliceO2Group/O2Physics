@@ -209,11 +209,11 @@ struct HfTaskMcEfficiencyToXiPi {
     for (const auto& mcParticle : genParticles) {
 
       // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
-      if (rejGenTFAndITSROFBorder){
+      if (rejGenTFAndITSROFBorder) {
         auto coll = mcParticle.template mcCollision_as<MyMcCollisions>();
         auto bc = coll.template bc_as<BCsInfo>();
         if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-         continue;
+          continue;
         }
       }
 
@@ -388,13 +388,13 @@ struct HfTaskMcEfficiencyToXiPi {
     } else if (!matchXic && !matchOmegac) {
       LOGP(fatal, "Please match either Omegac0 or Xic0");
     } else if (matchXic) {
-      if(rejGenTFAndITSROFBordes){
-        candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0, true); 
-      } else{
-        candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0, false); 
+      if (rejGenTFAndITSROFBordes) {
+        candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0, true);
+      } else {
+        candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0, false);
       }
     } else if (matchOmegac) {
-      if(rejGenTFAndITSROFBordes){
+      if (rejGenTFAndITSROFBordes) {
         candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0, true);
       } else {
         candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0, false);
