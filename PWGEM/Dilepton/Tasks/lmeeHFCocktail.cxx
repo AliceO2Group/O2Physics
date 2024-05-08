@@ -48,10 +48,6 @@ DECLARE_SOA_TABLE(HfTable, "AOD", "HFTABLE",
                   hftable::IsHF);
 } // namespace o2::aod
 
-AxisSpec eta_axis = {100, -6., 6., "#eta"};
-AxisSpec pt_axis = {100, 0., 10., "#it{p}_{T} (GeV/c)"};
-AxisSpec mass_axis = {1000, 0., 10., "m_{ee} (GeV/c^{2})"};
-AxisSpec ptee_axis = {100, 0., 10., "#it{p}_{T,ee} (GeV/c)"};
 const char* stageNames[3] = {"gen", "eff", "eff_and_acc"};
 
 template <typename T>
@@ -136,6 +132,17 @@ struct lmeehfcocktailbeauty {
 
   Configurable<float> fConfigPtMin{"cfgPtMin", 0.2, "min. pT"};
   Configurable<float> fConfigEtaMax{"cfgEtaMax", 0.8, "max. |eta|"};
+  Configurable<int> fConfigNBinsPt{"cfgNBinsPt", 200, "number of pT bins"};
+  Configurable<float> fConfigPtBinMin{"cfgPtBinMin", 0., "minimum pT bin"};
+  Configurable<float> fConfigPtBinMax{"cfgPtBinMax", 10., "maximum pT bin"};
+  Configurable<int> fConfigNBinsEta{"cfgNBinsEta", 200, "number of eta bins"};
+  Configurable<float> fConfigEtaBinMax{"cfgEtaBinMax", 10., "maxiumum |eta| bin"};
+  Configurable<int> fConfigNBinsMee{"cfgNBinsMee", 800, "number of M_ee bins"};
+  Configurable<float> fConfigMeeBinMin{"cfgMeeBinMin", 0., "minimum M_ee bin"};
+  Configurable<float> fConfigMeeBinMax{"cfgMeeBinMax", 8., "maximum M_ee bin"};
+  Configurable<int> fConfigNBinsPtee{"cfgNBinsPtee", 400, "number of pT_ee bins"};
+  Configurable<float> fConfigPteeBinMin{"cfgPteeBinMin", 0., "minimum pT_ee bin"};
+  Configurable<float> fConfigPteeBinMax{"cfgPteeBinMax", 10., "maximum pT_ee bin"};
 
   Filter hfFilter = o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kBE) || o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kBCE);
   using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedTracks, aod::HfTable>>;
@@ -153,6 +160,11 @@ struct lmeehfcocktailbeauty {
     const char* typeNamesPairLS = "BCe_Be_DiffB";
     const char* typeNamesSingle[2] = {"be", "bce"};
     const char* typeTitlesSingle[2] = {"b->e", "b->c->e"};
+
+    AxisSpec eta_axis = {fConfigNBinsEta, -fConfigEtaBinMax, fConfigEtaBinMax, "#eta"};
+    AxisSpec pt_axis = {fConfigNBinsPt, fConfigPtBinMin, fConfigPtBinMax, "#it{p}_{T} (GeV/c)"};
+    AxisSpec mass_axis = {fConfigNBinsMee, fConfigMeeBinMin, fConfigMeeBinMax, "m_{ee} (GeV/c^{2})"};
+    AxisSpec ptee_axis = {fConfigNBinsPtee, fConfigPteeBinMin, fConfigPteeBinMax, "#it{p}_{T,ee} (GeV/c)"};
 
     // single histograms
     for (int i = 0; i < 2; i++) {
@@ -253,6 +265,17 @@ struct lmeehfcocktailcharm {
 
   Configurable<float> fConfigPtMin{"cfgPtMin", 0.2, "min. pT"};
   Configurable<float> fConfigEtaMax{"cfgEtaMax", 0.8, "max. |eta|"};
+  Configurable<int> fConfigNBinsPt{"cfgNBinsPt", 200, "number of pT bins"};
+  Configurable<float> fConfigPtBinMin{"cfgPtBinMin", 0., "minimum pT bin"};
+  Configurable<float> fConfigPtBinMax{"cfgPtBinMax", 10., "maximum pT bin"};
+  Configurable<int> fConfigNBinsEta{"cfgNBinsEta", 200, "number of eta bins"};
+  Configurable<float> fConfigEtaBinMax{"cfgEtaBinMax", 10., "maxiumum |eta| bin"};
+  Configurable<int> fConfigNBinsMee{"cfgNBinsMee", 800, "number of M_ee bins"};
+  Configurable<float> fConfigMeeBinMin{"cfgMeeBinMin", 0., "minimum M_ee bin"};
+  Configurable<float> fConfigMeeBinMax{"cfgMeeBinMax", 8., "maximum M_ee bin"};
+  Configurable<int> fConfigNBinsPtee{"cfgNBinsPtee", 400, "number of pT_ee bins"};
+  Configurable<float> fConfigPteeBinMin{"cfgPteeBinMin", 0., "minimum pT_ee bin"};
+  Configurable<float> fConfigPteeBinMax{"cfgPteeBinMax", 10., "maximum pT_ee bin"};
 
   Filter hfFilter = o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kCE);
   using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedTracks, aod::HfTable>>;
@@ -269,6 +292,11 @@ struct lmeehfcocktailcharm {
     const char* typeNamesPairULS = "Ce_Ce";
     const char* typeNamesSingle = "ce";
     const char* typeTitlesSingle = "c->e";
+
+    AxisSpec eta_axis = {fConfigNBinsEta, -fConfigEtaBinMax, fConfigEtaBinMax, "#eta"};
+    AxisSpec pt_axis = {fConfigNBinsPt, fConfigPtBinMin, fConfigPtBinMax, "#it{p}_{T} (GeV/c)"};
+    AxisSpec mass_axis = {fConfigNBinsMee, fConfigMeeBinMin, fConfigMeeBinMax, "m_{ee} (GeV/c^{2})"};
+    AxisSpec ptee_axis = {fConfigNBinsPtee, fConfigPteeBinMin, fConfigPteeBinMax, "#it{p}_{T,ee} (GeV/c)"};
 
     // single histograms
     for (int j = 0; j < 3; j++) {
