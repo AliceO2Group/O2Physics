@@ -527,12 +527,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("PIDStandardKine2")); // standard kine cuts usually are applied via Filter in the task
     return cut;
   }
-  
+
   if (!nameStr.compare("KineCutOnly3")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine3")); // standard kine cuts usually are applied via Filter in the task
     return cut;
   }
-  
+
   if (!nameStr.compare("kaonPID")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
