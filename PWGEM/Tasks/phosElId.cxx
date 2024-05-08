@@ -143,18 +143,6 @@ struct phosElId {
     PhosShiftZ[2] = vPhosShiftZ.at(2);
     PhosShiftZ[3] = vPhosShiftZ.at(3);
 
-    // PhosShiftX = new float[4];
-    // PhosShiftX[0] = 1.99;
-    // PhosShiftX[1] = -0.63;
-    // PhosShiftX[2] = -1.55;
-    // PhosShiftX[3] = -1.63;
-
-    // PhosShiftZ = new float[4];
-    // PhosShiftZ[0] = 4.5;
-    // PhosShiftZ[1] = 3;
-    // PhosShiftZ[2] = 2;
-    // PhosShiftZ[3] = 2;
-
     const AxisSpec
       axisCounter{1, 0, +1, ""},
       axisP{momentum_binning, "p (GeV/c)"},
@@ -190,10 +178,26 @@ struct phosElId {
     mHistManager.add("hColVZ", "Collision vertex coordinate Z", HistType::kTH1F, {axisVColZ});
     mHistManager.add("hTrackPhosProjMod", "Track projection coordinates on PHOS modules", HistType::kTH3F, {axisX, axisZ, axisModes});
 
-    mHistManager.add("hCluE_ncells_mod", "Cluster energy spectrum per module", HistType::kTH3F, {axisE, axisCells, axisModes}); // needs fixing
+    mHistManager.add("hCluE_mod_full", "Cluster energy spectrum (no if statements) per module ", HistType::kTH2F, {axisE, axisModes});
+    mHistManager.add("hCluE_mod_energy", "Cluster energy spectrum (E > 0.3 GeV) per module", HistType::kTH2F, {axisE, axisModes});
+    mHistManager.add("hCluE_mod_time", "Cluster energy spectrum (E > 0.3 GeV)(time +-25 ns) per module", HistType::kTH2F, {axisE, axisModes});
+    mHistManager.add("hCluE_mod_cells", "Cluster energy spectrum (E > 0.3 GeV)(time +-25 ns)(ncells > 3) per module", HistType::kTH2F, {axisE, axisModes});
+    mHistManager.add("hCluE_mod_disp", "Cluster energy spectrum OK dispersion and (E > 0.3 GeV)(time +-25 ns)(ncells > 3) per module", HistType::kTH2F, {axisE, axisModes});
+
+    mHistManager.add("hCluE_ncells_mod", "Cluster energy spectrum per module", HistType::kTH3F, {axisE, axisCells, axisModes});
     mHistManager.add("hCluXZ_mod", "Local cluster X Z per module", HistType::kTH3F, {axisX, axisZ, axisModes});
+
+    mHistManager.add("hCluE_v_p", "Cluster energy vs p", HistType::kTH3F, {axisE, axisP, axisModes});
+    mHistManager.add("hCluE_v_p_disp", "Cluster energy vs p | OK dispersion", HistType::kTH3F, {axisE, axisP, axisModes});
+    mHistManager.add("hCluE_v_p_1sigma", "Cluster energy vs p within trackmatch 1sigma", HistType::kTH3F, {axisE, axisP, axisModes});
+    mHistManager.add("hCluE_v_p_1sigma_disp", "Cluster energy vs p within trackmatch 1sigma | OK dispersion", HistType::kTH3F, {axisE, axisP, axisModes});
+    mHistManager.add("hCluE_v_p_2sigma", "Cluster energy vs p within trackmatch 2sigma", HistType::kTH3F, {axisE, axisP, axisModes});
+    mHistManager.add("hCluE_v_p_2sigma_disp", "Cluster energy vs p within trackmatch 2sigma | OK dispersion", HistType::kTH3F, {axisE, axisP, axisModes});
+
     mHistManager.add("hEp_v_p", "E/p ratio vs p", HistType::kTH3F, {axisEp, axisP, axisModes});
     mHistManager.add("hEp_v_p_disp", "E/p ratio vs p | OK dispersion", HistType::kTH3F, {axisEp, axisP, axisModes});
+    mHistManager.add("hEp_v_p_1sigma", "E/p ratio vs p within trackmatch 1sigma", HistType::kTH3F, {axisEp, axisP, axisModes});
+    mHistManager.add("hEp_v_p_1sigma_disp", "E/p ratio vs p within trackmatch 1sigma | OK dispersion", HistType::kTH3F, {axisEp, axisP, axisModes});
     mHistManager.add("hEp_v_p_2sigma", "E/p ratio vs p within trackmatch 2sigma", HistType::kTH3F, {axisEp, axisP, axisModes});
     mHistManager.add("hEp_v_p_2sigma_disp", "E/p ratio vs p within trackmatch 2sigma | OK dispersion", HistType::kTH3F, {axisEp, axisP, axisModes});
 
@@ -207,11 +211,9 @@ struct phosElId {
     geomPHOS = std::make_unique<o2::phos::Geometry>("PHOS");
     fSigma_dz = new TF1("func", "[0]/(x+[1])^[2]+pol1(3)", 0.3, 10);
     fSigma_dz->SetParameters(parameters_sigma_dz.at(0), parameters_sigma_dz.at(1), parameters_sigma_dz.at(2), parameters_sigma_dz.at(3), parameters_sigma_dz.at(4));
-    // fSigma_dz->SetParameters(20, 0.76, 6.6, 3.6, 0.1);
 
     fSigma_dx = new TF1("fSigma_dz_dx", "[0]/x^[1]+[2]", 0.1, 10);
     fSigma_dx->SetParameters(parameters_sigma_dx.at(0), parameters_sigma_dx.at(1), parameters_sigma_dx.at(2));
-    // fSigma_dx->SetParameters(3, 2.3, 3.1);
 
     fMean_dx_pos_mod1 = new TF1("funcMeandx_pos_mod1", "[0]/(x+[1])^[2]", 0.1, 10);
     fMean_dx_neg_mod1 = new TF1("funcMeandx_neg_mod1", "[0]/(x+[1])^[2]", 0.1, 10);
@@ -307,20 +309,51 @@ struct phosElId {
         }
         mHistManager.fill(HIST("hCluE_ncells_mod"), cluE, clu.ncell(), module);
 
+        mHistManager.fill(HIST("hCluE_v_p"), cluE, trackMom, module);
         mHistManager.fill(HIST("hEp_v_p"), Ep, trackMom, module);
-        if (isDispOK)
+        if (isDispOK) {
+          mHistManager.fill(HIST("hCluE_v_p_disp"), cluE, trackMom, module);
           mHistManager.fill(HIST("hEp_v_p_disp"), Ep, trackMom, module);
-        if (isWithin2Sigma(module, trackMom, dZ, dX)) {
-          mHistManager.fill(HIST("hEp_v_p_2sigma"), Ep, trackMom, module);
-          if (isDispOK)
-            mHistManager.fill(HIST("hEp_v_p_2sigma_disp"), Ep, trackMom, module);
+        }
+        if (!isWithin2Sigma(module, trackMom, dZ, dX))
+          continue;
+        mHistManager.fill(HIST("hCluE_v_p_2sigma"), cluE, trackMom, module);
+        mHistManager.fill(HIST("hEp_v_p_2sigma"), Ep, trackMom, module);
+        if (isDispOK) {
+          mHistManager.fill(HIST("hCluE_v_p_2sigma_disp"), cluE, trackMom, module);
+          mHistManager.fill(HIST("hEp_v_p_2sigma_disp"), Ep, trackMom, module);
+        }
+        if (isWithin1Sigma(module, trackMom, dZ, dX)) {
+          mHistManager.fill(HIST("hCluE_v_p_1sigma"), cluE, trackMom, module);
+          mHistManager.fill(HIST("hEp_v_p_1sigma"), Ep, trackMom, module);
+          if (isDispOK) {
+            mHistManager.fill(HIST("hCluE_v_p_1sigma_disp"), cluE, trackMom, module);
+            mHistManager.fill(HIST("hEp_v_p_1sigma_disp"), Ep, trackMom, module);
+          }
         }
       }
 
       mHistManager.fill(HIST("hTrackPtEta"), track.pt(), track.eta());
       mHistManager.fill(HIST("hTrackDCA"), track.dcaXY(), track.dcaZ());
       mHistManager.fill(HIST("hTrackPhosProjMod"), trackX, trackZ, module);
-    }
+    } // end of double loop
+
+    for (const auto& clu : clusters) {
+      double cluE = clu.e();
+      int mod = clu.mod();
+      mHistManager.fill(HIST("hCluE_mod_full"), cluE, mod);
+      if (cluE > mMinCluE) {
+        mHistManager.fill(HIST("hCluE_mod_energy"), cluE, mod);
+        if (clu.time() < mMaxCluTime || clu.time() > mMinCluTime) {
+          mHistManager.fill(HIST("hCluE_mod_time"), cluE, mod);
+          if (clu.ncell() > mMinCluNcell) {
+            mHistManager.fill(HIST("hCluE_mod_cells"), cluE, mod);
+            if (testLambda(cluE, clu.m02(), clu.m20()))
+              mHistManager.fill(HIST("hCluE_mod_disp"), cluE, mod);
+          }
+        }
+      }
+    } // end of cluster loop
   }
 
   bool isWithin2Sigma(int16_t& mod, float p, float deltaZ, float deltaX)
@@ -344,6 +377,32 @@ struct phosElId {
       if (fabs(deltaZ - PhosShiftZ[3]) > 2 * fSigma_dz->Eval(p))
         return false;
       if (fabs(deltaX - fMean_dx_pos_mod4->Eval(p) + PhosShiftX[3]) > 2 * fSigma_dx->Eval(p))
+        return false;
+    }
+    return true;
+  }
+
+  bool isWithin1Sigma(int16_t& mod, float p, float deltaZ, float deltaX)
+  {
+    if (mod == 1) {
+      if (fabs(deltaZ - PhosShiftZ[0]) > fSigma_dz->Eval(p))
+        return false;
+      if (fabs(deltaX - fMean_dx_pos_mod1->Eval(p) + PhosShiftX[0]) > fSigma_dx->Eval(p))
+        return false;
+    } else if (mod == 2) {
+      if (fabs(deltaZ - PhosShiftZ[1]) > fSigma_dz->Eval(p))
+        return false;
+      if (fabs(deltaX - fMean_dx_pos_mod2->Eval(p) + PhosShiftX[1]) > fSigma_dx->Eval(p))
+        return false;
+    } else if (mod == 3) {
+      if (fabs(deltaZ - PhosShiftZ[2]) > fSigma_dz->Eval(p))
+        return false;
+      if (fabs(deltaX - fMean_dx_pos_mod3->Eval(p) + PhosShiftX[2]) > fSigma_dx->Eval(p))
+        return false;
+    } else if (mod == 4) {
+      if (fabs(deltaZ - PhosShiftZ[3]) > fSigma_dz->Eval(p))
+        return false;
+      if (fabs(deltaX - fMean_dx_pos_mod4->Eval(p) + PhosShiftX[3]) > fSigma_dx->Eval(p))
         return false;
     }
     return true;
