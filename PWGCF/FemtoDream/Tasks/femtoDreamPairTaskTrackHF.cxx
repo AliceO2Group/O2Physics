@@ -98,8 +98,6 @@ struct femtoDreamPairTaskTrackHF {
   Configurable<float> ConfHF_bkgBDT{"ConfHF_bkgBDT", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
 
   Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= ConfHF_CandSel;
-  /// Histogramming for particle 2
-  // FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCharmHadron, 2> trackHistoPartTwo;
 
   using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex>>;
   using FilteredFDParticle = FilteredFDParticles::iterator;
