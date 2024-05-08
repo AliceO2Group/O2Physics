@@ -335,7 +335,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       if constexpr (isMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
       }
-      int8_t flagMcRec, origin;
+      int8_t flagMcRec = 0, origin = 0;
       for (const auto& candidate : candidatesThisColl) {
         if constexpr (isMc) {
           flagMcRec = candidate.flagMcMatchRec();
@@ -356,9 +356,6 @@ struct HfDerivedDataCreatorD0ToKPi {
               continue;
             }
           }
-        } else {
-          flagMcRec = 0;
-          origin = 0;
         }
         auto prong0 = candidate.template prong0_as<TracksWPid>();
         auto prong1 = candidate.template prong1_as<TracksWPid>();
@@ -430,7 +427,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       // Fill MC particle properties
       reserveTable(rowParticleBase, fillParticleBase, sizeTablePart);
       reserveTable(rowParticleId, fillParticleId, sizeTablePart);
-      for (const auto& particle : mcParticles) {
+      for (const auto& particle : particlesThisMcColl) {
         fillTablesParticle(particle, o2::constants::physics::MassD0);
       }
     }
