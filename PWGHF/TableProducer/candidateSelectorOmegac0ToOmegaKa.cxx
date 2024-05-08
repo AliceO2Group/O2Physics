@@ -571,7 +571,7 @@ struct HfCandidateSelectorToOmegaKa {
         registry.fill(HIST("hSelMassCharmBaryon"), 0);
       }
 
-      hfSelTOmegaKa(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
+      hfSelToOmegaKa(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
                   trackKaFromCharm.tpcNSigmaKa(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                   trackKaFromCharm.tofNSigmaKa(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
 
