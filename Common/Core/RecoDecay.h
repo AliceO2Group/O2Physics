@@ -991,6 +991,11 @@ class RecoDecay
 };
 
 /// Calculations using (pT, η, φ) coordinates, aka (transverse momentum, pseudorapidity, azimuth)
+/// \tparam indexPt  index of pT element
+/// \tparam indexEta  index of η element
+/// \tparam indexPhi  index of φ element
+/// \tparam indexM  index of mass element (optional)
+template <size_t indexPt = 0, size_t indexEta = 1, size_t indexPhi = 2, size_t indexM = 3>
 class RecoDecayPtEtaPhi
 {
  public:
@@ -1000,22 +1005,19 @@ class RecoDecayPtEtaPhi
   /// Default destructor
   ~RecoDecayPtEtaPhi() = default;
 
-  /// Sets the convention of ordering pT, η, φ in a vector
-  static constexpr size_t IndexPt = 0;
-  static constexpr size_t IndexEta = 1;
-  static constexpr size_t IndexPhi = 2;
+  // Variable-based calculations
 
-  /// Sets pT, η, φ variables from a vector
-  /// \param vecPtEtaPhi  vector with pT, η, φ elements
-  /// \param ptTo  variable to store pT
-  /// \param etaTo  variable to store η
-  /// \param phiTo  variable to store φ
+  /// Sets a vector from pT, η, φ variables
+  /// \param vecTo  vector to store pT, η, φ elements
+  /// \param ptFrom  variable with pT
+  /// \param etaFrom  variable with η
+  /// \param phiFrom  variable with φ
   template <typename TVec, typename TPt, typename TEta, typename TPhi>
-  static void setPtEtaPhiFromVector(const TVec& vecPtEtaPhi, TPt& ptTo, TEta& etaTo, TPhi& phiTo)
+  static void setVectorFromVariables(TVec& vecTo, TPt ptFrom, TEta etaFrom, TPhi phiFrom)
   {
-    ptTo = vecPtEtaPhi[IndexPt];
-    etaTo = vecPtEtaPhi[IndexEta];
-    phiTo = vecPtEtaPhi[IndexPhi];
+    vecTo[indexPt] = ptFrom;
+    vecTo[indexEta] = etaFrom;
+    vecTo[indexPhi] = phiFrom;
   }
 
   /// px as a function of pT, φ
@@ -1073,6 +1075,96 @@ class RecoDecayPtEtaPhi
   {
     // ln[(E + pz) / √(m^2 + pT^2)]
     return std::log((e(pt, eta, m) + pz(pt, eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
+  }
+
+  // Vector-based calculations
+
+  /// pt
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto pt(const TVec& vec)
+  {
+    return vec[indexPt];
+  }
+
+  /// η
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto eta(const TVec& vec)
+  {
+    return vec[indexEta];
+  }
+
+  /// φ
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto phi(const TVec& vec)
+  {
+    return vec[indexPhi];
+  }
+
+  /// Sets pT, η, φ variables from a vector
+  /// \param vecFrom  vector with pT, η, φ elements
+  /// \param ptTo  variable to store pT
+  /// \param etaTo  variable to store η
+  /// \param phiTo  variable to store φ
+  template <typename TVec, typename TPt, typename TEta, typename TPhi>
+  static void setVariablesFromVector(const TVec& vecFrom, TPt& ptTo, TEta& etaTo, TPhi& phiTo)
+  {
+    ptTo = pt(vecFrom);
+    etaTo = eta(vecFrom);
+    phiTo = phi(vecFrom);
+  }
+
+  /// px as a function of pT, φ
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto px(const TVec& vec)
+  {
+    return px(pt(vec), phi(vec));
+  }
+
+  /// py as a function of pT, φ
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto py(const TVec& vec)
+  {
+    return py(pt(vec), phi(vec));
+  }
+
+  /// pz as a function of pT, η
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto pz(const TVec& vec)
+  {
+    return pz(pt(vec), eta(vec));
+  }
+
+  /// p as a function of pT, η
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto p(const TVec& vec)
+  {
+    return p(pt(vec), eta(vec));
+  }
+
+  /// Energy as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ elements
+  /// \param m  mass
+  template <typename TVec, typename TM>
+  static auto e(const TVec& vec, TM m)
+  {
+    return RecoDecay::e(p(vec), m);
+  }
+
+  /// Rapidity as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ elements
+  /// \param m  mass
+  template <typename TVec, typename TM>
+  static auto y(const TVec& vec, TM m)
+  {
+    // ln[(E + pz) / √(m^2 + pT^2)]
+    return std::log((e(vec, m) + pz(vec)) / RecoDecay::sqrtSumOfSquares(m, pt(vec)));
   }
 };
 
