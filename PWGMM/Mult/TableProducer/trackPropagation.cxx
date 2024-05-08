@@ -89,12 +89,24 @@ struct AmbiguousTrackPropagation {
     ccdb->setLocalObjectValidityChecking();
 
     if (produceHistos) {
-      registry.add({"DeltaZ", " ; #Delta#it{z}", {HistType::kTH1F, {{201, -10.1, 10.1}}}});
-      registry.add({"TracksDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}});
-      registry.add({"ReassignedDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}});
-      registry.add({"TracksOrigDCAXY", " ; DCA_{XY} (wrt orig coll) (cm)", {HistType::kTH1F, {DCAxyAxis}}});
-      registry.add({"TracksAmbDegree", " ; N_{coll}^{comp}", {HistType::kTH1D, {{41, -0.5, 40.5}}}});
-      registry.add({"TrackIsAmb", " ; isAmbiguous", {HistType::kTH1D, {{2, -0.5, 1.5}}}});
+      if (doprocessMFT || doprocessMFTReassoc) {
+        registry.add({"DeltaZ", " ; #Delta#it{z}", {HistType::kTH1F, {{201, -10.1, 10.1}}}});
+        registry.add({"TracksDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}});
+        registry.add({"ReassignedDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}});
+        registry.add({"TracksOrigDCAXY", " ; DCA_{XY} (wrt orig coll) (cm)", {HistType::kTH1F, {DCAxyAxis}}});
+        registry.add({"TracksAmbDegree", " ; N_{coll}^{comp}", {HistType::kTH1D, {{41, -0.5, 40.5}}}});
+        registry.add({"TrackIsAmb", " ; isAmbiguous", {HistType::kTH1D, {{2, -0.5, 1.5}}}});
+      }
+      if (doprocessCentral) {
+        registry.add({"PropagationFailures", "", {HistType::kTH1F, {{5, 0.5, 5.5}}}});
+        auto h = registry.get<TH1>(HIST("PropagationFailures"));
+        auto* x = h->GetXaxis();
+        x->SetBinLabel(1, "Total");
+        x->SetBinLabel(2, "Propagated");
+        x->SetBinLabel(3, "Failed 1");
+        x->SetBinLabel(4, "Failed 2");
+        x->SetBinLabel(5, "Failed 3+");
+      }
     }
   }
 
@@ -164,14 +176,37 @@ struct AmbiguousTrackPropagation {
         if (ids.empty() || (ids.size() == 1 && bestCol == ids[0])) {
           continue;
         }
+        if (produceHistos) {
+          registry.fill(HIST("PropagationFailures"), 1);
+        }
         auto compatibleColls = track.compatibleColl();
+        int failures = 0;
         for (auto& collision : compatibleColls) {
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-          if ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1]))) {
+          auto propagated = o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
+          if (!propagated) {
+            ++failures;
+          }
+          if (propagated && ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1])))) {
             bestCol = collision.globalIndex();
             bestDCA[0] = dcaInfo[0];
             bestDCA[1] = dcaInfo[1];
             bestTrackPar = trackPar;
+          }
+        }
+        if (produceHistos) {
+          switch (failures) {
+            case 0:
+              registry.fill(HIST("PropagationFailures"), 2);
+              break;
+            case 1:
+              registry.fill(HIST("PropagationFailures"), 3);
+              break;
+            case 2:
+              registry.fill(HIST("PropagationFailures"), 4);
+              break;
+            default:
+              registry.fill(HIST("PropagationFailures"), 5);
+              break;
           }
         }
       }
