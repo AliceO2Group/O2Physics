@@ -58,14 +58,14 @@ struct HfDerivedDataCreatorLcToPKPi {
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
-  Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill candidate indices"};
+  Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
   Configurable<bool> fillCollBase{"fillCollBase", true, "Fill collision base properties"};
-  Configurable<bool> fillCollId{"fillCollId", true, "Fill collision indices"};
+  Configurable<bool> fillCollId{"fillCollId", true, "Fill original collision indices"};
   Configurable<bool> fillMcCollBase{"fillMcCollBase", true, "Fill MC collision base properties"};
-  Configurable<bool> fillMcCollId{"fillMcCollId", true, "Fill MC collision indices"};
+  Configurable<bool> fillMcCollId{"fillMcCollId", true, "Fill indices of saved derived reconstructed collisions matched to saved derived MC collisions"};
   Configurable<bool> fillParticleBase{"fillParticleBase", true, "Fill MC particle properties"};
-  Configurable<bool> fillParticleId{"fillParticleId", true, "Fill MC particle indices"};
+  Configurable<bool> fillParticleId{"fillParticleId", true, "Fill original MC indices"};
   // Parameters for production of training samples
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
