@@ -490,10 +490,6 @@ struct HfCandidateCreatorToXiPiMc {
 
   Configurable<bool> matchOmegacMc{"matchOmegacMc", true, "Do MC matching for Omegac0"};
   Configurable<bool> matchXicMc{"matchXicMc", false, "Do MC matching for Xic0"};
-  Configurable<bool> rejGenTFAndITSROFBorders{"rejGenTFAndITSROFBorders", true, "Reject generated particles coming from bc close to TF and ITSROF borders"};
-
-  using MyMcCollisions = soa::Join<aod::McCollisions, aod::McCollisionLabels>;
-  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   float zPvPosMax{1000.f};
 
@@ -523,7 +519,7 @@ struct HfCandidateCreatorToXiPiMc {
   void processMc(aod::HfCandToXiPi const& candidates,
                  aod::TracksWMc const&,
                  aod::McParticles const& mcParticles,
-                 MyMcCollisions const&)
+                 aod::McCollisionLabels const&)
   {
     float ptCharmBaryonGen = -999.;
     float etaCharmBaryonGen = -999.;
@@ -587,7 +583,7 @@ struct HfCandidateCreatorToXiPiMc {
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi);
-              collisionMatched = candidate.collision_as<MyMcCollisions>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
+              collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
         }
@@ -620,7 +616,7 @@ struct HfCandidateCreatorToXiPiMc {
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
-              collisionMatched = candidate.collision_as<MyMcCollisions>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
+              collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
         }
@@ -649,15 +645,6 @@ struct HfCandidateCreatorToXiPiMc {
       debugGenXi = 0;
       debugGenLambda = 0;
       origin = RecoDecay::OriginType::None;
-
-      // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
-      if (rejGenTFAndITSROFBorders) {
-        auto coll = particle.mcCollision_as<MyMcCollisions>();
-        auto bc = coll.bc_as<BCsInfo>();
-        if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-          rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);;
-        }
-      }
 
       auto mcCollision = particle.mcCollision();
       float zPv = mcCollision.posZ();
