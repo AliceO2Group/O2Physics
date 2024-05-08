@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file treeCreatorToXiPi.cxx
-/// \brief Writer of the omegac0 or xic0 to Xi Pi candidates in the form of flat tables to be stored in TTrees.
+/// \file treeCreatorOmegacToOmegaPi.cxx
+/// \brief Writer of the omegac0 to Omega Pi candidates in the form of flat tables to be stored in TTrees.
 ///        In this file are defined and filled the output tables
 ///
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
@@ -62,9 +62,9 @@ DECLARE_SOA_COLUMN(PzPiFromCharmBaryon, pzPiFromCharmBaryon, float);
 DECLARE_SOA_COLUMN(PxLambda, pxLambda, float);
 DECLARE_SOA_COLUMN(PyLambda, pyLambda, float);
 DECLARE_SOA_COLUMN(PzLambda, pzLambda, float);
-DECLARE_SOA_COLUMN(PxPiFromCasc, pxPiFromCasc, float);
-DECLARE_SOA_COLUMN(PyPiFromCasc, pyPiFromCasc, float);
-DECLARE_SOA_COLUMN(PzPiFromCasc, pzPiFromCasc, float);
+DECLARE_SOA_COLUMN(PxKaFromCasc, pxKaFromCasc, float);
+DECLARE_SOA_COLUMN(PyKaFromCasc, pyKaFromCasc, float);
+DECLARE_SOA_COLUMN(PzKaFromCasc, pzKaFromCasc, float);
 DECLARE_SOA_COLUMN(PxPosV0Dau, pxPosV0Dau, float);
 DECLARE_SOA_COLUMN(PyPosV0Dau, pyPosV0Dau, float);
 DECLARE_SOA_COLUMN(PzPosV0Dau, pzPosV0Dau, float);
@@ -89,10 +89,9 @@ DECLARE_SOA_COLUMN(CosPAXYCasc, cosPAXYCasc, double);
 DECLARE_SOA_COLUMN(CTauOmegac, ctauOmegac, double);
 DECLARE_SOA_COLUMN(CTauCascade, ctauCascade, double);
 DECLARE_SOA_COLUMN(CTauV0, ctauV0, double);
-DECLARE_SOA_COLUMN(CTauXic, ctauXic, double);
 DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, double);
 DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, double);
-DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, double);
+DECLARE_SOA_COLUMN(EtaKaFromCasc, etaKaFromCasc, double);
 DECLARE_SOA_COLUMN(EtaPiFromCharmBaryon, etaPiFromCharmBaryon, double);
 DECLARE_SOA_COLUMN(EtaCharmBaryon, etaCharmBaryon, double);
 DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
@@ -132,20 +131,20 @@ DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
 DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
 DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
 DECLARE_SOA_COLUMN(TpcNSigmaPiFromCharmBaryon, tpcNSigmaPiFromCharmBaryon, float);
-DECLARE_SOA_COLUMN(TpcNSigmaPiFromCasc, tpcNSigmaPiFromCasc, float);
+DECLARE_SOA_COLUMN(TpcNSigmaKaFromCasc, tpcNSigmaKaFromCasc, float);
 DECLARE_SOA_COLUMN(TpcNSigmaPiFromLambda, tpcNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TpcNSigmaPrFromLambda, tpcNSigmaPrFromLambda, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromCharmBaryon, tofNSigmaPiFromCharmBaryon, float);
-DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
+DECLARE_SOA_COLUMN(TofNSigmaKaFromCasc, tofNSigmaKaFromCasc, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 
 } // namespace full
 
-DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
+DECLARE_SOA_TABLE(HfToOmegaPiEvs, "AOD", "HFTOOMEPIEV",
                   full::IsEventSel8, full::IsEventSelZ);
 
-DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
+DECLARE_SOA_TABLE(HfOmegac0ToOmegaPiFulls, "AOD", "HFTOOMEPIFULL",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
@@ -156,7 +155,7 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::PxCasc, full::PyCasc, full::PzCasc,
                   full::PxPiFromCharmBaryon, full::PyPiFromCharmBaryon, full::PzPiFromCharmBaryon,
                   full::PxLambda, full::PyLambda, full::PzLambda,
-                  full::PxPiFromCasc, full::PyPiFromCasc, full::PzPiFromCasc,
+                  full::PxKaFromCasc, full::PyKaFromCasc, full::PzKaFromCasc,
                   full::PxPosV0Dau, full::PyPosV0Dau, full::PzPosV0Dau,
                   full::PxNegV0Dau, full::PyNegV0Dau, full::PzNegV0Dau,
                   full::ImpactParCascXY, full::ImpactParPiFromCharmBaryonXY,
@@ -165,7 +164,7 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
                   full::CosPAV0, full::CosPACharmBaryon, full::CosPACasc, full::CosPAXYV0, full::CosPAXYCharmBaryon, full::CosPAXYCasc,
                   full::CTauOmegac, full::CTauCascade, full::CTauV0, full::CTauXic,
-                  full::EtaV0PosDau, full::EtaV0NegDau, full::EtaPiFromCasc, full::EtaPiFromCharmBaryon,
+                  full::EtaV0PosDau, full::EtaV0NegDau, full::EtaKaFromCasc, full::EtaPiFromCharmBaryon,
                   full::EtaCharmBaryon, full::EtaCascade, full::EtaV0,
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::DcaZToPvV0Dau0, full::DcaZToPvV0Dau1, full::DcaZToPvCascDau,
@@ -174,11 +173,11 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::NormImpParCascade, full::NormImpParPiFromCharmBar, full::NormDecayLenCharmBar, full::IsPionGlbTrkWoDca, full::PionItsNCls,
                   full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharmBaryon,
                   full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections, full::PidTpcInfoStored, full::PidTofInfoStored,
-                  full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
-                  full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
+                  full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaKaFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
+                  full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaKaFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
                   full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
 
-DECLARE_SOA_TABLE(HfToXiPiLites, "AOD", "HFTOXIPILITE",
+DECLARE_SOA_TABLE(HfOmegac0ToOmegaPiLites, "AOD", "HFTOOMEPILITE",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
@@ -186,30 +185,30 @@ DECLARE_SOA_TABLE(HfToXiPiLites, "AOD", "HFTOXIPILITE",
                   full::SignDecay,
                   full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
                   full::PxPiFromCharmBaryon, full::PyPiFromCharmBaryon, full::PzPiFromCharmBaryon,
-                  full::PxPiFromCasc, full::PyPiFromCasc, full::PzPiFromCasc,
+                  full::PxKaFromCasc, full::PyKaFromCasc, full::PzKaFromCasc,
                   full::PxPosV0Dau, full::PyPosV0Dau, full::PzPosV0Dau,
                   full::PxNegV0Dau, full::PyNegV0Dau, full::PzNegV0Dau,
                   full::ImpactParCascXY, full::ImpactParPiFromCharmBaryonXY,
                   full::ErrImpactParCascXY, full::ErrImpactParPiFromCharmBaryonXY,
                   full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
-                  full::EtaV0PosDau, full::EtaV0NegDau, full::EtaPiFromCasc, full::EtaPiFromCharmBaryon,
+                  full::EtaV0PosDau, full::EtaV0NegDau, full::EtaKaFromCasc, full::EtaPiFromCharmBaryon,
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau,
                   full::ErrorDecayLengthCharmBaryon, full::NormImpParCascade, full::NormImpParPiFromCharmBar,
                   full::IsPionGlbTrkWoDca, full::PionItsNCls,
                   full::PidTpcInfoStored, full::PidTofInfoStored,
-                  full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
-                  full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
+                  full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaKaFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
+                  full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaKaFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
                   full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched);
 
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct HfTreeCreatorToXiPi {
+struct HfTreeCreatorOmegac0ToOmegaPi {
 
-  Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
-  Produces<o2::aod::HfToXiPiLites> rowCandidateLite;
-  Produces<o2::aod::HfToXiPiEvs> rowEv;
+  Produces<o2::aod::HfOmegac0ToOmegaPiFulls> rowCandidateFull;
+  Produces<o2::aod::HfOmegac0ToOmegaPiLites> rowCandidateLite;
+  Produces<o2::aod::HfToOmegaPiEvs> rowEv;
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
 
@@ -218,9 +217,7 @@ struct HfTreeCreatorToXiPi {
 
   void init(InitContext const&)
   {
-    if ((doprocessMcLiteXic0 && doprocessMcLiteOmegac0) || (doprocessMcFullXic0 && doprocessMcFullOmegac0)) {
-      LOGF(fatal, "Both Xic0 and Omegac0 MC processes enabled, please choose ONLY one!");
-    }
+
   }
 
   template <typename T>
@@ -290,7 +287,6 @@ struct HfTreeCreatorToXiPi {
       candidate.ctauOmegac(),
       candidate.ctauCascade(),
       candidate.ctauV0(),
-      candidate.ctauXic(),
       candidate.etaV0PosDau(),
       candidate.etaV0NegDau(),
       candidate.etaBachFromCasc(),
@@ -327,11 +323,11 @@ struct HfTreeCreatorToXiPi {
       candidate.pidTpcInfoStored(),
       candidate.pidTofInfoStored(),
       candidate.tpcNSigmaPiFromCharmBaryon(),
-      candidate.tpcNSigmaPiFromCasc(),
+      candidate.tpcNSigmaKaFromCasc(),
       candidate.tpcNSigmaPiFromLambda(),
       candidate.tpcNSigmaPrFromLambda(),
       candidate.tofNSigmaPiFromCharmBaryon(),
-      candidate.tofNSigmaPiFromCasc(),
+      candidate.tofNSigmaKaFromCasc(),
       candidate.tofNSigmaPiFromLambda(),
       candidate.tofNSigmaPrFromLambda(),
       flagMc,
@@ -401,11 +397,11 @@ struct HfTreeCreatorToXiPi {
         candidate.pidTpcInfoStored(),
         candidate.pidTofInfoStored(),
         candidate.tpcNSigmaPiFromCharmBaryon(),
-        candidate.tpcNSigmaPiFromCasc(),
+        candidate.tpcNSigmaKaFromCasc(),
         candidate.tpcNSigmaPiFromLambda(),
         candidate.tpcNSigmaPrFromLambda(),
         candidate.tofNSigmaPiFromCharmBaryon(),
-        candidate.tofNSigmaPiFromCasc(),
+        candidate.tofNSigmaKaFromCasc(),
         candidate.tofNSigmaPiFromLambda(),
         candidate.tofNSigmaPrFromLambda(),
         flagMc,
@@ -415,7 +411,7 @@ struct HfTreeCreatorToXiPi {
   }
 
   void processDataFull(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+                       soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -429,10 +425,10 @@ struct HfTreeCreatorToXiPi {
       fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataFull, "Process data with full information", true);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataFull, "Process data with full information", true);
 
-  void processMcFullXic0(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  void processMcFull(MyEventTable const& collisions, MyTrackTable const&,
+                     soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -446,27 +442,10 @@ struct HfTreeCreatorToXiPi {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcFullXic0, "Process MC with full information for xic0", false);
-
-  void processMcFullOmegac0(MyEventTable const& collisions, MyTrackTable const&,
-                            soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates)
-  {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
-    }
-
-    // Filling candidate properties
-    rowCandidateFull.reserve(candidates.size());
-    for (const auto& candidate : candidates) {
-      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
-    }
-  }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcFullOmegac0, "Process MC with full information for omegac0", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcFull, "Process MC with full information", false);
 
   void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+                       soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -480,10 +459,10 @@ struct HfTreeCreatorToXiPi {
       fillCandidateLite(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataLite, "Process data and produce lite table version", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataLite, "Process data and produce lite table version", false);
 
-  void processMcLiteXic0(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  void processMcLite(MyEventTable const& collisions, MyTrackTable const&,
+                    soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -497,29 +476,12 @@ struct HfTreeCreatorToXiPi {
       fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLiteXic0, "Process MC and produce lite table version for xic0", false);
-
-  void processMcLiteOmegac0(MyEventTable const& collisions, MyTrackTable const&,
-                            soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates)
-  {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
-    }
-
-    // Filling candidate properties
-    rowCandidateLite.reserve(candidates.size());
-    for (const auto& candidate : candidates) {
-      fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
-    }
-  }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLiteOmegac0, "Process MC and produce lite table version for omegac0", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcLite, "Process MC and produce lite table version", false);
 
 }; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTreeCreatorToXiPi>(cfgc)};
+    adaptAnalysisTask<HfTreeCreatorOmegac0ToOmegaPi>(cfgc)};
 }
