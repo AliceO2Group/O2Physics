@@ -814,7 +814,7 @@ struct strangederivedbuilder {
     for (auto const& foundV0 : foundV0s) {
       foundV0sPacked[foundV0.globalIndex()] = combineProngIndices(foundV0.posTrackId(), foundV0.negTrackId());
     }
-    
+
     for (auto const& findableV0 : findableV0s) {
       bool hasBeenFound = false;
       uint64_t indexPack = combineProngIndices(findableV0.posTrackId(), findableV0.negTrackId());

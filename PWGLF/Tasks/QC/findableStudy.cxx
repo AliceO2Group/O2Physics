@@ -10,9 +10,9 @@
 // or submit itself to any jurisdiction.
 //
 // Strangeness findable study
-// 
+//
 // --- deals with derived data that has been specifically
-//     generated to do the findable exercise. 
+//     generated to do the findable exercise.
 //
 //    Comments, questions, complaints, suggestions?
 //    Please write to:
@@ -57,7 +57,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using recoStraCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraRawCents_003, aod::StraCollLabels>; 
+using recoStraCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraRawCents_003, aod::StraCollLabels>;
 using reconstructedV0s = soa::Join<aod::V0CoreMCLabels, aod::V0Cores, aod::V0FoundTags, aod::V0MCCollRefs, aod::V0CollRefs, aod::V0Extras>;
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
@@ -78,23 +78,23 @@ struct findableStudy {
     // Event counting
     histos.add("hCentrality", "hCentrality", kTH1D, {axisCentrality});
 
-    // Duplicate counting 
-    histos.add("hNRecoV0s", "hNRecoV0s", kTH1D, {{50, -0.5,49.5f}});
-    histos.add("hNRecoV0sWrongColl", "hNRecoV0sWrongColl", kTH1D, {{50, -0.5,49.5f}});
+    // Duplicate counting
+    histos.add("hNRecoV0s", "hNRecoV0s", kTH1D, {{50, -0.5, 49.5f}});
+    histos.add("hNRecoV0sWrongColl", "hNRecoV0sWrongColl", kTH1D, {{50, -0.5, 49.5f}});
 
     // Findable versus found
     histos.add("h2dPtVsCentrality_All_Findable", "hPtVsCentrality_All_Findable", kTH2D, {axisCentrality, axisPt});
     histos.add("h2dPtVsCentrality_All_Found", "hPtVsCentrality_All_Found", kTH2D, {axisCentrality, axisPt});
 
-    // binary feature study: encode in Y axis 
-    // 0 - positive and negative don't have feature 
-    // 1 - positive has, negative doesn't 
-    // 2 - negative has, positive doesn't 
+    // binary feature study: encode in Y axis
+    // 0 - positive and negative don't have feature
+    // 1 - positive has, negative doesn't
+    // 2 - negative has, positive doesn't
     // 3 - both positive and negative have feature
     //
     // all binary feature presence tests are done such that the "has feature" condition
-    // is evaluated such that out of any reco V0s, at least one V0 has the desired feature. 
-    // this is required for generality 
+    // is evaluated such that out of any reco V0s, at least one V0 has the desired feature.
+    // this is required for generality
 
     const AxisSpec axisBinaryFeature{static_cast<int>(4), -0.5f, +3.5f, ""};
     histos.add("h2dPtVsCentrality_WithTPC_Findable", "hPtVsCentrality_WithTPC_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
@@ -111,29 +111,29 @@ struct findableStudy {
 
   void processEvents(
     recoStraCollisions::iterator const& collision // reco collisions for collision counting
-    )
+  )
   {
     histos.fill(HIST("hCentrality"), collision.centFT0C());
   }
 
   void processV0s(
-    aod::V0MCCores::iterator const& v0, // non-duplicated MC V0 decays
-    soa::SmallGroups<reconstructedV0s> const& recv0s, // reconstructed versions of the v0 
-    recoStraCollisions const&, // reco collisions for de-reference
-    aod::StraMCCollisions const&, // MC collisions for de-reference
-    dauTracks const& // daughter track extras
-    )
+    aod::V0MCCores::iterator const& v0,               // non-duplicated MC V0 decays
+    soa::SmallGroups<reconstructedV0s> const& recv0s, // reconstructed versions of the v0
+    recoStraCollisions const&,                        // reco collisions for de-reference
+    aod::StraMCCollisions const&,                     // MC collisions for de-reference
+    dauTracks const&                                  // daughter track extras
+  )
   {
-    if(v0.pdgCode() != pdgCode || v0.pdgCodePositive() != 211 || v0.pdgCodeNegative() != -211) 
-      return; 
-    if(!v0.isPhysicalPrimary()) 
-      return; 
-    
-    float rapidity = RecoDecay::y(std::array{v0.pxPosMC()+v0.pxNegMC(), v0.pyPosMC()+v0.pyNegMC(), v0.pzPosMC()+v0.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-    if(std::abs(rapidity) > 0.5f) 
-      return; 
+    if (v0.pdgCode() != pdgCode || v0.pdgCodePositive() != 211 || v0.pdgCodeNegative() != -211)
+      return;
+    if (!v0.isPhysicalPrimary())
+      return;
 
-    double ptmc = std::hypot(v0.pxPosMC()+v0.pxNegMC(), v0.pyPosMC()+v0.pyNegMC(), v0.pzPosMC()+v0.pzNegMC());
+    float rapidity = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
+    if (std::abs(rapidity) > 0.5f)
+      return;
+
+    double ptmc = std::hypot(v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC());
 
     // step 1: count number of times this candidate was actually reconstructed
     histos.fill(HIST("hNRecoV0s"), recv0s.size());
@@ -142,50 +142,50 @@ struct findableStudy {
     bool hasBeenFound = false;
 
     // encode conditionals here
-    uint32_t withTPC = 0, withITSTracker = 0, withITSAfterburner = 0, withITSTrackerTPC = 0, withITSABTPC = 0; 
+    uint32_t withTPC = 0, withITSTracker = 0, withITSAfterburner = 0, withITSTrackerTPC = 0, withITSABTPC = 0;
 
     for (auto& recv0 : recv0s) {
-      if(recv0.isFound()){
+      if (recv0.isFound()) {
         hasBeenFound = true;
       }
-      auto coll = recv0.straCollision_as<recoStraCollisions>(); 
-      int mcCollID_fromCollision = coll.straMCCollisionId(); 
-      int mcCollID_fromV0 = recv0.straMCCollisionId(); 
-      if( mcCollID_fromCollision != mcCollID_fromV0){
-        hasWrongCollision = true; 
-      }else{
+      auto coll = recv0.straCollision_as<recoStraCollisions>();
+      int mcCollID_fromCollision = coll.straMCCollisionId();
+      int mcCollID_fromV0 = recv0.straMCCollisionId();
+      if (mcCollID_fromCollision != mcCollID_fromV0) {
+        hasWrongCollision = true;
+      } else {
         // if this is a correctly collision-associated V0, take centrality from here
         // N.B.: this could still be an issue if collision <-> mc collision is imperfect
-        centrality = coll.centFT0C(); 
+        centrality = coll.centFT0C();
       }
 
       // de-reference daughter track extras
       auto pTrack = recv0.posTrackExtra_as<dauTracks>();
       auto nTrack = recv0.negTrackExtra_as<dauTracks>();
 
-      if(pTrack.hasTPC()) 
+      if (pTrack.hasTPC())
         bitset(withTPC, 0);
-      if(nTrack.hasTPC()) 
+      if (nTrack.hasTPC())
         bitset(withTPC, 1);
 
-      if(pTrack.hasITS() && pTrack.itsChi2PerNcl()>-10.0f) 
+      if (pTrack.hasITS() && pTrack.itsChi2PerNcl() > -10.0f)
         bitset(withITSTracker, 0);
-      if(nTrack.hasITS() && nTrack.itsChi2PerNcl()>-10.0f) 
+      if (nTrack.hasITS() && nTrack.itsChi2PerNcl() > -10.0f)
         bitset(withITSTracker, 1);
 
-      if(pTrack.hasITS() && pTrack.itsChi2PerNcl()<-10.0f) 
+      if (pTrack.hasITS() && pTrack.itsChi2PerNcl() < -10.0f)
         bitset(withITSAfterburner, 0);
-      if(nTrack.hasITS() && nTrack.itsChi2PerNcl()<-10.0f) 
+      if (nTrack.hasITS() && nTrack.itsChi2PerNcl() < -10.0f)
         bitset(withITSAfterburner, 1);
 
-      if(pTrack.hasTPC() && pTrack.hasITS() && pTrack.itsChi2PerNcl()>-10.0f) 
+      if (pTrack.hasTPC() && pTrack.hasITS() && pTrack.itsChi2PerNcl() > -10.0f)
         bitset(withITSTrackerTPC, 0);
-      if(nTrack.hasTPC() && nTrack.hasITS() && nTrack.itsChi2PerNcl()>-10.0f) 
+      if (nTrack.hasTPC() && nTrack.hasITS() && nTrack.itsChi2PerNcl() > -10.0f)
         bitset(withITSTrackerTPC, 1);
 
-      if(pTrack.hasTPC() && pTrack.hasITS() && pTrack.itsChi2PerNcl()<-10.0f) 
+      if (pTrack.hasTPC() && pTrack.hasITS() && pTrack.itsChi2PerNcl() < -10.0f)
         bitset(withITSABTPC, 0);
-      if(nTrack.hasTPC() && nTrack.hasITS() && nTrack.itsChi2PerNcl()<-10.0f) 
+      if (nTrack.hasTPC() && nTrack.hasITS() && nTrack.itsChi2PerNcl() < -10.0f)
         bitset(withITSABTPC, 1);
     }
     histos.fill(HIST("h2dPtVsCentrality_All_Findable"), centrality, ptmc);
@@ -195,7 +195,7 @@ struct findableStudy {
     histos.fill(HIST("h2dPtVsCentrality_WithITSTrackerTPC_Findable"), centrality, ptmc, withITSTrackerTPC);
     histos.fill(HIST("h2dPtVsCentrality_WithITSABTPC_Findable"), centrality, ptmc, withITSABTPC);
 
-    if(hasBeenFound){ 
+    if (hasBeenFound) {
       histos.fill(HIST("h2dPtVsCentrality_All_Found"), centrality, ptmc);
       histos.fill(HIST("h2dPtVsCentrality_WithTPC_Found"), centrality, ptmc, withTPC);
       histos.fill(HIST("h2dPtVsCentrality_WithITSTracker_Found"), centrality, ptmc, withITSTracker);
@@ -204,7 +204,7 @@ struct findableStudy {
       histos.fill(HIST("h2dPtVsCentrality_WithITSABTPC_Found"), centrality, ptmc, withITSABTPC);
     }
 
-    if(hasWrongCollision){ 
+    if (hasWrongCollision) {
       histos.fill(HIST("hNRecoV0sWrongColl"), recv0s.size());
     }
   }
@@ -212,7 +212,6 @@ struct findableStudy {
   PROCESS_SWITCH(findableStudy, processEvents, "process collision counters", true);
   PROCESS_SWITCH(findableStudy, processV0s, "process V0s", true);
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
