@@ -116,12 +116,12 @@ struct qVectorsTable {
   std::vector<TH3F*> objQvec{};
 
   std::unordered_map<string, bool> useDetector = {
-    {"QvectorBNegs", true},
-    {"QvectorBPoss", true},
-    {"QvectorFV0As", true},
-    {"QvectorFT0Ms", true},
-    {"QvectorFT0As", true},
-    {"QvectorFT0Cs", true}};
+    {"QvectorBNegs", false},
+    {"QvectorBPoss", false},
+    {"QvectorFV0As", false},
+    {"QvectorFT0Ms", false},
+    {"QvectorFT0As", false},
+    {"QvectorFT0Cs", false}};
 
   void init(InitContext& initContext)
   {
@@ -405,7 +405,7 @@ struct qVectorsTable {
     }
 
     for (auto i{0u}; i < 4; i++) {
-	  QvecRe.push_back(qVectFT0C[0]);
+      QvecRe.push_back(qVectFT0C[0]);
       QvecIm.push_back(qVectFT0C[1]);
     }
     for (auto i{0u}; i < 4; i++) {

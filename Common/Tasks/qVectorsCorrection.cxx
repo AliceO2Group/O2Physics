@@ -215,7 +215,7 @@ struct qVectorsCorrection {
       histosQA.fill(HIST("histEvtPlUncorV3"), helperEP.GetEventPlane(vec.qvecRe()[6*4 + DetId * 4], vec.qvecIm()[6*4 + DetId * 4], 3), vec.cent());
       histosQA.fill(HIST("histEvtPlRectrV3"), helperEP.GetEventPlane(vec.qvecRe()[6*4 + DetId * 4 + 1], vec.qvecIm()[6*4 + DetId * 4 + 1], 3), vec.cent());
       histosQA.fill(HIST("histEvtPlTwistV3"), helperEP.GetEventPlane(vec.qvecRe()[6*4 + DetId * 4 + 2], vec.qvecIm()[6*4 + DetId * 4 + 2], 3), vec.cent());
-	  histosQA.fill(HIST("histEvtPlFinalV3"), helperEP.GetEventPlane(vec.qvecRe()[6*4 + DetId * 4 + 3], vec.qvecIm()[6*4 + DetId * 4 + 3], 3), vec.cent());
+      histosQA.fill(HIST("histEvtPlFinalV3"), helperEP.GetEventPlane(vec.qvecRe()[6*4 + DetId * 4 + 3], vec.qvecIm()[6*4 + DetId * 4 + 3], 3), vec.cent());
       if (cfgSaveAll) {
         histosQA.fill(HIST("histQvecRectr"), vec.qvecRe()[DetId * 4 + 1], vec.qvecIm()[DetId * 4 + 1], vec.cent());
         histosQA.fill(HIST("histQvecTwist"), vec.qvecRe()[DetId * 4 + 2], vec.qvecIm()[DetId * 4 + 2], vec.cent());
