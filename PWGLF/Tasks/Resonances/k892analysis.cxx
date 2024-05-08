@@ -119,7 +119,7 @@ struct k892analysis {
     AxisSpec centAxis = {binsCent, "V0M (%)"};
     AxisSpec dcaxyAxis = {cDCABins, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
     AxisSpec dcazAxis = {cDCABins, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
-    AxisSpec mcLabelAxis = {4, -0.5, 3.5, "MC Label"};
+    AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
     AxisSpec ptAxis = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisQA = {binsPtQA, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec invMassAxis = {cInvMassBins, cInvMassStart, cInvMassEnd, "Invariant Mass (GeV/#it{c}^2)"};
@@ -641,12 +641,19 @@ struct k892analysis {
         else
           histos.fill(HIST("k892GenAnti"), 1, part.pt(), multiplicity);
       }
-      if (collision.isInAfterAllCuts()) // after all event selection
+      if (collision.isVtxIn10() && collision.isTriggerTVX()) // vtx10, TriggerTVX
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("k892Gen"), 2, part.pt(), multiplicity);
         else
           histos.fill(HIST("k892GenAnti"), 2, part.pt(), multiplicity);
+      }
+      if (collision.isInAfterAllCuts()) // after all event selection
+      {
+        if (part.pdgCode() > 0)
+          histos.fill(HIST("k892Gen"), 3, part.pt(), multiplicity);
+        else
+          histos.fill(HIST("k892GenAnti"), 3, part.pt(), multiplicity);
       }
     }
   }

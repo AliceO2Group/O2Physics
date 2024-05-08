@@ -707,10 +707,8 @@ struct HfCorrelatorDsHadrons {
         // DsToKKPi and DsToPiKK division
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           fillHistoMcRecSig(candidate, 0.);
-          registry.fill(HIST("hSelectionStatusMcRec"), candidate.isSelDsToKKPi());
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           fillHistoMcRecSig(candidate, 0.);
-          registry.fill(HIST("hSelectionStatusMcRec"), candidate.isSelDsToPiKK());
         }
       } else {
         fillHistoMcRecBkg(candidate);
