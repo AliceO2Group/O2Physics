@@ -94,9 +94,7 @@ struct V0JetSpectra {
     if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
       return;
     }
-    if (v0jets.size() > 0) {
-      return;
-    } else {
+    if (v0jets.size() == 0) {
       fillHistograms(chjets);
     }
   }
@@ -111,9 +109,7 @@ struct V0JetSpectra {
       return;
     }
     double weight = jcoll.mcCollision().weight();
-    if (v0jets.size() > 0) {
-      return;
-    } else {
+    if (v0jets.size() == 0) {
       fillHistograms(chjets, weight);
     }
   }
@@ -122,9 +118,7 @@ struct V0JetSpectra {
   void processMCP(JetMcCollision const& jcoll, MCPJets const& chjets, MCPV0Jets const& v0jets)
   {
     double weight = jcoll.weight();
-    if (v0jets.size() > 0) {
-      return;
-    } else {
+    if (v0jets.size() == 0) {
       fillMCPHistograms(chjets, weight);
     }
   }
@@ -137,15 +131,11 @@ struct V0JetSpectra {
     }
     // TODO: Need to add checker to only count matched jets (?)
     double weight = jcoll.mcCollision().weight();
-    if (v0jetsMCP.size() > 0) {
-      return;
-    } else {
+    if (v0jetsMCP.size() == 0) {
       fillMCPHistograms(chjetsMCP, weight);
     } // Particle level loop
 
-    if (v0jetsMCD.size() > 0) {
-      return;
-    } else {
+    if (v0jetsMCD.size() == 0) {
       fillHistograms(chjetsMCD, weight);
     } // Detector level loop
   }
