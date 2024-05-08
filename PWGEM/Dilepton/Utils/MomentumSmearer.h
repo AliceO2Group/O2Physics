@@ -115,7 +115,7 @@ class MomentumSmearer
     // get efficiency histo
     fEffType = 0;
     if (fEffFileName.CompareTo("") != 0) {
-      LOGP(info, "Set Resolution histo");
+      LOGP(info, "Set Efficiency histo");
       TFile* fEffFile = TFile::Open(fEffFileName);
       if (!fEffFile) {
         LOGP(fatal, "Could not open efficiency file {}", fEffFileName.Data());

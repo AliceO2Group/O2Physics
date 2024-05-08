@@ -226,7 +226,7 @@ struct JetDerivedDataWriter {
       iPreviousDataFrame++;
     }
     previousReadCounts.push_back(readCollisionCounter);
-    previousReadCounts.push_back(readSelectedCollisionCounter);
+    previousReadSelectedCounts.push_back(readSelectedCollisionCounter);
     previousWrittenCounts.push_back(writtenCollisionCounter);
     storedCollisionCountsTable(previousReadCounts, previousReadSelectedCounts, previousWrittenCounts);
   }

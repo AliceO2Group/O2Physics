@@ -843,35 +843,45 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("dimuon-polarization-he")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kPhiHE};
-        int varsFV0AMulHE[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int varsFT0CMulHE[4] = {VarManager::kMass, VarManager::kMultFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};
-        int varsTPCMulHE[4] = {VarManager::kMass, VarManager::kMultTPC, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int binspT[4] = {100, 20, 20, 20};
-        int binsMul[4] = {100, 50, 20, 20};
+        int binsMul[4] = {100, 20, 20, 20};
         double xminpT[4] = {1., 0., -1., -3.14};
         double xmaxpT[4] = {5., 20., 1., +3.14};
         double xminMul[4] = {1., 0., -1., -3.14};
-        double xmaxMul[4] = {5., 5000., 1., +3.14};
+        double xmaxMul[4] = {5., 2000., 1., +3.14};
         hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_phiHE", "", 4, varspTHE, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_MultFV0A_cosThetaHE_phiHE", "", 4, varsFV0AMulHE, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
         hm->AddHistogram(histClass, "Mass_MultFT0C_cosThetaHE_phiHE", "", 4, varsFT0CMulHE, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_MultTPC_cosThetaHE_phiHE", "", 4, varsTPCMulHE, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-cs")) {
         int varspTCS[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaCS, VarManager::kPhiCS};
-        int varsFV0AMulCS[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaCS, VarManager::kPhiCS};
         int varsFT0CMulCS[4] = {VarManager::kMass, VarManager::kMultFT0C, VarManager::kCosThetaCS, VarManager::kPhiCS};
-        int varsTPCMulCS[4] = {VarManager::kMass, VarManager::kMultTPC, VarManager::kCosThetaCS, VarManager::kPhiCS};
         int binspT[4] = {100, 20, 20, 20};
-        int binsMul[4] = {100, 50, 20, 20};
+        int binsMul[4] = {100, 20, 20, 20};
         double xminpT[4] = {1., 0., -1., -3.14};
         double xmaxpT[4] = {5., 20., 1., +3.14};
         double xminMul[4] = {1., 0., -1., -3.14};
-        double xmaxMul[4] = {5., 5000., 1., +3.14};
+        double xmaxMul[4] = {5., 2000., 1., +3.14};
         hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_phiCS", "", 4, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_MultFV0A_cosThetaCS_phiCS", "", 4, varsFV0AMulCS, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
         hm->AddHistogram(histClass, "Mass_MultFT0C_cosThetaCS_phiCS", "", 4, varsFT0CMulCS, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
+      }
+      if (subGroupStr.Contains("multiplicity-fvoa")) {
+        int varsFV0AMulHE[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaHE, VarManager::kPhiHE};
+        int varsFV0AMulCS[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaCS, VarManager::kPhiCS};
+        int binsMul[4] = {100, 20, 20, 20};
+        double xminMul[4] = {1., 0., -1., -3.14};
+        double xmaxMul[4] = {5., 5000., 1., +3.14};
+        hm->AddHistogram(histClass, "Mass_MultFV0A_cosThetaHE_phiHE", "", 4, varsFV0AMulHE, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_MultFV0A_cosThetaCS_phiCS", "", 4, varsFV0AMulCS, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
+      }
+      if (subGroupStr.Contains("multiplicity-tpc")) {
+        int varsTPCMulHE[4] = {VarManager::kMass, VarManager::kMultTPC, VarManager::kCosThetaHE, VarManager::kPhiHE};
+        int varsTPCMulCS[4] = {VarManager::kMass, VarManager::kMultTPC, VarManager::kCosThetaCS, VarManager::kPhiCS};
+        int binsMul[4] = {100, 20, 20, 20};
+        double xminMul[4] = {1., 0., -1., -3.14};
+        double xmaxMul[4] = {5., 2000., 1., +3.14};
         hm->AddHistogram(histClass, "Mass_MultTPC_cosThetaCS_phiCS", "", 4, varsTPCMulCS, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_MultTPC_cosThetaHE_phiHE", "", 4, varsTPCMulHE, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("vertexing-forward")) {
         hm->AddHistogram(histClass, "Lxyz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyz);

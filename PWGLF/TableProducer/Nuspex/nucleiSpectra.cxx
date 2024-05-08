@@ -314,7 +314,7 @@ struct nucleiSpectra {
   template <class collision_t>
   bool eventSelection(collision_t& collision)
   {
-    return collision.sel8() && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
+    return collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
