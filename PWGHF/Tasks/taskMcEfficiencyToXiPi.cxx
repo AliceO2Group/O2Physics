@@ -46,7 +46,7 @@ struct HfTaskMcEfficiencyToXiPi {
   Configurable<bool> matchOmegac{"matchOmegac", false, "Do MC studies for Omegac0"};
   Configurable<bool> matchXic{"matchXic", true, "Do MC studies for Xic0"};
 
-  Configurable<bool> rejGenTFAndITSROFBordes{"rejGenTFAndITSROFBorders", true, "Reject generated particles coming from bc clode to TF and ITSROF borders"};
+  Configurable<bool> rejGenTFAndITSROFBorders{"rejGenTFAndITSROFBorders", true, "Reject generated particles coming from bc close to TF and ITSROF borders"};
 
   ConfigurableAxis axisPt{"axisPt", {200, 0, 20}, "pT axis"};
   ConfigurableAxis axisMass{"axisMass", {900, 2.1, 3}, "m_inv axis"};
@@ -388,13 +388,13 @@ struct HfTaskMcEfficiencyToXiPi {
     } else if (!matchXic && !matchOmegac) {
       LOGP(fatal, "Please match either Omegac0 or Xic0");
     } else if (matchXic) {
-      if (rejGenTFAndITSROFBordes) {
+      if (rejGenTFAndITSROFBorders) {
         candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0, true);
       } else {
         candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0, false);
       }
     } else if (matchOmegac) {
-      if (rejGenTFAndITSROFBordes) {
+      if (rejGenTFAndITSROFBorders) {
         candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0, true);
       } else {
         candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0, false);
