@@ -72,7 +72,7 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   HfHelper hfHelper;
   SliceCache cache;
-  std::map<int, std::vector<int>> mappingCollisions; // indices of derived reconstructed collisions matched to the global indices of MC collisions
+  std::map<int, std::vector<int>> matchedCollisions; // indices of derived reconstructed collisions matched to the global indices of MC collisions
   std::map<int, bool> hasMcParticles; // flags for MC collisions with HF particles
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
@@ -164,7 +164,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       if (fillMcCollId && collision.has_mcCollision()) {
         // Save rowCollBase.lastIndex() at key collision.mcCollisionId()
         LOGF(debug, "Rec. collision %d: Filling derived-collision index %d for MC collision %d", collision.globalIndex(), rowCollBase.lastIndex(), collision.mcCollisionId());
-        mappingCollisions[collision.mcCollisionId()].push_back(rowCollBase.lastIndex()); // [] inserts an empty element if it does not exist
+        matchedCollisions[collision.mcCollisionId()].push_back(rowCollBase.lastIndex()); // [] inserts an empty element if it does not exist
       }
     }
   }
@@ -181,7 +181,7 @@ struct HfDerivedDataCreatorD0ToKPi {
     if (fillMcCollId) {
       // Fill the table with the vector of indices of derived reconstructed collisions matched to mcCollision.globalIndex()
       rowMcCollId(
-        mappingCollisions[mcCollision.globalIndex()]);
+        matchedCollisions[mcCollision.globalIndex()]);
     }
   }
 
@@ -301,7 +301,7 @@ struct HfDerivedDataCreatorD0ToKPi {
     // Fill collision properties
     if constexpr (isMc) {
       if (fillMcCollId) {
-        mappingCollisions.clear();
+        matchedCollisions.clear();
       }
     }
     auto sizeTableColl = collisions.size();
@@ -312,7 +312,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
       auto sizeTableCand = candidatesThisColl.size();
       LOGF(debug, "Rec. collision %d has %d candidates", thisCollId, sizeTableCand);
-      // Skip collisions without HF candidates (and without HF particles if saving indices of reconstructed collisions matched to MC collisions)
+      // Skip collisions without HF candidates (and without HF particles in matched MC collisions if saving indices of reconstructed collisions matched to MC collisions)
       bool mcCollisionHasMcParticles{false};
       if constexpr (isMc) {
         mcCollisionHasMcParticles = fillMcCollId && collision.has_mcCollision() && hasMcParticles[collision.mcCollisionId()];
@@ -415,9 +415,9 @@ struct HfDerivedDataCreatorD0ToKPi {
       auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
       auto sizeTablePart = particlesThisMcColl.size();
       LOGF(debug, "MC collision %d has %d MC particles", thisMcCollId, sizeTablePart);
-      // Skip MC collisions without HF particles (and without reconstructed HF candidates if saving indices of reconstructed collisions)
-      LOGF(debug, "MC collision %d has %d saved derived rec. collisions", thisMcCollId, mappingCollisions[thisMcCollId].size());
-      if (sizeTablePart == 0 && (!fillMcCollId || mappingCollisions[thisMcCollId].empty())) {
+      // Skip MC collisions without HF particles (and without HF candidates in matched reconstructed collisions if saving indices of reconstructed collisions matched to MC collisions)
+      LOGF(debug, "MC collision %d has %d saved derived rec. collisions", thisMcCollId, matchedCollisions[thisMcCollId].size());
+      if (sizeTablePart == 0 && (!fillMcCollId || matchedCollisions[thisMcCollId].empty())) {
         LOGF(debug, "Skipping MC collision %d", thisMcCollId);
         continue;
       }
