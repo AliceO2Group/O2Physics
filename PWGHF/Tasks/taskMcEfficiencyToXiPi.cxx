@@ -72,7 +72,8 @@ struct HfTaskMcEfficiencyToXiPi {
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
   using CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfToXiPiMCRec, aod::HfSelToXiPi>;
   using ParticleInfo = soa::Join<aod::McParticles, aod::HfToXiPiMCGen>;
-  using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  using MyMcCollisions = soa::Join<aod::McCollisionLabels, aod::McCollisions>;
 
   HistogramRegistry registry{"registry"};
 
@@ -160,7 +161,7 @@ struct HfTaskMcEfficiencyToXiPi {
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
   // genParticles -> join aod::McParticles and candidateCreator McGen tables
   template <typename T1, typename T2>
-  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisionLabels const&, int pdgCode, bool rejGenTFAndITSROFBorder)
+  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, MyMcCollisions const&, BCsInfo const&, int pdgCode, bool rejGenTFAndITSROFBorder)
   {
     // fill hCandidates histogram
     candidateRecLoop(candidates, pdgCode);
@@ -209,8 +210,8 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
       if (rejGenTFAndITSROFBorder){
-        auto coll = mcParticle.template mcCollision_as<T2>();
-        auto bc = coll.template bc_as<BCsRun3>();
+        auto coll = mcParticle.template mcCollision_as<MyMcCollisions>();
+        auto bc = coll.template bc_as<BCsInfo>();
         if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
          continue;
         }
@@ -378,18 +379,26 @@ struct HfTaskMcEfficiencyToXiPi {
   // process functions
   void process(CandidateInfo const& candidates,
                ParticleInfo const& genParticles,
-               BCsRun3 const& bcs,
+               BCsInfo const& bcs,
                TracksWithSelectionMC const& tracks,
-               aod::McCollisionLabels const& colls)
+               MyMcCollisions const& colls)
   {
     if (matchXic && matchOmegac) {
       LOGP(fatal, "Can't match Omegac0 and Xic0 at the same time, please choose one");
     } else if (!matchXic && !matchOmegac) {
       LOGP(fatal, "Please match either Omegac0 or Xic0");
     } else if (matchXic) {
-      candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kXiC0, rejGenTFAndITSROFBordes);
+      if(rejGenTFAndITSROFBordes){
+        candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0, true); 
+      } else{
+        candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0, false); 
+      }
     } else if (matchOmegac) {
-      candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kOmegaC0, rejGenTFAndITSROFBordes);
+      if(rejGenTFAndITSROFBordes){
+        candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0, true);
+      } else {
+        candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0, false);
+      }
     }
   }
 
