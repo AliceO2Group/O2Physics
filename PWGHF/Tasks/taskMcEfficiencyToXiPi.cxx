@@ -70,6 +70,7 @@ struct HfTaskMcEfficiencyToXiPi {
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
   using CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfToXiPiMCRec, aod::HfSelToXiPi>;
   using ParticleInfo = soa::Join<aod::McParticles, aod::HfToXiPiMCGen>;
+  using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   HistogramRegistry registry{"registry"};
 
@@ -156,7 +157,7 @@ struct HfTaskMcEfficiencyToXiPi {
 
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
   // genParticles -> join aod::McParticles and candidateCreator McGen tables
-  template <typename T1, typename T2>
+  template <typename T1, typename T2, typename T3, bool rejGenTFAndITSROFBorder>
   void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisionLabels const&, int pdgCode)
   {
     // fill hCandidates histogram
@@ -203,6 +204,15 @@ struct HfTaskMcEfficiencyToXiPi {
     }
 
     for (const auto& mcParticle : genParticles) {
+
+      // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
+      if constexpr(rejGenTFAndITSROFBorder){
+        auto coll = mcParticle.template mcCollision_as<T2>();
+        auto bc = coll.template bc_as<T3>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+         continue;
+        }
+      }
 
       // check if I am treating the desired charm baryon
       if (std::abs(mcParticle.pdgCode()) != pdgCode) {
