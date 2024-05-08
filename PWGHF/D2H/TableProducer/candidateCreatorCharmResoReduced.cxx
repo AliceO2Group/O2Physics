@@ -149,7 +149,7 @@ struct HfCandidateCreatorCharmResoReduced {
   /// \return true if selections are passed
   template <DecayChannel channel, typename DRedTable, typename V0RedTable>
   bool isV0Selected(V0RedTable const& candV0, DRedTable const& candD)
-   {
+  {
     float massV0{0.};
     float invMassV0{0.};
     if (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::Ds1ToDstarK0s) {
@@ -268,7 +268,7 @@ struct HfCandidateCreatorCharmResoReduced {
   void processDs2StarToDplusK0s(aod::HfRedCollisions const& collisions,
                                 aod::HfRed3PrNoTrks const& candsD,
                                 aod::HfRedVzeros const&)
-  { 
+  {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
@@ -306,7 +306,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
   void processDs1ToDstarK0sWithMl(aod::HfRedCollisions const& collisions,
                                   reducedDWithMl const& candsD,
-                                  aod::HfRedVzeros const& )
+                                  aod::HfRedVzeros const&)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
