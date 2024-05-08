@@ -85,8 +85,8 @@ class FemtoDreamDetaDphiStar
           }
         }
         if (fillQA) {
-          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
-          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
+          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
         }
       }
     }
