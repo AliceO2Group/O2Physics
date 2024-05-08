@@ -990,4 +990,90 @@ class RecoDecay
   }
 };
 
+/// Calculations using (pT, η, φ) coordinates, aka (transverse momentum, pseudorapidity, azimuth)
+class RecoDecayPtEtaPhi
+{
+ public:
+  /// Default constructor
+  RecoDecayPtEtaPhi() = default;
+
+  /// Default destructor
+  ~RecoDecayPtEtaPhi() = default;
+
+  /// Sets the convention of ordering pT, η, φ in a vector
+  static constexpr size_t IndexPt = 0;
+  static constexpr size_t IndexEta = 1;
+  static constexpr size_t IndexPhi = 2;
+
+  /// Sets pT, η, φ variables from a vector
+  /// \param vecPtEtaPhi  vector with pT, η, φ elements
+  /// \param ptTo  variable to store pT
+  /// \param etaTo  variable to store η
+  /// \param phiTo  variable to store φ
+  template <typename TVec, typename TPt, typename TEta, typename TPhi>
+  static void setPtEtaPhiFromVector(const TVec& vecPtEtaPhi, TPt& ptTo, TEta& etaTo, TPhi& phiTo)
+  {
+    ptTo = vecPtEtaPhi[IndexPt];
+    etaTo = vecPtEtaPhi[IndexEta];
+    phiTo = vecPtEtaPhi[IndexPhi];
+  }
+
+  /// px as a function of pT, φ
+  /// \param pt  pT
+  /// \param phi  φ
+  template <typename TPt, typename TPhi>
+  static auto px(TPt pt, TPhi phi)
+  {
+    return pt * std::cos(phi);
+  }
+
+  /// py as a function of pT, φ
+  /// \param pt  pT
+  /// \param phi  φ
+  template <typename TPt, typename TPhi>
+  static auto py(TPt pt, TPhi phi)
+  {
+    return pt * std::sin(phi);
+  }
+
+  /// pz as a function of pT, η
+  /// \param pt  pT
+  /// \param eta  η
+  template <typename TPt, typename TEta>
+  static auto pz(TPt pt, TEta eta)
+  {
+    return pt * std::sinh(eta);
+  }
+
+  /// p as a function of pT, η
+  /// \param pt  pT
+  /// \param eta  η
+  template <typename TPt, typename TEta>
+  static auto p(TPt pt, TEta eta)
+  {
+    return pt * std::cosh(eta);
+  }
+
+  /// Energy as a function of pT, η, mass
+  /// \param pt  pT
+  /// \param eta  η
+  /// \param m  mass
+  template <typename TPt, typename TEta, typename TM>
+  static auto e(TPt pt, TEta eta, TM m)
+  {
+    return RecoDecay::e(p(pt, eta), m);
+  }
+
+  /// Rapidity as a function of pT, η, mass
+  /// \param pt  pT
+  /// \param eta  η
+  /// \param m  mass
+  template <typename TPt, typename TEta, typename TM>
+  static auto y(TPt pt, TEta eta, TM m)
+  {
+    // ln[(E + pz) / √(m^2 + pT^2)]
+    return std::log((e(pt, eta, m) + pz(pt, eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
+  }
+};
+
 #endif // COMMON_CORE_RECODECAY_H_
