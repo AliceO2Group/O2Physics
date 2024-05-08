@@ -25,6 +25,9 @@
 
 namespace o2::aod
 {
+constexpr uint MarkerD0Stored = 10;
+constexpr uint Marker3PStored = 20;
+
 // ================
 // Collision tables
 // ================
