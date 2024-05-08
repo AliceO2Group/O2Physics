@@ -97,12 +97,6 @@ struct femtoDreamPairTaskTrackHF {
   Configurable<float> ConfHF_fdBDT{"ConfHF_fdBDT", 0., "Minimum feed-down bdt score Charm Hadron (particle 2)"};
   Configurable<float> ConfHF_bkgBDT{"ConfHF_bkgBDT", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
 
-  // Filter hfMassFilterUp = aod::fdhf::charmM > ConfHF_minInvMass;
-  // Filter hfMassFilterLow = aod::fdhf::m < ConfHF_maxInvMass;
-  // Filter hfPtFilterUp = aod::fdhf::pt > ConfHF_minPt;
-  // Filter hfPtFilterLow = aod::fdhf::Pt < ConfHF_maxPt;
-  // Filter hfEtaFilterUp = aod::fdhf::Eta > ConfHF_minEta;
-  // Filter hfEtaFilterLow = aod::fdhf::Eta < ConfHF_maxEta;
   Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= ConfHF_CandSel;
   /// Histogramming for particle 2
   // FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCharmHadron, 2> trackHistoPartTwo;
