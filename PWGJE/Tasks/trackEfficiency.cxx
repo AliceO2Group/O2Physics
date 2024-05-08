@@ -107,19 +107,22 @@ struct TrackEfficiencyJets {
     registry.get<TH1>(HIST("hMcPartCutsCounts"))->GetXaxis()->SetBinLabel(6, "isFinalState");
 
     registry.add("hTrackCutsCounts", "Track cuts count checks", {HistType::kTH1F, {{10, 0., 10.}}});
-    registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(1, "allTracksInAllColl");
-    registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(2, "hasMcParticle");
-    registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(3, "trackSel");
+    registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(1, "allTracksInSelColl");
+    registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(2, "trackSel");
+    registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(3, "hasMcParticle");
     registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(4, "mcPartIsPrimary");
     registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(5, "etaAcc");
 
-    registry.add("h3_track_pt_track_eta_track_phi_associatedtrackSelCollSplit", "#it{p}_{T, associatedSplitTrack} (GeV/#it{c}); #eta_{associatedSplitTrack}; #phi_{associatedSplitTrack}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
+    registry.add("h3_particle_pt_particle_eta_particle_phi_mcpartofinterest", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
 
-    registry.add("h3_track_pt_track_eta_track_phi_mcparticles", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
-    registry.add("h3_track_pt_track_eta_track_phi_associatedtrackSelColl", "#it{p}_{T, associatedTrack} (GeV/#it{c}); #eta_{associatedTrack}; #phi_{associatedTrack}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
-    registry.add("h3_track_pt_track_eta_track_phi_associatedtrackNonSelColl", "#it{p}_{T, associatedTrack} (GeV/#it{c}); #eta_{associatedTrack}; #phi_{associatedTrack}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
+    registry.add("h3_track_pt_track_eta_track_phi_nonassociatedtrack", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}; #phi_{track}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
+    registry.add("h3_track_pt_track_eta_track_phi_associatedtrack_primary", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}; #phi_{track}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
+    registry.add("h3_track_pt_track_eta_track_phi_associatedtrack_nonprimary", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}; #phi_{track}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
+    registry.add("h3_track_pt_track_eta_track_phi_associatedtrack_split", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}; #phi_{track}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
 
-    registry.add("h3_track_pt_track_eta_track_phi_associatedtrackSelCollNonPrimary", "#it{p}_{T, associatedTrack} (GeV/#it{c}); #eta_{associatedTrack}; #phi_{associatedTrack}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
+    registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_primary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
+    registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_nonprimary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
+    registry.add("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {{500, 0., 10.}, {100, -1.0, 1.0}, {400, -1.0, 7.}}});
   }
 
   Preslice<myJetTracksMCD> tracksPerJCollision = o2::aod::jtrack::collisionId;
@@ -198,7 +201,7 @@ struct TrackEfficiencyJets {
       }
       registry.fill(HIST("hMcPartCutsCounts"), 5.5); // isFinalState
 
-      registry.fill(HIST("h3_track_pt_track_eta_track_phi_mcparticles"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi());
+      registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_mcpartofinterest"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi());
     }
 
     std::vector<int> seenMcParticlesVector; // is reset every mc collision
@@ -207,35 +210,38 @@ struct TrackEfficiencyJets {
 
       auto collTracks = jetTracks.sliceBy(tracksPerJCollision, collision.globalIndex());
       for (auto& track : collTracks) {
-        registry.fill(HIST("hTrackCutsCounts"), 0.5);
-
-        if (!track.has_mcParticle()) {
+        if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !(collision.posZ() < vertexZCut)) { // selectCollision is mostly here for readability, as the code only looks at the collision associated to a mc collision for which this has already been checked ; collision.posZ() hasn't been checked yet though
           continue;
         }
-        registry.fill(HIST("hTrackCutsCounts"), 1.5);
+        registry.fill(HIST("hTrackCutsCounts"), 0.5);
 
         if (!(jetderiveddatautilities::selectTrack(track, trackSelection) && (trackSelections->compare("uniformTracks") != 1 || isPrimaryTrackFromCuts(track)))) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
           continue;
         }
-        registry.fill(HIST("hTrackCutsCounts"), 2.5);
+        registry.fill(HIST("hTrackCutsCounts"), 1.5);
 
-        if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !(collision.posZ() < vertexZCut)) {
-          registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrackNonSelColl"), track.mcParticle_as<JetParticlesWithOriginal>().pt(), track.mcParticle_as<JetParticlesWithOriginal>().eta(), track.mcParticle_as<JetParticlesWithOriginal>().phi());
+        if (!track.has_mcParticle()) {
+          registry.fill(HIST("h3_track_pt_track_eta_track_phi_nonassociatedtrack"), track.pt(), track.eta(), track.phi());
+          continue;
         }
+        registry.fill(HIST("hTrackCutsCounts"), 2.5);
 
         auto jMcParticleFromTrack = track.mcParticle_as<JetParticlesWithOriginal>();
         // auto mcParticleFromTrack = jMcParticleFromTrack.mcParticle_as<aod::McParticles>();
         if (!jMcParticleFromTrack.isPhysicalPrimary()) {
-          registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrackSelCollNonPrimary"), track.mcParticle_as<JetParticlesWithOriginal>().pt(), track.mcParticle_as<JetParticlesWithOriginal>().eta(), track.mcParticle_as<JetParticlesWithOriginal>().phi());
+          registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_nonprimary"), track.pt(), track.eta(), track.phi());
+          registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_nonprimary"), track.mcParticle_as<JetParticlesWithOriginal>().pt(), track.mcParticle_as<JetParticlesWithOriginal>().eta(), track.mcParticle_as<JetParticlesWithOriginal>().phi());
           continue;
         }
 
         registry.fill(HIST("hTrackCutsCounts"), 3.5);
 
-        registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrackSelColl"), track.mcParticle_as<JetParticlesWithOriginal>().pt(), track.mcParticle_as<JetParticlesWithOriginal>().eta(), track.mcParticle_as<JetParticlesWithOriginal>().phi());
+        registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_primary"), track.pt(), track.eta(), track.phi());
+        registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_primary"), track.mcParticle_as<JetParticlesWithOriginal>().pt(), track.mcParticle_as<JetParticlesWithOriginal>().eta(), track.mcParticle_as<JetParticlesWithOriginal>().phi());
 
         if (std::find(seenMcParticlesVector.begin(), seenMcParticlesVector.end(), track.mcParticle_as<JetParticlesWithOriginal>().globalIndex()) != seenMcParticlesVector.end()) {
-          registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrackSelCollSplit"), track.mcParticle_as<JetParticlesWithOriginal>().pt(), track.mcParticle_as<JetParticlesWithOriginal>().eta(), track.mcParticle_as<JetParticlesWithOriginal>().phi());
+          registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_split"), track.pt(), track.eta(), track.phi());
+          registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_split"), track.mcParticle_as<JetParticlesWithOriginal>().pt(), track.mcParticle_as<JetParticlesWithOriginal>().eta(), track.mcParticle_as<JetParticlesWithOriginal>().phi());
         } else {
           seenMcParticlesVector.push_back(track.mcParticle_as<JetParticlesWithOriginal>().globalIndex());
         }
