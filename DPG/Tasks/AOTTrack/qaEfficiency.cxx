@@ -427,7 +427,7 @@ struct QaEfficiency {
   Configurable<bool> doTr{"do-tr", false, "Flag to run with the PDG code of tritons"};
   Configurable<bool> doHe{"do-he", false, "Flag to run with the PDG code of helium 3"};
   Configurable<bool> doAl{"do-al", false, "Flag to run with the PDG code of helium 4"};
-  Configurable<std::vector<int>> motherPDGs{"motherPDGs", std::vector<int>{}, "PDGs of origin of the particle under study"};
+  Configurable<std::vector<int>> mothersPDGs{"mothersPDGs", std::vector<int>{}, "PDGs of origin of the particle under study"};
   // Track only selection, options to select only specific tracks
   Configurable<bool> trackSelection{"trackSelection", true, "Local track selection"};
   Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks, 6 -> custom track cuts via Configurable"};
