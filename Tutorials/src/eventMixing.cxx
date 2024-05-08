@@ -49,7 +49,11 @@ struct MixedEvents {
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
+      // Example of using getBin() to check collisions bin
+      // NOTE that it is a bit different for FlexibleBinning -- check in respective example
+      int bin = binningOnPositions.getBin(c1.posX(), c1.posY());
+
+      LOGF(info, "Mixed event collisions: (%d, %d) from bin %d", c1.globalIndex(), c2.globalIndex(), bin);
       count++;
       if (count == 100)
         break;
@@ -434,7 +438,10 @@ struct MixedEventsLambdaBinning {
 
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      LOGF(info, "Mixed event collisions: (%d, %d) z: (%.3f, %.3f), tracks size (%d, %d)", c1.globalIndex(), c2.globalIndex(), c1.posZ(), c2.posZ(), tracks1.size(), tracks2.size());
+      // NOTE that getBin() with FlexibleBinningPolicy needs explicit tuple construction
+      int bin = binningWithLambda.getBin(std::tuple(getTrackSize(c1), c1.posZ()));
+
+      LOGF(info, "Mixed event collisions: (%d, %d) from bin %d z: (%.3f, %.3f), tracks size (%d, %d)", c1.globalIndex(), c2.globalIndex(), bin, c1.posZ(), c2.posZ(), tracks1.size(), tracks2.size());
       count++;
       if (count == 100)
         break;
