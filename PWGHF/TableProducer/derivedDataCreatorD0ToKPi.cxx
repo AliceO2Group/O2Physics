@@ -73,7 +73,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   HfHelper hfHelper;
   SliceCache cache;
   std::map<int, std::vector<int>> matchedCollisions; // indices of derived reconstructed collisions matched to the global indices of MC collisions
-  std::map<int, bool> hasMcParticles; // flags for MC collisions with HF particles
+  std::map<int, bool> hasMcParticles;                // flags for MC collisions with HF particles
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
