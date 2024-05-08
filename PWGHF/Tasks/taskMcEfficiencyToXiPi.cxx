@@ -73,7 +73,6 @@ struct HfTaskMcEfficiencyToXiPi {
   using CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfToXiPiMCRec, aod::HfSelToXiPi>;
   using ParticleInfo = soa::Join<aod::McParticles, aod::HfToXiPiMCGen>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-  using MyMcCollisions = soa::Join<aod::McCollisionLabels, aod::McCollisions>;
 
   HistogramRegistry registry{"registry"};
 
@@ -161,7 +160,7 @@ struct HfTaskMcEfficiencyToXiPi {
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
   // genParticles -> join aod::McParticles and candidateCreator McGen tables
   template <typename T1, typename T2>
-  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, MyMcCollisions const&, BCsInfo const&, int pdgCode, bool rejGenTFAndITSROFBorder)
+  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisions const&, BCsInfo const&, int pdgCode, bool rejGenTFAndITSROFBorder)
   {
     // fill hCandidates histogram
     candidateRecLoop(candidates, pdgCode);
@@ -210,7 +209,7 @@ struct HfTaskMcEfficiencyToXiPi {
 
       // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
       if (rejGenTFAndITSROFBorder) {
-        auto coll = mcParticle.template mcCollision_as<MyMcCollisions>();
+        auto coll = mcParticle.template mcCollision_as<aod::McCollisions>();
         auto bc = coll.template bc_as<BCsInfo>();
         if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
           continue;
@@ -381,7 +380,7 @@ struct HfTaskMcEfficiencyToXiPi {
                ParticleInfo const& genParticles,
                BCsInfo const& bcs,
                TracksWithSelectionMC const& tracks,
-               MyMcCollisions const& colls)
+               aod::McCollisions const& colls)
   {
     if (matchXic && matchOmegac) {
       LOGP(fatal, "Can't match Omegac0 and Xic0 at the same time, please choose one");
