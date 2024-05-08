@@ -177,7 +177,7 @@ void setupTimestamps(int64_t& timestamp,
       }
     }
   }
-  if (validityStop == 0) { //Default value for validityStop
+  if (validityStop == 0) { // Default value for validityStop
     validityStop = 4108971600000;
   }
 }
