@@ -37,7 +37,7 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
     return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVXTSC-B-NOPF");
   } else if (sourceName == "T0VTX") {
     if (runNumber < 534202) {
-      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0",3); // 2022
+      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0", 3); // 2022
     } else {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF");
     }
@@ -77,7 +77,7 @@ double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* /*ccdb*/,
 
 double ctpRateFetcher::pileUpCorrection(double triggerRate)
 {
-  if(mLHCIFdata == nullptr ) {
+  if (mLHCIFdata == nullptr) {
     LOG(fatal) << "No filling" << std::endl;
   }
   auto bfilling = mLHCIFdata->getBunchFilling();

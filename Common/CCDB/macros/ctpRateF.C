@@ -37,7 +37,7 @@ struct ctpRateFetcher {
 
 double ctpRateFetcher::pileUpCorrection(double triggerRate)
 {
-  if(mLHCIFdata == nullptr ) {
+  if (mLHCIFdata == nullptr) {
     LOG(fatal) << "No filling" << std::endl;
   }
   auto bfilling = mLHCIFdata->getBunchFilling();
@@ -130,7 +130,7 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
     return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVXTSC-B-NOPF");
   } else if (sourceName == "T0VTX") {
     if (runNumber < 534202) {
-      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0",3); // 2022
+      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0", 3); // 2022
     } else {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF");
     }
@@ -144,7 +144,7 @@ void ctpRateF(int runNumber = 0, bool cxx = 1)
   auto soreor = ccdbMgr.getRunDuration(runNumber);
   uint64_t timeStamp = (soreor.second - soreor.first) / 2 + soreor.first;
   std::cout << "Timestamp:" << timeStamp << std::endl;
-  if( cxx) {
+  if (cxx) {
     o2::ctpRateFetcher ctprate;
     auto rate = ctprate.fetch(&ccdbMgr, timeStamp + 100, runNumber, "T0VTX");
     std::cout << "Rate:" << rate << std::endl;
