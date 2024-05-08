@@ -615,7 +615,7 @@ void fillCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseTab
 template <typename T, typename U>
 void fillD0CandidateMcTable(T const& candidate, U& D0PBaseTable, int32_t& D0CandidateTableIndex)
 {
-  D0PBaseTable(candidate.pt(), candidate.eta(), candidate.phi(), candidate.flagMcMatchGen(), candidate.originMcGen());
+  D0PBaseTable(candidate.hfD0McCollBaseId(), candidate.pt(), candidate.eta(), candidate.phi(), candidate.flagMcMatchGen(), candidate.originMcGen());
   D0CandidateTableIndex = D0PBaseTable.lastIndex();
 }
 template <typename T, typename U>

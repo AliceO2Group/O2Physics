@@ -97,10 +97,23 @@ DECLARE_SOA_TABLE(Hf3PCollIds, "AOD", "HF3PCOLLID", //! Table with global indice
 // MC collision columns
 namespace hf_mc_coll
 {
+DECLARE_SOA_ARRAY_INDEX_COLUMN(HfD0CollBase, hfD0CollBases); //! collision index array pointing to the derived collision table for D0 candidates
 DECLARE_SOA_ARRAY_INDEX_COLUMN(Hf3PCollBase, hf3PCollBases); //! collision index array pointing to the derived collision table for 3-prong candidates
 } // namespace hf_mc_coll
 
-// DO (TODO)
+// DO
+
+DECLARE_SOA_TABLE(HfD0McCollBases, "AOD", "HFD0MCCOLLBASE", //! Table with basic MC collision info
+                  o2::soa::Index<>,
+                  mccollision::PosX,
+                  mccollision::PosY,
+                  mccollision::PosZ,
+                  soa::Marker<1>);
+
+using HfD0McCollBase = HfD0McCollBases::iterator;
+
+DECLARE_SOA_TABLE(HfD0McCollIds, "AOD", "HFD0MCCOLLID", //! Table with indices pointing to the derived collision table
+                  hf_mc_coll::HfD0CollBaseIds);
 
 // 3-prong decays
 
@@ -472,6 +485,7 @@ namespace hf_mc_particle
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);               //! MC collision of this particle
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                 //! MC particle
+DECLARE_SOA_INDEX_COLUMN(HfD0McCollBase, hfD0McCollBase);             //! collision index pointing to the derived MC collision table for D0 candidates
 DECLARE_SOA_INDEX_COLUMN(Hf3PMcCollBase, hf3PMcCollBase);             //! collision index pointing to the derived MC collision table for 3-prong candidates
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         //! flag for generator level matching
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle origin, generator level
@@ -482,6 +496,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 
 DECLARE_SOA_TABLE(HfD0PBases, "AOD", "HFD0PBASE", //! Table with MC particle info
                   o2::soa::Index<>,
+                  hf_mc_particle::HfD0McCollBaseId,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
