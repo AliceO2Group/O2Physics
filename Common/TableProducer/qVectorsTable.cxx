@@ -77,7 +77,7 @@ struct qVectorsTable {
 
   Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
-//  Configurable<int> cfgnMod{"cfgnMod", 2, "Modulation of interest"};
+  //  Configurable<int> cfgnMod{"cfgnMod", 2, "Modulation of interest"};
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest"};
 
   Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Users/j/junlee/Qvector/GainEq", "CCDB path for gain equalization constants"};
@@ -192,7 +192,7 @@ struct qVectorsTable {
     }
 
     objQvec.clear();
-    for (auto i=0; i<cfgnMods->size(); i++){
+    for (auto i = 0; i < cfgnMods->size(); i++) {
       int ind = cfgnMods->at(i);
       fullPath = cfgQvecCalibPath;
       fullPath += "/v";
@@ -474,25 +474,25 @@ struct qVectorsTable {
       cent = 110.;
       IsCalibrated = false;
     }
-    for (auto id=0; id<cfgnMods->size(); id++){
+    for (auto id = 0; id < cfgnMods->size(); id++) {
       int ind = cfgnMods->at(id);
       CalQvec(ind, coll, tracks, qvecRe, qvecIm, qvecAmp, TrkBPosLabel, TrkBNegLabel);
       if (cent < 80) {
         for (auto i{0u}; i < 6; i++) {
           helperEP.DoRecenter(qvecRe[(kBNeg + 1) * 4 * id + i * 4 + 1], qvecIm[(kBNeg + 1) * 4 * id + i * 4 + 1],
-                            objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+                              objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
 
           helperEP.DoRecenter(qvecRe[(kBNeg + 1) * 4 * id + i * 4 + 2], qvecIm[(kBNeg + 1) * 4 * id + i * 4 + 2],
-                            objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+                              objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
           helperEP.DoTwist(qvecRe[(kBNeg + 1) * 4 * id + i * 4 + 2], qvecIm[(kBNeg + 1) * 4 * id + i * 4 + 2],
-                         objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+                           objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
 
           helperEP.DoRecenter(qvecRe[(kBNeg + 1) * 4 * id + i * 4 + 3], qvecIm[(kBNeg + 1) * 4 * id + i * 4 + 3],
-                            objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+                              objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
           helperEP.DoTwist(qvecRe[(kBNeg + 1) * 4 * id + i * 4 + 3], qvecIm[(kBNeg + 1) * 4 * id + i * 4 + 3],
-                         objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+                           objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
           helperEP.DoRescale(qvecRe[(kBNeg + 1) * 4 * id + i * 4 + 3], qvecIm[(kBNeg + 1) * 4 * id + i * 4 + 3],
-                           objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
+                             objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
         }
       }
       qvecReFT0C.push_back(qvecRe[(kBNeg + 1) * 4 * id + kFT0C * 4 + 3]);
