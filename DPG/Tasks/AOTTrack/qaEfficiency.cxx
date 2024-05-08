@@ -1257,11 +1257,11 @@ struct QaEfficiency {
     } else if (mcParticle.getProcess() == 4) { // Particle decay
       // Checking mothers
       bool motherIsAccepted = true;
-      if (mothersPDGs.size() > 0 && mcParticle.has_mothers()) {
+      if (mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
         motherIsAccepted = false;
         auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
         for (const auto& mother : mothers) {
-          for (const auto& pdgToCheck : mothersPDGs) {
+          for (const auto& pdgToCheck : mothersPDGs.value) {
             if (mother.pdgCode() == pdgToCheck) {
               motherIsAccepted = true;
               break;
@@ -1338,11 +1338,11 @@ struct QaEfficiency {
       if (mcParticle.getProcess() == 4) { // Particle decay
         // Checking mothers
         bool motherIsAccepted = true;
-        if (mothersPDGs.size() > 0 && mcParticle.has_mothers()) {
+        if (mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
           motherIsAccepted = false;
           auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
           for (const auto& mother : mothers) {
-            for (const auto& pdgToCheck : mothersPDGs) {
+            for (const auto& pdgToCheck : mothersPDGs.value) {
               if (mother.pdgCode() == pdgToCheck) {
                 motherIsAccepted = true;
                 break;
