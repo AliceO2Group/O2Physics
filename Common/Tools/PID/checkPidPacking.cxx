@@ -75,8 +75,8 @@ bool process(std::string outputName, int nevents = 100000)
   huniformPacked->Draw("same");
   can->SaveAs(outputName.c_str());
   can->SaveAs(Form("%s]", outputName.c_str()));
-  const bool gausOk = (hgaus->GetBinContent(hgaus->FindBin(0))  == hgausPacked->GetBinContent(hgausPacked->FindBin(0)));
-  const bool uniformOk = (huniform->GetBinContent(huniform->FindBin(0))  == huniformPacked->GetBinContent(huniformPacked->FindBin(0)));
+  const bool gausOk = (hgaus->GetBinContent(hgaus->FindBin(0)) == hgausPacked->GetBinContent(hgausPacked->FindBin(0)));
+  const bool uniformOk = (huniform->GetBinContent(huniform->FindBin(0)) == huniformPacked->GetBinContent(huniformPacked->FindBin(0)));
   return gausOk && uniformOk;
 }
 
