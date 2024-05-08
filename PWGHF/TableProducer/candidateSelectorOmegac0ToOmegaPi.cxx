@@ -204,9 +204,9 @@ struct HfCandidateSelectorToOmegaPi {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDau = candidate.posTrack_as<TracksSel>();    // positive V0 daughter
-      auto trackV0NegDau = candidate.negTrack_as<TracksSel>();    // negative V0 daughter
-      auto trackKaFromCasc = candidate.bachelor_as<TracksSel>();  // kaon <- cascade
+      auto trackV0PosDau = candidate.posTrack_as<TracksSel>();                   // positive V0 daughter
+      auto trackV0NegDau = candidate.negTrack_as<TracksSel>();                   // negative V0 daughter
+      auto trackKaFromCasc = candidate.bachelor_as<TracksSel>();                 // kaon <- cascade
       auto trackPiFromCharm = candidate.bachelorFromCharmBaryon_as<TracksSel>(); // pion <- charm baryon
 
       auto trackPiFromLam = trackV0NegDau;
@@ -572,8 +572,8 @@ struct HfCandidateSelectorToOmegaPi {
       }
 
       hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
-                  trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
-                  trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
+                     trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
+                     trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
 
       if (resultSelections) {
         if (!statusPidLambda) {
