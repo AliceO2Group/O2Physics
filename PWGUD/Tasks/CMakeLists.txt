@@ -129,3 +129,12 @@ o2physics_add_dpl_workflow(inclusive-phikstar-sd
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sg-exclusive-phi
+                           SOURCES sgExclusivePhi.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-pion-analysis
+                           SOURCES upcPionAnalysis.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)

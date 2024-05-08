@@ -210,7 +210,7 @@ struct HeavyIonMultiplicity {
     }
     histos.fill(HIST("EventHist"), 8);
 
-    if (IsApplyExtraCorrCut && col.multNTracksPV() > NPVtracksCut && col.multFT0C() < (10 * NPVtracksCut - FT0CCut)) {
+    if (IsApplyExtraCorrCut && col.multNTracksPV() > NPVtracksCut && col.multFT0C() < (10 * col.multNTracksPV() - FT0CCut)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 9);

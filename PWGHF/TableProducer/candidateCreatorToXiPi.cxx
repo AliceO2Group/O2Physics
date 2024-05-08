@@ -519,6 +519,7 @@ struct HfCandidateCreatorToXiPiMc {
   void processMc(aod::HfCandToXiPi const& candidates,
                  aod::TracksWMc const&,
                  aod::McParticles const& mcParticles,
+                 aod::McCollisions const&,
                  aod::McCollisionLabels const&)
   {
     float ptCharmBaryonGen = -999.;

@@ -183,7 +183,7 @@ DECLARE_JET_TABLES_LEVELS(Neutral, JTrackSub, HfD0Bases, HfD0PBases, "N");
 DECLARE_JET_TABLES_LEVELS(D0Charged, JTrackD0Sub, HfD0Bases, HfD0PBases, "D0");
 DECLARE_JET_TABLES_LEVELS(LcCharged, JTrackLcSub, Hf3PBases, Hf3PPBases, "Lc");
 DECLARE_JET_TABLES_LEVELS(BplusCharged, JTrackBplusSub, HfCandBplus, HfD0PBases, "BPl");
-DECLARE_JET_TABLES_LEVELS(V0Charged, JTrackSub, V0Cores, V0Cores, "V0");
+DECLARE_JET_TABLES_LEVELS(V0Charged, JTrackSub, V0Cores, JV0McParticles, "V0");
 
 // duplicate jet tables (added as needed for analyses)
 DECLARE_JET_DUPLICATE_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "C", 1);
