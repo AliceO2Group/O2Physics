@@ -994,7 +994,7 @@ class RecoDecay
 /// \tparam indexPt  index of pT element
 /// \tparam indexEta  index of η element
 /// \tparam indexPhi  index of φ element
-/// \tparam indexM  index of mass element (optional)
+/// \tparam indexM  index of mass element (optional for (pT, η, φ, m) vectors)
 template <size_t indexPt = 0, size_t indexEta = 1, size_t indexPhi = 2, size_t indexM = 3>
 class RecoDecayPtEtaPhi
 {
