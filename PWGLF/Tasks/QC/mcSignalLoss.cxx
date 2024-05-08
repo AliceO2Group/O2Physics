@@ -101,7 +101,7 @@ struct mcsignalloss {
 
     for (const auto& collision : collisions) {
 
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10)
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > 10)
         continue;
 
       if (collision.has_mcCollision()) {
