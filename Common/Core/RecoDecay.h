@@ -1154,7 +1154,7 @@ class RecoDecayPtEtaPhi
   template <typename TVec, typename TM>
   static auto e(const TVec& vec, TM m)
   {
-    return RecoDecay::e(p(vec), m);
+    return e(pt(vec), eta(vec), m);
   }
 
   /// Rapidity as a function of pT, η, mass
@@ -1163,8 +1163,26 @@ class RecoDecayPtEtaPhi
   template <typename TVec, typename TM>
   static auto y(const TVec& vec, TM m)
   {
-    // ln[(E + pz) / √(m^2 + pT^2)]
-    return std::log((e(vec, m) + pz(vec)) / RecoDecay::sqrtSumOfSquares(m, pt(vec)));
+    return y(pt(vec), eta(vec), m);
+  }
+
+  // Calculations for (pT, η, φ, m) vectors
+
+  /// Energy as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ, m elements
+  template <typename TVec>
+  static auto e(const TVec& vec)
+  {
+    return e(vec, vec[indexM]);
+  }
+
+  /// Rapidity as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ, m elements
+  /// \param m  mass
+  template <typename TVec>
+  static auto y(const TVec& vec)
+  {
+    return y(vec, vec[indexM]);
   }
 };
 
