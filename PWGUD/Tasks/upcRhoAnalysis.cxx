@@ -44,9 +44,10 @@ struct upcRhoAnalysis {
   Configurable<double> tracksTofNSigmaPiCut{"treacksTofNSigmaPiCut", 3.0, "tofNSigmaPiCut"};
   Configurable<double> tracksPtMaxCut{"tracksPtMaxCut", 2.0, "ptMaxCut"};
   Configurable<double> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "dcaMaxCut"};
+  Configurable<double> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "posZMaxCut"};
 
-  ConfigurableAxis mAxis{"mAxis", {250, 0.0, 2.5}, "m (GeV/#it{c}^{2})"};
-  ConfigurableAxis ptAxis{"ptAxis", {300, 0.0, 3.0}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis mAxis{"mAxis", {500, 0.0, 5.0}, "m (GeV/#it{c}^{2})"};
+  ConfigurableAxis ptAxis{"ptAxis", {500, 0.0, 5.0}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis etaAxis{"etaAxis", {180, -0.9, 0.9}, "#eta"};
   ConfigurableAxis yAxis{"yAxis", {180, -0.9, 0.9}, "y"};
   ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, 2.0*o2::constants::math::PI}, "#phi"};
@@ -74,6 +75,9 @@ struct upcRhoAnalysis {
     registry.add("QC/collisions/hFddTime", ";t_{A};t_{C};counts", kTH2D, {{1050, -999.5, 50.5}, {1050, -999.5, 50.5}});
     registry.add("QC/collisions/hFv0Amplitude", ";A;counts", kTH1D, {{72, -1.5, 70.5}});
     registry.add("QC/collisions/hFv0Time", ";t;counts", kTH1D, {{1050, -999.5, 50.5}});
+    registry.add("QC/collisions/hPosX", ";x (cm);counts", kTH1D, {{200, -1.0, 1.0}});
+    registry.add("QC/collisions/hPosY", ";y (cm);counts", kTH1D, {{200, -1.0, 1.0}});
+    registry.add("QC/collisions/hPosZ", ";z (cm);counts", kTH1D, {{400, -20.0, 20.0}});
     // all tracks
     registry.add("QC/allTracks/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     registry.add("QC/allTracks/hEta", ";#eta;counts", kTH1D, {etaAxis});
@@ -96,8 +100,8 @@ struct upcRhoAnalysis {
     registry.add("QC/cutTracks/hTpcNSigmaPi", ";TPC n#sigma_{#pi};counts", kTH1D, {tpcNSigmaPiAxis});
     registry.add("QC/cutTracks/hTofNSigmaPi", ";TOF n#sigma_{#pi};counts", kTH1D, {tofNSigmaPiAxis});
     registry.add("QC/cutTracks/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {dcaAxis, dcaAxis});
-    registry.add("QC/cutTracks/hTpcSignalVsPt", ";p_{T} (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {100, 0.0, 250.0}});
-    registry.add("QC/cutTracks/hTpcNsigmaPi2D", ";TPC n#sigma_{#pi}^{+};TPC n#sigma_{#pi}^{-};counts", kTH2D, {tpcNSigmaPiAxis, tpcNSigmaPiAxis});
+    registry.add("QC/cutTracks/hTpcSignalVsPt", ";p_{T} (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
+    registry.add("QC/cutTracks/hTpcNsigmaPi2D", ";TPC n#sigma_{#pi^{+}};TPC n#sigma_{#pi^{-}};counts", kTH2D, {tpcNSigmaPiAxis, tpcNSigmaPiAxis});
     registry.add("QC/cutTracks/hTpcNClsFindable", ";N_{findable};counts", kTH1D, {{171, -0.5, 170.5}});
     registry.add("QC/cutTracks/hTpcNClsFindableMinusFound", ";N_{findable} - N_{found};counts", kTH1D, {{11, -0.5, 10.5}});
     // reco pions
@@ -108,16 +112,38 @@ struct upcRhoAnalysis {
     registry.add("reco/pions/like-sign/hEta", ";#eta(#pi_{1});#eta(#pi_{2});counts", kTH2D, {etaAxis, etaAxis});
     registry.add("reco/pions/like-sign/hPhi", ";#phi(#pi_{1});#phi(#pi_{2});counts", kTH2D, {phiAxis, phiAxis});
     // reco rhos
-    registry.add("reco/system/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
-    registry.add("reco/system/like-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
-    registry.add("reco/system/like-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
-    registry.add("reco/system/like-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    registry.add("reco/system/like-sign/hY", ";y;counts", kTH1D, {yAxis});
-    registry.add("reco/system/like-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/unlike-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/unlike-sign/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/unlike-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/2pi/like-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/2pi/like-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/2pi/like-sign/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/2pi/like-sign/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/2pi/like-sign/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    // 4pi system
+    registry.add("reco/system/4pi/net-zero/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/4pi/net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/4pi/net-zero/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/4pi/net-zero/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/4pi/net-zero/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/4pi/non-net-zero/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/4pi/non-net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/4pi/non-net-zero/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/4pi/non-net-zero/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/4pi/non-net-zero/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    // 6pi system
+    registry.add("reco/system/6pi/net-zero/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/6pi/net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/6pi/net-zero/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/6pi/net-zero/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/6pi/net-zero/hPhi", ";#phi;counts", kTH1D, {phiAxis});
+    registry.add("reco/system/6pi/non-net-zero/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    registry.add("reco/system/6pi/non-net-zero/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    registry.add("reco/system/6pi/non-net-zero/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    registry.add("reco/system/6pi/non-net-zero/hY", ";y;counts", kTH1D, {yAxis});
+    registry.add("reco/system/6pi/non-net-zero/hPhi", ";#phi;counts", kTH1D, {phiAxis});
   }
 
   template <typename T>
@@ -147,13 +173,15 @@ struct upcRhoAnalysis {
     registry.fill(HIST("QC/collisions/hFddTime"), collision.timeFDDA(), collision.timeFDDC());
     registry.fill(HIST("QC/collisions/hFv0Amplitude"), collision.totalFV0AmplitudeA());
     registry.fill(HIST("QC/collisions/hFv0Time"), collision.timeFV0A());
+    registry.fill(HIST("QC/collisions/hPosX"), collision.posX());
+    registry.fill(HIST("QC/collisions/hPosY"), collision.posY());
+    registry.fill(HIST("QC/collisions/hPosZ"), collision.posZ());
+
+    if (std::abs(collision.posZ()) > collisionsPosZMaxCut) return;
 
     // create some vectors for storing track info
     std::vector<ROOT::Math::PxPyPzMVector> track4Vecs;
-    ROOT::Math::PxPyPzMVector rho;
     std::vector<decltype(tracks.begin())> allTracks, cutTracks;
-    decltype(tracks.begin()) posTrack, negTrack, trackOne, trackTwo;
-    ROOT::Math::PxPyPzMVector piPos, piNeg, piOne, piTwo;
 
     for (const auto& track : tracks) {
       allTracks.push_back(track);
@@ -187,57 +215,109 @@ struct upcRhoAnalysis {
     registry.fill(HIST("QC/allTracks/hNTracks"), allTracks.size());
     registry.fill(HIST("QC/cutTracks/hNTracks"), cutTracks.size());
 
-    // assume only events with two tracks
-    if (cutTracks.size() != 2) return;
-    registry.fill(HIST("hSelectionCounter"), 7, 2.); // the weight is 2. because we are looking at pairs of tracks
+    // assume events with two tracks
+    if (cutTracks.size() == 2) {
+      ROOT::Math::PxPyPzMVector rho, piPos, piNeg, piOne, piTwo;
+      decltype(tracks.begin()) posTrack, negTrack, trackOne, trackTwo;
+      
+      registry.fill(HIST("hSelectionCounter"), 7, 2.); // the weight is 2. because we are looking at pairs of tracks
 
-    // unlike-sign tracks
-    if (cutTracks[0].sign() != cutTracks[1].sign()) {
-      registry.fill(HIST("hSelectionCounter"), 8, 2.);
-      if (cutTracks[0].sign() > 0) {
-        piPos = track4Vecs[0];
-        posTrack = cutTracks[0];
-        piNeg = track4Vecs[1];
-        negTrack = cutTracks[1];
-      } else {
-        piNeg = track4Vecs[0];
-        negTrack = cutTracks[0];
-        piPos = track4Vecs[1];
-        posTrack = cutTracks[1];
+      // unlike-sign tracks
+      if (cutTracks[0].sign() != cutTracks[1].sign()) {
+        registry.fill(HIST("hSelectionCounter"), 8, 2.);
+        if (cutTracks[0].sign() > 0) {
+          piPos = track4Vecs[0];
+          posTrack = cutTracks[0];
+          piNeg = track4Vecs[1];
+          negTrack = cutTracks[1];
+        } else {
+          piNeg = track4Vecs[0];
+          negTrack = cutTracks[0];
+          piPos = track4Vecs[1];
+          posTrack = cutTracks[1];
+        }
+
+        registry.fill(HIST("QC/cutTracks/hTpcNsigmaPi2D"), posTrack.tpcNSigmaPi(), negTrack.tpcNSigmaPi());
+
+        // 2D PID check
+        if (std::pow(posTrack.tpcNSigmaPi(), 2) + std::pow(negTrack.tpcNSigmaPi(), 2) > std::pow(tracksTpcNSigmaPiCut, 2)) return;
+        registry.fill(HIST("reco/pions/unlike-sign/hPt"), piPos.Pt(), piNeg.Pt());
+        registry.fill(HIST("reco/pions/unlike-sign/hEta"), piPos.Eta(), piNeg.Eta());
+        registry.fill(HIST("reco/pions/unlike-sign/hPhi"), piPos.Phi() + o2::constants::math::PI, piNeg.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
+        // reconstruct rho
+        rho = piPos + piNeg;
+        registry.fill(HIST("reco/system/2pi/unlike-sign/hM"), rho.M());
+        registry.fill(HIST("reco/system/2pi/unlike-sign/hPt"), rho.Pt());
+        registry.fill(HIST("reco/system/2pi/unlike-sign/hPtVsM"), rho.M(), rho.Pt());
+        registry.fill(HIST("reco/system/2pi/unlike-sign/hY"), rho.Rapidity());
+        registry.fill(HIST("reco/system/2pi/unlike-sign/hPhi"), rho.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
       }
 
-      registry.fill(HIST("QC/cutTracks/hTpcNsigmaPi2D"), posTrack.tpcNSigmaPi(), negTrack.tpcNSigmaPi());
-
-      // 2D PID check
-      if (std::pow(posTrack.tpcNSigmaPi(), 2) + std::pow(negTrack.tpcNSigmaPi(), 2) > std::pow(tracksTpcNSigmaPiCut, 2)) return;
-      registry.fill(HIST("reco/pions/unlike-sign/hPt"), piPos.Pt(), piNeg.Pt());
-      registry.fill(HIST("reco/pions/unlike-sign/hEta"), piPos.Eta(), piNeg.Eta());
-      registry.fill(HIST("reco/pions/unlike-sign/hPhi"), piPos.Phi() + o2::constants::math::PI, piNeg.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
-      // reconstruct rho
-      rho = piPos + piNeg;
-      registry.fill(HIST("reco/system/unlike-sign/hM"), rho.M());
-      registry.fill(HIST("reco/system/unlike-sign/hPt"), rho.Pt());
-      registry.fill(HIST("reco/system/unlike-sign/hPtVsM"), rho.M(), rho.Pt());
-      registry.fill(HIST("reco/system/unlike-sign/hY"), rho.Rapidity());
-      registry.fill(HIST("reco/system/unlike-sign/hPhi"), rho.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
+      // like-sign tracks
+      if (cutTracks[0].sign() == cutTracks[1].sign()) {
+        piOne = track4Vecs[0];
+        piTwo = track4Vecs[1];
+        trackOne = cutTracks[0];
+        trackTwo = cutTracks[1];
+        registry.fill(HIST("reco/pions/like-sign/hPt"), piOne.Pt(), piTwo.Pt());
+        registry.fill(HIST("reco/pions/like-sign/hEta"), piOne.Eta(), piTwo.Eta());
+        registry.fill(HIST("reco/pions/like-sign/hPhi"), piOne.Phi() + o2::constants::math::PI, piTwo.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
+        // reconstruct "rho"
+        rho = piOne + piTwo;
+        registry.fill(HIST("reco/system/2pi/like-sign/hM"), rho.M());
+        registry.fill(HIST("reco/system/2pi/like-sign/hPt"), rho.Pt());
+        registry.fill(HIST("reco/system/2pi/like-sign/hPtVsM"), rho.M(), rho.Pt());
+        registry.fill(HIST("reco/system/2pi/like-sign/hY"), rho.Rapidity());
+        registry.fill(HIST("reco/system/2pi/like-sign/hPhi"), rho.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
+      }
     }
 
-    // like-sign tracks
-    if (cutTracks[0].sign() == cutTracks[1].sign()) {
-      piOne = track4Vecs[0];
-      piTwo = track4Vecs[1];
-      trackOne = cutTracks[0];
-      trackTwo = cutTracks[1];
-      registry.fill(HIST("reco/pions/like-sign/hPt"), piOne.Pt(), piTwo.Pt());
-      registry.fill(HIST("reco/pions/like-sign/hEta"), piOne.Eta(), piTwo.Eta());
-      registry.fill(HIST("reco/pions/like-sign/hPhi"), piOne.Phi() + o2::constants::math::PI, piTwo.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
-      // reconstruct "rho"
-      rho = piOne + piTwo;
-      registry.fill(HIST("reco/system/like-sign/hM"), rho.M());
-      registry.fill(HIST("reco/system/like-sign/hPt"), rho.Pt());
-      registry.fill(HIST("reco/system/like-sign/hPtVsM"), rho.M(), rho.Pt());
-      registry.fill(HIST("reco/system/like-sign/hY"), rho.Rapidity());
-      registry.fill(HIST("reco/system/like-sign/hPhi"), rho.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
+    // events with 4 tracks
+    if (cutTracks.size() == 4) {
+      // net-zero charge event
+      if (cutTracks[0].sign() + cutTracks[1].sign() + cutTracks[2].sign() + cutTracks[3].sign() == 0) {
+        // reconstruct system
+        ROOT::Math::PxPyPzMVector system = track4Vecs[0] + track4Vecs[1] + track4Vecs[2] + track4Vecs[3];
+        registry.fill(HIST("reco/system/4pi/net-zero/hM"), system.M());
+        registry.fill(HIST("reco/system/4pi/net-zero/hPt"), system.Pt());
+        registry.fill(HIST("reco/system/4pi/net-zero/hPtVsM"), system.M(), system.Pt());
+        registry.fill(HIST("reco/system/4pi/net-zero/hY"), system.Rapidity());
+        registry.fill(HIST("reco/system/4pi/net-zero/hPhi"), system.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
+      }
+      // non-net-zero charge event
+      else {
+        // reconstruct system
+        ROOT::Math::PxPyPzMVector system = track4Vecs[0] + track4Vecs[1] + track4Vecs[2] + track4Vecs[3];
+        registry.fill(HIST("reco/system/4pi/non-net-zero/hM"), system.M());
+        registry.fill(HIST("reco/system/4pi/non-net-zero/hPt"), system.Pt());
+        registry.fill(HIST("reco/system/4pi/non-net-zero/hPtVsM"), system.M(), system.Pt());
+        registry.fill(HIST("reco/system/4pi/non-net-zero/hY"), system.Rapidity());
+        registry.fill(HIST("reco/system/4pi/non-net-zero/hPhi"), system.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
+      }
+    }
+
+    // events with 6 tracks
+    if (cutTracks.size() == 6) {
+      // net-zero charge event
+      if (cutTracks[0].sign() + cutTracks[1].sign() + cutTracks[2].sign() + cutTracks[3].sign() + cutTracks[4].sign() + cutTracks[5].sign() == 0) {
+        // reconstruct system
+        ROOT::Math::PxPyPzMVector system = track4Vecs[0] + track4Vecs[1] + track4Vecs[2] + track4Vecs[3] + track4Vecs[4] + track4Vecs[5];
+        registry.fill(HIST("reco/system/6pi/net-zero/hM"), system.M());
+        registry.fill(HIST("reco/system/6pi/net-zero/hPt"), system.Pt());
+        registry.fill(HIST("reco/system/6pi/net-zero/hPtVsM"), system.M(), system.Pt());
+        registry.fill(HIST("reco/system/6pi/net-zero/hY"), system.Rapidity());
+        registry.fill(HIST("reco/system/6pi/net-zero/hPhi"), system.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
+      }
+      // non-net-zero charge event
+      else {
+        // reconstruct system
+        ROOT::Math::PxPyPzMVector system = track4Vecs[0] + track4Vecs[1] + track4Vecs[2] + track4Vecs[3] + track4Vecs[4] + track4Vecs[5];
+        registry.fill(HIST("reco/system/6pi/non-net-zero/hM"), system.M());
+        registry.fill(HIST("reco/system/6pi/non-net-zero/hPt"), system.Pt());
+        registry.fill(HIST("reco/system/6pi/non-net-zero/hPtVsM"), system.M(), system.Pt());
+        registry.fill(HIST("reco/system/6pi/non-net-zero/hY"), system.Rapidity());
+        registry.fill(HIST("reco/system/6pi/non-net-zero/hPhi"), system.Phi() + o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
+      }
     }
   } PROCESS_SWITCH(upcRhoAnalysis, processReco, "Analyse reco tracks", true);
 };
