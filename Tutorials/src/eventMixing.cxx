@@ -51,7 +51,7 @@ struct MixedEvents {
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       // Example of using getBin() to check collisions bin
       // NOTE that it is a bit different for FlexibleBinning -- check in respective example
-      int bin = binningOnPositions.getBin(c1.posX(), c1.posY());
+      int bin = binningOnPositions.getBin({c1.posX(), c1.posY()});
 
       LOGF(info, "Mixed event collisions: (%d, %d) from bin %d", c1.globalIndex(), c2.globalIndex(), bin);
       count++;
@@ -439,7 +439,7 @@ struct MixedEventsLambdaBinning {
     int count = 0;
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       // NOTE that getBin() with FlexibleBinningPolicy needs explicit tuple construction
-      int bin = binningWithLambda.getBin(std::tuple(getTrackSize(c1), c1.posZ()));
+      int bin = binningWithLambda.getBin(std::tuple(getTracksSize(c1), c1.posZ()));
 
       LOGF(info, "Mixed event collisions: (%d, %d) from bin %d z: (%.3f, %.3f), tracks size (%d, %d)", c1.globalIndex(), c2.globalIndex(), bin, c1.posZ(), c2.posZ(), tracks1.size(), tracks2.size());
       count++;
@@ -454,6 +454,27 @@ struct MixedEventsLambdaBinning {
         if (trackCount == 10)
           break;
       }
+    }
+  }
+};
+
+struct MixedEventsCounters {
+  SliceCache cache;
+
+  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
+  std::vector<double> yBins{VARIABLE_WIDTH, -0.320, -0.301, -0.300, 0.330, 0.340, 0.350, 0.360};
+  using BinningType = ColumnBinningPolicy<aod::collision::PosX, aod::collision::PosY>;
+  BinningType binningOnPositions{{xBins, yBins}, true};
+  // true is for 'ignore overflows' (true by default)
+  SameKindPair<aod::Collisions, aod::Tracks, BinningType> pair{binningOnPositions, 5, -1, &cache}; // indicates that 5 events should be mixed and under / overflow(-1) to be ignored
+
+  void process(aod::Collisions const& collisions, aod::Tracks const& tracks)
+  {
+    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracks.size());
+
+    for (auto it = pair.begin(); it != pair.end(); it++) {
+      auto& [c1, tracks1, c2, tracks2] = *it;
+      LOGF(info, "Mixed event collisions: (%d, %d), is it first pair with %d: %d, number of collisions mixed with the first: %d", c1.globalIndex(), c2.globalIndex(), c1.globalIndex(), it.isNewWindow(), it.currentWindowNeighbours());
     }
   }
 };
@@ -473,5 +494,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<MixedEventsWithHashTask>(cfgc),
     adaptAnalysisTask<MixedEventsPartitionedTracks>(cfgc),
     adaptAnalysisTask<MixedEventsLambdaBinning>(cfgc),
+    adaptAnalysisTask<MixedEventsCounters>(cfgc),
   };
 }
