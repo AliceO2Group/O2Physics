@@ -62,6 +62,7 @@ static const std::vector<int> pdgCodes{211, 321, 2212, 1000010020, 1000020030, 3
 struct mcsignalloss {
   ConfigurableAxis ptAxis{"ptAxis", {80., 0.f, 10.f}, "pt axis binning"};
   ConfigurableAxis decLAxis{"decLAxis", {100., 0.f, 50.f}, "decay length binning"};
+  ConfigurableAxis zAxis{"zAxis", {100, -20, 20}, "z axis binning"};
   ConfigurableAxis pdgAxis{"pdgAxis", {static_cast<double>(pdgCodes.size()), 0, static_cast<double>(pdgCodes.size())}, "pdg axis binning"};
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<bool> isRecoCollision;
@@ -88,6 +89,8 @@ struct mcsignalloss {
 
   void init(o2::framework::InitContext&)
   {
+    histos.add<TH1>("mcGenCollisionVtx", ";#it{z} (cm)", HistType::kTH1F, {zAxis});
+    histos.add<TH1>("recCollisionVtx", ";#it{z} (cm)", HistType::kTH1F, {zAxis});
     histos.add<TH2>("mcGenAll", ";#it{p_{T}(GeV/#it{c}); pdg", HistType::kTH2F, {ptAxis, pdgAxis});
     histos.add<TH2>("mcGenAllRecoColl", ";#it{p_{T}(GeV/#it{c}); pdg", HistType::kTH2F, {ptAxis, pdgAxis});
     histos.add<TH3>("mcGenV0s", ";#it{p_{T}(GeV/#it{c}); Decay Length (cm); pdg", HistType::kTH3F, {ptAxis, decLAxis, pdgAxis});
@@ -103,10 +106,16 @@ struct mcsignalloss {
 
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > 10)
         continue;
+      
+      histos.fill(HIST("recCollisionVtx"), collision.posZ());
 
       if (collision.has_mcCollision()) {
         isRecoCollision[collision.mcCollisionId()] = true;
       }
+    }
+    
+    for (const auto& mcCollision : mcCollisions) {
+      histos.fill(HIST("mcGenCollisionVtx"), mcCollision.posZ());
     }
 
     for (auto& mcPart : particlesMC) {
