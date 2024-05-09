@@ -229,18 +229,18 @@ struct FilterCF {
       for (auto& track : groupedTracks) {
         uint8_t trackType = 0;
         if (track.isGlobalTrack()) {
-        trackType |= BIT(0);
-        if (cfgSystematicChecks) {
-          if (track.itsNCls() >= 5) {
-            trackType |= BIT(3);
+          trackType |= BIT(0);
+          if (cfgSystematicChecks) {
+            if (track.itsNCls() >= 5) {
+              trackType |= BIT(3);
+            }
+            if (track.tpcNClsCrossedRows() >= 90) {
+              trackType |= BIT(4);
+            }
           }
-          if (track.tpcNClsCrossedRows() >= 90) {
-            trackType |= BIT(4);
-          }
+        } else if (track.isGlobalTrackSDD()) {
+          trackType |= BIT(2);
         }
-      } else if (track.isGlobalTrackSDD()) {
-        trackType |= BIT(2);
-      }
 
         int mcParticleId = track.mcParticleId();
         if (mcParticleId >= 0) {
