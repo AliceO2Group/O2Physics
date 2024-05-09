@@ -1063,6 +1063,17 @@ struct RecoDecayPtEtaPhiBase
     return std::log((e(pt, eta, m) + pz(pt, eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
   }
 
+  /// Momentum vector in (px, py, pz) coordinates from pT, η, φ variables
+  /// \param pt  pT
+  /// \param eta  η
+  /// \param phi  φ
+  /// \return std::array with px, py, pz elements
+  template <typename TPt, typename TEta, typename TPhi>
+  static auto pVector(TPt pt, TEta eta, TPhi phi)
+  {
+    return std::array{px(pt, phi), py(pt, phi), pz(pt, eta)};
+  }
+
   // Vector-based calculations
 
   /// pt
@@ -1152,6 +1163,15 @@ struct RecoDecayPtEtaPhiBase
     return y(pt(vec), eta(vec), m);
   }
 
+  /// Momentum vector in (px, py, pz) coordinates from a (pT, η, φ) vector
+  /// \param vec  vector with pT, η, φ elements
+  /// \return std::array with px, py, pz elements
+  template <typename TVec>
+  static auto pVector(const TVec& vec)
+  {
+    return std::array{px(vec), py(vec), pz(vec)};
+  }
+
   // Calculations for (pT, η, φ, m) vectors
 
   /// Energy as a function of pT, η, mass
@@ -1186,11 +1206,13 @@ struct RecoDecayPtEtaPhiBase
     setVectorFromVariables(vecPtEtaPhi, RecoDecay::pt(vecXYZ), RecoDecay::eta(vecXYZ), RecoDecay::phi(vecXYZ));
     setVectorFromVariables(vecPtEtaPhiM, RecoDecay::pt(vecXYZ), RecoDecay::eta(vecXYZ), RecoDecay::phi(vecXYZ));
     vecPtEtaPhiM[3] = mIn;
+    auto vecXYZFromVec = pVector(vecPtEtaPhi);
+    auto vecXYZFromVars = pVector(pt(vecPtEtaPhi), eta(vecPtEtaPhi), phi(vecPtEtaPhi));
     // Test px, py, pz, pt, p, eta, phi, e, y, m
     printf("RecoDecay test\n");
-    printf("px: In: %g, XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pxIn, vecXYZ[0], px(vecPtEtaPhi), px(vecPtEtaPhiM));
-    printf("py: In: %g, XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pyIn, vecXYZ[1], py(vecPtEtaPhi), py(vecPtEtaPhiM));
-    printf("pz: In: %g, XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pzIn, vecXYZ[2], pz(vecPtEtaPhi), pz(vecPtEtaPhiM));
+    printf("px: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pxIn, vecXYZ[0], vecXYZFromVec[0], vecXYZFromVars[0], px(vecPtEtaPhi), px(vecPtEtaPhiM));
+    printf("py: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pyIn, vecXYZ[1], vecXYZFromVec[1], vecXYZFromVars[1], py(vecPtEtaPhi), py(vecPtEtaPhiM));
+    printf("pz: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pzIn, vecXYZ[2], vecXYZFromVec[2], vecXYZFromVars[2], pz(vecPtEtaPhi), pz(vecPtEtaPhiM));
     printf("pt: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::pt(vecXYZ), pt(vecPtEtaPhi), pt(vecPtEtaPhiM));
     printf("p: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::p(vecXYZ), p(vecPtEtaPhi), p(vecPtEtaPhiM));
     printf("eta: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::eta(vecXYZ), eta(vecPtEtaPhi), eta(vecPtEtaPhiM));
