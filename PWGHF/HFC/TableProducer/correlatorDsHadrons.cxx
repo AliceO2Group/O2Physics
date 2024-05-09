@@ -762,6 +762,7 @@ struct HfCorrelatorDsHadrons {
             outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
           }
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
+          entryTrackRecoInfo(pAssoc.dcaXY(), pAssoc.dcaZ(), pAssoc.tpcNClsCrossedRows());
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           entryDsHadronPair(getDeltaPhi(pAssoc.phi(), candidate.phi()),
                             pAssoc.eta() - candidate.eta(),
@@ -774,6 +775,7 @@ struct HfCorrelatorDsHadrons {
             outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
           }
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
+          entryTrackRecoInfo(pAssoc.dcaXY(), pAssoc.dcaZ(), pAssoc.tpcNClsCrossedRows());
         }
       }
     }
