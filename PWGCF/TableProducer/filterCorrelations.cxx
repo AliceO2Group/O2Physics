@@ -19,8 +19,6 @@
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 
 #include <TH3F.h>
@@ -58,10 +56,7 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgTrigger, int, 7, "Trigger choice: (0 = none, 7 = sel7, 8 = sel8)")
   O2_DEFINE_CONFIGURABLE(cfgCollisionFlags, uint16_t, aod::collision::CollisionFlagsRun2::Run2VertexerTracks, "Request collision flags if non-zero (0 = off, 1 = Run2VertexerTracks)")
   O2_DEFINE_CONFIGURABLE(cfgTransientTables, bool, false, "Output transient tables for collision and track IDs")
-  O2_DEFINE_CONFIGURABLE(cfgMinNCrossedRowsTPC, float, 70.f, "Additional cut on the minimum number of crossed rows in the TPC")
-  O2_DEFINE_CONFIGURABLE(cfgMinITScl, int, 4, "Additional cut on the ITS cluster")
-  O2_DEFINE_CONFIGURABLE(cfgDCAxyCut, float, 2.0f, "DCAxy range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgDCAzCut, float, 2.0f, "DCAz range for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgSystematicChecks, bool, false, "Systematic checks on track selection")
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -101,7 +96,7 @@ struct FilterCF {
     return false;
   }
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>> const& tracks)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
   {
     if (cfgVerbosity > 0) {
       LOGF(info, "processData: Tracks for collision: %d | Vertex: %.1f (%d) | INT7: %d | Multiplicity: %.1f", tracks.size(), collision.posZ(), collision.flags(), collision.sel7(), collision.multiplicity());
@@ -120,17 +115,17 @@ struct FilterCF {
     for (auto& track : tracks) {
       uint8_t trackType = 0;
       if (track.isGlobalTrack()) {
-        trackType = 1;
+        trackType |= BIT(0);
+        if (cfgSystematicChecks) {
+          if (track.itsNCls() >= 5) {
+            trackType |= BIT(3);
+          }
+          if (track.tpcNClsCrossedRows() >= 90) {
+            trackType |= BIT(4);
+          }
+        }
       } else if (track.isGlobalTrackSDD()) {
-        trackType = 2;
-      } else if (track.isGlobalTrack() && track.itsNCls() >= cfgMinITScl.value) {
-        trackType = 3;
-      } else if (track.isGlobalTrack() && track.tpcNClsCrossedRows() >= cfgMinNCrossedRowsTPC.value) {
-        trackType = 4;
-      } else if (track.isGlobalTrack() && abs(track.dcaXY()) <= cfgDCAxyCut.value) {
-        trackType = 5;
-      } else if (track.isGlobalTrack() && abs(track.dcaZ()) <= cfgDCAzCut.value) {
-        trackType = 6;
+        trackType |= BIT(2);
       }
 
       outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), trackType);
@@ -234,18 +229,18 @@ struct FilterCF {
       for (auto& track : groupedTracks) {
         uint8_t trackType = 0;
         if (track.isGlobalTrack()) {
-          trackType = 1;
-        } else if (track.isGlobalTrackSDD()) {
-          trackType = 2;
-        } else if (track.isGlobalTrack() && track.itsNCls() >= cfgMinITScl.value) {
-          trackType = 3;
-        } else if (track.isGlobalTrack() && track.tpcNClsCrossedRows() >= cfgMinNCrossedRowsTPC.value) {
-          trackType = 4;
-        } else if (track.isGlobalTrack() && abs(track.dcaXY()) <= cfgDCAxyCut.value) {
-          trackType = 5;
-        } else if (track.isGlobalTrack() && abs(track.dcaZ()) <= cfgDCAzCut.value) {
-          trackType = 6;
+        trackType |= BIT(0);
+        if (cfgSystematicChecks) {
+          if (track.itsNCls() >= 5) {
+            trackType |= BIT(3);
+          }
+          if (track.tpcNClsCrossedRows() >= 90) {
+            trackType |= BIT(4);
+          }
         }
+      } else if (track.isGlobalTrackSDD()) {
+        trackType |= BIT(2);
+      }
 
         int mcParticleId = track.mcParticleId();
         if (mcParticleId >= 0) {
