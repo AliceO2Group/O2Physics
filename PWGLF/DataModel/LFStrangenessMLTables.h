@@ -30,8 +30,8 @@ DECLARE_SOA_COLUMN(PosITSCls, posITSCls, int);
 DECLARE_SOA_COLUMN(NegITSCls, negITSCls, int);
 DECLARE_SOA_COLUMN(PosITSClSize, posITSClSize, uint32_t);
 DECLARE_SOA_COLUMN(NegITSClSize, negITSClSize, uint32_t);
-DECLARE_SOA_COLUMN(PosTPCRows, posTPCRows, float);
-DECLARE_SOA_COLUMN(NegTPCRows, negTPCRows, float);
+DECLARE_SOA_COLUMN(PosTPCRows, posTPCRows, uint8_t);
+DECLARE_SOA_COLUMN(NegTPCRows, negTPCRows, uint8_t);
 DECLARE_SOA_COLUMN(PosTPCSigmaPi, posTPCSigmaPi, float);
 DECLARE_SOA_COLUMN(NegTPCSigmaPi, negTPCSigmaPi, float);
 DECLARE_SOA_COLUMN(PosTPCSigmaPr, posTPCSigmaPr, float);
@@ -69,6 +69,7 @@ DECLARE_SOA_COLUMN(IsLambda, isLambda, bool);
 DECLARE_SOA_COLUMN(IsAntiLambda, isAntiLambda, bool);
 DECLARE_SOA_COLUMN(IsGamma, isGamma, bool);
 DECLARE_SOA_COLUMN(IsKZeroShort, isKZeroShort, bool);
+DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);
 } // namespace v0mlcandidates
 
 DECLARE_SOA_TABLE(V0MLCandidates, "AOD", "V0MLCANDIDATES",
@@ -114,7 +115,8 @@ DECLARE_SOA_TABLE(V0MLCandidates, "AOD", "V0MLCANDIDATES",
                   v0mlcandidates::IsLambda,
                   v0mlcandidates::IsAntiLambda,
                   v0mlcandidates::IsGamma,
-                  v0mlcandidates::IsKZeroShort);
+                  v0mlcandidates::IsKZeroShort,
+                  v0mlcandidates::PDGCodeMother);
 
 namespace V0MLSelection
 {
