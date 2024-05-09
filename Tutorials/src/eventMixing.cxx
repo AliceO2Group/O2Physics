@@ -459,6 +459,9 @@ struct MixedEventsLambdaBinning {
 };
 
 struct MixedEventsCounters {
+  // Please read carefully the tutorial description in O2 documentation to understand the behaviour of currentWindowNeighbours().
+  // https://aliceo2group.github.io/analysis-framework/docs/tutorials/eventMixing.html#mixedeventscounters
+
   SliceCache cache;
 
   std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
