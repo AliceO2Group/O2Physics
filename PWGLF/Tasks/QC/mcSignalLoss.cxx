@@ -106,14 +106,14 @@ struct mcsignalloss {
 
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > 10)
         continue;
-      
+
       histos.fill(HIST("recCollisionVtx"), collision.posZ());
 
       if (collision.has_mcCollision()) {
         isRecoCollision[collision.mcCollisionId()] = true;
       }
     }
-    
+
     for (const auto& mcCollision : mcCollisions) {
       histos.fill(HIST("mcGenCollisionVtx"), mcCollision.posZ());
     }
