@@ -29,6 +29,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/EventSelection.h"
@@ -112,8 +113,31 @@ struct qVectorsTable {
 
   TH3F* objQvec = nullptr;
 
-  void init(InitContext const&)
+  std::unordered_map<string, bool> useDetector = {
+    {"QvectorBNegs", false},
+    {"QvectorBPoss", false},
+    {"QvectorFV0As", false},
+    {"QvectorFT0Ms", false},
+    {"QvectorFT0As", false},
+    {"QvectorFT0Cs", false}};
+
+  void init(InitContext& initContext)
   {
+
+    // Check the sub-detector used
+    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (DeviceSpec const& device : workflows.devices) {
+      for (auto const& input : device.inputs) {
+        LOGF(info, Form("%s", input.matcher.binding.data()));
+        for (auto det : useDetector) {
+          if (input.matcher.binding == det.first) {
+            useDetector[det.first.data()] = true;
+            LOGF(info, Form("Using detector: %s.", det.first.data()));
+          }
+        }
+      }
+    }
+
     // Setup the access to the CCDB objects of interest.
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdb->setCaching(true);
@@ -267,63 +291,74 @@ struct qVectorsTable {
     /// First check if the collision has a found FT0. If yes, calculate the
     /// Q-vectors for FT0A and FT0C (both real and imaginary parts). If no,
     /// attribute dummy values to the corresponding qVect.
-    if (coll.has_foundFT0()) {
+    if (coll.has_foundFT0() && (useDetector["QvectorFT0As"] || useDetector["QvectorFT0Cs"] || useDetector["QvectorFT0Ms"])) {
       auto ft0 = coll.foundFT0();
 
-      // Iterate over the non-dead channels for FT0-A to get the total Q-vector
-      // and sum of amplitudes.
-      for (std::size_t iChA = 0; iChA < ft0.channelA().size(); iChA++) {
-        // Get first the corresponding amplitude.
-        float ampl = ft0.amplitudeA()[iChA];
-        int FT0AchId = ft0.channelA()[iChA];
+      // Check whether FT0-A is being used.
+      if (useDetector["QvectorFT0As"]) {
+        // Iterate over the non-dead channels for FT0-A to get the total Q-vector
+        // and sum of amplitudes.
+        for (std::size_t iChA = 0; iChA < ft0.channelA().size(); iChA++) {
+          // Get first the corresponding amplitude.
+          float ampl = ft0.amplitudeA()[iChA];
+          int FT0AchId = ft0.channelA()[iChA];
 
-        histosQA.fill(HIST("FT0Amp"), ampl, FT0AchId);
-        histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0AchId], FT0AchId);
-        // Update the Q-vector and sum of amplitudes using the helper function.
-        // LOKI: Note this assumes nHarmo = 2!! Likely generalise in the future.
-        helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], cfgnMod, QvecDet, sumAmplFT0A, ft0geom, fv0geom);
-        helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], cfgnMod, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
-      } // Go to the next channel iChA.
+          histosQA.fill(HIST("FT0Amp"), ampl, FT0AchId);
+          histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0AchId], FT0AchId);
+          // Update the Q-vector and sum of amplitudes using the helper function.
+          // LOKI: Note this assumes nHarmo = 2!! Likely generalise in the future.
+          helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], cfgnMod, QvecDet, sumAmplFT0A, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], cfgnMod, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
+        } // Go to the next channel iChA.
 
-      // Set the Qvectors for FT0A with the normalised Q-vector values if the sum of
-      // amplitudes is non-zero. Otherwise, set it to a dummy 999.
-      if (sumAmplFT0A > 1e-8) {
-        QvecDet /= sumAmplFT0A;
-        qVectFT0A[0] = QvecDet.Re();
-        qVectFT0A[1] = QvecDet.Im();
-        // printf("qVectFT0A[0] = %.2f ; qVectFT0A[1] = %.2f \n", qVectFT0A[0], qVectFT0A[1]); // Debug printing.
+        // Set the Qvectors for FT0A with the normalised Q-vector values if the sum of
+        // amplitudes is non-zero. Otherwise, set it to a dummy 999.
+        if (sumAmplFT0A > 1e-8) {
+          QvecDet /= sumAmplFT0A;
+          qVectFT0A[0] = QvecDet.Re();
+          qVectFT0A[1] = QvecDet.Im();
+          // printf("qVectFT0A[0] = %.2f ; qVectFT0A[1] = %.2f \n", qVectFT0A[0], qVectFT0A[1]); // Debug printing.
+        } else {
+          qVectFT0A[0] = 999.;
+          qVectFT0A[1] = 999.;
+        }
       } else {
-        qVectFT0A[0] = 999.;
-        qVectFT0A[1] = 999.;
+        qVectFT0A[0] = -999.;
+        qVectFT0A[1] = -999.;
       }
 
-      // Repeat the procedure with FT0-C for the found FT0.
-      // Start by resetting to zero the intermediate quantities.
-      QvecDet = TComplex(0., 0.);
-      for (std::size_t iChC = 0; iChC < ft0.channelC().size(); iChC++) {
-        // iChC ranging from 0 to max 112. We need to add 96 (= max channels in FT0-A)
-        // to ensure a proper channel number in FT0 as a whole.
-        float ampl = ft0.amplitudeC()[iChC];
-        int FT0CchId = ft0.channelC()[iChC] + 96;
+      if (useDetector["QvectorFT0Cs"]) {
+        // Repeat the procedure with FT0-C for the found FT0.
+        // Start by resetting to zero the intermediate quantities.
+        QvecDet = TComplex(0., 0.);
+        for (std::size_t iChC = 0; iChC < ft0.channelC().size(); iChC++) {
+          // iChC ranging from 0 to max 112. We need to add 96 (= max channels in FT0-A)
+          // to ensure a proper channel number in FT0 as a whole.
+          float ampl = ft0.amplitudeC()[iChC];
+          int FT0CchId = ft0.channelC()[iChC] + 96;
 
-        histosQA.fill(HIST("FT0Amp"), ampl, FT0CchId);
-        histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0CchId], FT0CchId);
+          histosQA.fill(HIST("FT0Amp"), ampl, FT0CchId);
+          histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0CchId], FT0CchId);
 
-        helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], cfgnMod, QvecDet, sumAmplFT0C, ft0geom, fv0geom);
-        helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], cfgnMod, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
-      }
+          helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], cfgnMod, QvecDet, sumAmplFT0C, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], cfgnMod, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
+        }
 
-      if (sumAmplFT0C > 1e-8) {
-        QvecDet /= sumAmplFT0C;
-        qVectFT0C[0] = QvecDet.Re();
-        qVectFT0C[1] = QvecDet.Im();
-        // printf("qVectFT0C[0] = %.2f ; qVectFT0C[1] = %.2f \n", qVectFT0C[0], qVectFT0C[1]); // Debug printing.
+        if (sumAmplFT0C > 1e-8) {
+          QvecDet /= sumAmplFT0C;
+          qVectFT0C[0] = QvecDet.Re();
+          qVectFT0C[1] = QvecDet.Im();
+          // printf("qVectFT0C[0] = %.2f ; qVectFT0C[1] = %.2f \n", qVectFT0C[0], qVectFT0C[1]); // Debug printing.
+        } else {
+          qVectFT0C[0] = 999.;
+          qVectFT0C[1] = 999.;
+        }
       } else {
-        qVectFT0C[0] = 999.;
-        qVectFT0C[1] = 999.;
+        qVectFT0C[0] = -999.;
+        qVectFT0C[1] = -999.;
       }
 
-      if (sumAmplFT0M > 1e-8) {
+      if (sumAmplFT0M > 1e-8 && useDetector["QvectorFT0Ms"]) {
         QvecFT0M /= sumAmplFT0M;
         qVectFT0M[0] = QvecFT0M.Re();
         qVectFT0M[1] = QvecFT0M.Im();
@@ -342,7 +377,7 @@ struct qVectorsTable {
 
     QvecDet = TComplex(0., 0.);
     sumAmplFV0A = 0;
-    if (coll.has_foundFV0()) {
+    if (coll.has_foundFV0() && useDetector["QvectorFV0As"]) {
       auto fv0 = coll.foundFV0();
 
       for (std::size_t iCh = 0; iCh < fv0.channel().size(); iCh++) {
@@ -379,12 +414,12 @@ struct qVectorsTable {
       if (std::abs(trk.eta()) < 0.1 || std::abs(trk.eta()) > 0.8) {
         continue;
       }
-      if (trk.eta() > 0) {
+      if (trk.eta() > 0 && useDetector["QvectorBPoss"]) {
         qVectBPos[0] += trk.pt() * std::cos(trk.phi() * cfgnMod);
         qVectBPos[1] += trk.pt() * std::sin(trk.phi() * cfgnMod);
         TrkBPosLabel.push_back(trk.globalIndex());
         nTrkBPos++;
-      } else if (trk.eta() < 0) {
+      } else if (trk.eta() < 0 && useDetector["QvectorBNegs"]) {
         qVectBNeg[0] += trk.pt() * std::cos(trk.phi() * cfgnMod);
         qVectBNeg[1] += trk.pt() * std::sin(trk.phi() * cfgnMod);
         TrkBNegLabel.push_back(trk.globalIndex());
@@ -441,7 +476,14 @@ struct qVectorsTable {
     qvecAmp.push_back(static_cast<float>(nTrkBNeg));
 
     if (cent < 80) {
-      for (auto i{0u}; i < 6; i++) {
+      int i = 0;
+      for (auto det : useDetector) {
+        // Check whether Q-vectors are found for a detector
+        if (!useDetector[det.first.data()]) {
+          i++;
+          continue;
+        }
+
         helperEP.DoRecenter(qvecRe[i * 4 + 1], qvecIm[i * 4 + 1],
                             objQvec->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
 
@@ -456,17 +498,24 @@ struct qVectorsTable {
                          objQvec->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
         helperEP.DoRescale(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3],
                            objQvec->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
+        i++;
       }
     }
 
-    // Fill the columns of the Qvectors table.
+    // Fill the columns of the Qvectors table if they are found for a detector.
     qVector(cent, IsCalibrated, qvecRe, qvecIm, qvecAmp);
-    qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + 3], qvecIm[kFT0C * 4 + 3], sumAmplFT0C);
-    qVectorFT0A(IsCalibrated, qvecRe[kFT0A * 4 + 3], qvecIm[kFT0A * 4 + 3], sumAmplFT0A);
-    qVectorFT0M(IsCalibrated, qvecRe[kFT0M * 4 + 3], qvecIm[kFT0M * 4 + 3], sumAmplFT0M);
-    qVectorFV0A(IsCalibrated, qvecRe[kFV0A * 4 + 3], qvecIm[kFV0A * 4 + 3], sumAmplFV0A);
-    qVectorBPos(IsCalibrated, qvecRe[kBPos * 4 + 3], qvecIm[kBPos * 4 + 3], nTrkBPos, TrkBPosLabel);
-    qVectorBNeg(IsCalibrated, qvecRe[kBNeg * 4 + 3], qvecIm[kBNeg * 4 + 3], nTrkBNeg, TrkBNegLabel);
+    if (useDetector["QvectorFT0Cs"])
+      qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + 3], qvecIm[kFT0C * 4 + 3], sumAmplFT0C);
+    if (useDetector["QvectorFT0As"])
+      qVectorFT0A(IsCalibrated, qvecRe[kFT0A * 4 + 3], qvecIm[kFT0A * 4 + 3], sumAmplFT0A);
+    if (useDetector["QvectorFT0Ms"])
+      qVectorFT0M(IsCalibrated, qvecRe[kFT0M * 4 + 3], qvecIm[kFT0M * 4 + 3], sumAmplFT0M);
+    if (useDetector["QvectorFV0As"])
+      qVectorFV0A(IsCalibrated, qvecRe[kFV0A * 4 + 3], qvecIm[kFV0A * 4 + 3], sumAmplFV0A);
+    if (useDetector["QvectorBPoss"])
+      qVectorBPos(IsCalibrated, qvecRe[kBPos * 4 + 3], qvecIm[kBPos * 4 + 3], nTrkBPos, TrkBPosLabel);
+    if (useDetector["QvectorBNegs"])
+      qVectorBNeg(IsCalibrated, qvecRe[kBNeg * 4 + 3], qvecIm[kBNeg * 4 + 3], nTrkBNeg, TrkBNegLabel);
 
   } // End process.
 };

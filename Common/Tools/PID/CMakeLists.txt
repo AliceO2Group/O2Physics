@@ -9,17 +9,10 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Multiplicity)
-add_subdirectory(PID)
-
-o2physics_add_executable(aod-data-model-graph
-    SOURCES aodDataModelGraph.cxx
+o2physics_add_executable(pidparam-tpc-response
+    SOURCES handleParamTPCResponse.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
-o2physics_add_library(trackSelectionRequest
-    SOURCES trackSelectionRequest.cxx
+o2physics_add_executable(check-pid-packing
+    SOURCES checkPidPacking.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore)
-
-o2physics_target_root_dictionary(trackSelectionRequest
-    HEADERS trackSelectionRequest.h
-    LINKDEF trackSelectionRequestLinkDef.h)

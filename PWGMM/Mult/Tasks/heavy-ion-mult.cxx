@@ -90,6 +90,7 @@ AxisSpec axisEvent{9, 0.5, 9.5, "#Event", "EventAxis"};
 AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
 AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
 AxisSpec axisPhi{{0, M_PI / 4, M_PI / 2, M_PI * 3. / 4, M_PI, M_PI * 5. / 4, M_PI * 3. / 2, M_PI * 7. / 4, 2 * M_PI}, "#phi", "PhiAxis"};
+AxisSpec axisPhi2{629, 0, 2 * M_PI, "#phi"};
 AxisSpec axisCent{100, 0, 100, "#Cent"};
 AxisSpec AxisTrackType = {kTrackTypeend - 1, +kTrackTypebegin + 0.5, +kTrackTypeend - 0.5, "", "TrackTypeAxis"};
 AxisSpec AxisGenpTVary = {kGenpTend - 1, +kGenpTbegin + 0.5, +kGenpTend - 0.5, "", "GenpTVaryAxis"};
@@ -162,6 +163,7 @@ struct HeavyIonMultiplicity {
     }
 
     if (doprocessCorrelation || doprocessCorrelationMC) {
+      histos.add("PhiVsEtaHist", "PhiVsEtaHist", kTH2D, {axisPhi2, axisEta}, false);
       histos.add("GlobalMult_vs_FT0A", "GlobalMult_vs_FT0A", kTH2F, {axisMult, axisFT0AMult}, true);
       histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFT0CMult}, true);
       histos.add("NPVtracks_vs_FT0C", "NPVtracks_vs_FT0C", kTH2F, {axisPV, axisFT0CMult}, true);
@@ -210,7 +212,7 @@ struct HeavyIonMultiplicity {
     }
     histos.fill(HIST("EventHist"), 8);
 
-    if (IsApplyExtraCorrCut && col.multNTracksPV() > NPVtracksCut && col.multFT0C() < (10 * NPVtracksCut - FT0CCut)) {
+    if (IsApplyExtraCorrCut && col.multNTracksPV() > NPVtracksCut && col.multFT0C() < (10 * col.multNTracksPV() - FT0CCut)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 9);
@@ -271,6 +273,7 @@ struct HeavyIonMultiplicity {
     for (auto& track : tracks) {
       if (std::abs(track.eta()) < etaRange) {
         NchTracks++;
+        histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
       }
     }
 
@@ -364,6 +367,7 @@ struct HeavyIonMultiplicity {
     for (auto& track : tracks) {
       if (std::abs(track.eta()) < etaRange) {
         NchTracks++;
+        histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
       }
     }
 

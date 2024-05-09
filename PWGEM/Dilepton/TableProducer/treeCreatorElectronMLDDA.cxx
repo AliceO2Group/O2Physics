@@ -149,7 +149,8 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
 
   // ITS-related variables
-  Configurable<int> minitsncls{"minitsncls", 2, "min. number of ITS clusters"};
+  Configurable<int> minitsibncls{"minitsibncls", 1, "min. number of ITSib clusters"};
+  Configurable<int> minitsncls{"minitsncls", 4, "min. number of ITS clusters"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
 
   // for v0
@@ -363,6 +364,9 @@ struct TreeCreatorElectronMLDDA {
       return false;
     }
 
+    if (track.itsNClsInnerBarrel() < minitsibncls) {
+      return false;
+    }
     if (track.itsNCls() < minitsncls) {
       return false;
     }
