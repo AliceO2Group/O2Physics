@@ -996,15 +996,8 @@ class RecoDecay
 /// \tparam indexPhi  index of φ element
 /// \tparam indexM  index of mass element (optional for (pT, η, φ, m) vectors)
 template <size_t indexPt = 0, size_t indexEta = 1, size_t indexPhi = 2, size_t indexM = 3>
-class RecoDecayPtEtaPhi
+struct RecoDecayPtEtaPhi
 {
- public:
-  /// Default constructor
-  RecoDecayPtEtaPhi() = default;
-
-  /// Default destructor
-  ~RecoDecayPtEtaPhi() = default;
-
   // Variable-based calculations
 
   /// Sets a vector from pT, η, φ variables
