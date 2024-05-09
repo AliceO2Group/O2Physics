@@ -247,7 +247,10 @@ struct UpcPhotonuclearAnalysisJMG {
     histos.add("Events/SGsideA/hTimeRelationSides", "Time in side A vs time in side C; Time in side A; Time in side C", kTH2F, {axisZNTime, axisZNTime});
     histos.add("Events/SGsideA/hAmplitudFT0A", "Amplitud in side A distribution; Amplitud in side A; counts", kTH1F, {axisFT0Amplitud});
     histos.add("Events/SGsideA/hAmplitudFT0C", "Amplitud in side C distribution; Amplitud in side C; counts", kTH1F, {axisFT0Amplitud});
+<<<<<<< HEAD
     histos.add("Events/SGsideA/hTrackPV", "#it{Nch vs Nch(PV)}; #it{N_{ch}(PV)}; #it{N_{ch}}", kTH2F, {axisNch, axisNch});
+=======
+>>>>>>> 4cae5d67c (improving the analysis)
 
     // histos to selection gap in side C
     histos.add("Tracks/SGsideC/hTrackPt", "#it{p_{T}} distribution; #it{p_{T}}; counts", kTH1F, {axisPt});
@@ -320,6 +323,7 @@ struct UpcPhotonuclearAnalysisJMG {
     bool gapSideC = (collision.energyCommonZNA() >= cutGapCMyEnergyZNA) && (collision.energyCommonZNC() < cutGapCMyEnergyZNC);
 
     switch (SideGap) {
+<<<<<<< HEAD
       case 0:            // Gap in A side
         return gapSideA; // 0n - A side && Xn - C Side
         // if ((collision.totalFT0AmplitudeA() < cutAGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() >= cutAGapMyAmplitudeFT0CMin) == false) {
@@ -334,6 +338,31 @@ struct UpcPhotonuclearAnalysisJMG {
         break;
       default:
         return false;
+=======
+      case 0:                                                                                                                         // Gap in A side
+        if ((collision.energyCommonZNA() < cutAGapMyEnergyZNAMax && collision.energyCommonZNC() >= cutAGapMyEnergyZNCMin) == false) { // 0n - A side && Xn - C Side
+          return false;
+        }
+        if ((collision.totalFT0AmplitudeA() < cutAGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() >= cutAGapMyAmplitudeFT0CMin) == false) {
+          return false;
+        }
+        break;
+      case 1:                                                                                                                         // Gap in C side
+        if ((collision.energyCommonZNA() >= cutCGapMyEnergyZNAMin && collision.energyCommonZNC() < cutCGapMyEnergyZNCMax) == false) { // Xn - A side && 0n - C Side
+          return false;
+        }
+        if ((collision.totalFT0AmplitudeA() >= cutCGapMyAmplitudeFT0AMin && collision.totalFT0AmplitudeC() < cutCGapMyAmplitudeFT0CMax) == false) {
+          return false;
+        }
+        break;
+      case 2:                                                                                                                              // Gap in Both Sides
+        if ((collision.energyCommonZNA() < cutBothGapMyEnergyZNAMax && collision.energyCommonZNC() < cutBothGapMyEnergyZNCMax) == false) { // 0n - A side && 0n - C Side
+          return false;
+        }
+        if ((collision.totalFT0AmplitudeA() < cutBothGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() < cutBothGapMyAmplitudeFT0CMax) == false) {
+          return false;
+        }
+>>>>>>> 4cae5d67c (improving the analysis)
         break;
     }
   }
@@ -550,11 +579,33 @@ struct UpcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideA/hZVtx"), reconstructedCollision.posZ());
         histos.fill(HIST("Events/SGsideA/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
         histos.fill(HIST("Events/SGsideA/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
+<<<<<<< HEAD
         for (const auto& track : reconstructedTracks) {
           // LOGF(debug, "Filling tracks. Gap Side A");
           ++nchGapSideA;
           if (track.isPVContributor() == true) {
             ++nchPVGapSideA;
+=======
+        for (auto& track : reconstructedTracks) {
+          if (track.sign() == 1 || track.sign() == -1) {
+            if (isTrackCut(track) == false) {
+              continue;
+            }
+            nTracksCharged++;
+            sumPt += track.pt();
+            histos.fill(HIST("Tracks/SGsideA/hTrackPt"), track.pt());
+            histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phi(track.px(), track.py()));
+            histos.fill(HIST("Tracks/SGsideA/hTrackEta"), eta(track.px(), track.py(), track.pz()));
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tpcSignal());
+
+            histos.fill(HIST("Tracks/SGsideA/hTrackITSNCls"), track.itsNCls());
+            histos.fill(HIST("Tracks/SGsideA/hTrackITSChi2NCls"), track.itsChi2NCl());
+            histos.fill(HIST("Tracks/SGsideA/hTrackNClsCrossedRowsOverNCls"), (static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())));
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCNClsFindable"), track.tpcNClsFindable());
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCChi2NCls"), track.tpcChi2NCl());
+            histos.fill(HIST("Tracks/SGsideA/hTrackITSNClsTPCCls"), track.tpcNClsFindable(), track.itsNCls());
+>>>>>>> 4cae5d67c (improving the analysis)
           }
           if (isTrackCut(track) == false) {
             continue;
@@ -611,10 +662,32 @@ struct UpcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideC/hZVtx"), reconstructedCollision.posZ());
         histos.fill(HIST("Events/SGsideC/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
         histos.fill(HIST("Events/SGsideC/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
+<<<<<<< HEAD
         for (const auto& track : reconstructedTracks) {
           ++nchGapSideC;
           if (track.isPVContributor() == true) {
             ++nchPVGapSideC;
+=======
+        for (auto& track : reconstructedTracks) {
+          if (track.sign() == 1 || track.sign() == -1) {
+            if (isTrackCut(track) == false) {
+              continue;
+            }
+            nTracksCharged++;
+            sumPt += track.pt();
+            histos.fill(HIST("Tracks/SGsideC/hTrackPt"), track.pt());
+            histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phi(track.px(), track.py()));
+            histos.fill(HIST("Tracks/SGsideC/hTrackEta"), eta(track.px(), track.py(), track.pz()));
+            histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tpcSignal());
+
+            histos.fill(HIST("Tracks/SGsideC/hTrackITSNCls"), track.itsNCls());
+            histos.fill(HIST("Tracks/SGsideC/hTrackITSChi2NCls"), track.itsChi2NCl());
+            histos.fill(HIST("Tracks/SGsideC/hTrackNClsCrossedRowsOverNCls"), (static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())));
+            histos.fill(HIST("Tracks/SGsideC/hTrackTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
+            histos.fill(HIST("Tracks/SGsideC/hTrackTPCNClsFindable"), track.tpcNClsFindable());
+            histos.fill(HIST("Tracks/SGsideC/hTrackTPCChi2NCls"), track.tpcChi2NCl());
+            histos.fill(HIST("Tracks/SGsideC/hTrackITSNClsTPCCls"), track.tpcNClsFindable(), track.itsNCls());
+>>>>>>> 4cae5d67c (improving the analysis)
           }
           if (isTrackCut(track) == false) {
             continue;
@@ -652,9 +725,51 @@ struct UpcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideC/hNch"), nTracksCharged);
         histos.fill(HIST("Events/SGsideC/hMultiplicity"), reconstructedTracks.size());
         histos.fill(HIST("Events/SGsideC/hPtVSNch"), nTracksCharged, (sumPt / nTracksCharged));
+<<<<<<< HEAD
         histos.fill(HIST("Events/SGsideC/hTrackPV"), nchPVGapSideC, nchGapSideC);
         nTracksChargedSideC = nTracksCharged;
         multiplicitySideC = reconstructedTracks.size();
+=======
+        nTracksCharged = sumPt = 0;
+        break;
+      case 2: // for both sides
+        if (isCollisionCutSG(reconstructedCollision, 2) == false) {
+          return;
+        }
+        histos.fill(HIST("Events/hCountCollisions"), 3);
+        histos.fill(HIST("Events/SGsideBoth/hEnergyZNA"), reconstructedCollision.energyCommonZNA());
+        histos.fill(HIST("Events/SGsideBoth/hEnergyZNC"), reconstructedCollision.energyCommonZNC());
+        histos.fill(HIST("Events/SGsideBoth/hEnergyRelationSides"), reconstructedCollision.energyCommonZNA(), reconstructedCollision.energyCommonZNC());
+        histos.fill(HIST("Events/SGsideBoth/hTimeZNA"), reconstructedCollision.timeZNA());
+        histos.fill(HIST("Events/SGsideBoth/hTimeZNC"), reconstructedCollision.timeZNC());
+        histos.fill(HIST("Events/SGsideBoth/hTimeRelationSides"), reconstructedCollision.timeZNA(), reconstructedCollision.timeZNC());
+        histos.fill(HIST("Events/SGsideBoth/hTrackZVtx"), reconstructedCollision.posZ());
+        histos.fill(HIST("Events/SGsideBoth/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
+        histos.fill(HIST("Events/SGsideBoth/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
+        for (auto& track : reconstructedTracks) {
+          if (track.sign() == 1 || track.sign() == -1) {
+            if (isTrackCut(track) == false) {
+              continue;
+            }
+            nTracksCharged++;
+            sumPt += track.pt();
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackPt"), track.pt());
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackPhi"), phi(track.px(), track.py()));
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackEta"), eta(track.px(), track.py(), track.pz()));
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tpcSignal());
+
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackITSNCls"), track.itsNCls());
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackITSChi2NCls"), track.itsChi2NCl());
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackNClsCrossedRowsOverNCls"), (static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())));
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackTPCNClsFindable"), track.tpcNClsFindable());
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackTPCChi2NCls"), track.tpcChi2NCl());
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackITSNClsTPCCls"), track.tpcNClsFindable(), track.itsNCls());
+          }
+        }
+        histos.fill(HIST("Events/SGsideBoth/hNch"), nTracksCharged);
+        histos.fill(HIST("Events/SGsideBoth/hPtVSNch"), nTracksCharged, (sumPt / nTracksCharged));
+>>>>>>> 4cae5d67c (improving the analysis)
         nTracksCharged = sumPt = 0;
         break;
       default:
