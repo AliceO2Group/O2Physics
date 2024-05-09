@@ -118,7 +118,6 @@ struct upcPhotonuclearAnalysisJMG {
     histos.add("Events/SGsideA/hAmplitudFT0A", "Amplitud in side A distribution; Amplitud in side A; counts", kTH1F, {axisFT0Amplitud});
     histos.add("Events/SGsideA/hAmplitudFT0C", "Amplitud in side C distribution; Amplitud in side C; counts", kTH1F, {axisFT0Amplitud});
 
-
     // histos to selection gap in side C
     histos.add("Tracks/SGsideC/hTrackPt", "#it{p_{T}} distribution; #it{p_{T}}; counts", kTH1F, {axisPt});
     histos.add("Tracks/SGsideC/hTrackPhi", "#it{#phi} distribution; #it{#phi}; counts", kTH1F, {axisPhi});
@@ -186,27 +185,27 @@ struct upcPhotonuclearAnalysisJMG {
   bool isCollisionCutSG(CSG const& collision, int SideGap)
   {
     switch (SideGap) {
-      case 0:                                                                                                                  // Gap in A side
+      case 0:                                                                                                                         // Gap in A side
         if ((collision.energyCommonZNA() < cutAGapMyEnergyZNAMax && collision.energyCommonZNC() >= cutAGapMyEnergyZNCMin) == false) { // 0n - A side && Xn - C Side
           return false;
         }
-        if ((collision.totalFT0AmplitudeA() < cutAGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() >= cutAGapMyAmplitudeFT0CMin) == false ){
+        if ((collision.totalFT0AmplitudeA() < cutAGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() >= cutAGapMyAmplitudeFT0CMin) == false) {
           return false;
         }
         break;
-      case 1:                                                                                                                  // Gap in C side
+      case 1:                                                                                                                         // Gap in C side
         if ((collision.energyCommonZNA() >= cutCGapMyEnergyZNAMin && collision.energyCommonZNC() < cutCGapMyEnergyZNCMax) == false) { // Xn - A side && 0n - C Side
           return false;
         }
-        if ((collision.totalFT0AmplitudeA() >= cutCGapMyAmplitudeFT0AMin && collision.totalFT0AmplitudeC() < cutCGapMyAmplitudeFT0CMax) == false){
+        if ((collision.totalFT0AmplitudeA() >= cutCGapMyAmplitudeFT0AMin && collision.totalFT0AmplitudeC() < cutCGapMyAmplitudeFT0CMax) == false) {
           return false;
         }
         break;
-      case 2:                                                                                                                        // Gap in Both Sides
+      case 2:                                                                                                                              // Gap in Both Sides
         if ((collision.energyCommonZNA() < cutBothGapMyEnergyZNAMax && collision.energyCommonZNC() < cutBothGapMyEnergyZNCMax) == false) { // 0n - A side && 0n - C Side
           return false;
         }
-        if ((collision.totalFT0AmplitudeA() < cutBothGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() < cutBothGapMyAmplitudeFT0CMax) == false){
+        if ((collision.totalFT0AmplitudeA() < cutBothGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() < cutBothGapMyAmplitudeFT0CMax) == false) {
           return false;
         }
         break;
@@ -302,7 +301,7 @@ struct upcPhotonuclearAnalysisJMG {
             histos.fill(HIST("Tracks/SGsideA/hTrackPt"), track.pt());
             histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phi(track.px(), track.py()));
             histos.fill(HIST("Tracks/SGsideA/hTrackEta"), eta(track.px(), track.py(), track.pz()));
-            histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz())*track.sign(), track.tpcSignal());
+            histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tpcSignal());
 
             histos.fill(HIST("Tracks/SGsideA/hTrackITSNCls"), track.itsNCls());
             histos.fill(HIST("Tracks/SGsideA/hTrackITSChi2NCls"), track.itsChi2NCl());
@@ -341,7 +340,7 @@ struct upcPhotonuclearAnalysisJMG {
             histos.fill(HIST("Tracks/SGsideC/hTrackPt"), track.pt());
             histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phi(track.px(), track.py()));
             histos.fill(HIST("Tracks/SGsideC/hTrackEta"), eta(track.px(), track.py(), track.pz()));
-            histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz())*track.sign(), track.tpcSignal());
+            histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tpcSignal());
 
             histos.fill(HIST("Tracks/SGsideC/hTrackITSNCls"), track.itsNCls());
             histos.fill(HIST("Tracks/SGsideC/hTrackITSChi2NCls"), track.itsChi2NCl());
@@ -380,7 +379,7 @@ struct upcPhotonuclearAnalysisJMG {
             histos.fill(HIST("Tracks/SGsideBoth/hTrackPt"), track.pt());
             histos.fill(HIST("Tracks/SGsideBoth/hTrackPhi"), phi(track.px(), track.py()));
             histos.fill(HIST("Tracks/SGsideBoth/hTrackEta"), eta(track.px(), track.py(), track.pz()));
-            histos.fill(HIST("Tracks/SGsideBoth/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz())*track.sign(), track.tpcSignal());
+            histos.fill(HIST("Tracks/SGsideBoth/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tpcSignal());
 
             histos.fill(HIST("Tracks/SGsideBoth/hTrackITSNCls"), track.itsNCls());
             histos.fill(HIST("Tracks/SGsideBoth/hTrackITSChi2NCls"), track.itsChi2NCl());
