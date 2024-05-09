@@ -931,6 +931,7 @@ namespace hf_cand_casc_lf
 // mapping of decay types
 enum DecayType2Prong { XiczeroOmegaczeroToXiPi = 0,
                        OmegaczeroToOmegaPi,
+                       OmegaczeroToOmegaK,
                        N2ProngDecays }; // always keep N2ProngDecays at the end
 
 // mapping of decay types

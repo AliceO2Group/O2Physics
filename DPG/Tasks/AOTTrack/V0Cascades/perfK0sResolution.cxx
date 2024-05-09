@@ -57,7 +57,9 @@ struct perfK0sResolution {
   Configurable<float> nV0lifetime{"nV0lifetime", 3., "n ctau"};
   Configurable<float> nMaxTPCNsigma{"nMaxTPCNsigma", 10., "Maximum TPC nsigma for pions"};
   Configurable<int> itsIbSelectionPos{"itsIbSelectionPos", 0, "Flag for the ITS IB selection on positive daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
-  Configurable<int> itsIbSelectionNeg{"itsIbSelectionNeg", 0, "Flag for the ITS IB IB selection on negative daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
+  Configurable<int> itsIbSelectionNeg{"itsIbSelectionNeg", 0, "Flag for the ITS IB selection on negative daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
+  Configurable<int> itsAfterburnerPos{"itsAfterburnerPos", 0, "Flag for the ITS afterburner tracks on positive daughters: -1 no AB, 0 no selection, 1 AB"};
+  Configurable<int> itsAfterburnerNeg{"itsAfterburnerNeg", 0, "Flag for the ITS afterburner tracks on negative daughters: -1 no AB, 0 no selection, 1 AB"};
   Configurable<int> trdSelectionPos{"trdSelectionPos", 0, "Flag for the TRD selection on positive daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
@@ -246,6 +248,40 @@ struct perfK0sResolution {
         break;
       default:
         LOG(fatal) << "Invalid ITS selection for negative daughter";
+        break;
+    }
+    switch (itsAfterburnerPos) {
+      case -1:
+        if (ptrack.itsChi2NCl() >= 0) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (ptrack.itsChi2NCl() < 0) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid AB selection for positive daughter";
+        break;
+    }
+    switch (itsAfterburnerNeg) {
+      case -1:
+        if (ntrack.itsChi2NCl() >= 0) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (ntrack.itsChi2NCl() < 0) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid AB selection for negative daughter";
         break;
     }
 

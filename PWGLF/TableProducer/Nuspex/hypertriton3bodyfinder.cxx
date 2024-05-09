@@ -711,7 +711,8 @@ struct hypertriton3bodyFinder {
       vertexXYZ[0], vertexXYZ[1], vertexXYZ[2],
       p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
       fitter3body.getChi2AtPCACandidate(),
-      Track0dcaXY, Track1dcaXY, Track2dcaXY);
+      Track0dcaXY, Track1dcaXY, Track2dcaXY,
+      0); // To be fixed
   }
   //------------------------------------------------------------------
   // 3body decay finder for a collsion

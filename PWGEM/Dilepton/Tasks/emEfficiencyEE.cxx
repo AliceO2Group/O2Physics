@@ -92,7 +92,7 @@ using MyMCTrackNoSkimmed = soa::Join<aod::McParticles, aod::SmearedTracks>;
 
 constexpr static uint32_t gkEventFillMapNoSkimmed = VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkMCEventFillMapNoSkimmed = VarManager::ObjTypes::CollisionMC;
-constexpr static uint32_t gkTrackFillMapNoSkimmed = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapNoSkimmed = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkParticleMCFillMapNoSkimmed = VarManager::ObjTypes::ParticleMC;
 
 // Skimmed data: works up to dielectron efficiency
@@ -720,6 +720,7 @@ struct AnalysisTrackSelection {
   {
 
     for (auto& mctrack : groupedMCTracks) {
+      VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
       VarManager::FillTrackMC(groupedMCTracks, mctrack);
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
@@ -757,6 +758,8 @@ struct AnalysisTrackSelection {
     for (auto& track : groupedTracks) {
       filterMap = 0;
 
+      VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
+      VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       VarManager::FillTrack<TTrackFillMap>(track); // compute track quantities
 
       // compute MC matched quantities
@@ -1093,6 +1096,13 @@ struct AnalysisSameEventPairing {
       TString histClassesQA = "";
       for (auto& cut : fTrackCuts) {
 
+        // All passing dileptons
+        names = {
+          Form("PairsBarrelSEPM_%s", cut.GetName()),
+          Form("PairsBarrelSEPP_%s", cut.GetName()),
+          Form("PairsBarrelSEMM_%s", cut.GetName())};
+        histClassesQA += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+
         // All reconstructed dileptons matched to a MC signal
         std::vector<TString> mcnamesreco;
         for (unsigned int isig = 0; isig < fMCSignals.size(); ++isig) {
@@ -1326,7 +1336,29 @@ struct AnalysisSameEventPairing {
         recfidcut = kFALSE;
 
       //
+      VarManager::ResetValues(0, VarManager::kNPairVariables);
       VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2);
+
+      // Fill the QA for all passing tracks
+      if (fConfigQA) {
+        for (unsigned int j = 0; j < fTrackCuts.size(); j++) {
+          if (twoTrackFilter & (uint8_t(1) << j)) {
+            if (!fConfigFillLS) {
+              fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+            } else {
+              if (uls) {
+                fHistManQA->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+              } else {
+                if (t1.sign() > 0) {
+                  fHistManQA->FillHistClass(Form("PairsBarrelSEPP_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+                } else {
+                  fHistManQA->FillHistClass(Form("PairsBarrelSEMM_%s", fTrackCuts.at(j).GetName()), VarManager::fgValues);
+                }
+              }
+            }
+          }
+        }
+      }
 
       // run MC matching for this pair
       uint32_t mcDecision = 0;
@@ -1447,6 +1479,21 @@ struct AnalysisSameEventPairing {
                           soa::Filtered<MyBarrelTracksSelected> const& tracks,
                           ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
+    if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
+      if (fUseRemoteField.value) {
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
+        if (grpmag != nullptr) {
+          mMagField = grpmag->getNominalL3Field();
+        } else {
+          LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+        }
+        VarManager::SetMagneticField(mMagField);
+      } else {
+        VarManager::SetMagneticField(fConfigMagField.value);
+      }
+      fCurrentRun = events.begin().runNumber();
+    }
+
     runPairing<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(events, tracks, eventsMC, tracksMC);
   }
 
@@ -1463,9 +1510,9 @@ struct AnalysisSameEventPairing {
         } else {
           LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", event.timestamp());
         }
-        VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+        VarManager::SetMagneticField(mMagField);
       } else {
-        VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+        VarManager::SetMagneticField(fConfigMagField.value);
       }
       fCurrentRun = event.runNumber();
     }
@@ -1497,9 +1544,9 @@ struct AnalysisSameEventPairing {
         } else {
           LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
         }
-        VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+        VarManager::SetMagneticField(mMagField);
       } else {
-        VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
+        VarManager::SetMagneticField(fConfigMagField.value);
       }
       fCurrentRun = bc.runNumber();
     }

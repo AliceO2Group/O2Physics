@@ -18,6 +18,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "TH1F.h"
@@ -45,18 +46,29 @@ struct centralityStudy {
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", true, "require events with at least one of vertex contributors matched to TOF"};
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", true, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
+  Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
 
   // Configurable Axes
   ConfigurableAxis axisMultFT0C{"axisMultFT0C", {2000, 0, 100000}, "FT0C amplitude"};
   ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
+
+  // For one-dimensional plots, where binning is no issue
+  ConfigurableAxis axisMultUltraFineFT0C{"axisMultUltraFineFT0C", {60000, 0, 60000}, "FT0C amplitude"};
+  ConfigurableAxis axisMultUltraFinePVContributors{"axisMultUltraFinePVContributors", {10000, 0, 10000}, "Number of PV Contributors"};
+
   ConfigurableAxis axisMultITSOnly{"axisMultITSOnly", {200, 0, 6000}, "Number of ITS only tracks"};
   ConfigurableAxis axisMultITSTPC{"axisMultITSTPC", {200, 0, 6000}, "Number of ITSTPC matched tracks"};
 
+  // For centrality studies if requested
+  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile"};
+  ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
+  ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
+
   void init(InitContext&)
   {
-    if (doprocessCollisions) {
+    if (doprocessCollisions || doprocessCollisionsWithCentrality) {
       const AxisSpec axisCollisions{100, -0.5f, 99.5f, "Number of collisions"};
-      histos.add("hCollisionSelection", "hCollisionSelection", kTH1D, {{10, -0.5f, +9.5f}});
+      histos.add("hCollisionSelection", "hCollisionSelection", kTH1D, {{20, -0.5f, +19.5f}});
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
@@ -67,23 +79,38 @@ struct centralityStudy {
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(11, "Neighbour rejection");
 
-      histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultFT0C});
+      histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
+      histos.add("hNPVContributors", "hNPVContributors", kTH1D, {axisMultUltraFinePVContributors});
     }
 
     if (doprocessBCs) {
       histos.add("hBCSelection", "hBCSelection", kTH1D, {{10, -0.5, 9.5f}});
-      histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultFT0C});
+      histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultUltraFineFT0C});
     }
 
     if (do2DPlots) {
       histos.add("hFT0CvsNContribs", "hFT0CvsNContribs", kTH2F, {axisMultPVContributors, axisMultFT0C});
       histos.add("hMatchedVsITSOnly", "hMatchedVsITSOnly", kTH2F, {axisMultITSOnly, axisMultITSTPC});
     }
+
+    if (doprocessCollisionsWithCentrality) {
+      // in case requested: do vs centrality debugging
+      histos.add("hNContribsVsCentrality", "hNContribsVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
+      histos.add("hNITSTPCTracksVsCentrality", "hNITSTPCTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
+      histos.add("hNITSOnlyTracksVsCentrality", "hNITSOnlyTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
+      histos.add("hNGlobalTracksVsCentrality", "hNGlobalTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
+      histos.add("hPVChi2VsCentrality", "hPVChi2VsCentrality", kTH2F, {axisCentrality, axisPVChi2});
+      histos.add("hDeltaTimeVsCentrality", "hDeltaTimeVsCentrality", kTH2F, {axisCentrality, axisDeltaTime});
+    }
   }
 
-  void processCollisions(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections>::iterator const& collision)
+  template <typename TCollision>
+  void genericProcessCollision(TCollision collision)
+  // process this collisions
   {
+
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
     if (applySel8 && !collision.multSel8())
       return;
@@ -129,13 +156,46 @@ struct centralityStudy {
     }
     histos.fill(HIST("hCollisionSelection"), 9 /* Not at same bunch pile-up */);
 
+    // do this only if information is available
+    if constexpr (requires { collision.timeToNext(); }) {
+      float timeToNeighbour = TMath::Min(
+        std::abs(collision.timeToNext()),
+        std::abs(collision.timeToPrevious()));
+      histos.fill(HIST("hDeltaTimeVsCentrality"), collision.centFT0C(), timeToNeighbour);
+      if (timeToNeighbour < minTimeDelta) {
+        return;
+      }
+      histos.fill(HIST("hCollisionSelection"), 10 /* has suspicious neighbour */);
+    }
+
     // if we got here, we also finally fill the FT0C histogram, please
-    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() /* Not at same bunch pile-up */);
+    histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
+    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
 
     if (do2DPlots) {
       histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C());
       histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
     }
+
+    // if the table has centrality information
+    if constexpr (requires { collision.centFT0C(); }) {
+      // process FT0C centrality plots
+      histos.fill(HIST("hNContribsVsCentrality"), collision.centFT0C(), collision.multPVTotalContributors());
+      histos.fill(HIST("hNITSTPCTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
+      histos.fill(HIST("hNITSOnlyTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
+      histos.fill(HIST("hNGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
+      histos.fill(HIST("hPVChi2VsCentrality"), collision.centFT0C(), collision.multPVChi2());
+    }
+  }
+
+  void processCollisions(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections>::iterator const& collision)
+  {
+    genericProcessCollision(collision);
+  }
+
+  void processCollisionsWithCentrality(soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs>::iterator const& collision)
+  {
+    genericProcessCollision(collision);
   }
 
   void processBCs(aod::MultsBC::iterator const& multbc)
@@ -158,6 +218,7 @@ struct centralityStudy {
   }
 
   PROCESS_SWITCH(centralityStudy, processCollisions, "per-collision analysis", true);
+  PROCESS_SWITCH(centralityStudy, processCollisionsWithCentrality, "per-collision analysis", true);
   PROCESS_SWITCH(centralityStudy, processBCs, "per-BC analysis", true);
 };
 

@@ -15,10 +15,6 @@
 // General remarks:
 // 0. Starting with C++11, it's possible to initialize data members at declaration, so I do it here
 // 1. Use //!<! for introducing a Doxygen comment interpreted as transient in both ROOT 5 and ROOT 6.
-// 2. If I hit at the compilation error: Framework/StructToTuple.h:286:6: error: only 99 names provided for structured binding
-//    2a) As far as I can tell, that means that sum of individual data members + struct fields + individual configurables > 99
-//    2b) Therefore, wrap up all data members in some struct fields + use in instead of individual configurables arrays whenever possible.
-//    2c) Within a given struct field, number of data members do not add to that number. Also, number of enum fields do not add.
 
 // a) Base list to hold all output objects ("grandmother" of all lists);
 // *) Task configuration;
@@ -81,44 +77,49 @@ struct QualityAssurance {
 
 // *) Event histograms:
 struct EventHistograms {
-  TList* fEventHistogramsList = NULL;                            //!<! list to hold all control event histograms
-  TProfile* fEventHistogramsPro = NULL;                          //!<! keeps flags relevant for the control event histograms
-  TH1D* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum eEventHistograms ][reco,sim][before, after event cuts]
-  Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};     // book or not this histogram, see SetBookEventHistograms
-  Double_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}}; // [nBins,min,max]
-  Double_t fEventCuts[eEventHistograms_N][2] = {{0.}};           // [min,max]
-} eh;                                                            // "eh" labels an instance of group of histograms "EventHistograms"
+  TList* fEventHistogramsList = NULL;                                     //!<! list to hold all control event histograms
+  TProfile* fEventHistogramsPro = NULL;                                   //!<! keeps flags relevant for the control event histograms
+  TH1D* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}};          //! [ type - see enum eEventHistograms ][reco,sim][before, after event cuts]
+  Bool_t fFillEventHistograms = kTRUE;                                    // if kFALSE, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled
+  Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};              // book or not this histogram, see SetBookEventHistograms
+  Double_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}};          // [nBins,min,max]
+  TH2D* fEventHistograms2D[eEventHistograms2D_N][2][2] = {{{NULL}}};      //! [ type - see enum eEventHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillEventHistograms2D = kTRUE;                                  // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookEventHistograms2D[eEventHistograms2D_N] = {kTRUE};          // book or not this 2D histogram, see configurable cfBookEventHistograms2D
+  Double_t fEventHistogramsBins2D[eEventHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
+} eh;                                                                     // "eh" labels an instance of group of histograms "EventHistograms"
 
 // *) Event cuts:
 struct EventCuts {
-  TList* fEventCutsList = NULL;      //!<! list to hold all event cuts objects
-  TProfile* fEventCutsPro = NULL;    //!<! keeps flags relevant for the event cuts
-  TString fTrigger = "";             // offline trigger, use e.g. "kINT7" for Run 2 and Run 1 data via configurable cfTrigger
-  Bool_t fUseTrigger = kFALSE;       // kFALSE by default. Set automatically when supported trigger is set via configurable cTrigger
-  Bool_t fUseSel7 = kFALSE;          // See doc: for Run 2 data and MC
-  Bool_t fUseSel8 = kFALSE;          // See doc: for Run 3 data and MC
-  TString fCentralityEstimator = ""; // centrality estimator, see in process() arguments to which cent. tables I subscribe, separately for Run 3 and Run 2. Set via configurable fCentralityEstimator
-} ec;                                // "ec" is a common label for objects in this struct
+  TList* fEventCutsList = NULL;                   //!<! list to hold all event cuts objects
+  TProfile* fEventCutsPro = NULL;                 //!<! keeps flags relevant for the event cuts
+  Bool_t fUseEventCuts[eEventCuts_N] = {kFALSE};  // Use or do not use a cut enumerated in eEventHistograms + eEventCuts
+  Double_t fdEventCuts[eEventCuts_N][2] = {{0.}}; // [min,max)
+  TString fsEventCuts[eEventCuts_N] = {""};       // specific option passed via string
+} ec;                                             // "ec" is a common label for objects in this struct
 
 // *) Particle histograms:
 struct ParticleHistograms {
   TList* fParticleHistogramsList = NULL;                                        //!<! list to hold all control particle histograms
   TProfile* fParticleHistogramsPro = NULL;                                      //!<! keeps flags relevant for the control particle histograms
   TH1D* fParticleHistograms[eParticleHistograms_N][2][2] = {{{NULL}}};          //! [ type - see enum eParticleHistograms ][reco,sim][before, after particle cuts]
-  Bool_t fBookParticleHistograms[eParticleHistograms_N] = {kTRUE};              // book or not this histogram, see configurable cfBookParticleHistograms
+  Bool_t fFillParticleHistograms = kTRUE;                                       // if kFALSE, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled
+  Bool_t fBookParticleHistograms[eParticleHistograms_N] = {kTRUE};              // book or not the particular particle histogram, see configurable cfBookParticleHistograms
   Double_t fParticleHistogramsBins[eParticleHistograms_N][3] = {{0.}};          // [nBins,min,max]
-  Double_t fParticleCuts[eParticleHistograms_N][2] = {{0.}};                    // [min,max]
   TH2D* fParticleHistograms2D[eParticleHistograms2D_N][2][2] = {{{NULL}}};      //! [ type - see enum eParticleHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillParticleHistograms2D = kTRUE;                                     // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled
   Bool_t fBookParticleHistograms2D[eParticleHistograms2D_N] = {kTRUE};          // book or not this 2D histogram, see configurable cfBookParticleHistograms2D
   Double_t fParticleHistogramsBins2D[eParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
 } ph;                                                                           // "ph" labels an instance of group of histograms "ParticleHistograms"
 
 // *) Particle cuts:
 struct ParticleCuts {
-  TList* fParticleCutsList = NULL;   //!<! list to hold all particle cuts objects
-  TProfile* fParticleCutsPro = NULL; //!<! keeps flags relevant for the particle cuts
-  // ...  TBI 20240223
-} pc; // "pc" is a common label for objects in this struct
+  TList* fParticleCutsList = NULL;                      //!<! list to hold all particle cuts objects
+  TProfile* fParticleCutsPro = NULL;                    //!<! keeps flags relevant for the particle cuts
+  Bool_t fUseParticleCuts[eParticleCuts_N] = {kFALSE};  // true or false .
+  Double_t fdParticleCuts[eParticleCuts_N][2] = {{0.}}; // [min,max) . Remark: I use here eParticleHistograms_N , not to duplicate these enums for ParticleCuts.
+  TString fsParticleCuts[eParticleCuts_N] = {""};       // specific option passed via string
+} pc;                                                   // "pc" is a common label for objects in this struct
 
 // *) Q-vectors:
 struct Qvector {
@@ -168,11 +169,25 @@ struct NestedLoops {
   TArrayD* ftaNestedLoopsKine[eqvectorKine_N][gMaxNoBinsKine][2] = {{{NULL}}}; //! e-b-e container for nested loops // [0=pT,1=eta][kine bin][0=angles;1=product of all weights]
 } nl;                                                                          // "nl" labels an instance of this group of histograms
 
+// *) Toy NUA (can be applied both in real data analysis and in analysis 'on-the-fly'):
+struct NUA {
+  TList* fNUAList = NULL;                              // list to hold all NUA objects
+  TProfile* fNUAFlagsPro = NULL;                       // profile to hold all flags for NUA objects
+  Bool_t fApplyNUAPDF[eNUAPDF_N] = {kFALSE};           // apply NUA to particular kine variable (see the corresponding enum eNUAPDF)
+  Bool_t fUseDefaultNUAPDF[eNUAPDF_N] = {kTRUE};       // by default, use simple hardcoded expressions for NUA acceptance profile
+  TF1* fDefaultNUAPDF[eNUAPDF_N] = {NULL};             // default distributions used as pdfs to simulate events on-the-fly
+  TH1D* fCustomNUAPDF[eNUAPDF_N] = {NULL};             // custom, user-supplied distributions used to simulate NUA
+  TString* fCustomNUAPDFHistNames[eNUAPDF_N] = {NULL}; // these are the names of histograms holding custom NUA in an external file. There is a configurable for this one.
+  TString fFileWithCustomNUA = "";                     // path to external ROOT file which holds all histograms with custom NUA
+  Double_t fMaxValuePDF[eNUAPDF_N] = {0.};             // see algorithm used in Accept(...). I implemented it as a data member, so that it is not calculated again and again at each particle call
+} nua;
+
 // *) Internal validation:
 struct InternalValidation {
   TList* fInternalValidationList = NULL;              // list to hold all objects for internal validation
   TProfile* fInternalValidationFlagsPro = NULL;       // profile to hold all flags for internal validation
   Bool_t fUseInternalValidation = kFALSE;             // use internal validation
+  Bool_t fInternalValidationForceBailout = kFALSE;    // force bailout after fnEventsInternalValidation is reached. In HL, for each real event, I do fnEventsInternalValidation events
   UInt_t fnEventsInternalValidation = 0;              // how many events will be sampled on-the-fly for internal validation
   TString* fHarmonicsOptionInternalValidation = NULL; // see .cxx for full documentation
   Bool_t fRescaleWithTheoreticalInput = kFALSE;       // if kTRUE, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1

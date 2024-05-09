@@ -108,10 +108,11 @@ struct strangederivedbuilder {
 
   //__________________________________________________
   // Q-vectors
-  Produces<aod::StraFT0AQVs> StraFT0AQVs; // FT0A Q-vector
-  Produces<aod::StraFT0CQVs> StraFT0CQVs; // FT0C Q-vector
-  Produces<aod::StraFT0MQVs> StraFT0MQVs; // FT0M Q-vector
-  Produces<aod::StraFV0AQVs> StraFV0AQVs; // FV0A Q-vector
+  Produces<aod::StraFT0AQVs> StraFT0AQVs;     // FT0A Q-vector
+  Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
+  Produces<aod::StraFT0MQVs> StraFT0MQVs;     // FT0M Q-vector
+  Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
+  Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
 
   //__________________________________________________
   // Generated binned data
@@ -123,6 +124,11 @@ struct strangederivedbuilder {
   Produces<aod::GeXiPlus> geXiPlus;
   Produces<aod::GeOmegaMinus> geOmegaMinus;
   Produces<aod::GeOmegaPlus> geOmegaPlus;
+
+  //__________________________________________________
+  // Found tags for findable exercise
+  Produces<aod::V0FoundTags> v0FoundTags;
+  Produces<aod::CascFoundTags> cascFoundTags;
 
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -211,6 +217,16 @@ struct strangederivedbuilder {
     }
 
     histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", kTH2D, {axisCentrality, axisNVertices});
+
+    if (doprocessV0FoundTags || doprocessCascFoundTags) {
+      auto h = histos.add<TH1>("hFoundTagsCounters", "hFoundTagsCounters", kTH1D, {{6, -0.5f, 5.5f}});
+      h->GetXaxis()->SetBinLabel(1, "Found V0s");
+      h->GetXaxis()->SetBinLabel(2, "Findable V0s");
+      h->GetXaxis()->SetBinLabel(3, "Findable & found V0s");
+      h->GetXaxis()->SetBinLabel(4, "Found Cascades");
+      h->GetXaxis()->SetBinLabel(5, "Findable Cascades");
+      h->GetXaxis()->SetBinLabel(6, "Findable & found Cascades");
+    }
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
@@ -770,7 +786,8 @@ struct strangederivedbuilder {
   }
   void processFT0CQVectorsLF(soa::Join<aod::Collisions, aod::EPCalibrationTables>::iterator const& collision)
   {
-    StraFT0CQVs(std::cos(2 * collision.psiFT0C()), std::sin(2 * collision.psiFT0C()), 1.f);
+    StraFT0CQVs(collision.qFT0C() * std::cos(2 * collision.psiFT0C()), collision.qFT0C() * std::sin(2 * collision.psiFT0C()), 1.f);
+    StraFT0CQVsEv(collision.triggereventep());
   }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
   {
@@ -779,6 +796,70 @@ struct strangederivedbuilder {
   void processFV0AQVectors(soa::Join<aod::Collisions, aod::QvectorFV0As>::iterator const& collision)
   {
     StraFV0AQVs(collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A());
+  }
+
+  uint64_t combineProngIndices(uint32_t low, uint32_t high)
+  {
+    return (((uint64_t)high) << 32) | ((uint64_t)low);
+  }
+
+  void processV0FoundTags(aod::V0s const& foundV0s, aod::V0Datas const& findableV0s, aod::FindableV0s const& /* added to avoid troubles */)
+  {
+    histos.fill(HIST("hFoundTagsCounters"), 0.0f, foundV0s.size());
+    histos.fill(HIST("hFoundTagsCounters"), 1.0f, findableV0s.size());
+
+    // pack the found V0s in a long long
+    std::vector<uint64_t> foundV0sPacked;
+    foundV0sPacked.reserve(foundV0s.size());
+    for (auto const& foundV0 : foundV0s) {
+      foundV0sPacked[foundV0.globalIndex()] = combineProngIndices(foundV0.posTrackId(), foundV0.negTrackId());
+    }
+
+    for (auto const& findableV0 : findableV0s) {
+      bool hasBeenFound = false;
+      uint64_t indexPack = combineProngIndices(findableV0.posTrackId(), findableV0.negTrackId());
+      for (uint32_t ic = 0; ic < foundV0s.size(); ic++) {
+        if (indexPack == foundV0sPacked[ic]) {
+          hasBeenFound = true;
+          histos.fill(HIST("hFoundTagsCounters"), 2.0f);
+          break;
+        }
+      }
+      v0FoundTags(hasBeenFound);
+    }
+  }
+
+  using uint128_t = __uint128_t;
+  uint128_t combineProngIndices128(uint32_t pos, uint32_t neg, uint32_t bach)
+  {
+    return (((uint128_t)pos) << 64) | (((uint128_t)neg) << 32) | ((uint128_t)bach);
+  }
+
+  void processCascFoundTags(aod::Cascades const& foundCascades, aod::CascDatas const& findableCascades, aod::V0s const&, aod::FindableCascades const& /* added to avoid troubles */)
+  {
+    histos.fill(HIST("hFoundTagsCounters"), 3.0f, foundCascades.size());
+    histos.fill(HIST("hFoundTagsCounters"), 4.0f, findableCascades.size());
+
+    // pack the found V0s in a long long
+    std::vector<uint128_t> foundCascadesPacked;
+    foundCascadesPacked.reserve(foundCascades.size());
+    for (auto const& foundCascade : foundCascades) {
+      auto v0 = foundCascade.v0();
+      foundCascadesPacked[foundCascade.globalIndex()] = combineProngIndices128(v0.posTrackId(), v0.negTrackId(), foundCascade.bachelorId());
+    }
+
+    bool hasBeenFound = false;
+    for (auto const& findableCascade : findableCascades) {
+      uint128_t indexPack = combineProngIndices128(findableCascade.posTrackId(), findableCascade.negTrackId(), findableCascade.bachelorId());
+      for (uint32_t ic = 0; ic < foundCascades.size(); ic++) {
+        if (indexPack == foundCascadesPacked[ic]) {
+          hasBeenFound = true;
+          histos.fill(HIST("hFoundTagsCounters"), 5.0f);
+          break;
+        }
+      }
+      cascFoundTags(hasBeenFound);
+    }
   }
 
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsV0sOnly, "Produce collisions (V0s only)", true);
@@ -793,11 +874,17 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processPureSimulation, "Produce pure simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processReconstructedSimulation, "Produce reco-ed simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processBinnedGenerated, "Produce binned generated information", false);
+
+  // event plane information
   PROCESS_SWITCH(strangederivedbuilder, processFT0AQVectors, "Produce FT0A Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectors, "Produce FT0C Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectorsLF, "Produce FT0C Q-vectors table using LF temporary calibration", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0MQVectors, "Produce FT0M Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
+
+  // dedicated findable functionality
+  PROCESS_SWITCH(strangederivedbuilder, processV0FoundTags, "Produce FoundV0Tags for findable exercise", false);
+  PROCESS_SWITCH(strangederivedbuilder, processCascFoundTags, "Produce FoundCascTags for findable exercise", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

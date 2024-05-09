@@ -135,7 +135,6 @@ struct phiInJets {
     
     JEhistos.add("JetVsPhi_GEN","JetVsPhi_GEN",kTH2F,{{4000, 0., 200.},{200, 0, 20.0}});
     JEhistos.add("JetVsPhi_REC","JetVsPhi_REC",kTH2F,{{4000, 0., 200.},{200, 0, 20.0}});
-    
     JEhistos.add("nJetsPerEvent", "nJetsPerEvent", kTH1F, {{10, 0.0, 10.0}});
 
     JEhistos.add("hDCArToPv", "DCArToPv", kTH1F, {{300, 0.0, 3.0}});
@@ -237,7 +236,7 @@ struct phiInJets {
     // basic track cuts
     if (track.pt() < cfgtrkMinPt)
       return false;
-
+    
     if (std::abs(track.eta()) > cfgtrkMaxEta)
       return false;
 
@@ -462,7 +461,7 @@ struct phiInJets {
 
       if (!trackSelection(originalTrack))
         continue;
-      
+
       JEhistos.fill(HIST("etaHistogram"), trackC.eta());
       JEhistos.fill(HIST("phiHistogram"), trackC.phi());
     } // JTrack Loop
@@ -530,6 +529,7 @@ struct phiInJets {
         continue;
       if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
+
         if (mcParticle.isPhysicalPrimary() && fabs(mcParticle.eta()) <= cfgtrkMaxEta) {
           if (abs(mcParticle.pdgCode()) == 211)
             JEhistos.fill(HIST("ptJEHistogramPion"), mcParticle.pt());
@@ -627,11 +627,11 @@ struct phiInJets {
 
           if (hasJets){
             JEhistos.fill(HIST("ptJEHistogramPhi_JetTrigger"), lResonance.Pt());
-	    auto triggerjet = std::min_element(mcd_pt.begin(), mcd_pt.end());
-	    double triggerjet_pt  = *triggerjet;
-	    JEhistos.fill(HIST("JetVsPhi_REC"), triggerjet_pt, lResonance.Pt());
+      	    auto triggerjet = std::min_element(mcd_pt.begin(), mcd_pt.end());
+	          double triggerjet_pt  = *triggerjet;
+	          JEhistos.fill(HIST("JetVsPhi_REC"), triggerjet_pt, lResonance.Pt());
 
-	  }
+      	  }
           JEhistos.fill(HIST("minvJEHistogramPhi"), lResonance.M());
         } // mcpart check
       }   // tracks2
@@ -659,10 +659,9 @@ struct phiInJets {
     
     for(auto& recocoll : recocolls){ //poorly reconstructed
       if (!jetderiveddatautilities::selectCollision(recocoll, jetderiveddatautilities::JCollisionSel::sel8))
-	return;
+      	return;
     }
     
-
 
     if (fabs(collision.posZ()) > 10)//bad vertex
       return;
@@ -673,10 +672,9 @@ struct phiInJets {
         break;
       }
     }
+
     if (!INELgt0) //not INEL
       return;
-
-
     std::vector<double> mcp_pt{};
     std::vector<double> mcp_phi{};
     std::vector<double> mcp_eta{};
@@ -753,9 +751,9 @@ struct phiInJets {
           ////////////////////////////Phi found
           if (hasJets) {
             JEhistos.fill(HIST("ptGeneratedPhi_JetTrigger"), mcParticle.pt());
-	    auto triggerjet = std::min_element(mcp_pt.begin(), mcp_pt.end());
-	    double triggerjet_pt  = *triggerjet;
-	    JEhistos.fill(HIST("JetVsPhi_GEN"), triggerjet_pt, mcParticle.pt());
+      	    auto triggerjet = std::min_element(mcp_pt.begin(), mcp_pt.end());
+	          double triggerjet_pt  = *triggerjet;
+	          JEhistos.fill(HIST("JetVsPhi_GEN"), triggerjet_pt, mcParticle.pt());
           } // check for jets
 
         } // check for phi
@@ -773,7 +771,7 @@ struct phiInJets {
   // void processMatchedGen(o2::aod::JMcCollision const& collision, aod::JMcParticles const& mcParticles, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
   int nprocessSimJEEvents = 0;
   void processMatchedGen(aod::JMcCollision const& collision,
-			 soa::SmallGroups<soa::Join<aod::JMcCollisionLbs,aod::JCollisions>> const& recocolls,
+                  			 soa::SmallGroups<soa::Join<aod::JMcCollisionLbs,aod::JCollisions>> const& recocolls,
                          JetMCDTable const& mcdjets,
                          JetMCPTable const& mcpjets,
                          aod::JMcParticles const& mcParticles)
@@ -794,7 +792,7 @@ struct phiInJets {
       return;
     for(auto& recocoll : recocolls){ //poorly reconstructed
       if (!jetderiveddatautilities::selectCollision(recocoll, jetderiveddatautilities::JCollisionSel::sel8))
-	return;
+      	return;
     }
 
 
@@ -1004,6 +1002,7 @@ struct phiInJets {
             lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
             lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
             lResonance = lDecayDaughter1 + lDecayDaughter2;
+
             if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
               continue;
 
