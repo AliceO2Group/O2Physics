@@ -21,7 +21,8 @@
 
 using o2::InteractionRecord;
 
-std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber, uint64_t timestamp, std::string tois, int bcRange) {
+std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber, uint64_t timestamp, std::string tois, int bcRange)
+{
   if (mRunNumber == runNumber) {
     return mTOIidx;
   }
@@ -62,7 +63,8 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   return mTOIidx;
 }
 
-std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance) {
+std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
+{
   std::bitset<128> result;
   o2::dataformats::IRFrame bcFrame{InteractionRecord::long2IR(bcGlobalId) - tolerance, InteractionRecord::long2IR(bcGlobalId) + tolerance};
   if (bcGlobalId < mLastBCglobalId) {
@@ -82,14 +84,15 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance) {
   return result;
 }
 
-bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance) {
+bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance)
+{
   int lastSelectedIdx = mLastSelectedIdx;
   std::bitset<128> result = fetch(bcGlobalId, tolerance);
   for (size_t i{0}; i < mTOIidx.size(); ++i) {
     if (mTOIidx[i] < 0) {
       continue;
     } else if (result.test(mTOIidx[i])) {
-      mTOIcounts[i]+= (lastSelectedIdx != mLastSelectedIdx);  /// Avoid double counting
+      mTOIcounts[i] += (lastSelectedIdx != mLastSelectedIdx); /// Avoid double counting
       return true;
     }
   }

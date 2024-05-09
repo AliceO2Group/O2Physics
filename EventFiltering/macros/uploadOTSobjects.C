@@ -26,9 +26,10 @@
 
 const std::string kBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
 
-#pragma link C++ class std::vector<std::array<uint64_t, 2>> + ;
+#pragma link C++ class std::vector < std::array < uint64_t, 2>> + ;
 
-void uploadOTSobjects(std::string inputList) {
+void uploadOTSobjects(std::string inputList)
+{
   o2::ccdb::CcdbApi api;
   api.init("http://alice-ccdb.cern.ch");
 
@@ -36,13 +37,13 @@ void uploadOTSobjects(std::string inputList) {
   std::string path;
   std::map<std::string, std::string> metadata;
   while (std::getline(file, path)) {
-    auto pos = path.find("/5") + 1;  /// in the path at some point there is the run number
+    auto pos = path.find("/5") + 1; /// in the path at some point there is the run number
     const std::string runString = path.substr(pos, 6);
     std::cout << "Processing run " << runString << std::endl;
     const int runNumber = std::stoi(runString);
     metadata["runNumber"] = runString;
     std::pair<int64_t, int64_t> duration = o2::ccdb::BasicCCDBManager::getRunDuration(api, runNumber);
-    duration.first -= 10000; // subtract 3 minutes from the run start
+    duration.first -= 10000;   // subtract 3 minutes from the run start
     duration.second += 180000; // add 3 minutes to the run duration
     TFile scalersFile((path + "AnalysisResults_fullrun.root").data(), "READ");
     TH1* scalers = (TH1*)scalersFile.Get("central-event-filter-task/scalers/mScalers");
