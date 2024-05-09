@@ -34,15 +34,8 @@
 /// - calculation of topological properties of secondary vertices
 /// - Monte Carlo matching of decays at track and particle level
 
-class RecoDecay
+struct RecoDecay
 {
- public:
-  /// Default constructor
-  RecoDecay() = default;
-
-  /// Default destructor
-  ~RecoDecay() = default;
-
   // mapping of charm-hadron origin type
   enum OriginType { None = 0,
                     Prompt,
