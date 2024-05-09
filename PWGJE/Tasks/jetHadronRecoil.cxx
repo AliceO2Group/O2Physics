@@ -123,8 +123,8 @@ struct hJetAnalysis {
   {
     bool is_sig_col;
     std::vector<double> phi_TT_ar;
-    double phi_TT;
-    int trig_number;
+    double phi_TT = 0;
+    int trig_number = 0;
     int n_TT = 0;
     double leadingPT = 0;
 
