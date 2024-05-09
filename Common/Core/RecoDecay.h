@@ -34,8 +34,7 @@
 /// - calculation of topological properties of secondary vertices
 /// - Monte Carlo matching of decays at track and particle level
 
-struct RecoDecay
-{
+struct RecoDecay {
   // mapping of charm-hadron origin type
   enum OriginType { None = 0,
                     Prompt,
@@ -989,8 +988,7 @@ struct RecoDecay
 /// \tparam indexPhi  index of φ element
 /// \tparam indexM  index of mass element (optional for (pT, η, φ, m) vectors)
 template <std::size_t indexPt = 0, std::size_t indexEta = 1, std::size_t indexPhi = 2, std::size_t indexM = 3>
-struct RecoDecayPtEtaPhiBase
-{
+struct RecoDecayPtEtaPhiBase {
   // Variable-based calculations
 
   /// Sets a vector from pT, η, φ variables
@@ -1220,11 +1218,11 @@ struct RecoDecayPtEtaPhiBase
     printf("e: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::e(vecXYZ, mIn), e(vecPtEtaPhi, mIn), e(vecPtEtaPhiM));
     printf("y: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::y(vecXYZ, mIn), y(vecPtEtaPhi, mIn), y(vecPtEtaPhiM));
     printf("m: In: %g, XYZ(p, E): %g, XYZ(pVec, E): %g, XYZ(arr): %g, PtEtaPhiM: %g\n",
-            mIn,
-            RecoDecay::m(RecoDecay::p(vecXYZ), RecoDecay::e(vecXYZ, mIn)),
-            RecoDecay::m(vecXYZ, RecoDecay::e(vecXYZ, mIn)),
-            RecoDecay::m(std::array{vecXYZ, vecXYZ0}, std::array{mIn, 0.}),
-            vecPtEtaPhiM[indexM]);
+           mIn,
+           RecoDecay::m(RecoDecay::p(vecXYZ), RecoDecay::e(vecXYZ, mIn)),
+           RecoDecay::m(vecXYZ, RecoDecay::e(vecXYZ, mIn)),
+           RecoDecay::m(std::array{vecXYZ, vecXYZ0}, std::array{mIn, 0.}),
+           vecPtEtaPhiM[indexM]);
   }
 };
 
