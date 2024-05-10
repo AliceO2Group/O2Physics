@@ -46,7 +46,7 @@ using CFMultiplicity = CFMultiplicities::iterator;
 struct FilterCF {
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  enum TrackSelectionCuts {
+  enum TrackSelectionCuts :  uint8_t {
     kTrackSelected = BIT(0),
     kITS5Clusters = BIT(1),
     kTPC90CrossedRows = BIT(2)
