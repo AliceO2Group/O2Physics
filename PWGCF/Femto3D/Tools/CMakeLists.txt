@@ -9,8 +9,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Core)
-add_subdirectory(DataModel)
-add_subdirectory(TableProducer)
-add_subdirectory(Tasks)
-add_subdirectory(Tools)
+o2physics_add_executable(single-track-selector-check-packing
+    SOURCES checkPacking.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore)
