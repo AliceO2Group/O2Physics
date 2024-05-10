@@ -718,7 +718,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   // D+/- -> e and D+/- -> e
   if (!nameStr.compare("eeFromChargedD")) {
-    MCProng prong(2, {11, 421}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    MCProng prong(2, {11, 411}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from D+/- decays", {prong, prong}, {-1, -1});
     return signal;
