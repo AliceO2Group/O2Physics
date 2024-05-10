@@ -46,7 +46,11 @@ using CFMultiplicity = CFMultiplicities::iterator;
 struct FilterCF {
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  // TODO define enum
+  enum TrackSelectionCuts {
+    kTrackSelected = BIT(0),
+    kITS5Clusters = BIT(1),
+    kTPC90CrossedRows = BIT(2)
+  };
 
   // Configuration
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 7.0f, "Accepted z-vertex range")
