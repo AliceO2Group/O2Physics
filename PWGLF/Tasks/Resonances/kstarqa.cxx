@@ -818,11 +818,11 @@ struct kstarqa {
             auto motherP = mothertrack1.p();
             auto motherE = mothertrack1.e();
             auto genMass = std::sqrt(motherE * motherE - motherP * motherP);
-            auto recMass = RecoDecay::m(arrMomrec, array{massKa, massKa});
+            auto recMass = RecoDecay::m(arrMomrec, array{massKa, massPi});
             // auto recpt = TMath::Sqrt((track1.px() + track2.px()) * (track1.px() + track2.px()) + (track1.py() + track2.py()) * (track1.py() + track2.py()));
             //// Resonance reconstruction
             lDecayDaughter1.SetXYZM(track1.px(), track1.py(), track1.pz(), massKa);
-            lDecayDaughter2.SetXYZM(track2.px(), track2.py(), track2.pz(), massKa);
+            lDecayDaughter2.SetXYZM(track2.px(), track2.py(), track2.pz(), massPi);
             lResonance = lDecayDaughter1 + lDecayDaughter2;
             histos.fill(HIST("h3KstarRec"), motherP);
             histos.fill(HIST("h1KstarRecMass"), recMass);
