@@ -243,7 +243,7 @@ struct HfDataCreatorCharmResoReduced {
       std::array<float, 3> bdtScores;
       if constexpr (DecayChannel == DecayChannel::DstarV0) {
         if (candD.signSoftPi() > 0)
-          invMassD = candD.invMassDstar();
+          invMassD = candD.invMassDstar() - candD.invMassD0();
         else
           invMassD = candD.invMassAntiDstar() - candD.invMassD0Bar();
         massD = MassDStar;
