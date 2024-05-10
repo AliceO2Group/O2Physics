@@ -389,11 +389,7 @@ struct HfTaskMcEfficiencyToXiPi {
     } else if (matchXic) {
       candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0);
     } else if (matchOmegac) {
-      if (rejGenTFAndITSROFBorders) {
-        candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0, true);
-      } else {
-        candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0, false);
-      }
+      candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0);
     }
   }
 
