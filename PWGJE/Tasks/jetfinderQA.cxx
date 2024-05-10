@@ -56,7 +56,7 @@ struct JetFinderQATask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
   Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
-  Configurable<float> uniformTrackDcaZmax{"uniformTrackDcaZmax", 2.0, "maximum dcaZ acceptance for uniformTracks"};
+  Configurable<float> trackDcaZmax{"trackDcaZmax", -99, "additional cut on dcaZ to PV for tracks; uniformTracks in particular don't cut on this at all"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
@@ -313,17 +313,6 @@ struct JetFinderQATask {
     return true;
   }
 
-  double maxDcaXYPtDep(double pt) // global track default: see https://github.com/AliceO2Group/O2Physics/blob/master/Common/Core/TrackSelectionDefaults.cxx
-  {
-    return 0.0105f + 0.0350f / pow(pt, 1.1f);
-  }
-
-  template <typename T>
-  bool isPrimaryTrackFromCuts(T const& track)
-  {
-    return track.dcaXY() < maxDcaXYPtDep(track.pt()) || track.dcaZ() < uniformTrackDcaZmax;
-  }
-
   template <typename T>
   void fillHistograms(T const& jet, float centrality, float weight = 1.0)
   {
@@ -532,7 +521,7 @@ struct JetFinderQATask {
   void fillTrackHistograms(T const& collision, U const& tracks, float weight = 1.0)
   {
     for (auto const& track : tracks) {
-      if (!(jetderiveddatautilities::selectTrack(track, trackSelection) && (trackSelections->compare("uniformTracks") != 1 || isPrimaryTrackFromCuts(track)))) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
+      if (!(jetderiveddatautilities::selectTrack(track, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(track, trackDcaZmax))) {
         continue;
       }
       registry.fill(HIST("h2_centrality_track_pt"), collision.centrality(), track.pt(), weight);
@@ -836,7 +825,7 @@ struct JetFinderQATask {
   PROCESS_SWITCH(JetFinderQATask, processTriggeredData, "QA for charged jet trigger", false);
 
   void processTracks(soa::Filtered<JetCollisions>::iterator const& collision,
-                     soa::Filtered<soa::Join<JetTracks, aod::TracksCov, aod::JTrackExtras>> const& tracks)
+                     soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras>> const& tracks)
   {
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
@@ -851,7 +840,7 @@ struct JetFinderQATask {
 
   void processTracksWeighted(soa::Join<JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                              JetMcCollisions const&,
-                             soa::Filtered<soa::Join<JetTracks, aod::TracksCov, aod::JTrackExtras>> const& tracks)
+                             soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras>> const& tracks)
   {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
@@ -887,7 +876,7 @@ struct JetFinderQATask {
     }
     int nTracks = 0;
     for (auto const& track : tracks) {
-      if (jetderiveddatautilities::selectTrack(track, trackSelection) && (trackSelections->compare("uniformTracks") != 1 || isPrimaryTrackFromCuts(track))) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
+      if (jetderiveddatautilities::selectTrack(track, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(track, trackDcaZmax)) {
         nTracks++;
       }
     }
@@ -909,7 +898,7 @@ struct JetFinderQATask {
     float randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
     float randomConePt = 0;
     for (auto const& track : tracks) {
-      if (jetderiveddatautilities::selectTrack(track, trackSelection) && (trackSelections->compare("uniformTracks") != 1 || isPrimaryTrackFromCuts(track))) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
+      if (jetderiveddatautilities::selectTrack(track, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(track, trackDcaZmax)) {
         float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-M_PI));
         float dEta = track.eta() - randomConeEta;
         if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
@@ -935,7 +924,7 @@ struct JetFinderQATask {
       if (jetWasInCone) {
         randomConePt = 0.0;
         for (auto const& track : tracks) {
-          if (jetderiveddatautilities::selectTrack(track, trackSelection) && (trackSelections->compare("uniformTracks") != 1 || isPrimaryTrackFromCuts(track))) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
+          if (jetderiveddatautilities::selectTrack(track, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(track, trackDcaZmax)) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
             float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-M_PI));
             float dEta = track.eta() - randomConeEta;
             if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
