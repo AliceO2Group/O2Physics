@@ -45,7 +45,7 @@ struct SGTwoPiAnalyzer {
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
-  // Track Selections
+  //Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -53,6 +53,7 @@ struct SGTwoPiAnalyzer {
   Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
+  Configurable<float> pt_cut{"pt_cut", 0.1, "Track Pt"};
   HistogramRegistry registry{
     "registry",
     {
@@ -101,7 +102,7 @@ struct SGTwoPiAnalyzer {
     //  int truegapSide = sgSelector.trueGap(collision);
     // int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
-    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
     // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);

@@ -33,15 +33,13 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace bcNtr
-{
-DECLARE_SOA_COLUMN(BC, bc, uint64_t);
-DECLARE_SOA_COLUMN(PV, pv, int);
-DECLARE_SOA_COLUMN(GS, gs, int);
-} // namespace bcNtr
-namespace o2::aod
-{
-DECLARE_SOA_TABLE(BcPvGs, "AOD", "BCPVGS",
+namespace bcNtr{
+  DECLARE_SOA_COLUMN(BC, bc, uint64_t);
+  DECLARE_SOA_COLUMN(PV, pv, int);
+  DECLARE_SOA_COLUMN(GS, gs, int);
+}
+namespace o2::aod {
+  DECLARE_SOA_TABLE(BcPvGs, "AOD", "BCPVGS",
                   bcNtr::BC, bcNtr::PV, bcNtr::GS);
 }
 struct SGFITAnalyzer {
@@ -51,7 +49,7 @@ struct SGFITAnalyzer {
   // configurables
   Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
   ConfigurableAxis ptAxis{"ptAxis", {250, 0.0, 2.5}, "p_T axis"};
-  // ConfigurableAxis BCAxis{"BCAxis", {1000000000000, 0.5, 1000000000000.5}, "BC axis"};
+  //ConfigurableAxis BCAxis{"BCAxis", {1000000000000, 0.5, 1000000000000.5}, "BC axis"};
   ConfigurableAxis BCAxis{"BCAxis", {100000000000, 500000000000.5, 600000000000.5}, "BC axis"};
   ConfigurableAxis etaAxis{"etaAxis", {300, -1.5, 1.5}, ""};
   ConfigurableAxis sigTPCAxis{"sigTPCAxis", {100, -100.0, 100.0}, ""};
@@ -65,7 +63,7 @@ struct SGFITAnalyzer {
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
-  // Track Selections
+  //Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -73,6 +71,7 @@ struct SGFITAnalyzer {
   Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
+  Configurable<float> pt_cut{"pt_cut", 0.1, "Track Pt"};
   Configurable<std::string> outputFileName{"outputFileName", "AnalysisResults.root", "Output file name"};
   // initialize histogram registry
   HistogramRegistry registry{
@@ -347,7 +346,7 @@ struct SGFITAnalyzer {
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; // UDCollisions
   // using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions>; // UDCollisions
   using UDCollisionFull = UDCollisionsFull::iterator;
-  // using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  //using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
   using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   //  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksFlags>;
 
@@ -368,8 +367,8 @@ struct SGFITAnalyzer {
     // select PV contributors
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
     PVContributors.bindTable(dgtracks);
-    //    if (PVContributors.size() > 50)
-    //     return;
+//    if (PVContributors.size() > 50)
+ //     return;
     registry.get<TH1>(HIST("collisions/multiplicityPVC"))->Fill(PVContributors.size(), 1.);
     int pv = PVContributors.size();
     bool tof = false;
@@ -382,7 +381,7 @@ struct SGFITAnalyzer {
       LOGF(info, "<UDTutorial01sg>   Number of tracks %d", dgtracks.size());
       LOGF(info, "<UDTutorial01sg>   Number of PV contributors %d", PVContributors.size());
     }
-    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
     // check rho0 signals
     bool coh_rho0 = false;
     bool coh_jpsi = false;
@@ -398,22 +397,19 @@ struct SGFITAnalyzer {
       if (trackselector(t, parameters)) {
         sign += t.sign();
         goodTracks.push_back(a);
-        if (std::abs(t.tpcNSigmaMu()) < 3)
-          muonTracks.push_back(b);
+        if (std::abs(t.tpcNSigmaMu()) < 3) muonTracks.push_back(b);
       }
     }
     if (goodTracks.size() == 2) {
       for (auto pion : goodTracks) {
         rho += pion;
       }
-      if (sign == 0 && TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.1)
-        coh_rho0 = true;
+      if (sign == 0 && TMath::Abs(rho.Rapidity()) < .9 && rho.M() > .5 && rho.M() < 1.2 && rho.Pt() < 0.1) coh_rho0 = true;
       if (muonTracks.size() == 2) {
         for (auto muon : muonTracks) {
           jpsi += muon;
         }
-        if (sign == 0 && TMath::Abs(jpsi.Rapidity()) < .9 && jpsi.M() > 2.8 && jpsi.M() < 3.35 && jpsi.Pt() < 0.1)
-          coh_jpsi = true;
+        if (sign == 0 && TMath::Abs(jpsi.Rapidity()) < .9 && jpsi.M() > 2.8 && jpsi.M() < 3.35 && jpsi.Pt() < 0.1) coh_jpsi = true;
       }
     }
     int pva = 0;
@@ -818,8 +814,8 @@ struct SGFITAnalyzer {
       registry.get<TH1>(HIST("FIT/BBFDDA"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDApf(), bit));
       registry.get<TH1>(HIST("FIT/BBFDDC"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDCpf(), bit));
     }
-    // Fill Table here
-    bcNtr(bc, pv, gs);
+    //Fill Table here
+    bcNtr(bc,pv,gs);
   }
 };
 
