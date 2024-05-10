@@ -160,7 +160,7 @@ struct HfTaskMcEfficiencyToXiPi {
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
   // genParticles -> join aod::McParticles and candidateCreator McGen tables
   template <typename T1, typename T2>
-  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisions const&, BCsInfo const&, int pdgCode, bool rejGenTFAndITSROFBorder)
+  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisions const&, BCsInfo const&, int pdgCode)
   {
     // fill hCandidates histogram
     candidateRecLoop(candidates, pdgCode);
