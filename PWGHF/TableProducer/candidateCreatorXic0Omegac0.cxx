@@ -1045,36 +1045,40 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void processMcXicToXiPi(aod::HfCandToXiPi const& candidates,
                           aod::TracksWMc const& tracks,
                           aod::McParticles const& mcParticles,
+                          aod::McCollisions const& mcColls,
                           aod::McCollisionLabels const& mcLabels)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, mcColls, mcLabels);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPi, "Run Xic0 to xi pi MC process function", false);
 
   void processMcOmegacToXiPi(aod::HfCandToXiPi const& candidates,
                              aod::TracksWMc const& tracks,
                              aod::McParticles const& mcParticles,
+                             aod::McCollisions const& mcColls,
                              aod::McCollisionLabels const& mcLabels)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, mcColls, mcLabels);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToXiPi, "Run Omegac0 to xi pi MC process function", false);
 
   void processMcOmegacToOmegaPi(aod::HfCandToOmegaPi const& candidates,
                                 aod::TracksWMc const& tracks,
                                 aod::McParticles const& mcParticles,
+                                aod::McCollisions const& mcColls,
                                 aod::McCollisionLabels const& mcLabels)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, mcColls, mcLabels);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaPi, "Run Omegac0 to omega pi MC process function", false);
 
   void processMcOmegacToOmegaK(aod::HfCandToOmegaK const& candidates,
                                aod::TracksWMc const& tracks,
                                aod::McParticles const& mcParticles,
+                               aod::McCollisions const& mcColls,
                                aod::McCollisionLabels const& mcLabels)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, mcColls, mcLabels);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaK, "Run Omegac0 to omega K MC process function", false);
 
