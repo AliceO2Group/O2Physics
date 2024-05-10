@@ -51,7 +51,7 @@ o2physics_add_dpl_workflow(lithium4analysis
 
 o2physics_add_dpl_workflow(nuclei-spectra
     SOURCES nucleiSpectra.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(spectra-derived
