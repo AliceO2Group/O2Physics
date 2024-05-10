@@ -24,33 +24,35 @@
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
-#define melec 0.000511 //1
-#define mmuon 0.1057   //2
-#define mpion 0.1396   //3
-#define mkaon 0.4937   //4
-#define mproton 0.9383 //5
+#define melec 0.000511 // 1
+#define mmuon 0.1057   // 2
+#define mpion 0.1396   // 3
+#define mkaon 0.4937   // 4
+#define mproton 0.9383 // 5
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace pid_spectra{
-  DECLARE_SOA_COLUMN(GS, gs, int);
-  DECLARE_SOA_COLUMN(ZA, za, int);
-  DECLARE_SOA_COLUMN(ZC, zc, int);
-  DECLARE_SOA_COLUMN(SIGN, sign, std::vector<int>);
-  DECLARE_SOA_COLUMN(PX, px, std::vector<float>);
-  DECLARE_SOA_COLUMN(PY, py, std::vector<float>);
-  DECLARE_SOA_COLUMN(PZ, pz, std::vector<float>);
-  DECLARE_SOA_COLUMN(TPCPION, tpcpion, std::vector<int>);
-  DECLARE_SOA_COLUMN(TPCKAON, tpckaon, std::vector<int>);
-  DECLARE_SOA_COLUMN(TPCPROTON, tpcproton, std::vector<int>);
-  DECLARE_SOA_COLUMN(TOFPION, tofpion, std::vector<int>);
-  DECLARE_SOA_COLUMN(TOFKAON, tofkaon, std::vector<int>);
-  DECLARE_SOA_COLUMN(TOFPROTON, tofproton, std::vector<int>);
-}
-namespace o2::aod {
-  DECLARE_SOA_TABLE(PID_spectra, "AOD", "PID_SPECTRA",
+namespace pid_spectra
+{
+DECLARE_SOA_COLUMN(GS, gs, int);
+DECLARE_SOA_COLUMN(ZA, za, int);
+DECLARE_SOA_COLUMN(ZC, zc, int);
+DECLARE_SOA_COLUMN(SIGN, sign, std::vector<int>);
+DECLARE_SOA_COLUMN(PX, px, std::vector<float>);
+DECLARE_SOA_COLUMN(PY, py, std::vector<float>);
+DECLARE_SOA_COLUMN(PZ, pz, std::vector<float>);
+DECLARE_SOA_COLUMN(TPCPION, tpcpion, std::vector<int>);
+DECLARE_SOA_COLUMN(TPCKAON, tpckaon, std::vector<int>);
+DECLARE_SOA_COLUMN(TPCPROTON, tpcproton, std::vector<int>);
+DECLARE_SOA_COLUMN(TOFPION, tofpion, std::vector<int>);
+DECLARE_SOA_COLUMN(TOFKAON, tofkaon, std::vector<int>);
+DECLARE_SOA_COLUMN(TOFPROTON, tofproton, std::vector<int>);
+} // namespace pid_spectra
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(PID_spectra, "AOD", "PID_SPECTRA",
                   pid_spectra::GS, pid_spectra::ZA, pid_spectra::ZC, pid_spectra::SIGN, pid_spectra::PX, pid_spectra::PY, pid_spectra::PZ, pid_spectra::TPCPION, pid_spectra::TPCKAON, pid_spectra::TPCPROTON, pid_spectra::TOFPION, pid_spectra::TOFKAON, pid_spectra::TOFPROTON);
 }
 struct SGPIDSpectra {
@@ -64,7 +66,7 @@ struct SGPIDSpectra {
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
-  //Track Selections
+  // Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -139,29 +141,29 @@ struct SGPIDSpectra {
         py.push_back(t.py());
         pz.push_back(t.pz());
         sign.push_back(t.sign());
-        if (t.hasTOF()){
-	   tofproton.push_back(t.tofNSigmaPr()); 
-	   tofkaon.push_back(t.tofNSigmaKa()); 
-	   tofpion.push_back(t.tofNSigmaPi()); 
-	} else {
-           tofproton.push_back(-999.);
-           tofkaon.push_back(-999.);
-           tofpion.push_back(-999.);
-	}
-        if (t.hasTPC()){
-	   tpcproton.push_back(t.tpcNSigmaPr()); 
-	   tpckaon.push_back(t.tpcNSigmaKa()); 
-	   tpcpion.push_back(t.tpcNSigmaPi()); 
-	} else {
-           tpcproton.push_back(-999.);
-           tpckaon.push_back(-999.);
-           tpcpion.push_back(-999.);
-	}
+        if (t.hasTOF()) {
+          tofproton.push_back(t.tofNSigmaPr());
+          tofkaon.push_back(t.tofNSigmaKa());
+          tofpion.push_back(t.tofNSigmaPi());
+        } else {
+          tofproton.push_back(-999.);
+          tofkaon.push_back(-999.);
+          tofpion.push_back(-999.);
+        }
+        if (t.hasTPC()) {
+          tpcproton.push_back(t.tpcNSigmaPr());
+          tpckaon.push_back(t.tpcNSigmaKa());
+          tpcpion.push_back(t.tpcNSigmaPi());
+        } else {
+          tpcproton.push_back(-999.);
+          tpckaon.push_back(-999.);
+          tpcpion.push_back(-999.);
+        }
       }
     }
-    //Fill Tables here
+    // Fill Tables here
     pid_spectra(gs, an, cn, sign, px, py, pz, tpcpion, tpckaon, tpcproton, tofpion, tofkaon, tofproton);
- }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
