@@ -715,7 +715,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   void runXic0Omegac0Mc(TMyRecoCand const& candidates,
                         aod::TracksWMc const&,
                         aod::McParticles const& mcParticles,
-                        aod::McCollisionLabels const&)
+                        aod::McCollisionLabels const&,
+                        aod::McCollisions const&)
   {
     float ptCharmBaryonGen = -999.;
     float etaCharmBaryonGen = -999.;
