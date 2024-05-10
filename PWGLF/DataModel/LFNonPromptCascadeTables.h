@@ -32,6 +32,13 @@ DECLARE_SOA_COLUMN(CascPt, cascPt, float);
 DECLARE_SOA_COLUMN(CascEta, cascEta, float);
 DECLARE_SOA_COLUMN(CascPhi, cascPhi, float);
 
+DECLARE_SOA_COLUMN(ProtonPt, protonPt, float);
+DECLARE_SOA_COLUMN(ProtonEta, protonEta, float);
+DECLARE_SOA_COLUMN(PionPt, pionPt, float);
+DECLARE_SOA_COLUMN(PionEta, pionEta, float);
+DECLARE_SOA_COLUMN(BachPt, bachPt, float);
+DECLARE_SOA_COLUMN(BachEta, bachEta, float);
+
 DECLARE_SOA_COLUMN(CascDCAxy, cascDCAxy, float);
 DECLARE_SOA_COLUMN(CascDCAz, cascDCAz, float);
 DECLARE_SOA_COLUMN(ProtonDCAxy, protonDCAxy, float);
@@ -93,6 +100,12 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::CascPt,
                   NPCascadeTable::CascEta,
                   NPCascadeTable::CascPhi,
+                  NPCascadeTable::ProtonPt,
+                  NPCascadeTable::ProtonEta,
+                  NPCascadeTable::PionPt,
+                  NPCascadeTable::PionEta,
+                  NPCascadeTable::BachPt,
+                  NPCascadeTable::BachEta,
                   NPCascadeTable::CascDCAxy,
                   NPCascadeTable::CascDCAz,
                   NPCascadeTable::ProtonDCAxy,
@@ -139,6 +152,12 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::CascPt,
                   NPCascadeTable::CascEta,
                   NPCascadeTable::CascPhi,
+                  NPCascadeTable::ProtonPt,
+                  NPCascadeTable::ProtonEta,
+                  NPCascadeTable::PionPt,
+                  NPCascadeTable::PionEta,
+                  NPCascadeTable::BachPt,
+                  NPCascadeTable::BachEta,
                   NPCascadeTable::CascDCAxy,
                   NPCascadeTable::CascDCAz,
                   NPCascadeTable::ProtonDCAxy,

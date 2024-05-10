@@ -335,7 +335,7 @@ struct HfTaskDs {
       // Ds
       if (whichSpeciesDecay == SpeciesAndDecay::DsToKKPi) {
 
-        auto y = hfHelper.yDs(candidate);
+        double y = hfHelper.yDs(candidate);
 
         // prompt
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
@@ -383,7 +383,7 @@ struct HfTaskDs {
 
       // D+→ K± K∓ π±
       if (whichSpeciesDecay == SpeciesAndDecay::DplusToKKPi) {
-        auto y = hfHelper.yDplus(candidate);
+        double y = hfHelper.yDplus(candidate);
 
         // prompt
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
@@ -432,7 +432,7 @@ struct HfTaskDs {
 
       // D+→ π± K∓ π±
       if (whichSpeciesDecay == SpeciesAndDecay::DplusToPiKPi) {
-        auto y = hfHelper.yDplus(candidate);
+        double y = hfHelper.yDplus(candidate);
 
         // Fill whether it is prompt or non-prompt
         fillHisto(candidate, DataType::McDplusBkg);
@@ -542,7 +542,7 @@ struct HfTaskDs {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
         if (particle.flagMcDecayChanGen() == decayChannel || (fillDplusMc && particle.flagMcDecayChanGen() == (decayChannel + offsetDplusDecayChannel))) {
           auto pt = particle.pt();
-          auto y = 0;
+          double y{0.f};
 
           if (particle.flagMcDecayChanGen() == decayChannel) {
             y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS);

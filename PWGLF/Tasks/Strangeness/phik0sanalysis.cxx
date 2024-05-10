@@ -66,6 +66,10 @@ struct phik0shortanalysis {
   Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"};
   Configurable<float> NSigmaTPCPion{"NSigmaTPCPion", 4.0, "NSigmaTPCPion"};
 
+  // Configurables for drawing  TPCPion vs pT
+  Configurable<float> lowmK0S{"lowK0S", 0.48, "Lower limit on mK0Short to draw TPCPion vs pT"};
+  Configurable<float> upmK0S{"upK0S", 0.52, "Upper limit on mK0Short to draw TPCPion vs pT"};
+
   // Configurables for phi selection
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
   Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Cut on charge"};
@@ -83,6 +87,7 @@ struct phik0shortanalysis {
   // Configurable for event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
 
+  // Configurable axis
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
@@ -141,7 +146,7 @@ struct phik0shortanalysis {
   using V0Candidates = soa::Filtered<aod::V0Datas>;
 
   // Defining the type of the V0 daughter tracks
-  using V0DaughterCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi>;
+  using V0DaughterCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
 
   // Defining the binning policy for mixed event
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
@@ -155,18 +160,24 @@ struct phik0shortanalysis {
   template <typename T>
   bool selectionTrack(const T& track)
   {
-    if (std::abs(track.pt()) < cMinPtcut)
+    if (std::abs(track.pt()) < cMinPtcut) {
       return false;
-    if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
+    }
+    if (std::abs(track.dcaXY()) > cMaxDCArToPVcut) {
       return false;
-    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
+    }
+    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut) {
       return false;
-    if (cfgPrimaryTrack && !track.isPrimaryTrack())
+    }
+    if (cfgPrimaryTrack && !track.isPrimaryTrack()) {
       return false;
-    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+    }
+    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
       return false;
-    if (cfgPVContributor && !track.isPVContributor())
+    }
+    if (cfgPVContributor && !track.isPVContributor()) {
       return false;
+    }
     return true;
   }
 
@@ -199,6 +210,26 @@ struct phik0shortanalysis {
     return mother;
   }
 
+  // V0 selection
+  template <typename T1, typename T2>
+  bool selectionV0(const T1& v0, const T2& daughter1, const T2& daughter2)
+  {
+    if (v0.v0cosPA() < v0setting_cospa) {
+      return false;
+    }
+    if (v0.v0radius() < v0setting_radius) {
+      return false;
+    }
+    if (TMath::Abs(daughter1.tpcNSigmaPi()) > NSigmaTPCPion) {
+      return false;
+    }
+    if (TMath::Abs(daughter2.tpcNSigmaPi()) > NSigmaTPCPion) {
+      return false;
+    }
+    return true;
+  }
+
+  // Fill 2D invariant mass histogram
   void fillInvMass2D(TLorentzVector mother, TLorentzVector V0, float multiplicity, bool same, bool mix)
   {
     double mass1 = V0.M();
@@ -261,17 +292,8 @@ struct phik0shortanalysis {
           const auto& posDaughterTrack = v0.posTrack_as<V0DaughterCandidates>();
           const auto& negDaughterTrack = v0.negTrack_as<V0DaughterCandidates>();
 
-          // Cut on dynamic columns
-          if (v0.v0cosPA() < v0setting_cospa) {
-            continue;
-          }
-          if (v0.v0radius() < v0setting_radius) {
-            continue;
-          }
-          if (TMath::Abs(posDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
-            continue;
-          }
-          if (TMath::Abs(negDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
+          // Cut on V0 dynamic columns
+          if (!selectionV0(v0, posDaughterTrack, negDaughterTrack)) {
             continue;
           }
 
@@ -280,7 +302,7 @@ struct phik0shortanalysis {
             K0SHist.fill(HIST("hV0CosPA"), v0.v0cosPA());
 
             // Filling the PID of the V0 daughters in the region of the K0 peak
-            if (0.48 < v0.mK0Short() && v0.mK0Short() < 0.52) {
+            if (lowmK0S < v0.mK0Short() && v0.mK0Short() < upmK0S) {
               K0SHist.fill(HIST("hNSigmaPosPionFromK0S"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
               K0SHist.fill(HIST("hNSigmaNegPionFromK0S"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
             }
@@ -319,17 +341,8 @@ struct phik0shortanalysis {
           const auto& posDaughterTrack = v0.posTrack_as<V0DaughterCandidates>();
           const auto& negDaughterTrack = v0.negTrack_as<V0DaughterCandidates>();
 
-          // Cut on dynamic columns
-          if (v0.v0cosPA() < v0setting_cospa) {
-            continue;
-          }
-          if (v0.v0radius() < v0setting_radius) {
-            continue;
-          }
-          if (TMath::Abs(posDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
-            continue;
-          }
-          if (TMath::Abs(negDaughterTrack.tpcNSigmaPi()) > NSigmaTPCPion) {
+          // Cut on V0 dynamic columns
+          if (!selectionV0(v0, posDaughterTrack, negDaughterTrack)) {
             continue;
           }
 

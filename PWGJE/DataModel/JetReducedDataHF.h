@@ -38,6 +38,7 @@ DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 namespace d0collisioncounter
 {
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
 } // namespace d0collisioncounter
 
@@ -63,6 +64,7 @@ DECLARE_SOA_TABLE(StoredJD0PIds, "AOD1", "JD0PID",
 
 DECLARE_SOA_TABLE(D0CollisionCounts, "AOD", "D0COLLCOUNT",
                   d0collisioncounter::ReadCounts,
+                  d0collisioncounter::ReadSelectedCounts,
                   d0collisioncounter::WrittenCounts);
 
 namespace jlcindices
@@ -78,6 +80,7 @@ DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 namespace lccollisioncounter
 {
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
 } // namespace lccollisioncounter
 
@@ -105,6 +108,7 @@ DECLARE_SOA_TABLE(StoredJLcPIds, "AOD1", "JLCPID",
 
 DECLARE_SOA_TABLE(LcCollisionCounts, "AOD", "LcCOLLCOUNT",
                   lccollisioncounter::ReadCounts,
+                  lccollisioncounter::ReadSelectedCounts,
                   lccollisioncounter::WrittenCounts);
 
 } // namespace o2::aod

@@ -1689,7 +1689,7 @@ struct NucleiHistTask {
       bool passedTPC = track.hasTPC();
       bool passedTOF = track.hasTOF();
 
-      if ((particle.pdgCode() == 1000020030) | (particle.pdgCode() == -1000020030) | (particle.pdgCode() == 1000020040) | (particle.pdgCode() == -1000020040)) {
+      if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
         float TPCnumberClsFound = track.tpcNClsFound();
         float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
         float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
