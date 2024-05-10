@@ -181,7 +181,8 @@ class FemtoUniverseDetaDphiStar
 
       bool pass = false;
       for (int i = 0; i < 2; i++) {
-        auto indexOfDaughter = part2.globalIndex() - 2 + i;
+        auto indexOfDaughter = (ChosenEventType == femtoUniverseContainer::EventType::mixed ? part2.globalIndex() : part2.index()) - 2 + i;
+        // auto indexOfDaughter = part2.globalIndex() - 2 + i;
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
         auto dphiAvg = AveragePhiStar(part1, *daughter, i);
@@ -217,8 +218,10 @@ class FemtoUniverseDetaDphiStar
 
       bool pass = false;
       for (int i = 0; i < 2; i++) {
-        auto indexOfDaughterpart1 = part1.globalIndex() - 2 + i;
-        auto indexOfDaughterpart2 = part2.globalIndex() - 2 + i;
+        auto indexOfDaughterpart1 = (ChosenEventType == femtoUniverseContainer::EventType::mixed ? part1.globalIndex() : part1.index()) - 2 + i;
+        auto indexOfDaughterpart2 = (ChosenEventType == femtoUniverseContainer::EventType::mixed ? part2.globalIndex() : part2.index()) - 2 + i;
+        // auto indexOfDaughterpart1 = part1.globalIndex() - 2 + i;
+        // auto indexOfDaughterpart2 = part2.globalIndex() - 2 + i;
         auto daughterpart1 = particles.begin() + indexOfDaughterpart1;
         auto daughterpart2 = particles.begin() + indexOfDaughterpart2;
         auto deta = daughterpart1.eta() - daughterpart2.eta();
@@ -255,7 +258,13 @@ class FemtoUniverseDetaDphiStar
 
       bool pass = false;
       for (int i = 0; i < 2; i++) {
-        auto indexOfDaughter = part2.index() - 2 + i;
+        auto indexOfDaughter = 0;
+        if (ChosenEventType == femtoUniverseContainer::EventType::mixed) {
+          indexOfDaughter = part2.globalIndex() - 2 + i;
+        } else if (ChosenEventType == femtoUniverseContainer::EventType::same) {
+          indexOfDaughter = part2.index() - 2 + i;
+        }
+
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
         auto dphiAvg = AveragePhiStar(part1, *daughter, i); // auto dphiAvg = CalculateDphiStar(part1, *daughter);

@@ -24,6 +24,6 @@ set_package_properties(KFParticle PROPERTIES TYPE REQUIRED)
 find_package(fjcontrib)
 set_package_properties(fjcontrib PROPERTIES TYPE REQUIRED)
 
-find_package(ONNXRuntime::ONNXRuntime)
+find_package(ONNXRuntime)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)

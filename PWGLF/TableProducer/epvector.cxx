@@ -98,7 +98,7 @@ struct epvector {
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for recentere"};
   Configurable<std::string> ConfShift{"ConfShift", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift"};
-
+  ConfigurableAxis configAxisCentrality{"configAxisCentrality", {80, 0.0, 80}, "centrality bining"};
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -108,7 +108,8 @@ struct epvector {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
+    const AxisSpec centAxis{configAxisCentrality, "V0M (%)"};
+    // AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec multiplicity = {5000, -500, 500, "TPC Multiplicity"};
     AxisSpec amplitudeFT0 = {5000, 0, 10000, "FT0 amplitude"};
     AxisSpec channelFT0Axis = {220, 0.0, 220.0, "FT0 channel"};

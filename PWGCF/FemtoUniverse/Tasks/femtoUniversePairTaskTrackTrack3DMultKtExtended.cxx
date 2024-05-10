@@ -242,30 +242,41 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
   bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
-    //|nsigma_TPC| < 3 for p < 0.5 GeV/c
-    //|nsigma_combined| < 3 for p > 0.5
-
-    // using configurables:
-    // ConfTOFPtMin - momentum value when we start using TOF; set to 1000 if TOF not needed
-    // ConfNsigmaTPCTOFKaon -> are we doing TPC TOF PID for Kaons? (boolean)
-    // ConfNsigmaTPC -> TPC Kaon Sigma for momentum < 0.5
-    // ConfNsigmaCombined -> TPC and TOF Sigma (combined) for momentum > 0.5
-    if (true) {
-      if (mom < twotracksconfigs.ConfTOFPtMin) {
-        if (TMath::Abs(nsigmaTPCK) < twotracksconfigs.ConfNsigmaTPC) {
+    if (mom < 0.3) { // 0.0-0.3
+      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.45) { // 0.30 - 0.45
+      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 0.55) { // 0.45-0.55
+      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        {
           return true;
-        } else {
-          return false;
         }
       } else {
-        if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < twotracksconfigs.ConfNsigmaCombined) {
-          return true;
-        } else {
-          return false;
-        }
+        return false;
       }
+    } else if (mom > 1.5) { // 1.5 -
+      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
     }
-    return false;
   }
 
   bool IsPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)

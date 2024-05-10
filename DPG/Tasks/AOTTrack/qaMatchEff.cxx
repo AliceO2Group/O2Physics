@@ -73,6 +73,12 @@ struct qaMatchEff {
   // Track selections
   Configurable<bool> isUseTrackSelections{"isUseTrackSelections", false, "Boolean to switch the track selections on/off."};
   Configurable<bool> isUseAnalysisTrackSelections{"isUseAnalysisTrackSelections", false, "Boolean to switch if the analysis track selections are used. If true, all the Explicit track cuts are ignored."};
+  // analysis track selections changes
+  Configurable<bool> isChangeAnalysisCutEta{"isChangeAnalysisCutEta", false, "Boolean to switch if the analysis eta cut is changed."};
+  Configurable<bool> isChangeAnalysisCutDcaXY{"isChangeAnalysisCutDcaXY", false, "Boolean to switch if the analysis DcaXY cut is changed."};
+  Configurable<bool> isChangeAnalysisCutDcaZ{"isChangeAnalysisCutDcaZ", false, "Boolean to switch if the analysis DcaZ cut is changed."};
+  Configurable<bool> isChangeAnalysisCutNClustersTPC{"isChangeAnalysisCutNClustersTPC", false, "Boolean to switch if the analysis NClustersTPC cut is changed."};
+  Configurable<bool> isChangeAnalysisITSHitmap{"isChangeAnalysisITSHitmap", false, "Boolean to switch if the analysis ITSHitmap is changed."};
   // kinematics
   Configurable<float> ptMinCutInnerWallTPC{"ptMinCutInnerWallTPC", 0.1f, "Minimum transverse momentum calculated at the inner wall of TPC (GeV/c)"};
   Configurable<float> ptMinCut{"ptMinCut", 0.1f, "Minimum transverse momentum (GeV/c)"};
@@ -243,11 +249,41 @@ struct qaMatchEff {
       }
       LOG(info) << "############";
       cutObject.SetRequireHitsInITSLayers(customMinITShits, set_customITShitmap);
+    }
 
-      if (isUseAnalysisTrackSelections) {
-        LOG(info) << "### Using analysis track selections";
-        cutObject = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, 0);
-        LOG(info) << "### Analysis track selections set";
+    if (isUseAnalysisTrackSelections) {
+      LOG(info) << "### Using analysis track selections";
+      cutObject = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, 0);
+      LOG(info) << "### Analysis track selections set";
+      // change the cuts get from the track selection default if requested
+      if (isChangeAnalysisCutEta) {
+        cutObject.SetEtaRange(etaMinCut, etaMaxCut);
+        LOG(info) << "### Changing analysis eta cut to " << etaMinCut << " - " << etaMaxCut;
+      }
+      if (isChangeAnalysisCutDcaXY) {
+        // clear the pt dependence of DcaXY
+        cutObject.SetMaxDcaXYPtDep(nullptr);
+        LOG(info) << "### DcaXY cut pt dependence cleared";
+        cutObject.SetMaxDcaXY(dcaMaxCut->get("TrVtx", "dcaXY"));
+        LOG(info) << "### Changing analysis DcaXY cut to " << dcaMaxCut->get("TrVtx", "dcaXY");
+      }
+      if (isChangeAnalysisCutDcaZ) {
+        cutObject.SetMaxDcaZ(dcaMaxCut->get("TrVtx", "dcaZ"));
+        LOG(info) << "### Changing analysis DCAZ cut to " << dcaMaxCut->get("TrVtx", "dcaZ");
+      }
+      if (isChangeAnalysisCutNClustersTPC) {
+        cutObject.SetMinNClustersTPC(tpcNClusterMin);
+        LOG(info) << "### Changing analysis NClustersTPC cut to " << tpcNClusterMin;
+      }
+      if (isChangeAnalysisITSHitmap) {
+        std::set<uint8_t> set_customITShitmap; // = {};
+        for (int index_ITSlayer = 0; index_ITSlayer < 7; index_ITSlayer++) {
+          if ((customITShitmap & (1 << index_ITSlayer)) > 0) {
+            set_customITShitmap.insert(static_cast<uint8_t>(index_ITSlayer));
+          }
+        }
+        cutObject.SetRequireHitsInITSLayers(customMinITShits, set_customITShitmap);
+        LOG(info) << "### Changing analysis ITSHitmap cut to " << customMinITShits;
       }
     }
   }
