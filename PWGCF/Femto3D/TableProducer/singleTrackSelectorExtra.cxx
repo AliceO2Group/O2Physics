@@ -38,7 +38,8 @@ struct singleTrackSelectorDummy {
   {
     tableRowCollExtra(true,
                       true,
-                      true);
+                      true,
+                      0.0);
   }
 };
 
