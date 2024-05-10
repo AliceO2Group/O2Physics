@@ -108,6 +108,8 @@ struct findableStudy {
     histos.add("h2dPtVsCentrality_WithITSABTPC_Found", "hPtVsCentrality_WithITSABTPC_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
     histos.add("h2dPtVsCentrality_WithSVertexerOK_Findable", "hPtVsCentrality_WithSVertexerOK_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
     histos.add("h2dPtVsCentrality_WithSVertexerOK_Found", "hPtVsCentrality_WithSVertexerOK_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
+    histos.add("h2dPtVsCentrality_WithSVertexerOK_Findable", "hPtVsCentrality_WithSVertexerOK_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
+    histos.add("h2dPtVsCentrality_WithSVertexerOK_Found", "hPtVsCentrality_WithSVertexerOK_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
   }
 
   void processEvents(
@@ -148,6 +150,11 @@ struct findableStudy {
     uint32_t withITSTrackerTPC = 0; // if prongs have TPC and are ITS tracked
     uint32_t withITSABTPC = 0;      // if prongs have TPC and are ITS afterburned
     uint32_t withSVertexerOK = 0;   // if prongs have acceptable tracking conditions for svertexer
+    uint32_t withTPC = 0; // if prongs have TPC 
+    uint32_t withITSTracker = 0; // if prongs have been ITS tracked
+    uint32_t withITSTrackerTPC = 0; // if prongs have TPC and are ITS tracked
+    uint32_t withITSABTPC = 0; // if prongs have TPC and are ITS afterburned
+    uint32_t withSVertexerOK = 0; // if prongs have acceptable tracking conditions for svertexer
 
     for (auto& recv0 : recv0s) {
       if (recv0.isFound()) {
