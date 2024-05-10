@@ -917,11 +917,11 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
         if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi) {
           rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
-        } else if (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi) {
+        } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi) {
           rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
-        } else if (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi) {
+        } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi) {
           rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
-        } else if (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK) {
+        } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK) {
           rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
         }
         continue;
