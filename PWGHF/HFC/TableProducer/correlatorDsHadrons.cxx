@@ -599,7 +599,7 @@ struct HfCorrelatorDsHadrons {
         isDecayChan = particle.flagMcDecayChanGen() == decayChannel;
         // Ds Hadron correlation dedicated section
         for (const auto& particleAssoc : mcParticles) {
-          if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() < ptTrackMax) {
+          if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
             continue;
           }
           if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
@@ -707,10 +707,8 @@ struct HfCorrelatorDsHadrons {
         // DsToKKPi and DsToPiKK division
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           fillHistoMcRecSig(candidate, 0.);
-          registry.fill(HIST("hSelectionStatusMcRec"), candidate.isSelDsToKKPi());
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           fillHistoMcRecSig(candidate, 0.);
-          registry.fill(HIST("hSelectionStatusMcRec"), candidate.isSelDsToPiKK());
         }
       } else {
         fillHistoMcRecBkg(candidate);
@@ -764,6 +762,7 @@ struct HfCorrelatorDsHadrons {
             outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
           }
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
+          entryTrackRecoInfo(pAssoc.dcaXY(), pAssoc.dcaZ(), pAssoc.tpcNClsCrossedRows());
         } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
           entryDsHadronPair(getDeltaPhi(pAssoc.phi(), candidate.phi()),
                             pAssoc.eta() - candidate.eta(),
@@ -776,6 +775,7 @@ struct HfCorrelatorDsHadrons {
             outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
           }
           entryDsHadronMlInfo(outputMl[0], outputMl[2]);
+          entryTrackRecoInfo(pAssoc.dcaXY(), pAssoc.dcaZ(), pAssoc.tpcNClsCrossedRows());
         }
       }
     }
@@ -799,7 +799,7 @@ struct HfCorrelatorDsHadrons {
           if (std::abs(yD) > yCandGenMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
             continue;
           }
-          if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() < ptTrackMax) {
+          if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
             continue;
           }
           if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {

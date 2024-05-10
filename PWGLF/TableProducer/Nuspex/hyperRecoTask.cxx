@@ -586,7 +586,7 @@ struct hyperRecoTask {
         isRecoCollision[collision.mcCollisionId()] = true;
       }
 
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10)
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > 10)
         continue;
       hEvents->Fill(1.);
       hZvtx->Fill(collision.posZ());
