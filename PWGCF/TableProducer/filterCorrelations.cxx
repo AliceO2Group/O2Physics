@@ -118,14 +118,14 @@ struct FilterCF {
         trackType |= BIT(0);
         if (cfgSystematicChecks) {
           if (track.itsNCls() >= 5) {
-            trackType |= BIT(3);
+            trackType |= BIT(2);
           }
           if (track.tpcNClsCrossedRows() >= 90) {
-            trackType |= BIT(4);
+            trackType |= BIT(3);
           }
         }
       } else if (track.isGlobalTrackSDD()) {
-        trackType |= BIT(2);
+        trackType |= BIT(1);
       }
 
       outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), trackType);
@@ -143,7 +143,7 @@ struct FilterCF {
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
-                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
+                 soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                  aod::BCsWithTimestamps const&)
   {
     bool* reconstructed = new bool[allParticles.size()];
@@ -232,14 +232,14 @@ struct FilterCF {
           trackType |= BIT(0);
           if (cfgSystematicChecks) {
             if (track.itsNCls() >= 5) {
-              trackType |= BIT(3);
+              trackType |= BIT(2);
             }
             if (track.tpcNClsCrossedRows() >= 90) {
-              trackType |= BIT(4);
+              trackType |= BIT(3);
             }
           }
         } else if (track.isGlobalTrackSDD()) {
-          trackType |= BIT(2);
+          trackType |= BIT(1);
         }
 
         int mcParticleId = track.mcParticleId();
