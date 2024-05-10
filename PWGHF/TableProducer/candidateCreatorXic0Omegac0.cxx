@@ -327,7 +327,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       std::array<float, 6> covVtxCharmBaryon = df.calcPCACovMatrixFlat();
 
       // pseudorapidity
-      double pseudorapCharmBachelor = trackCharmBachelor.eta();
+      float pseudorapCharmBachelor = trackCharmBachelor.eta();
 
       // DCAxy (computed with propagateToDCABxByBz method)
       float dcaxyV0Dau0 = trackV0Dau0.dcaXY();
