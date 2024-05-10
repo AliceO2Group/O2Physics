@@ -1073,7 +1073,7 @@ DECLARE_SOA_TABLE(HfCandXiccMcGen, "AOD", "HFCANDXICCMCGEN", //!
                   hf_cand_xicc::OriginMcGen);
 
 // specific Omegac and Xic to Xi Pi candidate properties
-namespace hf_cand_xic0omegac0
+namespace hf_cand_xic0_omegac0
 {
 // Data processing results:
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
@@ -1180,134 +1180,134 @@ enum DecayType { XiczeroToXiPi = 0,
                  OmegaczeroToOmegaPi,
                  OmegaczeroToOmegaK };
 
-} // end of namespace hf_cand_xic0omegac0
+} // end of namespace hf_cand_xic0_omegac0
 
 // declare dedicated Omegac and Xic to Xi Pi candidate table
 DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   o2::soa::Index<>,
-                  hf_cand_xic0omegac0::CollisionId, hf_cand_xic0omegac0::XPv, hf_cand_xic0omegac0::YPv, hf_cand_xic0omegac0::ZPv,
-                  hf_cand_xic0omegac0::XDecayVtxCharmBaryon, hf_cand_xic0omegac0::YDecayVtxCharmBaryon, hf_cand_xic0omegac0::ZDecayVtxCharmBaryon,
-                  hf_cand_xic0omegac0::XDecayVtxCascade, hf_cand_xic0omegac0::YDecayVtxCascade, hf_cand_xic0omegac0::ZDecayVtxCascade,
-                  hf_cand_xic0omegac0::XDecayVtxV0, hf_cand_xic0omegac0::YDecayVtxV0, hf_cand_xic0omegac0::ZDecayVtxV0,
-                  hf_cand_xic0omegac0::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
-                  hf_cand_xic0omegac0::CovVtxCharmBaryon0, hf_cand_xic0omegac0::CovVtxCharmBaryon1, hf_cand_xic0omegac0::CovVtxCharmBaryon2, hf_cand_xic0omegac0::CovVtxCharmBaryon3, hf_cand_xic0omegac0::CovVtxCharmBaryon4, hf_cand_xic0omegac0::CovVtxCharmBaryon5,
-                  hf_cand_xic0omegac0::PxCharmBaryon, hf_cand_xic0omegac0::PyCharmBaryon, hf_cand_xic0omegac0::PzCharmBaryon,
-                  hf_cand_xic0omegac0::PxCasc, hf_cand_xic0omegac0::PyCasc, hf_cand_xic0omegac0::PzCasc,
-                  hf_cand_xic0omegac0::PxBachFromCharmBaryon, hf_cand_xic0omegac0::PyBachFromCharmBaryon, hf_cand_xic0omegac0::PzBachFromCharmBaryon,
-                  hf_cand_xic0omegac0::PxLambda, hf_cand_xic0omegac0::PyLambda, hf_cand_xic0omegac0::PzLambda,
-                  hf_cand_xic0omegac0::PxBachFromCasc, hf_cand_xic0omegac0::PyBachFromCasc, hf_cand_xic0omegac0::PzBachFromCasc,
-                  hf_cand_xic0omegac0::PxPosV0Dau, hf_cand_xic0omegac0::PyPosV0Dau, hf_cand_xic0omegac0::PzPosV0Dau,
-                  hf_cand_xic0omegac0::PxNegV0Dau, hf_cand_xic0omegac0::PyNegV0Dau, hf_cand_xic0omegac0::PzNegV0Dau,
-                  hf_cand_xic0omegac0::ImpactParCascXY, hf_cand_xic0omegac0::ImpactParBachFromCharmBaryonXY, hf_cand_xic0omegac0::ImpactParCascZ, hf_cand_xic0omegac0::ImpactParBachFromCharmBaryonZ,
-                  hf_cand_xic0omegac0::ErrImpactParCascXY, hf_cand_xic0omegac0::ErrImpactParBachFromCharmBaryonXY,
-                  hf_cand_xic0omegac0::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0omegac0::CascadeId, hf_cand_xic0omegac0::BachelorFromCharmBaryonId, cascdata::BachelorId,
-                  hf_cand_xic0omegac0::InvMassLambda, hf_cand_xic0omegac0::InvMassCascade, hf_cand_xic0omegac0::InvMassCharmBaryon,
-                  hf_cand_xic0omegac0::CosPAV0, hf_cand_xic0omegac0::CosPACharmBaryon, hf_cand_xic0omegac0::CosPACasc, hf_cand_xic0omegac0::CosPAXYV0, hf_cand_xic0omegac0::CosPAXYCharmBaryon, hf_cand_xic0omegac0::CosPAXYCasc,
-                  hf_cand_xic0omegac0::CTauOmegac, hf_cand_xic0omegac0::CTauCascade, hf_cand_xic0omegac0::CTauV0, hf_cand_xic0omegac0::CTauXic,
-                  hf_cand_xic0omegac0::EtaV0PosDau, hf_cand_xic0omegac0::EtaV0NegDau, hf_cand_xic0omegac0::EtaBachFromCasc, hf_cand_xic0omegac0::EtaBachFromCharmBaryon,
-                  hf_cand_xic0omegac0::EtaCharmBaryon, hf_cand_xic0omegac0::EtaCascade, hf_cand_xic0omegac0::EtaV0,
-                  hf_cand_xic0omegac0::DcaXYToPvV0Dau0, hf_cand_xic0omegac0::DcaXYToPvV0Dau1, hf_cand_xic0omegac0::DcaXYToPvCascDau,
-                  hf_cand_xic0omegac0::DcaZToPvV0Dau0, hf_cand_xic0omegac0::DcaZToPvV0Dau1, hf_cand_xic0omegac0::DcaZToPvCascDau,
-                  hf_cand_xic0omegac0::DcaCascDau, hf_cand_xic0omegac0::DcaV0Dau, hf_cand_xic0omegac0::DcaCharmBaryonDau,
-                  hf_cand_xic0omegac0::DecLenCharmBaryon, hf_cand_xic0omegac0::DecLenCascade, hf_cand_xic0omegac0::DecLenV0, hf_cand_xic0omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0omegac0::ErrorDecayLengthXYCharmBaryon);
+                  hf_cand_xic0_omegac0::CollisionId, hf_cand_xic0_omegac0::XPv, hf_cand_xic0_omegac0::YPv, hf_cand_xic0_omegac0::ZPv,
+                  hf_cand_xic0_omegac0::XDecayVtxCharmBaryon, hf_cand_xic0_omegac0::YDecayVtxCharmBaryon, hf_cand_xic0_omegac0::ZDecayVtxCharmBaryon,
+                  hf_cand_xic0_omegac0::XDecayVtxCascade, hf_cand_xic0_omegac0::YDecayVtxCascade, hf_cand_xic0_omegac0::ZDecayVtxCascade,
+                  hf_cand_xic0_omegac0::XDecayVtxV0, hf_cand_xic0_omegac0::YDecayVtxV0, hf_cand_xic0_omegac0::ZDecayVtxV0,
+                  hf_cand_xic0_omegac0::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
+                  hf_cand_xic0_omegac0::CovVtxCharmBaryon0, hf_cand_xic0_omegac0::CovVtxCharmBaryon1, hf_cand_xic0_omegac0::CovVtxCharmBaryon2, hf_cand_xic0_omegac0::CovVtxCharmBaryon3, hf_cand_xic0_omegac0::CovVtxCharmBaryon4, hf_cand_xic0_omegac0::CovVtxCharmBaryon5,
+                  hf_cand_xic0_omegac0::PxCharmBaryon, hf_cand_xic0_omegac0::PyCharmBaryon, hf_cand_xic0_omegac0::PzCharmBaryon,
+                  hf_cand_xic0_omegac0::PxCasc, hf_cand_xic0_omegac0::PyCasc, hf_cand_xic0_omegac0::PzCasc,
+                  hf_cand_xic0_omegac0::PxBachFromCharmBaryon, hf_cand_xic0_omegac0::PyBachFromCharmBaryon, hf_cand_xic0_omegac0::PzBachFromCharmBaryon,
+                  hf_cand_xic0_omegac0::PxLambda, hf_cand_xic0_omegac0::PyLambda, hf_cand_xic0_omegac0::PzLambda,
+                  hf_cand_xic0_omegac0::PxBachFromCasc, hf_cand_xic0_omegac0::PyBachFromCasc, hf_cand_xic0_omegac0::PzBachFromCasc,
+                  hf_cand_xic0_omegac0::PxPosV0Dau, hf_cand_xic0_omegac0::PyPosV0Dau, hf_cand_xic0_omegac0::PzPosV0Dau,
+                  hf_cand_xic0_omegac0::PxNegV0Dau, hf_cand_xic0_omegac0::PyNegV0Dau, hf_cand_xic0_omegac0::PzNegV0Dau,
+                  hf_cand_xic0_omegac0::ImpactParCascXY, hf_cand_xic0_omegac0::ImpactParBachFromCharmBaryonXY, hf_cand_xic0_omegac0::ImpactParCascZ, hf_cand_xic0_omegac0::ImpactParBachFromCharmBaryonZ,
+                  hf_cand_xic0_omegac0::ErrImpactParCascXY, hf_cand_xic0_omegac0::ErrImpactParBachFromCharmBaryonXY,
+                  hf_cand_xic0_omegac0::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0_omegac0::CascadeId, hf_cand_xic0_omegac0::BachelorFromCharmBaryonId, cascdata::BachelorId,
+                  hf_cand_xic0_omegac0::InvMassLambda, hf_cand_xic0_omegac0::InvMassCascade, hf_cand_xic0_omegac0::InvMassCharmBaryon,
+                  hf_cand_xic0_omegac0::CosPAV0, hf_cand_xic0_omegac0::CosPACharmBaryon, hf_cand_xic0_omegac0::CosPACasc, hf_cand_xic0_omegac0::CosPAXYV0, hf_cand_xic0_omegac0::CosPAXYCharmBaryon, hf_cand_xic0_omegac0::CosPAXYCasc,
+                  hf_cand_xic0_omegac0::CTauOmegac, hf_cand_xic0_omegac0::CTauCascade, hf_cand_xic0_omegac0::CTauV0, hf_cand_xic0_omegac0::CTauXic,
+                  hf_cand_xic0_omegac0::EtaV0PosDau, hf_cand_xic0_omegac0::EtaV0NegDau, hf_cand_xic0_omegac0::EtaBachFromCasc, hf_cand_xic0_omegac0::EtaBachFromCharmBaryon,
+                  hf_cand_xic0_omegac0::EtaCharmBaryon, hf_cand_xic0_omegac0::EtaCascade, hf_cand_xic0_omegac0::EtaV0,
+                  hf_cand_xic0_omegac0::DcaXYToPvV0Dau0, hf_cand_xic0_omegac0::DcaXYToPvV0Dau1, hf_cand_xic0_omegac0::DcaXYToPvCascDau,
+                  hf_cand_xic0_omegac0::DcaZToPvV0Dau0, hf_cand_xic0_omegac0::DcaZToPvV0Dau1, hf_cand_xic0_omegac0::DcaZToPvCascDau,
+                  hf_cand_xic0_omegac0::DcaCascDau, hf_cand_xic0_omegac0::DcaV0Dau, hf_cand_xic0_omegac0::DcaCharmBaryonDau,
+                  hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::DecLenCascade, hf_cand_xic0_omegac0::DecLenV0, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthXYCharmBaryon);
 
 DECLARE_SOA_TABLE(HfCandToOmegaPi, "AOD", "HFCANDTOOMEGAPI",
                   o2::soa::Index<>,
-                  hf_cand_xic0omegac0::CollisionId, hf_cand_xic0omegac0::XPv, hf_cand_xic0omegac0::YPv, hf_cand_xic0omegac0::ZPv,
-                  hf_cand_xic0omegac0::XDecayVtxCharmBaryon, hf_cand_xic0omegac0::YDecayVtxCharmBaryon, hf_cand_xic0omegac0::ZDecayVtxCharmBaryon,
-                  hf_cand_xic0omegac0::XDecayVtxCascade, hf_cand_xic0omegac0::YDecayVtxCascade, hf_cand_xic0omegac0::ZDecayVtxCascade,
-                  hf_cand_xic0omegac0::XDecayVtxV0, hf_cand_xic0omegac0::YDecayVtxV0, hf_cand_xic0omegac0::ZDecayVtxV0,
-                  hf_cand_xic0omegac0::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
-                  hf_cand_xic0omegac0::CovVtxCharmBaryon0, hf_cand_xic0omegac0::CovVtxCharmBaryon1, hf_cand_xic0omegac0::CovVtxCharmBaryon2, hf_cand_xic0omegac0::CovVtxCharmBaryon3, hf_cand_xic0omegac0::CovVtxCharmBaryon4, hf_cand_xic0omegac0::CovVtxCharmBaryon5,
-                  hf_cand_xic0omegac0::PxCharmBaryon, hf_cand_xic0omegac0::PyCharmBaryon, hf_cand_xic0omegac0::PzCharmBaryon,
-                  hf_cand_xic0omegac0::PxCasc, hf_cand_xic0omegac0::PyCasc, hf_cand_xic0omegac0::PzCasc,
-                  hf_cand_xic0omegac0::PxBachFromCharmBaryon, hf_cand_xic0omegac0::PyBachFromCharmBaryon, hf_cand_xic0omegac0::PzBachFromCharmBaryon,
-                  hf_cand_xic0omegac0::PxLambda, hf_cand_xic0omegac0::PyLambda, hf_cand_xic0omegac0::PzLambda,
-                  hf_cand_xic0omegac0::PxBachFromCasc, hf_cand_xic0omegac0::PyBachFromCasc, hf_cand_xic0omegac0::PzBachFromCasc,
-                  hf_cand_xic0omegac0::PxPosV0Dau, hf_cand_xic0omegac0::PyPosV0Dau, hf_cand_xic0omegac0::PzPosV0Dau,
-                  hf_cand_xic0omegac0::PxNegV0Dau, hf_cand_xic0omegac0::PyNegV0Dau, hf_cand_xic0omegac0::PzNegV0Dau,
-                  hf_cand_xic0omegac0::ImpactParCascXY, hf_cand_xic0omegac0::ImpactParBachFromCharmBaryonXY, hf_cand_xic0omegac0::ImpactParCascZ, hf_cand_xic0omegac0::ImpactParBachFromCharmBaryonZ,
-                  hf_cand_xic0omegac0::ErrImpactParCascXY, hf_cand_xic0omegac0::ErrImpactParBachFromCharmBaryonXY,
-                  hf_cand_xic0omegac0::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0omegac0::CascadeId, hf_cand_xic0omegac0::BachelorFromCharmBaryonId, cascdata::BachelorId,
-                  hf_cand_xic0omegac0::InvMassLambda, hf_cand_xic0omegac0::InvMassCascade, hf_cand_xic0omegac0::InvMassCharmBaryon,
-                  hf_cand_xic0omegac0::CosPAV0, hf_cand_xic0omegac0::CosPACharmBaryon, hf_cand_xic0omegac0::CosPACasc, hf_cand_xic0omegac0::CosPAXYV0, hf_cand_xic0omegac0::CosPAXYCharmBaryon, hf_cand_xic0omegac0::CosPAXYCasc,
-                  hf_cand_xic0omegac0::CTauOmegac, hf_cand_xic0omegac0::CTauCascade, hf_cand_xic0omegac0::CTauV0,
-                  hf_cand_xic0omegac0::EtaV0PosDau, hf_cand_xic0omegac0::EtaV0NegDau, hf_cand_xic0omegac0::EtaBachFromCasc, hf_cand_xic0omegac0::EtaBachFromCharmBaryon,
-                  hf_cand_xic0omegac0::EtaCharmBaryon, hf_cand_xic0omegac0::EtaCascade, hf_cand_xic0omegac0::EtaV0,
-                  hf_cand_xic0omegac0::DcaXYToPvV0Dau0, hf_cand_xic0omegac0::DcaXYToPvV0Dau1, hf_cand_xic0omegac0::DcaXYToPvCascDau,
-                  hf_cand_xic0omegac0::DcaZToPvV0Dau0, hf_cand_xic0omegac0::DcaZToPvV0Dau1, hf_cand_xic0omegac0::DcaZToPvCascDau,
-                  hf_cand_xic0omegac0::DcaCascDau, hf_cand_xic0omegac0::DcaV0Dau, hf_cand_xic0omegac0::DcaCharmBaryonDau,
-                  hf_cand_xic0omegac0::DecLenCharmBaryon, hf_cand_xic0omegac0::DecLenCascade, hf_cand_xic0omegac0::DecLenV0, hf_cand_xic0omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0omegac0::ErrorDecayLengthXYCharmBaryon,
+                  hf_cand_xic0_omegac0::CollisionId, hf_cand_xic0_omegac0::XPv, hf_cand_xic0_omegac0::YPv, hf_cand_xic0_omegac0::ZPv,
+                  hf_cand_xic0_omegac0::XDecayVtxCharmBaryon, hf_cand_xic0_omegac0::YDecayVtxCharmBaryon, hf_cand_xic0_omegac0::ZDecayVtxCharmBaryon,
+                  hf_cand_xic0_omegac0::XDecayVtxCascade, hf_cand_xic0_omegac0::YDecayVtxCascade, hf_cand_xic0_omegac0::ZDecayVtxCascade,
+                  hf_cand_xic0_omegac0::XDecayVtxV0, hf_cand_xic0_omegac0::YDecayVtxV0, hf_cand_xic0_omegac0::ZDecayVtxV0,
+                  hf_cand_xic0_omegac0::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
+                  hf_cand_xic0_omegac0::CovVtxCharmBaryon0, hf_cand_xic0_omegac0::CovVtxCharmBaryon1, hf_cand_xic0_omegac0::CovVtxCharmBaryon2, hf_cand_xic0_omegac0::CovVtxCharmBaryon3, hf_cand_xic0_omegac0::CovVtxCharmBaryon4, hf_cand_xic0_omegac0::CovVtxCharmBaryon5,
+                  hf_cand_xic0_omegac0::PxCharmBaryon, hf_cand_xic0_omegac0::PyCharmBaryon, hf_cand_xic0_omegac0::PzCharmBaryon,
+                  hf_cand_xic0_omegac0::PxCasc, hf_cand_xic0_omegac0::PyCasc, hf_cand_xic0_omegac0::PzCasc,
+                  hf_cand_xic0_omegac0::PxBachFromCharmBaryon, hf_cand_xic0_omegac0::PyBachFromCharmBaryon, hf_cand_xic0_omegac0::PzBachFromCharmBaryon,
+                  hf_cand_xic0_omegac0::PxLambda, hf_cand_xic0_omegac0::PyLambda, hf_cand_xic0_omegac0::PzLambda,
+                  hf_cand_xic0_omegac0::PxBachFromCasc, hf_cand_xic0_omegac0::PyBachFromCasc, hf_cand_xic0_omegac0::PzBachFromCasc,
+                  hf_cand_xic0_omegac0::PxPosV0Dau, hf_cand_xic0_omegac0::PyPosV0Dau, hf_cand_xic0_omegac0::PzPosV0Dau,
+                  hf_cand_xic0_omegac0::PxNegV0Dau, hf_cand_xic0_omegac0::PyNegV0Dau, hf_cand_xic0_omegac0::PzNegV0Dau,
+                  hf_cand_xic0_omegac0::ImpactParCascXY, hf_cand_xic0_omegac0::ImpactParBachFromCharmBaryonXY, hf_cand_xic0_omegac0::ImpactParCascZ, hf_cand_xic0_omegac0::ImpactParBachFromCharmBaryonZ,
+                  hf_cand_xic0_omegac0::ErrImpactParCascXY, hf_cand_xic0_omegac0::ErrImpactParBachFromCharmBaryonXY,
+                  hf_cand_xic0_omegac0::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0_omegac0::CascadeId, hf_cand_xic0_omegac0::BachelorFromCharmBaryonId, cascdata::BachelorId,
+                  hf_cand_xic0_omegac0::InvMassLambda, hf_cand_xic0_omegac0::InvMassCascade, hf_cand_xic0_omegac0::InvMassCharmBaryon,
+                  hf_cand_xic0_omegac0::CosPAV0, hf_cand_xic0_omegac0::CosPACharmBaryon, hf_cand_xic0_omegac0::CosPACasc, hf_cand_xic0_omegac0::CosPAXYV0, hf_cand_xic0_omegac0::CosPAXYCharmBaryon, hf_cand_xic0_omegac0::CosPAXYCasc,
+                  hf_cand_xic0_omegac0::CTauOmegac, hf_cand_xic0_omegac0::CTauCascade, hf_cand_xic0_omegac0::CTauV0,
+                  hf_cand_xic0_omegac0::EtaV0PosDau, hf_cand_xic0_omegac0::EtaV0NegDau, hf_cand_xic0_omegac0::EtaBachFromCasc, hf_cand_xic0_omegac0::EtaBachFromCharmBaryon,
+                  hf_cand_xic0_omegac0::EtaCharmBaryon, hf_cand_xic0_omegac0::EtaCascade, hf_cand_xic0_omegac0::EtaV0,
+                  hf_cand_xic0_omegac0::DcaXYToPvV0Dau0, hf_cand_xic0_omegac0::DcaXYToPvV0Dau1, hf_cand_xic0_omegac0::DcaXYToPvCascDau,
+                  hf_cand_xic0_omegac0::DcaZToPvV0Dau0, hf_cand_xic0_omegac0::DcaZToPvV0Dau1, hf_cand_xic0_omegac0::DcaZToPvCascDau,
+                  hf_cand_xic0_omegac0::DcaCascDau, hf_cand_xic0_omegac0::DcaV0Dau, hf_cand_xic0_omegac0::DcaCharmBaryonDau,
+                  hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::DecLenCascade, hf_cand_xic0_omegac0::DecLenV0, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthXYCharmBaryon,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfCandToOmegaK, "AOD", "HFCANDTOOMEGAK",
                   o2::soa::Index<>,
-                  hf_cand_xic0omegac0::CollisionId, hf_cand_xic0omegac0::XPv, hf_cand_xic0omegac0::YPv, hf_cand_xic0omegac0::ZPv,
-                  hf_cand_xic0omegac0::XDecayVtxCharmBaryon, hf_cand_xic0omegac0::YDecayVtxCharmBaryon, hf_cand_xic0omegac0::ZDecayVtxCharmBaryon,
-                  hf_cand_xic0omegac0::XDecayVtxCascade, hf_cand_xic0omegac0::YDecayVtxCascade, hf_cand_xic0omegac0::ZDecayVtxCascade,
-                  hf_cand_xic0omegac0::XDecayVtxV0, hf_cand_xic0omegac0::YDecayVtxV0, hf_cand_xic0omegac0::ZDecayVtxV0,
-                  hf_cand_xic0omegac0::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
-                  hf_cand_xic0omegac0::CovVtxCharmBaryon0, hf_cand_xic0omegac0::CovVtxCharmBaryon1, hf_cand_xic0omegac0::CovVtxCharmBaryon2, hf_cand_xic0omegac0::CovVtxCharmBaryon3, hf_cand_xic0omegac0::CovVtxCharmBaryon4, hf_cand_xic0omegac0::CovVtxCharmBaryon5,
-                  hf_cand_xic0omegac0::PxCharmBaryon, hf_cand_xic0omegac0::PyCharmBaryon, hf_cand_xic0omegac0::PzCharmBaryon,
-                  hf_cand_xic0omegac0::PxCasc, hf_cand_xic0omegac0::PyCasc, hf_cand_xic0omegac0::PzCasc,
-                  hf_cand_xic0omegac0::PxBachFromCharmBaryon, hf_cand_xic0omegac0::PyBachFromCharmBaryon, hf_cand_xic0omegac0::PzBachFromCharmBaryon,
-                  hf_cand_xic0omegac0::PxLambda, hf_cand_xic0omegac0::PyLambda, hf_cand_xic0omegac0::PzLambda,
-                  hf_cand_xic0omegac0::PxBachFromCasc, hf_cand_xic0omegac0::PyBachFromCasc, hf_cand_xic0omegac0::PzBachFromCasc,
-                  hf_cand_xic0omegac0::PxPosV0Dau, hf_cand_xic0omegac0::PyPosV0Dau, hf_cand_xic0omegac0::PzPosV0Dau,
-                  hf_cand_xic0omegac0::PxNegV0Dau, hf_cand_xic0omegac0::PyNegV0Dau, hf_cand_xic0omegac0::PzNegV0Dau,
-                  hf_cand_xic0omegac0::ImpactParCascXY, hf_cand_xic0omegac0::ImpactParBachFromCharmBaryonXY, hf_cand_xic0omegac0::ImpactParCascZ, hf_cand_xic0omegac0::ImpactParBachFromCharmBaryonZ,
-                  hf_cand_xic0omegac0::ErrImpactParCascXY, hf_cand_xic0omegac0::ErrImpactParBachFromCharmBaryonXY,
-                  hf_cand_xic0omegac0::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0omegac0::CascadeId, hf_cand_xic0omegac0::BachelorFromCharmBaryonId, cascdata::BachelorId,
-                  hf_cand_xic0omegac0::InvMassLambda, hf_cand_xic0omegac0::InvMassCascade, hf_cand_xic0omegac0::InvMassCharmBaryon,
-                  hf_cand_xic0omegac0::CosPAV0, hf_cand_xic0omegac0::CosPACharmBaryon, hf_cand_xic0omegac0::CosPACasc, hf_cand_xic0omegac0::CosPAXYV0, hf_cand_xic0omegac0::CosPAXYCharmBaryon, hf_cand_xic0omegac0::CosPAXYCasc,
-                  hf_cand_xic0omegac0::CTauOmegac, hf_cand_xic0omegac0::CTauCascade, hf_cand_xic0omegac0::CTauV0,
-                  hf_cand_xic0omegac0::EtaV0PosDau, hf_cand_xic0omegac0::EtaV0NegDau, hf_cand_xic0omegac0::EtaBachFromCasc, hf_cand_xic0omegac0::EtaBachFromCharmBaryon,
-                  hf_cand_xic0omegac0::EtaCharmBaryon, hf_cand_xic0omegac0::EtaCascade, hf_cand_xic0omegac0::EtaV0,
-                  hf_cand_xic0omegac0::DcaXYToPvV0Dau0, hf_cand_xic0omegac0::DcaXYToPvV0Dau1, hf_cand_xic0omegac0::DcaXYToPvCascDau,
-                  hf_cand_xic0omegac0::DcaZToPvV0Dau0, hf_cand_xic0omegac0::DcaZToPvV0Dau1, hf_cand_xic0omegac0::DcaZToPvCascDau,
-                  hf_cand_xic0omegac0::DcaCascDau, hf_cand_xic0omegac0::DcaV0Dau, hf_cand_xic0omegac0::DcaCharmBaryonDau,
-                  hf_cand_xic0omegac0::DecLenCharmBaryon, hf_cand_xic0omegac0::DecLenCascade, hf_cand_xic0omegac0::DecLenV0, hf_cand_xic0omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0omegac0::ErrorDecayLengthXYCharmBaryon,
+                  hf_cand_xic0_omegac0::CollisionId, hf_cand_xic0_omegac0::XPv, hf_cand_xic0_omegac0::YPv, hf_cand_xic0_omegac0::ZPv,
+                  hf_cand_xic0_omegac0::XDecayVtxCharmBaryon, hf_cand_xic0_omegac0::YDecayVtxCharmBaryon, hf_cand_xic0_omegac0::ZDecayVtxCharmBaryon,
+                  hf_cand_xic0_omegac0::XDecayVtxCascade, hf_cand_xic0_omegac0::YDecayVtxCascade, hf_cand_xic0_omegac0::ZDecayVtxCascade,
+                  hf_cand_xic0_omegac0::XDecayVtxV0, hf_cand_xic0_omegac0::YDecayVtxV0, hf_cand_xic0_omegac0::ZDecayVtxV0,
+                  hf_cand_xic0_omegac0::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
+                  hf_cand_xic0_omegac0::CovVtxCharmBaryon0, hf_cand_xic0_omegac0::CovVtxCharmBaryon1, hf_cand_xic0_omegac0::CovVtxCharmBaryon2, hf_cand_xic0_omegac0::CovVtxCharmBaryon3, hf_cand_xic0_omegac0::CovVtxCharmBaryon4, hf_cand_xic0_omegac0::CovVtxCharmBaryon5,
+                  hf_cand_xic0_omegac0::PxCharmBaryon, hf_cand_xic0_omegac0::PyCharmBaryon, hf_cand_xic0_omegac0::PzCharmBaryon,
+                  hf_cand_xic0_omegac0::PxCasc, hf_cand_xic0_omegac0::PyCasc, hf_cand_xic0_omegac0::PzCasc,
+                  hf_cand_xic0_omegac0::PxBachFromCharmBaryon, hf_cand_xic0_omegac0::PyBachFromCharmBaryon, hf_cand_xic0_omegac0::PzBachFromCharmBaryon,
+                  hf_cand_xic0_omegac0::PxLambda, hf_cand_xic0_omegac0::PyLambda, hf_cand_xic0_omegac0::PzLambda,
+                  hf_cand_xic0_omegac0::PxBachFromCasc, hf_cand_xic0_omegac0::PyBachFromCasc, hf_cand_xic0_omegac0::PzBachFromCasc,
+                  hf_cand_xic0_omegac0::PxPosV0Dau, hf_cand_xic0_omegac0::PyPosV0Dau, hf_cand_xic0_omegac0::PzPosV0Dau,
+                  hf_cand_xic0_omegac0::PxNegV0Dau, hf_cand_xic0_omegac0::PyNegV0Dau, hf_cand_xic0_omegac0::PzNegV0Dau,
+                  hf_cand_xic0_omegac0::ImpactParCascXY, hf_cand_xic0_omegac0::ImpactParBachFromCharmBaryonXY, hf_cand_xic0_omegac0::ImpactParCascZ, hf_cand_xic0_omegac0::ImpactParBachFromCharmBaryonZ,
+                  hf_cand_xic0_omegac0::ErrImpactParCascXY, hf_cand_xic0_omegac0::ErrImpactParBachFromCharmBaryonXY,
+                  hf_cand_xic0_omegac0::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0_omegac0::CascadeId, hf_cand_xic0_omegac0::BachelorFromCharmBaryonId, cascdata::BachelorId,
+                  hf_cand_xic0_omegac0::InvMassLambda, hf_cand_xic0_omegac0::InvMassCascade, hf_cand_xic0_omegac0::InvMassCharmBaryon,
+                  hf_cand_xic0_omegac0::CosPAV0, hf_cand_xic0_omegac0::CosPACharmBaryon, hf_cand_xic0_omegac0::CosPACasc, hf_cand_xic0_omegac0::CosPAXYV0, hf_cand_xic0_omegac0::CosPAXYCharmBaryon, hf_cand_xic0_omegac0::CosPAXYCasc,
+                  hf_cand_xic0_omegac0::CTauOmegac, hf_cand_xic0_omegac0::CTauCascade, hf_cand_xic0_omegac0::CTauV0,
+                  hf_cand_xic0_omegac0::EtaV0PosDau, hf_cand_xic0_omegac0::EtaV0NegDau, hf_cand_xic0_omegac0::EtaBachFromCasc, hf_cand_xic0_omegac0::EtaBachFromCharmBaryon,
+                  hf_cand_xic0_omegac0::EtaCharmBaryon, hf_cand_xic0_omegac0::EtaCascade, hf_cand_xic0_omegac0::EtaV0,
+                  hf_cand_xic0_omegac0::DcaXYToPvV0Dau0, hf_cand_xic0_omegac0::DcaXYToPvV0Dau1, hf_cand_xic0_omegac0::DcaXYToPvCascDau,
+                  hf_cand_xic0_omegac0::DcaZToPvV0Dau0, hf_cand_xic0_omegac0::DcaZToPvV0Dau1, hf_cand_xic0_omegac0::DcaZToPvCascDau,
+                  hf_cand_xic0_omegac0::DcaCascDau, hf_cand_xic0_omegac0::DcaV0Dau, hf_cand_xic0_omegac0::DcaCharmBaryonDau,
+                  hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::DecLenCascade, hf_cand_xic0_omegac0::DecLenV0, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthXYCharmBaryon,
                   o2::soa::Marker<2>);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfXicToXiPiMCRec, "AOD", "HFXICXIPIMCREC", //!
-                  hf_cand_xic0omegac0::FlagMcMatchRec,
-                  hf_cand_xic0omegac0::DebugMcRec,
-                  hf_cand_xic0omegac0::OriginRec,
-                  hf_cand_xic0omegac0::CollisionMatched,
+                  hf_cand_xic0_omegac0::FlagMcMatchRec,
+                  hf_cand_xic0_omegac0::DebugMcRec,
+                  hf_cand_xic0_omegac0::OriginRec,
+                  hf_cand_xic0_omegac0::CollisionMatched,
                   o2::soa::Marker<1>);
 DECLARE_SOA_TABLE(HfOmegacToXiPiMCRec, "AOD", "HFOMCXIPIMCREC", //!
-                  hf_cand_xic0omegac0::FlagMcMatchRec,
-                  hf_cand_xic0omegac0::DebugMcRec,
-                  hf_cand_xic0omegac0::OriginRec,
-                  hf_cand_xic0omegac0::CollisionMatched,
+                  hf_cand_xic0_omegac0::FlagMcMatchRec,
+                  hf_cand_xic0_omegac0::DebugMcRec,
+                  hf_cand_xic0_omegac0::OriginRec,
+                  hf_cand_xic0_omegac0::CollisionMatched,
                   o2::soa::Marker<2>);
 DECLARE_SOA_TABLE(HfToOmegaPiMCRec, "AOD", "HFTOOMEPIMCREC", //!
-                  hf_cand_xic0omegac0::FlagMcMatchRec,
-                  hf_cand_xic0omegac0::DebugMcRec,
-                  hf_cand_xic0omegac0::OriginRec,
-                  hf_cand_xic0omegac0::CollisionMatched,
+                  hf_cand_xic0_omegac0::FlagMcMatchRec,
+                  hf_cand_xic0_omegac0::DebugMcRec,
+                  hf_cand_xic0_omegac0::OriginRec,
+                  hf_cand_xic0_omegac0::CollisionMatched,
                   o2::soa::Marker<3>);
 DECLARE_SOA_TABLE(HfToOmegaKMCRec, "AOD", "HFTOOMEKMCREC", //!
-                  hf_cand_xic0omegac0::FlagMcMatchRec,
-                  hf_cand_xic0omegac0::DebugMcRec,
-                  hf_cand_xic0omegac0::OriginRec,
-                  hf_cand_xic0omegac0::CollisionMatched,
+                  hf_cand_xic0_omegac0::FlagMcMatchRec,
+                  hf_cand_xic0_omegac0::DebugMcRec,
+                  hf_cand_xic0_omegac0::OriginRec,
+                  hf_cand_xic0_omegac0::CollisionMatched,
                   o2::soa::Marker<4>);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfXicToXiPiMCGen, "AOD", "HFXICXIPIMCGEN", //!
-                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda,
-                  hf_cand_xic0omegac0::PtCharmBaryonGen, hf_cand_xic0omegac0::EtaCharmBaryonGen, hf_cand_xic0omegac0::OriginGen, o2::soa::Marker<1>);
+                  hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, o2::soa::Marker<1>);
 DECLARE_SOA_TABLE(HfOmegacToXiPiMCGen, "AOD", "HFOMECXIPIMCGEN", //!
-                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda,
-                  hf_cand_xic0omegac0::PtCharmBaryonGen, hf_cand_xic0omegac0::EtaCharmBaryonGen, hf_cand_xic0omegac0::OriginGen, o2::soa::Marker<2>);
+                  hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, o2::soa::Marker<2>);
 DECLARE_SOA_TABLE(HfToOmegaPiMCGen, "AOD", "HFTOOMEPIMCGEN", //!
-                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda,
-                  hf_cand_xic0omegac0::PtCharmBaryonGen, hf_cand_xic0omegac0::EtaCharmBaryonGen, hf_cand_xic0omegac0::OriginGen, o2::soa::Marker<3>);
+                  hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, o2::soa::Marker<3>);
 DECLARE_SOA_TABLE(HfToOmegaKMCGen, "AOD", "HFTOOMEKMCGEN", //!
-                  hf_cand_xic0omegac0::FlagMcMatchGen, hf_cand_xic0omegac0::DebugGenCharmBar, hf_cand_xic0omegac0::DebugGenCasc, hf_cand_xic0omegac0::DebugGenLambda,
-                  hf_cand_xic0omegac0::PtCharmBaryonGen, hf_cand_xic0omegac0::EtaCharmBaryonGen, hf_cand_xic0omegac0::OriginGen, o2::soa::Marker<4>);
+                  hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, o2::soa::Marker<4>);
 
 // specific chic candidate properties
 namespace hf_cand_chic

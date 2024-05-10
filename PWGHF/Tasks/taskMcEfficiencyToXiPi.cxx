@@ -119,9 +119,9 @@ struct HfTaskMcEfficiencyToXiPi {
 
     int decayFlag = 0;
     if (pdgCode == Pdg::kXiC0) {
-      decayFlag = 1 << aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi;
+      decayFlag = 1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi;
     } else if (pdgCode == Pdg::kOmegaC0) {
-      decayFlag = 1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi;
+      decayFlag = 1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi;
     } else {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
     }
@@ -200,10 +200,10 @@ struct HfTaskMcEfficiencyToXiPi {
     int decayFlagGen = 0;
 
     if (pdgCode == Pdg::kXiC0) {
-      decayFlagGen = 1 << aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi;
+      decayFlagGen = 1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi;
       mass = MassXiC0;
     } else if (pdgCode == Pdg::kOmegaC0) {
-      decayFlagGen = 1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi;
+      decayFlagGen = 1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi;
       mass = MassOmegaC0;
     } else {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);

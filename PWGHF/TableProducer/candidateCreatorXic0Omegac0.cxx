@@ -740,7 +740,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       auto arrayDaughtersV0 = std::array{candidate.template posTrack_as<aod::TracksWMc>(),
                                          candidate.template negTrack_as<aod::TracksWMc>()};
       // Xic0 -> xi pi matching
-      if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi) {
+      if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
         // Xic → pi pi pi p
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeXic0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
@@ -760,7 +760,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
               debug = 3;
             }
             if (indexRec > -1) {
-              flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi);
+              flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi);
               collisionMatched = candidate.template collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
@@ -774,7 +774,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           LOGF(info, "WARNING: Xic0ToXiPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
         rowMCMatchRecXicToXiPi(flag, debug, origin, collisionMatched);
-      } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi) { // Omegac -> xi pi matching
+      } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) { // Omegac -> xi pi matching
         // Omegac → pi pi pi p
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
@@ -794,7 +794,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
               debug = 3;
             }
             if (indexRec > -1) {
-              flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi);
+              flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi);
               collisionMatched = candidate.template collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
@@ -808,7 +808,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           LOGF(info, "WARNING: Omegac0ToXiPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
         rowMCMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched);
-      } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi) { // Omegac0 -> omega pi matching
+      } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) { // Omegac0 -> omega pi matching
         // Omegac → pi K pi p
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodeKaonMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
@@ -828,7 +828,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
               debug = 3;
             }
             if (indexRec > -1) {
-              flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi);
+              flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi);
               collisionMatched = candidate.template collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
@@ -842,7 +842,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           LOGF(info, "WARNING: Omegac0ToOmegaPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
         rowMCMatchRecToOmegaPi(flag, debug, origin, collisionMatched);
-      } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK) { // Omegac0 -> omega K matching
+      } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) { // Omegac0 -> omega K matching
         // Omegac → K K pi p
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodeKaonPlus, pdgCodeKaonMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
         indexRecCharmBaryon = indexRec;
@@ -862,7 +862,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
               debug = 3;
             }
             if (indexRec > -1) {
-              flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK);
+              flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK);
               collisionMatched = candidate.template collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
             }
           }
@@ -893,19 +893,19 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       auto mcCollision = particle.mcCollision();
       float zPv = mcCollision.posZ();
       if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
-        if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi) {
+        if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
           rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
-        } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi) {
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
           rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
-        } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi) {
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
           rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
-        } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK) {
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
           rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
         }
         continue;
       }
 
-      if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi) {
+      if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
         //  Xic → Xi pi
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
@@ -925,7 +925,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                 // Lambda -> p pi
                 if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
                   debugGenLambda = 1;
-                  flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi);
+                  flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi);
                 }
               }
             }
@@ -937,7 +937,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
 
-      } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi) {
+      } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
         //  Omegac → Xi pi
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
@@ -957,7 +957,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                 // Lambda -> p pi
                 if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
                   debugGenLambda = 1;
-                  flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi);
+                  flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi);
                 }
               }
             }
@@ -969,7 +969,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
 
-      } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi) {
+      } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
         //  Omegac → Omega pi
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeOmegaMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
@@ -989,7 +989,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                 // Lambda -> p pi
                 if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
                   debugGenLambda = 1;
-                  flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi);
+                  flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi);
                 }
               }
             }
@@ -1001,7 +1001,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
 
-      } else if constexpr (decayChannel == aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK) {
+      } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
         //  Omegac → Omega K
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeOmegaMinus, pdgCodeKaonPlus}, true, &sign)) {
           debugGenCharmBar = 1;
@@ -1021,7 +1021,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                 // Lambda -> p pi
                 if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
                   debugGenLambda = 1;
-                  flag = sign * (1 << aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK);
+                  flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK);
                 }
               }
             }
@@ -1047,7 +1047,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                           aod::McParticles const& mcParticles,
                           aod::McCollisionLabels const& mcLabels)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, mcLabels);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPi, "Run Xic0 to xi pi MC process function", false);
 
@@ -1056,7 +1056,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                              aod::McParticles const& mcParticles,
                              aod::McCollisionLabels const& mcLabels)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, mcLabels);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToXiPi, "Run Omegac0 to xi pi MC process function", false);
 
@@ -1065,7 +1065,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                                 aod::McParticles const& mcParticles,
                                 aod::McCollisionLabels const& mcLabels)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, mcLabels);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaPi, "Run Omegac0 to omega pi MC process function", false);
 
@@ -1074,7 +1074,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                                aod::McParticles const& mcParticles,
                                aod::McCollisionLabels const& mcLabels)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, mcLabels);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaK, "Run Omegac0 to omega K MC process function", false);
 
