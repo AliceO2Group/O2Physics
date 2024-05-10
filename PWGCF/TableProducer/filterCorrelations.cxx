@@ -125,7 +125,7 @@ struct FilterCF {
       }
       return trackType;
     }
-    LOGF(fatal, "Invalid setting for cfgTrackSelection: %d", cfgTrackSelection);
+    LOGF(fatal, "Invalid setting for cfgTrackSelection: %d", cfgTrackSelection.value);
   }
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
