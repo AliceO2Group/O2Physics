@@ -24,33 +24,35 @@
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
-#define melec 0.000511 //1
-#define mmuon 0.1057   //2
-#define mpion 0.1396   //3
-#define mkaon 0.4937   //4
-#define mproton 0.9383 //5
+#define melec 0.000511 // 1
+#define mmuon 0.1057   // 2
+#define mpion 0.1396   // 3
+#define mkaon 0.4937   // 4
+#define mproton 0.9383 // 5
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace excl_fs{
-  DECLARE_SOA_COLUMN(GS, gs, int);
-  DECLARE_SOA_COLUMN(PV, pv, int);
-  DECLARE_SOA_COLUMN(ZA, za, int);
-  DECLARE_SOA_COLUMN(ZC, zc, int);
-  DECLARE_SOA_COLUMN(SIGN, sign, std::vector<int>);
-  DECLARE_SOA_COLUMN(PX, px, std::vector<float>);
-  DECLARE_SOA_COLUMN(PY, py, std::vector<float>);
-  DECLARE_SOA_COLUMN(PZ, pz, std::vector<float>);
-  DECLARE_SOA_COLUMN(ISELEC, iselec, std::vector<int>);
-  DECLARE_SOA_COLUMN(ISMUON, ismuon, std::vector<int>);
-  DECLARE_SOA_COLUMN(ISPION, ispion, std::vector<int>);
-  DECLARE_SOA_COLUMN(ISKAON, iskaon, std::vector<int>);
-  DECLARE_SOA_COLUMN(ISPROTON, isproton, std::vector<int>);
-}
-namespace o2::aod {
-  DECLARE_SOA_TABLE(Excl_fs, "AOD", "EXCL_FS",
+namespace excl_fs
+{
+DECLARE_SOA_COLUMN(GS, gs, int);
+DECLARE_SOA_COLUMN(PV, pv, int);
+DECLARE_SOA_COLUMN(ZA, za, int);
+DECLARE_SOA_COLUMN(ZC, zc, int);
+DECLARE_SOA_COLUMN(SIGN, sign, std::vector<int>);
+DECLARE_SOA_COLUMN(PX, px, std::vector<float>);
+DECLARE_SOA_COLUMN(PY, py, std::vector<float>);
+DECLARE_SOA_COLUMN(PZ, pz, std::vector<float>);
+DECLARE_SOA_COLUMN(ISELEC, iselec, std::vector<int>);
+DECLARE_SOA_COLUMN(ISMUON, ismuon, std::vector<int>);
+DECLARE_SOA_COLUMN(ISPION, ispion, std::vector<int>);
+DECLARE_SOA_COLUMN(ISKAON, iskaon, std::vector<int>);
+DECLARE_SOA_COLUMN(ISPROTON, isproton, std::vector<int>);
+} // namespace excl_fs
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(Excl_fs, "AOD", "EXCL_FS",
                   excl_fs::GS, excl_fs::PV, excl_fs::ZA, excl_fs::ZC, excl_fs::SIGN, excl_fs::PX, excl_fs::PY, excl_fs::PZ, excl_fs::ISELEC, excl_fs::ISMUON, excl_fs::ISPION, excl_fs::ISKAON, excl_fs::ISPROTON);
 }
 struct SGExcUniverse {
@@ -64,7 +66,7 @@ struct SGExcUniverse {
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
-  //Track Selections
+  // Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -73,7 +75,7 @@ struct SGExcUniverse {
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
   Configurable<float> pt_cut{"pt_cut", 0.1, "Track Pt"};
-  //PID Selections
+  // PID Selections
   Configurable<float> nsigmatpc_cut{"nsigmatpc", 3.0, "nsigma tpc cut"};
   Configurable<float> nsigmatof_cut{"nsigmatof", 9.0, "nsigma tof cut"};
   Configurable<bool> use_tof{"Use_TOF", true, "TOF PID"};
@@ -127,7 +129,7 @@ struct SGExcUniverse {
 
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
     // check rho0 signals
-    int goodTracks=0;
+    int goodTracks = 0;
     std::vector<float> px;
     std::vector<float> py;
     std::vector<float> pz;
@@ -144,27 +146,27 @@ struct SGExcUniverse {
         py.push_back(t.py());
         pz.push_back(t.pz());
         sign.push_back(t.sign());
-	int hypothesis;
-	hypothesis = selectionPIDElec(t, use_tof, nsigmatpc_cut, nsigmatof_cut);
-	iselec.push_back(hypothesis);
-	hypothesis = selectionPIDMuon(t, use_tof, nsigmatpc_cut, nsigmatof_cut);
-	ismuon.push_back(hypothesis);
-	hypothesis = selectionPIDPion(t, use_tof, nsigmatpc_cut, nsigmatof_cut);
-	ispion.push_back(hypothesis);
-	hypothesis = selectionPIDKaon(t, use_tof, nsigmatpc_cut, nsigmatof_cut);
-	iskaon.push_back(hypothesis);
-	hypothesis = selectionPIDProton(t, use_tof, nsigmatpc_cut, nsigmatof_cut);
-	isproton.push_back(hypothesis);
-	goodTracks++;
+        int hypothesis;
+        hypothesis = selectionPIDElec(t, use_tof, nsigmatpc_cut, nsigmatof_cut);
+        iselec.push_back(hypothesis);
+        hypothesis = selectionPIDMuon(t, use_tof, nsigmatpc_cut, nsigmatof_cut);
+        ismuon.push_back(hypothesis);
+        hypothesis = selectionPIDPion(t, use_tof, nsigmatpc_cut, nsigmatof_cut);
+        ispion.push_back(hypothesis);
+        hypothesis = selectionPIDKaon(t, use_tof, nsigmatpc_cut, nsigmatof_cut);
+        iskaon.push_back(hypothesis);
+        hypothesis = selectionPIDProton(t, use_tof, nsigmatpc_cut, nsigmatof_cut);
+        isproton.push_back(hypothesis);
+        goodTracks++;
       }
     }
-    //Fill Tables here
+    // Fill Tables here
     if (goodTracks == 2) {
-          excl_fs(gs, 2, an, cn, sign, px, py, pz, iselec, ismuon, ispion, iskaon, isproton);
+      excl_fs(gs, 2, an, cn, sign, px, py, pz, iselec, ismuon, ispion, iskaon, isproton);
     } else if (goodTracks == 4) {
-          excl_fs(gs, 4, an, cn, sign, px, py, pz, iselec, ismuon, ispion, iskaon, isproton);
+      excl_fs(gs, 4, an, cn, sign, px, py, pz, iselec, ismuon, ispion, iskaon, isproton);
     }
- }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
