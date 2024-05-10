@@ -39,7 +39,7 @@ template <typename T>
 int trackselector(const T& track, const std::vector<float>& params)
 {
   // Ensure the params vector contains all the necessary parameters
-  if (params.size() < 7) {
+  if (params.size() < 8) {
     throw std::runtime_error("Insufficient parameters provided");
   }
   TLorentzVector a;
@@ -62,6 +62,8 @@ int trackselector(const T& track, const std::vector<float>& params)
   if (track.itsChi2NCl() > params[5])
     return 0;
   if (std::abs(a.Eta()) > params[6])
+    return 0;
+  if (a.Pt() < params[7])
     return 0;
   return 1;
 }
@@ -117,6 +119,34 @@ bool selectionPIDPion(const T& candidate, bool use_tof, float nsigmatpc_cut, flo
     return true;
   }
   if (!use_tof && std::abs(candidate.tpcNSigmaPi()) < nsigmatpc_cut) {
+    return true;
+  }
+  return false;
+}
+template <typename T>
+bool selectionPIDElec(const T& candidate, bool use_tof, float nsigmatpc_cut, float nsigmatof_cut)
+{
+  if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaEl() * candidate.tofNSigmaEl() + candidate.tpcNSigmaEl() * candidate.tpcNSigmaEl()) < nsigmatof_cut) {
+    return true;
+  }
+  if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaEl()) < nsigmatpc_cut) {
+    return true;
+  }
+  if (!use_tof && std::abs(candidate.tpcNSigmaEl()) < nsigmatpc_cut) {
+    return true;
+  }
+  return false;
+}
+template <typename T>
+bool selectionPIDProton(const T& candidate, bool use_tof, float nsigmatpc_cut, float nsigmatof_cut)
+{
+  if (use_tof && candidate.hasTOF() && (candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < nsigmatof_cut) {
+    return true;
+  }
+  if (use_tof && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmatpc_cut) {
+    return true;
+  }
+  if (!use_tof && std::abs(candidate.tpcNSigmaPr()) < nsigmatpc_cut) {
     return true;
   }
   return false;
