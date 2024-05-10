@@ -17,11 +17,13 @@
 #include "Framework/AnalysisTask.h"
 
 #include "TVector3.h"
+#include "TTree.h"
+#include "TFile.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Tasks/SGTrackSelector.h"
+#include "PWGUD/Core/SGTrackSelector.h"
 #define mpion 0.1396
 #define mmuon 0.1057
 #define mkaon 0.4937
@@ -31,12 +33,26 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct SGFITAnalyzer { // UDTutorial01
+namespace bcNtr
+{
+DECLARE_SOA_COLUMN(BC, bc, uint64_t);
+DECLARE_SOA_COLUMN(PV, pv, int);
+DECLARE_SOA_COLUMN(GS, gs, int);
+} // namespace bcNtr
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(BcPvGs, "AOD", "BCPVGS",
+                  bcNtr::BC, bcNtr::PV, bcNtr::GS);
+}
+struct SGFITAnalyzer {
+  Produces<o2::aod::BcPvGs> bcNtr;
   SGSelector sgSelector;
 
   // configurables
   Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
   ConfigurableAxis ptAxis{"ptAxis", {250, 0.0, 2.5}, "p_T axis"};
+  // ConfigurableAxis BCAxis{"BCAxis", {1000000000000, 0.5, 1000000000000.5}, "BC axis"};
+  ConfigurableAxis BCAxis{"BCAxis", {100000000000, 500000000000.5, 600000000000.5}, "BC axis"};
   ConfigurableAxis etaAxis{"etaAxis", {300, -1.5, 1.5}, ""};
   ConfigurableAxis sigTPCAxis{"sigTPCAxis", {100, -100.0, 100.0}, ""};
   ConfigurableAxis sigTOFAxis{"sigTOFAxis", {100, -100.0, 100.0}, ""};
@@ -57,6 +73,7 @@ struct SGFITAnalyzer { // UDTutorial01
   Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
+  Configurable<std::string> outputFileName{"outputFileName", "AnalysisResults.root", "Output file name"};
   // initialize histogram registry
   HistogramRegistry registry{
     "registry",
@@ -65,12 +82,16 @@ struct SGFITAnalyzer { // UDTutorial01
   void init(InitContext&)
   {
     const AxisSpec axispt{ptAxis, "p_{T}"};
+    const AxisSpec axisBC{BCAxis, "BC"};
     const AxisSpec axiseta{etaAxis, "#eta"};
     const AxisSpec axismult{multAxis, "N_{tracks}"};
     const AxisSpec axisfit{FitAxis, "FIT Amplitude"};
     const AxisSpec axiszdc{ZDCAxis, "ZDC Amplitude"};
     // Collision histograms
     registry.add("collisions/BC", "Relative BC number; Relative BC; Collisions", {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
+    registry.add("collisions/BC_PVCA", "Global BC; Global BC; Multiplicity", {HistType::kTH2F, {axisBC, axismult}});
+    registry.add("collisions/BC_PVCC", "Global BC; Global BC; Multiplicity", {HistType::kTH2F, {axisBC, axismult}});
+    registry.add("collisions/BC_PVCAC", "Global BC; Global BC; Multiplicity", {HistType::kTH2F, {axisBC, axismult}});
     registry.add("collisions/multiplicityAll", "Multiplicity of all tracks; Tracks; Tracks", {HistType::kTH1F, {{axismult}}});
     registry.add("collisions/multiplicityPVC", "Multiplicity of PV contributors; PV contributors; Tracks", {HistType::kTH1F, {{axismult}}});
     registry.add("collisions/multiplicityPVCA", "Multiplicity of PV contributors A-side; PV contributors; Tracks", {HistType::kTH1F, {{axismult}}});
@@ -341,7 +362,8 @@ struct SGFITAnalyzer { // UDTutorial01
     // int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
-    int truegapSide = sgSelector.trueGap(dgcand, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
+    int truegapSide = sgSelector.trueGap(dgcand, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
+    int gs = truegapSide;
     registry.get<TH1>(HIST("collisions/TrueGapSide"))->Fill(truegapSide, 1.);
     // select PV contributors
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
@@ -349,11 +371,12 @@ struct SGFITAnalyzer { // UDTutorial01
     //    if (PVContributors.size() > 50)
     //     return;
     registry.get<TH1>(HIST("collisions/multiplicityPVC"))->Fill(PVContributors.size(), 1.);
+    int pv = PVContributors.size();
     bool tof = false;
     // relative BC number
     auto bcnum = dgcand.globalBC() % o2::constants::lhc::LHCMaxBunches;
+    uint64_t bc = dgcand.globalBC();
     registry.get<TH1>(HIST("collisions/BC"))->Fill(bcnum, 1.);
-
     // fill track histograms
     if (verbose) {
       LOGF(info, "<UDTutorial01sg>   Number of tracks %d", dgtracks.size());
@@ -687,7 +710,6 @@ struct SGFITAnalyzer { // UDTutorial01
       registry.get<TH2>(HIST("ZDC/MACZNA"))->Fill(PVContributors.size(), zna);
       registry.get<TH2>(HIST("ZDC/MACZNC"))->Fill(PVContributors.size(), znc);
     }
-
     for (auto track : dgtracks) {
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(0., 1.);
       registry.get<TH1>(HIST("tracks/QCAll"))->Fill(1., track.hasITS() * 1.);
@@ -796,6 +818,8 @@ struct SGFITAnalyzer { // UDTutorial01
       registry.get<TH1>(HIST("FIT/BBFDDA"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDApf(), bit));
       registry.get<TH1>(HIST("FIT/BBFDDC"))->Fill(bit - 16, TESTBIT(dgcand.bbFDDCpf(), bit));
     }
+    // Fill Table here
+    bcNtr(bc, pv, gs);
   }
 };
 

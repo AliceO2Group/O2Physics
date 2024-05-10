@@ -191,7 +191,9 @@ struct femoDreamCollisionMasker {
         counter++;
         TaskFinder = CollisionMasks::kTrackV0;
         for (auto const& option : device.options) {
-          if (option.name.compare(std::string("Track1.CutBit")) == 0) {
+          if (option.name.compare(std::string("Option.DCACutPtDep")) == 0) {
+            TrackDCACutPtDep.push_back(option.defaultValue.get<bool>());
+          } else if (option.name.compare(std::string("Track1.CutBit")) == 0) {
             TrackCutBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
           } else if (option.name.compare(std::string("Track1.TPCBit")) == 0) {
             TrackPIDTPCBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
@@ -319,8 +321,8 @@ struct femoDreamCollisionMasker {
   }
 
   // make bitmask for a track for two body task
-  template <typename T, typename R>
-  void MaskForTrack(T& BitSet, CollisionMasks::Parts P, R& track)
+  template <typename T, typename R, typename S>
+  void MaskForTrack(T& BitSet, CollisionMasks::Parts P, R& track, S& counter)
   {
     if (track.partType() != static_cast<uint8_t>(femtodreamparticle::kTrack)) {
       return;
@@ -332,7 +334,7 @@ struct femoDreamCollisionMasker {
           track.eta() < FilterEtaMin.at(P).at(index) || track.eta() > FilterEtaMax.at(P).at(index)) {
         // check if we apply pt dependend dca cut
         if (TrackDCACutPtDep.at(index)) {
-          if (std::abs(track.tempFitVar()) > 0.0105f * (0.035 / std::pow(track.pt(), 1.1))) {
+          if (std::fabs(track.tempFitVar()) > 0.0105f * (0.035f / std::pow(track.pt(), 1.1f))) {
             continue;
           }
         } else {
@@ -349,10 +351,12 @@ struct femoDreamCollisionMasker {
         if (track.p() <= TrackPIDThreshold.at(P).at(index)) {
           if ((track.pidcut() & TrackPIDTPCBits.at(P).at(index)) == TrackPIDTPCBits.at(P).at(index) && ((track.pidcut() & TrackPIDTPCBitsReject.at(P).at(index)) == 0u)) {
             BitSet.at(P).set(index);
+            counter.at(P).at(index)++;
           }
         } else {
           if ((track.pidcut() & TrackPIDTPCTOFBits.at(P).at(index)) == TrackPIDTPCTOFBits.at(P).at(index)) {
             BitSet.at(P).set(index);
+            counter.at(P).at(index)++;
           }
         }
       }
@@ -527,20 +531,34 @@ struct femoDreamCollisionMasker {
     // create a bit mask for particle one, particle two and particle three
     std::array<std::bitset<8 * sizeof(femtodreamcollision::BitMaskType)>, CollisionMasks::kNParts> Mask = {{0}};
 
+    // array to keep track of found particles
+    std::array<std::array<int, 8 * sizeof(femtodreamcollision::BitMaskType)>, CollisionMasks::kNParts> FoundParts = {{{0}}};
+
     switch (TaskFinder) {
       case CollisionMasks::kTrackTrack:
         // pair-track-track task
         // create mask for track 1 and track 2
         for (auto const& part : parts) {
-          MaskForTrack(Mask, CollisionMasks::kPartOne, part);
-          MaskForTrack(Mask, CollisionMasks::kPartTwo, part);
+          MaskForTrack(Mask, CollisionMasks::kPartOne, part, FoundParts);
+          MaskForTrack(Mask, CollisionMasks::kPartTwo, part, FoundParts);
+        }
+        // check if SameSpecies option is set
+        // if so, only set the bit for kPartTwo to true if there are at least to tracks in the collision that pass the selections
+        // this allows to (optionally) select only events with at least two particles for the mixing
+        for (size_t index = 0; index < TrackSameSpecies.size(); index++) {
+          if (TrackSameSpecies.at(index) == true) {
+            Mask.at(CollisionMasks::kPartTwo).reset(index);
+            if (FoundParts.at(CollisionMasks::kPartOne).at(index) >= 2) {
+              Mask.at(CollisionMasks::kPartTwo).set(index);
+            }
+          }
         }
         break;
       case CollisionMasks::kTrackV0:
         // pair-track-v0 task
         // create mask for track 1 and v0 2
         for (auto const& part : parts) {
-          MaskForTrack(Mask, CollisionMasks::kPartOne, part);
+          MaskForTrack(Mask, CollisionMasks::kPartOne, part, FoundParts);
           MaskForV0(Mask, CollisionMasks::kPartTwo, part, parts);
         }
         break;
@@ -557,7 +575,7 @@ struct femoDreamCollisionMasker {
         break;
       // TODO: add all supported pair/triplet tasks
       default:
-        LOG(fatal) << "No femtodream pair task found!";
+        LOG(fatal) << "No femtodream task found!";
     }
     // fill bitmask for each collision
     Masks(static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartOne).to_ulong()),

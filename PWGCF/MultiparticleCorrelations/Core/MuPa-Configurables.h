@@ -36,8 +36,10 @@ struct : ConfigurableGroup {
 
 // *) Event histograms:
 struct : ConfigurableGroup {
-  Configurable<vector<int>> cfBookEventHistograms{"cfBookEventHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) event histogram, ordering is the same as in enum eEventHistograms"};
-  // TBI 20240426 add here some more configurables for event histogtams
+  Configurable<bool> cfFillEventHistograms{"cfFillEventHistograms", true, "if false, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled"};
+  Configurable<vector<int>> cfBookEventHistograms{"cfBookEventHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) event histogram, ordering is the same as in enum eEventHistograms"};
+  Configurable<bool> cfFillEventHistograms2D{"cfFillEventHistograms2D", true, "if false, all 2D event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms2D[...] is kTRUE, are filled"};
+  Configurable<vector<int>> cfBookEventHistograms2D{"cfBookEventHistograms2D", {1, 1}, "Book (1) or do not book (0) this 2D event histogram, ordering is the same as in enum eEventHistograms2D"};
 } cf_eh;
 
 // *) Event cuts:
@@ -61,8 +63,10 @@ struct : ConfigurableGroup {
 
 // *) Particle histograms:
 struct : ConfigurableGroup {
-  Configurable<vector<int>> cfBookParticleHistograms{"cfBookParticleHistograms", {1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms"};
-  Configurable<vector<int>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms2D"};
+  Configurable<bool> cfFillParticleHistograms{"cfFillParticleHistograms", true, "if false, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled"};
+  Configurable<vector<int>> cfBookParticleHistograms{"cfBookParticleHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms"};
+  Configurable<bool> cfFillParticleHistograms2D{"cfFillParticleHistograms2D", true, "if false, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled"};
+  Configurable<vector<int>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {1, 1}, "Book (1) or do not book (0) this 2D particle histogram, ordering is the same as in enum eParticleHistograms2D"};
 } cf_ph;
 
 // *) Particle cuts:
@@ -71,14 +75,30 @@ struct : ConfigurableGroup {
   Configurable<vector<float>> cfPhi{"cfPhi", {0.0, TMath::TwoPi()}, "phi range: {min, max}[rad], with convention: min <= phi < max"};
   Configurable<vector<float>> cfPt{"cfPt", {0.2, 5.0}, "pt range: {min, max}[GeV], with convention: min <= pt < max"};
   Configurable<vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range: {min, max}, with convention: min <= eta < max"};
-  // TBI 20240426 add suport for etpcNClsCrossedRows, eDCA_xy, eDCA_z, eDPG, ...
+  Configurable<vector<float>> cftpcNClsFindable{"cftpcNClsFindable", {-1000., 1000.}, "tpcNClsFindable range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcNClsShared{"cftpcNClsShared", {-1000., 1000.}, "tpcNClsShared range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcNClsFound{"cftpcNClsFound", {-1000., 1000.}, "tpcNClsFound range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcNClsCrossedRows{"cftpcNClsCrossedRows", {-1000., 1000.}, "tpcNClsCrossedRows range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfitsNCls{"cfitsNCls", {-1000., 1000.}, "itsNCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfitsNClsInnerBarrel{"cfitsNClsInnerBarrel", {-1000., 1000.}, "itsNClsInnerBarrel range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcCrossedRowsOverFindableCls{"cftpcCrossedRowsOverFindableCls", {-1000., 1000.}, "tpcCrossedRowsOverFindableCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcFoundOverFindableCls{"cftpcFoundOverFindableCls", {-1000., 1000.}, "tpcFoundOverFindableCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcFractionSharedCls{"cftpcFractionSharedCls", {-1000., 1000.}, "tpcFractionSharedCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfDCA_xy{"cfDCA_xy", {-1000., 1000.}, "DCA_xy range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfDCA_z{"cfDCA_z", {-1000., 1000.}, "DCA_z range: {min, max}, with convention: min <= eta < max"};
+  // TBI 20240504 eDPG, ...
   // TBI 20240426 do I need to add separate support for booleans to use each specific cut?
 } cf_pc;
 
-// Q-vector:
-Configurable<bool> cfCalculateQvectors{"cfCalculateQvectors", true, "calculate or not Q-vectors (all, also diff. ones). If I want only to fill control histograms, then I can set here false"};
-// Correlations:
-Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false, "calculate or not correlations"};
+// *) Q-vector:
+struct : ConfigurableGroup {
+  Configurable<bool> cfCalculateQvectors{"cfCalculateQvectors", true, "calculate or not Q-vectors (all, also diff. ones). If I want only to fill control histograms, then set here false"};
+} cf_qv;
+
+// *) Multiparticle correlations:
+struct : ConfigurableGroup {
+  Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false, "calculate or not multiparticle correlations"};
+} cf_mupa;
 
 // *) Test0:
 struct : ConfigurableGroup {
@@ -108,6 +128,14 @@ struct : ConfigurableGroup {
   Configurable<bool> cfCalculateKineCustomNestedLoops{"cfCalculateKineCustomNestedLoops", false, "cross-check e-b-e all differential (vs. pt, eta, etc.) correlations with custom nested loops"};
   Configurable<int> cfMaxNestedLoop{"cfMaxNestedLoop", -1, "if set to e.g. 4, all nested loops beyond that, e.g. 6-p and 8-p, are NOT calculated"};
 } cf_nl;
+
+// *) Toy NUA:
+struct : ConfigurableGroup {
+  Configurable<vector<int>> cfApplyNUAPDF{"cfApplyNUAPDF", {0, 0, 0}, "Apply (1) or do not apply (0) NUA on variable, ordering is the same as in enum eNUAPDF (phi, pt, eta)"};
+  Configurable<vector<int>> cfUseDefaultNUAPDF{"cfUseDefaultNUAPDF", {1, 1, 1}, "Use (1) or do not use (0) default NUA profile, ordering is the same as in enum eNUAPDF (phi, pt, eta)"};
+  Configurable<vector<string>> cfCustomNUAPDFHistNames{"cfCustomNUAPDFHistNames", {"a", "bb", "ccc"}, "the names of histograms holding custom NUA in an external file."};
+  Configurable<string> cfFileWithCustomNUA{"cfFileWithCustomNUA", "/home/abilandz/DatasetsO2/customNUA.root", "path to external ROOT file which holds all histograms with custom NUA"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
+} cf_nua;
 
 // *) Internal validation:
 struct : ConfigurableGroup {

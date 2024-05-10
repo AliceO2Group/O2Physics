@@ -14,6 +14,7 @@
 
 // ...
 #include <vector>
+#include <string>
 
 //============================================================
 
@@ -200,14 +201,13 @@ void DefaultConfiguration()
   // *) Event cuts:
   // ...
 
-  // Configurable<bool> cfCalculateQvectors{ ... }
-  qv.fCalculateQvectors = cfCalculateQvectors;
+  // *) Q-vectors:
+  qv.fCalculateQvectors = cf_qv.cfCalculateQvectors;
 
-  // Configurable<bool> cfCalculateCorrelations{ ... };
-  mupa.fCalculateCorrelations = cfCalculateCorrelations;
+  // *) Multiparticle correlations:
+  mupa.fCalculateCorrelations = cf_mupa.cfCalculateCorrelations;
 
-  // ...
-
+  // *) Test0:
   t0.fCalculateTest0 = cf_t0.cfCalculateTest0; // + see below, how it's automatically set via other Test0 flags
   t0.fCalculateTest0AsFunctionOf[AFO_INTEGRATED] = cf_t0.cfCalculateTest0AsFunctionOfIntegrated;
   t0.fCalculateTest0AsFunctionOf[AFO_MULTIPLICITY] = cf_t0.cfCalculateTest0AsFunctionOfMultiplicity;
@@ -241,6 +241,74 @@ void DefaultConfiguration()
 
   // ...
 
+  // *) Toy NUA:
+  auto lApplyNUAPDF = (vector<int>)cf_nua.cfApplyNUAPDF;
+  if (lApplyNUAPDF.size() != eNUAPDF_N) {
+    LOGF(info, "\033[1;31m lApplyNUAPDF.size() = %d\033[0m", lApplyNUAPDF.size());
+    LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
+    LOGF(fatal, "\033[1;31m%s at line %d : Mismatch in the number of flags in configurable cfApplyNUAPDF, and number of entries in enum eNUAPDF \n \033[0m", __FUNCTION__, __LINE__);
+  }
+  nua.fApplyNUAPDF[ePhiNUAPDF] = static_cast<bool>(lApplyNUAPDF[ePhiNUAPDF]);
+  nua.fApplyNUAPDF[ePtNUAPDF] = static_cast<bool>(lApplyNUAPDF[ePtNUAPDF]);
+  nua.fApplyNUAPDF[eEtaNUAPDF] = static_cast<bool>(lApplyNUAPDF[eEtaNUAPDF]);
+
+  // **) Execute the lines below, only if toy NUA (either default or custom) is requested for at least one kine variable:
+  if (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF]) {
+
+    auto lUseDefaultNUAPDF = (vector<int>)cf_nua.cfUseDefaultNUAPDF;
+    if (lUseDefaultNUAPDF.size() != eNUAPDF_N) {
+      LOGF(info, "\033[1;31m lUseDefaultNUAPDF.size() = %d\033[0m", lUseDefaultNUAPDF.size());
+      LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
+      LOGF(fatal, "\033[1;31m%s at line %d : Mismatch in the number of flags in configurable cfUseDefaultNUAPDF, and number of entries in enum eNUAPDF \n \033[0m", __FUNCTION__, __LINE__);
+    }
+    nua.fUseDefaultNUAPDF[ePhiNUAPDF] = static_cast<bool>(lUseDefaultNUAPDF[ePhiNUAPDF]);
+    nua.fUseDefaultNUAPDF[ePtNUAPDF] = static_cast<bool>(lUseDefaultNUAPDF[ePtNUAPDF]);
+    nua.fUseDefaultNUAPDF[eEtaNUAPDF] = static_cast<bool>(lUseDefaultNUAPDF[eEtaNUAPDF]);
+
+    // **) Execute the lines below, only if custom toy NUA is requested in at least one kine variable:
+    if (!((nua.fApplyNUAPDF[ePhiNUAPDF] && nua.fUseDefaultNUAPDF[ePhiNUAPDF]) ||
+          (nua.fApplyNUAPDF[ePtNUAPDF] && nua.fUseDefaultNUAPDF[ePtNUAPDF]) ||
+          (nua.fApplyNUAPDF[eEtaNUAPDF] && nua.fUseDefaultNUAPDF[eEtaNUAPDF]))) {
+      // If the above conditon is true, as least one NUA is requested and is not default, i.e. it's custom NUA obtained from external file, which was requested to be used.
+      // TBI 20240501 Can I simplify the logic above, it's a bit cryptic...
+
+      // *) external file path with custom NUA histos:
+      nua.fFileWithCustomNUA = TString(cf_nua.cfFileWithCustomNUA);
+
+      // *) histogram names with custom NUA distributions in that file + get those histograms immediately here:
+      auto lCustomNUAPDFHistNames = (vector<string>)cf_nua.cfCustomNUAPDFHistNames;
+      if (lCustomNUAPDFHistNames.size() != eNUAPDF_N) {
+        LOGF(info, "\033[1;31m lCustomNUAPDFHistNames.size() = %d\033[0m", lCustomNUAPDFHistNames.size());
+        LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
+        LOGF(fatal, "\033[1;31m%s at line %d : Mismatch in the number of flags in configurable cfCustomNUAPDFHistNames, and number of entries in enum eNUAPDF \n \033[0m", __FUNCTION__, __LINE__);
+      }
+
+      if (!nua.fUseDefaultNUAPDF[ePhiNUAPDF]) {
+        nua.fCustomNUAPDFHistNames[ePhiNUAPDF] = new TString(lCustomNUAPDFHistNames[ePhiNUAPDF]);
+        this->GetHistogramWithCustomNUA(nua.fFileWithCustomNUA.Data(), ePhiNUAPDF);
+        if (!nua.fCustomNUAPDF[ePhiNUAPDF]) {
+          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+        }
+      }
+
+      if (!nua.fUseDefaultNUAPDF[ePtNUAPDF]) {
+        nua.fCustomNUAPDFHistNames[ePtNUAPDF] = new TString(lCustomNUAPDFHistNames[ePtNUAPDF]);
+        this->GetHistogramWithCustomNUA(nua.fFileWithCustomNUA.Data(), ePtNUAPDF);
+        if (!nua.fCustomNUAPDF[ePtNUAPDF]) {
+          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+        }
+      }
+      if (!nua.fUseDefaultNUAPDF[eEtaNUAPDF]) {
+        nua.fCustomNUAPDFHistNames[eEtaNUAPDF] = new TString(lCustomNUAPDFHistNames[eEtaNUAPDF]);
+        this->GetHistogramWithCustomNUA(nua.fFileWithCustomNUA.Data(), eEtaNUAPDF);
+        if (!nua.fCustomNUAPDF[eEtaNUAPDF]) {
+          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+        }
+      }
+    } // if (!(nua.fUseDefaultNUAPDF[ePhiNUAPDF] || nua.fUseDefaultNUAPDF[ePtNUAPDF] || nua.fUseDefaultNUAPDF[eEtaNUAPDF])) {
+
+  } // if ( nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF] ) {
+
   // *) Internal validation:
   iv.fUseInternalValidation = cf_iv.cfUseInternalValidation;
   iv.fInternalValidationForceBailout = cf_iv.cfInternalValidationForceBailout;
@@ -258,67 +326,109 @@ void DefaultBooking()
 {
   // Set here which histograms are booked by default.
 
-  // a) Event histograms;
-  // b) Particle histograms 1D;
-  // c) Particle histograms 2D;
-  // d) QA;
+  // a) Event histograms 1D;
+  // b) Event histograms 2D;
+  // c) Particle histograms 1D;
+  // d) Particle histograms 2D;
+  // e) QA;
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
   }
 
-  // a) Event histograms:
+  // a) Event histograms 1D:
+  // By default all event histograms are booked. Set this flag to kFALSE to switch off booking of all event histograms:
+  eh.fFillEventHistograms = cf_eh.cfFillEventHistograms;
+
   // By default all event histograms are booked. If you do not want particular event histogram to be booked,
   // use configurable array cfBookEventHistograms, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eEventHistograms. // TBI 20240124 is this safe enough?
   auto lBookEventHistograms = (vector<int>)cf_eh.cfBookEventHistograms; // this is now the local version of that int array from configurable.
   if (lBookEventHistograms.size() != eEventHistograms_N) {
+    LOGF(info, "\033[1;31m lBookEventHistograms.size() = %d\033[0m", lBookEventHistograms.size());
+    LOGF(info, "\033[1;31m eEventHistograms_N) = %d\033[0m", static_cast<int>(eEventHistograms_N));
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookEventHistograms, and number of entries in enum eEventHistograms \n \033[0m", __FUNCTION__, __LINE__);
   }
 
-  eh.fBookEventHistograms[eNumberOfEvents] = static_cast<bool>(lBookEventHistograms[eNumberOfEvents]);
-  eh.fBookEventHistograms[eTotalMultiplicity] = static_cast<bool>(lBookEventHistograms[eTotalMultiplicity]);
-  eh.fBookEventHistograms[eSelectedTracks] = static_cast<bool>(lBookEventHistograms[eSelectedTracks]);
-  eh.fBookEventHistograms[eMultFV0M] = static_cast<bool>(lBookEventHistograms[eMultFV0M]);
-  eh.fBookEventHistograms[eMultFT0M] = static_cast<bool>(lBookEventHistograms[eMultFT0M]);
-  eh.fBookEventHistograms[eMultTPC] = static_cast<bool>(lBookEventHistograms[eMultTPC]);
-  eh.fBookEventHistograms[eMultNTracksPV] = static_cast<bool>(lBookEventHistograms[eMultNTracksPV]);
-  eh.fBookEventHistograms[eCentrality] = static_cast<bool>(lBookEventHistograms[eCentrality]);
-  eh.fBookEventHistograms[eVertex_x] = static_cast<bool>(lBookEventHistograms[eVertex_x]);
-  eh.fBookEventHistograms[eVertex_y] = static_cast<bool>(lBookEventHistograms[eVertex_y]);
-  eh.fBookEventHistograms[eVertex_z] = static_cast<bool>(lBookEventHistograms[eVertex_z]);
-  eh.fBookEventHistograms[eNContributors] = static_cast<bool>(lBookEventHistograms[eNContributors]);
-  eh.fBookEventHistograms[eImpactParameter] = static_cast<bool>(lBookEventHistograms[eImpactParameter]);
+  // I append "&& eh.fFillEventHistograms" below, to switch off booking of all event histograms with one common flag:
+  eh.fBookEventHistograms[eNumberOfEvents] = static_cast<bool>(lBookEventHistograms[eNumberOfEvents]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eTotalMultiplicity] = static_cast<bool>(lBookEventHistograms[eTotalMultiplicity]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eSelectedTracks] = static_cast<bool>(lBookEventHistograms[eSelectedTracks]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eMultFV0M] = static_cast<bool>(lBookEventHistograms[eMultFV0M]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eMultFT0M] = static_cast<bool>(lBookEventHistograms[eMultFT0M]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eMultTPC] = static_cast<bool>(lBookEventHistograms[eMultTPC]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eMultNTracksPV] = static_cast<bool>(lBookEventHistograms[eMultNTracksPV]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eCentrality] = static_cast<bool>(lBookEventHistograms[eCentrality]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertex_x] = static_cast<bool>(lBookEventHistograms[eVertex_x]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertex_y] = static_cast<bool>(lBookEventHistograms[eVertex_y]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertex_z] = static_cast<bool>(lBookEventHistograms[eVertex_z]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eNContributors] = static_cast<bool>(lBookEventHistograms[eNContributors]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eImpactParameter] = static_cast<bool>(lBookEventHistograms[eImpactParameter]) && eh.fFillEventHistograms;
 
-  // b) Particle histograms 1D:
-  // By default all particle histograms are booked. If you do not want particular particle histogram to be booked,
-  // use configurable array cfBookParticleHistograms, where you can specify flags 1 (book) or 0 (do not book).
+  // b) Event histograms 2D:
+  // By default all 2D event histograms are booked. Set this flag to kFALSE to switch off booking of all 2D event histograms:
+  eh.fFillEventHistograms2D = cf_eh.cfFillEventHistograms2D;
+
+  // If you do not want particular 2D event histogram to be booked, use configurable array cfBookEventHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
+  // Ordering of the flags in that array is interpreted through ordering of enums in enum eEventHistograms2D. // TBI 20240124 is this safe enough?
+  auto lBookEventHistograms2D = (vector<int>)cf_eh.cfBookEventHistograms2D; // this is now the local version of that int array from configurable. TBI 20240124 why is this casting mandatory?
+  if (lBookEventHistograms2D.size() != eEventHistograms2D_N) {
+    LOGF(info, "\033[1;31m lBookEventHistograms2D.size() = %d\033[0m", lBookEventHistograms2D.size());
+    LOGF(info, "\033[1;31m eEventHistograms2D_N) = %d\033[0m", static_cast<int>(eEventHistograms2D_N));
+    LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookEventHistograms2D, and number of entries in enum eEventHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
+  }
+
+  // I append "&& eh.fFillEventHistograms2D" below, to switch off booking of all 2D event histograms with one common flag:
+  eh.fBookEventHistograms2D[eVertex_z_vs_MultTPC] = static_cast<bool>(lBookEventHistograms2D[eVertex_z_vs_MultTPC]) && eh.fFillEventHistograms2D;
+  eh.fBookEventHistograms2D[eVertex_z_vs_NContributors] = static_cast<bool>(lBookEventHistograms2D[eVertex_z_vs_NContributors]) && eh.fFillEventHistograms2D;
+
+  // c) Particle histograms 1D:
+  // By default all 1D particle histograms are booked. Set this flag to kFALSE to switch off booking of all 1D particle histograms:
+  ph.fFillParticleHistograms = cf_ph.cfFillParticleHistograms;
+
+  // If you do not want particular particle histogram to be booked, use configurable array cfBookParticleHistograms, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms. // TBI 20240124 is this safe enough?
   auto lBookParticleHistograms = (vector<int>)cf_ph.cfBookParticleHistograms; // this is now the local version of that int array from configurable. TBI 20240124 why is this casting mandatory?
   if (lBookParticleHistograms.size() != eParticleHistograms_N) {
+    LOGF(info, "\033[1;31m lBookParticleHistograms.size() = %d\033[0m", lBookParticleHistograms.size());
+    LOGF(info, "\033[1;31m eParticleHistograms_N) = %d\033[0m", static_cast<int>(eParticleHistograms_N));
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms, and number of entries in enum eParticleHistograms \n \033[0m", __FUNCTION__, __LINE__);
   }
 
-  ph.fBookParticleHistograms[ePhi] = static_cast<bool>(lBookParticleHistograms[ePhi]);
-  ph.fBookParticleHistograms[ePt] = static_cast<bool>(lBookParticleHistograms[ePt]);
-  ph.fBookParticleHistograms[eEta] = static_cast<bool>(lBookParticleHistograms[eEta]);
-  ph.fBookParticleHistograms[etpcNClsCrossedRows] = static_cast<bool>(lBookParticleHistograms[etpcNClsCrossedRows]);
-  ph.fBookParticleHistograms[eDCA_xy] = static_cast<bool>(lBookParticleHistograms[eDCA_xy]);
-  ph.fBookParticleHistograms[eDCA_z] = static_cast<bool>(lBookParticleHistograms[eDCA_z]);
+  // I append "&& ph.fFillParticleHistograms" below, to switch off booking of all 1D particle histograms with one common flag:
+  ph.fBookParticleHistograms[ePhi] = static_cast<bool>(lBookParticleHistograms[ePhi]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[ePt] = static_cast<bool>(lBookParticleHistograms[ePt]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[eEta] = static_cast<bool>(lBookParticleHistograms[eEta]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[etpcNClsFindable] = static_cast<bool>(lBookParticleHistograms[etpcNClsFindable]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[etpcNClsShared] = static_cast<bool>(lBookParticleHistograms[etpcNClsShared]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[etpcNClsFound] = static_cast<bool>(lBookParticleHistograms[etpcNClsFound]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[etpcNClsCrossedRows] = static_cast<bool>(lBookParticleHistograms[etpcNClsCrossedRows]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[eitsNCls] = static_cast<bool>(lBookParticleHistograms[eitsNCls]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[eitsNClsInnerBarrel] = static_cast<bool>(lBookParticleHistograms[eitsNClsInnerBarrel]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[etpcCrossedRowsOverFindableCls] = static_cast<bool>(lBookParticleHistograms[etpcCrossedRowsOverFindableCls]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[etpcFoundOverFindableCls] = static_cast<bool>(lBookParticleHistograms[etpcFoundOverFindableCls]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[etpcFractionSharedCls] = static_cast<bool>(lBookParticleHistograms[etpcFractionSharedCls]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[eDCA_xy] = static_cast<bool>(lBookParticleHistograms[eDCA_xy]) && ph.fFillParticleHistograms;
+  ph.fBookParticleHistograms[eDCA_z] = static_cast<bool>(lBookParticleHistograms[eDCA_z]) && ph.fFillParticleHistograms;
 
-  // c) Particle histograms 2D:
-  // By default all 2D particle histograms are booked. If you do not want particular 2D particle histogram to be booked,
-  // use configurable array cfBookParticleHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
+  // d) Particle histograms 2D:
+  // By default all 2D particle histograms are booked. Set this flag to kFALSE to switch off booking of all 2D particle histograms:
+  ph.fFillParticleHistograms2D = cf_ph.cfFillParticleHistograms2D;
+
+  // If you do not want particular 2D particle histogram to be booked, use configurable array cfBookParticleHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms2D. // TBI 20240124 is this safe enough?
   auto lBookParticleHistograms2D = (vector<int>)cf_ph.cfBookParticleHistograms2D; // this is now the local version of that int array from configurable. TBI 20240124 why is this casting mandatory?
   if (lBookParticleHistograms2D.size() != eParticleHistograms2D_N) {
+    LOGF(info, "\033[1;31m lBookParticleHistograms2D.size() = %d\033[0m", lBookParticleHistograms2D.size());
+    LOGF(info, "\033[1;31m eParticleHistograms2D_N) = %d\033[0m", static_cast<int>(eParticleHistograms2D_N));
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms2D, and number of entries in enum eParticleHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
   }
 
-  ph.fBookParticleHistograms2D[ePhiPt] = static_cast<bool>(lBookParticleHistograms2D[ePhiPt]);
-  ph.fBookParticleHistograms2D[ePhiEta] = static_cast<bool>(lBookParticleHistograms2D[ePhiEta]);
+  // I append "&& ph.fFillParticleHistograms2D" below, to switch off booking of all 2D particle histograms with one common flag:
+  ph.fBookParticleHistograms2D[ePhiPt] = static_cast<bool>(lBookParticleHistograms2D[ePhiPt]) && ph.fFillParticleHistograms2D;
+  ph.fBookParticleHistograms2D[ePhiEta] = static_cast<bool>(lBookParticleHistograms2D[ePhiEta]) && ph.fFillParticleHistograms2D;
 
-  // d) QA:
+  // e) QA:
   // ...
 
 } // void DefaultBooking()
@@ -343,84 +453,114 @@ void DefaultBinning()
   }
 
   // a) Default binning for event histograms:
-  // task->SetEventHistogramsBins("NumberOfEvents",1,0.,1.);
   eh.fEventHistogramsBins[eNumberOfEvents][0] = 1;
   eh.fEventHistogramsBins[eNumberOfEvents][1] = 0.;
   eh.fEventHistogramsBins[eNumberOfEvents][2] = 1.;
-  // task->SetEventHistogramsBins("TotalMultiplicity",1000,0.,1000.);
+
   eh.fEventHistogramsBins[eTotalMultiplicity][0] = 10000;
   eh.fEventHistogramsBins[eTotalMultiplicity][1] = 0.;
   eh.fEventHistogramsBins[eTotalMultiplicity][2] = 10000.;
-  // task->SetEventHistogramsBins("SelectedTracks",1000,0.,1000.);
+
   eh.fEventHistogramsBins[eSelectedTracks][0] = 10000;
   eh.fEventHistogramsBins[eSelectedTracks][1] = 0.;
   eh.fEventHistogramsBins[eSelectedTracks][2] = 10000.;
-  // ... TBI 20240120
+
   eh.fEventHistogramsBins[eMultFV0M][0] = 10000;
   eh.fEventHistogramsBins[eMultFV0M][1] = 0.;
   eh.fEventHistogramsBins[eMultFV0M][2] = 10000.;
-  // ... TBI 20240120
+
   eh.fEventHistogramsBins[eMultFT0M][0] = 10000;
   eh.fEventHistogramsBins[eMultFT0M][1] = 0.;
   eh.fEventHistogramsBins[eMultFT0M][2] = 10000.;
-  // ... TBI 20240120
+
   eh.fEventHistogramsBins[eMultTPC][0] = 10000;
   eh.fEventHistogramsBins[eMultTPC][1] = 0.;
   eh.fEventHistogramsBins[eMultTPC][2] = 10000.;
-  // ... TBI 20240120
+
   eh.fEventHistogramsBins[eMultNTracksPV][0] = 10000;
   eh.fEventHistogramsBins[eMultNTracksPV][1] = 0.;
   eh.fEventHistogramsBins[eMultNTracksPV][2] = 10000.;
-  // task->SetEventHistogramsBins("Centrality",100,0.,100.);
-  eh.fEventHistogramsBins[eCentrality][0] = 110; // intentionally, because if centrality is not determined, it's set to 105.0 at the moment
-  eh.fEventHistogramsBins[eCentrality][1] = 0.;
+
+  eh.fEventHistogramsBins[eCentrality][0] = 120; // intentionally, because if centrality is not determined, it's set to 105.0 at the moment
+  eh.fEventHistogramsBins[eCentrality][1] = -10.;
   eh.fEventHistogramsBins[eCentrality][2] = 110.;
-  // task->SetEventHistogramsBins("Vertex_x",1000,-20.,20.);
+
   eh.fEventHistogramsBins[eVertex_x][0] = 1000;
-  eh.fEventHistogramsBins[eVertex_x][1] = -20.;
-  eh.fEventHistogramsBins[eVertex_x][2] = 20.;
-  // task->SetEventHistogramsBins("Vertex_y",1000,-20.,20.);
+  eh.fEventHistogramsBins[eVertex_x][1] = -1.;
+  eh.fEventHistogramsBins[eVertex_x][2] = 1.;
+
   eh.fEventHistogramsBins[eVertex_y][0] = 1000;
-  eh.fEventHistogramsBins[eVertex_y][1] = -20.;
-  eh.fEventHistogramsBins[eVertex_y][2] = 20.;
-  // task->SetEventHistogramsBins("Vertex_z",1000,-20.,20.);
-  eh.fEventHistogramsBins[eVertex_z][0] = 1000;
+  eh.fEventHistogramsBins[eVertex_y][1] = -1.;
+  eh.fEventHistogramsBins[eVertex_y][2] = 1.;
+
+  eh.fEventHistogramsBins[eVertex_z][0] = 4000;
   eh.fEventHistogramsBins[eVertex_z][1] = -20.;
   eh.fEventHistogramsBins[eVertex_z][2] = 20.;
-  // task->SetEventHistogramsBins("NContributors",1000,0.,1000.);
-  eh.fEventHistogramsBins[eNContributors][0] = 1000;
-  eh.fEventHistogramsBins[eNContributors][1] = 0.;
+
+  eh.fEventHistogramsBins[eNContributors][0] = 1010;
+  eh.fEventHistogramsBins[eNContributors][1] = -10.;
   eh.fEventHistogramsBins[eNContributors][2] = 1000.;
-  // task->SetEventHistogramsBins("ImpactParameter",1000,0.,1000.);
+
   eh.fEventHistogramsBins[eImpactParameter][0] = 1000000;
   eh.fEventHistogramsBins[eImpactParameter][1] = 0.;
   eh.fEventHistogramsBins[eImpactParameter][2] = 1.; // TBI 20231031 check this, i do not know in which units IP is stored
 
   // b) Default binning for particle histograms 1D:
-  // task->SetParticleHistogramsBins("Phi",360,0.,TMath::TwoPi());
   ph.fParticleHistogramsBins[ePhi][0] = 360;
   ph.fParticleHistogramsBins[ePhi][1] = 0.;
   ph.fParticleHistogramsBins[ePhi][2] = TMath::TwoPi();
-  // task->SetParticleHistogramsBins("Pt",1000,0.,20.);
+
   ph.fParticleHistogramsBins[ePt][0] = 1000;
   ph.fParticleHistogramsBins[ePt][1] = 0.;
-  ph.fParticleHistogramsBins[ePt][2] = 20.;
-  // task->SetParticleHistogramsBins("Eta",200,-1.,1.);
+  ph.fParticleHistogramsBins[ePt][2] = 50.;
+
   ph.fParticleHistogramsBins[eEta][0] = 200;
   ph.fParticleHistogramsBins[eEta][1] = -2.;
   ph.fParticleHistogramsBins[eEta][2] = 2.;
 
-  ph.fParticleHistogramsBins[etpcNClsCrossedRows][0] = 200;
-  ph.fParticleHistogramsBins[etpcNClsCrossedRows][1] = 0.;
+  ph.fParticleHistogramsBins[etpcNClsFindable][0] = 210;
+  ph.fParticleHistogramsBins[etpcNClsFindable][1] = -10.;
+  ph.fParticleHistogramsBins[etpcNClsFindable][2] = 200.;
+
+  ph.fParticleHistogramsBins[etpcNClsShared][0] = 210;
+  ph.fParticleHistogramsBins[etpcNClsShared][1] = -10.;
+  ph.fParticleHistogramsBins[etpcNClsShared][2] = 200.;
+
+  ph.fParticleHistogramsBins[etpcNClsFound][0] = 210;
+  ph.fParticleHistogramsBins[etpcNClsFound][1] = -10.;
+  ph.fParticleHistogramsBins[etpcNClsFound][2] = 200.;
+
+  ph.fParticleHistogramsBins[etpcNClsCrossedRows][0] = 210;
+  ph.fParticleHistogramsBins[etpcNClsCrossedRows][1] = -10.;
   ph.fParticleHistogramsBins[etpcNClsCrossedRows][2] = 200.;
 
+  ph.fParticleHistogramsBins[eitsNCls][0] = 11;
+  ph.fParticleHistogramsBins[eitsNCls][1] = -1.;
+  ph.fParticleHistogramsBins[eitsNCls][2] = 10.;
+
+  ph.fParticleHistogramsBins[eitsNClsInnerBarrel][0] = 11;
+  ph.fParticleHistogramsBins[eitsNClsInnerBarrel][1] = -1.;
+  ph.fParticleHistogramsBins[eitsNClsInnerBarrel][2] = 10.;
+
+  ph.fParticleHistogramsBins[etpcCrossedRowsOverFindableCls][0] = 200;
+  ph.fParticleHistogramsBins[etpcCrossedRowsOverFindableCls][1] = -10.;
+  ph.fParticleHistogramsBins[etpcCrossedRowsOverFindableCls][2] = 10.;
+
+  ph.fParticleHistogramsBins[etpcFoundOverFindableCls][0] = 200;
+  ph.fParticleHistogramsBins[etpcFoundOverFindableCls][1] = -10.;
+  ph.fParticleHistogramsBins[etpcFoundOverFindableCls][2] = 10.;
+
+  ph.fParticleHistogramsBins[etpcFractionSharedCls][0] = 200;
+  ph.fParticleHistogramsBins[etpcFractionSharedCls][1] = -10.;
+  ph.fParticleHistogramsBins[etpcFractionSharedCls][2] = 10.;
+
   ph.fParticleHistogramsBins[eDCA_xy][0] = 2000;
-  ph.fParticleHistogramsBins[eDCA_xy][1] = -10.;
-  ph.fParticleHistogramsBins[eDCA_xy][2] = 10.;
+  ph.fParticleHistogramsBins[eDCA_xy][1] = -1000.;
+  ph.fParticleHistogramsBins[eDCA_xy][2] = 1000.;
 
   ph.fParticleHistogramsBins[eDCA_z][0] = 2000;
-  ph.fParticleHistogramsBins[eDCA_z][1] = -10.;
-  ph.fParticleHistogramsBins[eDCA_z][2] = 10.;
+  ph.fParticleHistogramsBins[eDCA_z][1] = -1000.;
+  ph.fParticleHistogramsBins[eDCA_z][2] = 1000.;
 
   ph.fParticleHistogramsBins[ePDG][0] = 10000;
   ph.fParticleHistogramsBins[ePDG][1] = -5000.;
@@ -645,14 +785,15 @@ void DefaultCuts()
   //    Default cuts are set in configurable cfUseParticleCuts
   auto lUseParticleCuts = (vector<int>)cf_pc.cfUseParticleCuts;
   if (lUseParticleCuts.size() != eParticleCuts_N) {
-    LOGF(info, "\033[1;31m lUseParticleCuts.size() = %d\033[0m", lUseEventCuts.size());
-    LOGF(info, "\033[1;31m eParticleCuts_N = %d\033[0m", static_cast<int>(eEventCuts_N));
+    LOGF(info, "\033[1;31m lUseParticleCuts.size() = %d\033[0m", lUseParticleCuts.size());
+    LOGF(info, "\033[1;31m eParticleCuts_N = %d\033[0m", static_cast<int>(eParticleCuts_N));
     LOGF(fatal, "in function \033[1;31m%s at line %d : Mismatch in the number of flags in configurable cfUseParticleCuts, and number of entries in enum eParticleHistograms + eParticleCuts \n \033[0m", __FUNCTION__, __LINE__);
   }
   // eParticleHistograms:
   pc.fUseParticleCuts[ePhi] = static_cast<bool>(lUseParticleCuts[ePhi]);
   pc.fUseParticleCuts[ePt] = static_cast<bool>(lUseParticleCuts[ePt]);
   pc.fUseParticleCuts[eEta] = static_cast<bool>(lUseParticleCuts[eEta]);
+  pc.fUseParticleCuts[etpcNClsFound] = static_cast<bool>(lUseParticleCuts[etpcNClsFound]);
   pc.fUseParticleCuts[etpcNClsCrossedRows] = static_cast<bool>(lUseParticleCuts[etpcNClsCrossedRows]);
   pc.fUseParticleCuts[eDCA_xy] = static_cast<bool>(lUseParticleCuts[eDCA_xy]);
   pc.fUseParticleCuts[eDCA_z] = static_cast<bool>(lUseParticleCuts[eDCA_z]);
@@ -671,6 +812,50 @@ void DefaultCuts()
   pc.fdParticleCuts[eEta][eMin] = lEta[eMin];
   pc.fdParticleCuts[eEta][eMax] = lEta[eMax];
 
+  auto ltpcNClsFindable = (vector<float>)cf_pc.cftpcNClsFindable;
+  pc.fdParticleCuts[etpcNClsFindable][eMin] = ltpcNClsFindable[eMin];
+  pc.fdParticleCuts[etpcNClsFindable][eMax] = ltpcNClsFindable[eMax];
+
+  auto ltpcNClsShared = (vector<float>)cf_pc.cftpcNClsShared;
+  pc.fdParticleCuts[etpcNClsShared][eMin] = ltpcNClsShared[eMin];
+  pc.fdParticleCuts[etpcNClsShared][eMax] = ltpcNClsShared[eMax];
+
+  auto ltpcNClsFound = (vector<float>)cf_pc.cftpcNClsFound;
+  pc.fdParticleCuts[etpcNClsFound][eMin] = ltpcNClsFound[eMin];
+  pc.fdParticleCuts[etpcNClsFound][eMax] = ltpcNClsFound[eMax];
+
+  auto ltpcNClsCrossedRows = (vector<float>)cf_pc.cftpcNClsCrossedRows;
+  pc.fdParticleCuts[etpcNClsCrossedRows][eMin] = ltpcNClsCrossedRows[eMin];
+  pc.fdParticleCuts[etpcNClsCrossedRows][eMax] = ltpcNClsCrossedRows[eMax];
+
+  auto litsNCls = (vector<float>)cf_pc.cfitsNCls;
+  pc.fdParticleCuts[eitsNCls][eMin] = litsNCls[eMin];
+  pc.fdParticleCuts[eitsNCls][eMax] = litsNCls[eMax];
+
+  auto litsNClsInnerBarrel = (vector<float>)cf_pc.cfitsNClsInnerBarrel;
+  pc.fdParticleCuts[eitsNClsInnerBarrel][eMin] = litsNClsInnerBarrel[eMin];
+  pc.fdParticleCuts[eitsNClsInnerBarrel][eMax] = litsNClsInnerBarrel[eMax];
+
+  auto ltpcCrossedRowsOverFindableCls = (vector<float>)cf_pc.cftpcCrossedRowsOverFindableCls;
+  pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMin] = ltpcCrossedRowsOverFindableCls[eMin];
+  pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax] = ltpcCrossedRowsOverFindableCls[eMax];
+
+  auto ltpcFoundOverFindableCls = (vector<float>)cf_pc.cftpcFoundOverFindableCls;
+  pc.fdParticleCuts[etpcFoundOverFindableCls][eMin] = ltpcFoundOverFindableCls[eMin];
+  pc.fdParticleCuts[etpcFoundOverFindableCls][eMax] = ltpcFoundOverFindableCls[eMax];
+
+  auto ltpcFractionSharedCls = (vector<float>)cf_pc.cftpcFractionSharedCls;
+  pc.fdParticleCuts[etpcFractionSharedCls][eMin] = ltpcFractionSharedCls[eMin];
+  pc.fdParticleCuts[etpcFractionSharedCls][eMax] = ltpcFractionSharedCls[eMax];
+
+  auto lDCA_xy = (vector<float>)cf_pc.cfDCA_xy;
+  pc.fdParticleCuts[eDCA_xy][eMin] = lDCA_xy[eMin];
+  pc.fdParticleCuts[eDCA_xy][eMax] = lDCA_xy[eMax];
+
+  auto lDCA_z = (vector<float>)cf_pc.cfDCA_z;
+  pc.fdParticleCuts[eDCA_z][eMin] = lDCA_z[eMin];
+  pc.fdParticleCuts[eDCA_z][eMax] = lDCA_z[eMax];
+
   // *) specific option passed via string:
   // pc.fsParticleCuts[...] = ... ;
 
@@ -687,7 +872,8 @@ void InsanityChecks()
   // c) Insanity checks on booking;
   // d) Insanity checks on binning;
   // e) Insanity checks on cuts;
-  // f) Insanity checks on internal validation.
+  // f) Insanity checks on Toy NUA;
+  // g) Insanity checks on internal validation.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -720,18 +906,18 @@ void InsanityChecks()
 
   if (ec.fUseEventCuts[eSel7]) { // from doc: for Run 2 data and MC
     if (!(tc.fProcess[eProcessRec_Run2] || tc.fProcess[eProcessRecSim_Run2] || tc.fProcess[eProcessSim_Run2] || tc.fProcess[eProcessRec_Run1] || tc.fProcess[eProcessRecSim_Run1] || tc.fProcess[eProcessSim_Run1])) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d use fSel7 for Run 2 data and MC\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : use fSel7 for Run 2 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eSel8]) { // from doc: for Run 3 data and MC
     if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d use fSel8 for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : use fSel8 for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && !tc.fUseFisherYates) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
   if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim]) {
@@ -739,7 +925,7 @@ void InsanityChecks()
     if (!(ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0M", TString::kIgnoreCase) ||
           ec.fsEventCuts[eCentralityEstimator].EqualTo("centFV0A", TString::kIgnoreCase) ||
           ec.fsEventCuts[eCentralityEstimator].EqualTo("centNTPV", TString::kIgnoreCase))) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %s is not supported yet for Run 3 analysis. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
+      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported yet for Run 3 analysis. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
   }
 
@@ -747,7 +933,7 @@ void InsanityChecks()
     // Supported centrality estimators for Run 3 are enlisted here:
     if (!(ec.fsEventCuts[eCentralityEstimator].EqualTo("centRun2V0M", TString::kIgnoreCase) ||
           ec.fsEventCuts[eCentralityEstimator].EqualTo("centRun2SPDTracklets", TString::kIgnoreCase))) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %s is not supported yet for converted Run 2 and Run 1 analysis. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
+      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported yet for converted Run 2 and Run 1 analysis. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
   }
 
@@ -764,19 +950,19 @@ void InsanityChecks()
   //    Remark: I check here only in the settings I could define in DefaultConfiguration(), the other insanity checks are in BookInternalValidationHistograms()
   if (iv.fUseInternalValidation) {
     if (iv.fnEventsInternalValidation <= 0) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d : iv.fnEventsInternalValidation <= 0 => Set number of events to positive integer\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : iv.fnEventsInternalValidation <= 0 => Set number of events to positive integer\033[0m", __FUNCTION__, __LINE__);
     }
 
     if (pw.fUseWeights[wPHI] || pw.fUseWeights[wPT] || pw.fUseWeights[wETA]) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d : integrated weights are not supported (yet) for internal validation. \033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : integrated weights are not supported (yet) for internal validation. \033[0m", __FUNCTION__, __LINE__);
     }
 
     if (pw.fUseDiffWeights[wPHIPT] || pw.fUseDiffWeights[wPHIETA]) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d : differential weights are not supported (yet) for internal validation. \033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : differential weights are not supported (yet) for internal validation. \033[0m", __FUNCTION__, __LINE__);
     }
 
     if (iv.fRescaleWithTheoreticalInput && (nl.fCalculateNestedLoops || nl.fCalculateCustomNestedLoops || nl.fCalculateKineCustomNestedLoops)) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d : rescaling with theoretical input is not supported when cross-check is done with nested loops. \033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : rescaling with theoretical input is not supported when cross-check is done with nested loops. \033[0m", __FUNCTION__, __LINE__);
     }
 
   } // if (iv.fUseInternalValidation) {
@@ -794,6 +980,7 @@ void BookAndNestAllLists()
   // *) Q-vectors;
   // *) Particle weights;
   // *) Nested loops;
+  // *) Toy NUA;
   // *) Internal validation;
   // *) Test0;
   // *) Results.
@@ -856,6 +1043,12 @@ void BookAndNestAllLists()
   nl.fNestedLoopsList->SetOwner(kTRUE);
   fBaseList->Add(nl.fNestedLoopsList);
 
+  // *) Toy NUA:
+  nua.fNUAList = new TList();
+  nua.fNUAList->SetName("ToyNUA");
+  nua.fNUAList->SetOwner(kTRUE);
+  fBaseList->Add(nua.fNUAList);
+
   // *) Internal validation:
   iv.fInternalValidationList = new TList();
   iv.fInternalValidationList->SetName("InternalValidation");
@@ -883,7 +1076,8 @@ void BookEventHistograms()
   // Book all event histograms.
 
   // a) Book the profile holding flags;
-  // b) Book specific event histograms.
+  // b) Book specific event histograms 1D;
+  // c) Book specific event histograms 2D.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -902,18 +1096,26 @@ void BookEventHistograms()
     kRed,
     kGreen}; //! [0 = kRed,1 = kGreen] TBI 20220713 only temporarily here
 
-  // b) Book specific control event histograms:
-  TString stype[eEventHistograms_N] = {
+  // b) Book specific control event histograms 1D:
+  TString stype[] = {
     "NumberOfEvents", "TotalMultiplicity", "SelectedTracks", "MultFV0M", "MultFT0M", "MultTPC", "MultNTracksPV",
     "Centrality", "Vertex_x", "Vertex_y",
     "Vertex_z", "NContributors", "ImpactParameter"}; // keep in sync. with enum eEventHistograms
+
+  // *) quick insanity check on entries in above array:
+  if (sizeof(stype) / sizeof(stype[0]) != eEventHistograms_N) {
+    LOGF(info, "\033[1;31m mismatch - add same number of names for event histograms as you have data members \033[0m");
+    LOGF(info, "\033[1;31m sizeof(stype)/sizeof(stype[0]) = %d \033[0m", sizeof(stype) / sizeof(stype[0]));
+    LOGF(info, "\033[1;31m eEventHistograms_N = %d \033[0m", static_cast<int>(eEventHistograms_N));
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+
   TString srs[2] = {"rec", "sim"};
   TString srs_long[2] = {"reconstructed", "simulated"};
   TString sba[2] = {"before", "after"};
   TString sba_long[2] = {"before cuts", "after cuts"};
 
-  for (Int_t t = 0; t < eEventHistograms_N;
-       t++) // type, see enum eEventHistograms
+  for (Int_t t = 0; t < eEventHistograms_N; t++) // type, see enum eEventHistograms
   {
     if (!eh.fBookEventHistograms[t]) {
       continue;
@@ -926,21 +1128,107 @@ void BookEventHistograms()
         continue;
       }
 
+      // If I am doing internal validation, I need only sim:
+      if (iv.fUseInternalValidation && rs == eRec) {
+        continue;
+      }
+
       for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
       {
+
+        // Special treatment for eSelectedTracks => I will never fill this one before the cuts, obviously:
+        if (ba == eBefore && stype[t].EqualTo("SelectedTracks")) {
+          continue;
+        }
+
         eh.fEventHistograms[t][rs][ba] = new TH1D(
           Form("fEventHistograms[%s][%s][%s]", stype[t].Data(), srs[rs].Data(), sba[ba].Data()),
           Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in DetermineAndPropagateRunNumber(T const& collision)
           static_cast<int>(eh.fEventHistogramsBins[t][0]),
           eh.fEventHistogramsBins[t][1], eh.fEventHistogramsBins[t][2]);
         eh.fEventHistograms[t][rs][ba]->SetLineColor(fBeforeAfterColor[ba]);
-        eh.fEventHistograms[t][rs][ba]->SetFillColor(fBeforeAfterColor[ba] -
-                                                     10);
+        eh.fEventHistograms[t][rs][ba]->SetFillColor(fBeforeAfterColor[ba] - 10);
         eh.fEventHistogramsList->Add(eh.fEventHistograms[t][rs][ba]);
       } // for(Int_t ba=0;ba<2;ba++)
     }   // for(Int_t rs=0;rs<2;rs++) // reco/sim
-  }     // for(Int_t t=0;t<eEventHistograms_N;t++) // type, see enum
-        // eEventHistograms
+  }     // for(Int_t t=0;t<eEventHistograms_N;t++) // type, see enum eEventHistograms
+
+  // c) Book specific event histograms 2D:
+  TString stype2D[] = {"Vertex_z_vs_MultTPC", "Vertex_z_vs_NContributors"}; // keep in sync. with enum eEventHistograms2D
+
+  // *) quick insanity check on entries in above array:
+  if (sizeof(stype2D) / sizeof(stype2D[0]) != eEventHistograms2D_N) {
+    LOGF(info, "\033[1;31m mismatch - add same number of names for 2D event histograms as you have data members \033[0m");
+    LOGF(info, "\033[1;31m sizeof(stype2D)/sizeof(stype2D[0]) = %d \033[0m", sizeof(stype2D) / sizeof(stype2D[0]));
+    LOGF(info, "\033[1;31m eEventHistograms2D_N = %d \033[0m", static_cast<int>(eEventHistograms2D_N));
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+
+  // Binning of 2D histos: TBI 20240503 see if you can automate this
+  Int_t nBins_x[eEventHistograms2D_N] = {0};
+  Double_t min_x[eEventHistograms2D_N] = {0.};
+  Double_t max_x[eEventHistograms2D_N] = {0.};
+  Int_t nBins_y[eEventHistograms2D_N] = {0};
+  Double_t min_y[eEventHistograms2D_N] = {0.};
+  Double_t max_y[eEventHistograms2D_N] = {0.};
+
+  // *) "Vertex_z_vs_MultTPC":
+  nBins_x[eVertex_z_vs_MultTPC] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
+  min_x[eVertex_z_vs_MultTPC] = eh.fEventHistogramsBins[eVertex_z][1];
+  max_x[eVertex_z_vs_MultTPC] = eh.fEventHistogramsBins[eVertex_z][2];
+  nBins_y[eVertex_z_vs_MultTPC] = static_cast<int>(eh.fEventHistogramsBins[eMultTPC][0]);
+  min_y[eVertex_z_vs_MultTPC] = eh.fEventHistogramsBins[eMultTPC][1];
+  max_y[eVertex_z_vs_MultTPC] = eh.fEventHistogramsBins[eMultTPC][2];
+
+  // *) "Vertex_z_vs_NContributors":
+  nBins_x[eVertex_z_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
+  min_x[eVertex_z_vs_NContributors] = eh.fEventHistogramsBins[eVertex_z][1];
+  max_x[eVertex_z_vs_NContributors] = eh.fEventHistogramsBins[eVertex_z][2];
+  nBins_y[eVertex_z_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0]);
+  min_y[eVertex_z_vs_NContributors] = eh.fEventHistogramsBins[eNContributors][1];
+  max_y[eVertex_z_vs_NContributors] = eh.fEventHistogramsBins[eNContributors][2];
+
+  // *) ...
+
+  // Okay, let's book 'em all:
+  for (Int_t t = 0; t < eEventHistograms2D_N; t++) // type, see enum eEventHistograms2D
+  {
+    if (!eh.fBookEventHistograms2D[t]) {
+      continue;
+    }
+    for (Int_t rs = 0; rs < 2; rs++) // reco/sim
+    {
+      // If I am analyzing only reconstructed data, do not book histos for simulated, and vice versa.
+      // TBI 20240223 tc.fProcess[eProcessTest] is treated as tc.fProcess[eProcessRec], for the time being
+      if ((tc.fProcess[eGenericRec] && rs == eSim) || (tc.fProcess[eGenericSim] && rs == eRec)) {
+        continue;
+      }
+
+      // If I am doing internal validation, I need only sim:
+      if (iv.fUseInternalValidation && rs == eRec) {
+        continue;
+      }
+
+      for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
+      {
+
+        // Special treatment for eSelectedTracks => I will never fill this one before the cuts, obviously:
+        if (ba == eBefore && stype[t].EqualTo("SelectedTracks")) {
+          continue;
+        }
+
+        eh.fEventHistograms2D[t][rs][ba] = new TH2D(
+          Form("fEventHistograms[%s][%s][%s]", stype2D[t].Data(), srs[rs].Data(), sba[ba].Data()),
+          Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in DetermineAndPropagateRunNumber(T const& collision)
+          nBins_x[t], min_x[t], max_x[t], nBins_y[t], min_y[t], max_y[t]);
+
+        eh.fEventHistograms2D[t][rs][ba]->SetLineColor(fBeforeAfterColor[ba]);
+        eh.fEventHistograms2D[t][rs][ba]->SetFillColor(fBeforeAfterColor[ba] - 10);
+        eh.fEventHistograms2D[t][rs][ba]->SetOption("col");
+        eh.fEventHistogramsList->Add(eh.fEventHistograms2D[t][rs][ba]);
+      } // for(Int_t ba=0;ba<2;ba++)
+    }   // for(Int_t rs=0;rs<2;rs++) // reco/sim
+  }     // for(Int_t t=0;t<eEventHistograms2D_N;t++) // type, see enum eEventHistograms2D
 
 } // void BookEventHistograms()
 
@@ -1042,33 +1330,53 @@ void BookParticleHistograms()
   // ... TBI 20240418 I shall fill something in this config profile...
   ph.fParticleHistogramsList->Add(ph.fParticleHistogramsPro);
 
-  Int_t fBeforeAfterColor[2] = {
-    kRed,
-    kGreen}; //! [0 = kRed,1 = kGreen] TBI 20220713 only temporarily here
+  Int_t fBeforeAfterColor[2] = {kRed, kGreen}; //! [0 = kRed,1 = kGreen] TBI 20220713 only temporarily here
 
   // b) Book specific particle histograms 1D:
-  TString stype[eParticleHistograms_N] = {"Phi", "Pt", "Eta", "tpcNClsCrossedRows", "DCA_xy", "DCA_z", "PDG"};               // keep ordering in sync. with enum eParticleHistograms
-  TString stitleX[eParticleHistograms_N] = {"#varphi", "p_{T}", "#eta", "tpcNClsCrossedRows", "DCA_{xy}", "DCA_{z}", "PDG"}; // keep ordering in sync. with enum eParticleHistograms
+  TString stype[] = {"Phi", "Pt", "Eta", "tpcNClsFindable", "tpcNClsShared", "tpcNClsFound", "tpcNClsCrossedRows", "itsNCls", "itsNClsInnerBarrel", "tpcCrossedRowsOverFindableCls", "tpcFoundOverFindableCls", "tpcFractionSharedCls", "DCA_xy", "DCA_z", "PDG"};               // keep ordering in sync. with enum eParticleHistograms
+  TString stitleX[] = {"#varphi", "p_{T}", "#eta", "tpcNClsFindable", "tpcNClsShared", "tpcNClsFound", "tpcNClsCrossedRows", "itsNCls", "itsNClsInnerBarrel", "tpcCrossedRowsOverFindableCls", "tpcFoundOverFindableCls", "tpcFractionSharedCls", "DCA_{xy}", "DCA_{z}", "PDG"}; // keep ordering in sync. with enum eParticleHistograms
+
+  // *) quick insanity checks on the entries in above 2 arrays:
+  if (sizeof(stype) / sizeof(stype[0]) != eParticleHistograms_N) {
+    LOGF(info, "\033[1;31m mismatch - add same number of names for particle histograms as you have data members \033[0m");
+    LOGF(info, "\033[1;31m sizeof(stype)/sizeof(stype[0]) = %d \033[0m", sizeof(stype) / sizeof(stype[0]));
+    LOGF(info, "\033[1;31m eParticleHistograms_N = %d \033[0m", static_cast<int>(eParticleHistograms_N));
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+  if (sizeof(stitleX) / sizeof(stitleX[0]) != eParticleHistograms_N) {
+    LOGF(info, "\033[1;31m mismatch - add same number of x-axis title names for particle histograms as you have data members \033[0m");
+    LOGF(info, "\033[1;31m sizeof(stitleX)/sizeof(stitleX[0]) = %d \033[0m", sizeof(stitleX) / sizeof(stitleX[0]));
+    LOGF(info, "\033[1;31m eParticleHistograms_N = %d \033[0m", static_cast<int>(eParticleHistograms_N));
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+
   TString srs[2] = {"rec", "sim"};
   TString srs_long[2] = {"reconstructed", "simulated"};
   TString sba[2] = {"before", "after"};
   TString sba_long[2] = {"before cuts", "after cuts"};
 
-  for (Int_t t = 0; t < eParticleHistograms_N;
-       t++) // type, see enum eParticleHistograms
+  for (Int_t t = 0; t < eParticleHistograms_N; t++) // type, see enum eParticleHistograms
   {
     if (!ph.fBookParticleHistograms[t]) {
       continue;
     }
     for (Int_t rs = 0; rs < 2; rs++) // reco/sim
     {
+
+      // If I am analyzing only reconstructed data, do not book histos for simulated, and vice versa.
       if ((tc.fProcess[eGenericRec] && rs == eSim) || (tc.fProcess[eGenericSim] && rs == eRec)) {
-        continue; // if I am analyzing only reconstructed data, do not book histos for simulated, and vice versa.
+        continue;
       }
+
+      // If I am doing internal validation, I need only sim:
+      if (iv.fUseInternalValidation && rs == eRec) {
+        continue;
+      }
+
       for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
       {
         ph.fParticleHistograms[t][rs][ba] = new TH1D(Form("fParticleHistograms[%s][%s][%s]", stype[t].Data(), srs[rs].Data(), sba[ba].Data()),
-                                                     Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in DetermineAndPropagateRunNumber(T const& collision)
+                                                     Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()),
                                                      static_cast<int>(ph.fParticleHistogramsBins[t][0]), ph.fParticleHistogramsBins[t][1], ph.fParticleHistogramsBins[t][2]);
         ph.fParticleHistograms[t][rs][ba]->SetLineColor(
           fBeforeAfterColor[ba]);
@@ -1084,9 +1392,29 @@ void BookParticleHistograms()
 
   // c) Book specific particle histograms 2D:
   //    TBI 20240418 the code here is a bit of a mess, to be cleaned up...
-  TString stype2D[eParticleHistograms2D_N] = {"PhiPt", "PhiEta"};      // keep ordering in sync. with enum eParticleHistograms2D
-  TString stitleX2D[eParticleHistograms2D_N] = {"#varphi", "#varphi"}; // keep ordering in sync. with enum eParticleHistograms2D
-  TString stitleY2D[eParticleHistograms2D_N] = {"p_{T}", "#eta"};      // keep ordering in sync. with enum eParticleHistograms2D
+  TString stype2D[] = {"PhiPt", "PhiEta"};      // keep ordering in sync. with enum eParticleHistograms2D
+  TString stitleX2D[] = {"#varphi", "#varphi"}; // keep ordering in sync. with enum eParticleHistograms2D
+  TString stitleY2D[] = {"p_{T}", "#eta"};      // keep ordering in sync. with enum eParticleHistograms2D
+
+  // *) quick insanity checks on the entries in above 3 arrays:
+  if (sizeof(stype2D) / sizeof(stype2D[0]) != eParticleHistograms2D_N) {
+    LOGF(info, "\033[1;31m mismatch - add same number of names for 2D particle histograms as you have data members \033[0m");
+    LOGF(info, "\033[1;31m sizeof(stype2D)/sizeof(stype2D[0]) = %d \033[0m", sizeof(stype2D) / sizeof(stype2D[0]));
+    LOGF(info, "\033[1;31m eParticleHistograms2D_N = %d \033[0m", static_cast<int>(eParticleHistograms2D_N));
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+  if (sizeof(stitleX2D) / sizeof(stitleX2D[0]) != eParticleHistograms2D_N) {
+    LOGF(info, "\033[1;31m mismatch - add same number of x-axis title for 2D particle histograms as you have data members \033[0m");
+    LOGF(info, "\033[1;31m sizeof(stitleX2D)/sizeof(stitleX2D[0]) = %d \033[0m", sizeof(stitleX2D) / sizeof(stitleX2D[0]));
+    LOGF(info, "\033[1;31m eParticleHistograms2D_N = %d \033[0m", static_cast<int>(eParticleHistograms2D_N));
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+  if (sizeof(stitleY2D) / sizeof(stitleY2D[0]) != eParticleHistograms2D_N) {
+    LOGF(info, "\033[1;31m mismatch - add same number of y-axis title for 2D particle histograms as you have data members \033[0m");
+    LOGF(info, "\033[1;31m sizeof(stitleY2D)/sizeof(stitleY2D[0]) = %d \033[0m", sizeof(stitleY2D) / sizeof(stitleY2D[0]));
+    LOGF(info, "\033[1;31m eParticleHistograms2D_N = %d \033[0m", static_cast<int>(eParticleHistograms2D_N));
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
 
   for (Int_t t = 0; t < eParticleHistograms2D_N; t++) // type, see enum eParticleHistograms2D
   {
@@ -1256,7 +1584,7 @@ void BookCorrelationsHistograms()
            v++) // variable [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pt,4=eta]
       {
         if (!res.fResultsPro[v]) {
-          LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
         mupa.fCorrelationsPro[k][n][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fCorrelationsPro[%d][%d][%s]", k, n, res.fResultsProRawName[v].Data()))); // yes
         mupa.fCorrelationsPro[k][n][v]->SetStats(kFALSE);
@@ -1270,10 +1598,10 @@ void BookCorrelationsHistograms()
 
   // d) Few quick insanity checks on booking:
   if (mupa.fCorrelationsPro[0][0][AFO_INTEGRATED] && !TString(mupa.fCorrelationsPro[0][0][AFO_INTEGRATED]->GetXaxis()->GetTitle()).EqualTo("integrated")) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
   }
   if (mupa.fCorrelationsPro[0][0][AFO_PT] && !TString(mupa.fCorrelationsPro[0][0][AFO_PT]->GetXaxis()->GetTitle()).EqualTo("p_{T}")) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
   }
 
 } // BookCorrelationsHistograms()
@@ -1412,7 +1740,7 @@ void BookNestedLoopsHistograms()
         // if(ETAKINE == v  && !fCalculateEtaCorrelations){continue;}
 
         if (!res.fResultsPro[v]) {
-          LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
         nl.fNestedLoopsPro[k][n][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fNestedLoopsPro[%d][%d][%d]", k, n, v))); // yes
         nl.fNestedLoopsPro[k][n][v]->SetTitle(Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1), oVariable[k].Data()));
@@ -1439,13 +1767,151 @@ void BookNestedLoopsHistograms()
 
   // d) Few quick insanity checks on booking:
   if (nl.fNestedLoopsPro[0][0][AFO_INTEGRATED] && !TString(nl.fNestedLoopsPro[0][0][AFO_INTEGRATED]->GetXaxis()->GetTitle()).EqualTo("integrated")) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
   }
   if (nl.fNestedLoopsPro[0][0][AFO_PT] && !TString(nl.fNestedLoopsPro[0][0][AFO_PT]->GetXaxis()->GetTitle()).EqualTo("p_{T}")) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
   }
 
 } // void BookNestedLoopsHistograms()
+
+//============================================================
+
+void BookNUAHistograms()
+{
+  // Book all objects for Toy NUA.
+
+  // a) Book the profile holding flags;
+  // b) Common local labels;
+  // c) Histograms.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+  }
+
+  // a) Book the profile holding flags:
+  nua.fNUAFlagsPro = new TProfile("fNUAFlagsPro", "flags for Toy NUA", 6, 0.5, 6.5);
+  nua.fNUAFlagsPro->SetStats(kFALSE);
+  nua.fNUAFlagsPro->SetLineColor(eColor);
+  nua.fNUAFlagsPro->SetFillColor(eFillColor);
+  nua.fNUAFlagsPro->GetXaxis()->SetLabelSize(0.03);
+  // TBI 20240429 the binning below is a bit fragile, but ok...
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + ePhiNUAPDF), "fApplyNUAPDF[phi]");
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + ePtNUAPDF), "fApplyNUAPDF[pt]");
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + eEtaNUAPDF), "fApplyNUAPDF[eta]");
+  if (nua.fApplyNUAPDF[ePhiNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(1 + ePhiNUAPDF), 1.);
+  }
+  if (nua.fApplyNUAPDF[ePtNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(1 + ePtNUAPDF), 1.);
+  }
+  if (nua.fApplyNUAPDF[eEtaNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(1 + eEtaNUAPDF), 1.);
+  }
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + ePhiNUAPDF), "fUseDefaultNUAPDF[phi]");
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + ePtNUAPDF), "fUseDefaultNUAPDF[pt]");
+  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + eEtaNUAPDF), "fUseDefaultNUAPDF[eta]");
+  if (nua.fUseDefaultNUAPDF[ePhiNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(4 + ePhiNUAPDF), 1.);
+  }
+  if (nua.fUseDefaultNUAPDF[ePtNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(4 + ePtNUAPDF), 1.);
+  }
+  if (nua.fUseDefaultNUAPDF[eEtaNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(4 + eEtaNUAPDF), 1.);
+  }
+  nua.fNUAList->Add(nua.fNUAFlagsPro);
+
+  if (!(nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF])) {
+    return;
+  }
+
+  // b) Common local labels:
+  TString sVariable[eNUAPDF_N] = {"#varphi", "p_{t}", "#eta"}; // has to be in sync with the ordering of enum eNUAPDF
+
+  // c) Histograms:
+  for (Int_t pdf = 0; pdf < eNUAPDF_N; pdf++) // use pdfs for NUA in (phi, pt, eta, ...)
+  {
+    if (!nua.fCustomNUAPDF[pdf]) // yes, because these histos are cloned from the external ones, see void SetNUAPDF(TH1D* const hist, const char* variable);
+    {
+      // otherwise, book here TF1 objects with default pdfs for NUA:
+
+      // *) default NUA for azimuthal angle pdf:
+      if (sVariable[pdf].EqualTo("#varphi")) {
+        if (!nua.fApplyNUAPDF[ePhiNUAPDF]) {
+          continue;
+        }
+        // Define default detector acceptance in azimuthal angle: Two sectors, with different probabilities.
+        Double_t dFirstSector[2] = {-(3. / 4.) * TMath::Pi(), -(1. / 4.) * TMath::Pi()}; // first sector is defined as [-3Pi/4,Pi/4]
+        Double_t dSecondSector[2] = {(1. / 3.) * TMath::Pi(), (2. / 3.) * TMath::Pi()};  // second sector is defined as [Pi/3,2Pi/3]
+        Double_t dProbability[2] = {0.3, 0.5};                                           // probabilities
+        nua.fDefaultNUAPDF[ePhiNUAPDF] = new TF1(Form("fDefaultNUAPDF[%d]", ePhiNUAPDF), "1.-(x>=[0])*(1.-[4]) + (x>=[1])*(1.-[4]) - (x>=[2])*(1.-[5]) + (x>=[3])*(1.-[5]) ",
+                                                 ph.fParticleHistogramsBins[ePhi][1], ph.fParticleHistogramsBins[ePhi][2]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(0, dFirstSector[0]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(1, dFirstSector[1]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(2, dSecondSector[0]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(3, dSecondSector[1]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(4, dProbability[0]);
+        nua.fDefaultNUAPDF[ePhiNUAPDF]->SetParameter(5, dProbability[1]);
+        nua.fNUAList->Add(nua.fDefaultNUAPDF[ePhiNUAPDF]);
+
+      } else if (sVariable[pdf].EqualTo("p_{t}")) {
+
+        // *) default NUA for transverse momentum pdf:
+        if (!nua.fApplyNUAPDF[ePtNUAPDF]) {
+          continue;
+        }
+        // Define default detector acceptance in transverse momentum: One sectors, with probability < 1.
+        Double_t dSector[2] = {0.4, 0.8}; // sector is defined as 0.8 < pT < 1.2
+        Double_t dProbability = 0.3;      // probability, so after being set this way, only 30% of particles in that sector are reconstructed
+        nua.fDefaultNUAPDF[ePtNUAPDF] = new TF1(Form("fDefaultNUAPDF[%d]", ePtNUAPDF), "1.-(x>=[0])*(1.-[2]) + (x>=[1])*(1.-[2])",
+                                                ph.fParticleHistogramsBins[ePt][1], ph.fParticleHistogramsBins[ePt][2]);
+        nua.fDefaultNUAPDF[ePtNUAPDF]->SetParameter(0, dSector[0]);
+        nua.fDefaultNUAPDF[ePtNUAPDF]->SetParameter(1, dSector[1]);
+        nua.fDefaultNUAPDF[ePtNUAPDF]->SetParameter(2, dProbability);
+        nua.fNUAList->Add(nua.fDefaultNUAPDF[ePtNUAPDF]);
+
+      } else if (sVariable[pdf].EqualTo("#eta")) {
+
+        // *) default NUA for pseudorapidity pdf:
+        if (!nua.fApplyNUAPDF[eEtaNUAPDF]) {
+          continue;
+        }
+        // Define default detector acceptance in pseudorapidity: One sectors, with probability < 1.
+        Double_t dSector[2] = {2.0, 2.5}; // sector is defined as 0.5 < eta < 1.0
+        Double_t dProbability = 0.5;      // probability, so after being set this way, only 50% of particles in that sector are reconstructed
+        nua.fDefaultNUAPDF[eEtaNUAPDF] = new TF1(Form("fDefaultNUAPDF[%d]", eEtaNUAPDF), "1.-(x>=[0])*(1.-[2]) + (x>=[1])*(1.-[2])",
+                                                 ph.fParticleHistogramsBins[eEta][1], ph.fParticleHistogramsBins[eEta][2]);
+        nua.fDefaultNUAPDF[eEtaNUAPDF]->SetParameter(0, dSector[0]);
+        nua.fDefaultNUAPDF[eEtaNUAPDF]->SetParameter(1, dSector[1]);
+        nua.fDefaultNUAPDF[eEtaNUAPDF]->SetParameter(2, dProbability);
+        nua.fNUAList->Add(nua.fDefaultNUAPDF[eEtaNUAPDF]);
+      } else {
+        LOGF(fatal, "\033[1;31m%s at line %d : pdf = %s is not supported (yet)\n \033[0m", __FUNCTION__, __LINE__, sVariable[pdf].Data());
+      }
+
+    } else { // if(!nua.fCustomNUAPDF[pdf])
+      // generic cosmetics for custom user-supplied pdfs via histograms:
+      nua.fCustomNUAPDF[pdf]->SetTitle(Form("Custom user-provided NUA for %s", sVariable[pdf].Data()));
+      nua.fCustomNUAPDF[pdf]->SetStats(kFALSE);
+      nua.fCustomNUAPDF[pdf]->GetXaxis()->SetTitle(sVariable[pdf].Data());
+      nua.fCustomNUAPDF[pdf]->SetFillColor(eFillColor);
+      nua.fCustomNUAPDF[pdf]->SetLineColor(eColor);
+      nua.fNUAList->Add(nua.fCustomNUAPDF[pdf]);
+    } // if(!nua.fCustomNUAPDF[pdf])
+
+    // Get the max values of pdfs, so that later in Accept(...) there is no loss of efficiency, when would need to calculate the same thing for each particle:
+    if (!nua.fUseDefaultNUAPDF[pdf] && nua.fCustomNUAPDF[pdf]) { // pdf is a loop variable
+      // custom, user-provided pdf via TH1D object:
+      nua.fMaxValuePDF[pdf] = nua.fCustomNUAPDF[pdf]->GetMaximum();
+    } else if (nua.fUseDefaultNUAPDF[pdf] && nua.fDefaultNUAPDF[pdf]) {
+      // default pdf implemented as TF1 object:
+      nua.fMaxValuePDF[pdf] = nua.fDefaultNUAPDF[pdf]->GetMaximum(ph.fParticleHistogramsBins[pdf][1], ph.fParticleHistogramsBins[pdf][2]);
+    }
+
+  } // for(Int_t pdf=0;pdf<eNUAPDF_N;pdf++) // use pdfs for NUA in (phi, pt, eta, ...).
+
+} // void BookNUAHistograms()
 
 //============================================================
 
@@ -1492,17 +1958,17 @@ void BookInternalValidationHistograms()
   iv.fHarmonicsOptionInternalValidation = new TString(cf_iv.cfHarmonicsOptionInternalValidation);
   if (!(iv.fHarmonicsOptionInternalValidation->EqualTo("constant", TString::kIgnoreCase) ||
         iv.fHarmonicsOptionInternalValidation->EqualTo("correlated", TString::kIgnoreCase))) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d : fHarmonicsOptionInternalValidation = %s is not supported. \033[0m", __FUNCTION__, __LINE__, iv.fHarmonicsOptionInternalValidation->Data());
+    LOGF(fatal, "\033[1;31m%s at line %d : fHarmonicsOptionInternalValidation = %s is not supported. \033[0m", __FUNCTION__, __LINE__, iv.fHarmonicsOptionInternalValidation->Data());
   }
 
   // b) Book and fill container vn amplitudes:
   iv.fInternalValidationVnPsin[eVn] = new TArrayD(gMaxHarmonic);
   auto lInternalValidationAmplitudes = (vector<float>)cf_iv.cfInternalValidationAmplitudes; // this is now the local version of that array from configurable
   if (lInternalValidationAmplitudes.size() < 1) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d Set at least one vn amplitude in array cfInternalValidationAmplitudes\n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : set at least one vn amplitude in array cfInternalValidationAmplitudes\n \033[0m", __FUNCTION__, __LINE__);
   }
   if (lInternalValidationAmplitudes.size() > gMaxHarmonic) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d lInternalValidationAmplitudes.size() > gMaxHarmonic \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : lInternalValidationAmplitudes.size() > gMaxHarmonic \n \033[0m", __FUNCTION__, __LINE__);
   }
   for (Int_t i = 0; i < static_cast<int>(lInternalValidationAmplitudes.size()); i++) {
     iv.fInternalValidationVnPsin[eVn]->SetAt(lInternalValidationAmplitudes[i], i);
@@ -1512,13 +1978,13 @@ void BookInternalValidationHistograms()
   iv.fInternalValidationVnPsin[ePsin] = new TArrayD(gMaxHarmonic);
   auto lInternalValidationPlanes = (vector<float>)cf_iv.cfInternalValidationPlanes;
   if (lInternalValidationPlanes.size() < 1) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d Set at least one Psi plane in array cfInternalValidationPlanes\n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line : %d set at least one Psi plane in array cfInternalValidationPlanes\n \033[0m", __FUNCTION__, __LINE__);
   }
   if (lInternalValidationPlanes.size() > gMaxHarmonic) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d lInternalValidationPlanes.size() > gMaxHarmonic \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : lInternalValidationPlanes.size() > gMaxHarmonic \n \033[0m", __FUNCTION__, __LINE__);
   }
   if (lInternalValidationAmplitudes.size() != lInternalValidationPlanes.size()) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d : lInternalValidationAmplitudes.size() != lInternalValidationPlanes.size() \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : lInternalValidationAmplitudes.size() != lInternalValidationPlanes.size() \n \033[0m", __FUNCTION__, __LINE__);
   }
   for (Int_t i = 0; i < static_cast<int>(lInternalValidationPlanes.size()); i++) {
     iv.fInternalValidationVnPsin[ePsin]->SetAt(lInternalValidationPlanes[i], i);
@@ -1529,7 +1995,7 @@ void BookInternalValidationHistograms()
   iv.fMultRangeInternalValidation[eMin] = lMultRangeInternalValidation[eMin];
   iv.fMultRangeInternalValidation[eMax] = lMultRangeInternalValidation[eMax];
   if (iv.fMultRangeInternalValidation[eMin] >= iv.fMultRangeInternalValidation[eMax]) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d : iv.fMultRangeInternalValidation[eMin] >= iv.fMultRangeInternalValidation[eMax] \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : iv.fMultRangeInternalValidation[eMin] >= iv.fMultRangeInternalValidation[eMax] \n \033[0m", __FUNCTION__, __LINE__);
   }
 
 } // BookInternalValidationHistograms()
@@ -1551,16 +2017,16 @@ TComplex TheoreticalValue(TArrayI* harmonics, TArrayD* amplitudes, TArrayD* plan
 
   // a) Insanity checks:
   if (!harmonics) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d : !harmonics \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : !harmonics \n \033[0m", __FUNCTION__, __LINE__);
   }
   if (!amplitudes) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d : !amplitudes \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : !amplitudes \n \033[0m", __FUNCTION__, __LINE__);
   }
   if (!planes) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d : !planes \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : !planes \n \033[0m", __FUNCTION__, __LINE__);
   }
   if (amplitudes->GetSize() != planes->GetSize()) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d : amplitudes->GetSize() != planes->GetSize() \n \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : amplitudes->GetSize() != planes->GetSize() \n \033[0m", __FUNCTION__, __LINE__);
   }
 
   // b) Main calculus:
@@ -1587,10 +2053,11 @@ void InternalValidation()
   // a) Fourier like p.d.f. for azimuthal angles and flow amplitudes;
   // b) Loop over on-the-fly events.
   //    b0) Reset ebe quantities;
-  //    b1) Determine multiplicity, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e;
-  //    b2) Loop over particles;
-  //    b3) Calculate correlations;
-  //    b4) Optionally, cross-check with nested loops;
+  //    b1) Determine multiplicity, centrality, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e;
+  //    b2) Fill event histograms;
+  //    b3) Loop over particles;
+  //    b4) Calculate correlations;
+  //    b5) Optionally, cross-check with nested loops;
   // c) Delete persistent objects.
 
   if (tc.fVerbose) {
@@ -1657,26 +2124,28 @@ void InternalValidation()
   // watch.Start();
   Double_t v1 = 0., v2 = 0., v3 = 0.;
   for (Int_t e = 0; e < static_cast<int>(iv.fnEventsInternalValidation); e++) {
-    // ..) Event counter:
-    !eh.fEventHistograms[eNumberOfEvents][eSim][eBefore] ? true : eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]->Fill(0.5);
 
     // b0) Reset ebe quantities:
     ResetEventByEventQuantities();
 
-    // b1) Determine multiplicity, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
+    // b1) Determine multiplicity, centrality, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
     Int_t nMult = gRandom->Uniform(iv.fMultRangeInternalValidation[eMin], iv.fMultRangeInternalValidation[eMax]);
-    // cout<<"nMult = "<<nMult<<endl;
-    !eh.fEventHistograms[eTotalMultiplicity][eSim][eBefore] ? true : eh.fEventHistograms[eTotalMultiplicity][eSim][eBefore]->Fill(nMult);
-
-    ebye.fSelectedTracks = nMult; // I can do it this way, as long as I do not apply some cuts on tracks in InternalValidation(). Otherwise, introduce a special counter
-                                  // Remember that I have to calculate ebye.fSelectedTracks, due to e.g. if(ebye.fSelectedTracks<2){return;} in Calculate* member functions
-    !eh.fEventHistograms[eSelectedTracks][eSim][eBefore] ? true : eh.fEventHistograms[eSelectedTracks][eSim][eBefore]->Fill(ebye.fSelectedTracks);
 
     Double_t fReactionPlane = gRandom->Uniform(0., TMath::TwoPi());
     if (iv.fHarmonicsOptionInternalValidation->EqualTo("constant")) {
       fPhiPDF->SetParameter(18, fReactionPlane);
     } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) {
       fPhiPDF->SetParameter(3, fReactionPlane);
+    }
+
+    ebye.fCentrality = gRandom->Uniform(0., 100.); // this is perfectly fine for this exercise
+
+    //    b2) Fill event histograms:
+    if (eh.fFillEventHistograms) {
+      !eh.fEventHistograms[eNumberOfEvents][eSim][eAfter] ? true : eh.fEventHistograms[eNumberOfEvents][eSim][eAfter]->Fill(0.5);
+      !eh.fEventHistograms[eTotalMultiplicity][eSim][eAfter] ? true : eh.fEventHistograms[eTotalMultiplicity][eSim][eAfter]->Fill(nMult);
+      !eh.fEventHistograms[eSelectedTracks][eSim][eAfter] ? true : eh.fEventHistograms[eSelectedTracks][eSim][eAfter]->Fill(ebye.fSelectedTracks);
+      !eh.fEventHistograms[eCentrality][eSim][eAfter] ? true : eh.fEventHistograms[eCentrality][eSim][eAfter]->Fill(ebye.fCentrality);
     }
 
     // configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
@@ -1706,7 +2175,7 @@ void InternalValidation()
       // Particle angle:
       dPhi = fPhiPDF->GetRandom();
 
-      // To increase performance, sample pt or eta only if requested:
+      // *) To increase performance, sample pt or eta only if requested:
       if (mupa.fCalculateCorrelations || t0.fCalculateTest0AsFunctionOf[AFO_PT]) { // TBI 20240423 The first switch I need to replace with differentual switch, like I have it for Test0 now
         dPt = gRandom->Uniform(dPt_min, dPt_max);
       }
@@ -1715,24 +2184,45 @@ void InternalValidation()
         dEta = gRandom->Uniform(dEta_min, dEta_max);
       }
 
-      // Remark: Deliberately I do not fill Control Particle Histograms in InternalValidation(), to increase the performance, and to make copying and merging faster.
+      // *) Fill few selected particle histograms before cuts here directly here:
+      // Remark: I do not call FillParticleHistograms<rs>(track, eBefore), as I do not want to bother to make here full 'track' object, etc., just to fill simple kine info:
+      if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D) {
+        // 1D:
+        !ph.fParticleHistograms[ePhi][eSim][eBefore] ? true : ph.fParticleHistograms[ePhi][eSim][eBefore]->Fill(dPhi);
+        !ph.fParticleHistograms[ePt][eSim][eBefore] ? true : ph.fParticleHistograms[ePt][eSim][eBefore]->Fill(dPt);
+        !ph.fParticleHistograms[eEta][eSim][eBefore] ? true : ph.fParticleHistograms[eEta][eSim][eBefore]->Fill(dEta);
+        // 2D:
+        !ph.fParticleHistograms2D[ePhiPt][eSim][eBefore] ? true : ph.fParticleHistograms2D[ePhiPt][eSim][eBefore]->Fill(dPhi, dPt);
+        !ph.fParticleHistograms2D[ePhiEta][eSim][eBefore] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][eBefore]->Fill(dPhi, dEta);
+      }
 
-      // Fill Q-vector (simplified version, without weights):
-      for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
-        for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) // weight power
-        {
-          qv.fQvector[h][wp] += TComplex(TMath::Cos(h * dPhi), TMath::Sin(h * dPhi)); // no support for weights, deliberately in internal validation, to increase performance
-        }                                                                             // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
-      }                                                                               // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
+      // *) Particle cuts (only support for Toy NUA is provided, for the time being):
+      //    NUA:
+      if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
+        continue;
+      }
+      if (nua.fApplyNUAPDF[ePtNUAPDF] && !Accept(dPt, ePtNUAPDF)) {
+        continue;
+      }
+      if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
+        continue;
+      }
 
-      // Nested loops containers:
-      if (nl.fCalculateNestedLoops || nl.fCalculateCustomNestedLoops) {
-        if (nl.ftaNestedLoops[0]) {
-          nl.ftaNestedLoops[0]->AddAt(dPhi, p);
-        }
-        if (nl.ftaNestedLoops[1]) {
-          nl.ftaNestedLoops[1]->AddAt(1., p);
-        } // yes, otherwise weights are automatically set to 0.
+      // *) Fill few selected particle histograms after cuts here directly here:
+      // Remark: I do not call FillParticleHistograms<rs>(track, eAfter), as I do not want to bother to make here full 'track' object, etc., just to fill simple kine info:
+      if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D) {
+        // 1D:
+        !ph.fParticleHistograms[ePhi][eSim][eAfter] ? true : ph.fParticleHistograms[ePhi][eSim][eAfter]->Fill(dPhi);
+        !ph.fParticleHistograms[ePt][eSim][eAfter] ? true : ph.fParticleHistograms[ePt][eSim][eAfter]->Fill(dPt);
+        !ph.fParticleHistograms[eEta][eSim][eAfter] ? true : ph.fParticleHistograms[eEta][eSim][eAfter]->Fill(dEta);
+        // 2D:
+        !ph.fParticleHistograms2D[ePhiPt][eSim][eAfter] ? true : ph.fParticleHistograms2D[ePhiPt][eSim][eAfter]->Fill(dPhi, dPt);
+        !ph.fParticleHistograms2D[ePhiEta][eSim][eAfter] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][eAfter]->Fill(dPhi, dEta);
+      }
+
+      // *) Integrated Q-vectors:
+      if (qv.fCalculateQvectors) {
+        this->FillQvector(dPhi, dPt, dEta); // all 3 arguments are passed by reference
       }
 
       // *) Differential q-vectors:
@@ -1743,10 +2233,18 @@ void InternalValidation()
         this->Fillqvector(dPhi, dEta, ETAq);                                  // first 2 arguments are passed by reference, 3rd argument is enum
       }
 
-    } // for(Int_t p=0;p<nMult;p++)
+      // *) Fill nested loops containers:
+      if (nl.fCalculateNestedLoops || nl.fCalculateCustomNestedLoops) {
+        this->FillNestedLoopsContainers(ebye.fSelectedTracks, dPhi, dPt, dEta); // all 4 arguments are passed by reference
+      }
 
-    // *) Centrality for this event:
-    ebye.fCentrality = gRandom->Uniform(0., 100.); // in any case it's meaningless in this exercise
+      // *) Counter of selected tracks in the current event:
+      ebye.fSelectedTracks++;
+      if (ebye.fSelectedTracks >= ec.fdEventCuts[eSelectedTracks][eMax]) {
+        break;
+      }
+
+    } // for(Int_t p=0;p<nMult;p++)
 
     // *) Calculate everything for selected events and particles:
     CalculateEverything();
@@ -1771,12 +2269,57 @@ void InternalValidation()
   } // for(Int_t e=0;e<e<static_cast<int>(iv.fnEventsInternalValidation);e++)
 
   // c) Delete persistent objects:
-  if (fPhiPDF)
+  if (fPhiPDF) {
     delete fPhiPDF;
-  if (fvnPDF)
+  }
+  if (fvnPDF) {
     delete fvnPDF;
+  }
 
 } // void InternalValidation()
+
+//============================================================
+
+Bool_t Accept(const Double_t& value, Int_t var)
+{
+  // Given the acceptance profile for this observable, accept or not that observable for the analysis.
+  // Use in Toy NUA studies.
+
+  // Remark: var corresponds to the field in enum eNUAPDF { ePhiNUAPDF, ePtNUAPDF, eEtaNUAPDF };
+  //         Therefore, always call this function as e.g. Accept(someAngle, ePhiNUAPDF) or Accept(somePt, ePtNUAPDF)
+
+  if (tc.fVerboseForEachParticle) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+  }
+
+  // Basic protection:
+  if (nua.fUseDefaultNUAPDF[var] && !nua.fDefaultNUAPDF[var]) {
+    LOGF(info, "\033[1;33m%s var = %d\033[0m", static_cast<int>(var));
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  } else if (!nua.fUseDefaultNUAPDF[var] && !nua.fCustomNUAPDF[var]) {
+    LOGF(info, "\033[1;33m%s var = %d\033[0m", static_cast<int>(var));
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+
+  Bool_t bAccept = kTRUE; // return value
+
+  Double_t acceptanceProbability = 1.;
+  Double_t correspondingAcceptance = -44.;
+  if (!nua.fUseDefaultNUAPDF[var]) {
+    correspondingAcceptance = nua.fCustomNUAPDF[var]->GetBinContent(nua.fCustomNUAPDF[var]->FindBin(value));
+  } else {
+    correspondingAcceptance = nua.fDefaultNUAPDF[var]->Eval(value);
+  }
+
+  // Probability to accept:
+  acceptanceProbability = 1. - (nua.fMaxValuePDF[var] - correspondingAcceptance) / nua.fMaxValuePDF[var];
+
+  // Accept or not:
+  (gRandom->Uniform(0, 1) < acceptanceProbability) ? bAccept = kTRUE : bAccept = kFALSE;
+
+  return bAccept;
+
+} // Bool_t Accept(const Double_t &value, Int_t var)
 
 //============================================================
 
@@ -1814,8 +2357,7 @@ void BookTest0Histograms()
 
   // c) Retrieve labels from placeholder:
   if (!(this->RetrieveCorrelationsLabels())) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
   // d) Book what needs to be booked:
@@ -1844,7 +2386,7 @@ void BookTest0Histograms()
           }
 
           if (!res.fResultsPro[v]) {
-            LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+            LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
           }
 
           t0.fTest0Pro[mo][mi][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fTest0Pro[%d][%d][%s]", mo, mi, res.fResultsProRawName[v].Data()))); // yes
@@ -1866,10 +2408,10 @@ void BookTest0Histograms()
 
   // e) Few quick insanity checks on booking:
   if (t0.fTest0Pro[0][0][AFO_INTEGRATED] && !TString(t0.fTest0Pro[0][0][AFO_INTEGRATED]->GetXaxis()->GetTitle()).EqualTo("integrated")) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
   }
   if (t0.fTest0Pro[0][0][AFO_PT] && !TString(t0.fTest0Pro[0][0][AFO_PT]->GetXaxis()->GetTitle()).EqualTo("p_{T}")) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
   }
 
 } // void BookTest0Histograms()
@@ -2345,6 +2887,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
 
   // a) Fill reconstructed ... (common to Run 3, Run 2 and Run 1):
   if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+    // 1D:
     !eh.fEventHistograms[eNumberOfEvents][eRec][ba] ? true : eh.fEventHistograms[eNumberOfEvents][eRec][ba]->Fill(0.5); // basically, if histogram is not booked, do nothing. 'true' is a placeholder, for the time being
     !eh.fEventHistograms[eVertex_x][eRec][ba] ? true : eh.fEventHistograms[eVertex_x][eRec][ba]->Fill(collision.posX());
     !eh.fEventHistograms[eVertex_y][eRec][ba] ? true : eh.fEventHistograms[eVertex_y][eRec][ba]->Fill(collision.posY());
@@ -2355,6 +2898,9 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     !eh.fEventHistograms[eMultTPC][eRec][ba] ? true : eh.fEventHistograms[eMultTPC][eRec][ba]->Fill(collision.multTPC());
     !eh.fEventHistograms[eMultNTracksPV][eRec][ba] ? true : eh.fEventHistograms[eMultNTracksPV][eRec][ba]->Fill(collision.multNTracksPV());
     !eh.fEventHistograms[eCentrality][eRec][ba] ? true : eh.fEventHistograms[eCentrality][eRec][ba]->Fill(ebye.fCentrality);
+    // 2D:
+    !eh.fEventHistograms2D[eVertex_z_vs_MultTPC][eRec][ba] ? true : eh.fEventHistograms2D[eVertex_z_vs_MultTPC][eRec][ba]->Fill(collision.posZ(), collision.multTPC());
+    !eh.fEventHistograms2D[eVertex_z_vs_NContributors][eRec][ba] ? true : eh.fEventHistograms2D[eVertex_z_vs_NContributors][eRec][ba]->Fill(collision.posZ(), collision.numContrib());
 
     // ... and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1) ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
     if constexpr (rs == eRecAndSim) {
@@ -2377,9 +2923,9 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
   if constexpr (rs == eSim) {
     !eh.fEventHistograms[eImpactParameter][eSim][ba] ? true : eh.fEventHistograms[eImpactParameter][eSim][ba]->Fill(collision.impactParameter()); // yes, because in this branch 'collision' is always aod::McCollision
     !eh.fEventHistograms[eSelectedTracks][eSim][ba] ? true : eh.fEventHistograms[eSelectedTracks][eSim][ba]->Fill(ebye.fSelectedTracks);          // TBI 20240108 this one makes sense only for eAfter
-    // eh.fEventHistograms[eCentrality][eSim][ba]->Fill(ebye.fCentrality); // TBI 20240120 this case is still not supported in DetermineCentrality()
-    // eh.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231030 check further how to use the same thing for 'sim'
-  } // if constexpr (rs == eSim) {
+                                                                                                                                                  // eh.fEventHistograms[eCentrality][eSim][ba]->Fill(ebye.fCentrality); // TBI 20240120 this case is still not supported in DetermineCentrality()
+                                                                                                                                                  // eh.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231030 check further how to use the same thing for 'sim'
+  }                                                                                                                                               // if constexpr (rs == eSim) {
 
   // -----------------------------------------------------------------------------
 
@@ -2504,7 +3050,7 @@ bool ValidTrack(T const& track)
 
   // *) Temporary here, until I cover also these cases:
   if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d : add support for TrackTypeEnum here also for cases eSim, eSim_Run2 and eSim_Run1\033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : add support for TrackTypeEnum here also for cases eSim, eSim_Run2 and eSim_Run1\033[0m", __FUNCTION__, __LINE__);
   }
 
   // c) Additional validity checks for all tracks (in Run 3, 2 and 1), use only during debugging:
@@ -2538,9 +3084,8 @@ Bool_t ParticleCuts(T const& track)
 
   // a) Particle cuts on info available in reconstructed (and the corresponding MC truth simulated track);
   // b) Particle cuts on info available only in simulated data;
-  // c) Test case.
-
-  // TBI 20240213 at the moment, I take that there is nothing specific for Run 3, 2, 1 here. Otherwise, see what I did in EventCuts
+  // c) Test case;
+  // d) Toy NUA.
 
   if (tc.fVerboseForEachParticle) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -2557,6 +3102,43 @@ Bool_t ParticleCuts(T const& track)
     if (pc.fUseParticleCuts[eEta] && (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax])) {
       return kFALSE;
     }
+
+    /* TBI 20240504 I have to sort out cuts below specifically for Run 3, 2, 1 , like I did it in FillParticleHistograms
+
+        if (pc.fUseParticleCuts[etpcNClsFindable] && (track.tpcNClsFindable() < pc.fdParticleCuts[etpcNClsFindable][eMin] || track.tpcNClsFindable() > pc.fdParticleCuts[etpcNClsFindable][eMax])) {
+          return kFALSE;
+        }
+        if (pc.fUseParticleCuts[etpcNClsShared] && (track.tpcNClsShared() < pc.fdParticleCuts[etpcNClsShared][eMin] || track.tpcNClsShared() > pc.fdParticleCuts[etpcNClsShared][eMax])) {
+          return kFALSE;
+        }
+        if (pc.fUseParticleCuts[etpcNClsFound] && (track.tpcNClsFound() < pc.fdParticleCuts[etpcNClsFound][eMin] || track.tpcNClsFound() > pc.fdParticleCuts[etpcNClsFound][eMax])) {
+          return kFALSE;
+        }
+        if (pc.fUseParticleCuts[etpcNClsCrossedRows] && (track.tpcNClsCrossedRows() < pc.fdParticleCuts[etpcNClsCrossedRows][eMin] || track.tpcNClsCrossedRows() > pc.fdParticleCuts[etpcNClsCrossedRows][eMax])) {
+          return kFALSE;
+        }
+        if (pc.fUseParticleCuts[eitsNCls] && (track.itsNCls() < pc.fdParticleCuts[eitsNCls][eMin] || track.itsNCls() > pc.fdParticleCuts[eitsNCls][eMax])) {
+          return kFALSE;
+        }
+        if (pc.fUseParticleCuts[eitsNClsInnerBarrel] && (track.itsNClsInnerBarrel() < pc.fdParticleCuts[eitsNClsInnerBarrel][eMin] || track.itsNClsInnerBarrel() > pc.fdParticleCuts[eitsNClsInnerBarrel][eMax])) {
+          return kFALSE;
+        }
+        if (pc.fUseParticleCuts[etpcCrossedRowsOverFindableCls] && (track.tpcCrossedRowsOverFindableCls() < pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMin] || track.tpcCrossedRowsOverFindableCls() > pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax])) {
+          return kFALSE;
+        }
+        if (pc.fUseParticleCuts[etpcFoundOverFindableCls] && (track.tpcFoundOverFindableCls() < pc.fdParticleCuts[etpcFoundOverFindableCls][eMin] || track.tpcFoundOverFindableCls() > pc.fdParticleCuts[etpcFoundOverFindableCls][eMax])) {
+          return kFALSE;
+        }
+        if (pc.fUseParticleCuts[etpcFractionSharedCls] && (track.tpcFractionSharedCls() < pc.fdParticleCuts[etpcFractionSharedCls][eMin] || track.tpcFractionSharedCls() > pc.fdParticleCuts[etpcFractionSharedCls][eMax])) {
+          return kFALSE;
+        }
+        if (pc.fUseParticleCuts[eDCA_xy] && (track.dcaXY() < pc.fdParticleCuts[eDCA_xy][eMin] || track.dcaXY() > pc.fdParticleCuts[eDCA_xy][eMax])) {
+          return kFALSE;
+        }
+        if (pc.fUseParticleCuts[eDCA_z] && (track.dcaZ() < pc.fdParticleCuts[eDCA_z][eMin] || track.dcaZ() > pc.fdParticleCuts[eDCA_z][eMax])) {
+          return kFALSE;
+        }
+    */
 
     // TBI 20231107 other cuts on reconstructed track ...
 
@@ -2613,6 +3195,77 @@ Bool_t ParticleCuts(T const& track)
     }
   } // if constexpr (rs == eTest) {
 
+  // d) Toy NUA:
+  if (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF]) {
+
+    // Local kine variables on which support for Toy NUA is implemented and applied:
+    Double_t dPhi = 0.;
+    Double_t dPt = 0.;
+    Double_t dEta = 0.;
+
+    // *) Apply Toy NUA on info available in reconstructed (and the corresponding MC truth simulated track);
+    if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+      dPhi = track.phi();
+      dPt = track.pt();
+      dEta = track.eta();
+
+      // Apply NUA on these kine variables:
+      if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
+        return kFALSE;
+      }
+      if (nua.fApplyNUAPDF[ePtNUAPDF] && !Accept(dPt, ePtNUAPDF)) {
+        return kFALSE;
+      }
+      if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
+        return kFALSE;
+      }
+
+      // ... and corresponding MC truth simulated ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
+      if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
+        if (!track.has_mcParticle()) {
+          LOGF(warning, "No MC particle for this track, skip...");
+          return kFALSE; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this particle
+        }
+        auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+        dPhi = mcparticle.phi();
+        dPt = mcparticle.pt();
+        dEta = mcparticle.eta();
+
+        // Apply NUA on these kine variables:
+        if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
+          return kFALSE;
+        }
+        if (nua.fApplyNUAPDF[ePtNUAPDF] && !Accept(dPt, ePtNUAPDF)) {
+          return kFALSE;
+        }
+        if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
+          return kFALSE;
+        }
+
+      } // if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
+    }   // if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+
+    // *) Apply Toy NUA on info available only in simulated data:
+    if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
+      // Remark: in this branch, 'track' is always TracksSim = aod::McParticles
+      dPhi = track.phi();
+      dPt = track.pt();
+      dEta = track.eta();
+
+      // Apply NUA on these kine variables:
+      if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
+        return kFALSE;
+      }
+      if (nua.fApplyNUAPDF[ePtNUAPDF] && !Accept(dPt, ePtNUAPDF)) {
+        return kFALSE;
+      }
+      if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
+        return kFALSE;
+      }
+    } // if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
+
+  } // if(nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF]) {
+
   return kTRUE;
 
 } // template <typename T> Bool_t ParticleCuts(T const& track)
@@ -2624,9 +3277,15 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba)
 {
   // Fill all particle histograms for reconstructed and simulated data.
 
-  // a) Fill reconstructed (and corresponding MC truth simulated);
-  // b) Fill only simulated;
-  // c) Test case.
+  // a) Fill reconstructed (and corresponding MC truth simulated) (common to Run 3, Run 2 and Run 1);
+  // b) Fill only simulated (common to Run 3, Run 2 and Run 1);
+  // c) Fill reconstructed (Run 3 specific);
+  // d) Fill only simulated (Run 3 specific);
+  // e) Fill reconstructed (Run 2 specific);
+  // f) Fill only simulated (Run 2 specific);
+  // g) Fill reconstructed (Run 1 specific);
+  // h) Fill only simulated (Run 1 specific);
+  // i) Test case.
 
   if (tc.fVerboseForEachParticle) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -2635,21 +3294,25 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba)
     LOGF(info, "  track.eta() = %f", track.eta());
   }
 
-  // a) Fill reconstructed ...:
+  // a) Fill reconstructed ... (common to Run 3, Run 2 and Run 1):
   if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
-    !ph.fParticleHistograms[ePhi][eRec][ba] ? true : ph.fParticleHistograms[ePhi][eRec][ba]->Fill(track.phi()); // basically, if hist is not booked, do nothing. 'true' is a placeholder, for the time being
+    // Remark: Remember to use onyl eRec and eSim as array indices in histos, also for rs == eRecAndSim, etc. TBI 20240504 shall I introduce generic enum egRec and egSim for this sake?
+    // 1D:
+    !ph.fParticleHistograms[ePhi][eRec][ba] ? true : ph.fParticleHistograms[ePhi][eRec][ba]->Fill(track.phi());
     !ph.fParticleHistograms[ePt][eRec][ba] ? true : ph.fParticleHistograms[ePt][eRec][ba]->Fill(track.pt());
     !ph.fParticleHistograms[eEta][eRec][ba] ? true : ph.fParticleHistograms[eEta][eRec][ba]->Fill(track.eta());
-    // ... and corresponding MC truth simulated ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
     // 2D:
     !ph.fParticleHistograms2D[ePhiPt][eRec][ba] ? true : ph.fParticleHistograms2D[ePhiPt][eRec][ba]->Fill(track.phi(), track.pt());
     !ph.fParticleHistograms2D[ePhiEta][eRec][ba] ? true : ph.fParticleHistograms2D[ePhiEta][eRec][ba]->Fill(track.phi(), track.eta());
+
+    // ... and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1) ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
     if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
       if (!track.has_mcParticle()) {
         LOGF(warning, "  No MC particle for this track, skip...");
         return;
       }
       auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // 1D:
       !ph.fParticleHistograms[ePhi][eSim][ba] ? true : ph.fParticleHistograms[ePhi][eSim][ba]->Fill(mcparticle.phi());
       !ph.fParticleHistograms[ePt][eSim][ba] ? true : ph.fParticleHistograms[ePt][eSim][ba]->Fill(mcparticle.pt());
       !ph.fParticleHistograms[eEta][eSim][ba] ? true : ph.fParticleHistograms[eEta][eSim][ba]->Fill(mcparticle.eta());
@@ -2657,12 +3320,14 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba)
       // 2D:
       !ph.fParticleHistograms2D[ePhiPt][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiPt][eSim][ba]->Fill(mcparticle.phi(), mcparticle.pt());
       !ph.fParticleHistograms2D[ePhiEta][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][ba]->Fill(mcparticle.phi(), mcparticle.eta());
+
     } // if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
   }   // if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
 
-  // b) Fill only simulated:
+  // b) Fill only simulated (common to Run 3, Run 2 and Run 1):
   if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
     // Remark: in this branch, 'track' is always TracksSim = aod::McParticles
+    // 1D:
     !ph.fParticleHistograms[ePhi][eSim][ba] ? true : ph.fParticleHistograms[ePhi][eSim][ba]->Fill(track.phi());
     !ph.fParticleHistograms[ePt][eSim][ba] ? true : ph.fParticleHistograms[ePt][eSim][ba]->Fill(track.pt());
     !ph.fParticleHistograms[eEta][eSim][ba] ? true : ph.fParticleHistograms[eEta][eSim][ba]->Fill(track.eta());
@@ -2672,18 +3337,107 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba)
     !ph.fParticleHistograms2D[ePhiEta][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][ba]->Fill(track.phi(), track.eta());
   } // if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
 
-  /* TBI 20231019 use also these + check further
-  // From aod::TracksExtra
-  ph.fParticleHistograms[etpcNClsCrossedRows][rs][ba]->Fill(track.tpcNClsCrossedRows());
+  // -----------------------------------------------------------------------------
 
-  // From aod::TracksDCA
-  ph.fParticleHistograms[eDCA_xy][rs][ba]->Fill(track.dcaXY());
-  ph.fParticleHistograms[eDCA_z][rs][ba]->Fill(track.dcaZ());
-  */
+  // c) Fill reconstructed (Run 3 specific):
+  if constexpr (rs == eRec || rs == eRecAndSim) {
+    // TBI 20240504 check if I can fill some of these histos also for converted Run 1 and Run 2 data
+    // Remark: Remember to use onyl eRec and eSim as array indices in histos, also for rs == eRecAndSim, etc. TBI 20240504 shall I introduce generic enum egRec and egSim for this sake?
+    // 1D:
+    // From o2::aod::TracksExtra_001
+    !ph.fParticleHistograms[etpcNClsFindable][eRec][ba] ? true : ph.fParticleHistograms[etpcNClsFindable][eRec][ba]->Fill(track.tpcNClsFindable());
+    !ph.fParticleHistograms[etpcNClsShared][eRec][ba] ? true : ph.fParticleHistograms[etpcNClsShared][eRec][ba]->Fill(track.tpcNClsShared());
+    !ph.fParticleHistograms[etpcNClsFound][eRec][ba] ? true : ph.fParticleHistograms[etpcNClsFound][eRec][ba]->Fill(track.tpcNClsFound());
+    !ph.fParticleHistograms[etpcNClsCrossedRows][eRec][ba] ? true : ph.fParticleHistograms[etpcNClsCrossedRows][eRec][ba]->Fill(track.tpcNClsCrossedRows());
+    !ph.fParticleHistograms[eitsNCls][eRec][ba] ? true : ph.fParticleHistograms[eitsNCls][eRec][ba]->Fill(track.itsNCls());
+    !ph.fParticleHistograms[eitsNClsInnerBarrel][eRec][ba] ? true : ph.fParticleHistograms[eitsNClsInnerBarrel][eRec][ba]->Fill(track.itsNClsInnerBarrel());
+    !ph.fParticleHistograms[etpcCrossedRowsOverFindableCls][eRec][ba] ? true : ph.fParticleHistograms[etpcCrossedRowsOverFindableCls][eRec][ba]->Fill(track.tpcCrossedRowsOverFindableCls());
+    !ph.fParticleHistograms[etpcFoundOverFindableCls][eRec][ba] ? true : ph.fParticleHistograms[etpcFoundOverFindableCls][eRec][ba]->Fill(track.tpcFoundOverFindableCls());
+    !ph.fParticleHistograms[etpcFractionSharedCls][eRec][ba] ? true : ph.fParticleHistograms[etpcFractionSharedCls][eRec][ba]->Fill(track.tpcFractionSharedCls());
 
-  // c) Test case:
+    // From o2::aod::TracksDCA
+    !ph.fParticleHistograms[eDCA_xy][eRec][ba] ? true : ph.fParticleHistograms[eDCA_xy][eRec][ba]->Fill(track.dcaXY());
+    !ph.fParticleHistograms[eDCA_z][eRec][ba] ? true : ph.fParticleHistograms[eDCA_z][eRec][ba]->Fill(track.dcaZ());
+
+    // ... fill some particle hist here ...
+
+    // ... and corresponding MC truth simulated (Run 3 specific) ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
+    if constexpr (rs == eRecAndSim) {
+      if (!track.has_mcParticle()) {
+        LOGF(warning, "  No MC particle for this track, skip...");
+        return;
+      }
+      // ... fill some particle hist here ...
+
+    } // if constexpr (rs == eRecAndSim) {
+  }   // if constexpr (rs == eRec || rs == eRecAndSim) {
+
+  // -----------------------------------------------------------------------------
+
+  // d) Fill only simulated (Run 3 specific):
+  if constexpr (rs == eSim) {
+    // Remark: in this branch, 'track' is always TracksSim = aod::McParticles
+    // ... fill some particle hist here ...
+  } // if constexpr (rs == eSim) {
+
+  // -----------------------------------------------------------------------------
+
+  // e) Fill reconstructed (Run 2 specific):
+  if constexpr (rs == eRec_Run2 || rs == eRecAndSim_Run2) {
+    // ... fill some particle hist here ...
+
+    // ... and corresponding MC truth simulated (Run 2 specific) ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
+    if constexpr (rs == eRecAndSim_Run2) {
+      if (!track.has_mcParticle()) {
+        LOGF(warning, "  No MC particle for this track, skip...");
+        return;
+      }
+      // ... fill some particle hist here ...
+
+    } // if constexpr (rs == eRecAndSim_Run2) {
+  }   // if constexpr (rs == eRec_Run2 || rs == eRecAndSim_Run2) {
+
+  // -----------------------------------------------------------------------------
+
+  // f) Fill only simulated (Run 2 specific):
+  if constexpr (rs == eSim_Run2) {
+    // Remark: in this branch, 'track' is always TracksSim = aod::McParticles
+    // ... fill some particle hist here ...
+
+  } // if constexpr (rs == eSim_Run2) {
+
+  // -----------------------------------------------------------------------------
+
+  // g) Fill reconstructed (Run 1 specific):
+  if constexpr (rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+    // ... fill some particle hist here ...
+
+    // ... and corresponding MC truth simulated (Run 1  specific) ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
+    if constexpr (rs == eRecAndSim_Run1) {
+      if (!track.has_mcParticle()) {
+        LOGF(warning, "  No MC particle for this track, skip...");
+        return;
+      }
+      // ... fill some particle hist here ...
+
+    } // if constexpr (rs == eRecAndSim_Run1) {
+  }   // if constexpr (rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+
+  // -----------------------------------------------------------------------------
+
+  // h) Fill only simulated (Run 1  specific):
+  if constexpr (rs == eSim_Run1) {
+    // Remark: in this branch, 'track' is always TracksSim = aod::McParticles
+    // ... fill some particle hist here ...
+
+  } // if constexpr (rs == eSim_Run1) {
+
+  // -----------------------------------------------------------------------------
+
+  // i) Test case:
   if constexpr (rs == eTest) {
     // TBI 20240223 for the time being, eTest fills eRec histos:
+    // 1D:
     !ph.fParticleHistograms[ePhi][eRec][ba] ? true : ph.fParticleHistograms[ePhi][eRec][ba]->Fill(track.phi());
     !ph.fParticleHistograms[ePt][eRec][ba] ? true : ph.fParticleHistograms[ePt][eRec][ba]->Fill(track.pt());
     !ph.fParticleHistograms[eEta][eRec][ba] ? true : ph.fParticleHistograms[eEta][eRec][ba]->Fill(track.eta());
@@ -2747,7 +3501,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 1);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
       if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(twoC - nestedLoopValue) > 1.e-5) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d, nestedLoopValue = %f is not the same as twoC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, twoC);
+        LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as twoC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, twoC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 2-p, harmonic %d", h);
       }
@@ -2800,7 +3554,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 3);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
       if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(fourC - nestedLoopValue) > 1.e-5) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d, nestedLoopValue = %f is not the same as fourC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, fourC);
+        LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as fourC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, fourC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 4-p, harmonic %d", h);
       }
@@ -2855,7 +3609,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 5);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
       if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(sixC - nestedLoopValue) > 1.e-5) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d, nestedLoopValue = %f is not the same as sixC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, sixC);
+        LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as sixC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, sixC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 6-p, harmonic %d", h);
       }
@@ -2912,7 +3666,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 7);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
       if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(eightC - nestedLoopValue) > 1.e-5) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d, nestedLoopValue = %f is not the same as eightC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, eightC);
+        LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as eightC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, eightC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 8-p, harmonic %d", h);
       }
@@ -2992,8 +3746,7 @@ void CalculateTest0()
         for (Int_t h = 0; h <= mo; h++) {
           TObjArray* oa = t0.fTest0Labels[mo][mi]->Tokenize(" ");
           if (!oa) {
-            LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-                 __FUNCTION__, __LINE__);
+            LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
           }
           n[h] = TString(oa->At(h)->GetName()).Atoi();
           delete oa; // yes, otherwise it's a memory leak
@@ -3098,12 +3851,12 @@ void CalculateTest0()
             break;
 
           default:
-            LOGF(fatal, "in function \033[1;31m%s at line %d\n Not supported yet: %s \n\n\033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data());
+            LOGF(fatal, "\033[1;31m%s at line %d : Not supported yet: t0.fTest0Labels[mo][mi]->Data() = %s\033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data());
         } // switch(mo+1)
 
         // Insanity check on weight:
         if (!(weight > 0.)) {
-          LOGF(fatal, "in function \033[1;31m%s at line %d\n Is perhaps order of correlator bigger than the number of particles? %s \n\n\033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data());
+          LOGF(fatal, "\033[1;31m%s at line %d : weight = %f => Is perhaps order of correlator bigger than the number of particles? t0.fTest0Labels[mo][mi]->Data() = %s \033[0m", __FUNCTION__, __LINE__, weight, t0.fTest0Labels[mo][mi]->Data());
         }
 
         // e-b-e sanity check:
@@ -3116,7 +3869,7 @@ void CalculateTest0()
           if (!(TMath::Abs(nestedLoopValue) > 0.)) {
             LOGF(info, "  e-b-e check with CustomNestedLoops was NOT calculated for %d-p Test0 corr. %s", mo + 1, t0.fTest0Labels[mo][mi]->Data());
           } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > 1.e-5) {
-            LOGF(fatal, "in function \033[1;31m%s at line %d, nestedLoopValue = %f is not the same as correlation/weight = %f, for correlator %s\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, correlation / weight, t0.fTest0Labels[mo][mi]->Data());
+            LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as correlation/weight = %f, for correlator %s\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, correlation / weight, t0.fTest0Labels[mo][mi]->Data());
           } else {
             LOGF(info, "  e-b-e check with CustomNestedLoops is OK for %d-p Test0 corr. %s", mo + 1, t0.fTest0Labels[mo][mi]->Data());
           }
@@ -3163,7 +3916,7 @@ void CalculateTest0()
 
 //============================================================
 
-void CalculateKineTest0(const char* kc)
+void CalculateKineTest0(eAsFunctionOf AFO_variable)
 {
   // Calculate analytically kine Test0 from Q-vectors.
 
@@ -3172,28 +3925,35 @@ void CalculateKineTest0(const char* kc)
   }
 
   // *) ...
-  Int_t kb = -1;         // which kine bin
-  Int_t qvKine_var = -1; // which eqvectorKine enum
+  eqvectorKine qvKine = eqvectorKine_N; // which eqvectorKine enum
   Int_t nBins = -1;
-  if (TString(kc).EqualTo("pt")) {
-    kb = AFO_PT;
-    qvKine_var = PTq;
-    // nBins = fKinematicsBins[PT][0];
-    nBins = res.fResultsPro[AFO_PT]->GetNbinsX();
-  } else if (TString(kc).EqualTo("eta")) {
-    kb = AFO_ETA;
-    qvKine_var = ETAq;
-    // nBins = fKinematicsBins[ETA][0];
-    nBins = res.fResultsPro[AFO_ETA]->GetNbinsX();
+
+  switch (AFO_variable) {
+    case AFO_PT:
+      qvKine = PTq;
+      nBins = res.fResultsPro[AFO_PT]->GetNbinsX();
+      break;
+    case AFO_ETA:
+      qvKine = ETAq;
+      nBins = res.fResultsPro[AFO_ETA]->GetNbinsX();
+      break;
+    default:
+      LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
+      break;
+  } // switch(AFO_variable)
+
+  // *) Insanity checks on above settings:
+  if (qvKine == eqvectorKine_N) {
+    LOGF(fatal, "\033[1;31m%s at line %d : qvKine == eqvectorKine_N => add some more entries to the case stamenent \033[0m", __FUNCTION__, __LINE__);
   }
 
   // *) Uniform loop over bin for all kine variables:
   for (Int_t b = 0; b < nBins; b++) {
 
     // *) Ensures that in each bin of interest, I have the same cut on number of particles, like in integrated analysis:
-    if ((qv.fqVectorEntries[qvKine_var][b] < ec.fdEventCuts[eSelectedTracks][eMin]) || (qv.fqVectorEntries[qvKine_var][b] > ec.fdEventCuts[eSelectedTracks][eMax])) {
+    if ((qv.fqVectorEntries[qvKine][b] < ec.fdEventCuts[eSelectedTracks][eMin]) || (qv.fqVectorEntries[qvKine][b] > ec.fdEventCuts[eSelectedTracks][eMax])) {
       if (tc.fVerbose) {
-        LOGF(info, "\033[1;31m%s eSelectedTracks cut in bin = %d, for qvKine_var = %d\033[0m", __FUNCTION__, b, static_cast<int>(qvKine_var));
+        LOGF(info, "\033[1;31m%s eSelectedTracks cut in bin = %d, for qvKine = %d\033[0m", __FUNCTION__, b, static_cast<int>(qvKine));
       }
     }
 
@@ -3201,7 +3961,7 @@ void CalculateKineTest0(const char* kc)
     // After that, I can call all standard Q-vector functions again:
     for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
       for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
-        qv.fQ[h][wp] = qv.fqvector[qvKine_var][b][h][wp];
+        qv.fQ[h][wp] = qv.fqvector[qvKine][b][h][wp];
       }
     }
 
@@ -3226,7 +3986,7 @@ void CalculateKineTest0(const char* kc)
             delete oa; // yes, otherwise it's a memory leak
           }
 
-          if (qv.fqVectorEntries[qvKine_var][b] < mo + 1) {
+          if (qv.fqVectorEntries[qvKine][b] < mo + 1) {
             continue;
           }
 
@@ -3293,7 +4053,7 @@ void CalculateKineTest0(const char* kc)
               break;
 
             default:
-              LOGF(fatal, "in function \033[1;31m%s at line %d\n Not supported yet: %s \n\n\033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data());
+              LOGF(fatal, "\033[1;31m%s at line %d : not supported yet: %s \n\n\033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data());
           } // switch(mo+1)
 
           // *) e-b-e sanity check:
@@ -3303,13 +4063,13 @@ void CalculateKineTest0(const char* kc)
               harmonics->SetAt(n[i], i);
             }
             if (!(weight > 0.)) {
-              LOGF(fatal, "in function \033[1;31m%s at line %d Is perhaps order of some requested correlator bigger than the number of particles? Correlator = %s \033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data());
+              LOGF(fatal, "\033[1;31m%s at line %d : is perhaps order of some requested correlator bigger than the number of particles? Correlator = %s \033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data());
             }
-            Double_t nestedLoopValue = this->CalculateKineCustomNestedLoops(harmonics, kc, b);
+            Double_t nestedLoopValue = this->CalculateKineCustomNestedLoops(harmonics, AFO_variable, b);
             if (!(TMath::Abs(nestedLoopValue) > 0.)) {
               LOGF(info, "  e-b-e check with CalculateKineCustomNestedLoops was NOT calculated for %d-p Test0 corr. %s, bin = %d", mo + 1, t0.fTest0Labels[mo][mi]->Data(), b + 1);
             } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > 1.e-5) {
-              LOGF(fatal, "in function \033[1;31m%s at line %d \n correlator: %s \n correlation: %f \n custom loop: %f \033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data(), correlation / weight, nestedLoopValue);
+              LOGF(fatal, "\033[1;31m%s at line %d : correlator: %s \n correlation: %f \n custom loop: %f \033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data(), correlation / weight, nestedLoopValue);
             } else {
               LOGF(info, "  e-b-e check with CalculateKineCustomNestedLoops is OK for %d-p Test0 corr. %s, bin = %d", mo + 1, t0.fTest0Labels[mo][mi]->Data(), b + 1);
             }
@@ -3337,20 +4097,20 @@ void CalculateKineTest0(const char* kc)
             // If it's negative, that means that sum of particle weights is smaller than "number of particles - 1"
             // In that case, you can simply rescale all particle weights, so that each of them is > 1, basically recalculate weights.root files with such a rescaling.
             LOGF(info, "\n\033[1;33m b = %d \033[0m\n", b);
-            LOGF(info, "\n\033[1;33m qvKine_var = %d \033[0m\n", qvKine_var);
+            LOGF(info, "\n\033[1;33m qvKine = %d \033[0m\n", static_cast<int>(qvKine));
             LOGF(info, "\n\033[1;33m event weight = %e \033[0m\n", weight);
             LOGF(info, "\n\033[1;33m sum of particle weights = %e \033[0m\n", One(0).Re());
             LOGF(info, "\n\033[1;33m correlation = %f \033[0m\n", correlation);
-            LOGF(info, "\n\033[1;33m t0.fTest0Pro[mo][mi][kb]->GetTitle() = %s \033[0m\n", t0.fTest0Pro[mo][mi][kb]->GetTitle());
-            LOGF(info, "\n\033[1;33m [mo][mi][kb] = [%d][%d][%d] \033[0m\n", mo, mi, kb);
+            LOGF(info, "\n\033[1;33m t0.fTest0Pro[mo][mi][AFO_variable]->GetTitle() = %s \033[0m\n", t0.fTest0Pro[mo][mi][AFO_variable]->GetTitle());
+            LOGF(info, "\n\033[1;33m [mo][mi][AFO_variable] = [%d][%d][%d] \033[0m\n", mo, mi, static_cast<int>(AFO_variable));
             LOGF(info, "\n\033[1;33m ebye.fSelectedTracks = %d \033[0m\n", ebye.fSelectedTracks);
-            LOGF(info, "\n\033[1;33m qv.fqVectorEntries[qvKine_var][b] = %d \033[0m\n", qv.fqVectorEntries[qvKine_var][b]);
-            LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+            LOGF(info, "\n\033[1;33m qv.fqVectorEntries[qvKine][b] = %d \033[0m\n", qv.fqVectorEntries[qvKine][b]);
+            LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
           }
 
           // Finally, fill:
-          if (t0.fTest0Pro[mo][mi][kb]) {
-            t0.fTest0Pro[mo][mi][kb]->Fill(t0.fTest0Pro[mo][mi][kb]->GetXaxis()->GetBinCenter(b + 1), correlation / weight, weight);
+          if (t0.fTest0Pro[mo][mi][AFO_variable]) {
+            t0.fTest0Pro[mo][mi][AFO_variable]->Fill(t0.fTest0Pro[mo][mi][AFO_variable]->GetXaxis()->GetBinCenter(b + 1), correlation / weight, weight);
           } // fill in the bin center
 
         } // if(fTest0Labels[mo][mi])
@@ -3360,6 +4120,54 @@ void CalculateKineTest0(const char* kc)
   } // for(Int_t b=0;b<nBins;b++)
 
 } // CalculateKineTest0(const char* kc)
+
+//============================================================
+
+void FillNestedLoopsContainers(const Int_t& particleIndex, const Double_t& dPhi, const Double_t& dPt, const Double_t& dEta)
+{
+  // Fill into the nested loop containers the current particle.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+  }
+
+  if (tc.fInsanityCheckForEachParticle) {
+    if (particleIndex < 0) {
+      LOGF(fatal, "\033[1;31m%s at line %d : particleIndex = %d\033[0m", __FUNCTION__, __LINE__, particleIndex);
+    }
+    if (!(TMath::Abs(nl.ftaNestedLoops[0]->GetAt(particleIndex - 1)) > 0.)) {
+      LOGF(fatal, "\033[1;31m%s at line %d : there are empty elements in nl.ftaNestedLoops[0] \033[0m", __FUNCTION__, __LINE__);
+      // I need this protection, to ensure that all array entries are filled. If not, most likely a particle passed all
+      // selection criteria, and it wasn't added to the nested loops containers
+    }
+  }
+
+  // *) Fill container for angles:
+  if (nl.ftaNestedLoops[0]) {
+    nl.ftaNestedLoops[0]->AddAt(dPhi, particleIndex); // remember that the 2nd argument here must start from 0
+  }
+
+  // *) Fill container for weights:
+  if (nl.ftaNestedLoops[1]) {
+    // TBI 20240501 there is a bit of efficiency loss here, because I access Weight() again here.
+    // But it doesn't matter really, in any case I evaluate nested loops only for small M during debugging.
+    // Otherwise, just promote weights to data members, and initialize them only once for a given particle.
+    Double_t wPhi = 1.;
+    Double_t wPt = 1.;
+    Double_t wEta = 1.;
+    if (pw.fUseWeights[wPHI]) {
+      wPhi = Weight(dPhi, wPHI);
+    }
+    if (pw.fUseWeights[wPT]) {
+      wPt = Weight(dPt, wPT);
+    }
+    if (pw.fUseWeights[wETA]) {
+      wEta = Weight(dEta, wETA);
+    }
+    nl.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta, particleIndex); // remember that the 2nd argument here must start from 0
+  }
+
+} // void FillNestedLoopsContainers(const Int_t& particleIndex, const Double_t& dPhi, const Double_t& dPt, const Double_t& dEta)
 
 //============================================================
 
@@ -3644,8 +4452,7 @@ void ComparisonNestedLoopsVsCorrelations()
     nBinsQV = mupa.fCorrelationsPro[0][0][v]->GetNbinsX();
     nBinsNL = nl.fNestedLoopsPro[0][0][v]->GetNbinsX();
     if (nBinsQV != nBinsNL) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     LOGF(info, "\033[1;32m   [%d] : %s\033[0m", v, res.fResultsProXaxisTitle[v].Data());
     for (Int_t o = 0; o < 4; o++) {
@@ -3663,8 +4470,7 @@ void ComparisonNestedLoopsVsCorrelations()
             LOGF(info, "   bin=%d, h=%d, Nested loops: %f", b, h + 1, valueNL);
             if (TMath::Abs(valueQV - valueNL) > 1.e-5) {
               LOGF(info, "\n\033[1;33m[%d][%d][%d] \033[0m\n", o, h, v);
-              LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-                   __FUNCTION__, __LINE__);
+              LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
             }
           }           // if(TMath::Abs(valueQV)>0. && TMath::Abs(valueNL)>0.)
         }             // for(Int_t b=1;b<=nBinsQV;b++)
@@ -3920,61 +4726,41 @@ void ResetQ()
 
 //============================================================
 
-void SetWeightsHist(TH1D* const hist, const char* variable)
+void SetWeightsHist(TH1D* const hist, eWeights whichWeight)
 {
-  // Copy histogram holding weights from an external file to the corresponding
-  // data member.
+  // Copy histogram holding weights from an external file to the corresponding data member.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
   }
 
-  // Basic protection:
-  if (!(TString(variable).EqualTo("phi") || TString(variable).EqualTo("pt") ||
-        TString(variable).EqualTo("eta"))) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
-  }
-
-  Int_t ppe = -1;
-  if (TString(variable).EqualTo("phi")) {
-    ppe = 0;
-  }
-  if (TString(variable).EqualTo("pt")) {
-    ppe = 1;
-  }
-  if (TString(variable).EqualTo("eta")) {
-    ppe = 2;
-  }
-
   // Finally:
   hist->SetDirectory(0);
-  pw.fWeightsHist[ppe] = reinterpret_cast<TH1D*>(hist->Clone());
+  pw.fWeightsHist[whichWeight] = reinterpret_cast<TH1D*>(hist->Clone());
 
-  if (!pw.fWeightsHist[ppe]) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
+  if (!pw.fWeightsHist[whichWeight]) {
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
   // Cosmetics: TBI 20240216 do I really want to overwrite initial cosmetics, perhaps this shall go better into MakeWeights.C ?
   //                         Or I could move all this to GetHistogramWithWeights, where in any case I am setting e.g. histogram title, etc.
   TString sVariable[eWeights_N] = {"#varphi", "p_{t}", "#eta"}; // [phi,pt,eta]
   TString sWeights[eWeights_N] = {"w_{#varphi}", "w_{p_{t}}", "w_{#eta}"};
-  pw.fWeightsHist[ppe]->SetStats(kFALSE);
-  pw.fWeightsHist[ppe]->GetXaxis()->SetTitle(sVariable[ppe].Data());
-  pw.fWeightsHist[ppe]->GetYaxis()->SetTitle(sWeights[ppe].Data());
-  pw.fWeightsHist[ppe]->SetFillColor(eFillColor);
-  pw.fWeightsHist[ppe]->SetLineColor(eColor);
-  pw.fWeightsList->Add(pw.fWeightsHist[ppe]);
+  pw.fWeightsHist[whichWeight]->SetStats(kFALSE);
+  pw.fWeightsHist[whichWeight]->GetXaxis()->SetTitle(sVariable[whichWeight].Data());
+  pw.fWeightsHist[whichWeight]->GetYaxis()->SetTitle(sWeights[whichWeight].Data());
+  pw.fWeightsHist[whichWeight]->SetFillColor(eFillColor);
+  pw.fWeightsHist[whichWeight]->SetLineColor(eColor);
+  pw.fWeightsList->Add(pw.fWeightsHist[whichWeight]);
 
   // Flag:
-  pw.fUseWeights[ppe] = kTRUE;
+  pw.fUseWeights[whichWeight] = kTRUE;
 
-} // void SetWeightsHist(TH1D* const hist, const char *variable)
+} // void SetWeightsHist(TH1D* const hist, , eWeights whichWeight)
 
 //============================================================
 
-void SetDiffWeightsHist(TH1D* const hist, const char* variable, Int_t bin)
+void SetDiffWeightsHist(TH1D* const hist, eDiffWeights whichDiffWeight, Int_t bin)
 {
   // Copy histogram holding differential weights from an external file to the corresponding data member.
 
@@ -3982,51 +4768,36 @@ void SetDiffWeightsHist(TH1D* const hist, const char* variable, Int_t bin)
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
   }
 
-  // Basic protection:
-  if (!(TString(variable).EqualTo("phipt") || TString(variable).EqualTo("phieta"))) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
-  }
-
-  Int_t ppe = -1; // TBI 20240215 use enum's instead
-  if (TString(variable).EqualTo("phipt")) {
-    ppe = 0;
-  }
-  if (TString(variable).EqualTo("phieta")) {
-    ppe = 1;
-  }
-
   // Finally:
   hist->SetDirectory(0);
-  pw.fDiffWeightsHist[ppe][bin] = reinterpret_cast<TH1D*>(hist->Clone());
+  pw.fDiffWeightsHist[whichDiffWeight][bin] = reinterpret_cast<TH1D*>(hist->Clone());
 
-  if (!pw.fDiffWeightsHist[ppe][bin]) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
+  if (!pw.fDiffWeightsHist[whichDiffWeight][bin]) {
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
   // Cosmetics: TBI 20240216 do I really want to overwrite initial cosmetics, perhaps this shall go better into MakeWeights.C ?
   //                         Or I could move all this to GetHistogramWithWeights, where in any case I am setting e.g. histogram title, etc.
   TString sVariable[eWeights_N] = {"#varphi", "p_{t}", "#eta"}; // [phi,pt,eta]
   TString sWeights[eWeights_N] = {"w_{#varphi}", "w_{p_{t}}", "w_{#eta}"};
-  pw.fDiffWeightsHist[ppe][bin]->SetStats(kFALSE);
-  pw.fDiffWeightsHist[ppe][bin]->GetXaxis()->SetTitle(sVariable[ppe].Data());
-  pw.fDiffWeightsHist[ppe][bin]->GetYaxis()->SetTitle(sWeights[ppe].Data());
-  pw.fDiffWeightsHist[ppe][bin]->SetFillColor(eFillColor);
-  pw.fDiffWeightsHist[ppe][bin]->SetLineColor(eColor);
-  pw.fWeightsList->Add(pw.fDiffWeightsHist[ppe][bin]);
+  pw.fDiffWeightsHist[whichDiffWeight][bin]->SetStats(kFALSE);
+  pw.fDiffWeightsHist[whichDiffWeight][bin]->GetXaxis()->SetTitle(sVariable[whichDiffWeight].Data());
+  pw.fDiffWeightsHist[whichDiffWeight][bin]->GetYaxis()->SetTitle(sWeights[whichDiffWeight].Data());
+  pw.fDiffWeightsHist[whichDiffWeight][bin]->SetFillColor(eFillColor);
+  pw.fDiffWeightsHist[whichDiffWeight][bin]->SetLineColor(eColor);
+  pw.fWeightsList->Add(pw.fDiffWeightsHist[whichDiffWeight][bin]);
 
   // Flag:
-  if (!pw.fUseDiffWeights[ppe]) // yes, set it only once to kTRUE, for all bins
+  if (!pw.fUseDiffWeights[whichDiffWeight]) // yes, set it only once to kTRUE, for all bins
   {
-    pw.fUseDiffWeights[ppe] = kTRUE;
+    pw.fUseDiffWeights[whichDiffWeight] = kTRUE;
   }
 
 } // SetDiffWeightsHist(TH1D* const hist, const char *variable, Int_t bin)
 
 //============================================================
 
-TH1D* GetWeightsHist(const char* variable)
+TH1D* GetWeightsHist(eWeights whichWeight)
 {
   // The standard getter.
 
@@ -4034,28 +4805,10 @@ TH1D* GetWeightsHist(const char* variable)
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
   }
 
-  // Basic protection:
-  if (!(TString(variable).EqualTo("phi") || TString(variable).EqualTo("pt") ||
-        TString(variable).EqualTo("eta"))) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
-  }
-
-  Int_t ppe = -1;
-  if (TString(variable).EqualTo("phi")) {
-    ppe = 0;
-  }
-  if (TString(variable).EqualTo("pt")) {
-    ppe = 1;
-  }
-  if (TString(variable).EqualTo("eta")) {
-    ppe = 2;
-  }
-
   // Finally:
-  return pw.fWeightsHist[ppe];
+  return pw.fWeightsHist[whichWeight];
 
-} // TH1D* GetWeightsHist(const char *variable)
+} // TH1D* GetWeightsHist(eWeights whichWeigh)
 
 //============================================================
 
@@ -4066,6 +4819,10 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   // If bin = -1, integrated weights are searched for, i.e. in this case "bin" variable has no effect.
   // I do it this way, so as to condense GetHistogramWithWeights(...) and GetHistogramWithDiffWeights(...) from MuPa class in
   // one routine here, so that I do not duplicate code related to CCDB access, etc.
+
+  // TBI 20240504: Here I can keep const char* variable , i.e. no need to switch to enums, because this function is called only once, at init.
+  //               Nevertheless, I could switch to enums and make it more general, i.e. I could introduce additional data members and configurables,
+  //               for the names of histograms with weights. Like I did it in void GetHistogramWithCustomNUA(const char* filePath, eNUAPDF variable)
 
   // a) Return value;
   // b) Basic protection for arguments;
@@ -4093,8 +4850,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   //    Remark: below I do one more specific check.
   if (!(TString(variable).EqualTo("phi") || TString(variable).EqualTo("pt") || TString(variable).EqualTo("eta") ||
         TString(variable).EqualTo("phipt") || TString(variable).EqualTo("phieta"))) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
   // c) Determine from filePath if the file in on a local machine, or in home
@@ -4117,13 +4873,11 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
     // d) Handle the AliEn case:
     TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
     if (!alien) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     TFile* weightsFile = TFile::Open(Form("alien://%s", filePath), "READ");
     if (!weightsFile) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
     weightsFile->GetObject(
@@ -4132,14 +4886,12 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
                                 // AliEn case, see if I need to change this
     if (!baseList) {
       // weightsFile->ls();
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
     listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
   } else if (bFileIsInCCDB) {
@@ -4168,15 +4920,13 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
                                                   .Data()));
 
     if (!baseList) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
     listWithRuns =
       reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
   } else {
@@ -4189,18 +4939,13 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
 
     // Check if the external ROOT file exists at specified path:
     if (gSystem->AccessPathName(filePath, kFileExists)) {
-      LOGF(info,
-           "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), "
-           "filePath = %s \033[0m",
-           filePath);
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(info, "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), filePath = %s \033[0m", filePath);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
     TFile* weightsFile = TFile::Open(filePath, "READ");
     if (!weightsFile) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
     weightsFile->GetObject(
@@ -4209,15 +4954,13 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
                                 // local case, see if I need to change this
     if (!baseList) {
       // weightsFile->ls();
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
     listWithRuns =
       reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
   } // else {
@@ -4226,7 +4969,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   if (-1 == bin) {
     // Integrated weights:
     if (!(TString(variable).EqualTo("phi") || TString(variable).EqualTo("pt") || TString(variable).EqualTo("eta"))) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
     // fetch histogram directly from this list:
@@ -4240,7 +4983,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
     }
     if (!hist) {
       listWithRuns->ls();
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     hist->SetDirectory(0);
     hist->SetTitle(Form("%s, %s", filePath, runNumber));
@@ -4248,7 +4991,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   } else {
     // Differential weights:
     if (!(TString(variable).EqualTo("phipt") || TString(variable).EqualTo("phieta"))) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     // fetch histogram directly from this list:
     hist = reinterpret_cast<TH1D*>(listWithRuns->FindObject(Form("%s[%d]_%s", variable, bin, tc.fTaskName.Data())));
@@ -4262,7 +5005,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
     if (!hist) {
       LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
       listWithRuns->ls();
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     hist->SetDirectory(0);
 
@@ -4326,20 +5069,17 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
     // c) Handle the AliEn case:
     TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
     if (!alien) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     oaFile = TFile::Open(Form("alien://%s", filePath), "READ");
     if (!oaFile) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
     // Fetch TObjArray from external file (keep in sync with local file case below):
     TList* lok = oaFile->GetListOfKeys();
     if (!lok) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     for (Int_t l = 0; l < lok->GetEntries(); l++) {
       oaFile->GetObject(lok->At(l)->GetName(), oa);
@@ -4353,8 +5093,7 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
     } // for(Int_t l=0;l<lok->GetEntries();l++)
 
     if (!oa) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
   } else if (bFileIsInCCDB) {
 
@@ -4377,32 +5116,25 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
         .Data()));
 
     if (!oa) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
   } else {
 
     // e) Handle the local case:
     // Check if the external ROOT file exists at specified path:
     if (gSystem->AccessPathName(filePath, kFileExists)) {
-      LOGF(info,
-           "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), "
-           "filePath = %s \033[0m",
-           filePath);
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(info, "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), filePath = %s \033[0m", filePath);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     oaFile = TFile::Open(filePath, "READ");
     if (!oaFile) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
     // Fetch TObjArray from external file (keep in sync with AliEn file case above):
     TList* lok = oaFile->GetListOfKeys();
     if (!lok) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     for (Int_t l = 0; l < lok->GetEntries(); l++) {
       oaFile->GetObject(lok->At(l)->GetName(), oa);
@@ -4415,7 +5147,7 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
       }
     } // for(Int_t l=0;l<lok->GetEntries();l++)
     if (!oa) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
   } // else {
@@ -4427,6 +5159,144 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
   return oa;
 
 } // TObjArray* GetObjArrayWithLabels(const char *filePath)
+
+//============================================================
+
+void GetHistogramWithCustomNUA(const char* filePath, eNUAPDF variable)
+{
+  // Get and set immediately histogram with custom NUA for specified variable, from an external file.
+  // This structure of an external file is mandatory at the moment:
+  //  *) There is a TList named "ccdb_object", which holds all histograms for custom NUA;
+  //  *) These histograms are TH1D objects.
+  // This is a port of void FlowWithMultiparticleCorrelationsTask::SetNUAPDF(TH1D* const hist, const char* variable)
+
+  // Remark: Unlike for weights and labels, here I am trying to do everythign in the same function, that's why here return type is void, instead of TH1D*.
+
+  // TBI 20240501 there is a bit of code repetition below, add with analogous functions GetHistogramWithWeights(...) and GetObjArrayWithLabels(...)
+
+  // a) Local objects;
+  // b) Basic protection for arguments;
+  // c) Determine from filePath if the file in on a local machine, or in AliEn, or in CCDB;
+  // d) Handle the AliEn case;
+  // e) Handle the CCDB case;
+  // f) Handle the local case;
+  // g) The final touch.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    LOGF(info, "\033[1;32m filePath = %s\033[0m", filePath);
+    LOGF(info, "\033[1;32m variable = %d\033[0m", static_cast<int>(variable));
+    LOGF(info, "\033[1;32m nua.fCustomNUAPDFHistNames[variable]->Data() = %s\033[0m", nua.fCustomNUAPDFHistNames[variable]->Data());
+    LOGF(info, "\033[1;32m fTaskName = %s\033[0m", tc.fTaskName.Data());
+  }
+
+  // *) Basic protection:
+  if (nua.fCustomNUAPDFHistNames[variable] && nua.fCustomNUAPDFHistNames[variable]->EqualTo("")) {
+    LOGF(info, "\033[1;32m empty TString, variable = %d\033[0m", static_cast<int>(variable));
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+
+  // a) Local objects:
+  TH1D* hist = NULL;
+  TList* baseList = NULL; // base top-level list in the TFile, always named "ccdb_object"
+
+  // b) Basic protection for arguments:
+  // ...
+
+  // c) Determine from filePath if the file in on a local machine, or in home dir AliEn, or in CCDB:
+  //    Algorithm:
+  //     *) If filePath begins with "/alice/cern.ch/" then it's in home dir AliEn.
+  //     *) If filePath begins with "/alice-ccdb.cern.ch/" then it's in  CCDB.
+  //     *) It's a local file otherwise.
+  //    Therefore, files in AliEn and CCDB must be specified with abs path, for local files both abs and relative paths are just fine.
+  Bool_t bFileIsInAliEn = kFALSE;
+  Bool_t bFileIsInCCDB = kFALSE;
+  if (TString(filePath).BeginsWith("/alice/cern.ch/")) {
+    bFileIsInAliEn = kTRUE;
+  } else {
+    if (TString(filePath).BeginsWith("/alice-ccdb.cern.ch/")) {
+      bFileIsInCCDB = kTRUE;
+    } // else {
+  }   // if (TString(filePath).BeginsWith("/alice/cern.ch/")) {
+
+  if (bFileIsInAliEn) {
+    // d) Handle the AliEn case:
+    TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
+    if (!alien) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+    TFile* customNUAFile = TFile::Open(Form("alien://%s", filePath), "READ");
+    if (!customNUAFile) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+    customNUAFile->GetObject("ccdb_object", baseList);
+    if (!baseList) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+  } else if (bFileIsInCCDB) {
+
+    // e) Handle the CCDB case: Remember that here I do not access the file, instead directly object in that file.
+    //    My home dir in CCDB: https://alice-ccdb.cern.ch/browse/Users/a/abilandz/
+    //    Inspired by:
+    //    1. Discussion at:
+    //    https://alice-talk.web.cern.ch/t/access-to-lhc-filling-scheme/1073/17
+    //    2. See also:
+    //    https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/efficiencyGlobal.cxx
+    //    https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/efficiencyPerRun.cxx
+    //    3. O2 Analysis Tutorial 2.0:
+    //    https://indico.cern.ch/event/1267433/timetable/#20230417.detailed
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    if (tc.fVerbose) {
+      LOGF(info, "\033[1;32mAccessing in CCDB %s\033[0m", TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data());
+    }
+
+    baseList = reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
+
+    if (!baseList) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+  } else {
+
+    // f) Handle the local case:
+
+    // Check if the external ROOT file exists at specified path:
+    if (gSystem->AccessPathName(filePath, kFileExists)) {
+      LOGF(info, "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), filePath = %s \033[0m", filePath);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+    TFile* customNUAFile = TFile::Open(filePath, "READ");
+    if (!customNUAFile) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+    customNUAFile->GetObject("ccdb_object", baseList);
+    if (!baseList) {
+      // customNUAFile->ls();
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+    // hist = reinterpret_cast<TH1D*>(GetObjectFromList(baseList, nua.fCustomNUAPDFHistNames[variable]->Data()));
+
+  } // else {
+
+  // g) The final touch:
+  hist = reinterpret_cast<TH1D*>(GetObjectFromList(baseList, nua.fCustomNUAPDFHistNames[variable]->Data()));
+  if (!hist) {
+    LOGF(info, "\033[1;31m hist is NULL \033[0m");
+    LOGF(info, "\033[1;31m variable = %d\033[0m", static_cast<int>(variable));
+    LOGF(info, "\033[1;31m nua.fCustomNUAPDFHistNames[variable]->Data() = %s\033[0m", nua.fCustomNUAPDFHistNames[variable]->Data());
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+  hist->SetDirectory(0);
+  nua.fCustomNUAPDF[variable] = reinterpret_cast<TH1D*>(hist->Clone());
+  nua.fCustomNUAPDF[variable]->SetTitle(Form("%s", filePath));
+
+  // TBI 20240501 if additional cosmetics is needed, it can be implemented here
+
+} // void GetHistogramWithCustomNUA(const char* filePath, eNUAPDF variable)
 
 //============================================================
 
@@ -4455,8 +5325,7 @@ void StoreLabelsInPlaceholder()
   if (!oa) {
     LOGF(info, "\033[1;33m fFileWithLabels = %s \033[0m",
          t0.fFileWithLabels.Data());
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
   // c) Book the placeholder fTest0LabelsPlaceholder for all labels:
@@ -4473,8 +5342,7 @@ void StoreLabelsInPlaceholder()
   for (Int_t e = 0; e < nLabels; e++) {
     TObjArray* temp = TString(oa->At(e)->GetName()).Tokenize(" ");
     if (!temp) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     order = temp->GetEntries();
     delete temp; // yes, otherwise it's a memory leak
@@ -4500,7 +5368,7 @@ void StoreLabelsInPlaceholder()
     for (Int_t h = 0; h < temp->GetEntries(); h++) {
       if (TMath::Abs(TString(temp->At(h)->GetName()).Atoi()) > gMaxHarmonic) {
         LOGF(info, "\033[1;31m bin = %d, label = %s, gMaxHarmonic = %d\033[0m", b, t0.fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b), static_cast<int>(gMaxHarmonic));
-        LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }          // if(TString(temp->At(h)->GetName()).Atoi() > gMaxHarmonic) {
     }            // for(Int_t h = 0; h < temp->GetEntries(); h++) {
     delete temp; // yes, otherwise it's a memory leak
@@ -4531,8 +5399,7 @@ Bool_t RetrieveCorrelationsLabels()
     TObjArray* oa = TString(t0.fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b))
                       .Tokenize(" ");
     if (!oa) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-           __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     order = oa->GetEntries();
     delete oa; // yes, otherwise it's a memory leak
@@ -4576,12 +5443,10 @@ TObject* GetObjectFromList(TList* list,
 
   // Insanity checks:
   if (!list) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
   if (!objectName) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
   if (0 == list->GetEntries()) {
     return NULL;
@@ -4612,92 +5477,60 @@ TObject* GetObjectFromList(TList* list,
 
 //============================================================
 
-Double_t Weight(const Double_t& value,
-                const char* variable) // value, [phi,pt,eta]
+Double_t Weight(const Double_t& value, eWeights whichWeight) // value, integrated [phi,pt,eta] weight
 {
   // Determine particle weight.
 
-  // Basic protection:
-  if (!(TString(variable).EqualTo("phi") || TString(variable).EqualTo("pt") ||
-        TString(variable).EqualTo("eta"))) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    LOGF(info, "\033[1;32m value = %f\033[0m", value);
+    LOGF(info, "\033[1;32m variable = %d\033[0m", static_cast<int>(whichWeight));
   }
 
-  Int_t ppe = 0; // [phi,pt,eta]
-  if (TString(variable).EqualTo("pt")) {
-    ppe = 1;
-  }
-  if (TString(variable).EqualTo("eta")) {
-    ppe = 2;
+  if (!pw.fWeightsHist[whichWeight]) {
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
-  if (!pw.fWeightsHist[ppe]) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
-         __FUNCTION__, __LINE__);
-  }
-
-  Int_t bin = pw.fWeightsHist[ppe]->FindBin(value);
+  Int_t bin = pw.fWeightsHist[whichWeight]->FindBin(value);
   Double_t weight = 0.;
-  if (bin > pw.fWeightsHist[ppe]->GetNbinsX()) {
+  if (bin > pw.fWeightsHist[whichWeight]->GetNbinsX()) {
     weight = 0.; // we are in the overflow, ignore this particle TBI_20210524 is
                  // this really the correct procedure?
   } else {
-    weight = pw.fWeightsHist[ppe]->GetBinContent(bin);
+    weight = pw.fWeightsHist[whichWeight]->GetBinContent(bin);
   }
 
   return weight;
 
-} // Weight(const Double_t &value, const char *variable) // value, [phi,pt,eta]
+} // Weight(const Double_t &value, eWeights whichWeight) // value, integrated [phi,pt,eta] weight
 
 //============================================================
 
-Double_t DiffWeight(const Double_t& valueY, const Double_t& valueX, const char* variableX)
+Double_t DiffWeight(const Double_t& valueY, const Double_t& valueX, eqvectorKine variableX)
 {
   // Determine differential particle weight y(x). For the time being, "y = phi" always, but this can be generalized.
 
   // *) Determine first to which bin the 'valueX' corresponds to.
   //    Based on that, I decide from which histogram I fetch weight for y. See MakeWeights.C
 
-  // TBI 20240208 I need to add support below also for fixed binning case, using fResultsProFixedLengthBins, not only for fResultsProVariableLengthBins
-  // TBI 20231026 I do it at the moment this way just to move on, but this can be optimized clearly.
-
-  // *) Mapping between enum's "variableX" on one side, and enum "eAsFunctionOf" on the other:
-  Int_t AFO_var = -1;                     // this local variable determines the enum "eAsFunctionOf" which corresponds to enum "eqvectorKine"
-  Int_t AFO_weight = -1;                  // this local variable determines the enum "eDiffWeights" which corresponds to enum "eqvectorKine"
-  if (TString(variableX).EqualTo("pt")) { // TBI 20240215 check if I can optimize here, i.e. by using strcmp
+  // *) Mapping between enums "eqvectorKine" on one side, and enums "eAsFunctionOf" and "eDiffWeights" on the other:
+  eAsFunctionOf AFO_var = eAsFunctionOf_N;      // this local variable determines the enum "eAsFunctionOf" which corresponds to enum "eqvectorKine"
+  eDiffWeights AFO_diffWeight = eDiffWeights_N; // this local variable determines the enum "eDiffWeights" which corresponds to enum "eqvectorKine"
+  if (variableX == PTq) {
     AFO_var = AFO_PT;
-    AFO_weight = wPHIPT;
-  } else if (TString(variableX).EqualTo("eta")) {
+    AFO_diffWeight = wPHIPT;
+  } else if (variableX == ETAq) {
     AFO_var = AFO_ETA;
-    AFO_weight = wPHIETA;
+    AFO_diffWeight = wPHIETA;
   }
 
-  // *) Okay, let's do it:
-  /*
-    Int_t binX = 1;
-    // if(fInsanityChecksForEachParticle) {
-    if (true) { // TBI 20240208 add support to switch on and off this check, which is computationally heavy
-
-      if (valueX < res.fResultsProVariableLengthBins[AFO_var]->At(0)) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-        // underflow. this means that I didn't use the same cuts now, and I was using when making the particle weights. Adjust the cuts.
-      }
-      if (valueX >= res.fResultsProVariableLengthBins[AFO_var]->At(res.fResultsProVariableLengthBins[AFO_var]->GetSize() - 1)) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-        // overflow. this means that I didn't use the same cuts now, and I was using when making the particle weights. Adjust the cuts.
-      }
-    } // fInsanityChecksForEachParticle
-
-    // *) TBI add some comment...
-    for (Int_t e = 1; e < res.fResultsProVariableLengthBins[AFO_var]->GetSize(); e++) {
-      // Since I set binX = 1, intentionally I skip the first element in the loop, and start from e = 1, instead of e = 0.
-      if (valueX < res.fResultsProVariableLengthBins[AFO_var]->At(e)) {
-        binX = e;
-        break;
-      } // gotcha
-    }
-  */
+  // *) Insanity checks on above settings:
+  if (AFO_var == eAsFunctionOf_N) {
+    LOGF(fatal, "\033[1;31m%s at line %d : AFO_var == eAsFunctionOf_N => add some more entries to the case stamenent \033[0m", __FUNCTION__, __LINE__);
+  }
+  if (AFO_diffWeight == eDiffWeights_N) {
+    LOGF(fatal, "\033[1;31m%s at line %d : AFO_diffWeight == eDiffWeights_N => add some more entries to the case stamenent \033[0m", __FUNCTION__, __LINE__);
+  }
 
   // *) Determine first to which bin the 'valueX' corresponds to.
   //    Based on that, I decide from which histogram I fetch weight for y. See MakeWeights.C
@@ -4705,49 +5538,49 @@ Double_t DiffWeight(const Double_t& valueY, const Double_t& valueX, const char* 
   if (tc.fInsanityCheckForEachParticle) // enable only during debugging, as this check is computationally heavy.
   {
     if (binX < 1) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       // underflow. this means that I didn't use the same cuts now, and I was using when making the particle weights. Adjust the cuts.
     }
     if (binX > res.fResultsPro[AFO_var]->GetNbinsX()) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       // overflow. this means that I didn't use the same cuts now, and I was using when making the particle weights. Adjust the cuts.
     }
   } // if(tc.fInsanityCheckForEachParticle)
 
   // *) Finally, determine weight for y(x):
-  if (!pw.fDiffWeightsHist[AFO_weight][binX - 1]) {
+  if (!pw.fDiffWeightsHist[AFO_diffWeight][binX - 1]) {
     LOGF(info, "\033[1;32mvalueY = %f\033[0m", valueY);
     LOGF(info, "\033[1;32mvalueX = %f\033[0m", valueX);
-    LOGF(info, "\033[1;32mvariableX = %s\033[0m", variableX);
-    LOGF(info, "\033[1;32mAFO_weight = %d\033[0m", AFO_weight);
+    LOGF(info, "\033[1;32mvariableX = %d\033[0m", static_cast<int>(variableX));
+    LOGF(info, "\033[1;32mAFO_diffWeight = %d\033[0m", static_cast<int>(AFO_diffWeight));
     LOGF(info, "\033[1;32mbinX = %d\033[0m", binX);
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
-  Int_t bin = pw.fDiffWeightsHist[AFO_weight][binX - 1]->FindBin(valueY); // binX - 1, because I histogram for first bin in X is labeled with "[0]", etc.
-  if (tc.fInsanityCheckForEachParticle)                                   // enable only during debugging, as this check is computationally heavy.
+  Int_t bin = pw.fDiffWeightsHist[AFO_diffWeight][binX - 1]->FindBin(valueY); // binX - 1, because I histogram for first bin in X is labeled with "[0]", etc.
+  if (tc.fInsanityCheckForEachParticle)                                       // enable only during debugging, as this check is computationally heavy.
   {
     if (bin < 1) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       // underflow. this means that I didn't use the same cuts now, and I was using when making the particle weights. Adjust the cuts.
     }
-    if (bin > pw.fDiffWeightsHist[AFO_weight][binX - 1]->GetNbinsX()) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    if (bin > pw.fDiffWeightsHist[AFO_diffWeight][binX - 1]->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       // overflow. this means that I didn't use the same cuts now, and I was using when making the particle weights. Adjust the cuts.
     }
   } // if(tc.fInsanityCheckForEachParticle)
 
-  Double_t diffWeight = pw.fDiffWeightsHist[AFO_weight][binX - 1]->GetBinContent(bin);
+  Double_t diffWeight = pw.fDiffWeightsHist[AFO_diffWeight][binX - 1]->GetBinContent(bin);
   if (tc.fInsanityCheckForEachParticle) // enable only during debugging, as this check is computationally heavy.
   {
     if (diffWeight < 0.) { // or <= 0 ? TBI 20240324 rethink
-      LOGF(fatal, "in function \033[1;31m%s at line %d : diffWeight < 0\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : diffWeight < 0\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   return diffWeight;
 
-} // DiffWeight(const Double_t &valueY, const Double_t &valueX, const char* variableX)
+} // DiffWeight(const Double_t &valueY, const Double_t &valueX, eqvectorKine variableX)
 
 //============================================================
 
@@ -4774,25 +5607,25 @@ void GetParticleWeights()
     if (!phiWeights) {
       LOGF(fatal, "in function \033[1;31m%s at line %d, phiWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
     }
-    SetWeightsHist(phiWeights, "phi");
+    SetWeightsHist(phiWeights, wPHI);
   }
 
   // integrated pt weights:
   if (pw.fUseWeights[wPT]) {
     TH1D* ptWeights = GetHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), "pt");
     if (!ptWeights) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d, ptWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
+      LOGF(fatal, "\033[1;31m%s at line %d : ptWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
     }
-    SetWeightsHist(ptWeights, "pt");
+    SetWeightsHist(ptWeights, wPT);
   }
 
   // integrated eta weights:
   if (pw.fUseWeights[wETA]) {
     TH1D* etaWeights = GetHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), "eta");
     if (!etaWeights) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d, etaWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
+      LOGF(fatal, "\033[1;31m%s at line %d : etaWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
     }
-    SetWeightsHist(etaWeights, "eta");
+    SetWeightsHist(etaWeights, wETA);
   }
 
   // b) Differential weights:
@@ -4803,9 +5636,9 @@ void GetParticleWeights()
     for (Int_t b = 0; b < nPtBins; b++) {
       phiptWeights = GetHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), "phipt", b);
       if (!phiptWeights) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d, phiptWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
+        LOGF(fatal, "\033[1;31m%s at line %d : phiptWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
       }
-      SetDiffWeightsHist(phiptWeights, "phipt", b);
+      SetDiffWeightsHist(phiptWeights, wPHIPT, b);
     }
   } // if (pw.fUseDiffWeights[wPHIPT]) {
 
@@ -4816,9 +5649,9 @@ void GetParticleWeights()
     for (Int_t b = 0; b < nEtaBins; b++) {
       phietaWeights = GetHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), "phieta", b);
       if (!phietaWeights) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d, phietaWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
+        LOGF(fatal, "\033[1;31m%s at line %d : phietaWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
       }
-      SetDiffWeightsHist(phietaWeights, "phieta", b);
+      SetDiffWeightsHist(phietaWeights, wPHIETA, b);
     } // for(Int_t b=0; b<nEtaBins; b++) {
   }   // if (pw.fUseDiffWeights[wPHIETA]) {
 
@@ -4853,7 +5686,7 @@ Bool_t MaxNumberOfEvents()
   } else if (tc.fProcess[eGenericSim]) {
     rs = eSim;
   } else {
-    LOGF(fatal, "in function \033[1;31m%s at line %d, not a single flag gProcess* is true \033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d : not a single flag gProcess* is true \033[0m", __FUNCTION__, __LINE__);
   }
 
   // *) Okay, do the thing:
@@ -4882,7 +5715,7 @@ Double_t CalculateCustomNestedLoops(TArrayI* harmonics)
   }
 
   if (!harmonics) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
   Int_t nParticles = ebye.fSelectedTracks;
@@ -4900,7 +5733,7 @@ Double_t CalculateCustomNestedLoops(TArrayI* harmonics)
   // a) Determine the order of correlator;
   Int_t order = harmonics->GetSize();
   if (0 == order || order > gMaxCorrelator) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
   if (nl.fMaxNestedLoop > 0 && nl.fMaxNestedLoop < order) {
     LOGF(info, "  nl.fMaxNestedLoop > 0 && nl.fMaxNestedLoop < order, where nl.fMaxNestedLoop = %d, order = %d", nl.fMaxNestedLoop, order);
@@ -5075,11 +5908,11 @@ Double_t CalculateCustomNestedLoops(TArrayI* harmonics)
   profile = NULL;
   return finalValue;
 
-} // Double_t CalculateCustomNestedLoops(TArrayI *harmonics)  _44
+} // Double_t CalculateCustomNestedLoops(TArrayI *harmonics)
 
 //============================================================
 
-Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_t bin)
+Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_variable, Int_t bin)
 {
   // For the specified harmonics, kine variable, and bin, get the correlation from nested loops.
   // Order of correlator is the number of harmonics, i.e. the number of elements in an array.
@@ -5093,36 +5926,43 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
   }
 
   if (!harmonics) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
-  Int_t AFO_var = -1; // this local variable determines the enum "eAsFunctionOf" which corresponds to enum "eqvectorKine"
-  Int_t qv = -1;      // which component of q-vector
-  if (TString(kc).EqualTo("pt")) {
-    AFO_var = AFO_PT;
-    qv = PTq;
-  } else if (TString(kc).EqualTo("eta")) {
-    AFO_var = AFO_ETA;
-    qv = ETAq;
-  } else {
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  // *) ...
+  eqvectorKine qvKine = eqvectorKine_N; // which component of q-vector
+  switch (AFO_variable) {
+    case AFO_PT:
+      qvKine = PTq;
+      break;
+    case AFO_ETA:
+      qvKine = ETAq;
+      break;
+    default:
+      LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
+      break;
+  } // switch(AFO_variable)
+
+  // *) Insanity checks on above settings:
+  if (qvKine == eqvectorKine_N) {
+    LOGF(fatal, "\033[1;31m%s at line %d : qvKine == eqvectorKine_N => add some more entries to the case stamenent \033[0m", __FUNCTION__, __LINE__);
   }
 
-  if (0 > bin || res.fResultsPro[AFO_var]->GetNbinsX() < bin) { // this 'bin' starts from 0, i.e. this is an array bin
+  if (0 > bin || res.fResultsPro[AFO_variable]->GetNbinsX() < bin) { // this 'bin' starts from 0, i.e. this is an array bin
     // either underflow or overflow is hit, meaning that histogram is booked in narrower range than cuts
-    LOGF(fatal, "in function \033[1;31m%s at line %d => AFO_var = %d, bin = %d\033[0m", __FUNCTION__, __LINE__, AFO_var, bin);
+    LOGF(fatal, "\033[1;31m%s at line %d => AFO_variable = %d, bin = %d\033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable), bin);
   }
 
   // Get the number of particles in this kine bin:
   Int_t nParticles = 0;
-  for (Int_t i = 0; i < nl.ftaNestedLoopsKine[qv][bin][0]->GetSize(); i++) {
-    if (TMath::Abs(nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i)) > 0.) {
+  for (Int_t i = 0; i < nl.ftaNestedLoopsKine[qvKine][bin][0]->GetSize(); i++) {
+    if (TMath::Abs(nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i)) > 0.) {
       nParticles++;
     }
   }
 
-  // 'kc' is kine variable, either "pt" or "eta" or ...
-  LOGF(info, "  %s: nParticles = %d, bin range = [%f,%f)", kc, nParticles, res.fResultsPro[AFO_var]->GetBinLowEdge(bin + 1), res.fResultsPro[AFO_var]->GetBinLowEdge(bin + 2));
+  // 'qvKine' is enum eqvectorKine:
+  LOGF(info, "  %s: nParticles = %d, bin range = [%f,%f)", static_cast<int>(qvKine), nParticles, res.fResultsPro[AFO_variable]->GetBinLowEdge(bin + 1), res.fResultsPro[AFO_variable]->GetBinLowEdge(bin + 2));
 
   // a) Determine the order of correlator;
   Int_t order = harmonics->GetSize();
@@ -5146,8 +5986,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
   Double_t value = 0.;  // cos of current multiplet
   Double_t weight = 1.; // weight of current multiplet
   for (int i1 = 0; i1 < nParticles; i1++) {
-    Double_t dPhi1 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i1);
-    Double_t dW1 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i1);
+    Double_t dPhi1 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i1);
+    Double_t dW1 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i1);
     if (1 == order) {
       value = TMath::Cos(harmonics->GetAt(0) * dPhi1);
       weight = dW1;
@@ -5158,8 +5998,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
       if (i2 == i1) {
         continue;
       }
-      Double_t dPhi2 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i2);
-      Double_t dW2 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i2);
+      Double_t dPhi2 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i2);
+      Double_t dW2 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i2);
       if (2 == order) {
         value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2);
         weight = dW1 * dW2;
@@ -5170,8 +6010,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
         if (i3 == i1 || i3 == i2) {
           continue;
         }
-        Double_t dPhi3 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i3);
-        Double_t dW3 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i3);
+        Double_t dPhi3 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i3);
+        Double_t dW3 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i3);
         if (3 == order) {
           value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3);
           weight = dW1 * dW2 * dW3;
@@ -5182,8 +6022,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
           if (i4 == i1 || i4 == i2 || i4 == i3) {
             continue;
           }
-          Double_t dPhi4 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i4);
-          Double_t dW4 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i4);
+          Double_t dPhi4 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i4);
+          Double_t dW4 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i4);
           if (4 == order) {
             value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4);
             weight = dW1 * dW2 * dW3 * dW4;
@@ -5194,8 +6034,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
             if (i5 == i1 || i5 == i2 || i5 == i3 || i5 == i4) {
               continue;
             }
-            Double_t dPhi5 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i5);
-            Double_t dW5 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i5);
+            Double_t dPhi5 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i5);
+            Double_t dW5 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i5);
             if (5 == order) {
               value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5);
               weight = dW1 * dW2 * dW3 * dW4 * dW5;
@@ -5206,8 +6046,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
               if (i6 == i1 || i6 == i2 || i6 == i3 || i6 == i4 || i6 == i5) {
                 continue;
               }
-              Double_t dPhi6 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i6);
-              Double_t dW6 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i6);
+              Double_t dPhi6 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i6);
+              Double_t dW6 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i6);
               if (6 == order) {
                 value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6);
                 weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6;
@@ -5218,8 +6058,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
                 if (i7 == i1 || i7 == i2 || i7 == i3 || i7 == i4 || i7 == i5 || i7 == i6) {
                   continue;
                 }
-                Double_t dPhi7 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i7);
-                Double_t dW7 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i7);
+                Double_t dPhi7 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i7);
+                Double_t dW7 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i7);
                 if (7 == order) {
                   value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7);
                   weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7;
@@ -5230,8 +6070,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
                   if (i8 == i1 || i8 == i2 || i8 == i3 || i8 == i4 || i8 == i5 || i8 == i6 || i8 == i7) {
                     continue;
                   }
-                  Double_t dPhi8 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i8);
-                  Double_t dW8 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i8);
+                  Double_t dPhi8 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i8);
+                  Double_t dW8 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i8);
                   if (8 == order) {
                     value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8);
                     weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8;
@@ -5242,8 +6082,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
                     if (i9 == i1 || i9 == i2 || i9 == i3 || i9 == i4 || i9 == i5 || i9 == i6 || i9 == i7 || i9 == i8) {
                       continue;
                     }
-                    Double_t dPhi9 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i9);
-                    Double_t dW9 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i9);
+                    Double_t dPhi9 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i9);
+                    Double_t dW9 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i9);
                     if (9 == order) {
                       value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9);
                       weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9;
@@ -5254,8 +6094,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
                       if (i10 == i1 || i10 == i2 || i10 == i3 || i10 == i4 || i10 == i5 || i10 == i6 || i10 == i7 || i10 == i8 || i10 == i9) {
                         continue;
                       }
-                      Double_t dPhi10 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i10);
-                      Double_t dW10 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i10);
+                      Double_t dPhi10 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i10);
+                      Double_t dW10 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i10);
                       if (10 == order) {
                         value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10);
                         weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10;
@@ -5266,8 +6106,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
                         if (i11 == i1 || i11 == i2 || i11 == i3 || i11 == i4 || i11 == i5 || i11 == i6 || i11 == i7 || i11 == i8 || i11 == i9 || i11 == i10) {
                           continue;
                         }
-                        Double_t dPhi11 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i11);
-                        Double_t dW11 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i11);
+                        Double_t dPhi11 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i11);
+                        Double_t dW11 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i11);
                         if (11 == order) {
                           value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11);
                           weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10 * dW11;
@@ -5278,8 +6118,8 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
                           if (i12 == i1 || i12 == i2 || i12 == i3 || i12 == i4 || i12 == i5 || i12 == i6 || i12 == i7 || i12 == i8 || i12 == i9 || i12 == i10 || i12 == i11) {
                             continue;
                           }
-                          Double_t dPhi12 = nl.ftaNestedLoopsKine[qv][bin][0]->GetAt(i12);
-                          Double_t dW12 = nl.ftaNestedLoopsKine[qv][bin][1]->GetAt(i12);
+                          Double_t dPhi12 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i12);
+                          Double_t dW12 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i12);
                           if (12 == order) {
                             value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11 + harmonics->GetAt(11) * dPhi12);
                             weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10 * dW11 * dW12;
@@ -5308,7 +6148,7 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, const char* kc, Int_
   profile = NULL;
   return finalValue;
 
-} // Double_t CalculateKineCustomNestedLoops(TArrayI *harmonics, const char* kc, Int_t bin)
+} // Double_t CalculateKineCustomNestedLoops(TArrayI *harmonics, eAsFunctionOf AFO_variable, Int_t bin)
 
 //============================================================
 
@@ -5338,7 +6178,7 @@ void DetermineCentrality(T const& collision)
     } else if (ec.fsEventCuts[eCentralityEstimator].EqualTo("CentNTPV", TString::kIgnoreCase)) {
       ebye.fCentrality = collision.centNTPV();
     } else {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
+      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
     // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
   }
@@ -5355,7 +6195,7 @@ void DetermineCentrality(T const& collision)
     } else if (ec.fsEventCuts[eCentralityEstimator].EqualTo("CentRun2SPDTracklets", TString::kIgnoreCase)) {
       ebye.fCentrality = collision.centRun2SPDTracklets();
     } else {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
+      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
     // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
   }
@@ -5372,7 +6212,7 @@ void DetermineCentrality(T const& collision)
     } else if (ec.fsEventCuts[eCentralityEstimator].EqualTo("CentRun2SPDTracklets", TString::kIgnoreCase)) {
       // ebye.fCentrality = collision.centRun2SPDTracklets(); // TBI 20240224 enable when I add support for RecAndSim_Run1
     } else {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
+      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
     // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
   }
@@ -5472,6 +6312,7 @@ void BailOut()
   bailOutList->Add(mupa.fCorrelationsList);
   bailOutList->Add(pw.fWeightsList);
   bailOutList->Add(nl.fNestedLoopsList);
+  bailOutList->Add(nua.fNUAList);
   bailOutList->Add(iv.fInternalValidationList);
   bailOutList->Add(t0.fTest0List);
   bailOutList->Add(res.fResultsList);
@@ -5490,6 +6331,68 @@ void BailOut()
 
 //============================================================
 
+void FillQvector(const Double_t& dPhi, const Double_t& dPt, const Double_t& dEta)
+{
+  // Fill integrated Q-vector.
+  // Example usage: this->FillQvector(dPhi, dPt, dEta);
+
+  // TBI 20240430 I could optimize further, and have a bare version of this function when weights are NOT used.
+  //              But since usage of weights amounts to checking a few simple booleans here, I do not anticipate any big gain in efficiency...
+
+  if (tc.fVerboseForEachParticle) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    LOGF(info, "\033[1;32m dPhi = %f\033[0m", dPhi);
+    LOGF(info, "\033[1;32m dPt  = %f\033[0m", dPt);
+    LOGF(info, "\033[1;32m dEta = %f\033[0m", dEta);
+  }
+
+  // Particle weights:
+  Double_t wPhi = 1.;      // integrated phi weight
+  Double_t wPt = 1.;       // integrated pt weight
+  Double_t wEta = 1.;      // integrated eta weight
+  Double_t wToPowerP = 1.; // weight raised to power p
+
+  if (pw.fUseWeights[wPHI]) {
+    wPhi = Weight(dPhi, wPHI);
+    if (!(wPhi > 0.)) {
+      LOGF(error, "\033[1;33m%s wPhi is not positive\033[0m", __FUNCTION__);
+      LOGF(fatal, "dPhi = %f\nwPhi = %f", dPhi, wPhi);
+    }
+  } // if(pw.fUseWeights[wPHI])
+
+  if (pw.fUseWeights[wPT]) {
+    wPt = Weight(dPt, wPT); // corresponding pt weight
+    if (!(wPt > 0.)) {
+      LOGF(error, "\033[1;33m%s wPt is not positive\033[0m", __FUNCTION__);
+      LOGF(fatal, "dPt = %f\nwPt = %f", dPt, wPt);
+    }
+  } // if(pw.fUseWeights[wPT])
+
+  if (pw.fUseWeights[wETA]) {
+    wEta = Weight(dEta, wETA); // corresponding eta weight
+    if (!(wEta > 0.)) {
+      LOGF(error, "\033[1;33m%s wEta is not positive\033[0m", __FUNCTION__);
+      LOGF(fatal, "dEta = %f\nwEta = %f", dEta, wEta);
+    }
+  } // if(pw.fUseWeights[wETA])
+
+  if (qv.fCalculateQvectors) {
+    for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
+      for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
+        if (pw.fUseWeights[wPHI] || pw.fUseWeights[wPT] || pw.fUseWeights[wETA]) {
+          wToPowerP = pow(wPhi * wPt * wEta, wp);
+          qv.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi)); // Q-vector with weights
+        } else {
+          qv.fQvector[h][wp] += TComplex(TMath::Cos(h * dPhi), TMath::Sin(h * dPhi)); // bare Q-vector without weights
+        }
+      } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
+    }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
+  }     // if (qv.fCalculateQvectors) {
+
+} // void FillQvector(const Double_t& dPhi, const Double_t& dPt, const Double_t& dEta)
+
+//============================================================
+
 void Fillqvector(const Double_t& dPhi, const Double_t& kineVarValue, eqvectorKine kineVarChoice)
 {
   // Fill differential q-vector, in generic kinematic variable. Here "kine" originally meant vs. pt or vs. eta, now it's general.
@@ -5501,34 +6404,42 @@ void Fillqvector(const Double_t& dPhi, const Double_t& kineVarValue, eqvectorKin
 
   // *) Mapping between enum's "eqvectorKine" on one side, and "eAsFunctionOf", "eWeights" and "eDiffWeights" on the other:
   //    TBI 20240212 I could promote this also to a member function, if I need it elsewhere. Or I could use TExMap?
-  Int_t AFO_var = -1;        // this local variable determines the enum "eAsFunctionOf" which corresponds to enum "eqvectorKine"
-  Int_t AFO_weight = -1;     // this local variable determined the enum "eWeights" which corresponds to enum "eqvectorKine"
-  Int_t AFO_diffWeight = -1; // this local variable determines the enum "eDiffWeights" which corresponds to enum "eqvectorKine"
-  TString AFO_name = "";     // TBI 20240212 most likely, I won't need this one in the final version
+  eAsFunctionOf AFO_var = eAsFunctionOf_N;      // this local variable determines the enum "eAsFunctionOf" which corresponds to enum "eqvectorKine"
+  eWeights AFO_weight = eWeights_N;             // this local variable determines the enum "eWeights" which corresponds to enum "eqvectorKine"
+  eDiffWeights AFO_diffWeight = eDiffWeights_N; // this local variable determines the enum "eDiffWeights" which corresponds to enum "eqvectorKine"
   switch (kineVarChoice) {
     case PTq:
       AFO_var = AFO_PT;
       AFO_weight = wPT;
       AFO_diffWeight = wPHIPT;
-      AFO_name = "pt";
       break;
     case ETAq:
       AFO_var = AFO_ETA;
       AFO_weight = wETA;
       AFO_diffWeight = wPHIETA;
-      AFO_name = "eta";
       break;
     default:
-      LOGF(fatal, "in function \033[1;31m%s at line %d. This kineVarChoice = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(kineVarChoice));
+      LOGF(fatal, "\033[1;31m%s at line %d : this kineVarChoice = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(kineVarChoice));
       break;
   } // switch(kineVarChoice)
+
+  // *) Insanity checks on above settings:
+  if (AFO_var == eAsFunctionOf_N) {
+    LOGF(fatal, "\033[1;31m%s at line %d : AFO_var == eAsFunctionOf_N => add some more entries to the case stamenent \033[0m", __FUNCTION__, __LINE__);
+  }
+  if (AFO_weight == eWeights_N) {
+    LOGF(fatal, "\033[1;31m%s at line %d : AFO_weight == eWeights_N => add some more entries to the case stamenent \033[0m", __FUNCTION__, __LINE__);
+  }
+  if (AFO_diffWeight == eDiffWeights_N) {
+    LOGF(fatal, "\033[1;31m%s at line %d : AFO_diffWeight == eDiffWeights_N => add some more entries to the case stamenent \033[0m", __FUNCTION__, __LINE__);
+  }
 
   // *) Get the desired bin number:
   Int_t bin = -1;
   if (res.fResultsPro[AFO_var]) {
     bin = res.fResultsPro[AFO_var]->FindBin(kineVarValue);         // this 'bin' starts from 1, i.e. this is genuine histogram bin
     if (0 >= bin || res.fResultsPro[AFO_var]->GetNbinsX() < bin) { // either underflow or overflow is hit, meaning that histogram is booked in narrower range than cuts
-      LOGF(fatal, "in function \033[1;31m%s at line %d => kineVarChoice = %d, bin = %d, kineVarValue = %f \033[0m", __FUNCTION__, __LINE__, static_cast<int>(kineVarChoice), bin, kineVarValue);
+      LOGF(fatal, "\033[1;31m%s at line %d : kineVarChoice = %d, bin = %d, kineVarValue = %f \033[0m", __FUNCTION__, __LINE__, static_cast<int>(kineVarChoice), bin, kineVarValue);
     }
   }
 
@@ -5536,9 +6447,9 @@ void Fillqvector(const Double_t& dPhi, const Double_t& kineVarValue, eqvectorKin
   Double_t wToPowerP = 1.;     // weight raised to power p
   Double_t kineVarWeight = 1.; // e.g. this can be integrated pT or eta weight
   if (pw.fUseWeights[AFO_weight]) {
-    kineVarWeight = Weight(kineVarValue, AFO_name.Data()); // corresponding e.g. pt or eta weight
+    kineVarWeight = Weight(kineVarValue, AFO_weight); // corresponding e.g. pt or eta weight
     if (!(kineVarWeight > 0.)) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. kineVarWeight is not positive \033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : kineVarWeight is not positive \033[0m", __FUNCTION__, __LINE__);
       // TBI 20240212 or could I just skip this particle?
     }
   } // if(fUseWeights[AFO_weight]) {
@@ -5547,9 +6458,9 @@ void Fillqvector(const Double_t& dPhi, const Double_t& kineVarValue, eqvectorKin
   //    Remark: special treatment is justified for phi-weights, because q-vector is defined in terms of phi-weights.
   Double_t diffPhiWeightsForThisKineVar = 1.;
   if (pw.fUseDiffWeights[AFO_diffWeight]) {
-    diffPhiWeightsForThisKineVar = DiffWeight(dPhi, kineVarValue, AFO_name.Data()); // corresponding differential phi weight as a function of e.g. pt or eta
+    diffPhiWeightsForThisKineVar = DiffWeight(dPhi, kineVarValue, kineVarChoice); // corresponding differential phi weight as a function of e.g. pt or eta
     if (!(diffPhiWeightsForThisKineVar > 0.)) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d. diffPhiWeightsForThisKineVar is not positive \033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d : diffPhiWeightsForThisKineVar is not positive \033[0m", __FUNCTION__, __LINE__);
       // TBI 20240212 or could I just skip this particle?
     }
   } // if(pw.fUseDiffWeights[AFO_diffWeight]) {
@@ -5558,9 +6469,13 @@ void Fillqvector(const Double_t& dPhi, const Double_t& kineVarValue, eqvectorKin
   for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
     for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
       if (pw.fUseWeights[AFO_weight] || pw.fUseDiffWeights[AFO_diffWeight]) {
-        wToPowerP = pow(diffPhiWeightsForThisKineVar * kineVarWeight, wp); // TBI 20240212 supported at the moment: e.g. q-vector vs pt can be weighted only with diff. phi(pt) and integrated pt weights. It cannot be weighted in addition with eta weights, since in any case I anticipate I will do always 1-D analysis, by integrating out all other dependencies
+        // TBI 20240212 supported at the moment: e.g. q-vector vs pt can be weighted only with diff. phi(pt) and integrated pt weights.
+        // It cannot be weighted in addition with eta weights, since in any case I anticipate I will do always 1-D analysis, by integrating out all other dependencies
+        wToPowerP = pow(diffPhiWeightsForThisKineVar * kineVarWeight, wp);
+        qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi)); // q-vector with weights
+      } else {
+        qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(TMath::Cos(h * dPhi), TMath::Sin(h * dPhi)); // bare q-vector without weights
       }
-      qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi));
     } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
   }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
 
@@ -5589,30 +6504,30 @@ void CalculateEverything()
   // *) Progress info:
   if (iv.fUseInternalValidation && eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]) {
     // this branch is relevant e.g. for internal validation:
-    LOGF(info, "  Processing event %d .... ", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eRec][eBefore]->GetBinContent(1)));
+    LOGF(info, "  Processing event %d .... ", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]->GetBinContent(1)));
   } else if (eh.fEventHistograms[eNumberOfEvents][eRec][eBefore] && eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]) {
     LOGF(info, "  Processing event %d/%d (selected/total) .... ", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]->GetBinContent(1)), static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eRec][eBefore]->GetBinContent(1)));
   }
   // TBI 20240423 I need to re-organize here if-else statements + add support for the case when I process only sim, etc.
 
   // *) Calculate multiparticle correlations (standard, isotropic, same harmonic):
-  if (mupa.fCalculateCorrelations) {
+  if (qv.fCalculateQvectors && mupa.fCalculateCorrelations) {
     this->CalculateCorrelations();
   }
 
   // *) Calculate Test0: TBI 20240110 name convention
   //    Remark: integrated, vs. M and vs. centrality are all calculated here
-  if (t0.fCalculateTest0) {
+  if (qv.fCalculateQvectors && t0.fCalculateTest0) {
     this->CalculateTest0();
   }
 
   // *) Calculate kine Test0: TBI 20240110 name convention
   //    Remark: vs. pt, vs. eta, etc., are all calculated here
-  if (t0.fCalculateTest0AsFunctionOf[AFO_PT]) {
-    this->CalculateKineTest0("pt");
+  if (qv.fCalculateQvectors && t0.fCalculateTest0AsFunctionOf[AFO_PT]) {
+    this->CalculateKineTest0(AFO_PT);
   }
-  if (t0.fCalculateTest0AsFunctionOf[AFO_ETA]) {
-    this->CalculateKineTest0("eta");
+  if (qv.fCalculateQvectors && t0.fCalculateTest0AsFunctionOf[AFO_ETA]) {
+    this->CalculateKineTest0(AFO_ETA);
   }
 
   // *) Calculate nested loops:
@@ -5635,7 +6550,6 @@ void Steer(T1 const& collision, T2 const& tracks)
   // The order of function calls obviously matters.
 
   if (tc.fVerbose) {
-    // LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // full function signature (including arguments, etc.), too verbose here...
     LOGF(info, "\033[1;32m%s starting ...\033[0m", __FUNCTION__); // just a bare function name
   }
 
@@ -5644,6 +6558,9 @@ void Steer(T1 const& collision, T2 const& tracks)
     LOGF(info, "\033[1;32m%s => This is a dry run, bailing out immediately from Steer(...)\033[0m", __FUNCTION__);
     return;
   }
+
+  // *) Reset event-by-event quantities: TBI 20240430 I do not need this call also here really, but it doesn't hurt either...
+  ResetEventByEventQuantities();
 
   // *) Only do internal validation for all implemented correlators against the theoretical values:
   if (iv.fUseInternalValidation) {
@@ -5664,7 +6581,9 @@ void Steer(T1 const& collision, T2 const& tracks)
   DetermineCentrality<rs>(collision);
 
   // *) Fill event histograms before event cuts:
-  FillEventHistograms<rs>(collision, tracks, eBefore);
+  if (eh.fFillEventHistograms) {
+    FillEventHistograms<rs>(collision, tracks, eBefore);
+  }
 
   // *) Print info on the current event number (total, before cuts):
   if (tc.fVerbose) {
@@ -5693,7 +6612,9 @@ void Steer(T1 const& collision, T2 const& tracks)
   }
 
   // *) Fill event histograms after event AND particle cuts: // TBI 20240110 not sure still if this one is called here, or it has to be moved above
-  FillEventHistograms<rs>(collision, tracks, eAfter);
+  if (eh.fFillEventHistograms) {
+    FillEventHistograms<rs>(collision, tracks, eAfter);
+  }
 
   // *) Calculate everything for selected events and particles:
   CalculateEverything();
@@ -5723,7 +6644,7 @@ void Steer(T1 const& collision, T2 const& tracks)
 template <eRecSim rs, typename T>
 void MainLoopOverParticles(T const& tracks)
 {
-  // This is the main loop over particles, in which Q-vectors and particle histograms are filled, particle cuts applied, etc.
+  // This is the main loop over particles, in which Q-vectors (both integrated and differential) and particle histograms are filled, particle cuts applied, etc.
 
   // Remark #1:
   // *) To process only reconstructed Run 3, use processRec(...), i.e. set field "processRec": "true" in json config
@@ -5740,21 +6661,19 @@ void MainLoopOverParticles(T const& tracks)
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // just a bare function name
   }
 
-  // *) Local kinematic variables and corresponding particle weights:
-  Double_t dPhi = 0., wPhi = 1.; // azimuthal angle and corresponding phi weight
-  Double_t dPt = 0., wPt = 1.;   // transverse momentum and corresponding pt weight
-  Double_t dEta = 0., wEta = 1.; // pseudorapidity and corresponding eta weight
-  Double_t wToPowerP = 1.;       // weight raised to power p
-  ebye.fSelectedTracks = 0;      // reset number of selected tracks
+  // *) Declare local kinematic variables:
+  Double_t dPhi = 0.; // azimuthal angle
+  Double_t dPt = 0.;  // transverse momentum
+  Double_t dEta = 0.; // pseudorapidity
 
   // *) If random access of tracks from collection is requested, use Fisher-Yates algorithm to generate random indices:
   if (tc.fUseFisherYates) {
     if (tc.fRandomIndices) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     this->RandomIndices(tracks.size());
     if (!tc.fRandomIndices) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
@@ -5783,7 +6702,9 @@ void MainLoopOverParticles(T const& tracks)
     }
 
     // *) Fill particle histograms before particle cuts:
-    FillParticleHistograms<rs>(track, eBefore);
+    if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D) {
+      FillParticleHistograms<rs>(track, eBefore);
+    }
 
     // *) Particle cuts:
     if (!ParticleCuts<rs>(track)) {
@@ -5791,60 +6712,20 @@ void MainLoopOverParticles(T const& tracks)
     }
 
     // *) Fill particle histograms after particle cuts:
-    FillParticleHistograms<rs>(track, eAfter);
+    if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D) {
+      FillParticleHistograms<rs>(track, eAfter);
+    }
 
-    // *) Fill Q-vectors:
-    //  Kinematics (Remark: for "eRecSim" processing, kinematics is taken from "reconstructed"):
+    // *) Intitialize local kinematic variables:
+    //    Remark: for "eRecSim" processing, kinematics is taken from "reconstructed".
     dPhi = track.phi();
     dPt = track.pt();
     dEta = track.eta();
 
-    // Particle weights:
-    if (pw.fUseWeights[wPHI]) {
-      wPhi = Weight(dPhi, "phi"); // corresponding phi weight
-      if (!(wPhi > 0.)) {
-        LOGF(error, "\033[1;33m%s wPhi is not positive, skipping this particle for the time being...\033[0m", __FUNCTION__);
-        LOGF(error, "dPhi = %f\nwPhi = %f", dPhi, wPhi);
-        continue;
-      }
-    } // if(pw.fUseWeights[wPHI])
-    if (pw.fUseWeights[wPT]) {
-      wPt = Weight(dPt, "pt"); // corresponding pt weight
-      if (!(wPt > 0.)) {
-        LOGF(error, "\033[1;33m%s wPt is not positive, skipping this particle for the time being...\033[0m", __FUNCTION__);
-        LOGF(error, "dPt = %f\nwPt = %f", dPt, wPt);
-        continue;
-      }
-    } // if(pw.fUseWeights[wPT])
-    if (pw.fUseWeights[wETA]) {
-      wEta = Weight(dEta, "eta"); // corresponding eta weight
-      if (!(wEta > 0.)) {
-        LOGF(error, "\033[1;33m%s wEta is not positive, skipping this particle for the time being...\033[0m", __FUNCTION__);
-        LOGF(error, "dEta = %f\nwEta = %f", dEta, wEta);
-        continue;
-      }
-    } // if(pw.fUseWeights[wETA])
-
+    // *) Integrated Q-vectors:
     if (qv.fCalculateQvectors) {
-      for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
-        for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
-          if (pw.fUseWeights[wPHI] || pw.fUseWeights[wPT] || pw.fUseWeights[wETA]) {
-            wToPowerP = pow(wPhi * wPt * wEta, wp);
-          }
-          qv.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi));
-        } // for(Int_t wp=0;wp<gMaxCorrelator+1;wp++)
-      }   // for(Int_t h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
-    }     // if (qv.fCalculateQvectors) {
-
-    // *) Nested loops containers:
-    if (nl.fCalculateNestedLoops || nl.fCalculateCustomNestedLoops) {
-      if (nl.ftaNestedLoops[0]) {
-        nl.ftaNestedLoops[0]->AddAt(dPhi, ebye.fSelectedTracks);
-      } // remember that the 2nd argument here must start from 0
-      if (nl.ftaNestedLoops[1]) {
-        nl.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta, ebye.fSelectedTracks);
-      } // remember that the 2nd argument here must start from 0
-    }   // if(nl.fCalculateNestedLoops || nl.fCalculateCustomNestedLoops)
+      this->FillQvector(dPhi, dPt, dEta); // all 3 arguments are passed by reference
+    }
 
     // *) Differential q-vectors:
     if (qv.fCalculateQvectors && t0.fCalculateTest0AsFunctionOf[AFO_PT]) { // TBI 20240423 I need to extend this condition to mupa.fCalculateCorrelations or some differential version of it
@@ -5852,6 +6733,11 @@ void MainLoopOverParticles(T const& tracks)
     }
     if (qv.fCalculateQvectors && t0.fCalculateTest0AsFunctionOf[AFO_ETA]) { // TBI 20240423 I need to extend this condition to mupa.fCalculateCorrelations or some differential version of it
       this->Fillqvector(dPhi, dEta, ETAq);                                  // first 2 arguments are passed by reference, 3rd argument is enum
+    }
+
+    // *) Fill nested loops containers:
+    if (nl.fCalculateNestedLoops || nl.fCalculateCustomNestedLoops) {
+      this->FillNestedLoopsContainers(ebye.fSelectedTracks, dPhi, dPt, dEta); // all 4 arguments are passed by reference
     }
 
     // *) Counter of selected tracks in the current event:

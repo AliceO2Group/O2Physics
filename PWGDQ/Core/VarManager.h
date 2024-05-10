@@ -95,6 +95,8 @@ class VarManager : public TObject
     CollisionQvect = BIT(13),
     ReducedEventQvectorExtra = BIT(14),
     ReducedEventRefFlow = BIT(15),
+    Zdc = BIT(16),
+    ReducedZdc = BIT(17),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -134,6 +136,7 @@ class VarManager : public TObject
     kXtoJpsiPiPi,               // e.g. X(3872)      -> J/psi pi+ pi-
     kChictoJpsiEE,              // e.g. Chi_c1      -> J/psi e+ e-
     kTripleCandidateToEEPhoton, // e.g. chi_c   -> e+ e- photon or pi0 -> e+ e- photon
+    kDecayToKPi,                // e.g. D0           -> K+ pi- or cc.
     kNMaxCandidateTypes
   };
 
@@ -301,6 +304,14 @@ class VarManager : public TObject
     kTwoEvDeltaX, // distance in x between collisions
     kTwoEvDeltaY, // distance in y between collisions
     kTwoEvDeltaR, // distance in (x,y) plane between collisions
+    kEnergyCommonZNA,
+    kEnergyCommonZNC,
+    kEnergyCommonZPA,
+    kEnergyCommonZPC,
+    kTimeZNA,
+    kTimeZNC,
+    kTimeZPA,
+    kTimeZPC,
     kNEventWiseVariables,
     kQ2X0A1,
     kQ2X0A2,
@@ -501,6 +512,7 @@ class VarManager : public TObject
     kVertexingTauzProjected,
     kVertexingTauxyProjected,
     kVertexingTauxyProjectedNs,
+    kVertexingTauxyzProjected,
     kVertexingTauz,
     kVertexingTauzErr,
     kVertexingPz,
@@ -849,6 +861,8 @@ class VarManager : public TObject
   static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int candidateType, typename T1, typename T2, typename T3>
   static void FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T3 const& hadron2, float* values = nullptr);
+  template <typename T>
+  static void FillZDC(const T& zdc, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
@@ -912,6 +926,8 @@ class VarManager : public TObject
   template <typename T>
   static KFPVertex createKFPVertexFromCollision(const T& collision);
   static float calculateCosPA(KFParticle kfp, KFParticle PV);
+  template <int pairType, typename T1, typename T2>
+  static float calculatePhiV(const T1& t1, const T2& t2);
 
   static o2::vertexing::DCAFitterN<2> fgFitterTwoProngBarrel;
   static o2::vertexing::DCAFitterN<3> fgFitterThreeProngBarrel;
@@ -1442,6 +1458,10 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kIsSingleGapA] = (event.eventFilter() & (uint64_t(1) << kSingleGapA)) > 0;
     values[kIsSingleGapC] = (event.eventFilter() & (uint64_t(1) << kSingleGapC)) > 0;
     values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
+  }
+
+  if constexpr ((fillMap & ReducedZdc) > 0) {
+    FillZDC(event, values);
   }
 
   FillEventDerived(values);
@@ -2124,6 +2144,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassPionCharged;
   }
 
+  if constexpr (pairType == kDecayToKPi) {
+    m1 = o2::constants::physics::MassKaonCharged;
+    m2 = o2::constants::physics::MassPionCharged;
+  }
+
   if constexpr (pairType == kElectronMuon) {
     m2 = o2::constants::physics::MassMuon;
   }
@@ -2234,93 +2259,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     }
   }
   if (fgUsedVars[kPairPhiv]) {
-    // cos(phiv) = w*a /|w||a|
-    // with w = u x v
-    // and  a = u x z / |u x z|   , unit vector perpendicular to v12 and z-direction (magnetic field)
-    // u = v12 / |v12|            , the unit vector of v12
-    // v = v1 x v2 / |v1 x v2|    , unit vector perpendicular to v1 and v2
-
-    float bz = fgFitterTwoProngBarrel.getBz();
-
-    bool swapTracks = false;
-    if (v1.Pt() < v2.Pt()) { // ordering of track, pt1 > pt2
-      ROOT::Math::PtEtaPhiMVector v3 = v1;
-      v1 = v2;
-      v2 = v3;
-      swapTracks = true;
-    }
-
-    // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
-    // vector product of pep X pem
-    float vpx = 0, vpy = 0, vpz = 0;
-    if (t1.sign() * t2.sign() > 0) { // Like Sign
-      if (!swapTracks) {
-        if (bz * t1.sign() < 0) {
-          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
-          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
-          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
-        } else {
-          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
-          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
-          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
-        }
-      } else { // swaped tracks
-        if (bz * t2.sign() < 0) {
-          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
-          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
-          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
-        } else {
-          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
-          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
-          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
-        }
-      }
-    } else { // Unlike Sign
-      if (!swapTracks) {
-        if (bz * t1.sign() > 0) {
-          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
-          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
-          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
-        } else {
-          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
-          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
-          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
-        }
-      } else { // swaped tracks
-        if (bz * t2.sign() > 0) {
-          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
-          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
-          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
-        } else {
-          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
-          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
-          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
-        }
-      }
-    }
-
-    // unit vector of pep X pem
-    float vx = vpx / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
-    float vy = vpy / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
-    float vz = vpz / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
-
-    float px = v12.Px();
-    float py = v12.Py();
-    float pz = v12.Pz();
-
-    // unit vector of (pep+pem)
-    float ux = px / TMath::Sqrt(px * px + py * py + pz * pz);
-    float uy = py / TMath::Sqrt(px * px + py * py + pz * pz);
-    float uz = pz / TMath::Sqrt(px * px + py * py + pz * pz);
-    float ax = uy / TMath::Sqrt(ux * ux + uy * uy);
-    float ay = -ux / TMath::Sqrt(ux * ux + uy * uy);
-
-    // The third axis defined by vector product (ux,uy,uz)X(vx,vy,vz)
-    float wx = uy * vz - uz * vy;
-    float wy = uz * vx - ux * vz;
-    // by construction, (wx,wy,wz) must be a unit vector. Measure angle between (wx,wy,wz) and (ax,ay,0).
-    // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
-    values[kPairPhiv] = TMath::ACos(wx * ax + wy * ay); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
+    values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
 }
 
@@ -2402,6 +2341,10 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   values[kU2Q2Ev2] = values[kQ2X0A2] * std::cos(2 * v2.Phi()) + values[kQ2Y0A2] * std::sin(2 * v2.Phi());
   values[kCos2DeltaPhiMu1] = std::cos(2 * (v1.Phi() - v12.Phi()));
   values[kCos2DeltaPhiMu2] = std::cos(2 * (v2.Phi() - v12.Phi()));
+
+  if (fgUsedVars[kPairPhiv]) {
+    values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
+  }
 }
 
 template <typename T1, typename T2>
@@ -2488,6 +2431,10 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   }
   float m1 = o2::constants::physics::MassElectron;
   float m2 = o2::constants::physics::MassElectron;
+  if constexpr (pairType == kDecayToKPi) {
+    m1 = o2::constants::physics::MassKaonCharged;
+    m2 = o2::constants::physics::MassPionCharged;
+  }
   if constexpr (pairType == kDecayToMuMu && muonHasCov) {
     m1 = o2::constants::physics::MassMuon;
     m2 = o2::constants::physics::MassMuon;
@@ -2504,7 +2451,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     // auto pars1 = getTrackParCov(t1);
     // auto pars2 = getTrackParCov(t2);
     // We need to hide the cov data members from the cases when no cov table is provided
-    if constexpr ((pairType == kDecayToEE) && trackHasCov) {
+    if constexpr ((pairType == kDecayToEE || pairType == kDecayToKPi) && trackHasCov) {
       std::array<float, 5> t1pars = {t1.y(), t1.z(), t1.snp(), t1.tgl(), t1.signed1Pt()};
       std::array<float, 15> t1covs = {t1.cYY(), t1.cZY(), t1.cZZ(), t1.cSnpY(), t1.cSnpZ(),
                                       t1.cSnpSnp(), t1.cTglY(), t1.cTglZ(), t1.cTglSnp(), t1.cTglTgl(),
@@ -2570,7 +2517,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       // auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
 
-      if constexpr (pairType == kDecayToEE && trackHasCov) {
+      if constexpr ((pairType == kDecayToEE || pairType == kDecayToKPi) && trackHasCov) {
         secondaryVertex = fgFitterTwoProngBarrel.getPCACandidate();
         covMatrixPCA = fgFitterTwoProngBarrel.calcPCACovMatrixFlat();
         auto chi2PCA = fgFitterTwoProngBarrel.getChi2AtPCACandidate();
@@ -2640,12 +2587,13 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.P());
       values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
       values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / (v12.P());
+      values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v12.M() / (v12.P());
     }
   } else {
     KFParticle trk0KF;
     KFParticle trk1KF;
     KFParticle KFGeoTwoProng;
-    if constexpr ((pairType == kDecayToEE) && trackHasCov) {
+    if constexpr ((pairType == kDecayToEE || pairType == kDecayToKPi) && trackHasCov) {
       KFPTrack kfpTrack0 = createKFPTrackFromTrack(t1);
       trk0KF = KFParticle(kfpTrack0, -11 * t1.sign());
       KFPTrack kfpTrack1 = createKFPTrackFromTrack(t2);
@@ -3364,6 +3312,23 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   }
 }
 
+template <typename T>
+void VarManager::FillZDC(T const& zdc, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  values[kEnergyCommonZNA] = zdc.energyCommonZNA();
+  values[kEnergyCommonZNC] = zdc.energyCommonZNC();
+  values[kEnergyCommonZPA] = zdc.energyCommonZPA();
+  values[kEnergyCommonZPC] = zdc.energyCommonZPC();
+  values[kTimeZNA] = zdc.timeZNA();
+  values[kTimeZNC] = zdc.timeZNC();
+  values[kTimeZPA] = zdc.timeZPA();
+  values[kTimeZPC] = zdc.timeZPC();
+}
+
 template <typename T1, typename T2>
 void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values, float hadronMass)
 {
@@ -3521,6 +3486,121 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
     values[kDitrackPt] = v23.Pt();
     values[kCosthetaDileptonDitrack] = (v1.Px() * v123.Px() + v1.Py() * v123.Py() + v1.Pz() * v123.Pz()) / (v1.P() * v123.P());
   }
+}
+
+//__________________________________________________________________
+template <int pairType, typename T1, typename T2>
+float VarManager::calculatePhiV(T1 const& t1, T2 const& t2)
+{
+  // cos(phiv) = w*a /|w||a|
+  // with w = u x v
+  // and  a = u x z / |u x z|   , unit vector perpendicular to v12 and z-direction (magnetic field)
+  // u = v12 / |v12|            , the unit vector of v12
+  // v = v1 x v2 / |v1 x v2|    , unit vector perpendicular to v1 and v2
+
+  float m1 = o2::constants::physics::MassElectron;
+  float m2 = o2::constants::physics::MassElectron;
+  if constexpr (pairType == kDecayToMuMu) {
+    m1 = o2::constants::physics::MassMuon;
+    m2 = o2::constants::physics::MassMuon;
+  }
+
+  if constexpr (pairType == kDecayToPiPi) {
+    m1 = o2::constants::physics::MassPionCharged;
+    m2 = o2::constants::physics::MassPionCharged;
+  }
+
+  if constexpr (pairType == kElectronMuon) {
+    m2 = o2::constants::physics::MassMuon;
+  }
+
+  ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+  ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+  float pairPhiV = -999;
+  float bz = fgMagField;
+
+  bool swapTracks = false;
+  if (v1.Pt() < v2.Pt()) { // ordering of track, pt1 > pt2
+    ROOT::Math::PtEtaPhiMVector v3 = v1;
+    v1 = v2;
+    v2 = v3;
+    swapTracks = true;
+  }
+
+  // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
+  // vector product of pep X pem
+  float vpx = 0, vpy = 0, vpz = 0;
+  if (t1.sign() * t2.sign() > 0) { // Like Sign
+    if (!swapTracks) {
+      if (bz * t1.sign() < 0) {
+        vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
+        vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
+        vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
+      } else {
+        vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
+        vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
+        vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+      }
+    } else { // swaped tracks
+      if (bz * t2.sign() < 0) {
+        vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
+        vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
+        vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
+      } else {
+        vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
+        vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
+        vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+      }
+    }
+  } else { // Unlike Sign
+    if (!swapTracks) {
+      if (bz * t1.sign() > 0) {
+        vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
+        vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
+        vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
+      } else {
+        vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
+        vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
+        vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+      }
+    } else { // swaped tracks
+      if (bz * t2.sign() > 0) {
+        vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
+        vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
+        vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
+      } else {
+        vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
+        vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
+        vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
+      }
+    }
+  }
+
+  // unit vector of pep X pem
+  float vx = vpx / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
+  float vy = vpy / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
+  float vz = vpz / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
+
+  float px = v12.Px();
+  float py = v12.Py();
+  float pz = v12.Pz();
+
+  // unit vector of (pep+pem)
+  float ux = px / TMath::Sqrt(px * px + py * py + pz * pz);
+  float uy = py / TMath::Sqrt(px * px + py * py + pz * pz);
+  float uz = pz / TMath::Sqrt(px * px + py * py + pz * pz);
+  float ax = uy / TMath::Sqrt(ux * ux + uy * uy);
+  float ay = -ux / TMath::Sqrt(ux * ux + uy * uy);
+
+  // The third axis defined by vector product (ux,uy,uz)X(vx,vy,vz)
+  float wx = uy * vz - uz * vy;
+  float wy = uz * vx - ux * vz;
+  // by construction, (wx,wy,wz) must be a unit vector. Measure angle between (wx,wy,wz) and (ax,ay,0).
+  // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
+  pairPhiV = TMath::ACos(wx * ax + wy * ay); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
+  return pairPhiV;
 }
 
 #endif // PWGDQ_CORE_VARMANAGER_H_

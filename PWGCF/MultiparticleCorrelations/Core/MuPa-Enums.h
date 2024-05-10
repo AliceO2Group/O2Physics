@@ -102,8 +102,14 @@ enum eEventHistograms {
   eEventHistograms_N
 };
 
+enum eEventHistograms2D {
+  eVertex_z_vs_MultTPC = 0,
+  eVertex_z_vs_NContributors,
+  eEventHistograms2D_N
+};
+
 enum eEventCuts {
-  eTrigger = eEventHistograms_N, // yes, because I do not want to duplicate the same enum's from eEventHistograms here
+  eTrigger = eEventHistograms_N, // yes, because I do not want to duplicate the same enums from eEventHistograms here
   eSel7,
   eSel8,
   eCentralityEstimator,
@@ -111,13 +117,31 @@ enum eEventCuts {
 };
 
 enum eParticleHistograms {
+
+  // from o2::aod::Tracks:
   ePhi = 0,
   ePt,
   eEta,
-  etpcNClsCrossedRows, // from aod::TracksExtra
-  eDCA_xy,             // from aod::TracksDCA
+
+  // from o2::aod::TracksExtra_001:
+  etpcNClsFindable,
+  etpcNClsShared,
+  etpcNClsFound,
+  etpcNClsCrossedRows,
+  eitsNCls,
+  eitsNClsInnerBarrel,
+  etpcCrossedRowsOverFindableCls,
+  etpcFoundOverFindableCls,
+  etpcFractionSharedCls,
+
+  // from o2::aod::TracksDCA:
+  eDCA_xy,
   eDCA_z,
+
+  // the rest:
   ePDG,
+
+  // counter:
   eParticleHistograms_N
 };
 
@@ -128,7 +152,7 @@ enum eParticleHistograms2D {
 };
 
 enum eParticleCuts {
-  eTBI = eParticleHistograms_N, // yes, because I do not want to duplicate the same enum's from eParticleHistograms here
+  eTBI = eParticleHistograms_N, // yes, because I do not want to duplicate the same enums from eParticleHistograms here
   eParticleCuts_N
 };
 
@@ -140,6 +164,13 @@ enum eAsFunctionOf {
   AFO_ETA = 4,
   eAsFunctionOf_N
 }; // prefix is needed, to avoid conflict with enum eKinematics
+
+enum eNUAPDF {
+  ePhiNUAPDF = 0,
+  ePtNUAPDF,
+  eEtaNUAPDF,
+  eNUAPDF_N
+};
 
 enum eqvectorKine { // Here "kine" originally meant "kinematic", i.e. vs. pt or vs. eta, now it's general.
   PTq = 0,

@@ -50,6 +50,8 @@ struct JetDerivedDataWriter {
   Configurable<bool> saveD0Table{"saveD0Table", false, "save the D0 table to the output"};
   Configurable<bool> saveLcTable{"saveLcTable", false, "save the Lc table to the output"};
 
+  Configurable<std::string> eventSelectionForCounting{"eventSelectionForCounting", "sel8", "choose event selection for collision counter"};
+
   Produces<aod::StoredCollisionCounts> storedCollisionCountsTable;
   Produces<aod::StoredJDummys> storedJDummysTable;
   Produces<aod::StoredJBCs> storedJBCsTable;
@@ -97,7 +99,7 @@ struct JetDerivedDataWriter {
 
   PresliceUnsorted<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels, aod::JChHFTrigSels, aod::JMcCollisionLbs>> CollisionsPerMcCollision = aod::jmccollisionlb::mcCollisionId;
   PresliceUnsorted<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
-  Preslice<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs>> TracksPerCollision = aod::jtrack::collisionId;
+  Preslice<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs>> TracksPerCollision = aod::jtrack::collisionId;
   Preslice<soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks>> ClustersPerCollision = aod::jcluster::collisionId;
   Preslice<CandidatesD0MCD> D0sPerCollision = aod::jd0indices::collisionId;
   Preslice<CandidatesLcMCD> LcsPerCollision = aod::jlcindices::collisionId;
@@ -109,10 +111,12 @@ struct JetDerivedDataWriter {
   uint32_t precisionPositionMask;
   uint32_t precisionMomentumMask;
 
+  int eventSelection = -1;
   void init(InitContext&)
   {
     precisionPositionMask = 0xFFFFFC00; // 13 bits
     precisionMomentumMask = 0xFFFFFC00; // 13 bits  this is currently keept at 13 bits wihich gives roughly a resolution of 1/8000. This can be increased to 15 bits if really needed
+    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelectionForCounting));
   }
 
   bool acceptCollision(aod::JCollision const&)
@@ -189,33 +193,42 @@ struct JetDerivedDataWriter {
   void processCollisionCounting(aod::JCollisions const& collisions, aod::CollisionCounts const& collisionCounts)
   {
     int readCollisionCounter = 0;
+    int readSelectedCollisionCounter = 0;
     int writtenCollisionCounter = 0;
     for (const auto& collision : collisions) {
       readCollisionCounter++;
+      if (jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+        readSelectedCollisionCounter++;
+      }
       if (collisionFlag[collision.globalIndex()]) {
         writtenCollisionCounter++;
       }
     }
     std::vector<int> previousReadCounts;
+    std::vector<int> previousReadSelectedCounts;
     std::vector<int> previousWrittenCounts;
     int iPreviousDataFrame = 0;
     for (const auto& collisionCount : collisionCounts) {
       auto readCollisionCounterSpan = collisionCount.readCounts();
+      auto readSelectedCollisionCounterSpan = collisionCount.readSelectedCounts();
       auto writtenCollisionCounterSpan = collisionCount.writtenCounts();
       if (iPreviousDataFrame == 0) {
         std::copy(readCollisionCounterSpan.begin(), readCollisionCounterSpan.end(), std::back_inserter(previousReadCounts));
+        std::copy(readSelectedCollisionCounterSpan.begin(), readSelectedCollisionCounterSpan.end(), std::back_inserter(previousReadSelectedCounts));
         std::copy(writtenCollisionCounterSpan.begin(), writtenCollisionCounterSpan.end(), std::back_inserter(previousWrittenCounts));
       } else {
         for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
           previousReadCounts[i] += readCollisionCounterSpan[i];
+          previousReadSelectedCounts[i] += readSelectedCollisionCounterSpan[i];
           previousWrittenCounts[i] += writtenCollisionCounterSpan[i];
         }
       }
       iPreviousDataFrame++;
     }
     previousReadCounts.push_back(readCollisionCounter);
+    previousReadSelectedCounts.push_back(readSelectedCollisionCounter);
     previousWrittenCounts.push_back(writtenCollisionCounter);
-    storedCollisionCountsTable(previousReadCounts, previousWrittenCounts);
+    storedCollisionCountsTable(previousReadCounts, previousReadSelectedCounts, previousWrittenCounts);
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processCollisionCounting, "write out collision counting output table", false);
 
@@ -266,7 +279,7 @@ struct JetDerivedDataWriter {
           storedJClustersParentIndexTable(cluster.clusterId());
 
           std::vector<int> clusterStoredJTrackIDs;
-          for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackPIs>>()) {
+          for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>()) {
             auto JtrackIndex = trackMapping.find(clusterTrack.globalIndex());
             if (JtrackIndex != trackMapping.end()) {
               clusterStoredJTrackIDs.push_back(JtrackIndex->second);
@@ -496,7 +509,7 @@ struct JetDerivedDataWriter {
               storedJClustersParentIndexTable(cluster.clusterId());
 
               std::vector<int> clusterStoredJTrackIDs;
-              for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackPIs>>()) {
+              for (const auto& clusterTrack : cluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>()) {
                 auto JtrackIndex = trackMapping.find(clusterTrack.globalIndex());
                 if (JtrackIndex != trackMapping.end()) {
                   clusterStoredJTrackIDs.push_back(JtrackIndex->second);

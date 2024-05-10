@@ -40,11 +40,17 @@ enum {
   kINELg0,
   kINELg010,
   kTrig,
-  kINELg0Trig,
-  kINELg010Trig,
-  kSel,
-  kINELg0Sel,
-  kINELg010Sel,
+  kTrig10,
+  kTrigINELg0,
+  kTrigINELg010,
+  kSel8,
+  kSel810,
+  kSel8INELg0,
+  kSel8INELg010,
+  kAllCuts,
+  kAllCuts10,
+  kAllCutsINELg0,
+  kAllCutsINELg010,
   kECend,
 };
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (Multiplicity) percentile (Default: FT0M)
@@ -57,6 +63,7 @@ DECLARE_SOA_COLUMN(BMagField, bMagField, float);   //! Magnetic field
 // MC
 DECLARE_SOA_COLUMN(IsVtxIn10, isVtxIn10, bool);               //! Vtx10
 DECLARE_SOA_COLUMN(IsINELgt0, isINELgt0, bool);               //! INEL>0
+DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);         //! TriggerTVX
 DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
 DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
 
@@ -80,6 +87,7 @@ using ResoCollision = ResoCollisions::iterator;
 DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
                   resocollision::IsVtxIn10,
                   resocollision::IsINELgt0,
+                  resocollision::IsTriggerTVX,
                   resocollision::IsInSel8,
                   resocollision::IsInAfterAllCuts);
 using ResoMCCollision = ResoMCCollisions::iterator;
@@ -108,6 +116,8 @@ DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);    //! Is glob
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);              //! Is global track
 DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);            //! Is primary track
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);          //! Is primary vertex contributor
+DECLARE_SOA_COLUMN(HasITS, hasITS, bool);                            //! Has ITS
+DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                            //! Has TPC
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                            //! Has TOF
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);               //! DCA between daughters
@@ -154,6 +164,8 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   o2::aod::track::DcaZ,
                   o2::aod::track::X,
                   o2::aod::track::Alpha,
+                  resodaughter::HasITS,
+                  resodaughter::HasTPC,
                   resodaughter::HasTOF,
                   o2::aod::pidtpc::TPCNSigmaPi,
                   o2::aod::pidtpc::TPCNSigmaKa,

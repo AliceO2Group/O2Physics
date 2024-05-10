@@ -19,7 +19,7 @@
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Tasks/SGTrackSelector.h"
+#include "PWGUD/Core/SGTrackSelector.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Framework/ASoA.h"
 #include "Framework/DataTypes.h"
@@ -103,7 +103,7 @@ struct SGTwoPiAnalyzer {
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut};
     // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
-    int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[3], ZDC_cut);
+    int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
     gapSide = truegapSide;

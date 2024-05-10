@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateCreatorToXiPi.cxx
+/// \file candidateCreatorXic0Omegac0.cxx
 /// \brief Reconstruction of Omegac0 and Xic0 decays candidates
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
