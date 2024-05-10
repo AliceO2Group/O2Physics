@@ -1175,10 +1175,7 @@ DECLARE_SOA_COLUMN(PtCharmBaryonGen, ptCharmBaryonGen, float);
 DECLARE_SOA_COLUMN(EtaCharmBaryonGen, etaCharmBaryonGen, float);
 
 // mapping of decay types
-enum DecayType { DecayToXiPi = 0,
-                 DecayToOmegaPi,
-                 DecayToOmegaK,
-                 XiczeroToXiPi,
+enum DecayType { XiczeroToXiPi = 0,
                  OmegaczeroToXiPi,
                  OmegaczeroToOmegaPi,
                  OmegaczeroToOmegaK };
@@ -1212,8 +1209,7 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_xic0omegac0::DcaXYToPvV0Dau0, hf_cand_xic0omegac0::DcaXYToPvV0Dau1, hf_cand_xic0omegac0::DcaXYToPvCascDau,
                   hf_cand_xic0omegac0::DcaZToPvV0Dau0, hf_cand_xic0omegac0::DcaZToPvV0Dau1, hf_cand_xic0omegac0::DcaZToPvCascDau,
                   hf_cand_xic0omegac0::DcaCascDau, hf_cand_xic0omegac0::DcaV0Dau, hf_cand_xic0omegac0::DcaCharmBaryonDau,
-                  hf_cand_xic0omegac0::DecLenCharmBaryon, hf_cand_xic0omegac0::DecLenCascade, hf_cand_xic0omegac0::DecLenV0, hf_cand_xic0omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0omegac0::ErrorDecayLengthXYCharmBaryon,
-                  hf_track_index::HFflag);
+                  hf_cand_xic0omegac0::DecLenCharmBaryon, hf_cand_xic0omegac0::DecLenCascade, hf_cand_xic0omegac0::DecLenV0, hf_cand_xic0omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0omegac0::ErrorDecayLengthXYCharmBaryon);
 
 DECLARE_SOA_TABLE(HfCandToOmegaPi, "AOD", "HFCANDTOOMEGAPI",
                   o2::soa::Index<>,
@@ -1242,7 +1238,7 @@ DECLARE_SOA_TABLE(HfCandToOmegaPi, "AOD", "HFCANDTOOMEGAPI",
                   hf_cand_xic0omegac0::DcaZToPvV0Dau0, hf_cand_xic0omegac0::DcaZToPvV0Dau1, hf_cand_xic0omegac0::DcaZToPvCascDau,
                   hf_cand_xic0omegac0::DcaCascDau, hf_cand_xic0omegac0::DcaV0Dau, hf_cand_xic0omegac0::DcaCharmBaryonDau,
                   hf_cand_xic0omegac0::DecLenCharmBaryon, hf_cand_xic0omegac0::DecLenCascade, hf_cand_xic0omegac0::DecLenV0, hf_cand_xic0omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0omegac0::ErrorDecayLengthXYCharmBaryon,
-                  hf_track_index::HFflag, o2::soa::Marker<1>);
+                  o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfCandToOmegaK, "AOD", "HFCANDTOOMEGAK",
                   o2::soa::Index<>,
@@ -1271,7 +1267,7 @@ DECLARE_SOA_TABLE(HfCandToOmegaK, "AOD", "HFCANDTOOMEGAK",
                   hf_cand_xic0omegac0::DcaZToPvV0Dau0, hf_cand_xic0omegac0::DcaZToPvV0Dau1, hf_cand_xic0omegac0::DcaZToPvCascDau,
                   hf_cand_xic0omegac0::DcaCascDau, hf_cand_xic0omegac0::DcaV0Dau, hf_cand_xic0omegac0::DcaCharmBaryonDau,
                   hf_cand_xic0omegac0::DecLenCharmBaryon, hf_cand_xic0omegac0::DecLenCascade, hf_cand_xic0omegac0::DecLenV0, hf_cand_xic0omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0omegac0::ErrorDecayLengthXYCharmBaryon,
-                  hf_track_index::HFflag, o2::soa::Marker<2>);
+                  o2::soa::Marker<2>);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfXicToXiPiMCRec, "AOD", "HFXICXIPIMCREC", //!

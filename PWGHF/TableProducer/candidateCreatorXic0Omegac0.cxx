@@ -399,17 +399,6 @@ struct HfCandidateCreatorXic0Omegac0 {
       float dcaV0Dau = casc.dcaV0daughters();
       float dcaCharmBaryonDau = std::sqrt(df.getChi2AtPCACandidate());
 
-      // set hfFlag
-      int hfFlag = 0;
-      if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
-        hfFlag = 1 << aod::hf_cand_xic0omegac0::DecayType::DecayToXiPi;
-      }
-      if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
-        hfFlag = 1 << aod::hf_cand_xic0omegac0::DecayType::DecayToOmegaPi;
-      } else {
-        hfFlag = 1 << aod::hf_cand_xic0omegac0::DecayType::DecayToOmegaK;
-      }
-
       // fill test histograms
       hInvMassCharmBaryon->Fill(mCharmBaryon);
       hCandidateCounter->Fill(3);
@@ -443,8 +432,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                       dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascBachelor,
                       dcazV0Dau0, dcazV0Dau1, dcazCascBachelor,
                       dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
-                      decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
-                      hfFlag);
+                      decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon);
 
       } else if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
         rowCandToOmegaPi(collision.globalIndex(),
@@ -474,8 +462,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                          dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascBachelor,
                          dcazV0Dau0, dcazV0Dau1, dcazCascBachelor,
                          dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
-                         decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
-                         hfFlag);
+                         decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon);
 
       } else {
         rowCandToOmegaK(
@@ -505,8 +492,7 @@ struct HfCandidateCreatorXic0Omegac0 {
           dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascBachelor,
           dcazV0Dau0, dcazV0Dau1, dcazCascBachelor,
           dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
-          decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
-          hfFlag);
+          decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon);
       }
 
     } // loop over LF Cascade-bachelor candidates
