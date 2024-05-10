@@ -208,7 +208,7 @@ struct HfTaskMcEfficiencyToXiPi {
     for (const auto& mcParticle : genParticles) {
 
       // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
-      if (rejGenTFAndITSROFBorder) {
+      if (rejGenTFAndITSROFBorders) {
         auto coll = mcParticle.template mcCollision_as<aod::McCollisions>();
         auto bc = coll.template bc_as<BCsInfo>();
         if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
