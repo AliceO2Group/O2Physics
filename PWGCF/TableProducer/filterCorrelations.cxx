@@ -103,7 +103,8 @@ struct FilterCF {
   }
 
   template <typename TTrack>
-  uint8_t getTrackType(TTrack& track) {
+  uint8_t getTrackType(TTrack& track)
+  {
     if (cfgTrackSelection == 0) {
       if (track.isGlobalTrack()) {
         return 1;
