@@ -145,9 +145,7 @@ struct FilterCF {
       outputCollRefs(collision.globalIndex());
 
     for (auto& track : tracks) {
-      uint8_t trackType = getTrackType(track);
-
-      outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), trackType);
+      outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), getTrackType(track));
       if (cfgTransientTables)
         outputTrackRefs(collision.globalIndex(), track.globalIndex());
 
@@ -246,8 +244,6 @@ struct FilterCF {
       outputMcCollisionLabels(collision.mcCollisionId());
 
       for (auto& track : groupedTracks) {
-        uint8_t trackType = getTrackType(track);
-
         int mcParticleId = track.mcParticleId();
         if (mcParticleId >= 0) {
           mcParticleId = mcParticleLabels[track.mcParticleId()];
@@ -256,7 +252,7 @@ struct FilterCF {
           }
         }
         outputTracks(outputCollisions.lastIndex(),
-                     truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), trackType);
+                     truncateFloatFraction(track.pt()), truncateFloatFraction(track.eta()), truncateFloatFraction(track.phi()), track.sign(), getTrackType(track));
         outputTrackLabels(mcParticleId);
 
         yields->Fill(collision.multiplicity(), track.pt(), track.eta());
