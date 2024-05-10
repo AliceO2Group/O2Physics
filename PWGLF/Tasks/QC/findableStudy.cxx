@@ -143,11 +143,11 @@ struct findableStudy {
     bool hasBeenFound = false;
 
     // encode conditionals here
-    uint32_t withTPC = 0; // if prongs have TPC 
-    uint32_t withITSTracker = 0; // if prongs have been ITS tracked
+    uint32_t withTPC = 0;           // if prongs have TPC
+    uint32_t withITSTracker = 0;    // if prongs have been ITS tracked
     uint32_t withITSTrackerTPC = 0; // if prongs have TPC and are ITS tracked
-    uint32_t withITSABTPC = 0; // if prongs have TPC and are ITS afterburned
-    uint32_t withSVertexerOK = 0; // if prongs have acceptable tracking conditions for svertexer
+    uint32_t withITSABTPC = 0;      // if prongs have TPC and are ITS afterburned
+    uint32_t withSVertexerOK = 0;   // if prongs have acceptable tracking conditions for svertexer
 
     for (auto& recv0 : recv0s) {
       if (recv0.isFound()) {
@@ -174,14 +174,12 @@ struct findableStudy {
         bitset(withTPC, 1);
 
       if (
-        (pTrack.hasTPC() && pTrack.hasITS()) || 
-        (!pTrack.hasTPC() && pTrack.itsNCls() >= 6)
-        )
+        (pTrack.hasTPC() && pTrack.hasITS()) ||
+        (!pTrack.hasTPC() && pTrack.itsNCls() >= 6))
         bitset(withSVertexerOK, 0);
       if (
-        (nTrack.hasTPC() && nTrack.hasITS()) || 
-        (!nTrack.hasTPC() && nTrack.itsNCls() >= 6)
-      )
+        (nTrack.hasTPC() && nTrack.hasITS()) ||
+        (!nTrack.hasTPC() && nTrack.itsNCls() >= 6))
         bitset(withSVertexerOK, 1);
 
       if (pTrack.hasITS() && pTrack.itsChi2PerNcl() > -10.0f)
