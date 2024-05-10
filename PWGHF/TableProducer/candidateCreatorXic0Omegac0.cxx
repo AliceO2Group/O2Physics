@@ -191,14 +191,6 @@ struct HfCandidateCreatorXic0Omegac0 {
       LOGP(fatal, "Decay channel not recognized!");
     }
 
-    double massPionFromPDG = MassPiPlus;      // pdg code 211
-    double massKaonFromPDG = MassKPlus;       // pdg code 321
-    double massLambdaFromPDG = MassLambda0;   // pdg code 3122
-    double massXiFromPDG = MassXiMinus;       // pdg code 3312
-    double massOmegaFromPDG = MassOmegaMinus; // pdg code 3334
-    double massOmegacFromPDG = MassOmegaC0;   // pdg code 4332
-    double massXicFromPDG = MassXiC0;         // pdg code 4132
-
     for (const auto& cand : candidates) {
 
       hCandidateCounter->Fill(0);
@@ -361,11 +353,11 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       auto arrMassCharmBaryon = std::array{0., 0.};
       if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
-        arrMassCharmBaryon = {massXiFromPDG, massPionFromPDG};
+        arrMassCharmBaryon = {MassXiMinus, MassPiPlus};
       } else if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
-        arrMassCharmBaryon = {massOmegaFromPDG, massPionFromPDG};
+        arrMassCharmBaryon = {MassOmegaMinus, MassPiPlus};
       } else {
-        arrMassCharmBaryon = {massOmegaFromPDG, massKaonFromPDG};
+        arrMassCharmBaryon = {MassOmegaMinus, MassKPlus};
       }
       double mCharmBaryon = RecoDecay::m(std::array{pVecCascAsD, pVecCharmBachelorAsD}, arrMassCharmBaryon);
 
@@ -387,15 +379,15 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto errorDecayLengthCharmBaryon = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharmBaryon, thetaCharmBaryon) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon));
       auto errorDecayLengthXYCharmBaryon = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharmBaryon, 0.) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, 0.));
 
-      double ctOmegac = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, massOmegacFromPDG);
-      double ctXic = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, massXicFromPDG);
+      double ctOmegac = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, MassOmegaC0);
+      double ctXic = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, MassXiC0);
       double ctCascade = 0.;
       if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
-        ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, massXiFromPDG);
+        ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, MassXiMinus);
       } else {
-        ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, massOmegaFromPDG);
+        ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, MassOmegaMinus);
       }
-      double ctV0 = RecoDecay::ct(pVecV0, decLenV0, massLambdaFromPDG);
+      double ctV0 = RecoDecay::ct(pVecV0, decLenV0, MassLambda0);
 
       // computing eta
       double pseudorapCharmBaryon = RecoDecay::eta(pVecCharmBaryon);
