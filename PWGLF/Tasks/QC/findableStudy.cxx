@@ -102,12 +102,12 @@ struct findableStudy {
     histos.add("h2dPtVsCentrality_WithTPC_Found", "hPtVsCentrality_WithTPC_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
     histos.add("h2dPtVsCentrality_WithITSTracker_Findable", "hPtVsCentrality_WithITSTracker_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
     histos.add("h2dPtVsCentrality_WithITSTracker_Found", "hPtVsCentrality_WithITSTracker_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h2dPtVsCentrality_WithITSAfterburner_Findable", "hPtVsCentrality_WithITSAfterburner_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h2dPtVsCentrality_WithITSAfterburner_Found", "hPtVsCentrality_WithITSAfterburner_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
     histos.add("h2dPtVsCentrality_WithITSTrackerTPC_Findable", "hPtVsCentrality_WithITSTrackerTPC_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
     histos.add("h2dPtVsCentrality_WithITSTrackerTPC_Found", "hPtVsCentrality_WithITSTrackerTPC_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
     histos.add("h2dPtVsCentrality_WithITSABTPC_Findable", "hPtVsCentrality_WithITSABTPC_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
     histos.add("h2dPtVsCentrality_WithITSABTPC_Found", "hPtVsCentrality_WithITSABTPC_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
+    histos.add("h2dPtVsCentrality_WithSVertexerOK_Findable", "hPtVsCentrality_WithSVertexerOK_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
+    histos.add("h2dPtVsCentrality_WithSVertexerOK_Found", "hPtVsCentrality_WithSVertexerOK_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
   }
 
   void processEvents(
@@ -143,7 +143,11 @@ struct findableStudy {
     bool hasBeenFound = false;
 
     // encode conditionals here
-    uint32_t withTPC = 0, withITSTracker = 0, withITSAfterburner = 0, withITSTrackerTPC = 0, withITSABTPC = 0;
+    uint32_t withTPC = 0;           // if prongs have TPC
+    uint32_t withITSTracker = 0;    // if prongs have been ITS tracked
+    uint32_t withITSTrackerTPC = 0; // if prongs have TPC and are ITS tracked
+    uint32_t withITSABTPC = 0;      // if prongs have TPC and are ITS afterburned
+    uint32_t withSVertexerOK = 0;   // if prongs have acceptable tracking conditions for svertexer
 
     for (auto& recv0 : recv0s) {
       if (recv0.isFound()) {
@@ -169,15 +173,19 @@ struct findableStudy {
       if (nTrack.hasTPC())
         bitset(withTPC, 1);
 
+      if (
+        (pTrack.hasTPC() && pTrack.hasITS()) ||
+        (!pTrack.hasTPC() && pTrack.itsNCls() >= 6))
+        bitset(withSVertexerOK, 0);
+      if (
+        (nTrack.hasTPC() && nTrack.hasITS()) ||
+        (!nTrack.hasTPC() && nTrack.itsNCls() >= 6))
+        bitset(withSVertexerOK, 1);
+
       if (pTrack.hasITS() && pTrack.itsChi2PerNcl() > -10.0f)
         bitset(withITSTracker, 0);
       if (nTrack.hasITS() && nTrack.itsChi2PerNcl() > -10.0f)
         bitset(withITSTracker, 1);
-
-      if (pTrack.hasITS() && pTrack.itsChi2PerNcl() < -10.0f)
-        bitset(withITSAfterburner, 0);
-      if (nTrack.hasITS() && nTrack.itsChi2PerNcl() < -10.0f)
-        bitset(withITSAfterburner, 1);
 
       if (pTrack.hasTPC() && pTrack.hasITS() && pTrack.itsChi2PerNcl() > -10.0f)
         bitset(withITSTrackerTPC, 0);
@@ -192,17 +200,17 @@ struct findableStudy {
     histos.fill(HIST("h2dPtVsCentrality_All_Findable"), centrality, ptmc);
     histos.fill(HIST("h2dPtVsCentrality_WithTPC_Findable"), centrality, ptmc, withTPC);
     histos.fill(HIST("h2dPtVsCentrality_WithITSTracker_Findable"), centrality, ptmc, withITSTracker);
-    histos.fill(HIST("h2dPtVsCentrality_WithITSAfterburner_Findable"), centrality, ptmc, withITSAfterburner);
     histos.fill(HIST("h2dPtVsCentrality_WithITSTrackerTPC_Findable"), centrality, ptmc, withITSTrackerTPC);
     histos.fill(HIST("h2dPtVsCentrality_WithITSABTPC_Findable"), centrality, ptmc, withITSABTPC);
+    histos.fill(HIST("h2dPtVsCentrality_WithSVertexerOK_Findable"), centrality, ptmc, withSVertexerOK);
 
     if (hasBeenFound) {
       histos.fill(HIST("h2dPtVsCentrality_All_Found"), centrality, ptmc);
       histos.fill(HIST("h2dPtVsCentrality_WithTPC_Found"), centrality, ptmc, withTPC);
       histos.fill(HIST("h2dPtVsCentrality_WithITSTracker_Found"), centrality, ptmc, withITSTracker);
-      histos.fill(HIST("h2dPtVsCentrality_WithITSAfterburner_Found"), centrality, ptmc, withITSAfterburner);
       histos.fill(HIST("h2dPtVsCentrality_WithITSTrackerTPC_Found"), centrality, ptmc, withITSTrackerTPC);
       histos.fill(HIST("h2dPtVsCentrality_WithITSABTPC_Found"), centrality, ptmc, withITSABTPC);
+      histos.fill(HIST("h2dPtVsCentrality_WithSVertexerOK_Found"), centrality, ptmc, withSVertexerOK);
     }
 
     if (hasWrongCollision) {
