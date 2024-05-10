@@ -66,6 +66,7 @@ struct PCMQC {
   Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.99, "min V0 CosPA"};
   Configurable<float> cfg_max_pca{"cfg_max_pca", 3.0, "max distance btween 2 legs"};
   Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
+  Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
 
   Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 10, "min ncluster tpc"};
   Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 20, "min ncrossed rows"};
@@ -176,7 +177,7 @@ struct PCMQC {
     fV0PhotonCut.SetMaxPCA(cfg_max_pca);
     fV0PhotonCut.SetRxyRange(cfg_min_v0radius, cfg_max_v0radius);
     fV0PhotonCut.SetAPRange(cfg_max_alpha_ap, cfg_max_qt_ap);
-    fV0PhotonCut.RejectITSib(true);
+    fV0PhotonCut.RejectITSib(cfg_reject_v0_on_itsib);
 
     // for track
     fV0PhotonCut.SetTrackPtRange(cfg_min_pt_v0 * 0.4, 1e+10f);
@@ -187,6 +188,7 @@ struct PCMQC {
     fV0PhotonCut.SetTPCNsigmaElRange(cfg_min_TPCNsigmaEl, cfg_max_TPCNsigmaEl);
     fV0PhotonCut.SetChi2PerClusterITS(-1e+10, cfg_max_chi2its);
     fV0PhotonCut.SetNClustersITS(2, 4);
+    fV0PhotonCut.SetNClustersITS(0, 7);
     fV0PhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
     fV0PhotonCut.SetIsWithinBeamPipe(cfg_require_v0_with_correct_xz);
 
@@ -206,6 +208,7 @@ struct PCMQC {
       fV0PhotonCut.SetRxyRange(36, 90);
     }
     if (cfg_require_v0_on_wwire_ib) {
+      fV0PhotonCut.SetMaxPCA(0.3);
       fV0PhotonCut.SetOnWwireIB(true);
       fV0PhotonCut.SetOnWwireOB(false);
       fV0PhotonCut.SetRxyRange(7, 14);

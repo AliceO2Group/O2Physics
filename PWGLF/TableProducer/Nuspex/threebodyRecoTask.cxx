@@ -38,7 +38,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTOFFullDe>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 struct Candidate3body {
@@ -305,17 +305,17 @@ struct threebodyRecoTask {
     }
     FillCandCounter(kCandDcaDau, isTrueCand);
 
-    registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
+    registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
     if (isTrueCand) {
-      registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
+      registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
     }
-    if ((trackDeuteron.tofNSigmaDe() < TofPidNsigmaMin || trackDeuteron.tofNSigmaDe() > TofPidNsigmaMax) && trackDeuteron.p() > minDeuteronPUseTOF) {
+    if ((candData.tofNSigmaBachDe() < TofPidNsigmaMin || candData.tofNSigmaBachDe() > TofPidNsigmaMax) && trackDeuteron.p() > minDeuteronPUseTOF) {
       return;
     }
     FillCandCounter(kCandTOFPID, isTrueCand);
-    registry.fill(HIST("hDeuteronTOFVsPAtferTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
+    registry.fill(HIST("hDeuteronTOFVsPAtferTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
     if (isTrueCand) {
-      registry.fill(HIST("hDeuteronTOFVsPAtferTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
+      registry.fill(HIST("hDeuteronTOFVsPAtferTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
     }
 
     if (TMath::Abs(trackProton.tpcNSigmaPr()) > TpcPidNsigmaCut || TMath::Abs(trackPion.tpcNSigmaPi()) > TpcPidNsigmaCut || TMath::Abs(trackDeuteron.tpcNSigmaDe()) > TpcPidNsigmaCut) {
@@ -421,7 +421,7 @@ struct threebodyRecoTask {
     cand3body.cosPA = cospa;
     cand3body.dcadaughters = candData.dcaVtxdaughters();
     cand3body.dcacandtopv = candData.dcavtxtopv(dCollision.posX(), dCollision.posY(), dCollision.posZ());
-    cand3body.bachelortofNsigma = trackDeuteron.tofNSigmaDe();
+    cand3body.bachelortofNsigma = candData.tofNSigmaBachDe();
     if (isTrueCand) {
       cand3body.mcmotherId = lLabel;
       cand3body.lgencand = lmother;
@@ -450,7 +450,7 @@ struct threebodyRecoTask {
     registry.fill(HIST("hProtonTPCVsPt"), trackProton.pt(), trackProton.tpcNSigmaPr());
     registry.fill(HIST("hPionTPCVsPt"), trackProton.pt(), trackPion.tpcNSigmaPi());
     registry.fill(HIST("hDeuteronTPCVsPt"), trackDeuteron.pt(), trackDeuteron.tpcNSigmaDe());
-    registry.fill(HIST("hTOFPIDDeuteron"), trackDeuteron.tofNSigmaDe());
+    registry.fill(HIST("hTOFPIDDeuteron"), candData.tofNSigmaBachDe());
   }
 
   //------------------------------------------------------------------
