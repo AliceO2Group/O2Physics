@@ -125,7 +125,7 @@ struct SecondaryVertexReconstruction {
   using JetTracksMCDwPIs = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackPIs>>;
   using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>;
 
-  template <short numProngs, typename AnyCollision, typename AnyJet, typename AnyParticles>
+  template <unsigned int numProngs, typename AnyCollision, typename AnyJet, typename AnyParticles>
   void runCreatorNProng(AnyCollision const& collision,
                         AnyJet const& analysisJet,
                         AnyParticles const& listoftracks,
@@ -141,7 +141,7 @@ struct SecondaryVertexReconstruction {
       // Create an array of track parameters and covariance matrices for the current combination
       std::array<o2::track::TrackParametrizationWithError<float>, numProngs> trackParVars;
       double energySV = 0.;
-      for (short inum = 0; inum < numProngs; ++inum) {
+      for (unsigned int inum = 0; inum < numProngs; ++inum) {
         const auto& prong = particles[currentCombination[inum]].template track_as<OriginalTracks>();
         energySV += prong.energy(o2::constants::physics::MassPiPlus);
         trackParVars[inum] = getTrackParCov(prong);
@@ -175,7 +175,7 @@ struct SecondaryVertexReconstruction {
       // Get track momenta and impact parameters
       std::array<std::array<float, 3>, numProngs> arrayMomenta;
       std::array<o2::dataformats::DCA, numProngs> impactParameters;
-      for (short inum = 0; inum < numProngs; ++inum) {
+      for (unsigned int inum = 0; inum < numProngs; ++inum) {
         trackParVars[inum].getPxPyPzGlo(arrayMomenta[inum]);
         trackParVars[inum].propagateToDCA(primaryVertex, bz, &impactParameters[inum]);
 
