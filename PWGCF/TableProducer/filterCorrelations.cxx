@@ -46,6 +46,8 @@ using CFMultiplicity = CFMultiplicities::iterator;
 struct FilterCF {
   Service<o2::framework::O2DatabasePDG> pdg;
 
+  // TODO define enum
+
   // Configuration
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 7.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPt, float, 0.5f, "Minimal pT for tracks")
@@ -96,6 +98,31 @@ struct FilterCF {
     return false;
   }
 
+  template <typename TTrack>
+  uint8_t getTrackType(TTrack& track) {
+    if (cfgTrackSelection == 0) {
+      if (track.isGlobalTrack()) {
+        return 1;
+      } else if (track.isGlobalTrackSDD()) {
+        return 2;
+      }
+      return 0;
+    } else if (cfgTrackSelection == 1) {
+      uint8_t trackType = 0;
+      if (track.isGlobalTrack()) {
+        trackType |= kTrackSelected;
+        if (track.itsNCls() >= 5) {
+          trackType |= kITS5Clusters;
+        }
+        if (track.tpcNClsCrossedRows() >= 90) {
+          trackType |= kTPC90CrossedRows;
+        }
+      }
+      return trackType;
+    }
+    LOGF(fatal, "Invalid setting for cfgTrackSelection: %d", cfgTrackSelection);
+  }
+
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
   {
     if (cfgVerbosity > 0) {
@@ -113,20 +140,7 @@ struct FilterCF {
       outputCollRefs(collision.globalIndex());
 
     for (auto& track : tracks) {
-      uint8_t trackType = 0;
-      if (track.isGlobalTrack()) {
-        trackType |= BIT(0);
-        if (cfgSystematicChecks) {
-          if (track.itsNCls() >= 5) {
-            trackType |= BIT(2);
-          }
-          if (track.tpcNClsCrossedRows() >= 90) {
-            trackType |= BIT(3);
-          }
-        }
-      } else if (track.isGlobalTrackSDD()) {
-        trackType |= BIT(1);
-      }
+      uint8_t trackType = getTrackType(track);
 
       outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), trackType);
       if (cfgTransientTables)
@@ -227,20 +241,7 @@ struct FilterCF {
       outputMcCollisionLabels(collision.mcCollisionId());
 
       for (auto& track : groupedTracks) {
-        uint8_t trackType = 0;
-        if (track.isGlobalTrack()) {
-          trackType |= BIT(0);
-          if (cfgSystematicChecks) {
-            if (track.itsNCls() >= 5) {
-              trackType |= BIT(2);
-            }
-            if (track.tpcNClsCrossedRows() >= 90) {
-              trackType |= BIT(3);
-            }
-          }
-        } else if (track.isGlobalTrackSDD()) {
-          trackType |= BIT(1);
-        }
+        uint8_t trackType = getTrackType(track);
 
         int mcParticleId = track.mcParticleId();
         if (mcParticleId >= 0) {
