@@ -387,7 +387,7 @@ struct HfTaskMcEfficiencyToXiPi {
                    aod::McCollisions const& colls)
   {
     candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0);
-  }  
+  }
   PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processXic0, "Enable Xic0 efficiency process", true);
 
   void processOmegac0(Omegac0CandidateInfo const& candidates,
@@ -398,7 +398,7 @@ struct HfTaskMcEfficiencyToXiPi {
   {
     candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0);
   }
-  PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processOmegac0, "Enable Omegac0 efficiency process", false);               
+  PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processOmegac0, "Enable Omegac0 efficiency process", false);
 
 }; // close struct
 
