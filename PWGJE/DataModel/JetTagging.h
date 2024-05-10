@@ -137,10 +137,6 @@ JETSV_TABLES_DEF(Charged, SecondaryVertex2Prong, "2PRONG");
 
 JETTAGGING_TABLES_DEF(Charged, "C");
 JETTAGGING_TABLES_DEF(Full, "F");
-JETTAGGING_TABLES_DEF(Neutral, "N");
-JETTAGGING_TABLES_DEF(D0Charged, "D0");
-JETTAGGING_TABLES_DEF(LcCharged, "Lc");
-JETTAGGING_TABLES_DEF(BplusCharged, "BPL");
 
 } // namespace o2::aod
 

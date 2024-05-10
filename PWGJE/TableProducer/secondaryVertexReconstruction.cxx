@@ -86,18 +86,13 @@ struct SecondaryVertexReconstruction {
   void init(InitContext const&)
   {
     if (fillHistograms) {
-      registry.add("hMass3Prongs", "3-prong candidates;SV inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 30}}});
-      registry.add("hLxyS3Prongs", "3-prong Decay length in XY;S#it{L}_{xy};entries", {HistType::kTH1F, {{100, 0., 100.0}}});
-      registry.add("hLS3Prongs", "3-prong Decay length in 3D;S#it{L};entries", {HistType::kTH1F, {{100, 0., 100.0}}});
-      registry.add("hFe3Prongs", "3-prong Energy fraction carried by the SV from the jet;#it{f}_{E};entries", {HistType::kTH1F, {{100, 0., 1.0}}});
-      registry.add("hDcaXY3Prongs", "DCAxy of 3-prong candidate daughters;#it{p}_{T} (GeV/#it{c});#it{d}_{xy} (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
-      registry.add("hDcaZ3Prongs", "DCAz of 3-prong candidate daughters;#it{p}_{T} (GeV/#it{c});#it{d}_{z} (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
-      registry.add("hMass2Prongs", "2-prong candidates;SV inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 30}}});
-      registry.add("hLxyS2Prongs", "2-prong Decay length in XY;S#it{L}_{xy};entries", {HistType::kTH1F, {{100, 0., 100.0}}});
-      registry.add("hLS2Prongs", "2-prong Decay length in 3D;S#it{L};entries", {HistType::kTH1F, {{100, 0., 100.0}}});
-      registry.add("hFe2Prongs", "2-prong Energy fraction carried by the SV from the jet;#it{f}_{E};entries", {HistType::kTH1F, {{100, 0., 1.0}}});
-      registry.add("hDcaXY2Prongs", "DCAxy of 2-prong candidate daughters;#it{p}_{T} (GeV/#it{c});#it{d}_{xy} (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
-      registry.add("hDcaZ2Prongs", "DCAz of 2-prong candidate daughters;#it{p}_{T} (GeV/#it{c});#it{d}_{z} (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
+      AxisSpec nProngsBins = {6, 2, 8, "nProngs"};
+      registry.add("hMassNProngs", "n-prong candidates;SV inv. mass (GeV/#it{c}^{2});nProngs;entries", {HistType::kTH2F, {{500, 0., 30}, nProngsBins}});
+      registry.add("hLxySNProngs", "n-prong Decay length in XY;S#it{L}_{xy};nProngs;entries", {HistType::kTH2F, {{100, 0., 100.0}, nProngsBins}});
+      registry.add("hLSNProngs", "n-prong Decay length in 3D;S#it{L};nProngs;entries", {HistType::kTH2F, {{100, 0., 100.0}, nProngsBins}});
+      registry.add("hFeNProngs", "n-prong Energy fraction carried by the SV from the jet;#it{f}_{E};nProngs;entries", {HistType::kTH2F, {{100, 0., 1.0}, nProngsBins}});
+      registry.add("hDcaXYNProngs", "DCAxy of n-prong candidate daughters;#it{p}_{T} (GeV/#it{c});#it{d}_{xy} (#mum);nProngs;entries", {HistType::kTH3F, {{100, 0., 20.}, {200, -500., 500.}, nProngsBins}});
+      registry.add("hDcaZNProngs", "DCAz of n-prong candidate daughters;#it{p}_{T} (GeV/#it{c});#it{d}_{z} (#mum);nProngs;entries", {HistType::kTH3F, {{100, 0., 20.}, {200, -500., 500.}, nProngsBins}});
     }
 
     df2.setPropagateToPCA(propagateToPCA);
@@ -130,241 +125,145 @@ struct SecondaryVertexReconstruction {
   using JetTracksMCDwPIs = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackPIs>>;
   using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>;
 
-  template <typename AnyCollision, typename AnyJet, typename AnyParticles>
-  void runCreator2Prong(AnyCollision const& collision,
+  template <short numProngs, typename AnyCollision, typename AnyJet, typename AnyParticles>
+  void runCreatorNProng(AnyCollision const& collision,
                         AnyJet const& analysisJet,
                         AnyParticles const& listoftracks,
-                        std::vector<int>& svIndices)
+                        std::vector<int>& svIndices,
+                        o2::vertexing::DCAFitterN<numProngs>& df,
+                        size_t prongIndex = 0,
+                        std::vector<size_t> currentCombination = {})
   {
 
     const auto& particles = analysisJet.template tracks_as<AnyParticles>();
-    for (size_t iprong0 = 0; iprong0 < particles.size(); ++iprong0) {
-      const auto& prong0 = particles[iprong0].template track_as<OriginalTracks>();
 
-      if (prong0.pt() < ptMinTrack || prong0.eta() < etaMinTrack || prong0.eta() > etaMaxTrack) {
-        continue;
+    if (currentCombination.size() == numProngs) {
+      // Create an array of track parameters and covariance matrices for the current combination
+      std::array<o2::track::TrackParametrizationWithError<float>, numProngs> trackParVars;
+      double energySV = 0.;
+      for (short inum = 0; inum < numProngs; ++inum) {
+        const auto& prong = particles[currentCombination[inum]].template track_as<OriginalTracks>();
+        energySV += prong.energy(o2::constants::physics::MassPiPlus);
+        trackParVars[inum] = getTrackParCov(prong);
       }
 
-      for (size_t iprong1 = iprong0 + 1; iprong1 < particles.size(); ++iprong1) {
-        const auto& prong1 = particles[iprong1].template track_as<OriginalTracks>();
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      if (runNumber != bc.runNumber()) {
+        initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
+        bz = o2::base::Propagator::Instance()->getNominalBz();
+      }
 
-        if (prong1.pt() < ptMinTrack || prong1.eta() < etaMinTrack || prong1.eta() > etaMaxTrack) {
-          continue;
-        }
+      // Use a different fitter depending on the number of prongs
+      df.setBz(bz);
 
-        auto trackParVar0 = getTrackParCov(prong0);
-        auto trackParVar1 = getTrackParCov(prong1);
+      // Reconstruct the secondary vertex
+      int processResult = 0;
+      std::apply([&df, &processResult](const auto&... elems) { processResult = df.process(elems...); }, trackParVars);
+      if (processResult == 0) {
+        return;
+      }
 
-        auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-        if (runNumber != bc.runNumber()) {
-          initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
-          bz = o2::base::Propagator::Instance()->getNominalBz();
-        }
-        df2.setBz(bz);
+      const auto& secondaryVertex = df.getPCACandidate();
+      auto chi2PCA = df.getChi2AtPCACandidate();
+      auto covMatrixPCA = df.calcPCACovMatrixFlat();
 
-        // reconstruct the 2-prong secondary vertex
-        if (df2.process(trackParVar0, trackParVar1) == 0) {
-          continue;
-        }
+      // get track impact parameters
+      // This modifies track momenta!
+      auto primaryVertex = getPrimaryVertex(collision);
+      auto covMatrixPV = primaryVertex.getCov();
 
-        const auto& secondaryVertex = df2.getPCACandidate();
-        auto chi2PCA = df2.getChi2AtPCACandidate();
-        auto covMatrixPCA = df2.calcPCACovMatrixFlat();
-        trackParVar0 = df2.getTrack(0);
-        trackParVar1 = df2.getTrack(1);
+      // Get track momenta and impact parameters
+      std::array<std::array<float, 3>, numProngs> arrayMomenta;
+      std::array<o2::dataformats::DCA, numProngs> impactParameters;
+      for (short inum = 0; inum < numProngs; ++inum) {
+        trackParVars[inum].getPxPyPzGlo(arrayMomenta[inum]);
+        trackParVars[inum].propagateToDCA(primaryVertex, bz, &impactParameters[inum]);
 
-        // get track momenta
-        std::array<float, 3> pvec0;
-        std::array<float, 3> pvec1;
-        trackParVar0.getPxPyPzGlo(pvec0);
-        trackParVar1.getPxPyPzGlo(pvec1);
-
-        // get track impact parameters
-        // This modifies track momenta!
-        auto primaryVertex = getPrimaryVertex(collision);
-        auto covMatrixPV = primaryVertex.getCov();
-
-        o2::dataformats::DCA impactParameter0;
-        o2::dataformats::DCA impactParameter1;
-        trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
-        trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
         if (fillHistograms) {
-          registry.fill(HIST("hDcaXY2Prongs"), prong0.pt(), impactParameter0.getY() * toMicrometers);
-          registry.fill(HIST("hDcaXY2Prongs"), prong1.pt(), impactParameter1.getY() * toMicrometers);
-          registry.fill(HIST("hDcaZ2Prongs"), prong0.pt(), impactParameter0.getZ() * toMicrometers);
-          registry.fill(HIST("hDcaZ2Prongs"), prong1.pt(), impactParameter1.getZ() * toMicrometers);
-        }
-
-        // get uncertainty of the decay length
-        double phi, theta;
-        getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
-        auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-        auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
-
-        // calculate invariant mass
-        auto arrayMomenta = std::array{pvec0, pvec1};
-        double energySV = prong0.energy(o2::constants::physics::MassPiPlus) + prong1.energy(o2::constants::physics::MassPiPlus);
-        double massSV = RecoDecay::m(std::move(arrayMomenta), std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
-
-        // fill candidate table rows
-        if (doprocessData2Prongs) {
-          sv2prongTableData(analysisJet.globalIndex(),
-                            primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
-                            secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                            pvec0[0] + pvec1[0],
-                            pvec0[1] + pvec1[1],
-                            pvec0[2] + pvec1[2],
-                            energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
-          svIndices.push_back(sv2prongTableData.lastIndex());
-        } else {
-          sv2prongTableMCD(analysisJet.globalIndex(),
-                           primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
-                           secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                           pvec0[0] + pvec1[0],
-                           pvec0[1] + pvec1[1],
-                           pvec0[2] + pvec1[2],
-                           energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
-          svIndices.push_back(sv2prongTableMCD.lastIndex());
-        }
-
-        // fill histograms
-        if (fillHistograms) {
-
-          double DecayLengthNormalised = RecoDecay::distance(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, std::array{secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]}) / errorDecayLength;
-          double DecayLengthXYNormalised = RecoDecay::distanceXY(std::array{primaryVertex.getX(), primaryVertex.getY()}, std::array{secondaryVertex[0], secondaryVertex[1]}) / errorDecayLengthXY;
-
-          registry.fill(HIST("hMass2Prongs"), massSV);
-          registry.fill(HIST("hLxyS2Prongs"), DecayLengthXYNormalised);
-          registry.fill(HIST("hLS2Prongs"), DecayLengthNormalised);
-          registry.fill(HIST("hFe2Prongs"), energySV / analysisJet.energy() > 1. ? 0.99 : energySV / analysisJet.energy());
+          const auto& prong = particles[currentCombination[inum]].template track_as<OriginalTracks>();
+          registry.fill(HIST("hDcaXYNProngs"), prong.pt(), impactParameters[inum].getY() * toMicrometers, numProngs);
+          registry.fill(HIST("hDcaZNProngs"), prong.pt(), impactParameters[inum].getZ() * toMicrometers, numProngs);
         }
       }
+
+      // get uncertainty of the decay length
+      double phi, theta;
+      getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
+      auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
+      auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+
+      // calculate invariant mass
+      std::array<double, numProngs> massArray;
+      std::fill(massArray.begin(), massArray.end(), o2::constants::physics::MassPiPlus);
+      double massSV = RecoDecay::m(std::move(arrayMomenta), massArray);
+
+      // fill candidate table rows
+      if (doprocessData3Prongs && numProngs == 3) {
+        sv3prongTableData(analysisJet.globalIndex(),
+                          primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+                          secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
+                          arrayMomenta[0][0] + arrayMomenta[1][0] + arrayMomenta[2][0],
+                          arrayMomenta[0][1] + arrayMomenta[1][1] + arrayMomenta[2][1],
+                          arrayMomenta[0][2] + arrayMomenta[1][2] + arrayMomenta[2][2],
+                          energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
+        svIndices.push_back(sv3prongTableData.lastIndex());
+      } else if (doprocessData2Prongs && numProngs == 2) {
+        sv2prongTableData(analysisJet.globalIndex(),
+                          primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+                          secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
+                          arrayMomenta[0][0] + arrayMomenta[1][0],
+                          arrayMomenta[0][1] + arrayMomenta[1][1],
+                          arrayMomenta[0][2] + arrayMomenta[1][2],
+                          energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
+        svIndices.push_back(sv2prongTableData.lastIndex());
+      } else if (doprocessMCD3Prongs && numProngs == 3) {
+        sv3prongTableMCD(analysisJet.globalIndex(),
+                         primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+                         secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
+                         arrayMomenta[0][0] + arrayMomenta[1][0] + arrayMomenta[2][0],
+                         arrayMomenta[0][1] + arrayMomenta[1][1] + arrayMomenta[2][1],
+                         arrayMomenta[0][2] + arrayMomenta[1][2] + arrayMomenta[2][2],
+                         energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
+        svIndices.push_back(sv3prongTableMCD.lastIndex());
+      } else if (doprocessMCD2Prongs && numProngs == 2) {
+        sv2prongTableMCD(analysisJet.globalIndex(),
+                         primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+                         secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
+                         arrayMomenta[0][0] + arrayMomenta[1][0],
+                         arrayMomenta[0][1] + arrayMomenta[1][1],
+                         arrayMomenta[0][2] + arrayMomenta[1][2],
+                         energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
+        svIndices.push_back(sv2prongTableMCD.lastIndex());
+      } else {
+        LOG(error) << "No process specified\n";
+      }
+
+      // fill histograms
+      if (fillHistograms) {
+        double DecayLengthNormalised = RecoDecay::distance(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, std::array{secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]}) / errorDecayLength;
+        double DecayLengthXYNormalised = RecoDecay::distanceXY(std::array{primaryVertex.getX(), primaryVertex.getY()}, std::array{secondaryVertex[0], secondaryVertex[1]}) / errorDecayLengthXY;
+
+        registry.fill(HIST("hMassNProngs"), massSV, numProngs);
+        registry.fill(HIST("hLxySNProngs"), DecayLengthXYNormalised, numProngs);
+        registry.fill(HIST("hLSNProngs"), DecayLengthNormalised, numProngs);
+        registry.fill(HIST("hFeNProngs"), energySV / analysisJet.energy() > 1. ? 0.99 : energySV / analysisJet.energy(), numProngs);
+      }
+
+      return;
     }
-  }
 
-  template <typename AnyCollision, typename AnyJet, typename AnyParticles>
-  void runCreator3Prong(AnyCollision const& collision,
-                        AnyJet const& analysisJet,
-                        AnyParticles const& listoftracks,
-                        std::vector<int>& svIndices)
-  {
-    const auto& particles = analysisJet.template tracks_as<AnyParticles>();
-    for (size_t iprong0 = 0; iprong0 < particles.size(); ++iprong0) {
-      const auto& prong0 = particles[iprong0].template track_as<OriginalTracks>();
+    // Recursive call to explore all combinations
+    for (size_t iprong = prongIndex; iprong < particles.size(); ++iprong) {
 
-      if (prong0.pt() < ptMinTrack || prong0.eta() < etaMinTrack || prong0.eta() > etaMaxTrack) {
+      const auto& testTrack = particles[iprong].template track_as<OriginalTracks>();
+      if (testTrack.pt() < ptMinTrack || testTrack.eta() < etaMinTrack || testTrack.eta() > etaMaxTrack) {
         continue;
       }
 
-      for (size_t iprong1 = iprong0 + 1; iprong1 < particles.size(); ++iprong1) {
-        const auto& prong1 = particles[iprong1].template track_as<OriginalTracks>();
-
-        if (prong1.pt() < ptMinTrack || prong1.eta() < etaMinTrack || prong1.eta() > etaMaxTrack) {
-          continue;
-        }
-
-        for (size_t iprong2 = iprong1 + 1; iprong2 < particles.size(); ++iprong2) {
-          const auto& prong2 = particles[iprong2].template track_as<OriginalTracks>();
-
-          if (prong2.pt() < ptMinTrack || prong2.eta() < etaMinTrack || prong2.eta() > etaMaxTrack) {
-            continue;
-          }
-
-          auto trackParVar0 = getTrackParCov(prong0);
-          auto trackParVar1 = getTrackParCov(prong1);
-          auto trackParVar2 = getTrackParCov(prong2);
-
-          auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-          if (runNumber != bc.runNumber()) {
-            initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
-            bz = o2::base::Propagator::Instance()->getNominalBz();
-          }
-          df3.setBz(bz);
-
-          // reconstruct the 3-prong secondary vertex
-          if (df3.process(trackParVar0, trackParVar1, trackParVar2) == 0) {
-            continue;
-          }
-
-          const auto& secondaryVertex = df3.getPCACandidate();
-          auto chi2PCA = df3.getChi2AtPCACandidate();
-          auto covMatrixPCA = df3.calcPCACovMatrixFlat();
-          trackParVar0 = df3.getTrack(0);
-          trackParVar1 = df3.getTrack(1);
-          trackParVar2 = df3.getTrack(2);
-
-          // get track momenta
-          std::array<float, 3> pvec0;
-          std::array<float, 3> pvec1;
-          std::array<float, 3> pvec2;
-          trackParVar0.getPxPyPzGlo(pvec0);
-          trackParVar1.getPxPyPzGlo(pvec1);
-          trackParVar2.getPxPyPzGlo(pvec2);
-
-          // get track impact parameters
-          // This modifies track momenta!
-          auto primaryVertex = getPrimaryVertex(collision);
-          auto covMatrixPV = primaryVertex.getCov();
-
-          o2::dataformats::DCA impactParameter0;
-          o2::dataformats::DCA impactParameter1;
-          o2::dataformats::DCA impactParameter2;
-          trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
-          trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
-          trackParVar2.propagateToDCA(primaryVertex, bz, &impactParameter2);
-          if (fillHistograms) {
-            registry.fill(HIST("hDcaXY3Prongs"), prong0.pt(), impactParameter0.getY() * toMicrometers);
-            registry.fill(HIST("hDcaXY3Prongs"), prong1.pt(), impactParameter1.getY() * toMicrometers);
-            registry.fill(HIST("hDcaXY3Prongs"), prong2.pt(), impactParameter2.getY() * toMicrometers);
-            registry.fill(HIST("hDcaZ3Prongs"), prong0.pt(), impactParameter0.getZ() * toMicrometers);
-            registry.fill(HIST("hDcaZ3Prongs"), prong1.pt(), impactParameter1.getZ() * toMicrometers);
-            registry.fill(HIST("hDcaZ3Prongs"), prong2.pt(), impactParameter2.getZ() * toMicrometers);
-          }
-
-          // get uncertainty of the decay length
-          double phi, theta;
-          getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
-          auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-          auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
-
-          // calculate invariant mass
-          auto arrayMomenta = std::array{pvec0, pvec1, pvec2};
-          double energySV = prong0.energy(o2::constants::physics::MassPiPlus) + prong1.energy(o2::constants::physics::MassPiPlus) + prong2.energy(o2::constants::physics::MassPiPlus);
-          double massSV = RecoDecay::m(std::move(arrayMomenta), std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
-
-          // fill candidate table rows
-          if (doprocessData3Prongs) {
-            sv3prongTableData(analysisJet.globalIndex(),
-                              primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
-                              secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                              pvec0[0] + pvec1[0] + pvec2[0],
-                              pvec0[1] + pvec1[1] + pvec2[1],
-                              pvec0[2] + pvec1[2] + pvec2[2],
-                              energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
-            svIndices.push_back(sv3prongTableData.lastIndex());
-          } else {
-            sv3prongTableMCD(analysisJet.globalIndex(),
-                             primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
-                             secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                             pvec0[0] + pvec1[0] + pvec2[0],
-                             pvec0[1] + pvec1[1] + pvec2[1],
-                             pvec0[2] + pvec1[2] + pvec2[2],
-                             energySV, massSV, chi2PCA, errorDecayLength, errorDecayLengthXY);
-            svIndices.push_back(sv3prongTableMCD.lastIndex());
-          }
-
-          // fill histograms
-          if (fillHistograms) {
-            double DecayLengthNormalised = RecoDecay::distance(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, std::array{secondaryVertex[0], secondaryVertex[1], secondaryVertex[2]}) / errorDecayLength;
-            double DecayLengthXYNormalised = RecoDecay::distanceXY(std::array{primaryVertex.getX(), primaryVertex.getY()}, std::array{secondaryVertex[0], secondaryVertex[1]}) / errorDecayLengthXY;
-
-            registry.fill(HIST("hMass3Prongs"), massSV);
-            registry.fill(HIST("hLxyS3Prongs"), DecayLengthXYNormalised);
-            registry.fill(HIST("hLS3Prongs"), DecayLengthNormalised);
-            registry.fill(HIST("hFe3Prongs"), energySV / analysisJet.energy() > 1. ? 0.99 : energySV / analysisJet.energy());
-          }
-        }
-      }
+      currentCombination.push_back(iprong);
+      runCreatorNProng<numProngs>(
+        collision, analysisJet, listoftracks, svIndices, df, iprong + 1, currentCombination);
+      currentCombination.pop_back();
     }
   }
 
@@ -377,7 +276,7 @@ struct SecondaryVertexReconstruction {
   {
     for (auto& jet : jets) {
       std::vector<int> svIndices;
-      runCreator3Prong(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices);
+      runCreatorNProng<3>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df3);
       sv3prongIndicesTableData(svIndices);
     }
   }
@@ -387,7 +286,7 @@ struct SecondaryVertexReconstruction {
   {
     for (auto& jet : jets) {
       std::vector<int> svIndices;
-      runCreator2Prong(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices);
+      runCreatorNProng<2>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df2);
       sv2prongIndicesTableData(svIndices);
     }
   }
@@ -397,7 +296,7 @@ struct SecondaryVertexReconstruction {
   {
     for (auto& jet : mcdjets) {
       std::vector<int> svIndices;
-      runCreator3Prong(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices);
+      runCreatorNProng<3>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df3);
       sv3prongIndicesTableMCD(svIndices);
     }
   }
@@ -407,7 +306,7 @@ struct SecondaryVertexReconstruction {
   {
     for (auto& jet : mcdjets) {
       std::vector<int> svIndices;
-      runCreator2Prong(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices);
+      runCreatorNProng<2>(collision.template collision_as<aod::Collisions>(), jet, jtracks, svIndices, df2);
       sv2prongIndicesTableMCD(svIndices);
     }
   }
