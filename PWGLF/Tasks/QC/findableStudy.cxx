@@ -45,6 +45,9 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "PWGLF/Utils/v0SelectionBits.h"
+#include "PWGLF/Utils/v0SelectionGroup.h"
+#include "PWGLF/Utils/v0SelectionTools.h"
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -59,11 +62,12 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using recoStraCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraRawCents_003, aod::StraCollLabels>;
-using reconstructedV0s = soa::Join<aod::V0CoreMCLabels, aod::V0Cores, aod::V0FoundTags, aod::V0MCCollRefs, aod::V0CollRefs, aod::V0Extras>;
+using reconstructedV0s = soa::Join<aod::V0CoreMCLabels, aod::V0Cores, aod::V0FoundTags, aod::V0MCCollRefs, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
-// simple helper
-#define bitset(var, nbit) ((var) |= (static_cast<uint32_t>(1) << static_cast<uint32_t>(nbit)))
+// simple checkers, but ensure 64 bit integers
+#define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
+#define bitcheck(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
 struct findableStudy {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -74,8 +78,31 @@ struct findableStudy {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality"};
 
+  // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+  // Full wrapper for configurables related to actual analysis
+  Configurable<v0SelectionGroup> v0Selections{"v0Selections", {}, "V0 selection criteria for analysis"};
+  // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+
+  uint64_t maskTopological;
+  uint64_t maskTrackProperties;
+
+  uint64_t maskK0ShortSpecific;
+  uint64_t maskLambdaSpecific;
+  uint64_t maskAntiLambdaSpecific;
+
+  uint64_t maskSelectionK0Short;
+  uint64_t maskSelectionLambda;
+  uint64_t maskSelectionAntiLambda;
+
   void init(InitContext const&)
   {
+    v0Selections->provideMasks(maskTopological, maskTrackProperties, maskK0ShortSpecific, maskLambdaSpecific, maskAntiLambdaSpecific);
+
+    // Primary particle selection, central to analysis
+    maskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific;
+    maskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific;
+    maskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific;
+
     // Event counting
     histos.add("hCentrality", "hCentrality", kTH1D, {axisCentrality});
 
@@ -108,8 +135,11 @@ struct findableStudy {
     histos.add("h2dPtVsCentrality_WithITSABTPC_Found", "hPtVsCentrality_WithITSABTPC_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
     histos.add("h2dPtVsCentrality_WithSVertexerOK_Findable", "hPtVsCentrality_WithSVertexerOK_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
     histos.add("h2dPtVsCentrality_WithSVertexerOK_Found", "hPtVsCentrality_WithSVertexerOK_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h2dPtVsCentrality_WithSVertexerOK_Findable", "hPtVsCentrality_WithSVertexerOK_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h2dPtVsCentrality_WithSVertexerOK_Found", "hPtVsCentrality_WithSVertexerOK_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
+
+    // Pass topological criteria - N.B. this is cumulative
+    histos.add("h2dPtVsCentrality_Analysis_PassesTrackQuality", "h2dPtVsCentrality_Analysis_PassesTrackQuality", kTH2D, {axisCentrality, axisPt});
+    histos.add("h2dPtVsCentrality_Analysis_PassesTopological", "h2dPtVsCentrality_Analysis_PassesTopological", kTH2D, {axisCentrality, axisPt});
+    histos.add("h2dPtVsCentrality_Analysis_PassesK0Short", "h2dPtVsCentrality_Analysis_PassesK0Short", kTH2D, {axisCentrality, axisPt});
   }
 
   void processEvents(
@@ -155,8 +185,11 @@ struct findableStudy {
     uint32_t withITSTrackerTPC = 0; // if prongs have TPC and are ITS tracked
     uint32_t withITSABTPC = 0; // if prongs have TPC and are ITS afterburned
     uint32_t withSVertexerOK = 0; // if prongs have acceptable tracking conditions for svertexer
-
-    for (auto& recv0 : recv0s) {
+    
+    bool trackPropertiesOK = false;
+    bool topologyOK = false;
+    bool k0specsOK = false;
+    for (auto& recv0 : recv0s) {  
       if (recv0.isFound()) {
         hasBeenFound = true;
       }
@@ -203,7 +236,24 @@ struct findableStudy {
         bitset(withITSABTPC, 0);
       if (nTrack.hasTPC() && nTrack.hasITS() && nTrack.itsChi2PerNcl() < -10.0f)
         bitset(withITSABTPC, 1);
+
+      // determine if this V0 would go to analysis or not
+      if( recv0.isFound() ){ 
+        uint64_t selMap = v0data::computeReconstructionBitmap(recv0, pTrack, nTrack, coll, recv0.yLambda(), recv0.yK0Short(), v0Selections);
+        
+        // Consider in all cases
+        selMap = selMap | (uint64_t(1) << v0data::selConsiderK0Short) | (uint64_t(1) << v0data::selConsiderLambda) | (uint64_t(1) << v0data::selConsiderAntiLambda);
+        
+        bool validTrackProperties = v0Selections->verifyMask(selMap, maskTrackProperties);
+        bool validTopology = v0Selections->verifyMask(selMap, maskTopological);
+        bool validK0Short = v0Selections->verifyMask(selMap, maskK0ShortSpecific);
+        if ( validTrackProperties ) trackPropertiesOK = true; // stay true even if last recv0 is false 
+        if ( validTrackProperties && validTopology ) topologyOK = true; // stay true even if last recv0 is false 
+        if ( validTrackProperties && validTopology && validK0Short ) k0specsOK = true; // stay true even if last recv0 is false 
+      }
     }
+
+
     histos.fill(HIST("h2dPtVsCentrality_All_Findable"), centrality, ptmc);
     histos.fill(HIST("h2dPtVsCentrality_WithTPC_Findable"), centrality, ptmc, withTPC);
     histos.fill(HIST("h2dPtVsCentrality_WithITSTracker_Findable"), centrality, ptmc, withITSTracker);
@@ -219,6 +269,11 @@ struct findableStudy {
       histos.fill(HIST("h2dPtVsCentrality_WithITSABTPC_Found"), centrality, ptmc, withITSABTPC);
       histos.fill(HIST("h2dPtVsCentrality_WithSVertexerOK_Found"), centrality, ptmc, withSVertexerOK);
     }
+
+    //Broad analysis Level selections -> last axis is 0 not, 1 yes 
+    histos.fill(HIST("h2dPtVsCentrality_Analysis_PassesTrackQuality"), centrality, ptmc);
+    histos.fill(HIST("h2dPtVsCentrality_Analysis_PassesTopological"), centrality, ptmc);
+    histos.fill(HIST("h2dPtVsCentrality_Analysis_PassesK0Short"), centrality, ptmc);
 
     if (hasWrongCollision) {
       histos.fill(HIST("hNRecoV0sWrongColl"), recv0s.size());
