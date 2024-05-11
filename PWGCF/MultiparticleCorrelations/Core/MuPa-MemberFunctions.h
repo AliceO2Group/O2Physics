@@ -1425,7 +1425,7 @@ void BookEventCutsHistograms()
   }
 
   // a) Book the profile holding flags:
-  ec.fEventCutsPro = new TProfile("fEventCutsPro", "flags for event cuts", eEventCuts_N, -0.5, static_cast<float>(eEventCuts_N - 0.5));
+  ec.fEventCutsPro = new TProfile("fEventCutsPro", "flags for event cuts", eEventCuts_N, -0.5, static_cast<float>(eEventCuts_N) - 0.5);
   ec.fEventCutsPro->SetStats(kFALSE);
   ec.fEventCutsPro->SetLineColor(eColor);
   ec.fEventCutsPro->SetFillColor(eFillColor);
@@ -1471,7 +1471,7 @@ void BookEventCutsHistograms()
         continue;
       }
 
-      ec.fEventCutCounterHist[rs][cc] = new TH1D(Form("fEventCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<float>(eEventCuts_N + 0.5));
+      ec.fEventCutCounterHist[rs][cc] = new TH1D(Form("fEventCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<float>(eEventCuts_N) + 0.5);
       ec.fEventCutCounterHist[rs][cc]->SetStats(kFALSE);
       ec.fEventCutCounterHist[rs][cc]->SetLineColor(eColor);
       ec.fEventCutCounterHist[rs][cc]->SetFillColor(eFillColor);
@@ -1652,7 +1652,7 @@ void BookParticleCutsHistograms()
   }
 
   // a) Book the profile holding flags:
-  pc.fParticleCutsPro = new TProfile("fParticleCutsPro", "flags for particle cuts", eParticleCuts_N, -0.5, static_cast<float>(eParticleCuts_N - 0.5));
+  pc.fParticleCutsPro = new TProfile("fParticleCutsPro", "flags for particle cuts", eParticleCuts_N, -0.5, static_cast<float>(eParticleCuts_N) - 0.5);
   pc.fParticleCutsPro->SetStats(kFALSE);
   pc.fParticleCutsPro->SetLineColor(eColor);
   pc.fParticleCutsPro->SetFillColor(eFillColor);
@@ -1699,7 +1699,7 @@ void BookParticleCutsHistograms()
         continue;
       }
 
-      pc.fParticleCutCounterHist[rs][cc] = new TH1D(Form("fParticleCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eParticleCuts_N, 0.5, static_cast<float>(eParticleCuts_N + 0.5));
+      pc.fParticleCutCounterHist[rs][cc] = new TH1D(Form("fParticleCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eParticleCuts_N, 0.5, static_cast<float>(eParticleCuts_N) + 0.5);
       pc.fParticleCutCounterHist[rs][cc]->SetStats(kFALSE);
       pc.fParticleCutCounterHist[rs][cc]->SetLineColor(eColor);
       pc.fParticleCutCounterHist[rs][cc]->SetFillColor(eFillColor);
