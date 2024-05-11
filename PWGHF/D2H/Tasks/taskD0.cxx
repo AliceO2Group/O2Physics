@@ -56,10 +56,13 @@ struct HfTaskD0 {
   ConfigurableAxis thnConfigAxisBkgScore{"thnConfigAxisBkgScore", {50, 0, 1}, "Bkg score bins"};
   ConfigurableAxis thnConfigAxisNonPromptScore{"thnConfigAxisNonPromptScore", {50, 0, 1}, "Non-prompt score bins"};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 1.5848, 2.1848}, "Cand. inv-mass bins"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {120, 0, 24}, "Cand. pT bins"};
+  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {1000, 0, 100}, "Cand. beauty mother pTB bins"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {500, 0, 50}, "Cand. pT bins"};
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
   ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType", {4, -0.5, 3.5}, "D0 type"};
+  ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
+  ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
 
   HfHelper hfHelper;
 
@@ -213,12 +216,18 @@ struct HfTaskD0 {
       const AxisSpec thnAxisNonPromptScore{thnConfigAxisNonPromptScore, "BDT score non-prompt."};
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#pi K) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec thnAxisPtB{thnConfigAxisPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
       const AxisSpec thnAxisY{thnConfigAxisY, "y"};
       const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
       const AxisSpec thnAxisCandType{thnConfigAxisCandType, "D0 type"};
+      const AxisSpec thnAxisGenPtD{thnConfigAxisGenPtD, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec thnAxisGenPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
 
-      registry.add("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type", "Thn for D0 candidates with BDT scores", HistType::kTHnSparseD, {thnAxisBkgScore, thnAxisNonPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisOrigin, thnAxisCandType});
-      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"))->Sumw2();
+      registry.add("hSparseAcc", "Thn for generated D0 from charm and beauty", HistType::kTHnSparseD, {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin});
+      registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
+
+      registry.add("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type", "Thn for D0 candidates with BDT scores", HistType::kTHnSparseD, {thnAxisBkgScore, thnAxisNonPromptScore, thnAxisMass, thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin, thnAxisCandType});
+      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Sumw2();
     }
   }
 
@@ -284,10 +293,10 @@ struct HfTaskD0 {
 
       if constexpr (applyMl) {
         if (candidate.isSelD0() >= selectionFlagD0) {
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, hfHelper.yD0(candidate), 0, SigD0);
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0);
         }
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, hfHelper.yD0(candidate), 0, SigD0bar);
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
         }
       }
     }
@@ -341,9 +350,9 @@ struct HfTaskD0 {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), o2::constants::physics::Pdg::kD0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
-        auto ptGen = particleMother.pt();                                                                                                    // gen. level pT
-        auto yGen = RecoDecay::y(particleMother.pVector(), o2::constants::physics::MassD0);                                                  // gen. level y
-        registry.fill(HIST("hPtGenSig"), ptGen);                                                                                             // gen. level pT
+        auto ptGen = particleMother.pt();                                                   // gen. level pT
+        auto yGen = RecoDecay::y(particleMother.pVector(), o2::constants::physics::MassD0); // gen. level y
+        registry.fill(HIST("hPtGenSig"), ptGen);                                            // gen. level pT
         auto ptRec = candidate.pt();
         auto yRec = hfHelper.yD0(candidate);
         if (candidate.isRecoHfFlag() >= selectionFlagHf) {
@@ -427,6 +436,9 @@ struct HfTaskD0 {
       auto ctCandidate = hfHelper.ctD0(candidate);
       auto cpaCandidate = candidate.cpa();
       auto cpaxyCandidate = candidate.cpaXY();
+      float ptB = -1;
+      auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), o2::constants::physics::Pdg::kD0, true);
+      auto particleMother = mcParticles.rawIteratorAt(indexMother);
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -454,7 +466,10 @@ struct HfTaskD0 {
           registry.fill(HIST("hDecLengthxyVsPtSig"), declengthxyCandidate, ptCandidate);
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
           if constexpr (applyMl) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, rapidityCandidate, candidate.originMcRec(), SigD0);
+            if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+              ptB = hfHelper.getBeautyMotherPt(mcParticles, particleMother);
+            }
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), SigD0);
           }
         } else {
           registry.fill(HIST("hPtProng0Bkg"), ptProng0, rapidityCandidate);
@@ -474,7 +489,10 @@ struct HfTaskD0 {
           if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
             if constexpr (applyMl) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, rapidityCandidate, candidate.originMcRec(), ReflectedD0);
+              if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+                ptB = hfHelper.getBeautyMotherPt(mcParticles, particleMother);
+              }
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), ReflectedD0);
             }
           }
         }
@@ -484,14 +502,20 @@ struct HfTaskD0 {
         if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           if constexpr (applyMl) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, rapidityCandidate, candidate.originMcRec(), SigD0bar);
+            if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+              ptB = hfHelper.getBeautyMotherPt(mcParticles, particleMother);
+            }
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), SigD0bar);
           }
         } else {
           registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
             if constexpr (applyMl) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
+              if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+                ptB = hfHelper.getBeautyMotherPt(mcParticles, particleMother);
+              }
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, ptB, rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
             }
           }
         }
@@ -503,18 +527,23 @@ struct HfTaskD0 {
         if (yCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > yCandGenMax) {
           continue;
         }
+        float ptGenB = -1;
         auto ptGen = particle.pt();
         auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0);
         registry.fill(HIST("hPtGen"), ptGen);
         registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
+
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hYGenPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
+          registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1);
         } else {
+          ptGenB = hfHelper.getBeautyMotherPt(mcParticles, particle);
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);
           registry.fill(HIST("hYGenNonPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenNonPrompt"), ptGen, yGen);
+          registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2);
         }
         registry.fill(HIST("hEtaGen"), particle.eta());
       }

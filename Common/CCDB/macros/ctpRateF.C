@@ -37,6 +37,9 @@ struct ctpRateFetcher {
 
 double ctpRateFetcher::pileUpCorrection(double triggerRate)
 {
+  if (mLHCIFdata == nullptr) {
+    LOG(fatal) << "No filling" << std::endl;
+  }
   auto bfilling = mLHCIFdata->getBunchFilling();
   std::vector<int> bcs = bfilling.getFilledBCs();
   double nbc = bcs.size();
@@ -97,12 +100,11 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, ui
 {
   getCTPscalers(ccdb, timeStamp, runNumber);
   getCTPconfig(ccdb, timeStamp, runNumber);
-
   std::vector<o2::ctp::CTPClass> ctpcls = mConfig->getCTPClasses();
   std::vector<int> clslist = mConfig->getTriggerClassList();
   int classIndex = -1;
   for (size_t i = 0; i < clslist.size(); i++) {
-    if (ctpcls[i].name == className) {
+    if (ctpcls[i].name.find(className) != std::string::npos) {
       classIndex = i;
       break;
     }
@@ -110,9 +112,8 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, ui
   if (classIndex == -1) {
     LOG(fatal) << "Trigger class " << className << " not found in CTPConfiguration";
   }
-
   auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType)};
-
+  getLHCIFdata(ccdb, timeStamp, runNumber);
   return pileUpCorrection(rate.second);
 }
 double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
@@ -124,26 +125,32 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "C1ZNC-B-NOPF-CRU", 6) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
     }
   } else if (sourceName == "T0CE") {
-    return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVXTCE-B-NOPF-CRU");
+    return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVXTCE-B-NOPF");
   } else if (sourceName == "T0SC") {
-    return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVXTSC-B-NOPF-CRU");
+    return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVXTSC-B-NOPF");
   } else if (sourceName == "T0VTX") {
     if (runNumber < 534202) {
-      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0"); // 2022
+      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0", 3); // 2022
     } else {
-      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF-CRU");
+      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF");
     }
   }
   LOG(error) << "CTP rate for " << sourceName << " not available";
   return -1.;
 }
-void ctpRateF(int runNumber = 0)
+void ctpRateF(int runNumber = 0, bool cxx = 1)
 {
   auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
   auto soreor = ccdbMgr.getRunDuration(runNumber);
   uint64_t timeStamp = (soreor.second - soreor.first) / 2 + soreor.first;
   std::cout << "Timestamp:" << timeStamp << std::endl;
-  ctpRateFetcher ctprate;
-  auto rate = ctprate.fetch(&ccdbMgr, timeStamp + 100, runNumber, "ZNChadronic");
-  std::cout << "Rate:" << rate << std::endl;
+  if (cxx) {
+    o2::ctpRateFetcher ctprate;
+    auto rate = ctprate.fetch(&ccdbMgr, timeStamp + 100, runNumber, "T0VTX");
+    std::cout << "Rate:" << rate << std::endl;
+  } else {
+    ctpRateFetcher ctprate;
+    auto rate = ctprate.fetch(&ccdbMgr, timeStamp + 100, runNumber, "T0VTX");
+    std::cout << "Rate:" << rate << std::endl;
+  }
 }

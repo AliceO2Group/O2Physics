@@ -156,9 +156,9 @@ struct highmasslambda {
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec resAxis = {400, -2, 2, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
-    AxisSpec ptProtonAxis = {48, 0.0, 24, "V0M (%)"};
+    AxisSpec ptProtonAxis = {24, 0.0, 12, "V0M (%)"};
     AxisSpec dcaAxis = {50, 0.0, 0.1, "V0M (%)"};
-    AxisSpec dcatoPVAxis = {50, 0.0, 0.2, "V0M (%)"};
+    AxisSpec dcatoPVAxis = {50, 0.0, 0.4, "V0M (%)"};
 
     histos.add("hInvMassKs0", "hInvMassKs0", kTH1F, {{200, 0.4f, 0.6f}});
     histos.add("hV0Dca", "hV0Dca", kTH1F, {{2000, -1.0f, 1.0f}});
@@ -215,7 +215,8 @@ struct highmasslambda {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    // if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    if (!(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
 

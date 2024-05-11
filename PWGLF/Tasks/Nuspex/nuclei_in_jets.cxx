@@ -125,6 +125,7 @@ struct nuclei_in_jets {
     // Global Properties and QC
     registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{15, 0, 15, "counter"}});
     registryQC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
+    registryQC.add("event_counter_mc", "event_counter_mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
     registryQC.add("jet_plus_ue_multiplicity", "jet + underlying-event multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("jet_multiplicity", "jet multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("ue_multiplicity", "underlying-event multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
@@ -1062,9 +1063,12 @@ struct nuclei_in_jets {
     // Loop over MC Collisions
     for (const auto& mccollision : mcCollisions) {
 
+      registryQC.fill(HIST("event_counter_mc"), 0.5);
+
       // Selection on z_{vertex}
       if (abs(mccollision.posZ()) > 10)
         continue;
+      registryQC.fill(HIST("event_counter_mc"), 1.5);
 
       // MC Particles per Collision
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
@@ -1113,6 +1117,7 @@ struct nuclei_in_jets {
       // Skip Events with pt<pt_leading_min
       if (pt_max < min_pt_leading)
         return;
+      registryQC.fill(HIST("event_counter_mc"), 2.5);
 
       // Number of Stored Particles
       int nParticles = static_cast<int>(particle_ID.size());
@@ -1202,6 +1207,7 @@ struct nuclei_in_jets {
       float eta_jet_axis = p_leading.Eta();
       if ((TMath::Abs(eta_jet_axis) + Rmax_jet_ue) > max_eta)
         return;
+      registryQC.fill(HIST("event_counter_mc"), 3.5);
 
       // Perpendicular Cones for UE Estimate
       TVector3 ue_axis1(0.0, 0.0, 0.0);
@@ -1214,6 +1220,7 @@ struct nuclei_in_jets {
         return;
       if (ue_axis2.X() == 0 && ue_axis2.Y() == 0 && ue_axis2.Z() == 0)
         return;
+      registryQC.fill(HIST("event_counter_mc"), 4.5);
 
       // Store UE
       std::vector<int> ue_particle_ID;

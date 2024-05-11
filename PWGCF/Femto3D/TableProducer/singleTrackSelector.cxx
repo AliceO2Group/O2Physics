@@ -27,6 +27,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 
 #include "DetectorsBase/Propagator.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -66,6 +67,8 @@ struct singleTrackSelector {
   Configurable<float> _eta{"eta", 100.f, "abs eta value limit"};
   Configurable<float> _dcaXY{"dcaXY", 1000.f, "Maximum dca of track in xy"};
   Configurable<float> _dcaZ{"dcaZ", 1000.f, "Maximum dca of track in xy"};
+  Configurable<float> _dcaXYmin{"dcaXYmin", -1000.f, "Minimum dca of track in xy"};
+  Configurable<float> _dcaZmin{"dcaZmin", -1000.f, "Minimum dca of track in xy"};
   Configurable<float> _maxTofChi2{"maxTofChi2", 10.f, "Maximum TOF Chi2 value -> to remove mismatched tracks"};
   Configurable<float> _vertexZ{"VertexZ", 15.0, "abs vertexZ value limit"};
   Configurable<std::pair<float, float>> _centCut{"centCut", std::pair<float, float>{0.f, 100.f}, "[min., max.] centrality range to keep events within"};
@@ -95,9 +98,11 @@ struct singleTrackSelector {
 
   Filter pFilter = o2::aod::track::p > _min_P&& o2::aod::track::p < _max_P;
   Filter etaFilter = nabs(o2::aod::track::eta) < _eta;
-  Filter dcaFilter = (o2::aod::track::dcaXY <= _dcaXY) && (o2::aod::track::dcaZ <= _dcaZ);
+  Filter dcaFilter = ((nabs(o2::aod::track::dcaXY) <= _dcaXY) && (nabs(o2::aod::track::dcaZ) <= _dcaZ)) &&
+                     ((o2::aod::track::dcaXY >= _dcaXYmin) && (o2::aod::track::dcaZ >= _dcaZmin));
   Filter tofChi2Filter = o2::aod::track::tofChi2 < _maxTofChi2;
 
+  ctpRateFetcher mRateFetcher; // inspired by zdcSP.cxx in PWGLF
   int mRunNumber = 0;
   float d_bz = 0.f;
 
@@ -194,7 +199,9 @@ struct singleTrackSelector {
                    track.sign(),
                    track.tpcNClsFound(),
                    track.tpcNClsShared(),
-                   track.itsNCls(),
+                   track.itsClusterMap(),
+                   track.itsClusterSizes(),
+
                    singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaXY()),
                    singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaZ()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.tpcChi2NCl()),
@@ -277,6 +284,7 @@ struct singleTrackSelector {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
 
     float centValue = -100.0f;
 
@@ -328,7 +336,8 @@ struct singleTrackSelector {
 
       tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
                         collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
-                        collision.selection_bit(aod::evsel::kIsVertexITSTPC));
+                        collision.selection_bit(aod::evsel::kIsVertexITSTPC),
+                        hadronicRate);
 
       fillTrackTables<false>(tracks);
     }
@@ -425,7 +434,8 @@ struct singleTrackSelector {
 
       tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
                         collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
-                        collision.selection_bit(aod::evsel::kIsVertexITSTPC));
+                        collision.selection_bit(aod::evsel::kIsVertexITSTPC),
+                        0.);
 
       fillTrackTables<true>(tracks);
 
