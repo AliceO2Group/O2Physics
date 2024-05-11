@@ -44,8 +44,6 @@ using namespace o2::framework::expressions;
 struct FlowGFWPbPb {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
@@ -66,12 +64,9 @@ struct FlowGFWPbPb {
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
   ConfigurableAxis axisCentForQA{"axisCentForQA", {100, 0, 100}, "centrality for QA"};
   ConfigurableAxis axisNch{"axisNch", {4000, 0, 4000}, "N_{ch}"};
-  ConfigurableAxis axisT0C{"axisT0C", {70, 0, 70000}, "N_{ch} (T0C)"};
-  ConfigurableAxis axisT0A{"axisT0A", {200, 0, 200000}, "N_{ch} (T0A)"};
-  ConfigurableAxis axisNchPV{"axisNchPV", {4000, 0, 4000}, "N_{ch} (PV)"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
@@ -84,7 +79,7 @@ struct FlowGFWPbPb {
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
@@ -132,17 +127,17 @@ struct FlowGFWPbPb {
     ccdb->setCreatedNotAfter(nolaterthan.value);
 
     // Add some output objects to the histogram registry
-    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{5, 0, 5}}});
+    registry.add("hEventCount", "Number of Events;; Count", {HistType::kTH1D, {{4, 0, 4}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after strict Pile-up cut");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after additional event cut");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after correction loads");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after additional event cut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after correction loads");
     registry.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
     registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
     registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
     registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     registry.add("hCent", "Centrality distribution", {HistType::kTH1D, {{90, 0, 90}}});
+    registry.add("cent_vs_Nch", ";Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2F, {axisCentrality, axisNch}});
 
     // Track QA
     registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
@@ -154,11 +149,11 @@ struct FlowGFWPbPb {
     registry.add("hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
 
     // additional Output histograms
-    registry.add("c22", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("c24", ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("c26", ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("c28", ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("c22etagap", ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("c22", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisCentrality}});
+    registry.add("c24", ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisCentrality}});
+    registry.add("c26", ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisCentrality}});
+    registry.add("c28", ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisCentrality}});
+    registry.add("c22etagap", ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
 
     // initial array
     BootstrapArray.resize(cfgNbootstrap);
@@ -167,11 +162,11 @@ struct FlowGFWPbPb {
     }
 
     for (int i = 0; i < cfgNbootstrap; i++) {
-      BootstrapArray[i][kc22] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22", i), ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile, {axisMultiplicity}});
-      BootstrapArray[i][kc24] = registry.add<TProfile>(Form("BootstrapContainer_%d/c24", i), ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisMultiplicity}});
-      BootstrapArray[i][kc26] = registry.add<TProfile>(Form("BootstrapContainer_%d/c26", i), ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisMultiplicity}});
-      BootstrapArray[i][kc28] = registry.add<TProfile>(Form("BootstrapContainer_%d/c28", i), ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisMultiplicity}});
-      BootstrapArray[i][kc22etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagap", i), ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisMultiplicity}});
+      BootstrapArray[i][kc22] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22", i), ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kc24] = registry.add<TProfile>(Form("BootstrapContainer_%d/c24", i), ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kc26] = registry.add<TProfile>(Form("BootstrapContainer_%d/c26", i), ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kc28] = registry.add<TProfile>(Form("BootstrapContainer_%d/c28", i), ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kc22etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagap", i), ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -188,7 +183,7 @@ struct FlowGFWPbPb {
     TObjArray* oba = new TObjArray();
     fFC->SetXAxis(fPtAxis);
     fFC->SetName("FlowContainer");
-    fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
+    fFC->Initialize(oba, axisCentrality, cfgNbootstrap);
     delete oba;
 
     fGFW->AddRegion("full", -0.8, 0.8, 1, 1); // eta region -0.8 to 0.8
@@ -393,13 +388,12 @@ struct FlowGFWPbPb {
     if (Ntot < 1)
       return;
     registry.fill(HIST("hEventCount"), 1.5);
-    // place holder for pile-up rejection
-    registry.fill(HIST("hEventCount"), 2.5);
+
     const auto cent = collision.centFT0C();
 
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent))
       return;
-    registry.fill(HIST("hEventCount"), 3.5);
+    registry.fill(HIST("hEventCount"), 2.5);
 
     float vtxz = collision.posZ();
     float l_Random = fRndm->Rndm();
@@ -410,7 +404,7 @@ struct FlowGFWPbPb {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     loadCorrections(bc.timestamp());
-    registry.fill(HIST("hEventCount"), 4.5);
+    registry.fill(HIST("hEventCount"), 3.5);
 
     // track weights
     float weff = 1, wacc = 1;
@@ -432,7 +426,6 @@ struct FlowGFWPbPb {
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
 
-      bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtMin < track.pt()) && (track.pt() < cfgCutPtMax);       // within RF pT range
       registry.fill(HIST("hPt"), track.pt());
 
@@ -447,12 +440,10 @@ struct FlowGFWPbPb {
 
       if (WithinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-      if (WithinPtPOI)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
-      if (WithinPtPOI && WithinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
 
     } // End of track loop
+
+    registry.fill(HIST("cent_vs_Nch"), cent, Ntot);
 
     // Filling c22 with ROOT TProfile
     FillProfile(corrconfigs.at(0), HIST("c22"), cent);
