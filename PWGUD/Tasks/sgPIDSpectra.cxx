@@ -124,12 +124,12 @@ struct SGPIDSpectra {
     std::vector<float> py;
     std::vector<float> pz;
     std::vector<int> sign;
-    std::vector<int> tpcpion;
-    std::vector<int> tpckaon;
-    std::vector<int> tpcproton;
-    std::vector<int> tofpion;
-    std::vector<int> tofkaon;
-    std::vector<int> tofproton;
+    std::vector<float> tpcpion;
+    std::vector<float> tpckaon;
+    std::vector<float> tpcproton;
+    std::vector<float> tofpion;
+    std::vector<float> tofkaon;
+    std::vector<float> tofproton;
     for (auto t : tracks) {
       if (trackselector(t, parameters)) {
         px.push_back(t.px());
