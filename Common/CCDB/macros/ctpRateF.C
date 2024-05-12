@@ -134,10 +134,10 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0", 3); // 2022
     } else {
       double_t ret = fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF");
-      if( ret < 0. ) {
+      if (ret < 0.) {
         LOG(info) << "Trying different class";
         ret = fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-NONE");
-        if(ret < 0) {
+        if (ret < 0) {
           LOG(fatal) << "None of the classes used for lumi found";
         }
       }
