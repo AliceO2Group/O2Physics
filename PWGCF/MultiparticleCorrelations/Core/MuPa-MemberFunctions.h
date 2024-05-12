@@ -3929,7 +3929,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
         LOGF(warning, "No MC particle for this track, skip...");
         return kFALSE; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this track
       }
-      auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
 
       // In this branch I can cut additionally and directly on corresponding MC truth simulated, e.g. on mcparticle.pt()
       // In case I implement something here, remember to switch from eRec to eSim when calling e.g. ParticleCut(...)
@@ -4230,7 +4230,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
         LOGF(warning, "No MC particle for this track, skip...");
         return kFALSE; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this track
       }
-      auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
 
       // ...
 
@@ -4267,7 +4267,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
         LOGF(warning, "No MC particle for this track, skip...");
         return kFALSE; // TBI 20231107 re-think. I shouldn't probably get to this point, if MC truth info doesn't exist for this track
       }
-      auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
 
       // ...
 
@@ -4549,7 +4549,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba)
         return;
       }
 
-      auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
 
       // ...
 
@@ -4584,7 +4584,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba)
         return;
       }
 
-      auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
+      // auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
 
       // ...
 
