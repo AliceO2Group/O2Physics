@@ -12,7 +12,8 @@
 #ifndef V0SELECTIONBITS_H
 #define V0SELECTIONBITS_H
 
-namespace v0data {
+namespace v0data
+{
 // provides simple switches
 enum selection : uint64_t { selCosPA = 0,
                             selRadius,
@@ -56,6 +57,6 @@ enum selection : uint64_t { selCosPA = 0,
                             selPhysPrimLambda,     // for mc tagging
                             selPhysPrimAntiLambda, // for mc tagging
 };
-}
+} // namespace v0data
 
 #endif // V0SELECTIONBITS_H

@@ -24,8 +24,8 @@ bool v0SelectionGroup::verifyMask(uint64_t bitmap, uint64_t mask) const
 }
 
 // provides standard masks given current event selection criteria.
-void v0SelectionGroup::provideMasks(uint64_t& maskTopological, uint64_t& maskTrackProperties, uint64_t& maskK0ShortSpecific, uint64_t& maskLambdaSpecific, uint64_t& maskAntiLambdaSpecific) const 
-{ 
+void v0SelectionGroup::provideMasks(uint64_t& maskTopological, uint64_t& maskTrackProperties, uint64_t& maskK0ShortSpecific, uint64_t& maskLambdaSpecific, uint64_t& maskAntiLambdaSpecific) const
+{
   maskTopological = (uint64_t(1) << v0data::selCosPA) | (uint64_t(1) << v0data::selRadius) | (uint64_t(1) << v0data::selDCANegToPV) | (uint64_t(1) << v0data::selDCAPosToPV) | (uint64_t(1) << v0data::selDCAV0Dau) | (uint64_t(1) << v0data::selRadiusMax);
   maskK0ShortSpecific = (uint64_t(1) << v0data::selK0ShortRapidity) | (uint64_t(1) << v0data::selK0ShortCTau) | (uint64_t(1) << v0data::selK0ShortArmenteros) | (uint64_t(1) << v0data::selConsiderK0Short);
   maskLambdaSpecific = (uint64_t(1) << v0data::selLambdaRapidity) | (uint64_t(1) << v0data::selLambdaCTau) | (uint64_t(1) << v0data::selConsiderLambda);

@@ -19,11 +19,12 @@
 #define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 #define bitcheck(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
-namespace v0data {
+namespace v0data
+{
 
 // utility method to calculate a selection map for the V0s
 template <typename TV0, typename TTrack, typename TCollision>
-uint64_t computeReconstructionBitmap(TV0 v0, TTrack posTrackExtra, TTrack negTrackExtra, TCollision collision, float rapidityLambda, float rapidityK0Short, const v0SelectionGroup &v0sels)
+uint64_t computeReconstructionBitmap(TV0 v0, TTrack posTrackExtra, TTrack negTrackExtra, TCollision collision, float rapidityLambda, float rapidityK0Short, const v0SelectionGroup& v0sels)
 // precalculate this information so that a check is one mask operation, not many
 {
   uint64_t bitMap = 0;
@@ -125,6 +126,6 @@ uint64_t computeReconstructionBitmap(TV0 v0, TTrack posTrackExtra, TTrack negTra
 
   return bitMap;
 }
-}
+} // namespace v0data
 
 #endif // V0SELECTIONTOOLS_H

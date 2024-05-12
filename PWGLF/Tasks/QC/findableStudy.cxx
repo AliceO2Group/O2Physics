@@ -171,11 +171,11 @@ struct findableStudy {
   {
     int pdgCodePositive = 211;
     int pdgCodeNegative = -211;
-    if( pdgCode == 3122 ) 
+    if (pdgCode == 3122)
       pdgCodePositive = 2212;
-    if( pdgCode == -3122 ) 
+    if (pdgCode == -3122)
       pdgCodePositive = -2212;
-    if( pdgCode == 22 ) {
+    if (pdgCode == 22) {
       pdgCodePositive = -11;
       pdgCodeNegative = -11;
     }
@@ -186,11 +186,11 @@ struct findableStudy {
       return;
 
     float rapidity = 2.0;
-    if (pdgCode==310)
+    if (pdgCode == 310)
       rapidity = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-    if (pdgCode==22)
+    if (pdgCode == 22)
       rapidity = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassPhoton);
-    if (pdgCode==3122 || pdgCode==-3122)
+    if (pdgCode == 3122 || pdgCode == -3122)
       rapidity = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassLambda0);
 
     if (std::abs(rapidity) > 0.5f)
@@ -205,12 +205,12 @@ struct findableStudy {
     bool hasBeenFound = false;
 
     // encode conditionals here
-    uint32_t withTPC = 0; // if prongs have TPC 
-    uint32_t withITSTracker = 0; // if prongs have been ITS tracked
+    uint32_t withTPC = 0;           // if prongs have TPC
+    uint32_t withITSTracker = 0;    // if prongs have been ITS tracked
     uint32_t withITSTrackerTPC = 0; // if prongs have TPC and are ITS tracked
-    uint32_t withITSABTPC = 0; // if prongs have TPC and are ITS afterburned
-    uint32_t withSVertexerOK = 0; // if prongs have acceptable tracking conditions for svertexer
-    
+    uint32_t withITSABTPC = 0;      // if prongs have TPC and are ITS afterburned
+    uint32_t withSVertexerOK = 0;   // if prongs have acceptable tracking conditions for svertexer
+
     // Broad
     bool trackPropertiesOK = false;
     bool topologyOK = false;
@@ -218,7 +218,7 @@ struct findableStudy {
 
     // Detailed
     bool topoV0RadiusOK = false, topoV0RadiusMaxOK = false, topoV0CosPAOK = false, topoDcaPosToPVOK = false, topoDcaNegToPVOK = false, topoDcaV0DauOK = false, trackTPCRowsOK = false, trackTPCPIDOK = false;
-    for (auto& recv0 : recv0s) {  
+    for (auto& recv0 : recv0s) {
       if (recv0.isFound()) {
         hasBeenFound = true;
       }
@@ -243,14 +243,12 @@ struct findableStudy {
         bitset(withTPC, 1);
 
       if (
-        (pTrack.hasTPC() && pTrack.hasITS()) || 
-        (!pTrack.hasTPC() && pTrack.itsNCls() >= 6)
-        )
+        (pTrack.hasTPC() && pTrack.hasITS()) ||
+        (!pTrack.hasTPC() && pTrack.itsNCls() >= 6))
         bitset(withSVertexerOK, 0);
       if (
-        (nTrack.hasTPC() && nTrack.hasITS()) || 
-        (!nTrack.hasTPC() && nTrack.itsNCls() >= 6)
-      )
+        (nTrack.hasTPC() && nTrack.hasITS()) ||
+        (!nTrack.hasTPC() && nTrack.itsNCls() >= 6))
         bitset(withSVertexerOK, 1);
 
       if (pTrack.hasITS() && pTrack.itsChi2PerNcl() > -10.0f)
@@ -269,27 +267,30 @@ struct findableStudy {
         bitset(withITSABTPC, 1);
 
       // determine if this V0 would go to analysis or not
-      if( recv0.isFound() ){ 
+      if (recv0.isFound()) {
         uint64_t selMap = v0data::computeReconstructionBitmap(recv0, pTrack, nTrack, coll, recv0.yLambda(), recv0.yK0Short(), v0Selections);
-        
+
         // Consider in all cases
         selMap = selMap | (uint64_t(1) << v0data::selConsiderK0Short) | (uint64_t(1) << v0data::selConsiderLambda) | (uint64_t(1) << v0data::selConsiderAntiLambda);
-        
+
         // global selection checker
         bool validTrackProperties = v0Selections->verifyMask(selMap, maskTrackProperties);
         bool validTopology = v0Selections->verifyMask(selMap, maskTopological);
 
-        uint64_t thisSpeciesMask = maskK0ShortSpecific; 
-        if(pdgCode==3122) 
+        uint64_t thisSpeciesMask = maskK0ShortSpecific;
+        if (pdgCode == 3122)
           thisSpeciesMask = maskLambdaSpecific;
-        if(pdgCode==-3122) 
+        if (pdgCode == -3122)
           thisSpeciesMask = maskAntiLambdaSpecific;
         // add other species masks as necessary
 
         bool validThisSpecies = v0Selections->verifyMask(selMap, thisSpeciesMask);
-        if ( validTrackProperties ) trackPropertiesOK = true; // stay true even if last recv0 is false 
-        if ( validTrackProperties && validTopology ) topologyOK = true; // stay true even if last recv0 is false 
-        if ( validTrackProperties && validTopology && validThisSpecies ) thisSpeciesOK = true; // stay true even if last recv0 is false 
+        if (validTrackProperties)
+          trackPropertiesOK = true; // stay true even if last recv0 is false
+        if (validTrackProperties && validTopology)
+          topologyOK = true; // stay true even if last recv0 is false
+        if (validTrackProperties && validTopology && validThisSpecies)
+          thisSpeciesOK = true; // stay true even if last recv0 is false
 
         // specific selection (not cumulative)
         topoV0RadiusOK |= v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadius);
@@ -298,18 +299,17 @@ struct findableStudy {
         topoDcaPosToPVOK |= v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAPosToPV);
         topoDcaNegToPVOK |= v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCANegToPV);
         topoDcaV0DauOK |= v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAV0Dau);
-        trackTPCRowsOK |= v0Selections->verifyMask(selMap, (uint64_t(1) << v0data::selPosGoodTPCTrack) | (uint64_t(1) << v0data::selNegGoodTPCTrack) );
+        trackTPCRowsOK |= v0Selections->verifyMask(selMap, (uint64_t(1) << v0data::selPosGoodTPCTrack) | (uint64_t(1) << v0data::selNegGoodTPCTrack));
 
-        uint64_t tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativePion); 
-        if(pdgCode==3122) 
-          tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositiveProton) | (uint64_t(1) << v0data::selTPCPIDNegativePion); 
-        if(pdgCode==-3122) 
-          tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativeProton); 
+        uint64_t tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativePion);
+        if (pdgCode == 3122)
+          tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositiveProton) | (uint64_t(1) << v0data::selTPCPIDNegativePion);
+        if (pdgCode == -3122)
+          tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativeProton);
 
         trackTPCPIDOK |= v0Selections->verifyMask(selMap, tpcPidMask);
       }
     }
-
 
     histos.fill(HIST("h2dPtVsCentrality_All_Findable"), centrality, ptmc);
     histos.fill(HIST("h3dPtVsCentrality_WithTPC_Findable"), centrality, ptmc, withTPC);
@@ -327,30 +327,30 @@ struct findableStudy {
       histos.fill(HIST("h3dPtVsCentrality_WithSVertexerOK_Found"), centrality, ptmc, withSVertexerOK);
     }
 
-    // broad analysis Level selections -> last axis is 0 not, 1 yes 
-    if(trackPropertiesOK)
+    // broad analysis Level selections -> last axis is 0 not, 1 yes
+    if (trackPropertiesOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_PassesTrackQuality"), centrality, ptmc);
-    if(topologyOK)
+    if (topologyOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_PassesTopological"), centrality, ptmc);
-    if(thisSpeciesOK)
+    if (thisSpeciesOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_PassesThisSpecies"), centrality, ptmc);
 
     // specifics (could be a bit cleaner but ok)
-    if(topoV0RadiusOK)
+    if (topoV0RadiusOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_V0Radius"), centrality, ptmc);
-    if(topoV0RadiusMaxOK)
+    if (topoV0RadiusMaxOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_V0RadiusMax"), centrality, ptmc);
-    if(topoV0CosPAOK)
+    if (topoV0CosPAOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_V0CosPA"), centrality, ptmc);
-    if(topoDcaPosToPVOK)
+    if (topoDcaPosToPVOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_DcaPosToPV"), centrality, ptmc);
-    if(topoDcaNegToPVOK)
+    if (topoDcaNegToPVOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_DcaNegToPV"), centrality, ptmc);
-    if(topoDcaV0DauOK)
+    if (topoDcaV0DauOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_DcaV0Dau"), centrality, ptmc);
-    if(trackTPCRowsOK)
+    if (trackTPCRowsOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_Track_TPCRows"), centrality, ptmc);
-    if(trackTPCPIDOK)
+    if (trackTPCPIDOK)
       histos.fill(HIST("h2dPtVsCentrality_Analysis_Track_TPCPID"), centrality, ptmc);
 
     if (hasWrongCollision) {
