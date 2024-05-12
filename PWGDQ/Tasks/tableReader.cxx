@@ -1093,7 +1093,7 @@ struct AnalysisSameEventPairing {
 
       VarManager::fgValues[VarManager::kMultDimuons] = mult_dimuons;
     }
-    bool isFirst=true;
+    bool isFirst = true;
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE || TPairType == VarManager::kDecayToPiPi) {
         twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
@@ -1184,9 +1184,9 @@ struct AnalysisSameEventPairing {
                              VarManager::fgValues[VarManager::kMultDimuons], VarManager::fgValues[VarManager::kMultA]);
           }
         }
-	if (t1.sign() != t2.sign()){
-	  isFirst=false;
-	}
+        if (t1.sign() != t2.sign()) {
+          isFirst = false;
+        }
       }
 
       int iCut = 0;

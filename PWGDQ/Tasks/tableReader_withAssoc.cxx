@@ -1156,7 +1156,7 @@ struct AnalysisSameEventPairing {
         continue;
       }
 
-      bool isFirst=true;
+      bool isFirst = true;
       for (auto& [a1, a2] : o2::soa::combinations(groupedAssocs, groupedAssocs)) {
 
         if constexpr (TPairType == VarManager::kDecayToEE || TPairType == VarManager::kDecayToPiPi) {
@@ -1273,9 +1273,9 @@ struct AnalysisSameEventPairing {
               }
             }
           }
-	  if (t1.sign() != t2.sign()){
-	    isFirst=false;
-	  }
+          if (t1.sign() != t2.sign()) {
+            isFirst = false;
+          }
         }
         // TODO: the model for the electron-muon combination has to be thought through
         /*if constexpr (TPairType == VarManager::kElectronMuon) {
