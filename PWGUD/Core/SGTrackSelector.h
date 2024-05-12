@@ -20,30 +20,27 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
-// #include "Common/DataModel/PIDResponse.h"
-// #include "PWGUD/Core/RLhelper.h"
 #include <TString.h>
-#include "TLorentzVector.h"
+#include "TVector3.h"
 using namespace std;
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-#define mpion 0.1396
-#define mkaon 0.4937
-#define mproton 0.9383
 template <typename T>
 int trackselector(const T& track, const std::vector<float>& params)
 {
   // Ensure the params vector contains all the necessary parameters
+
   if (params.size() < 8) {
     throw std::runtime_error("Insufficient parameters provided");
   }
-  TLorentzVector a;
-  a.SetXYZM(track.px(), track.py(), track.pz(), mpion);
+  TVector3 a;
+  a.SetXYZ(track.px(), track.py(), track.pz());
   if (params[0] == 1 && !track.isPVContributor())
     return 0;
   if (std::abs(track.dcaZ()) > params[1])
