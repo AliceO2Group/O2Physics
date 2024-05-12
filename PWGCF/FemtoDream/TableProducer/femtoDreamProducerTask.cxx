@@ -171,8 +171,6 @@ struct femtoDreamProducerTask {
   HfHelper hfHelper;
   int mRunNumber;
   float mMagField;
-  //  std::array<float, 3> outputMlPKPi{-1., -1., -1.};
-  //  std::array<float, 3> outputMlPiKP{-1., -1., -1.};
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   void init(InitContext&)

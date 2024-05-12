@@ -209,12 +209,14 @@ struct femtoDreamPairTaskTrackHF {
       trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
     }
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceCharmHad))) {
+      // proton track charge
       float chargeTrack = 0.;
       if ((p1.cut() & 1) == 1) {
         chargeTrack = 1;
       } else {
         chargeTrack = -1;
       }
+
       if (chargeTrack != p2.charge())
         continue;
       float kstar = FemtoDreamMath::getkstar(p1, MassOne, p2, MassTwo);

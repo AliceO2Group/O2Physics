@@ -248,7 +248,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //!
                                                                                                                                                     RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2))); });
 
 } // namespace fdhf
-
+// hf candidate table for derived data
 DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND",
                   o2::soa::Index<>,
                   femtodreamparticle::FDCollisionId,
@@ -275,7 +275,7 @@ DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND",
                   fdhf::Eta<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
-
+// table to store results for HF femtoscopy
 DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF",
                   fdhf::CharmM,
                   fdhf::CharmPt,

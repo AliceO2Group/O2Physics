@@ -414,7 +414,7 @@ class FemtoDreamDetaDphiStar
     float phi0, pt;
     if constexpr (isHF) {
       if (prong == 0) {
-        charge = part.charge();
+        charge = part.charge(); // chrage calculation according to 3-prong decay, Lc^+ --> P^+ + K^- + pi^+
         phi0 = part.prong0Phi();
         pt = part.prong0Pt();
       } else if (prong == 1) {
@@ -514,7 +514,7 @@ class FemtoDreamDetaDphiStar
       }
     } else {
       PhiAtRadiiTPCForHF(part2, tmpVec2, iHist);
-      *sameCharge = true;
+      *sameCharge = true; // always true as we checked the condition in the HF task
     }
     int num = tmpVec1.size();
     int meaningfulEntries = num;

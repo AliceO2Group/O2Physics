@@ -109,7 +109,7 @@ inline float getMass(int pdgCode)
   float mass = 0;
   // add new particles if necessary here
   switch (std::abs(pdgCode)) {
-    case kPiPlus: // charged pions
+    case kPiPlus: // charged pions, changed magic number as per their pdg name
       mass = o2::constants::physics::MassPiPlus;
       break;
     case kKPlus: // charged kaon
