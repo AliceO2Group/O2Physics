@@ -61,19 +61,16 @@ static constexpr int trkCutIdxN = 22;
 
 // Particle information
 static constexpr int nSpecies = o2::track::PID::NIDs; // One per PDG
+static constexpr int nCharges = 2;                    // Positive and negative
 static constexpr const char* particleTitle[nSpecies] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
+static constexpr const char* particleNames[nSpecies] = {"el", "mu", "pi", "ka", "pr", "de", "tr", "he", "al"};
+static constexpr const char* chargeNames[nSpecies] = {"pos_pdg", "neg_pdg"};
 static constexpr int PDGs[nSpecies] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040};
 
 // Histograms
 static constexpr int nHistograms = nSpecies * 2;
 
 // Pt
-static constexpr std::string_view hPtPrm[nHistograms] = {"MC/el/pos_pdg/dcaxy/pt/prm", "MC/mu/pos_pdg/dcaxy/pt/prm", "MC/pi/pos_pdg/dcaxy/pt/prm",
-                                                         "MC/ka/pos_pdg/dcaxy/pt/prm", "MC/pr/pos_pdg/dcaxy/pt/prm", "MC/de/pos_pdg/dcaxy/pt/prm",
-                                                         "MC/tr/pos_pdg/dcaxy/pt/prm", "MC/he/pos_pdg/dcaxy/pt/prm", "MC/al/pos_pdg/dcaxy/pt/prm",
-                                                         "MC/el/neg_pdg/dcaxy/pt/prm", "MC/mu/neg_pdg/dcaxy/pt/prm", "MC/pi/neg_pdg/dcaxy/pt/prm",
-                                                         "MC/ka/neg_pdg/dcaxy/pt/prm", "MC/pr/neg_pdg/dcaxy/pt/prm", "MC/de/neg_pdg/dcaxy/pt/prm",
-                                                         "MC/tr/neg_pdg/dcaxy/pt/prm", "MC/he/neg_pdg/dcaxy/pt/prm", "MC/al/neg_pdg/dcaxy/pt/prm"};
 static constexpr std::string_view hPtStr[nHistograms] = {"MC/el/pos_pdg/dcaxy/pt/str", "MC/mu/pos_pdg/dcaxy/pt/str", "MC/pi/pos_pdg/dcaxy/pt/str",
                                                          "MC/ka/pos_pdg/dcaxy/pt/str", "MC/pr/pos_pdg/dcaxy/pt/str", "MC/de/pos_pdg/dcaxy/pt/str",
                                                          "MC/tr/pos_pdg/dcaxy/pt/str", "MC/he/pos_pdg/dcaxy/pt/str", "MC/al/pos_pdg/dcaxy/pt/str",
@@ -98,6 +95,7 @@ static constexpr std::string_view hPtMatSM1Dau[nHistograms] = {"MC/el/pos_pdg/dc
                                                                "MC/el/neg_pdg/dcaxy/pt/sm1dau", "MC/mu/neg_pdg/dcaxy/pt/sm1dau", "MC/pi/neg_pdg/dcaxy/pt/sm1dau",
                                                                "MC/ka/neg_pdg/dcaxy/pt/sm1dau", "MC/pr/neg_pdg/dcaxy/pt/sm1dau", "MC/de/neg_pdg/dcaxy/pt/sm1dau",
                                                                "MC/tr/neg_pdg/dcaxy/pt/sm1dau", "MC/he/neg_pdg/dcaxy/pt/sm1dau", "MC/al/neg_pdg/dcaxy/pt/sm1dau"};
+std::array<std::array<std::shared_ptr<TH3>, nCharges>, nSpecies> hPtPrm;
 
 struct QaDcaMc {
   // Track/particle selection
@@ -187,7 +185,7 @@ struct QaDcaMc {
       registry = &histosNegPdg;
     }
 
-    registry->add(hPtPrm[histogramIndex].data(), "DCA Prm. " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
+    hPtPrm[id][pdgSign] = registry->add<TH3>(Form("MC/%s/%s/dcaxy/pt/prm", particleNames[id], chargeNames[pdgSign]), "DCA Prm. " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
     registry->add(hPtStr[histogramIndex].data(), "DCA Str. " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
     registry->add(hPtMat[histogramIndex].data(), "DCA Mat. " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
     registry->add(hPtMatSM[histogramIndex].data(), "DCA Mat. SM " + tagPt, kTH3F, {axisPt, axisDCAxy, axisDCAz});
@@ -342,7 +340,7 @@ struct QaDcaMc {
     histos.fill(HIST("MC/trackSelection"), trkCutIdxN + id);
 
     if (isPhysicalPrimary(mcParticle)) {
-      h->fill(HIST(hPtPrm[histogramIndex]), mcParticle.pt(), track.dcaXY(), track.dcaZ());
+      hPtPrm[id][pdgSign]->Fill(mcParticle.pt(), track.dcaXY(), track.dcaZ());
     } else if (mcParticle.getProcess() == 4) { // Particle decay
       h->fill(HIST(hPtStr[histogramIndex]), mcParticle.pt(), track.dcaXY(), track.dcaZ());
     } else { // Material
