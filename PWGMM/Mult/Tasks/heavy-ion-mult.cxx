@@ -407,8 +407,8 @@ struct HeavyIonMultiplicity {
             histos.fill(HIST("hmcgendndpt"), RecCollision.centFT0C(), particle.pt(), kGenpTup, -10.0 * particle.pt() + 2);
             histos.fill(HIST("hmcgendndpt"), RecCollision.centFT0C(), particle.pt(), kGenpTdown, 5.0 * particle.pt() + 0.5);
           } else {
-            histos.fill(HIST("hmcgendndpt"), RecCollision.centFT0C(), particle.pt(), kGenpTup, -10.0 * particle.pt() + 2);
-            histos.fill(HIST("hmcgendndpt"), RecCollision.centFT0C(), particle.pt(), kGenpTdown, 5.0 * particle.pt() + 0.5);
+            histos.fill(HIST("hmcgendndpt"), RecCollision.centFT0C(), particle.pt(), kGenpTup);
+            histos.fill(HIST("hmcgendndpt"), RecCollision.centFT0C(), particle.pt(), kGenpTdown);
           }
         }
       }
