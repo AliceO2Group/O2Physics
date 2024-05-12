@@ -30,23 +30,25 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-namespace excl_fs{
-  DECLARE_SOA_COLUMN(GS, gs, int);
-  DECLARE_SOA_COLUMN(PV, pv, int);
-  DECLARE_SOA_COLUMN(ZA, za, int);
-  DECLARE_SOA_COLUMN(ZC, zc, int);
-  DECLARE_SOA_COLUMN(SIGN, sign, std::vector<int>);
-  DECLARE_SOA_COLUMN(PX, px, std::vector<float>);
-  DECLARE_SOA_COLUMN(PY, py, std::vector<float>);
-  DECLARE_SOA_COLUMN(PZ, pz, std::vector<float>);
-  DECLARE_SOA_COLUMN(ISELEC, iselec, std::vector<int>);
-  DECLARE_SOA_COLUMN(ISMUON, ismuon, std::vector<int>);
-  DECLARE_SOA_COLUMN(ISPION, ispion, std::vector<int>);
-  DECLARE_SOA_COLUMN(ISKAON, iskaon, std::vector<int>);
-  DECLARE_SOA_COLUMN(ISPROTON, isproton, std::vector<int>);
-}
-namespace o2::aod {
-  DECLARE_SOA_TABLE(Excl_fs, "AOD", "EXCL_FS",
+namespace excl_fs
+{
+DECLARE_SOA_COLUMN(GS, gs, int);
+DECLARE_SOA_COLUMN(PV, pv, int);
+DECLARE_SOA_COLUMN(ZA, za, int);
+DECLARE_SOA_COLUMN(ZC, zc, int);
+DECLARE_SOA_COLUMN(SIGN, sign, std::vector<int>);
+DECLARE_SOA_COLUMN(PX, px, std::vector<float>);
+DECLARE_SOA_COLUMN(PY, py, std::vector<float>);
+DECLARE_SOA_COLUMN(PZ, pz, std::vector<float>);
+DECLARE_SOA_COLUMN(ISELEC, iselec, std::vector<int>);
+DECLARE_SOA_COLUMN(ISMUON, ismuon, std::vector<int>);
+DECLARE_SOA_COLUMN(ISPION, ispion, std::vector<int>);
+DECLARE_SOA_COLUMN(ISKAON, iskaon, std::vector<int>);
+DECLARE_SOA_COLUMN(ISPROTON, isproton, std::vector<int>);
+} // namespace excl_fs
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(Excl_fs, "AOD", "EXCL_FS",
                   excl_fs::GS, excl_fs::PV, excl_fs::ZA, excl_fs::ZC, excl_fs::SIGN, excl_fs::PX, excl_fs::PY, excl_fs::PZ, excl_fs::ISELEC, excl_fs::ISMUON, excl_fs::ISPION, excl_fs::ISKAON, excl_fs::ISPROTON);
 }
 struct SGSpectraAnalyzer {
@@ -59,7 +61,7 @@ struct SGSpectraAnalyzer {
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   Configurable<bool> use_tof{"Use_TOF", true, "TOF PID"};
-  //Track Selections
+  // Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -210,9 +212,9 @@ struct SGSpectraAnalyzer {
   */
   void process(UDCollisionFull const& collision, udtracksfull const& tracks)
   {
-    const float mpion = pdg->Mass(211);  
-    const float mkaon = pdg->Mass(321);  
-    const float mproton = pdg->Mass(2212);  
+    const float mpion = pdg->Mass(211);
+    const float mkaon = pdg->Mass(321);
+    const float mproton = pdg->Mass(2212);
     TLorentzVector a;
     TLorentzVector am;
     TLorentzVector sum;
