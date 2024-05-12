@@ -38,12 +38,12 @@ DECLARE_SOA_COLUMN(SIGN, sign, std::vector<int>);
 DECLARE_SOA_COLUMN(PX, px, std::vector<float>);
 DECLARE_SOA_COLUMN(PY, py, std::vector<float>);
 DECLARE_SOA_COLUMN(PZ, pz, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCPION, tpcpion, std::vector<int>);
-DECLARE_SOA_COLUMN(TPCKAON, tpckaon, std::vector<int>);
-DECLARE_SOA_COLUMN(TPCPROTON, tpcproton, std::vector<int>);
-DECLARE_SOA_COLUMN(TOFPION, tofpion, std::vector<int>);
-DECLARE_SOA_COLUMN(TOFKAON, tofkaon, std::vector<int>);
-DECLARE_SOA_COLUMN(TOFPROTON, tofproton, std::vector<int>);
+DECLARE_SOA_COLUMN(TPCPION, tpcpion, std::vector<float>);
+DECLARE_SOA_COLUMN(TPCKAON, tpckaon, std::vector<floatt>);
+DECLARE_SOA_COLUMN(TPCPROTON, tpcproton, std::vector<float>);
+DECLARE_SOA_COLUMN(TOFPION, tofpion, std::vector<float>);
+DECLARE_SOA_COLUMN(TOFKAON, tofkaon, std::vector<float>);
+DECLARE_SOA_COLUMN(TOFPROTON, tofproton, std::vector<float>);
 } // namespace pid_spectra
 namespace o2::aod
 {
