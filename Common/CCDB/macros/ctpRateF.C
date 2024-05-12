@@ -110,7 +110,8 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, ui
     }
   }
   if (classIndex == -1) {
-    LOG(fatal) << "Trigger class " << className << " not found in CTPConfiguration";
+    LOG(warn) << "Trigger class " << className << " not found in CTPConfiguration";
+    return -1;
   }
   auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType)};
   getLHCIFdata(ccdb, timeStamp, runNumber);
@@ -132,7 +133,15 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
     if (runNumber < 534202) {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0", 3); // 2022
     } else {
-      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF");
+      double_t ret = fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF");
+      if( ret < 0. ) {
+        LOG(info) << "Trying different class";
+        ret = fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-NONE");
+        if(ret < 0) {
+          LOG(fatal) << "None of the classes used for lumi found";
+        }
+      }
+      return ret;
     }
   }
   LOG(error) << "CTP rate for " << sourceName << " not available";
