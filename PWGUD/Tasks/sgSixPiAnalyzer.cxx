@@ -16,6 +16,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
@@ -34,19 +35,17 @@ using namespace o2::aod;
 // using namespace o2::aod::track::v001;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-#define mpion 0.1396
-#define mkaon 0.4937
-#define mproton 0.9383
 struct SGSixPiAnalyzer {
   SGSelector sgSelector;
-  // Adjusted Gap thresholds
+  Service<o2::framework::O2DatabasePDG> pdg;
+  //Adjusted Gap thresholds
   Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
   Configurable<float> FT0A_cut{"FT0A", 150., "FT0A threshold"};
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
-  // Track Selections
+  //Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -94,6 +93,7 @@ struct SGSixPiAnalyzer {
 
   void process(UDCollisionFull const& collision, udtracksfull const& tracks)
   {
+    const float mpion = pdg->Mass(211);  
     TLorentzVector a;
     int gapSide = collision.gapSide();
     if (gapSide < 0 || gapSide > 2)
