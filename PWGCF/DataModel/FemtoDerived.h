@@ -215,17 +215,37 @@ DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);
 DECLARE_SOA_COLUMN(PartPairSign, partPairSign, int8_t);
 DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);
 DECLARE_SOA_DYNAMIC_COLUMN(M, m, //!
-                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2, const std::array<double, 3>& m) -> float { return RecoDecay::m(std::array{std::array{pt0 * std::cos(phi0), pt0 * std::sin(phi0), pt0 * std::sinh(eta0)}, std::array{pt1 * std::cos(phi1), pt1 * std::sin(phi1), pt1 * std::sinh(eta1)}, std::array{pt2 * std::cos(phi2), pt2 * std::sin(phi2), pt2 * std::sinh(eta2)}}, m); });
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2, const std::array<double, 3>& m) -> float { return RecoDecay::m(std::array{
+                                                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2)},
+                                                                                                                                                                                                      m); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
-                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::p(RecoDecay::pVec(std::array{pt0 * std::cos(phi0), pt0 * std::sin(phi0), pt0 * std::sinh(eta0)}, std::array{pt1 * std::cos(phi1), pt1 * std::sin(phi1), pt1 * std::sinh(eta1)}, std::array{pt2 * std::cos(phi2), pt2 * std::sin(phi2), pt2 * std::sinh(eta2)})); });
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::p(RecoDecay::pVec(
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2))); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
-                           [](float pt0, float phi0, float pt1, float phi1, float pt2, float phi2) -> float { return RecoDecay::pt(std::array{pt0 * std::cos(phi0), pt0 * std::sin(phi0)}, std::array{pt1 * std::cos(phi1), pt1 * std::sin(phi1)}, std::array{pt2 * std::cos(phi2), pt2 * std::sin(phi2)}); });
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::pt(RecoDecay::pVec(
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2))); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //!
-                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::phi(std::array{(pt0 * std::cos(phi0) + pt1 * std::cos(phi1) + pt2 * std::cos(phi2)), (pt0 * std::sin(phi0) + pt1 * std::sin(phi1) + pt2 * std::sin(phi2)), (pt0 * std::sinh(eta0) + pt1 * std::sinh(eta1) + pt2 * std::sinh(eta2))}); });
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::phi(RecoDecay::pVec(
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2))); });
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //!
-                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::y(std::array{(pt0 * std::cos(phi0) + pt1 * std::cos(phi1) + pt2 * std::cos(phi2)), (pt0 * std::sin(phi0) + pt1 * std::sin(phi1) + pt2 * std::sin(phi2)), (pt0 * std::sinh(eta0) + pt1 * std::sinh(eta1) + pt2 * std::sinh(eta2))}, o2::constants::physics::MassLambdaCPlus); });
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::y(RecoDecay::pVec(
+                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                                        RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2)),
+                                                                                                                                                                      o2::constants::physics::MassLambdaCPlus); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //!
-                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::eta(std::array{(pt0 * std::cos(phi0) + pt1 * std::cos(phi1) + pt2 * std::cos(phi2)), (pt0 * std::sin(phi0) + pt1 * std::sin(phi1) + pt2 * std::sin(phi2)), (pt0 * std::sinh(eta0) + pt1 * std::sinh(eta1) + pt2 * std::sinh(eta2))}); });
+                           [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2) -> float { return RecoDecay::eta(RecoDecay::pVec(
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt1, eta1, phi1),
+                                                                                                                                                    RecoDecayPtEtaPhi::pVector(pt2, eta2, phi2))); });
 
 } // namespace fdhf
 
@@ -254,7 +274,7 @@ DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND",
                   fdhf::Y<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Eta<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
-                  fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong2Pt, fdhf::Prong2Phi>);
+                  fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
 DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF",
                   fdhf::CharmM,

@@ -13,10 +13,10 @@
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Ravindra SIngh, GSI, ravindra.singh@cern.ch
 
-#include <Framework/Expressions.h>
-#include <sys/stat.h>
-#include <cstdint>
+//#include <sys/stat.h>
+//#include <cstdint>
 #include <vector>
+#include <Framework/Expressions.h>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -97,7 +97,7 @@ struct femtoDreamPairTaskTrackHF {
   Configurable<float> ConfHF_fdBDT{"ConfHF_fdBDT", 0., "Minimum feed-down bdt score Charm Hadron (particle 2)"};
   Configurable<float> ConfHF_bkgBDT{"ConfHF_bkgBDT", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
 
-  Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= ConfHF_CandSel;
+  Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= ConfHF_CandSel.value;
 
   using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex>>;
   using FilteredFDParticle = FilteredFDParticles::iterator;
@@ -208,7 +208,6 @@ struct femtoDreamPairTaskTrackHF {
 
       trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
     }
-
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceCharmHad))) {
       float chargeTrack = 0.;
       if ((p1.cut() & 1) == 1) {
@@ -216,7 +215,6 @@ struct femtoDreamPairTaskTrackHF {
       } else {
         chargeTrack = -1;
       }
-
       if (chargeTrack != p2.charge())
         continue;
       float kstar = FemtoDreamMath::getkstar(p1, MassOne, p2, MassTwo);
@@ -271,7 +269,6 @@ struct femtoDreamPairTaskTrackHF {
 
   void processSameEvent(FilteredColision const& col, FilteredFDParticles const& parts, FilteredCharmCands const& candidates)
   {
-
     eventHisto.fillQA(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceCharmHad = PartitionHF->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -308,12 +305,7 @@ struct femtoDreamPairTaskTrackHF {
         } else {
           partSign = 1 << 1;
         }
-        // if(p2.candidateSelFlag()==1)std::cout<<p2.lcm(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus})<<"     "<<p2.m()<<std::endl;
-        // std::cout<<"mom "<<p2.lcp()<<"   "<<p2.p()<<std::endl;
-        // std::cout<<"pt "<<p2.lcpt()<<"   "<<p2.pt()<<std::endl;
-        // std::cout<<"Y "<<p2.lcy()<<"   "<<p2.y()<<std::endl;
-        // std::cout<<"Eta "<<p2.lceta()<<"   "<<p2.eta()<<std::endl;
-        // std::cout<<"Phi "<<p2.lcphi()<<"   "<<p2.phi()<<std::endl;
+
         float invMass;
         if (p2.candidateSelFlag() == 1) {
           invMass = p2.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});

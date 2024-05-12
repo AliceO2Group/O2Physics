@@ -41,54 +41,77 @@ class FemtoDreamDetaDphiStar
   /// Destructor
   virtual ~FemtoDreamDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii, int meORse = 0, bool oldversion = true)
+  // atWhichRadiiToCut - at which radii apply deta dphi cut; 0 - PV; 1 - average phi at given tpc radii, 2 - at 80 cm
+  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii, int meORse = 0, bool oldversion = true, float Q3Limit = 8., bool isMELambda = false, int atWhichRadiiToCut = 1, float radiiTPCtoCut = 85., bool fillTHSparse = false)
   {
     deltaPhiMax = ldeltaPhiMax;
     deltaEtaMax = ldeltaEtaMax;
     plotForEveryRadii = lplotForEveryRadii;
+    upperQ3LimitForPlotting = Q3Limit;
+    isMixedEventLambda = isMELambda;
     runOldVersion = oldversion;
     mHistogramRegistry = registry;
     mHistogramRegistryQA = registryQA;
-    std::string dirName;
+    atWhichRadiiToSelect = atWhichRadiiToCut;
+    radiiTPC = radiiTPCtoCut;
+    fillQA = fillTHSparse;
 
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
-      dirName = static_cast<std::string>(dirNames[0]);
-      histdetadpi[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-      histdetadpi[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      std::string dirName = static_cast<std::string>(dirNames[0]);
+      histdetadpi[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      histdetadpi[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      histdetadpi[0][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      histdetadpi[0][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
       if (plotForEveryRadii) {
         for (int i = 0; i < 9; i++) {
-          histdetadpiRadii[0][i] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+          histdetadpiRadii[0][i] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         }
+      }
+      if (fillQA) {
+        histdetadpi_eta[0] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+        histdetadpi_phi[0] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
       }
     }
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       for (int i = 0; i < 2; i++) {
-        dirName = static_cast<std::string>(dirNames[1]);
-        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        std::string dirName = static_cast<std::string>(dirNames[1]);
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         if (plotForEveryRadii) {
           for (int j = 0; j < 9; j++) {
-            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
           }
+        }
+        if (fillQA) {
+          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
         }
       }
     }
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
       for (int i = 0; i < 3; i++) {
-        dirName = static_cast<std::string>(dirNames[2]);
-        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        std::string dirName = static_cast<std::string>(dirNames[2]);
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         if (plotForEveryRadii) {
           for (int j = 0; j < 9; j++) {
             histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
           }
+        }
+        if (fillQA) {
+          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
         }
       }
     }
   }
   ///  Check if pair is close or not
   template <typename Part1, typename Part2, typename Parts>
-  bool isClosePair(Part1 const& part1, Part2 const& part2, Parts const& particles, float lmagfield)
+  bool isClosePair(Part1 const& part1, Part2 const& part2, Parts const& particles, float lmagfield, float Q3 = 999.)
   {
     magfield = lmagfield;
 
@@ -100,12 +123,69 @@ class FemtoDreamDetaDphiStar
         return false;
       }
       auto deta = part1.eta() - part2.eta();
-      auto dphiAvg = AveragePhiStar(part1, part2, 0);
-      histdetadpi[0][0]->Fill(deta, dphiAvg);
-      if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-        return true;
+      auto dphi_AT_PV = part1.phi() - part2.phi();
+      auto dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC(part2, radiiTPC);
+      bool sameCharge = false;
+      auto dphiAvg = AveragePhiStar(part1, part2, 0, &sameCharge);
+      if (Q3 == 999) {
+        histdetadpi[0][0]->Fill(deta, dphiAvg);
+        histdetadpi[0][2]->Fill(deta, dphi_AT_PV);
+        if (fillQA) {
+          histdetadpi_eta[0]->Fill(deta, dphiAvg, part1.eta(), part2.eta());
+          histdetadpi_phi[0]->Fill(deta, dphiAvg, part1.phi(), part2.phi());
+        }
+      } else if (Q3 < upperQ3LimitForPlotting) {
+        histdetadpi[0][0]->Fill(deta, dphiAvg);
+        histdetadpi[0][2]->Fill(deta, dphi_AT_PV);
+        if (fillQA) {
+          histdetadpi_eta[0]->Fill(deta, dphiAvg, part1.eta(), part2.eta());
+          histdetadpi_phi[0]->Fill(deta, dphiAvg, part1.phi(), part2.phi());
+        }
+      }
+      if (sameCharge) {
+        if (atWhichRadiiToSelect == 1) {
+          if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            return true;
+          } else {
+            if (Q3 == 999) {
+              histdetadpi[0][1]->Fill(deta, dphiAvg);
+              histdetadpi[0][3]->Fill(deta, dphi_AT_PV);
+            } else if (Q3 < upperQ3LimitForPlotting) {
+              histdetadpi[0][1]->Fill(deta, dphiAvg);
+              histdetadpi[0][3]->Fill(deta, dphi_AT_PV);
+            }
+            return false;
+          }
+        } else if (atWhichRadiiToSelect == 0) {
+          if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            return true;
+          } else {
+            if (Q3 == 999) {
+              histdetadpi[0][1]->Fill(deta, dphiAvg);
+              histdetadpi[0][3]->Fill(deta, dphi_AT_PV);
+            } else if (Q3 < upperQ3LimitForPlotting) {
+              histdetadpi[0][1]->Fill(deta, dphiAvg);
+              histdetadpi[0][3]->Fill(deta, dphi_AT_PV);
+            }
+            return false;
+          }
+        } else if (atWhichRadiiToSelect == 2) {
+          if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            return true;
+          } else {
+            if (Q3 == 999) {
+              histdetadpi[0][1]->Fill(deta, dphiAvg);
+              histdetadpi[0][3]->Fill(deta, dphi_AT_PV);
+            } else if (Q3 < upperQ3LimitForPlotting) {
+              histdetadpi[0][1]->Fill(deta, dphiAvg);
+              histdetadpi[0][3]->Fill(deta, dphi_AT_PV);
+            }
+            return false;
+          }
+        } else {
+          return true;
+        }
       } else {
-        histdetadpi[0][1]->Fill(deta, dphiAvg);
         return false;
       }
 
@@ -119,15 +199,71 @@ class FemtoDreamDetaDphiStar
 
       bool pass = false;
       for (int i = 0; i < 2; i++) {
-        auto indexOfDaughter = part2.index() - 2 + i;
+        int indexOfDaughter;
+        if (isMixedEventLambda) {
+          indexOfDaughter = part2.globalIndex() - 2 + i;
+        } else {
+          indexOfDaughter = part2.index() - 2 + i;
+        }
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
-        auto dphiAvg = AveragePhiStar(part1, *daughter, i);
-        histdetadpi[i][0]->Fill(deta, dphiAvg);
-        if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-          pass = true;
-        } else {
-          histdetadpi[i][1]->Fill(deta, dphiAvg);
+        auto dphi_AT_PV = part1.phi() - daughter.phi();
+        auto dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC(daughter, radiiTPC);
+        bool sameCharge = false;
+        auto dphiAvg = AveragePhiStar(part1, *daughter, i, &sameCharge);
+        if (Q3 == 999) {
+          histdetadpi[i][0]->Fill(deta, dphiAvg);
+          histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
+          if (fillQA) {
+            histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughter.eta());
+            histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughter.phi());
+          }
+        } else if (Q3 < upperQ3LimitForPlotting) {
+          histdetadpi[i][0]->Fill(deta, dphiAvg);
+          histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
+          if (fillQA) {
+            histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughter.eta());
+            histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughter.phi());
+          }
+        }
+        if (sameCharge) {
+          if (atWhichRadiiToSelect == 1) {
+            if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              pass = true;
+            } else {
+              if (Q3 == 999) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              } else if (Q3 < upperQ3LimitForPlotting) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              }
+            }
+          } else if (atWhichRadiiToSelect == 0) {
+            if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              pass = true;
+            } else {
+              if (Q3 == 999) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              } else if (Q3 < upperQ3LimitForPlotting) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              }
+            }
+          } else if (atWhichRadiiToSelect == 2) {
+            if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              pass = true;
+            } else {
+              if (Q3 == 999) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              } else if (Q3 < upperQ3LimitForPlotting) {
+                histdetadpi[i][1]->Fill(deta, dphiAvg);
+                histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+              }
+            }
+          }
         }
       }
       return pass;
@@ -141,22 +277,29 @@ class FemtoDreamDetaDphiStar
       bool pass = false;
 
       for (int i = 0; i < 3; ++i) {
-        double deta, dphiAvg;
+        double deta, dphiAvg, dphi_AT_PV, dphi_AT_SpecificRadii;
+        bool sameCharge = false;
 
         switch (i) {
           case 0:
             deta = part1.eta() - part2.prong0Eta();
-            dphiAvg = AveragePhiStar<true>(part1, part2, 0);
+            dphi_AT_PV = part1.phi() - part2.prong0Phi();
+            dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 0>(part2, radiiTPC);
+            dphiAvg = AveragePhiStar<true>(part1, part2, 0, &sameCharge);
             histdetadpi[0][0]->Fill(deta, dphiAvg);
             break;
           case 1:
             deta = part1.eta() - part2.prong1Eta();
-            dphiAvg = AveragePhiStar<true>(part1, part2, 1);
+            dphi_AT_PV = part1.phi() - part2.prong1Phi();
+            dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 1>(part2, radiiTPC);
+            dphiAvg = AveragePhiStar<true>(part1, part2, 1, &sameCharge);
             histdetadpi[1][0]->Fill(deta, dphiAvg);
             break;
           case 2:
             deta = part1.eta() - part2.prong2Eta();
-            dphiAvg = AveragePhiStar<true>(part1, part2, 2);
+            dphi_AT_PV = part1.phi() - part2.prong2Phi();
+            dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 2>(part2, radiiTPC);
+            dphiAvg = AveragePhiStar<true>(part1, part2, 2, &sameCharge);
             histdetadpi[2][0]->Fill(deta, dphiAvg);
             break;
         }
@@ -210,22 +353,29 @@ class FemtoDreamDetaDphiStar
   float deltaEtaMax;
   float magfield;
   bool plotForEveryRadii = false;
+  bool isMixedEventLambda = false;
+  float upperQ3LimitForPlotting = 8.;
+  int atWhichRadiiToSelect = 1;
+  float radiiTPC = 85.;
+  bool fillQA = false;
   // a possible bug was found, but this must be tested on hyperloop with larger statistics
   // possiboility to run old code is turned on so a proper comparison of both code versions can be done
   bool runOldVersion = true;
 
-  std::array<std::array<std::shared_ptr<TH2>, 2>, 3> histdetadpi{};
+  std::array<std::array<std::shared_ptr<TH2>, 4>, 3> histdetadpi{};
   std::array<std::array<std::shared_ptr<TH2>, 9>, 3> histdetadpiRadii{};
+  std::array<std::shared_ptr<THnSparse>, 3> histdetadpi_eta{};
+  std::array<std::shared_ptr<THnSparse>, 3> histdetadpi_phi{};
 
   ///  Calculate phi at all required radii stored in tmpRadiiTPC
   /// Magnetic field to be provided in Tesla
   template <typename T>
-  void PhiAtRadiiTPC(const T& part, std::vector<float>& tmpVec)
+  int PhiAtRadiiTPC(const T& part, std::vector<float>& tmpVec)
   {
 
     float phi0 = part.phi();
     // Start: Get the charge from cutcontainer using masks
-    float charge = 0.;
+    int charge = 0.;
     if ((part.cut() & kSignMinusMask) == kValue0 && (part.cut() & kSignPlusMask) == kValue0) {
       charge = 0;
     } else if ((part.cut() & kSignPlusMask) == kSignPlusMask) {
@@ -251,10 +401,64 @@ class FemtoDreamDetaDphiStar
         }
       }
     }
+    return charge;
+  }
+
+  ///  Calculate phi at specific radii
+  /// Magnetic field to be provided in Tesla
+  template <bool isHF = false, int prong = 0, typename T>
+  float PhiAtSpecificRadiiTPC(const T& part, float radii)
+  {
+    // Start: Get the charge from cutcontainer using masks
+    int charge = 0;
+    float phi0, pt;
+    if constexpr (isHF) {
+      if (prong == 0) {
+        charge = part.charge();
+        phi0 = part.prong0Phi();
+        pt = part.prong0Pt();
+      } else if (prong == 1) {
+        charge = -part.charge();
+        phi0 = part.prong1Phi();
+        pt = part.prong1Pt();
+      } else {
+        charge = part.charge();
+        phi0 = part.prong2Phi();
+        pt = part.prong2Pt();
+      }
+    } else {
+      phi0 = part.phi();
+      if ((part.cut() & kSignMinusMask) == kValue0 && (part.cut() & kSignPlusMask) == kValue0) {
+        charge = 0;
+      } else if ((part.cut() & kSignPlusMask) == kSignPlusMask) {
+        charge = 1;
+      } else if ((part.cut() & kSignMinusMask) == kSignMinusMask) {
+        charge = -1;
+      } else {
+        LOG(fatal) << "FemtoDreamDetaDphiStar: Charge bits are set wrong!";
+      }
+      pt = part.pt();
+    }
+    // End: Get the charge from cutcontainer using masks
+    float phiAtRadii = 0;
+    if (runOldVersion) {
+      phiAtRadii = phi0 - std::asin(0.3 * charge * 0.1 * magfield * radii * 0.01 / (2. * pt));
+    }
+    if (!runOldVersion) {
+      auto arg = 0.3 * charge * magfield * radii * 0.01 / (2. * pt);
+      // for very low pT particles, this value goes outside of range -1 to 1 at at large tpc radius; asin fails
+      if (abs(arg) < 1) {
+        phiAtRadii = phi0 - std::asin(0.3 * charge * magfield * radii * 0.01 / (2. * pt));
+      } else {
+        phiAtRadii = 999.;
+      }
+    }
+
+    return phiAtRadii;
   }
 
   template <typename T>
-  void PhiAtRadiiTPCForHF(const T& part, std::vector<float>& tmpVec, int prong)
+  int PhiAtRadiiTPCForHF(const T& part, std::vector<float>& tmpVec, int prong)
   {
     int charge = 0;
     float pt = -999.;
@@ -263,41 +467,54 @@ class FemtoDreamDetaDphiStar
       case 0:
         pt = part.prong0Pt();
         phi0 = part.prong0Phi();
-        charge = (part.charge() == 1) ? 1 : -1;
+        charge = part.charge();
         break;
       case 1:
         pt = part.prong1Pt();
         phi0 = part.prong1Phi();
-        charge = (part.charge() == 1) ? -1 : 1;
+        charge = -part.charge();
         break;
       case 2:
         pt = part.prong2Pt();
         phi0 = part.prong2Phi();
-        charge = (part.charge() == 1) ? 1 : -1;
+        charge = part.charge();
         break;
       default:
         // Handle invalid prong value
         break;
     }
-
-    // Calculate a common factor outside the loop to improve efficiency
-    float commonFactor = std::asin(0.3 * charge * 0.1 * magfield * 0.01 / (2. * pt));
     for (size_t i = 0; i < 9; i++) {
-      tmpVec.push_back(phi0 - commonFactor * tmpRadiiTPC[i]);
+      if (runOldVersion) {
+        tmpVec.push_back(phi0 - std::asin(0.3 * charge * 0.1 * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt)));
+      }
+      if (!runOldVersion) {
+        auto arg = 0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt);
+        // for very low pT particles, this value goes outside of range -1 to 1 at at large tpc radius; asin fails
+        if (abs(arg) < 1) {
+          tmpVec.push_back(phi0 - std::asin(0.3 * charge * magfield * tmpRadiiTPC[i] * 0.01 / (2. * pt)));
+        } else {
+          tmpVec.push_back(999);
+        }
+      }
     }
+    return charge;
   }
 
   ///  Calculate average phi
   template <bool isHF = false, typename T1, typename T2>
-  float AveragePhiStar(const T1& part1, const T2& part2, int iHist)
+  float AveragePhiStar(const T1& part1, const T2& part2, int iHist, bool* sameCharge)
   {
     std::vector<float> tmpVec1;
     std::vector<float> tmpVec2;
-    PhiAtRadiiTPC(part1, tmpVec1);
-    if constexpr (isHF) {
-      PhiAtRadiiTPCForHF(part2, tmpVec2, iHist);
+    auto charge1 = PhiAtRadiiTPC(part1, tmpVec1);
+    if constexpr (!isHF) {
+      auto charge2 = PhiAtRadiiTPC(part2, tmpVec2);
+      if (charge1 == charge2) {
+        *sameCharge = true;
+      }
     } else {
-      PhiAtRadiiTPC(part2, tmpVec2);
+      PhiAtRadiiTPCForHF(part2, tmpVec2, iHist);
+      *sameCharge = true;
     }
     int num = tmpVec1.size();
     int meaningfulEntries = num;
