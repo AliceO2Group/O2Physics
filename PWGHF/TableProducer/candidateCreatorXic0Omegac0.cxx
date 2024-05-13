@@ -670,7 +670,10 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   Produces<aod::HfToOmegaKMCRec> rowMCMatchRecToOmegaK;
   Produces<aod::HfToOmegaKMCGen> rowMCMatchGenToOmegaK;
 
+  Configurable<bool> rejGenTFAndITSROFBorders{"rejGenTFAndITSROFBorders", true, "Reject generated particles coming from bc close to TF and ITSROF borders"};
   float zPvPosMax{1000.f};
+
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
@@ -694,7 +697,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                         aod::TracksWMc const&,
                         aod::McParticles const& mcParticles,
                         aod::McCollisions const&,
-                        aod::McCollisionLabels const&)
+                        aod::McCollisionLabels const&,
+                        BCsInfo const&)
   {
     float ptCharmBaryonGen = -999.;
     float etaCharmBaryonGen = -999.;
@@ -890,6 +894,23 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       debugGenLambda = 0;
       origin = RecoDecay::OriginType::None;
 
+      // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
+      if (rejGenTFAndITSROFBorders) {
+        auto coll = particle.mcCollision_as<aod::McCollisions>();
+        auto bc = coll.bc_as<BCsInfo>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
+            rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
+          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
+            rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
+          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
+            rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
+          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
+            rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
+          }
+        }
+      }
+
       auto mcCollision = particle.mcCollision();
       float zPv = mcCollision.posZ();
       if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
@@ -1046,9 +1067,10 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                           aod::TracksWMc const& tracks,
                           aod::McParticles const& mcParticles,
                           aod::McCollisions const& mcColls,
-                          aod::McCollisionLabels const& mcLabels)
+                          aod::McCollisionLabels const& mcLabels,
+                          BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, mcColls, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, mcColls, mcLabels, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPi, "Run Xic0 to xi pi MC process function", false);
 
@@ -1056,9 +1078,10 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                              aod::TracksWMc const& tracks,
                              aod::McParticles const& mcParticles,
                              aod::McCollisions const& mcColls,
-                             aod::McCollisionLabels const& mcLabels)
+                             aod::McCollisionLabels const& mcLabels,
+                             BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, mcColls, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, mcColls, mcLabels, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToXiPi, "Run Omegac0 to xi pi MC process function", false);
 
@@ -1066,9 +1089,10 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                                 aod::TracksWMc const& tracks,
                                 aod::McParticles const& mcParticles,
                                 aod::McCollisions const& mcColls,
-                                aod::McCollisionLabels const& mcLabels)
+                                aod::McCollisionLabels const& mcLabels,
+                                BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, mcColls, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, mcColls, mcLabels, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaPi, "Run Omegac0 to omega pi MC process function", false);
 
@@ -1076,9 +1100,10 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                                aod::TracksWMc const& tracks,
                                aod::McParticles const& mcParticles,
                                aod::McCollisions const& mcColls,
-                               aod::McCollisionLabels const& mcLabels)
+                               aod::McCollisionLabels const& mcLabels,
+                               BCsInfo const& bcs)
   {
-    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, mcColls, mcLabels);
+    runXic0Omegac0Mc<aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, mcColls, mcLabels, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcOmegacToOmegaK, "Run Omegac0 to omega K MC process function", false);
 

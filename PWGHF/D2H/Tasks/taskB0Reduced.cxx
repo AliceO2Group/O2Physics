@@ -592,9 +592,6 @@ struct HfTaskB0Reduced {
                    TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -608,9 +605,6 @@ struct HfTaskB0Reduced {
                              TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -624,9 +618,6 @@ struct HfTaskB0Reduced {
                            TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -642,9 +633,6 @@ struct HfTaskB0Reduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -665,9 +653,6 @@ struct HfTaskB0Reduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -688,9 +673,6 @@ struct HfTaskB0Reduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -711,9 +693,6 @@ struct HfTaskB0Reduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -734,9 +713,6 @@ struct HfTaskB0Reduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
