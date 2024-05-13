@@ -2563,12 +2563,12 @@ struct qaMatchEff {
             }
           }
           /// control plot: correlation # ITS its vs ITS layer
-          int itsNhits = 0;
-          for (unsigned int i = 0; i < 7; i++) {
-            if (track.itsClusterMap() & (1 << i)) {
-              itsNhits += 1;
-            }
-          }
+          //          int itsNhits = 0;
+          // for (unsigned int i = 0; i < 7; i++) {
+          //   if (track.itsClusterMap() & (1 << i)) {
+          //     itsNhits += 1;
+          //   }
+          // }
           bool trkHasITS = false;
           for (unsigned int i = 0; i < 7; i++) {
             if (track.itsClusterMap() & (1 << i)) {
