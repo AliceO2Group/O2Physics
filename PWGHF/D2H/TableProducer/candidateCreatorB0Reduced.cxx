@@ -193,8 +193,7 @@ struct HfCandidateCreatorB0Reduced {
                          pVecD[0], pVecD[1], pVecD[2],
                          pVecPion[0], pVecPion[1], pVecPion[2],
                          dcaD.getY(), dcaPion.getY(),
-                         std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
-                         BIT(hf_cand_b0::DecayType::B0ToDPi));
+                         std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
 
         rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
 

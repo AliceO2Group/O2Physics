@@ -164,7 +164,6 @@ struct HfTaskBplus {
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
-
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -206,7 +205,6 @@ struct HfTaskBplus {
   {
     // MC rec
     for (const auto& candidate : selectedBPlusCandidatesMC) {
-
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
