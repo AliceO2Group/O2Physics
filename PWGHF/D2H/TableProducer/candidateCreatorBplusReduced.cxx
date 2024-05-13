@@ -177,8 +177,6 @@ struct HfCandidateCreatorBplusReduced {
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-        int hfFlag = BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
-
         // fill the candidate table for the B+ here:
         rowCandidateBase(collision.globalIndex(),
                          collision.posX(), collision.posY(), collision.posZ(),
@@ -188,16 +186,16 @@ struct HfCandidateCreatorBplusReduced {
                          pVecD0[0], pVecD0[1], pVecD0[2],
                          pVecPion[0], pVecPion[1], pVecPion[2],
                          dcaD0.getY(), dcaPion.getY(),
-                         std::sqrt(dcaD0.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
-                         hfFlag);
+                         std::sqrt(dcaD0.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
 
         rowCandidateProngs(candD0.globalIndex(), trackPion.globalIndex());
 
         if constexpr (withDmesMl) {
-          if (trackPion.signed1Pt() < 0)
+          if (trackPion.signed1Pt() < 0) {
             rowCandidateDmesMlScores(candD0.mlScoreBkgMassHypo0(), candD0.mlScorePromptMassHypo0(), candD0.mlScoreNonpromptMassHypo0());
-          else
+          } else {
             rowCandidateDmesMlScores(candD0.mlScoreBkgMassHypo1(), candD0.mlScorePromptMassHypo1(), candD0.mlScoreNonpromptMassHypo1());
+          }
         }
       } // pi loop
     }   // D0 loop

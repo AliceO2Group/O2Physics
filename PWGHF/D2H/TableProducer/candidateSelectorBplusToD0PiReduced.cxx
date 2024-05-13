@@ -38,7 +38,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
-  Configurable<int> usePionPid{"usePionPid", 1, "Switch for PID selection for the bachelor pion (0: none, 1: TPC or TOF, 2: TPC and TOF)"};
+  Configurable<int> pionPidMethod{"pionPidMethod", 1, "PID selection method for the bachelor pion (0: none, 1: TPC or TOF, 2: TPC and TOF)"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
@@ -94,11 +94,11 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       LOGP(fatal, "Only one process function for data should be enabled at a time.");
     }
 
-    if (usePionPid < 0 || usePionPid > 2) {
+    if (pionPidMethod < 0 || pionPidMethod > 2) {
       LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
     }
 
-    if (usePionPid) {
+    if (pionPidMethod) {
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -154,18 +154,6 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       int statusBplus = 0;
       auto ptCandBplus = hfCandBp.pt();
 
-      // check if flagged as B+ → D0 π
-      if (!TESTBIT(hfCandBp.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
-        hfSelBplusToD0PiCandidate(statusBplus);
-        if (applyBplusMl) {
-          hfMlBplusToD0PiCandidate(outputMlNotPreselected);
-        }
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 1, ptCandBplus);
-        }
-        // LOGF(info, "B+ candidate selection failed at hfflag check");
-        continue;
-      }
       SETBIT(statusBplus, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusBplus = 1
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandBplus);
@@ -199,9 +187,9 @@ struct HfCandidateSelectorBplusToD0PiReduced {
 
       // track-level PID selection
       auto trackPi = hfCandBp.template prong1_as<TracksPion>();
-      if (usePionPid) {
+      if (pionPidMethod) {
         int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
-        if (usePionPid == 1) {
+        if (pionPidMethod == 1) {
           pidTrackPi = selectorPion.statusTpcOrTof(trackPi);
         } else {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
@@ -229,7 +217,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
           hfSelBplusToD0PiCandidate(statusBplus);
           continue;
         }
-        SETBIT(statusBplus, SelectionStep::RecoMl); // RecoML = 3 --> statusBplus = 15 if usePionPid, 11 otherwise
+        SETBIT(statusBplus, SelectionStep::RecoMl); // RecoML = 3 --> statusBplus = 15 if pionPidMethod, 11 otherwise
         if (activateQA) {
           registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoMl, ptCandBplus);
         }
