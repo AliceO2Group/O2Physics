@@ -624,7 +624,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCDWeighted, "jet finder QA mcd with weighted events", false);
 
-  void processJetsMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, JetParticles const&, JetMcCollisions const &, soa::Filtered<JetCollisionsMCD> const& collisions)
+  void processJetsMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, JetParticles const&, JetMcCollisions const&, soa::Filtered<JetCollisionsMCD> const& collisions)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -637,7 +637,7 @@ struct JetFinderQATask {
       for (auto const& collision : collisions) {
         if (collision.mcCollision().globalIndex() == jet.mcCollision().globalIndex()) {
           isMatchFound = true;
-          break; 
+          break;
         }
       }
       if (!isMatchFound) {
@@ -648,7 +648,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCP, "jet finder QA mcp", false);
 
-  void processJetsMCPWeighted(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights>::iterator const& jet, JetParticles const&, JetMcCollisions const &, soa::Filtered<JetCollisionsMCD> const& collisions)
+  void processJetsMCPWeighted(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights>::iterator const& jet, JetParticles const&, JetMcCollisions const&, soa::Filtered<JetCollisionsMCD> const& collisions)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -667,7 +667,7 @@ struct JetFinderQATask {
       for (auto const& collision : collisions) {
         if (collision.mcCollision().globalIndex() == jet.mcCollision().globalIndex()) {
           isMatchFound = true;
-          break; 
+          break;
         }
       }
       if (!isMatchFound) {
