@@ -972,7 +972,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         int nbins_ptee = sizeof(ptee_bins) / sizeof(*ptee_bins) - 1;
 
         // binning for phiv:
-        // every 0.2 GeV/c from 0 to 10 GeV/c
+        // steps of size pi/100
         double phiv_bins[101];
         for (int i = 0; i <= 100; i++)
           phiv_bins[i] = TMath::Pi() / 100. * i;
