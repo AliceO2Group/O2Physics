@@ -74,6 +74,7 @@ struct findableStudy {
 
   // master PDG code selection
   Configurable<int> pdgCode{"pdgCode", 310, "PDG code to select"};
+  Configurable<bool> skipITSonly{"skipITSonly", true, "skip reco V0s if an ITS-only (no TPC) prong present"};
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality"};
@@ -110,48 +111,43 @@ struct findableStudy {
 
     // Duplicate counting
     histos.add("hNRecoV0s", "hNRecoV0s", kTH1D, {{50, -0.5, 49.5f}});
+    histos.add("hNRecoV0sWithTPC", "hNRecoV0sWithTPC", kTH1D, {{50, -0.5, 49.5f}});
     histos.add("hNRecoV0sWrongColl", "hNRecoV0sWrongColl", kTH1D, {{50, -0.5, 49.5f}});
 
-    // Findable versus found
-    histos.add("h2dPtVsCentrality_All_Findable", "hPtVsCentrality_All_Findable", kTH2D, {axisCentrality, axisPt});
-    histos.add("h2dPtVsCentrality_All_Found", "hPtVsCentrality_All_Found", kTH2D, {axisCentrality, axisPt});
+    // For broad correctness check
+    histos.add("hFoundVsTracksOK", "hFoundVsTracksOK", kTH2D, {{2, -0.5, 1.5f}, {2, -0.5, 1.5f}});
 
-    // binary feature study: encode in Y axis
-    // 0 - positive and negative don't have feature
-    // 1 - positive has, negative doesn't
-    // 2 - negative has, positive doesn't
-    // 3 - both positive and negative have feature
-    //
-    // all binary feature presence tests are done such that the "has feature" condition
-    // is evaluated such that out of any reco V0s, at least one V0 has the desired feature.
-    // this is required for generality
+    // Global findable
+    histos.add("h2dPtVsCentrality_Findable", "hPtVsCentrality_Findable", kTH2D, {axisCentrality, axisPt});
 
-    const AxisSpec axisBinaryFeature{static_cast<int>(4), -0.5f, +3.5f, ""};
-    histos.add("h3dPtVsCentrality_WithTPC_Findable", "h3dPtVsCentrality_WithTPC_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h3dPtVsCentrality_WithTPC_Found", "h3dPtVsCentrality_WithTPC_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h3dPtVsCentrality_WithITSTracker_Findable", "h3dPtVsCentrality_WithITSTracker_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h3dPtVsCentrality_WithITSTracker_Found", "h3dPtVsCentrality_WithITSTracker_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h3dPtVsCentrality_WithITSTrackerTPC_Findable", "h3dPtVsCentrality_WithITSTrackerTPC_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h3dPtVsCentrality_WithITSTrackerTPC_Found", "h3dPtVsCentrality_WithITSTrackerTPC_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h3dPtVsCentrality_WithITSABTPC_Findable", "h3dPtVsCentrality_WithITSABTPC_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h3dPtVsCentrality_WithITSABTPC_Found", "h3dPtVsCentrality_WithITSABTPC_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h3dPtVsCentrality_WithSVertexerOK_Findable", "h3dPtVsCentrality_WithSVertexerOK_Findable", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
-    histos.add("h3dPtVsCentrality_WithSVertexerOK_Found", "h3dPtVsCentrality_WithSVertexerOK_Found", kTH3D, {axisCentrality, axisPt, axisBinaryFeature});
+    // Acceptably (for svertexer) tracked
+    histos.add("h2dPtVsCentrality_AcceptablyTracked", "h2dPtVsCentrality_AcceptablyTracked", kTH2D, {axisCentrality, axisPt});
 
-    // Pass topological criteria - N.B. this is cumulative, no need for 2 prong encoding above
-    histos.add("h2dPtVsCentrality_Analysis_PassesTrackQuality", "h2dPtVsCentrality_Analysis_PassesTrackQuality", kTH2D, {axisCentrality, axisPt});
-    histos.add("h2dPtVsCentrality_Analysis_PassesTopological", "h2dPtVsCentrality_Analysis_PassesTopological", kTH2D, {axisCentrality, axisPt});
-    histos.add("h2dPtVsCentrality_Analysis_PassesThisSpecies", "h2dPtVsCentrality_Analysis_PassesThisSpecies", kTH2D, {axisCentrality, axisPt});
+    // Found in any capacity, including ITSonly
+    histos.add("h2dPtVsCentrality_FoundAny", "h2dPtVsCentrality_FoundAny", kTH2D, {axisCentrality, axisPt});
 
-    // one-on-one test
-    histos.add("h2dPtVsCentrality_Analysis_Topo_V0Radius", "h2dPtVsCentrality_Analysis_Topo_V0Radius", kTH2D, {axisCentrality, axisPt});
-    histos.add("h2dPtVsCentrality_Analysis_Topo_V0RadiusMax", "h2dPtVsCentrality_Analysis_Topo_V0RadiusMax", kTH2D, {axisCentrality, axisPt});
-    histos.add("h2dPtVsCentrality_Analysis_Topo_V0CosPA", "h2dPtVsCentrality_Analysis_Topo_V0CosPA", kTH2D, {axisCentrality, axisPt});
-    histos.add("h2dPtVsCentrality_Analysis_Topo_DcaPosToPV", "h2dPtVsCentrality_Analysis_Topo_DcaPosToPV", kTH2D, {axisCentrality, axisPt});
-    histos.add("h2dPtVsCentrality_Analysis_Topo_DcaNegToPV", "h2dPtVsCentrality_Analysis_Topo_DcaNegToPV", kTH2D, {axisCentrality, axisPt});
-    histos.add("h2dPtVsCentrality_Analysis_Topo_DcaV0Dau", "h2dPtVsCentrality_Analysis_Topo_DcaV0Dau", kTH2D, {axisCentrality, axisPt});
-    histos.add("h2dPtVsCentrality_Analysis_Track_TPCRows", "h2dPtVsCentrality_Analysis_Track_TPCRows", kTH2D, {axisCentrality, axisPt});
-    histos.add("h2dPtVsCentrality_Analysis_Track_TPCPID", "h2dPtVsCentrality_Analysis_Track_TPCPID", kTH2D, {axisCentrality, axisPt});
+    // Found with prongs with the TPC (typical analysis setting)
+    histos.add("h2dPtVsCentrality_Found", "h2dPtVsCentrality_Found", kTH2D, {axisCentrality, axisPt});
+
+    // Found in loop (may have duplicates, meant as cross-check too)
+    histos.add("h2dPtVsCentrality_FoundInLoop", "h2dPtVsCentrality_FoundInLoop", kTH2D, {axisCentrality, axisPt});
+
+    // Passes analysis-level track quality checks 
+    histos.add("h2dPtVsCentrality_PassesTrackQuality", "h2dPtVsCentrality_Analysis_PassesTrackQuality", kTH2D, {axisCentrality, axisPt});
+
+    // Passes analysis-level topological selection criteria 
+    histos.add("h2dPtVsCentrality_PassesTopological", "h2dPtVsCentrality_PassesTopological", kTH2D, {axisCentrality, axisPt});
+
+    // Passes analysis-level species-specific
+    histos.add("h2dPtVsCentrality_PassesThisSpecies", "h2dPtVsCentrality_PassesThisSpecies", kTH2D, {axisCentrality, axisPt});
+
+    // one-on-one test for topology, operating with track quality and species-specific checks ON
+    histos.add("h2dPtVsCentrality_V0Radius", "h2dPtVsCentrality_V0Radius", kTH2D, {axisCentrality, axisPt});
+    histos.add("h2dPtVsCentrality_V0RadiusMax", "h2dPtVsCentrality_V0RadiusMax", kTH2D, {axisCentrality, axisPt});
+    histos.add("h2dPtVsCentrality_V0CosPA", "h2dPtVsCentrality_V0CosPA", kTH2D, {axisCentrality, axisPt});
+    histos.add("h2dPtVsCentrality_DcaPosToPV", "h2dPtVsCentrality_DcaPosToPV", kTH2D, {axisCentrality, axisPt});
+    histos.add("h2dPtVsCentrality_DcaNegToPV", "h2dPtVsCentrality_DcaNegToPV", kTH2D, {axisCentrality, axisPt});
+    histos.add("h2dPtVsCentrality_DcaV0Dau", "h2dPtVsCentrality_DcaV0Dau", kTH2D, {axisCentrality, axisPt});
   }
 
   void processEvents(
@@ -202,26 +198,18 @@ struct findableStudy {
     histos.fill(HIST("hNRecoV0s"), recv0s.size());
     bool hasWrongCollision = false;
     float centrality = 100.5f;
+    bool hasBeenAcceptablyTracked = false;
+    bool hasBeenFoundAny = false;
     bool hasBeenFound = false;
+    int nCandidatesWithTPC = 0;
 
-    // encode conditionals here
-    uint32_t withTPC = 0;           // if prongs have TPC
-    uint32_t withITSTracker = 0;    // if prongs have been ITS tracked
-    uint32_t withITSTrackerTPC = 0; // if prongs have TPC and are ITS tracked
-    uint32_t withITSABTPC = 0;      // if prongs have TPC and are ITS afterburned
-    uint32_t withSVertexerOK = 0;   // if prongs have acceptable tracking conditions for svertexer
+    for (auto& recv0 : recv0s) {  
+      // define properties for this V0
+      bool pTrackOK = false, nTrackOK = false; // tracks are acceptably tracked
 
-    // Broad
-    bool trackPropertiesOK = false;
-    bool topologyOK = false;
-    bool thisSpeciesOK = false;
+      // Detailed analysis level
+      bool topoV0RadiusOK = false, topoV0RadiusMaxOK = false, topoV0CosPAOK = false, topoDcaPosToPVOK = false, topoDcaNegToPVOK = false, topoDcaV0DauOK = false;
 
-    // Detailed
-    bool topoV0RadiusOK = false, topoV0RadiusMaxOK = false, topoV0CosPAOK = false, topoDcaPosToPVOK = false, topoDcaNegToPVOK = false, topoDcaV0DauOK = false, trackTPCRowsOK = false, trackTPCPIDOK = false;
-    for (auto& recv0 : recv0s) {
-      if (recv0.isFound()) {
-        hasBeenFound = true;
-      }
       auto coll = recv0.straCollision_as<recoStraCollisions>();
       int mcCollID_fromCollision = coll.straMCCollisionId();
       int mcCollID_fromV0 = recv0.straMCCollisionId();
@@ -232,49 +220,58 @@ struct findableStudy {
         // N.B.: this could still be an issue if collision <-> mc collision is imperfect
         centrality = coll.centFT0C();
       }
+      if( recv0.isFound() ){ 
+        hasBeenFoundAny = true; // includes also ITS-only, checked before skipITSonly check
+      }
 
       // de-reference daughter track extras
       auto pTrack = recv0.posTrackExtra_as<dauTracks>();
       auto nTrack = recv0.negTrackExtra_as<dauTracks>();
 
-      if (pTrack.hasTPC())
-        bitset(withTPC, 0);
-      if (nTrack.hasTPC())
-        bitset(withTPC, 1);
+      // skip ITS-only for simplicity
+      if(skipITSonly){
+        if(!pTrack.hasTPC() || !nTrack.hasTPC())
+          continue;
+      }
 
       if (
-        (pTrack.hasTPC() && pTrack.hasITS()) ||
-        (!pTrack.hasTPC() && pTrack.itsNCls() >= 6))
-        bitset(withSVertexerOK, 0);
+        (pTrack.hasTPC() && pTrack.hasITS()) || // full global track
+        (pTrack.hasTPC() && pTrack.hasTOF()) || // TPC + TOF is accepted
+        (pTrack.hasTPC() && pTrack.hasTRD()) || // TPC + TRD is accepted
+        (!pTrack.hasTPC() && pTrack.itsNCls() >= 6) // long ITS-only
+        ){
+        pTrackOK = true; // for this V0 only
+        }
       if (
-        (nTrack.hasTPC() && nTrack.hasITS()) ||
-        (!nTrack.hasTPC() && nTrack.itsNCls() >= 6))
-        bitset(withSVertexerOK, 1);
+        (nTrack.hasTPC() && nTrack.hasITS()) || 
+        (nTrack.hasTPC() && nTrack.hasTOF()) || // TPC + TOF is accepted
+        (nTrack.hasTPC() && nTrack.hasTRD()) || // TPC + TRD is accepted
+        (!nTrack.hasTPC() && nTrack.itsNCls() >= 6)
+      ){
+        nTrackOK = true; // for this V0 only
+      }
 
-      if (pTrack.hasITS() && pTrack.itsChi2PerNcl() > -10.0f)
-        bitset(withITSTracker, 0);
-      if (nTrack.hasITS() && nTrack.itsChi2PerNcl() > -10.0f)
-        bitset(withITSTracker, 1);
+      if(pTrackOK && nTrackOK) 
+        hasBeenAcceptablyTracked = true;
 
-      if (pTrack.hasTPC() && pTrack.hasITS() && pTrack.itsChi2PerNcl() > -10.0f)
-        bitset(withITSTrackerTPC, 0);
-      if (nTrack.hasTPC() && nTrack.hasITS() && nTrack.itsChi2PerNcl() > -10.0f)
-        bitset(withITSTrackerTPC, 1);
-
-      if (pTrack.hasTPC() && pTrack.hasITS() && pTrack.itsChi2PerNcl() < -10.0f)
-        bitset(withITSABTPC, 0);
-      if (nTrack.hasTPC() && nTrack.hasITS() && nTrack.itsChi2PerNcl() < -10.0f)
-        bitset(withITSABTPC, 1);
+      // Cross-checking consistency: found should be a subset of nTrack, pTrack OK
+      histos.fill(HIST("hFoundVsTracksOK"), nTrackOK && pTrackOK, recv0.isFound());
 
       // determine if this V0 would go to analysis or not
-      if (recv0.isFound()) {
+      if( recv0.isFound() ){ 
+        // at this stage, this should be REALLY mostly unique (unless you switch skipITSonly to false or so)
+        // ... but we will cross-check this assumption (hNRecoV0sWithTPC, h2dPtVsCentrality_FoundInLoop)
+        nCandidatesWithTPC ++;
+        hasBeenFound = true; 
+        histos.fill(HIST("h2dPtVsCentrality_FoundInLoop"), centrality, ptmc);
+
         uint64_t selMap = v0data::computeReconstructionBitmap(recv0, pTrack, nTrack, coll, recv0.yLambda(), recv0.yK0Short(), v0Selections);
 
         // Consider in all cases
         selMap = selMap | (uint64_t(1) << v0data::selConsiderK0Short) | (uint64_t(1) << v0data::selConsiderLambda) | (uint64_t(1) << v0data::selConsiderAntiLambda);
-
-        // global selection checker
-        bool validTrackProperties = v0Selections->verifyMask(selMap, maskTrackProperties);
+        
+        // selection checker: ensure this works on subset of actual svertexer-findable
+        bool validTrackProperties = v0Selections->verifyMask(selMap, maskTrackProperties) && pTrackOK && nTrackOK;
         bool validTopology = v0Selections->verifyMask(selMap, maskTopological);
 
         uint64_t thisSpeciesMask = maskK0ShortSpecific;
@@ -285,74 +282,60 @@ struct findableStudy {
         // add other species masks as necessary
 
         bool validThisSpecies = v0Selections->verifyMask(selMap, thisSpeciesMask);
-        if (validTrackProperties)
-          trackPropertiesOK = true; // stay true even if last recv0 is false
-        if (validTrackProperties && validTopology)
-          topologyOK = true; // stay true even if last recv0 is false
-        if (validTrackProperties && validTopology && validThisSpecies)
-          thisSpeciesOK = true; // stay true even if last recv0 is false
 
         // specific selection (not cumulative)
-        topoV0RadiusOK |= v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadius);
-        topoV0RadiusMaxOK |= v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadiusMax);
-        topoV0CosPAOK |= v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selCosPA);
-        topoDcaPosToPVOK |= v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAPosToPV);
-        topoDcaNegToPVOK |= v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCANegToPV);
-        topoDcaV0DauOK |= v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAV0Dau);
-        trackTPCRowsOK |= v0Selections->verifyMask(selMap, (uint64_t(1) << v0data::selPosGoodTPCTrack) | (uint64_t(1) << v0data::selNegGoodTPCTrack));
+        topoV0RadiusOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadius);
+        topoV0RadiusMaxOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadiusMax);
+        topoV0CosPAOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selCosPA);
+        topoDcaPosToPVOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAPosToPV);
+        topoDcaNegToPVOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCANegToPV);
+        topoDcaV0DauOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAV0Dau);
+        // trackTPCRowsOK = v0Selections->verifyMask(selMap, (uint64_t(1) << v0data::selPosGoodTPCTrack) | (uint64_t(1) << v0data::selNegGoodTPCTrack) );
 
-        uint64_t tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativePion);
-        if (pdgCode == 3122)
-          tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositiveProton) | (uint64_t(1) << v0data::selTPCPIDNegativePion);
-        if (pdgCode == -3122)
-          tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativeProton);
+        // uint64_t tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativePion); 
+        // if(pdgCode==3122) 
+        //   tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositiveProton) | (uint64_t(1) << v0data::selTPCPIDNegativePion); 
+        // if(pdgCode==-3122) 
+        //   tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativeProton); 
 
-        trackTPCPIDOK |= v0Selections->verifyMask(selMap, tpcPidMask);
+        // trackTPCPIDOK = v0Selections->verifyMask(selMap, tpcPidMask);
+
+        // Broad level
+        if(validTrackProperties)
+          histos.fill(HIST("h2dPtVsCentrality_PassesTrackQuality"), centrality, ptmc);
+        if(validTrackProperties && validTopology)
+          histos.fill(HIST("h2dPtVsCentrality_PassesTopological"), centrality, ptmc);
+        if(validTrackProperties && validTopology && validThisSpecies)
+          histos.fill(HIST("h2dPtVsCentrality_PassesThisSpecies"), centrality, ptmc);
+
+        // topological 
+        if(validTrackProperties && validThisSpecies && topoV0RadiusOK)
+          histos.fill(HIST("h2dPtVsCentrality_V0Radius"), centrality, ptmc);
+        if(validTrackProperties && validThisSpecies && topoV0RadiusMaxOK)
+          histos.fill(HIST("h2dPtVsCentrality_V0RadiusMax"), centrality, ptmc);
+        if(validTrackProperties && validThisSpecies && topoV0CosPAOK)
+          histos.fill(HIST("h2dPtVsCentrality_V0CosPA"), centrality, ptmc);
+        if(validTrackProperties && validThisSpecies && topoDcaPosToPVOK)
+          histos.fill(HIST("h2dPtVsCentrality_DcaPosToPV"), centrality, ptmc);
+        if(validTrackProperties && validThisSpecies && topoDcaNegToPVOK)
+          histos.fill(HIST("h2dPtVsCentrality_DcaNegToPV"), centrality, ptmc);
+        if(validTrackProperties && validThisSpecies && topoDcaV0DauOK)
+          histos.fill(HIST("h2dPtVsCentrality_DcaV0Dau"), centrality, ptmc);
       }
     }
+    histos.fill(HIST("hNRecoV0sWithTPC"), nCandidatesWithTPC);
 
-    histos.fill(HIST("h2dPtVsCentrality_All_Findable"), centrality, ptmc);
-    histos.fill(HIST("h3dPtVsCentrality_WithTPC_Findable"), centrality, ptmc, withTPC);
-    histos.fill(HIST("h3dPtVsCentrality_WithITSTracker_Findable"), centrality, ptmc, withITSTracker);
-    histos.fill(HIST("h3dPtVsCentrality_WithITSTrackerTPC_Findable"), centrality, ptmc, withITSTrackerTPC);
-    histos.fill(HIST("h3dPtVsCentrality_WithITSABTPC_Findable"), centrality, ptmc, withITSABTPC);
-    histos.fill(HIST("h3dPtVsCentrality_WithSVertexerOK_Findable"), centrality, ptmc, withSVertexerOK);
-
-    if (hasBeenFound) {
-      histos.fill(HIST("h2dPtVsCentrality_All_Found"), centrality, ptmc);
-      histos.fill(HIST("h3dPtVsCentrality_WithTPC_Found"), centrality, ptmc, withTPC);
-      histos.fill(HIST("h3dPtVsCentrality_WithITSTracker_Found"), centrality, ptmc, withITSTracker);
-      histos.fill(HIST("h3dPtVsCentrality_WithITSTrackerTPC_Found"), centrality, ptmc, withITSTrackerTPC);
-      histos.fill(HIST("h3dPtVsCentrality_WithITSABTPC_Found"), centrality, ptmc, withITSABTPC);
-      histos.fill(HIST("h3dPtVsCentrality_WithSVertexerOK_Found"), centrality, ptmc, withSVertexerOK);
+    // Major check 1: Findable versus found in some capacity
+    histos.fill(HIST("h2dPtVsCentrality_Findable"), centrality, ptmc); 
+    if( hasBeenAcceptablyTracked ){ 
+      histos.fill(HIST("h2dPtVsCentrality_AcceptablyTracked"), centrality, ptmc); 
     }
-
-    // broad analysis Level selections -> last axis is 0 not, 1 yes
-    if (trackPropertiesOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_PassesTrackQuality"), centrality, ptmc);
-    if (topologyOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_PassesTopological"), centrality, ptmc);
-    if (thisSpeciesOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_PassesThisSpecies"), centrality, ptmc);
-
-    // specifics (could be a bit cleaner but ok)
-    if (topoV0RadiusOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_V0Radius"), centrality, ptmc);
-    if (topoV0RadiusMaxOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_V0RadiusMax"), centrality, ptmc);
-    if (topoV0CosPAOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_V0CosPA"), centrality, ptmc);
-    if (topoDcaPosToPVOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_DcaPosToPV"), centrality, ptmc);
-    if (topoDcaNegToPVOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_DcaNegToPV"), centrality, ptmc);
-    if (topoDcaV0DauOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_Topo_DcaV0Dau"), centrality, ptmc);
-    if (trackTPCRowsOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_Track_TPCRows"), centrality, ptmc);
-    if (trackTPCPIDOK)
-      histos.fill(HIST("h2dPtVsCentrality_Analysis_Track_TPCPID"), centrality, ptmc);
-
+    if( hasBeenFoundAny ){
+      histos.fill(HIST("h2dPtVsCentrality_FoundAny"), centrality, ptmc);
+    }
+    if( hasBeenFound ){ 
+      histos.fill(HIST("h2dPtVsCentrality_Found"), centrality, ptmc);
+    }
     if (hasWrongCollision) {
       histos.fill(HIST("hNRecoV0sWrongColl"), recv0s.size());
     }
