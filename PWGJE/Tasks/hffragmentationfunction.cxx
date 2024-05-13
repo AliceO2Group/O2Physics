@@ -62,7 +62,7 @@ double deltaPhi(double phi1, double phi2)
 // creating table for storing distance data
 namespace o2::aod
 {
-namespace DistanceSpace
+namespace jet_distance
 {
 DECLARE_SOA_COLUMN(JetHfDist, jethfdist, float);
 DECLARE_SOA_COLUMN(JetPt, jetpt, float);
@@ -73,63 +73,39 @@ DECLARE_SOA_COLUMN(HfEta, hfeta, float);
 DECLARE_SOA_COLUMN(HfPhi, hfphi, float);
 DECLARE_SOA_COLUMN(HfMass, hfmass, float);
 DECLARE_SOA_COLUMN(HfY, hfy, float);
-} // namespace DistanceSpace
+DECLARE_SOA_COLUMN(HfMatch, hfmatch, bool);
+} // namespace jet_distance
 DECLARE_SOA_TABLE(JetDistanceTable, "AOD", "JETDISTTABLE",
-                  DistanceSpace::JetHfDist,
-                  DistanceSpace::JetPt,
-                  DistanceSpace::JetEta,
-                  DistanceSpace::JetPhi,
-                  DistanceSpace::HfPt,
-                  DistanceSpace::HfEta,
-                  DistanceSpace::HfPhi,
-                  DistanceSpace::HfMass,
-                  DistanceSpace::HfY);
-namespace MCPDistanceTable
-{
-DECLARE_SOA_COLUMN(JetHfDist, jethfdist, float);
-DECLARE_SOA_COLUMN(JetPt, jetpt, float);
-DECLARE_SOA_COLUMN(JetEta, jeteta, float);
-DECLARE_SOA_COLUMN(JetPhi, jetphi, float);
-DECLARE_SOA_COLUMN(HfPt, hfpt, float);
-DECLARE_SOA_COLUMN(HfEta, hfeta, float);
-DECLARE_SOA_COLUMN(HfPhi, hfphi, float);
-DECLARE_SOA_COLUMN(HfY, hfy, float);
-DECLARE_SOA_COLUMN(HfMatch, hfmatch, bool);
-} // namespace MCPDistanceTable
+                  jet_distance::JetHfDist,
+                  jet_distance::JetPt,
+                  jet_distance::JetEta,
+                  jet_distance::JetPhi,
+                  jet_distance::HfPt,
+                  jet_distance::HfEta,
+                  jet_distance::HfPhi,
+                  jet_distance::HfMass,
+                  jet_distance::HfY);
 DECLARE_SOA_TABLE(MCPJetDistanceTable, "AOD", "MCPJETDISTTABLE",
-                  MCPDistanceTable::JetHfDist,
-                  MCPDistanceTable::JetPt,
-                  MCPDistanceTable::JetEta,
-                  MCPDistanceTable::JetPhi,
-                  MCPDistanceTable::HfPt,
-                  MCPDistanceTable::HfEta,
-                  MCPDistanceTable::HfPhi,
-                  MCPDistanceTable::HfY,
-                  MCPDistanceTable::HfMatch);
-namespace MCDDistanceTable
-{
-DECLARE_SOA_COLUMN(JetHfDist, jethfdist, float);
-DECLARE_SOA_COLUMN(JetPt, jetpt, float);
-DECLARE_SOA_COLUMN(JetEta, jeteta, float);
-DECLARE_SOA_COLUMN(JetPhi, jetphi, float);
-DECLARE_SOA_COLUMN(HfPt, hfpt, float);
-DECLARE_SOA_COLUMN(HfEta, hfeta, float);
-DECLARE_SOA_COLUMN(HfPhi, hfphi, float);
-DECLARE_SOA_COLUMN(HfMass, hfmass, float);
-DECLARE_SOA_COLUMN(HfY, hfy, float);
-DECLARE_SOA_COLUMN(HfMatch, hfmatch, bool);
-} // namespace MCDDistanceTable
+                  jet_distance::JetHfDist,
+                  jet_distance::JetPt,
+                  jet_distance::JetEta,
+                  jet_distance::JetPhi,
+                  jet_distance::HfPt,
+                  jet_distance::HfEta,
+                  jet_distance::HfPhi,
+                  jet_distance::HfY,
+                  jet_distance::HfMatch);
 DECLARE_SOA_TABLE(MCDJetDistanceTable, "AOD", "MCDJETDISTTABLE",
-                  MCDDistanceTable::JetHfDist,
-                  MCDDistanceTable::JetPt,
-                  MCDDistanceTable::JetEta,
-                  MCDDistanceTable::JetPhi,
-                  MCDDistanceTable::HfPt,
-                  MCDDistanceTable::HfEta,
-                  MCDDistanceTable::HfPhi,
-                  MCDDistanceTable::HfMass,
-                  MCDDistanceTable::HfY,
-                  MCDDistanceTable::HfMatch);
+                  jet_distance::JetHfDist,
+                  jet_distance::JetPt,
+                  jet_distance::JetEta,
+                  jet_distance::JetPhi,
+                  jet_distance::HfPt,
+                  jet_distance::HfEta,
+                  jet_distance::HfPhi,
+                  jet_distance::HfMass,
+                  jet_distance::HfY,
+                  jet_distance::HfMatch);
 } // namespace o2::aod
 
 struct HfFragmentationFunctionTask {
@@ -240,7 +216,7 @@ struct HfFragmentationFunctionTask {
           auto mcdd0cand = mcdjet.template hfcandidates_first_as<CandidatesD0MCD>();
 
           // calculating angular distance in eta-phi plane
-          axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), deltaPhi(jet.phi(), d0Candidate.phi()));
+          axisDistance = RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi()));
 
           // store data in MC detector level table
           mcddistJetTable(axisDistance, mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), mcdjet.has_matchedJetCand());
@@ -255,7 +231,7 @@ struct HfFragmentationFunctionTask {
         auto mcpd0cand = mcpjet.template hfcandidates_first_as<CandidatesD0MCP>();
 
         // calculating angular distance in eta-phi plane
-        axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), deltaPhi(jet.phi(), d0Candidate.phi()));
+        axisDistance = RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi()));
 
         // store data in MC detector level table
         mcpdistJetTable(axisDistance, mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), mcpjet.has_matchedJetCand());
