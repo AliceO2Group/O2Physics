@@ -86,7 +86,7 @@ enum eVnPsin { eVn = 0,
                ePsin = 1 };
 
 enum eEventHistograms {
-  eNumberOfEvents = 0,
+  eNumberOfEvents = 0, // Total events = eNumberOfEvents + eBefore, Selected events = eNumberOfEvents + eAfter
   eTotalMultiplicity,
   eSelectedTracks,
   eMultFV0M,      // ref. mult from helper task o2-analysis-multiplicity-table
@@ -110,18 +110,20 @@ enum eEventHistograms2D {
 
 enum eEventCuts {
   eTrigger = eEventHistograms_N, // yes, because I do not want to duplicate the same enums from eEventHistograms here
-  eSel7,
-  eSel8,
+  eSel7,                         // Event selection decision based on V0A & V0C => use only in Run 2 and Run 1
+  eSel8,                         // Event selection decision based on TVX => use only in Run 3
   eCentralityEstimator,
+  eSelectedEvents, // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
   eEventCuts_N
 };
 
 enum eParticleHistograms {
 
-  // from o2::aod::Tracks:
+  // from o2::aod::Tracks: (Track parameters at collision vertex)
   ePhi = 0,
   ePt,
   eEta,
+  eCharge, // Charge: positive: 1, negative: -1
 
   // from o2::aod::TracksExtra_001:
   etpcNClsFindable,
@@ -135,8 +137,8 @@ enum eParticleHistograms {
   etpcFractionSharedCls,
 
   // from o2::aod::TracksDCA:
-  eDCA_xy,
-  eDCA_z,
+  edcaXY,
+  edcaZ,
 
   // the rest:
   ePDG,
@@ -152,7 +154,14 @@ enum eParticleHistograms2D {
 };
 
 enum eParticleCuts {
-  eTBI = eParticleHistograms_N, // yes, because I do not want to duplicate the same enums from eParticleHistograms here
+
+  // from o2::aod::TrackSelection:
+  etrackCutFlagFb1 = eParticleHistograms_N, // yes, because I do not want to duplicate the same enums from eParticleHistograms here
+  etrackCutFlagFb2,
+  eisQualityTrack,
+  eisPrimaryTrack,
+  eisInAcceptanceTrack,
+  eisGlobalTrack,
   eParticleCuts_N
 };
 
@@ -183,4 +192,23 @@ enum eTimer {
   eLocal,
   eTimer_N
 };
+
+enum eEventCounter {
+  eFill = 0,
+  ePrint
+};
+
+enum eCutModus {
+  eCut = 0,           // standard, i.e. no cut counters are used
+  eCutCounterBinning, // dry call to EventCuts and ParticleCuts, just to establish order of binning in CutCountets, which resembles order of cut implementation
+  eCutCounterAbsolute,
+  eCutCounterSequential
+};
+
+enum eCutCounter {
+  eAbsolute = 0,
+  eSequential,
+  eCutCounter_N
+};
+
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_

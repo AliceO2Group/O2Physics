@@ -186,7 +186,7 @@ struct femtoDreamPairTaskTrackTrack {
     std::string prefix = "Binning";
     ConfigurableAxis TempFitVar{"TempFitVar", {300, -0.15, 0.15}, "Binning of the TempFitVar in the pT vs. TempFitVar plot"};
     ConfigurableAxis TrackpT{"TrackpT", {20, 0.5, 4.05}, "pT binning for pT vs. TempFitVar plot"};
-    ConfigurableAxis pT{"pT", {20, 0.5, 4.05}, "pT binning"};
+    ConfigurableAxis pT{"pT", {20, 0.5, 4.05}, "pT binning for extended plots"};
     ConfigurableAxis kstar{"kstar", {1500, 0., 6.}, "kstar binning"};
     ConfigurableAxis kT{"kT", {150, 0., 9.}, "kT binning"};
     ConfigurableAxis mT{"mT", {225, 0., 7.5}, "mT binning"};

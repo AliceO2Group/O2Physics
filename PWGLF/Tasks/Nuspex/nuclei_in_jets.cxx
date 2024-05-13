@@ -138,6 +138,7 @@ struct nuclei_in_jets {
     registryQC.add("eta_leading", "eta_leading", HistType::kTH1F, {{100, -1, 1, "#eta"}});
     registryQC.add("phi_leading", "phi_leading", HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi(), "#phi"}});
     registryQC.add("angle_jet_leading_track", "angle_jet_leading_track", HistType::kTH1F, {{200, 0.0, TMath::Pi() / 4.0, "#theta"}});
+    registryQC.add("deltaPt", "deltaPt", HistType::kTH1F, {{200, -2, 2, "#Delta p_{T}"}});
 
     // Antiprotons
     registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH3F, {{20, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {2, 0, 100, "#it{N}_{ch}"}});
@@ -531,14 +532,11 @@ struct nuclei_in_jets {
     bool containsParticleOfInterest(false);
     float pt_max(0);
 
-    // Track Index Initialization
-    int i = -1;
-
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
 
-      // Track Index
-      i++;
+      // Global Track
+      int i = track.globalIndex();
 
       // Track Selection for Jet
       if (!passedMinimalTrackSelection(track))
@@ -1078,14 +1076,11 @@ struct nuclei_in_jets {
       int leading_ID = 0;
       float pt_max(0);
 
-      // Track Index Initialization
-      int i = -1;
-
       // Generated Particles
       for (auto& particle : mcParticles_per_coll) {
 
-        // Index
-        i++;
+        // Global Index
+        int i = particle.globalIndex();
 
         // Select Primary Particles
         float deltaX = particle.vx() - mccollision.posX();
@@ -1125,6 +1120,7 @@ struct nuclei_in_jets {
       // Momentum of the Leading Particle
       auto const& leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
       TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
+      registryQC.fill(HIST("deltaPt"), leading_track.pt() - pt_max);
 
       // Array of Particles inside Jet
       std::vector<int> jet_particle_ID;
@@ -1150,8 +1146,7 @@ struct nuclei_in_jets {
 
           // Get Particle Momentum
           auto stored_track = mcParticles_per_coll.iteratorAt(particle_ID[i]);
-          TVector3 p_particle(stored_track.px(), stored_track.py(),
-                              stored_track.pz());
+          TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
 
           // Variables
           float one_over_pt2_part = 1.0 / (p_particle.Pt() * p_particle.Pt());
@@ -1322,14 +1317,11 @@ struct nuclei_in_jets {
       bool containsProton(false);
       bool containsNeutron(false);
 
-      // Track Index Initialization
-      int i = -1;
-
       // Generated Particles
       for (auto& particle : mcParticles_per_coll) {
 
-        // Index
-        i++;
+        // Global Index
+        int i = particle.globalIndex();
 
         // Select Primary Particles
         float deltaX = particle.vx() - mccollision.posX();
