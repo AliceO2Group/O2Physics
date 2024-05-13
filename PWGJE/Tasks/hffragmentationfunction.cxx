@@ -192,7 +192,7 @@ struct HfFragmentationFunctionTask {
         double z_parallel = (jetVector * d0Vector) / (jetVector * jetVector);
 
         // calculating angular distance in eta-phi plane
-        axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), DeltaPhi(jet.phi(), d0Candidate.phi()));
+        axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), deltaPhi(jet.phi(), d0Candidate.phi()));
 
         // filling histograms
         registry.fill(HIST("h_d0_jet_projection"), z_parallel);
@@ -218,26 +218,29 @@ struct HfFragmentationFunctionTask {
 
   void processMcChargedMatched(JetMcCollisions const& mccollisions,
                                JetCollisionsMCD const& collisions,
-                               JetMCDTable const& mcdjets, JetMCPTable const& mcpjets,
-                               CandidatesD0MCD const& mcdd0cands, CandidatesD0MCP const& mcpd0cands,
-                               JetTracks const& tracks, JetParticles const& particles)
+                               JetMCDTable const& mcdjets,
+                               JetMCPTable const& mcpjets,
+                               CandidatesD0MCD const& mcdd0cands,
+                               CandidatesD0MCP const& mcpd0cands,
+                               JetTracks const& tracks,
+                               JetParticles const& particles)
   {
     double axisDistance = 0;
 
-    for (auto& mccollision : mccollisions) {
+    for (const auto& mccollision : mccollisions) {
 
       // reconstructed collisions associated to same mccollision
       const auto collisionsPerMCCollision = collisions.sliceBy(CollisionsPerMCCollision, mccollision.globalIndex());
-      for (auto& collision : collisionsPerMCCollision) {
+      for (const auto& collision : collisionsPerMCCollision) {
         // d0 detector level jets associated to the current same collision
         const auto d0mcdJetsPerCollision = mcdjets.sliceBy(D0MCDJetsPerCollision, collision.globalIndex());
-        for (auto& mcdjet : d0mcdJetsPerCollision) {
+        for (const auto& mcdjet : d0mcdJetsPerCollision) {
 
           // obtain leading HF candidate in jet (is this correct?)
           auto mcdd0cand = mcdjet.template hfcandidates_first_as<CandidatesD0MCD>();
 
           // calculating angular distance in eta-phi plane
-          axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), DeltaPhi(jet.phi(), d0Candidate.phi()));
+          axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), deltaPhi(jet.phi(), d0Candidate.phi()));
 
           // store data in MC detector level table
           mcddistJetTable(axisDistance, mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), mcdjet.has_matchedJetCand());
@@ -246,13 +249,13 @@ struct HfFragmentationFunctionTask {
 
       // d0 particle level jets associated to same mccollision
       const auto d0mcpJetsPerMCCollision = mcpjets.sliceBy(D0MCPJetsPerMCCollision, mccollision.globalIndex());
-      for (auto& mcpjet : d0mcpJetsPerMCCollision) {
+      for (const auto& mcpjet : d0mcpJetsPerMCCollision) {
 
         // obtain leading HF particle in jet
         auto mcpd0cand = mcpjet.template hfcandidates_first_as<CandidatesD0MCP>();
 
         // calculating angular distance in eta-phi plane
-        axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), DeltaPhi(jet.phi(), d0Candidate.phi()));
+        axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), deltaPhi(jet.phi(), d0Candidate.phi()));
 
         // store data in MC detector level table
         mcpdistJetTable(axisDistance, mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), mcpjet.has_matchedJetCand());
