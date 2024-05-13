@@ -532,14 +532,11 @@ struct nuclei_in_jets {
     bool containsParticleOfInterest(false);
     float pt_max(0);
 
-    // Track Index Initialization
-    int i = -1;
-
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
 
-      // Track Index
-      i++;
+      // Global Track
+      int i = track.globalIndex();
 
       // Track Selection for Jet
       if (!passedMinimalTrackSelection(track))
@@ -1079,14 +1076,11 @@ struct nuclei_in_jets {
       int leading_ID = 0;
       float pt_max(0);
 
-      // Track Index Initialization
-      int i = -1;
-
       // Generated Particles
       for (auto& particle : mcParticles_per_coll) {
 
-        // Index
-        i++;
+        // Global Index
+        int i = particle.globalIndex();
 
         // Select Primary Particles
         float deltaX = particle.vx() - mccollision.posX();
@@ -1152,8 +1146,7 @@ struct nuclei_in_jets {
 
           // Get Particle Momentum
           auto stored_track = mcParticles_per_coll.iteratorAt(particle_ID[i]);
-          TVector3 p_particle(stored_track.px(), stored_track.py(),
-                              stored_track.pz());
+          TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
 
           // Variables
           float one_over_pt2_part = 1.0 / (p_particle.Pt() * p_particle.Pt());
@@ -1324,14 +1317,11 @@ struct nuclei_in_jets {
       bool containsProton(false);
       bool containsNeutron(false);
 
-      // Track Index Initialization
-      int i = -1;
-
       // Generated Particles
       for (auto& particle : mcParticles_per_coll) {
 
-        // Index
-        i++;
+        // Global Index
+        int i = particle.globalIndex();
 
         // Select Primary Particles
         float deltaX = particle.vx() - mccollision.posX();
