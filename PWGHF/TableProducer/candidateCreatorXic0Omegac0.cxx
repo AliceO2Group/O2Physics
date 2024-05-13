@@ -896,7 +896,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         auto coll = particle.mcCollision_as<aod::McCollisions>();
         auto bc = coll.bc_as<BCsInfo>();
         if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-          rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);;
+          rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
+          ;
         }
       }
 
