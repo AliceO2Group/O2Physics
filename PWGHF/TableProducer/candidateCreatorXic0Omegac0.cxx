@@ -670,6 +670,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   Produces<aod::HfToOmegaKMCRec> rowMCMatchRecToOmegaK;
   Produces<aod::HfToOmegaKMCGen> rowMCMatchGenToOmegaK;
 
+  Configurable<bool> rejGenTFAndITSROFBorders{"rejGenTFAndITSROFBorders", true, "Reject generated particles coming from bc close to TF and ITSROF borders"};
   float zPvPosMax{1000.f};
 
   // inspect for which zPvPosMax cut was set for reconstructed
@@ -889,6 +890,15 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       debugGenCasc = 0;
       debugGenLambda = 0;
       origin = RecoDecay::OriginType::None;
+
+      // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
+      if (rejGenTFAndITSROFBorders) {
+        auto coll = particle.mcCollision_as<aod::McCollisions>();
+        auto bc = coll.bc_as<BCsInfo>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);;
+        }
+      }
 
       auto mcCollision = particle.mcCollision();
       float zPv = mcCollision.posZ();
