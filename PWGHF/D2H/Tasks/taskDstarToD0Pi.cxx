@@ -36,10 +36,10 @@ struct HfTaskDstarToD0Pi {
   Configurable<bool> selectionFlagHfD0ToPiK{"selectionFlagHfD0ToPiK", true, "Selection Flag for HF flagged candidates"};
   Configurable<std::vector<double>> ptBins{"ptBins", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
 
-  using CandDstarWSelFlag = soa::Join<aod::HfD0FromDstar, aod::HfCandDstar, aod::HfSelDstarToD0Pi>;
+  using CandDstarWSelFlag = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
   /// @brief specially for MC data
   // full reconstructed Dstar candidate
-  using CandDstarWSelFlagMcRec = soa::Join<aod::HfD0FromDstar, aod::HfCandDstar, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>;
+  using CandDstarWSelFlagMcRec = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>;
   using CandDstarMcGen = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
 
   Partition<CandDstarWSelFlag> rowsSelectedCandDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
@@ -163,7 +163,7 @@ struct HfTaskDstarToD0Pi {
       auto invD0Bar = candDstar.invMassD0Bar();
 
       auto signDstar = candDstar.signSoftPi();
-      if (signDstar) {
+      if (signDstar > 0) {
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invDstar - invD0), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invDstar - invD0));
@@ -171,7 +171,7 @@ struct HfTaskDstarToD0Pi {
         // filling pt of two pronges of D0
         registry.fill(HIST("QA/hPtProng0D0"), candDstar.ptProng0());
         registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
-      } else if (signDstar) {
+      } else if (signDstar < 0) {
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invAntiDstar - invD0Bar), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invAntiDstar - invD0Bar));
@@ -255,7 +255,7 @@ struct HfTaskDstarToD0Pi {
       if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
         auto ptGen = mcParticle.pt();
         // auto yGen = mcParticle.y(); // Can we use this definition?
-        auto yGen = RecoDecay::y(std::array{mcParticle.px(), mcParticle.py(), mcParticle.pz()}, o2::constants::physics::MassDStar);
+        auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
         if (yCandDstarGenMax >= 0. && std::abs(yGen) > yCandDstarGenMax) {
           continue;
         }

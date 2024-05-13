@@ -43,12 +43,6 @@ struct RhoEstimatorTask {
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc->PKPi"};
-  Configurable<int> selectionFlagLcToPiPK{"selectionFlagLcToPiPK", 1, "Selection Flag for Lc->PiPK"};
-  Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
-
   Configurable<float> bkgjetR{"bkgjetR", 0.2, "jet resolution parameter for determining background density"};
   Configurable<float> bkgEtaMin{"bkgEtaMin", -0.9, "minimim pseudorapidity for determining background density"};
   Configurable<float> bkgEtaMax{"bkgEtaMax", 0.9, "maximum pseudorapidity for determining background density"};
@@ -84,7 +78,7 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processChargedCollisions, "Fill rho tables for collisions using charged tracks", true);
 
-  void processD0Collisions(JetCollision const& collision, soa::Filtered<JetTracks> const& tracks, CandidatesD0Data const& candidates)
+  void processD0Collisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesD0Data const& candidates)
   {
     inputParticles.clear();
     for (auto& candidate : candidates) {
@@ -97,7 +91,7 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processD0Collisions, "Fill rho tables for collisions with D0 candidates", false);
 
-  void processLcCollisions(JetCollision const& collision, soa::Filtered<JetTracks> const& tracks, CandidatesLcData const& candidates)
+  void processLcCollisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesLcData const& candidates)
   {
     inputParticles.clear();
     for (auto& candidate : candidates) {
@@ -110,7 +104,7 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processLcCollisions, "Fill rho tables for collisions with Lc candidates", false);
 
-  void processBplusCollisions(JetCollision const& collision, soa::Filtered<JetTracks> const& tracks, CandidatesBplusData const& candidates)
+  void processBplusCollisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesBplusData const& candidates)
   {
     inputParticles.clear();
     for (auto& candidate : candidates) {

@@ -44,7 +44,7 @@ struct PidMlProducerData {
      {"hTOFBetavsPt", "TOF beta vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF beta", {HistType::kTH2F, {{500, 0., 10.}, {500, 0., 2.}}}},
      {"hTRDSigvsPt", "TRD signal vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TRD signal", {HistType::kTH2F, {{500, 0., 10.}, {2500, 0., 100.}}}}}};
 
-  void processML(MyCollisionML const& collision, BigTracksML const& tracks)
+  void processML(MyCollisionML const& /*collision*/, BigTracksML const& tracks)
   {
     for (const auto& track : tracks) {
       pidTracksTableML(track.tpcSignal(), track.trdSignal(), track.trdPattern(),

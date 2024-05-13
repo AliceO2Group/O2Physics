@@ -55,7 +55,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   /// \param track is daughter track
   /// \return true if track is good
   template <typename T>
-  bool daughterSelection(const T& track)
+  bool daughterSelection(const T& /*track*/)
   {
     return true;
   }
@@ -65,7 +65,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   /// \param trackNeutral is the track with the pi+ hypothesis
   /// \return true if candidate passes all cuts
   template <typename T1, typename T2, typename T3>
-  bool selectionTopol(const T1& hfCandChic, const T2& hfCandJpsi, const T3& ecal)
+  bool selectionTopol(const T1& hfCandChic, const T2& hfCandJpsi, const T3& /*ecal*/)
   {
     auto candpT = hfCandChic.pt();
     int pTBin = findBin(binsPt, candpT);
@@ -137,7 +137,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   /// \param nSigmaCut is the nsigma threshold to test against
   /// \return true if track satisfies TPC pion hypothesis for given Nsigma cut
   template <typename T>
-  bool selectionPIDTPC(const T& track, int nSigmaCut)
+  bool selectionPIDTPC(const T& /*track*/, int nSigmaCut)
   {
     if (nSigmaCut > 999.) {
       return true;
@@ -151,7 +151,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   // \param nSigmaCut is the nSigma threshold to test against
   // \return true if track satisfies TOF pion hypothesis for given NSigma cut
   template <typename T>
-  bool selectionPIDTOF(const T& track, double nSigmaCut)
+  bool selectionPIDTOF(const T& /*track*/, double nSigmaCut)
   {
     if (nSigmaCut > 999.) {
       return true;
@@ -164,7 +164,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
   // \param track is the daughter track
   // \return 1 if successful PID match, 0 if successful PID rejection, -1 if no PID info
   template <typename T>
-  int selectionPID(const T& track)
+  int selectionPID(const T& /*track*/)
   { // use both TPC and TOF here; in run5 only TOF makes sense. add some flag for run3/run5 data later?
     // if (validTofPid(track)) {
     //   if (!selectionPIDTOF(track, nSigmaTofMax)) {
@@ -182,7 +182,7 @@ struct HfCandidateSelectorChicToJpsiGamma {
 
   void process(aod::HfCandChic const& hfCandChics,
                aod::HfCand2Prong const&,
-               aod::ECALs const& ecals)
+               aod::ECALs const&)
   {
     for (const auto& hfCandChic : hfCandChics) { // looping over chi_c candidates
       // note the difference between Jpsi (index0) and pions (index1,2)

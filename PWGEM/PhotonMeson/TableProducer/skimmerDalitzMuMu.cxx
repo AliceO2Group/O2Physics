@@ -26,10 +26,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds>;
 using MyTrack = MyTracks::iterator;
 
 struct skimmerDalitzMuMu {
@@ -40,12 +40,16 @@ struct skimmerDalitzMuMu {
   };
 
   SliceCache cache;
-  Preslice<MyTracks> perCol = o2::aod::emprimarymuon::emreducedeventId;
+  Preslice<MyTracks> perCol = o2::aod::emprimarymuon::emeventId;
   Produces<aod::DalitzMuMus> dalitzmumus;
-  Produces<o2::aod::DalitzMuMuEMReducedEventIds> dalitz_mumu_eventid;
-  Produces<o2::aod::EMReducedEventsNmumu> event_nmumu;
+  Produces<o2::aod::DalitzMuMuEMEventIds> dalitz_mumu_eventid;
+  Produces<o2::aod::EMEventsNmumu> event_nmumu;
 
   // Configurables
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+
   Configurable<float> maxMmumu{"maxMmumu", 1.1, "max. mmumu to store mumu pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
   Configurable<float> minpt{"minpt", 0.05, "min pt for track"};
@@ -164,13 +168,19 @@ struct skimmerDalitzMuMu {
     return npair;
   }
 
-  Partition<MyTracks> posTracks = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && o2::aod::emprimarymuon::sign > 0 && minTPCNsigmaMu < o2::aod::pidtpc::tpcNSigmaMu&& o2::aod::pidtpc::tpcNSigmaMu < maxTPCNsigmaMu;
-  Partition<MyTracks> negTracks = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && o2::aod::emprimarymuon::sign < 0 && minTPCNsigmaMu < o2::aod::pidtpc::tpcNSigmaMu && o2::aod::pidtpc::tpcNSigmaMu < maxTPCNsigmaMu;
-  void process(MyCollisions const& collisions, MyTracks const& tracks)
+  Partition<MyTracks> posTracks = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && o2::aod::emprimarymuon::sign > int8_t(0) && minTPCNsigmaMu < o2::aod::pidtpc::tpcNSigmaMu&& o2::aod::pidtpc::tpcNSigmaMu < maxTPCNsigmaMu;
+  Partition<MyTracks> negTracks = minpt < o2::aod::track::pt && o2::aod::track::pt < maxpt && nabs(o2::aod::track::eta) < maxeta && o2::aod::emprimarymuon::sign < int8_t(0) && minTPCNsigmaMu < o2::aod::pidtpc::tpcNSigmaMu && o2::aod::pidtpc::tpcNSigmaMu < maxTPCNsigmaMu;
+  void processAnalysis(MyCollisions const& collisions, MyTracks const&)
   {
     for (auto& collision : collisions) {
-      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimarymuon::emreducedeventId, collision.globalIndex(), cache);
-      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimarymuon::emreducedeventId, collision.globalIndex(), cache);
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        event_nmumu(0, 0, 0);
+        continue;
+      }
+
+      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimarymuon::emeventId, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimarymuon::emeventId, collision.globalIndex(), cache);
 
       int npair_uls = 0, npair_lspp = 0, npair_lsmm = 0;
       npair_uls = fillPairTable<EM_MuMuPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
@@ -181,6 +191,20 @@ struct skimmerDalitzMuMu {
       event_nmumu(npair_uls, npair_lspp, npair_lsmm);
     } // end of collision loop
   }
+  PROCESS_SWITCH(skimmerDalitzMuMu, processAnalysis, "Process dalitz mumu for analysis", true);
+
+  void processOnlyNmumu(soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent> const& collisions)
+  {
+    for (auto& collision : collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        event_nmumu(0, 0, 0);
+        continue;
+      }
+      event_nmumu(0, 0, 0);
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(skimmerDalitzMuMu, processOnlyNmumu, "Process only nmumu", false); // for central event filter processing
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

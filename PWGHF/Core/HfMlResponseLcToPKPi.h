@@ -63,6 +63,9 @@ enum class InputFeaturesLcToPKPi : uint8_t {
   impactParameterXY0,
   impactParameterXY1,
   impactParameterXY2,
+  impactParameterZ0,
+  impactParameterZ1,
+  impactParameterZ2,
   decayLength,
   decayLengthXY,
   decayLengthXYNormalised,
@@ -127,6 +130,9 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, impactParameterXY2, impactParameter2);
+        CHECK_AND_FILL_VEC_LCTOPKPI(impactParameterZ0);
+        CHECK_AND_FILL_VEC_LCTOPKPI(impactParameterZ1);
+        CHECK_AND_FILL_VEC_LCTOPKPI(impactParameterZ2);
         CHECK_AND_FILL_VEC_LCTOPKPI(decayLength);
         CHECK_AND_FILL_VEC_LCTOPKPI(decayLengthXY);
         CHECK_AND_FILL_VEC_LCTOPKPI(decayLengthXYNormalised);
@@ -180,6 +186,9 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LCTOPKPI(impactParameterXY0),
       FILL_MAP_LCTOPKPI(impactParameterXY1),
       FILL_MAP_LCTOPKPI(impactParameterXY2),
+      FILL_MAP_LCTOPKPI(impactParameterZ0),
+      FILL_MAP_LCTOPKPI(impactParameterZ1),
+      FILL_MAP_LCTOPKPI(impactParameterZ2),
       FILL_MAP_LCTOPKPI(decayLength),
       FILL_MAP_LCTOPKPI(decayLengthXY),
       FILL_MAP_LCTOPKPI(decayLengthXYNormalised),

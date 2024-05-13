@@ -15,11 +15,15 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/CaloClusters.h"
+#include "Common/Core/trackUtilities.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
+#include "DetectorsBase/Propagator.h"
 
 #include "CommonUtils/NameConf.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "SimulationDataFormat/MCTruthContainer.h"
 
+#include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsPHOS/Cell.h"
 #include "DataFormatsPHOS/Cluster.h"
 #include "DataFormatsPHOS/TriggerRecord.h"
@@ -44,10 +48,11 @@ struct caloClusterProducerTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<bool> useCoreE{"coreE", 0, "0 - full energy, 1 - core energy"};
   Configurable<bool> skipL1phase{"skipL1phase", false, "skip or apply L1phase time correction"};
+  Configurable<int> mNonlinType{"nonlinType", 1, "0:no corr, 1: default"};
   Configurable<std::vector<double>> cpvMinE{"cpvCluMinAmp", {20., 50., 50.}, "minimal CPV cluster amplitude per module"};
   Configurable<std::string> mBadMapPath{"badmapPath", "PHS/Calib/BadMap", "path to BadMap snapshot"};
   Configurable<std::string> mCalibPath{"calibPath", "PHS/Calib/CalibParams", "path to Calibration snapshot"};
-  Configurable<std::string> mL1PhasePath{"L1phasePath", "Users/d/daveryan/PHS/Calib/L1phase", "path to L1phase snapshot"};
+  Configurable<std::string> mL1PhasePath{"L1phasePath", "PHS/Calib/L1phase", "path to L1phase snapshot"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -61,8 +66,10 @@ struct caloClusterProducerTask {
   std::vector<int> mclabels;
   std::vector<float> mcamplitudes;
 
-  static constexpr int16_t kCpvX = 7; // grid 13 steps along z and 7 along phi as largest match ellips 20x10 cm
-  static constexpr int16_t kCpvZ = 13;
+  int mRunNumber{0};
+
+  static constexpr int16_t kCpvX = 7; // grid 6 steps along z and 7 along phi as largest match ellips 20x20 cm
+  static constexpr int16_t kCpvZ = 6;
   static constexpr int16_t kCpvCells = 4 * kCpvX * kCpvZ; // 4 modules
   static constexpr float cpvMaxX = 73;                    // max CPV coordinate phi
   static constexpr float cpvMaxZ = 63;                    // max CPV coordinate z
@@ -104,7 +111,7 @@ struct caloClusterProducerTask {
   void processStandalone(o2::aod::BCsWithTimestamps const& bcs,
                          o2::aod::Collisions const& colls,
                          o2::aod::Calos const& cells,
-                         o2::aod::CaloTriggers const& ctrs,
+                         o2::aod::CaloTriggers const&,
                          o2::aod::CPVClusters const& cpvs)
   {
 
@@ -398,7 +405,7 @@ struct caloClusterProducerTask {
   void processStandaloneMC(o2::aod::BCsWithTimestamps const& bcs,
                            o2::aod::Collisions const& colls,
                            mcCells& cells,
-                           o2::aod::CaloTriggers const& ctrs,
+                           o2::aod::CaloTriggers const&,
                            o2::aod::CPVClusters const& cpvs)
   {
 
@@ -436,11 +443,11 @@ struct caloClusterProducerTask {
     // Fill output table
 
     // calibration may be updated by CCDB fetcher
-    const o2::phos::BadChannelsMap* badMap = ccdb->getForTimeStamp<o2::phos::BadChannelsMap>("PHS/Calib/BadMap", timestamp);
-    const o2::phos::CalibParams* calibParams = ccdb->getForTimeStamp<o2::phos::CalibParams>("PHS/Calib/CalibParams", timestamp);
+    const o2::phos::BadChannelsMap* badMap = ccdb->getForTimeStamp<o2::phos::BadChannelsMap>(mBadMapPath, timestamp);
+    const o2::phos::CalibParams* calibParams = ccdb->getForTimeStamp<o2::phos::CalibParams>(mCalibPath, timestamp);
 
     if (!isMC && !skipL1phase) {
-      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", timestamp);
+      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>(mL1PhasePath, timestamp);
       if (vec) {
         clusterizerPHOS->setL1phase((*vec)[0]);
       } else {
@@ -729,7 +736,7 @@ struct caloClusterProducerTask {
   void processFull(o2::aod::BCsWithTimestamps const& bcs,
                    o2::aod::Collisions const& colls,
                    o2::aod::Calos const& cells,
-                   o2::aod::CaloTriggers const& ctrs,
+                   o2::aod::CaloTriggers const&,
                    o2::aod::CPVClusters const& cpvs,
                    o2::aod::FullTracks const& tracks)
   {
@@ -740,6 +747,17 @@ struct caloClusterProducerTask {
     } else {
       return;
     }
+
+    if (mRunNumber != bcs.begin().runNumber()) {
+      mRunNumber = bcs.begin().runNumber();
+      LOG(info) << ">>>>>>>>>>>> Current run number: " << mRunNumber;
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", mRunNumber, timestamp);
+      }
+      o2::base::Propagator::initFieldFromGRP(grpo);
+    }
+
     std::map<int64_t, int> bcMap;
     int bcId = 0;
     for (auto bc : bcs) {
@@ -767,11 +785,11 @@ struct caloClusterProducerTask {
     // Fill output table
 
     // calibration may be updated by CCDB fetcher
-    const o2::phos::BadChannelsMap* badMap = ccdb->getForTimeStamp<o2::phos::BadChannelsMap>("PHS/Calib/BadMap", timestamp);
-    const o2::phos::CalibParams* calibParams = ccdb->getForTimeStamp<o2::phos::CalibParams>("PHS/Calib/CalibParams", timestamp);
+    const o2::phos::BadChannelsMap* badMap = ccdb->getForTimeStamp<o2::phos::BadChannelsMap>(mBadMapPath, timestamp);
+    const o2::phos::CalibParams* calibParams = ccdb->getForTimeStamp<o2::phos::CalibParams>(mCalibPath, timestamp);
 
     if (!isMC && !skipL1phase) {
-      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", timestamp);
+      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>(mL1PhasePath, timestamp);
       if (vec) {
         clusterizerPHOS->setL1phase((*vec)[0]);
       } else {
@@ -880,7 +898,7 @@ struct caloClusterProducerTask {
     curBC = 0;
     for (const auto& track : tracks) {
       if (track.has_collision()) { // ignore orphan tracks without collision
-        curBC = tracks.begin().collision().bc_as<aod::BCsWithTimestamps>().globalBC();
+        curBC = track.collision().bc_as<aod::BCsWithTimestamps>().globalBC();
         break;
       }
     }
@@ -934,7 +952,8 @@ struct caloClusterProducerTask {
       // calculate coordinate in PHOS plane
       int16_t module;
       float trackX, trackZ;
-      if (impactOnPHOS(track.trackEtaEmcal(), track.trackPhiEmcal(), module, trackX, trackZ)) {
+      auto trackPar = getTrackPar(track);
+      if (impactOnPHOS(trackPar, track.trackEtaEmcal(), track.trackPhiEmcal(), track.collision().posZ(), module, trackX, trackZ)) {
         int index = CpvMatchIndex(module, trackX, trackZ);
         trackMatchPoints[index].emplace_back(trackX, trackZ, track.globalIndex());
       }
@@ -1048,25 +1067,29 @@ struct caloClusterProducerTask {
         float trackDx = 9999., trackDz = 9999.;
         int trackindex = -1;
         for (int indx : regions) {
-          if (indx >= 0 && indx < kCpvCells) {
-            for (int ii = cpvPoints->mStart[indx]; ii < cpvPoints->mEnd[indx]; ii++) {
-              auto p = cpvMatchPoints[indx][ii];
-              float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
-              if (d < cpvdist) {
-                cpvdist = d;
+          if (cpvPoints != cpvNMatchPoints.end()) {
+            if (indx >= 0 && indx < kCpvCells) {
+              for (int ii = cpvPoints->mStart[indx]; ii < cpvPoints->mEnd[indx]; ii++) {
+                auto p = cpvMatchPoints[indx][ii];
+                float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
+                if (d < cpvdist) {
+                  cpvdist = d;
+                }
               }
             }
           }
 
           // same for tracks
-          for (int ii = trackPoints->mStart[indx]; ii < trackPoints->mEnd[indx]; ii++) {
-            auto pp = trackMatchPoints[indx][ii];
-            float d = pow((pp.pX - posX) * sigmaX, 2) + pow((pp.pZ - posZ) * sigmaZ, 2); // TODO different sigma for tracks
-            if (d < trackdist) {
-              trackdist = d;
-              trackDx = pp.pX - posX;
-              trackDz = pp.pZ - posZ;
-              trackindex = pp.indx;
+          if (trackPoints != trackNMatchPoints.end()) {
+            for (int ii = trackPoints->mStart[indx]; ii < trackPoints->mEnd[indx]; ii++) {
+              auto pp = trackMatchPoints[indx][ii];
+              float d = pow((pp.pX - posX) * sigmaX, 2) + pow((pp.pZ - posZ) * sigmaZ, 2); // TODO different sigma for tracks
+              if (d < trackdist) {
+                trackdist = d;
+                trackDx = pp.pX - posX;
+                trackDz = pp.pZ - posZ;
+                trackindex = pp.indx;
+              }
             }
           }
         }
@@ -1123,17 +1146,27 @@ struct caloClusterProducerTask {
   void processFullMC(o2::aod::BCsWithTimestamps const& bcs,
                      o2::aod::Collisions const& colls,
                      mcCells& cells,
-                     o2::aod::CaloTriggers const& ctrs,
+                     o2::aod::CaloTriggers const&,
                      o2::aod::CPVClusters const& cpvs,
                      o2::aod::FullTracks const& tracks)
   {
-
     int64_t timestamp = 0;
     if (bcs.begin() != bcs.end()) {
       timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
     } else {
       return;
     }
+
+    if (mRunNumber != bcs.begin().runNumber()) {
+      mRunNumber = bcs.begin().runNumber();
+      LOG(info) << ">>>>>>>>>>>> Current run number: " << mRunNumber;
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", mRunNumber, timestamp);
+      }
+      o2::base::Propagator::initFieldFromGRP(grpo);
+    }
+
     std::map<int64_t, int> bcMap;
     int bcId = 0;
     for (auto bc : bcs) {
@@ -1161,11 +1194,11 @@ struct caloClusterProducerTask {
     // Fill output table
 
     // calibration may be updated by CCDB fetcher
-    const o2::phos::BadChannelsMap* badMap = ccdb->getForTimeStamp<o2::phos::BadChannelsMap>("PHS/Calib/BadMap", timestamp);
-    const o2::phos::CalibParams* calibParams = ccdb->getForTimeStamp<o2::phos::CalibParams>("PHS/Calib/CalibParams", timestamp);
+    const o2::phos::BadChannelsMap* badMap = ccdb->getForTimeStamp<o2::phos::BadChannelsMap>(mBadMapPath, timestamp);
+    const o2::phos::CalibParams* calibParams = ccdb->getForTimeStamp<o2::phos::CalibParams>(mCalibPath, timestamp);
 
     if (!isMC && !skipL1phase) {
-      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", timestamp);
+      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>(mL1PhasePath, timestamp);
       if (vec) {
         clusterizerPHOS->setL1phase((*vec)[0]);
       } else {
@@ -1242,7 +1275,6 @@ struct caloClusterProducerTask {
     if (phosCellTRs.size() > 0) {
       phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
     }
-
     // clusterize
     o2::dataformats::MCTruthContainer<o2::phos::MCLabel> outputTruthCont;
     clusterizerPHOS->processCells(phosCells, phosCellTRs, &cellTruth,
@@ -1271,7 +1303,7 @@ struct caloClusterProducerTask {
           cpvNMatchPoints.back().mEnd[i] = cpvMatchPoints[i].size();
         }
         curBC = cpvclu.bc_as<aod::BCsWithTimestamps>().globalBC();
-        cpvNMatchPoints.back() = cpvNMatchPoints.emplace_back();
+        cpvNMatchPoints.emplace_back();
         cpvNMatchPoints.back().mTR = curBC;
         for (int i = kCpvCells; i--;) {
           cpvNMatchPoints.back().mStart[i] = cpvMatchPoints[i].size();
@@ -1294,10 +1326,10 @@ struct caloClusterProducerTask {
     std::vector<trackTrigRec> trackNMatchPoints;
     trackNMatchPoints.reserve(outputPHOSClusterTrigRecs.size());
 
-    curBC = 0;
+    curBC = -1;
     for (const auto& track : tracks) {
       if (track.has_collision()) { // ignore orphan tracks without collision
-        curBC = tracks.begin().collision().bc_as<aod::BCsWithTimestamps>().globalBC();
+        curBC = track.collision().bc_as<aod::BCsWithTimestamps>().globalBC();
         break;
       }
     }
@@ -1351,7 +1383,8 @@ struct caloClusterProducerTask {
       // calculate coordinate in PHOS plane
       int16_t module;
       float trackX, trackZ;
-      if (impactOnPHOS(track.trackEtaEmcal(), track.trackPhiEmcal(), module, trackX, trackZ)) {
+      auto trackPar = getTrackPar(track);
+      if (impactOnPHOS(trackPar, track.trackEtaEmcal(), track.trackPhiEmcal(), track.collision().posZ(), module, trackX, trackZ)) {
         int index = CpvMatchIndex(module, trackX, trackZ);
         trackMatchPoints[index].emplace_back(trackX, trackZ, track.globalIndex());
       }
@@ -1388,7 +1421,6 @@ struct caloClusterProducerTask {
         }
         cpvPoints++;
       }
-
       // find cpvTR for this BC
       auto trackPoints = trackNMatchPoints.begin();
       while (trackPoints != trackNMatchPoints.end()) {
@@ -1426,7 +1458,6 @@ struct caloClusterProducerTask {
         e = Nonlinearity(e);
 
         mom.SetMag(e);
-
         // CPV and track match
         const float cellSizeX = 2 * cpvMaxX / kCpvX;
         const float cellSizeZ = 2 * cpvMaxZ / kCpvZ;
@@ -1465,25 +1496,28 @@ struct caloClusterProducerTask {
         float trackDx = 9999., trackDz = 9999.;
         int trackindex = -1;
         for (int indx : regions) {
-          if (indx >= 0 && indx < kCpvCells) {
-            for (int ii = cpvPoints->mStart[indx]; ii < cpvPoints->mEnd[indx]; ii++) {
-              auto p = cpvMatchPoints[indx][ii];
-              float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
-              if (d < cpvdist) {
-                cpvdist = d;
+          if (cpvPoints != cpvNMatchPoints.end()) {
+            if (indx >= 0 && indx < kCpvCells) {
+              for (int ii = cpvPoints->mStart[indx]; ii < cpvPoints->mEnd[indx]; ii++) {
+                auto p = cpvMatchPoints[indx][ii];
+                float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
+                if (d < cpvdist) {
+                  cpvdist = d;
+                }
               }
             }
           }
-
           // same for tracks
-          for (int ii = trackPoints->mStart[indx]; ii < trackPoints->mEnd[indx]; ii++) {
-            auto pp = trackMatchPoints[indx][ii];
-            float d = pow((pp.pX - posX) * sigmaX, 2) + pow((pp.pZ - posZ) * sigmaZ, 2); // TODO different sigma for tracks
-            if (d < trackdist) {
-              trackdist = d;
-              trackDx = pp.pX - posX;
-              trackDz = pp.pZ - posZ;
-              trackindex = pp.indx;
+          if (trackPoints != trackNMatchPoints.end()) {
+            for (int ii = trackPoints->mStart[indx]; ii < trackPoints->mEnd[indx]; ii++) {
+              auto pp = trackMatchPoints[indx][ii];
+              float d = pow((pp.pX - posX) * sigmaX, 2) + pow((pp.pZ - posZ) * sigmaZ, 2); // TODO different sigma for tracks
+              if (d < trackdist) {
+                trackdist = d;
+                trackDx = pp.pX - posX;
+                trackDz = pp.pZ - posZ;
+                trackindex = pp.indx;
+              }
             }
           }
         }
@@ -1567,14 +1601,18 @@ struct caloClusterProducerTask {
     return (module - 1) * kCpvX * kCpvZ + ix * kCpvZ + iz; // modules: 1,2,3,4
   }
 
-  bool impactOnPHOS(float trackEta, float trackPhi, int16_t& module, float& trackX, float& trackZ)
+  bool impactOnPHOS(o2::track::TrackParametrization<float>& trackPar, float trackEta, float trackPhi, float /*zvtx*/, int16_t& module, float& trackX, float& trackZ)
   {
+    // eta,phi was calculated at EMCAL radius.
+    // Extrapolate to PHOS assuming zeroB and current vertex
     // Check if direction in PHOS acceptance+20cm and return phos module number and coordinates in PHOS module plane
-    const float phiMin = 240. * 0.017453293; // degToRad
+    const float phiMin = 240. * 0.017453293; // PHOS phi coverage-10degree *degToRad
     const float phiMax = 323. * 0.017453293; // PHOS+20 cm * degToRad
+    const float xmax = 85.;                  // Maximal x distance per module
     const float etaMax = 0.178266;
-    const float r = 460.; // track propagated to this radius
-    if (trackPhi < phiMin || trackPhi > phiMax || abs(trackEta) > etaMax) {
+    double bz = o2::base::Propagator::Instance()->getNominalBz(); // magnetic field
+
+    if (trackPhi < phiMin || trackPhi > phiMax || abs(trackEta) > etaMax) { // do not match even approximately
       return false;
     }
 
@@ -1593,30 +1631,112 @@ struct caloClusterProducerTask {
       module = 4;
     }
 
-    double posG[3] = {r * cos(trackPhi), r * sin(trackPhi), r * sinh(trackEta)};
-    double posL[3];
+    // get PHOS radius
+    constexpr float shiftY = -1.26;    // Depth-optimized
+    double posL[3] = {0., 0., shiftY}; // local position at the center of module
+    double posG[3] = {0};
+    geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
+    double rPHOS = sqrt(posG[0] * posG[0] + posG[1] * posG[1]);
+    double alpha = (230. + 20. * module) * 0.017453293;
+
+    // During main reconstruction track was propagated to radius 460 cm with accounting material
+    // now material is not available. Therefore, start from main rec. position and extrapoate to actual radius without material
+    // Get track parameters at point where main reconstruction stop
+    float xPHOS = 460.f, xtrg = 0.f;
+    if (!trackPar.getXatLabR(xPHOS, xtrg, bz, o2::track::DirType::DirOutward)) {
+      return false;
+    }
+    auto prop = o2::base::Propagator::Instance();
+    if (!trackPar.rotate(alpha) ||
+        !prop->PropagateToXBxByBz(trackPar, xtrg, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrNONE)) {
+      return false;
+    }
+    // calculate xyz from old (Phi, eta) and new r
+    float r = std::sqrt(trackPar.getX() * trackPar.getX() + trackPar.getY() * trackPar.getY());
+    trackPar.setX(r * std::cos(trackPhi - alpha));
+    trackPar.setY(r * std::sin(trackPhi - alpha));
+    trackPar.setZ(r / std::tan(2. * std::atan(std::exp(-trackEta))));
+
+    if (!prop->PropagateToXBxByBz(trackPar, rPHOS, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrNONE)) {
+      return false;
+    }
+    alpha = trackPar.getAlpha();
+    double ca = cos(alpha), sa = sin(alpha);
+    posG[0] = trackPar.getX() * ca - trackPar.getY() * sa;
+    posG[1] = trackPar.getY() * ca + trackPar.getX() * sa;
+    posG[2] = trackPar.getZ();
+
     geomPHOS->getAlignmentMatrix(module)->MasterToLocal(posG, posL);
     trackX = posL[0];
-    trackZ = posL[2];
+    trackZ = posL[1];
+    // If trackX beyond the module, switch to the next one
+    if (abs(trackX) < xmax || (trackX < -xmax && module == 1) || (trackX > xmax && module == 4)) {
+      return true;
+    }
+    // re-do extrapolation to correct module
+    if (trackX < xmax && module > 1) {
+      --module;
+    } else {
+      if (trackX > xmax && module < 4) {
+        ++module;
+      }
+    }
+    // repeat extrapolation for correct module
+    alpha = (230. + 20. * module) * 0.017453293;
+    posL[0] = 0.;
+    posL[1] = 0.;
+    posL[2] = shiftY; // local position at the center of module
+    geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
+    rPHOS = sqrt(posG[0] * posG[0] + posG[1] * posG[1]);
+
+    if (!trackPar.rotate(alpha) ||
+        !prop->PropagateToXBxByBz(trackPar, xtrg, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrNONE)) {
+      return false;
+    }
+    // calculate xyz from old (Phi, eta) and new r
+    r = std::sqrt(trackPar.getX() * trackPar.getX() + trackPar.getY() * trackPar.getY());
+    trackPar.setX(r * std::cos(trackPhi - alpha));
+    trackPar.setY(r * std::sin(trackPhi - alpha));
+    trackPar.setZ(r / std::tan(2. * std::atan(std::exp(-trackEta))));
+
+    if (!prop->PropagateToXBxByBz(trackPar, rPHOS, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrNONE)) {
+      return false;
+    }
+    alpha = trackPar.getAlpha();
+    ca = cos(alpha);
+    sa = sin(alpha);
+    posG[0] = trackPar.getX() * ca - trackPar.getY() * sa;
+    posG[1] = trackPar.getY() * ca + trackPar.getX() * sa;
+    posG[2] = trackPar.getZ();
+
+    geomPHOS->getAlignmentMatrix(module)->MasterToLocal(posG, posL);
+    trackX = posL[0];
+    trackZ = posL[1];
     return true;
   }
 
   float Nonlinearity(float en)
   {
     // Correct for non-linearity
-    // Parameters to be read from ccdb
-    const double a = 9.34913e-01;
-    const double b = 2.33e-03;
-    const double c = -8.10e-05;
-    const double d = 3.2e-02;
-    const double f = -8.0e-03;
-    const double g = 1.e-01;
-    const double h = 2.e-01;
-    const double k = -1.48e-04;
-    const double l = 0.194;
-    const double m = 0.0025;
-
-    return en * (a + b * en + c * en * en + d / en + f / ((en - g) * (en - g) + h) + k / ((en - l) * (en - l) + m));
+    switch (mNonlinType) {
+      case 0:
+        return en;
+      case 1: {
+        const double a = 9.34913e-01;
+        const double b = 2.33e-03;
+        const double c = -8.10e-05;
+        const double d = 3.2e-02;
+        const double f = -8.0e-03;
+        const double g = 1.e-01;
+        const double h = 2.e-01;
+        const double k = -1.48e-04;
+        const double l = 0.194;
+        const double m = 0.0025;
+        return en * (a + b * en + c * en * en + d / en + f / ((en - g) * (en - g) + h) + k / ((en - l) * (en - l) + m));
+      }
+      default:
+        return en;
+    }
   }
 };
 

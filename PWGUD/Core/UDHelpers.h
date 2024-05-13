@@ -322,24 +322,29 @@ float FT0AmplitudeC(TFT0 ft0)
 template <typename TFDD>
 float FDDAmplitudeA(TFDD fdd)
 {
-  float totAmplitude = 0;
-  for (auto amp : fdd.chargeA()) {
-    totAmplitude += amp;
-  }
-
-  return totAmplitude;
+  std::vector<int16_t> ampsA(fdd.chargeA(), fdd.chargeA() + 8);
+  return std::accumulate(ampsA.begin(), ampsA.end(), 0);
 }
 
 // -----------------------------------------------------------------------------
 template <typename TFDD>
 float FDDAmplitudeC(TFDD fdd)
 {
-  float totAmplitude = 0;
-  for (auto amp : fdd.chargeC()) {
-    totAmplitude += amp;
-  }
+  std::vector<int16_t> ampsC(fdd.chargeC(), fdd.chargeC() + 8);
+  return std::accumulate(ampsC.begin(), ampsC.end(), 0);
+}
 
-  return totAmplitude;
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanFV0(T& bc, float maxFITtime, float limitA)
+{
+  if (bc.has_foundFV0() && limitA >= 0.) {
+    bool ota = std::abs(bc.foundFV0().time()) <= maxFITtime;
+    bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
+    return ota && oma;
+  } else {
+    return true;
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -389,19 +394,6 @@ bool cleanFDDC(T& bc, float maxFITtime, float limitC)
     bool otc = std::abs(bc.foundFDD().timeC()) <= maxFITtime;
     bool omc = FDDAmplitudeC(bc.foundFDD()) <= limitC;
     return otc && omc;
-  } else {
-    return true;
-  }
-}
-
-// -----------------------------------------------------------------------------
-template <typename T>
-bool cleanFV0(T& bc, float maxFITtime, float limitA)
-{
-  if (bc.has_foundFV0() && limitA >= 0.) {
-    bool ota = std::abs(bc.foundFV0().time()) <= maxFITtime;
-    bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
-    return ota && oma;
   } else {
     return true;
   }
@@ -549,33 +541,135 @@ bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
 }
 
 // -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutNoTimeFrameBorder(T const& coll)
+// Reject collisions close to TF borders due to incomplete TPC drift volume.
+// https://its.cern.ch/jira/browse/O2-4623
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutNoSameBunchPileup(T const& coll)
+// Rejects collisions which are associated with the same "found-by-T0" bunch crossing.
+// Could be partially due to the pileup with another collision in the same foundBC.
+// See more in slides 12-14 of https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutNoITSROFrameBorder(T const& coll)
+// Reject events affected by the ITS ROF border.
+// https://its.cern.ch/jira/browse/O2-4309
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsGoodZvtxFT0vsPV(T const& coll)
+// Removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference.
+// The large vertexZ difference can be due to the in-bunch pileup or wrong BC assigned to a collision.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexITSTPC(T const& coll)
+// Selects collisions with at least one ITS-TPC PV track, and thus rejects vertices built from ITS-only tracks.
+// Has an effect only on the pp data, in Pb-Pb ITS-only vertices are already rejected by default.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexTRDmatched(T const& coll)
+// Selects collisions with at least one TRD PV track.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexTRDmatched);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexTOFmatched(T const& coll)
+// Selects collisions with at least one TOF PV track.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexTOFmatched);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool goodCollision(T const& coll, DGCutparHolder const& diffCuts)
+// Return true if collision is accepted according to user-chosen rules from event selection task
+{
+  bool accepted = true;
+  std::vector<int> sels = diffCuts.collisionSel();
+  if (sels[0])
+    accepted = accepted && cutNoTimeFrameBorder(coll);
+  if (sels[1])
+    accepted = accepted && cutNoSameBunchPileup(coll);
+  if (sels[2])
+    accepted = accepted && cutNoITSROFrameBorder(coll);
+  if (sels[3])
+    accepted = accepted && cutIsGoodZvtxFT0vsPV(coll);
+  if (sels[4])
+    accepted = accepted && cutIsVertexITSTPC(coll);
+  if (sels[5])
+    accepted = accepted && cutIsVertexTRDmatched(coll);
+  if (sels[6])
+    accepted = accepted && cutIsVertexTOFmatched(coll);
+
+  return accepted;
+}
+
+// -----------------------------------------------------------------------------
 // fill BB and BG information into FITInfo
 template <typename BCR>
 void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& bcrange)
 {
-  for (auto const& bc2u : bcrange) {
+  for (auto const& bc : bcrange) {
 
     // 0 <= bit <= 31
-    auto bit = bc2u.globalBC() - minbc;
-    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGT0A))
+    auto bit = bc.globalBC() - minbc;
+    if (!bc.selection_bit(o2::aod::evsel::kNoBGT0A))
       SETBIT(info.BGFT0Apf, bit);
-    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGT0C))
+    if (!bc.selection_bit(o2::aod::evsel::kNoBGT0C))
       SETBIT(info.BGFT0Cpf, bit);
-    if (bc2u.selection_bit(o2::aod::evsel::kIsBBT0A))
+    if (bc.selection_bit(o2::aod::evsel::kIsBBT0A))
       SETBIT(info.BBFT0Apf, bit);
-    if (bc2u.selection_bit(o2::aod::evsel::kIsBBT0C))
+    if (bc.selection_bit(o2::aod::evsel::kIsBBT0C))
       SETBIT(info.BBFT0Cpf, bit);
-    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGV0A))
+    if (!bc.selection_bit(o2::aod::evsel::kNoBGV0A))
       SETBIT(info.BGFV0Apf, bit);
-    if (bc2u.selection_bit(o2::aod::evsel::kIsBBV0A))
+    if (bc.selection_bit(o2::aod::evsel::kIsBBV0A))
       SETBIT(info.BBFV0Apf, bit);
-    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGFDA))
+    if (!bc.selection_bit(o2::aod::evsel::kNoBGFDA))
       SETBIT(info.BGFDDApf, bit);
-    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGFDC))
+    if (!bc.selection_bit(o2::aod::evsel::kNoBGFDC))
       SETBIT(info.BGFDDCpf, bit);
-    if (bc2u.selection_bit(o2::aod::evsel::kIsBBFDA))
+    if (bc.selection_bit(o2::aod::evsel::kIsBBFDA))
       SETBIT(info.BBFDDApf, bit);
-    if (bc2u.selection_bit(o2::aod::evsel::kIsBBFDC))
+    if (bc.selection_bit(o2::aod::evsel::kIsBBFDC))
       SETBIT(info.BBFDDCpf, bit);
   }
 }
@@ -593,34 +687,22 @@ void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, B const& bcs, 
   if (selbc.size() > 0) {
     auto bc = selbc.begin();
 
+    // FV0A
+    if (bc.has_foundFV0()) {
+      auto fv0 = fv0as.iteratorAt(bc.foundFV0Id());
+      info.timeFV0A = fv0.time();
+      info.ampFV0A = FV0AmplitudeA(fv0);
+      info.triggerMaskFV0A = fv0.triggerMask();
+    }
+
     // FT0
     if (bc.has_foundFT0()) {
       auto ft0 = ft0s.iteratorAt(bc.foundFT0Id());
       info.timeFT0A = ft0.timeA();
       info.timeFT0C = ft0.timeC();
-      const auto& ampsA = ft0.amplitudeA();
-      const auto& ampsC = ft0.amplitudeC();
-      info.ampFT0A = 0.;
-      for (auto amp : ampsA) {
-        info.ampFT0A += amp;
-      }
-      info.ampFT0C = 0.;
-      for (auto amp : ampsC) {
-        info.ampFT0C += amp;
-      }
+      info.ampFT0A = FT0AmplitudeA(ft0);
+      info.ampFT0C = FT0AmplitudeC(ft0);
       info.triggerMaskFT0 = ft0.triggerMask();
-    }
-
-    // FV0A
-    if (bc.has_foundFV0()) {
-      auto fv0a = fv0as.iteratorAt(bc.foundFV0Id());
-      info.timeFV0A = fv0a.time();
-      const auto& amps = fv0a.amplitude();
-      info.ampFV0A = 0.;
-      for (auto amp : amps) {
-        info.ampFV0A += amp;
-      }
-      info.triggerMaskFV0A = fv0a.triggerMask();
     }
 
     // FDD
@@ -628,16 +710,8 @@ void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, B const& bcs, 
       auto fdd = fdds.iteratorAt(bc.foundFDDId());
       info.timeFDDA = fdd.timeA();
       info.timeFDDC = fdd.timeC();
-      const auto& ampsA = fdd.chargeA();
-      const auto& ampsC = fdd.chargeC();
-      info.ampFDDA = 0.;
-      for (auto amp : ampsA) {
-        info.ampFDDA += amp;
-      }
-      info.ampFDDC = 0.;
-      for (auto amp : ampsC) {
-        info.ampFDDC += amp;
-      }
+      info.ampFDDA = FDDAmplitudeA(fdd);
+      info.ampFDDC = FDDAmplitudeC(fdd);
       info.triggerMaskFDD = fdd.triggerMask();
     }
   }
@@ -652,7 +726,7 @@ void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, B const& bcs, 
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims, SliceCache& cache)
+bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& /*lims*/, SliceCache& cache)
 {
   const auto& ZdcBC = zdcs.sliceByCached(aod::zdc::bcId, bc.globalIndex(), cache);
   return (ZdcBC.size() == 0);
@@ -660,7 +734,7 @@ bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims, SliceCache
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims, SliceCache& cache)
+bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& /*lims*/, SliceCache& cache)
 {
   const auto& CaloBC = calos.sliceByCached(aod::calo::bcId, bc.globalIndex(), cache);
   return (CaloBC.size() == 0);

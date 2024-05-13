@@ -16,6 +16,8 @@ project(O2Physics
         LANGUAGES C CXX
         DESCRIPTION "Physics Analysis for O2")
 
+cmake_policy(SET CMP0144 NEW)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set_property(GLOBAL PROPERTY REPORT_UNDEFINED_PROPERTIES)
 
@@ -84,3 +86,5 @@ endif()
 
 set_root_pcm_dependencies()
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ClangBuildAnalyzer.ini.in
+               ${CMAKE_CURRENT_BINARY_DIR}/ClangBuildAnalyzer.ini @ONLY)

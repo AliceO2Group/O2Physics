@@ -35,6 +35,7 @@ struct skimmerGammaCalo {
   Preslice<o2::aod::EMCALMatchedTracks> MTperCluster = o2::aod::emcalclustercell::emcalclusterId;
 
   Produces<aod::SkimEMCClusters> tableGammaEMCReco;
+  Produces<aod::EMCClusterMCLabels> tableEMCClusterMCLabels;
   Produces<aod::SkimEMCCells> tableCellEMCReco;
   Produces<aod::SkimEMCMTs> tableTrackEMCReco;
 
@@ -67,7 +68,7 @@ struct skimmerGammaCalo {
     LOG(info) << "| M02 cut: " << minM02 << " < M02 < " << maxM02 << std::endl;
   }
 
-  void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const& tracks)
+  void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const&)
   {
     for (const auto& emccluster : emcclusters) {
       historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
@@ -79,7 +80,7 @@ struct skimmerGammaCalo {
         continue;
       }
       // M02 cut
-      if (emccluster.m02() > maxM02 || emccluster.m02() < minM02) {
+      if (emccluster.nCells() > 1 && (emccluster.m02() > maxM02 || emccluster.m02() < minM02)) {
         historeg.fill(HIST("hCaloClusterFilter"), 2);
         continue;
       }
@@ -133,9 +134,38 @@ struct skimmerGammaCalo {
                         emccluster.definition(), vTrackIds, vEta, vPhi, vP, vPt);
     }
   }
-  PROCESS_SWITCH(skimmerGammaCalo, processRec, "process only reconstructed info", true);
+  void processMC(aod::Collision const&, soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters, aod::McParticles const&)
+  {
+    for (const auto& emccluster : emcclusters) {
+      historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
+      historeg.fill(HIST("hCaloClusterFilter"), 0);
 
-  void processDummy(aod::Collision const& collision)
+      // timing cut
+      if (emccluster.time() > maxTime || emccluster.time() < minTime) {
+        historeg.fill(HIST("hCaloClusterFilter"), 1);
+        continue;
+      }
+      // M02 cut
+      if (emccluster.nCells() > 1 && (emccluster.m02() > maxM02 || emccluster.m02() < minM02)) {
+        historeg.fill(HIST("hCaloClusterFilter"), 2);
+        continue;
+      }
+      std::vector<int32_t> mcLabels;
+      for (size_t iCont = 0; iCont < emccluster.amplitudeA().size(); iCont++) {
+        mcLabels.push_back(emccluster.mcParticleIds()[iCont]);
+      }
+      // LOGF(info, "---- New Cluster ---");
+      // for (unsigned long int iCont = 0; iCont < mcLabels.size(); iCont++) {
+      //   LOGF(info, "iCont = %d, mcParticle = %d, amplitudeA = %.5f", iCont, mcLabels.at(iCont), emccluster.amplitudeA()[iCont]);
+      // }
+      tableEMCClusterMCLabels(mcLabels);
+      mcLabels.clear();
+    }
+  }
+  PROCESS_SWITCH(skimmerGammaCalo, processRec, "process only reconstructed info", true);
+  PROCESS_SWITCH(skimmerGammaCalo, processMC, "process MC info", false); // Run this in addition to processRec for MCs to copy the cluster mc labels from the EMCALMCClusters to the skimmed EMCClusterMCLabels table
+
+  void processDummy(aod::Collision const&)
   {
     // do nothing
   }

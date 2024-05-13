@@ -45,10 +45,11 @@ using namespace o2::analysis::femtoDream;
 namespace o2::aod
 {
 
-using FemtoFullCollision =
-  soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
+using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
 using FemtoFullCollision_noCent_MC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
+using FemtoFullMCgenCollisions = soa::Join<aod::McCollisions, MultsExtraMC>;
+using FemtoFullMCgenCollision = FemtoFullMCgenCollisions::iterator;
 
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA,
@@ -72,11 +73,14 @@ int getRowDaughters(int daughID, T const& vecID)
 struct femtoDreamProducerTask {
 
   Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDMCCollisions> outputMCCollision;
+  Produces<aod::FDMCCollLabels> outputCollsMCLabels;
   Produces<aod::FDParticles> outputParts;
   Produces<aod::FDMCParticles> outputPartsMC;
   Produces<aod::FDExtParticles> outputDebugParts;
   Produces<aod::FDMCLabels> outputPartsMCLabels;
   Produces<aod::FDExtMCParticles> outputDebugPartsMC;
+  Produces<aod::FDExtMCLabels> outputPartsExtMCLabels;
 
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
@@ -84,11 +88,11 @@ struct femtoDreamProducerTask {
 
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
-  Configurable<bool> ConfEvtUseTPCmult{"ConfEvtUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
+  Configurable<bool> ConfEvtAddOfflineCheck{"ConfEvtAddOfflineCheck", false, "Evt sel: additional checks for offline selection (not part of sel8 yet)"};
   Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", true, "Activate filling of V0 into femtodream tables"};
 
   Configurable<bool> ConfTrkRejectNotPropagated{"ConfTrkRejectNotPropagated", false, "True: reject not propagated tracks"};
@@ -166,7 +170,7 @@ struct femtoDreamProducerTask {
     TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
     V0Registry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
 
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
+    colCuts.setCuts(ConfEvtZvtx.value, ConfEvtTriggerCheck.value, ConfEvtTriggerSel.value, ConfEvtOfflineCheck.value, ConfEvtAddOfflineCheck.value, ConfIsRun3.value);
     colCuts.init(&qaRegistry);
 
     trackCuts.setSelection(ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
@@ -314,23 +318,35 @@ struct femtoDreamProducerTask {
     }
   }
 
-  template <typename ParticleType>
-  void fillMCParticle(ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype)
+  template <typename CollisionType, typename ParticleType>
+  void fillMCParticle(CollisionType const& col, ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype)
   {
     if (particle.has_mcParticle()) {
       // get corresponding MC particle and its info
       auto particleMC = particle.mcParticle();
       auto pdgCode = particleMC.pdgCode();
       int particleOrigin = 99;
-      auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
-
+      int pdgCodeMother = -1;
+      // get list of mothers
+      // could be empty (for example in case of injected light nuclei)
+      auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
+      // check pdg code
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
-        if (particleMC.isPhysicalPrimary()) {
+        if ((col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
+        } else if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
-        } else if (motherparticleMC.producedByGenerator()) {
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-        } else {
+        } else if (particleMC.getGenStatusCode() == -1) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+        } else if (!motherparticlesMC.empty()) {
+          // get direct mother of the particle
+          auto motherparticleMC = motherparticlesMC.front();
+          pdgCodeMother = motherparticleMC.pdgCode();
+          if (motherparticleMC.isPhysicalPrimary() && particleMC.getProcess() == 4) {
+            particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+          }
+        } else {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kElse;
         }
       } else {
         particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
@@ -338,11 +354,29 @@ struct femtoDreamProducerTask {
 
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       outputPartsMCLabels(outputPartsMC.lastIndex());
+      if (ConfIsDebug) {
+        outputPartsExtMCLabels(outputPartsMC.lastIndex());
+        outputDebugPartsMC(pdgCodeMother);
+      }
     } else {
       outputPartsMCLabels(-1);
+      if (ConfIsDebug) {
+        outputPartsExtMCLabels(-1);
+      }
     }
   }
 
+  template <typename CollisionType>
+  void fillMCCollision(CollisionType const& col)
+  {
+    if (col.has_mcCollision()) {
+      auto genMCcol = col.template mcCollision_as<aod::FemtoFullMCgenCollisions>();
+      outputMCCollision(genMCcol.multMCNParticlesEta08());
+      outputCollsMCLabels(outputMCCollision.lastIndex());
+    } else {
+      outputCollsMCLabels(-1);
+    }
+  }
   template <bool isMC, bool useCentrality, typename V0Type, typename TrackType, typename CollisionType>
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
@@ -360,9 +394,6 @@ struct femtoDreamProducerTask {
     } else {
       mult = 1; // multiplicity percentile is know in Run 2
       multNtr = col.multTracklets();
-    }
-    if (ConfEvtUseTPCmult) {
-      multNtr = col.multTPC();
     }
 
     colCuts.fillQA(col, mult);
@@ -383,6 +414,9 @@ struct femtoDreamProducerTask {
     }
 
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+    if constexpr (isMC) {
+      fillMCCollision(col);
+    }
 
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
@@ -412,7 +446,7 @@ struct femtoDreamProducerTask {
       }
 
       if constexpr (isMC) {
-        fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
+        fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
     }
 
@@ -458,7 +492,7 @@ struct femtoDreamProducerTask {
                     0);
         const int rowOfPosTrack = outputParts.lastIndex();
         if constexpr (isMC) {
-          fillMCParticle(postrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
+          fillMCParticle(col, postrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
         }
         int negtrackID = v0.negTrackId();
         int rowInPrimaryTrackTableNeg = -1;
@@ -478,7 +512,7 @@ struct femtoDreamProducerTask {
                     0);
         const int rowOfNegTrack = outputParts.lastIndex();
         if constexpr (isMC) {
-          fillMCParticle(negtrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
+          fillMCParticle(col, negtrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
         }
         std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
         outputParts(outputCollision.lastIndex(),
@@ -498,7 +532,7 @@ struct femtoDreamProducerTask {
           fillDebugParticle<false>(v0);      // QA for v0
         }
         if constexpr (isMC) {
-          fillMCParticle(v0, o2::aod::femtodreamparticle::ParticleType::kV0);
+          fillMCParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0);
         }
       }
     }
@@ -521,8 +555,8 @@ struct femtoDreamProducerTask {
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                 aod::McCollisions const& mcCollisions,
-                 aod::McParticles const& mcParticles,
+                 aod::FemtoFullMCgenCollisions const&,
+                 aod::McParticles const&,
                  soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
@@ -535,8 +569,8 @@ struct femtoDreamProducerTask {
   void processMC_noCentrality(aod::FemtoFullCollision_noCent_MC const& col,
                               aod::BCsWithTimestamps const&,
                               soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                              aod::McCollisions const& mcCollisions,
-                              aod::McParticles const& mcParticles,
+                              aod::FemtoFullMCgenCollisions const&,
+                              aod::McParticles const&,
                               soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run

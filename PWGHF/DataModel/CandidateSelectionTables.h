@@ -141,7 +141,7 @@ DECLARE_SOA_COLUMN(IsRecoD0Flag, isRecoD0Flag, bool);         //! checking Decay
 DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, bool);           //! checking conjugate independent Topological selection on Dstar
 DECLARE_SOA_COLUMN(IsRecoCand, isRecoCand, bool);             //! checking conjugate dependent Topological selecton on Dstar
 DECLARE_SOA_COLUMN(IsRecoPid, isRecoPid, bool);               //! checking PID selection on daughters of D0Prong
-
+DECLARE_SOA_COLUMN(MlProbDstarToD0Pi, mlProbDstarToD0Pi, std::vector<float>); //! ML probability for Dstar to D0Pi
 } // namespace hf_sel_candidate_dstar
 
 DECLARE_SOA_TABLE(HfSelDstarToD0Pi, "AOD", "HFSELDSTAR", //! Table stores information about selection flag on Dstar candidate
@@ -150,6 +150,9 @@ DECLARE_SOA_TABLE(HfSelDstarToD0Pi, "AOD", "HFSELDSTAR", //! Table stores inform
                   hf_sel_candidate_dstar::IsRecoTopol,
                   hf_sel_candidate_dstar::IsRecoCand,
                   hf_sel_candidate_dstar::IsRecoPid);
+
+DECLARE_SOA_TABLE(HfMlDstarToD0Pi, "AOD", "HFMLDSTAR", //! Table stores ML probability for Dstar to D0Pi
+                  hf_sel_candidate_dstar::MlProbDstarToD0Pi);
 
 namespace hf_sel_candidate_lc
 {
@@ -237,11 +240,15 @@ DECLARE_SOA_TABLE(HfSelLcToK0sP, "AOD", "HFSELLCK0SP", //!
 
 namespace hf_sel_candidate_b0
 {
-DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int); //!
+DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int);     //! selection flag on B0 candidate
+DECLARE_SOA_COLUMN(MlProbB0ToDPi, mlProbB0ToDPi, float); //! ML score of B0 candidate for signal class
 } // namespace hf_sel_candidate_b0
 
 DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
                   hf_sel_candidate_b0::IsSelB0ToDPi);
+
+DECLARE_SOA_TABLE(HfMlB0ToDPi, "AOD", "HFMLB0", //!
+                  hf_sel_candidate_b0::MlProbB0ToDPi);
 
 namespace hf_sel_candidate_bs
 {

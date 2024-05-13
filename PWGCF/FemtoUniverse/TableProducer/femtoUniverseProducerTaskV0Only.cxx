@@ -11,7 +11,7 @@
 /// \file femtoUniverseProducerTaskV0Only.cxx
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"
@@ -44,7 +44,7 @@ namespace o2::aod
 {
 
 using FemtoFullCollision =
-  soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>::iterator;
+  soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl,
             aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,

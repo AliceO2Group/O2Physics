@@ -150,18 +150,18 @@ AxisSpec DCAAxis = {601, -3.01, 3.01, "", "DCA axis"};
 AxisSpec EtaAxis = {80, -4.0, 4.0, "#eta", "eta axis"};
 AxisSpec V0EtaAxis = {20, -1.0, 1.0, "#etav0", "eta axis"};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI, "Rad", "phi axis"};
-AxisSpec PtVarAxis = {kPtVarend - 1, kPtVarbegin + 0.5, kPtVarend - 0.5, "", "ptvar axis"};
-AxisSpec EvtClassAxis = {kECend - 1, kECbegin + 0.5, kECend - 0.5, "", "event class"};
-AxisSpec TrigClassAxis = {kTrigend - 1, kTrigbegin + 0.5, kTrigend - 0.5, "", "trigger class"};
-AxisSpec ParticleTypeAxis = {kParTypeend - 1, kParTypebegin + 0.5, kParTypeend - 0.5, "", "Particle type"};
+AxisSpec PtVarAxis = {kPtVarend - 1, +kPtVarbegin + 0.5, +kPtVarend - 0.5, "", "ptvar axis"};
+AxisSpec EvtClassAxis = {kECend - 1, +kECbegin + 0.5, +kECend - 0.5, "", "event class"};
+AxisSpec TrigClassAxis = {kTrigend - 1, +kTrigbegin + 0.5, +kTrigend - 0.5, "", "trigger class"};
+AxisSpec ParticleTypeAxis = {kParTypeend - 1, +kParTypebegin + 0.5, +kParTypeend - 0.5, "", "Particle type"};
 std::vector<double> centBinningPbPb = {0, 1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100};
 std::vector<double> centBinning = {0., 0.01, 0.1, 1.0, 5.0, 10., 15, 20., 25, 30., 35., 40., 45., 50., 70., 100.0};
 AxisSpec CentAxis = {centBinning, "", "centrality"};
 AxisSpec CentAxisPbPb = {centBinningPbPb, "", "centrality"};
-AxisSpec SpeciesAxis = {kSpeciesend - 1, kSpeciesbegin + 0.5, kSpeciesend - 0.5, "", "species class"};
+AxisSpec SpeciesAxis = {kSpeciesend - 1, +kSpeciesbegin + 0.5, +kSpeciesend - 0.5, "", "species class"};
 AxisSpec MassAxis = {600, 0.3f, 1.3f, "Mass (GeV/c^{2})", "Inv. Mass (GeV/c^{2})"};
-AxisSpec SignAxis = {kSignend - 1, kSignbegin + 0.5, kSignend - 0.5, "", "sign"};
-AxisSpec StepAxis = {kStepend - 1, kStepbegin + 0.5, kStepend - 0.5, "", "step"};
+AxisSpec SignAxis = {kSignend - 1, +kSignbegin + 0.5, +kSignend - 0.5, "", "sign"};
+AxisSpec StepAxis = {kStepend - 1, +kStepbegin + 0.5, +kStepend - 0.5, "", "step"};
 AxisSpec testAxis = {101, -0.5, 100.5, "", "test"};
 AxisSpec multAxis = {1001, -0.5, 1000.5, "", "Ntrks"};
 AxisSpec StatusCodeAxis = {3, -1.5, 2.5, "", "StatusCode"};
@@ -285,7 +285,7 @@ struct MultiplicityCounter {
   {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
-      if (!useEvSel || (bc.selection_bit(o2::aod::evsel::kIsBBT0A) &
+      if (!useEvSel || (bc.selection_bit(o2::aod::evsel::kIsBBT0A) &&
                         bc.selection_bit(o2::aod::evsel::kIsBBT0C)) != 0) {
         registry.fill(HIST("Selection"), 5.);
         cols.clear();
@@ -315,7 +315,7 @@ struct MultiplicityCounter {
   template <typename C>
   void runCounting(
     C const& collisions,
-    FiTracks const& tracks)
+    FiTracks const& /*tracks*/)
   {
 
     for (auto& collision : collisions) {
@@ -462,13 +462,13 @@ struct MultiplicityCounter {
             if constexpr (MyCollisionsCent::template contains<aod::CentFT0Ms>())
               cent = collision.centFT0M();
 
-            auto Ntrk_rec = 0;
-            auto trackspart = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-            for (auto& track : trackspart) {
-              if (std::abs(track.eta()) < 1) {
-                Ntrk_rec++;
-              }
-            }
+            // auto Ntrk_rec = 0;
+            // auto trackspart = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            // for (auto& track : trackspart) {
+            //   if (std::abs(track.eta()) < 1) {
+            //     Ntrk_rec++;
+            //   }
+            // }
           }
         }
       }
@@ -529,13 +529,13 @@ struct MultiplicityCounter {
         } else {
           if constexpr (MyCollisionsCent::template contains<aod::CentFT0Ms>())
             cent = collision.centFT0M();
-          auto Ntrk_rec = 0;
-          auto trackspart = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-          for (auto& track : trackspart) {
-            if (std::abs(track.eta()) < 1) {
-              Ntrk_rec++;
-            }
-          }
+          // auto Ntrk_rec = 0;
+          // auto trackspart = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+          // for (auto& track : trackspart) {
+          //   if (std::abs(track.eta()) < 1) {
+          //     Ntrk_rec++;
+          //   }
+          // }
         }
 
         Bool_1d btrigc(kTrigend, false);
@@ -665,8 +665,8 @@ struct MultiplicityCounter {
 
   void processTrackEfficiencyGeneral(
     typename soa::Join<MyCollisions, aod::McCollisionLabels>::iterator const& collision,
-    aod::McCollisions const& mcCollisions, Particles const& particles,
-    FiLTracks const& tracks)
+    aod::McCollisions const& /*mcCollisions*/, Particles const& particles,
+    FiLTracks const& /*tracks*/)
   {
 
     if (!collision.sel8()) {
@@ -759,7 +759,7 @@ struct MultiplicityCounter {
   void processV0Counting(
     MyCollisionsCent const& collisions,
     aod::V0Datas const& fullV0s,
-    FiTracks const& tracks)
+    FiTracks const& /*tracks*/)
   {
     for (auto& collision : collisions) {
       if (!collision.sel8())
@@ -788,11 +788,11 @@ struct MultiplicityCounter {
 
   void processMCV0Counting(
     soa::Join<MyCollisionsCent, aod::McCollisionLabels> const& collisions,
-    aod::McCollisions const& MCCollisions,
-    Particles const& mcParticles,
+    aod::McCollisions const& /*MCCollisions*/,
+    Particles const& /*mcParticles*/,
     soa::Filtered<aod::V0Datas> const& fullV0s,
-    soa::Filtered<LabeledTracksEx> const& tracks,
-    DaughterTracks const& Dautrks)
+    soa::Filtered<LabeledTracksEx> const& /*tracks*/,
+    DaughterTracks const& /*Dautrks*/)
   {
     for (auto& collision : collisions) {
       auto cent = -1.f;

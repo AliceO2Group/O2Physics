@@ -59,7 +59,7 @@ struct JetMatchingMc {
   {
   }
 
-  void processDummy(JetMcCollisions const& mcCollisions)
+  void processDummy(JetMcCollisions const&)
   {
   }
   PROCESS_SWITCH(JetMatchingMc, processDummy, "Dummy process", true);
@@ -117,18 +117,24 @@ using D0ChargedJetMatching = JetMatchingMc<soa::Join<aod::D0ChargedMCDetectorLev
                                            aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets,
                                            CandidatesD0MCD,
                                            CandidatesD0MCP>;
-/*using LcChargedJetMatching = JetMatchingMc<soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,
+using LcChargedJetMatching = JetMatchingMc<soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,
                                            soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>,
                                            aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets,
                                            aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets,
                                            CandidatesLcMCD,
                                            CandidatesLcMCP>;
-using BplusChargedJetMatching = JetMatchingMc<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,
+/*using BplusChargedJetMatching = JetMatchingMc<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,
                                               soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>,
                                               aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets,
                                               aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets,
                                               CandidatesBplusMCD,
                                               CandidatesBplusMCP>;*/
+using V0ChargedJetMatching = JetMatchingMc<soa::Join<aod::V0ChargedMCDetectorLevelJets, aod::V0ChargedMCDetectorLevelJetConstituents>,
+                                           soa::Join<aod::V0ChargedMCParticleLevelJets, aod::V0ChargedMCParticleLevelJetConstituents>,
+                                           aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets,
+                                           aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets,
+                                           CandidatesV0MCD,
+                                           CandidatesV0MCP>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -136,8 +142,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   tasks.emplace_back(adaptAnalysisTask<ChargedJetMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-mc-ch"}));
   tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-d0-ch"}));
-  // tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-lc-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-lc-ch"}));
   // tasks.emplace_back(adaptAnalysisTask<BplusChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-bplus-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<V0ChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-v0-ch"}));
 
   return WorkflowSpec{tasks};
 }

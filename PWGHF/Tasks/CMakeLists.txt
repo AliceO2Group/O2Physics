@@ -19,6 +19,11 @@ o2physics_add_dpl_workflow(task-mc-efficiency
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-mc-efficiency-to-xi-pi
+                    SOURCES taskMcEfficiencyToXiPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-mc-validation
                     SOURCES taskMcValidation.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

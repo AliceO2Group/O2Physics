@@ -121,7 +121,7 @@ class CollisionAssociation
                         TTracksUnfiltered const& tracksUnfiltered,
                         TTracks const& tracks,
                         TAmbiTracks const& ambiguousTracks,
-                        o2::aod::BCs const& bcs,
+                        o2::aod::BCs const&,
                         Assoc& association,
                         RevIndices& reverseIndices)
   {
@@ -243,12 +243,21 @@ class CollisionAssociation
             if (mUsePvAssociation && track.isPVContributor()) {
               thresholdTime = trackTimeRes;
             } else if (TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange)) {
-              thresholdTime = std::sqrt(sigmaTimeRes2) + mTimeMargin;
+              // the track time resolution is a range, not a gaussian resolution
+              thresholdTime = trackTimeRes + mNumSigmaForTimeCompat * std::sqrt(collTimeRes2) + mTimeMargin;
             } else {
               thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
             }
           } else {
-            thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
+            // the track is not a central track
+            if constexpr (TTracks::template contains<o2::aod::MFTTracks>()) {
+              // then the track is an MFT track, or an MFT track with additionnal joined info
+              // in this case TrackTimeResIsRange
+              thresholdTime = trackTimeRes + mNumSigmaForTimeCompat * std::sqrt(collTimeRes2) + mTimeMargin;
+            } else if constexpr (TTracks::template contains<o2::aod::FwdTracks>()) {
+              // the track is a fwd track, with a gaussian time resolution
+              thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
+            }
           }
 
           if (std::abs(deltaTime) < thresholdTime) {

@@ -12,7 +12,7 @@
 /// \file FemtoUtils.h
 /// \brief Utilities for the FemtoUniverse framework
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUTILS_H_
