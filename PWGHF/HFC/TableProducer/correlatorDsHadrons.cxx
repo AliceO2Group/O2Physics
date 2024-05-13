@@ -602,6 +602,18 @@ struct HfCorrelatorDsHadrons {
           if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
             continue;
           }
+
+          if (particle.daughtersIds().size() != 3) {
+            LOGP(fatal, "Invalid numbers of daughters for Ds {}: {}", particle.globalIndex(), particle.daughtersIds().size());
+          }
+
+          auto prong0Id = particle.daughtersIds()[0];
+          auto prong1Id = particle.daughtersIds()[1];
+          auto prong2Id = particle.daughtersIds()[2];
+
+          if (particleAssoc.globalIndex() == prong0Id || particleAssoc.globalIndex() == prong1Id || particleAssoc.globalIndex() == prong2Id) {
+            continue;
+          }
           if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
             continue;
           }
