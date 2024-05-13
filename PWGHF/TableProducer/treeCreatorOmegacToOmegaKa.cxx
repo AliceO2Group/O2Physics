@@ -217,7 +217,6 @@ struct HfTreeCreatorOmegac0ToOmegaKa {
 
   void init(InitContext const&)
   {
-
   }
 
   template <typename T>
@@ -462,7 +461,7 @@ struct HfTreeCreatorOmegac0ToOmegaKa {
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaKa, processDataLite, "Process data and produce lite table version", false);
 
   void processMcLite(MyEventTable const& collisions, MyTrackTable const&,
-                    soa::Join<aod::HfCandToOmegaK, aod::HfSelToOmegaKa, aod::HfToOmegaKMCRec> const& candidates)
+                     soa::Join<aod::HfCandToOmegaK, aod::HfSelToOmegaKa, aod::HfToOmegaKMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
