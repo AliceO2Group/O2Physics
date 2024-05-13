@@ -542,7 +542,7 @@ struct HfTaskSigmac {
          OR
          consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
       */
-      if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassSigmaC0)) > yCandMax) {
+      if (yCandMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassSigmaC0)) > yCandMax) {
         continue;
       }
 

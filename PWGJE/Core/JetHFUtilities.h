@@ -41,6 +41,7 @@
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetV0Utilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 
@@ -308,6 +309,12 @@ bool isDaughterTrack(T& track, U& candidate, V const& /*tracks*/)
     } else {
       return false;
     }
+  } else if constexpr (jetv0utilities::isV0Candidate<U>()) {
+    if (candidate.posTrackId() == track.globalIndex() || candidate.negTrackId() == track.globalIndex()) {
+      return true;
+    } else {
+      return false;
+    }
   } else {
     return false;
   }
@@ -331,6 +338,34 @@ bool isDaughterParticle(const T& particle, int globalIndex)
     }
   }
   return false;
+}
+
+/**
+ * returns the index of the JMcParticle matched to the candidate
+ *
+ * @param candidate hf candidate that is being checked
+ * @param tracks track table
+ * @param particles particle table
+ */
+template <typename T, typename U, typename V>
+auto matchedParticleId(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
+{
+  const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+  return candidateDaughterParticle.template mothers_first_as<V>().globalIndex(); // can we get the Id directly?
+}
+
+/**
+ * returns the JMcParticle matched to the candidate
+ *
+ * @param candidate hf candidate that is being checked
+ * @param tracks track table
+ * @param particles particle table
+ */
+template <typename T, typename U, typename V>
+auto matchedParticle(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
+{
+  const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+  return candidateDaughterParticle.template mothers_first_as<V>();
 }
 
 /**

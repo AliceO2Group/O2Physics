@@ -440,6 +440,7 @@ struct Pi0EtaToGammaGamma {
               if (!IsSelectedPair<pairtype>(g1, g2, cut, cut)) {
                 continue;
               }
+
               if (!paircut.IsSelected(g1, g2)) {
                 continue;
               }
@@ -453,14 +454,14 @@ struct Pi0EtaToGammaGamma {
 
               if (cfgDoFlow) {
                 values[0] = v12.M(), values[1] = v12.Pt();
-                std::array<float, 2> u_gg = {static_cast<float>(v12.Px() / v12.Pt()), static_cast<float>(v12.Py() / v12.Pt())};
-                values[2] = RecoDecay::dotProd(u_gg, q2ft0m);
+                std::array<float, 2> u2_gg = {static_cast<float>(std::cos(2 * v12.Phi())), static_cast<float>(std::sin(2 * v12.Phi()))};
+                values[2] = RecoDecay::dotProd(u2_gg, q2ft0m);
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0M"))->Fill(values);
-                values[2] = RecoDecay::dotProd(u_gg, q2ft0a);
+                values[2] = RecoDecay::dotProd(u2_gg, q2ft0a);
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0A"))->Fill(values);
-                values[2] = RecoDecay::dotProd(u_gg, q2ft0c);
+                values[2] = RecoDecay::dotProd(u2_gg, q2ft0c);
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FT0C"))->Fill(values);
-                values[2] = RecoDecay::dotProd(u_gg, q2fv0a);
+                values[2] = RecoDecay::dotProd(u2_gg, q2fv0a);
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_Same_SPQ2FV0A"))->Fill(values);
               } else {
                 reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Same"))->Fill(v12.M(), v12.Pt());
@@ -478,9 +479,20 @@ struct Pi0EtaToGammaGamma {
           for (auto& cut2 : cuts2) {
             for (auto& paircut : paircuts) {
               for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_coll, photons2_coll))) {
-                if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
-                  continue;
+
+                if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == PairType::kPCMDalitzMuMu) {
+                  auto pos_pv = g2.template posTrack_as<MyPrimaryElectrons>();
+                  auto ele_pv = g2.template negTrack_as<MyPrimaryElectrons>();
+                  std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos_pv, ele_pv, collision.bz());
+                  if (!IsSelectedPair<pairtype>(g1, pair2, cut1, cut2)) {
+                    continue;
+                  }
+                } else {
+                  if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+                    continue;
+                  }
                 }
+
                 if (!paircut.IsSelected(g1, g2)) {
                   continue;
                 }
@@ -605,9 +617,20 @@ struct Pi0EtaToGammaGamma {
               if ((pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) && (TString(cut1.GetName()) != TString(cut2.GetName()))) {
                 continue;
               }
-              if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
-                continue;
+
+              if constexpr (pairtype == PairType::kPCMDalitzEE || pairtype == PairType::kPCMDalitzMuMu) {
+                auto pos_pv = g2.template posTrack_as<MyPrimaryElectrons>();
+                auto ele_pv = g2.template negTrack_as<MyPrimaryElectrons>();
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos_pv, ele_pv, collision1.bz());
+                if (!IsSelectedPair<pairtype>(g1, pair2, cut1, cut2)) {
+                  continue;
+                }
+              } else {
+                if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+                  continue;
+                }
               }
+
               if (!paircut.IsSelected(g1, g2)) {
                 continue;
               }

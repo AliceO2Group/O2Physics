@@ -71,6 +71,7 @@ struct JetChCorr {
 
   Configurable<float> zCut{"zCut", 0.05, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.1, "soft drop beta"};
+  Configurable<float> jetPtTh{"jetPtTh", 15.0, "jet transverse momentum cut"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
   std::vector<fastjet::PseudoJet> jetConstituents;
@@ -335,60 +336,62 @@ struct JetChCorr {
   template <bool isSubtracted, typename T, typename U>
   void analyseCharged(T const& jet, U const& /*tracks*/)
   {
-    jetConstituents.clear();
+    if (jet.pt() > jetPtTh) {
+      jetConstituents.clear();
 
-    int nn = 0;
-    int iord[50];
-    float ptc[50];
-    for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
-      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
-      ptc[nn] = jetConstituent.pt();
-      nn++;
-    }
-    TMath::Sort(nn, ptc, iord);
-
-    nn = 0;
-    ch_mult = jet.tracksIds().size();
-    for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
-      if (iord[nn] > 1)
-        continue;
-
-      if (iord[nn] == 0) {
-        trackL = jetConstituent.globalIndex();
-        ch_l = jetConstituent.sign();
-        v1.SetXYZ(jetConstituent.pt(), jetConstituent.py(), jetConstituent.pz());
+      int nn = 0;
+      int iord[50];
+      float ptc[50];
+      for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
+        fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
+        ptc[nn] = jetConstituent.pt();
+        nn++;
       }
+      TMath::Sort(nn, ptc, iord);
 
-      if (iord[nn] == 1) {
-        n_trackL = jetConstituent.globalIndex();
-        ch_nl = jetConstituent.sign();
-        v2.SetXYZ(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
+      nn = 0;
+      ch_mult = jet.tracksIds().size();
+      for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
+        if (iord[nn] > 1)
+          continue;
 
-        vR = v1 + v2;
-        float z = v2.Perp(vR.Orthogonal()) / (v1.Perp(vR.Orthogonal()) + v2.Perp(vR.Orthogonal()));
-        float fT = ((2. * z * (1 - z) * vR.Mag()) / v1.Perp2(vR)) / 6.;
-        float kt_p = v1.Perp(vR);
-
-        if (ch_l == ch_nl) {
-          registry.fill(HIST("h_ch_s_pt"), jet.pt());
-          registry.fill(HIST("h_ch_s_kt"), kt_p);
-          registry.fill(HIST("h_ch_s_z"), z);
-          registry.fill(HIST("h_ch_s_ft"), log10(fT));
-          registry.fill(HIST("h_ch_s_mult"), ch_mult);
+        if (iord[nn] == 0) {
+          trackL = jetConstituent.globalIndex();
+          ch_l = jetConstituent.sign();
+          v1.SetXYZ(jetConstituent.pt(), jetConstituent.py(), jetConstituent.pz());
         }
-        if (ch_l != ch_nl) {
-          registry.fill(HIST("h_ch_d_pt"), jet.pt());
-          registry.fill(HIST("h_ch_d_kt"), kt_p);
-          registry.fill(HIST("h_ch_d_z"), z);
-          registry.fill(HIST("h_ch_d_ft"), log10(fT));
-          registry.fill(HIST("h_ch_d_mult"), ch_mult);
+
+        if (iord[nn] == 1) {
+          n_trackL = jetConstituent.globalIndex();
+          ch_nl = jetConstituent.sign();
+          v2.SetXYZ(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
+
+          vR = v1 + v2;
+          float z = v2.Perp(vR.Orthogonal()) / (v1.Perp(vR.Orthogonal()) + v2.Perp(vR.Orthogonal()));
+          float fT = ((2. * z * (1 - z) * vR.Mag()) / v1.Perp2(vR)) / 6.;
+          float kt_p = v1.Perp(vR);
+
+          if (ch_l == ch_nl) {
+            registry.fill(HIST("h_ch_s_pt"), jet.pt());
+            registry.fill(HIST("h_ch_s_kt"), kt_p);
+            registry.fill(HIST("h_ch_s_z"), z);
+            registry.fill(HIST("h_ch_s_ft"), log10(fT));
+            registry.fill(HIST("h_ch_s_mult"), ch_mult);
+          }
+          if (ch_l != ch_nl) {
+            registry.fill(HIST("h_ch_d_pt"), jet.pt());
+            registry.fill(HIST("h_ch_d_kt"), kt_p);
+            registry.fill(HIST("h_ch_d_z"), z);
+            registry.fill(HIST("h_ch_d_ft"), log10(fT));
+            registry.fill(HIST("h_ch_d_mult"), ch_mult);
+          }
         }
+
+        nn++;
       }
-
-      nn++;
+      if (nn > 1)
+        jetReclustering<false, isSubtracted>(jet);
     }
-    if (nn > 1)
-      jetReclustering<false, isSubtracted>(jet);
   }
 
   void processDummy(JetTracks const&)

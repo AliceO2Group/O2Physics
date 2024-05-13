@@ -138,11 +138,19 @@ float etaFromMom(std::array<float, 3> const& momA, std::array<float, 3> const& m
                                     (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
                           (1.f * momA[2] + 1.f * momB[2])));
 }
+float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
+{
+  return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
+}
 } // namespace
 
 struct CandidateV0 {
   float pt;
   float eta;
+  float mass;
+  float cpa;
+  float dcav0daugh;
+  float dcav0pv;
   int64_t globalIndexPos = -999;
   int64_t globalIndexNeg = -999;
 };
@@ -195,7 +203,7 @@ struct antidLambdaEbye {
   ConfigurableAxis momResAxis{"momResAxis", {1.e2, -1.f, 1.f}, "momentum resolution binning"};
   ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
   ConfigurableAxis tofAxis{"tofAxis", {1.e3, 0.f, 1.f}, "tof signal axis binning"};
-  ConfigurableAxis tpcClsAxis{"tpcClsAxis", {160, 0, 160}, "tpc n clusters binning"};
+  ConfigurableAxis tpcClsAxis{"tpcClsAxis", {160, 0.f, 160.f}, "tpc n clusters binning"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -245,10 +253,11 @@ struct antidLambdaEbye {
   Configurable<float> tofMassMaxQA{"tofMassMaxQA", 0.6f, "(temporary) tof mass cut (for QA histograms)"};
 
   Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
-  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1f, "DCA Pos To PV"};
-  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1f, "DCA Neg To PV"};
+  Configurable<float> v0setting_dcav0pv{"v0setting_dcav0pv", 1, "DCA V0 to Pv"};
+  Configurable<float> v0setting_dcadaughtopv{"v0setting_dcadaughtopv", 0.1f, "DCA Pos To PV"};
   Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"};
   Configurable<float> v0setting_radius{"v0setting_radius", 0.5f, "v0radius"};
+  Configurable<float> v0setting_lifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
   Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.005f, "maximum deviation from PDG mass"};
   Configurable<float> lambdaMassCutQA{"lambdaMassCutQA", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
@@ -287,10 +296,11 @@ struct antidLambdaEbye {
       return false;
     }
     if (doprocessRun2 || doprocessMcRun2) {
-      if (!(track.flags() & o2::aod::track::TrackFlagsRun2Enum::TPCrefit)) {
+      if (!(track.trackType() & o2::aod::track::Run2Track) ||
+          !(track.flags() & o2::aod::track::TPCrefit)) {
         return false;
       }
-      if (v0requireITSrefit && !(track.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit)) {
+      if (v0requireITSrefit && !(track.flags() & o2::aod::track::ITSrefit)) {
         return false;
       }
     }
@@ -315,8 +325,9 @@ struct antidLambdaEbye {
       return false;
     }
     if (doprocessRun2 || doprocessMcRun2) {
-      if (!(track.flags() & o2::aod::track::TrackFlagsRun2Enum::TPCrefit) ||
-          !(track.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit)) {
+      if (!(track.trackType() & o2::aod::track::Run2Track) ||
+          !(track.flags() & o2::aod::track::TPCrefit) ||
+          !(track.flags() & o2::aod::track::ITSrefit)) {
         return false;
       }
     }
@@ -413,9 +424,11 @@ struct antidLambdaEbye {
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
     fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
+    fitter.setMaxDZIni(4);
+    fitter.setMaxDXYIni(1);
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
+    fitter.setWeightedFinalPCA(false);
     int mat{static_cast<int>(cfgMaterialCorrection)};
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
@@ -475,13 +488,26 @@ struct antidLambdaEbye {
     // v0 QA
     histos.add<TH3>("QA/massLambda", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
     histos.add<TH1>("QA/cosPa", ";cosPa;Entries", HistType::kTH1F, {cosPaAxis});
+    histos.add<TH1>("QA/cosPaSig", ";cosPa;Entries", HistType::kTH1F, {cosPaAxis});
+    histos.add<TH1>("QA/cosPaBkg", ";cosPa;Entries", HistType::kTH1F, {cosPaAxis});
+    histos.add<TH1>("QA/dcaV0daughSig", ";dcaV0daugh;Entries", HistType::kTH1F, {dcaV0daughAxis});
+    histos.add<TH1>("QA/dcaV0daughBkg", ";dcaV0daugh;Entries", HistType::kTH1F, {dcaV0daughAxis});
+    histos.add<TH1>("QA/dcaV0PvSig", ";dcaV0Pv;Entries", HistType::kTH1F, {dcaV0daughAxis});
+    histos.add<TH1>("QA/dcaV0PvBkg", ";dcaV0Pv;Entries", HistType::kTH1F, {dcaV0daughAxis});
+    histos.add<TH2>("QA/cosPaDcaV0daughSig", ";cosPa;dcaV0daugh", HistType::kTH2F, {cosPaAxis, dcaV0daughAxis});
+    histos.add<TH2>("QA/cosPaDcaV0daughBkg", ";cosPa;dcaV0daugh", HistType::kTH2F, {cosPaAxis, dcaV0daughAxis});
+    histos.add<TH3>("QA/massLambdaEvRej", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
+    histos.add<TH3>("QA/massLambdaEvRejSig", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
+    histos.add<TH3>("QA/massLambdaEvRejBkg", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
     histos.add<TH1>("QA/radius", ";radius;Entries", HistType::kTH1F, {radiusAxis});
     histos.add<TH1>("QA/dcaV0daugh", ";dcaV0daugh;Entries", HistType::kTH1F, {dcaV0daughAxis});
+    histos.add<TH1>("QA/dcaV0Pv", ";dcaV0Pv;Entries", HistType::kTH1F, {dcaV0daughAxis});
     histos.add<TH1>("QA/dcaPosPv", ";dcaPosPv;Entries", HistType::kTH1F, {dcaDaughPvAxis});
     histos.add<TH1>("QA/dcaNegPv", ";dcaNegPv;Entries", HistType::kTH1F, {dcaDaughPvAxis});
     histos.add<TH1>("QA/cosPaBeforeCut", ";cosPa;Entries", HistType::kTH1F, {cosPaAxis});
     histos.add<TH1>("QA/radiusBeforeCut", ";radius;Entries", HistType::kTH1F, {radiusAxis});
     histos.add<TH1>("QA/dcaV0daughBeforeCut", ";dcaV0daugh;Entries", HistType::kTH1F, {dcaV0daughAxis});
+    histos.add<TH1>("QA/dcaV0PvBeforeCut", ";dcaV0Pv;Entries", HistType::kTH1F, {dcaV0daughAxis});
 
     // d QA
     histos.add<TH2>("QA/dcaPv", ";#it{p}_{T} (GeV/#it{c});dcaPv;Entries", HistType::kTH2F, {momAxis, dcaDaughPvAxis});
@@ -653,8 +679,8 @@ struct antidLambdaEbye {
         continue;
 
       if (doprocessRun2 || doprocessMcRun2) {
-        bool checkPosPileUp = posTrack.hasTOF() || (posTrack.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit);
-        bool checkNegPileUp = negTrack.hasTOF() || (negTrack.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit);
+        bool checkPosPileUp = posTrack.hasTOF() || (posTrack.flags() & o2::aod::track::ITSrefit);
+        bool checkNegPileUp = negTrack.hasTOF() || (negTrack.flags() & o2::aod::track::ITSrefit);
         if (!checkPosPileUp && !checkNegPileUp) {
           continue;
         }
@@ -701,6 +727,18 @@ struct antidLambdaEbye {
       auto mLambda = invMass2Body(momV0, momPos, momNeg, massPos, massNeg);
       auto mK0Short = invMass2Body(momV0, momPos, momNeg, o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged);
 
+      // pid selections
+      double expBethePos{tpc::BetheBlochAleph(static_cast<double>(posTrack.tpcInnerParam() / massPos), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
+      double expSigmaPos{expBethePos * cfgBetheBlochParams->get("resolution")};
+      auto nSigmaTPCPos = static_cast<float>((posTrack.tpcSignal() - expBethePos) / expSigmaPos);
+      double expBetheNeg{tpc::BetheBlochAleph(static_cast<double>(negTrack.tpcInnerParam() / massNeg), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
+      double expSigmaNeg{expBetheNeg * cfgBetheBlochParams->get("resolution")};
+      auto nSigmaTPCNeg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
+
+      if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc) {
+        continue;
+      }
+
       // veto on K0s mass
       if (std::abs(mK0Short - o2::constants::physics::MassK0Short) < vetoMassK0Short) {
         continue;
@@ -721,21 +759,39 @@ struct antidLambdaEbye {
         continue;
       }
 
+      float dcaV0Pv = CalculateDCAStraightToPV(
+        vtx[0], vtx[1], vtx[2],
+        momPos[0] + momNeg[0],
+        momPos[1] + momNeg[1],
+        momPos[2] + momNeg[2],
+        collision.posX(), collision.posY(), collision.posZ());
+      histos.fill(HIST("QA/dcaV0PvBeforeCut"), dcaV0Pv);
+      if (std::abs(dcaV0Pv) > v0setting_dcav0pv) {
+        continue;
+      }
+
       double cosPA = RecoDecay::cpa(primVtx, vtx, momV0);
       histos.fill(HIST("QA/cosPaBeforeCut"), cosPA);
       if (cosPA < v0setting_cospa) {
         continue;
       }
 
+      auto ptotal = RecoDecay::sqrtSumOfSquares(momV0[0], momV0[1], momV0[2]);
+      auto lengthTraveled = RecoDecay::sqrtSumOfSquares(vtx[0] - primVtx[0], vtx[1] - primVtx[1], vtx[2] - primVtx[2]);
+      float ML2P_Lambda = o2::constants::physics::MassLambda * lengthTraveled / ptotal;
+      if (ML2P_Lambda > v0setting_lifetime) {
+        continue;
+      }
+
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto posDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-      if (posDcaToPv < v0setting_dcapostopv) {
+      if (posDcaToPv < v0setting_dcadaughtopv && std::abs(dcaInfo[0]) < v0setting_dcadaughtopv) {
         continue;
       }
 
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       auto negDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-      if (negDcaToPv < v0setting_dcanegtopv) {
+      if (negDcaToPv < v0setting_dcadaughtopv && std::abs(dcaInfo[0]) < v0setting_dcadaughtopv) {
         continue;
       }
 
@@ -752,6 +808,7 @@ struct antidLambdaEbye {
       histos.fill(HIST("QA/dcaV0daugh"), dcaV0dau);
       histos.fill(HIST("QA/dcaPosPv"), posDcaToPv);
       histos.fill(HIST("QA/dcaNegPv"), negDcaToPv);
+      histos.fill(HIST("QA/dcaV0Pv"), dcaV0Pv);
 
       if (matter) {
         tempHistos.fill(HIST("tempLambda"), std::abs(etaV0), ptV0);
@@ -765,6 +822,10 @@ struct antidLambdaEbye {
       CandidateV0 candV0;
       candV0.pt = ptV0;
       candV0.eta = etaV0;
+      candV0.mass = mLambda;
+      candV0.cpa = cosPA;
+      candV0.dcav0daugh = dcaV0dau;
+      candV0.dcav0pv = dcaV0Pv;
       candV0.globalIndexPos = posTrack.globalIndex();
       candV0.globalIndexNeg = negTrack.globalIndex();
       candidateV0s.push_back(candV0);
@@ -782,6 +843,9 @@ struct antidLambdaEbye {
       candV0.globalIndexNeg = -999;
       candidateV0s.push_back(candV0);
       return -1;
+    }
+    for (auto& candidateV0 : candidateV0s) {
+      histos.fill(HIST("QA/massLambdaEvRej"), centrality, candidateV0.pt, candidateV0.mass);
     }
 
     histos.fill(HIST("nEv"), subsample, centrality);
@@ -834,7 +898,7 @@ struct antidLambdaEbye {
           auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
           if (std::abs(mcTrack.pdgCode()) != partPdg[iP])
             continue;
-          if ((mcTrack.flags() & 0x8) || (mcTrack.flags() & 0x2) || (mcTrack.flags() & 0x1))
+          if (((mcTrack.flags() & 0x8) && doprocessMcRun2) || (mcTrack.flags() & 0x2) || (mcTrack.flags() & 0x1))
             continue;
           if (!mcTrack.isPhysicalPrimary())
             continue;
@@ -862,12 +926,23 @@ struct antidLambdaEbye {
                 continue;
               if (!((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212)))
                 continue;
-              if (std::abs(posMother.pdgCode()) != 3122)
+              if (std::abs(posMother.pdgCode()) != 3122) {
+                histos.fill(HIST("QA/cosPaBkg"), candidateV0.cpa);
+                histos.fill(HIST("QA/dcaV0daughBkg"), candidateV0.dcav0daugh);
+                histos.fill(HIST("QA/dcaV0PvBkg"), candidateV0.dcav0pv);
+                histos.fill(HIST("QA/cosPaDcaV0daughBkg"), candidateV0.cpa, candidateV0.dcav0daugh);
+                histos.fill(HIST("QA/massLambdaEvRejBkg"), centrality, candidateV0.pt, candidateV0.mass);
                 continue;
+              }
               if (!posMother.isPhysicalPrimary() && !posMother.has_mothers())
                 continue;
-              if ((posMother.flags() & 0x8) || (posMother.flags() & 0x2) || (posMother.flags() & 0x1))
+              if (((posMother.flags() & 0x8) && doprocessMcRun2) || (posMother.flags() & 0x2) || (posMother.flags() & 0x1))
                 continue;
+              histos.fill(HIST("QA/cosPaSig"), candidateV0.cpa);
+              histos.fill(HIST("QA/dcaV0daughSig"), candidateV0.dcav0daugh);
+              histos.fill(HIST("QA/dcaV0PvSig"), candidateV0.dcav0pv);
+              histos.fill(HIST("QA/cosPaDcaV0daughSig"), candidateV0.cpa, candidateV0.dcav0daugh);
+              histos.fill(HIST("QA/massLambdaEvRejSig"), centrality, candidateV0.pt, candidateV0.mass);
               if (posMother.pdgCode() > 0) {
                 histos.fill(HIST("recL"), centrality, candidateV0.pt, std::abs(candidateV0.eta));
                 if (fillOnlySignal)
@@ -927,7 +1002,7 @@ struct antidLambdaEbye {
         if (std::abs(genEta) > etaMax) {
           continue;
         }
-        if ((mcPart.flags() & 0x8) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
+        if (((mcPart.flags() & 0x8) && doprocessMcRun2) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
           continue;
         auto pdgCode = mcPart.pdgCode();
         if (std::abs(pdgCode) == 3122) {
@@ -1042,7 +1117,7 @@ struct antidLambdaEbye {
         continue;
 
       auto centrality = collision.centRun2V0M();
-      if (!collision.alias_bit(kINT7) && (!kINT7Intervals || (kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
+      if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
         continue;
 
       auto centralityCl0 = collision.centRun2CL0();

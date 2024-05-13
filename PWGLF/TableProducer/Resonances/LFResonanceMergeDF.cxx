@@ -79,12 +79,12 @@ struct reso2dfmerged {
 
   std::vector<std::tuple<float, float, float, float, float, float>> vecOfTuples;
   std::vector<std::vector<std::tuple<float, float, float, float,
-                                     float, float, signed char, unsigned char,
+                                     float, float, signed char, unsigned char, unsigned char, unsigned char,
                                      float, float, float, float,
                                      bool, float, float, float,
                                      float, float, float, float,
                                      float, float, bool, bool,
-                                     bool, float, float, float>>>
+                                     bool, bool, bool, bool, float, float, float>>>
     vecOfVecOfTuples;
   void processTrackDataDF(resoCols::iterator const& collision, resoTracks const& tracks)
   {
@@ -92,12 +92,12 @@ struct reso2dfmerged {
     int nCollisions = nDF;
     vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl()));
     std::vector<std::tuple<float, float, float, float,
-                           float, float, signed char, unsigned char,
+                           float, float, signed char, unsigned char, unsigned char, unsigned char,
                            float, float, float, float,
                            bool, float, float, float,
                            float, float, float, float,
                            float, float, bool, bool,
-                           bool, float, float, float>>
+                           bool, bool, bool, bool, float, float, float>>
       innerVector;
     for (auto& track : tracks) {
       innerVector.push_back(std::make_tuple(
@@ -109,6 +109,8 @@ struct reso2dfmerged {
         track.phi(),
         track.sign(),
         (uint8_t)track.tpcNClsCrossedRows(),
+        (uint8_t)track.tpcNClsFound(),
+        (uint8_t)track.itsNCls(),
         track.dcaXY(),
         track.dcaZ(),
         track.x(),
@@ -117,13 +119,16 @@ struct reso2dfmerged {
         track.tpcNSigmaPi(),
         track.tpcNSigmaKa(),
         track.tpcNSigmaPr(),
+        track.tpcNSigmaEl(),
         track.tofNSigmaPi(),
         track.tofNSigmaKa(),
         track.tofNSigmaPr(),
+        track.tofNSigmaEl(),
         track.tpcSignal(),
         track.passedITSRefit(),
         track.passedTPCRefit(),
         track.isGlobalTrackWoDCA(),
+        track.isGlobalTrack(),
         track.isPrimaryTrack(),
         track.isPVContributor(),
         track.tpcCrossedRowsOverFindableCls(),
@@ -175,7 +180,12 @@ struct reso2dfmerged {
                     std::get<24>(tuple),
                     std::get<25>(tuple),
                     std::get<26>(tuple),
-                    std::get<27>(tuple));
+                    std::get<27>(tuple),
+                    std::get<28>(tuple),
+                    std::get<29>(tuple),
+                    std::get<30>(tuple),
+                    std::get<31>(tuple),
+                    std::get<32>(tuple));
       }
     }
 

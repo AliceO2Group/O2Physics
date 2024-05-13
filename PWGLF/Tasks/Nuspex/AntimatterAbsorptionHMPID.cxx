@@ -12,12 +12,19 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch)
 /// \since June 27, 2023
 
+#include <TMath.h>
+#include <TPDGCode.h>
+#include <TRandom.h>
+#include <TDatabasePDG.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/DataTypes.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -29,7 +36,6 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/TrackParametrization.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -270,21 +276,8 @@ struct AntimatterAbsorptionHMPID {
     return true;
   }
 
-  // Info for TPC PID
-  using PidInfoTPC = soa::Join<aod::pidTPCLfFullPi, aod::pidTPCLfFullKa,
-                               aod::pidTPCLfFullPr, aod::pidTPCLfFullDe,
-                               aod::pidTPCLfFullTr, aod::pidTPCLfFullHe,
-                               aod::pidTPCLfFullAl>;
-
-  // Info for TOF PID
-  using PidInfoTOF = soa::Join<aod::pidTOFFullPi, aod::pidTOFFullKa,
-                               aod::pidTOFFullPr, aod::pidTOFFullDe,
-                               aod::pidTOFFullTr, aod::pidTOFFullHe,
-                               aod::pidTOFFullAl,
-                               aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
-
   // Full Tracks
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, PidInfoTPC, PidInfoTOF>;
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 
   // Process Data
   void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& event, o2::aod::HMPIDs const& hmpids)
@@ -295,11 +288,14 @@ struct AntimatterAbsorptionHMPID {
     if (!event.sel8())
       return;
 
+    // Event Counter
+    registryQC.fill(HIST("number_of_events_data"), 1.5);
+
     if (abs(event.posZ()) > 10.0)
       return;
 
     // Event Counter
-    registryQC.fill(HIST("number_of_events_data"), 1.5);
+    registryQC.fill(HIST("number_of_events_data"), 2.5);
 
     for (const auto& hmpid : hmpids) {
 

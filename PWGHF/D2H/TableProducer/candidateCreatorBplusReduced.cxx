@@ -131,12 +131,12 @@ struct HfCandidateCreatorBplusReduced {
       auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
       for (const auto& candD0 : candsDThisColl) {
         auto trackParCovD = getTrackParCov(candD0);
-        std::array<float, 3> pVecD0 = {candD0.px(), candD0.py(), candD0.pz()};
+        std::array<float, 3> pVecD0 = candD0.pVector();
 
         auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
         for (const auto& trackPion : tracksPionThisCollision) {
           auto trackParCovPi = getTrackParCov(trackPion);
-          std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+          std::array<float, 3> pVecPion = trackPion.pVector();
 
           // compute invariant mass square and apply selection
           auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecPion}, std::array{massD0, massPi});

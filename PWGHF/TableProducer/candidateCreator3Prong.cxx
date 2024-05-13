@@ -470,12 +470,13 @@ struct HfCandidateCreator3ProngExpressions {
   bool createDs{false};
   bool createLc{false};
   bool createXic{false};
+  float zPvPosMax{1000.f};
 
   void init(InitContext& initContext)
   {
 
-    // inspect for which particle species the candidates were created
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    // inspect for which particle species the candidates were created and which zPvPosMax cut was set for reconstructed
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-3prong") == 0) {
         for (const auto& option : device.options) {
@@ -487,8 +488,11 @@ struct HfCandidateCreator3ProngExpressions {
             createLc = option.defaultValue.get<bool>();
           } else if (option.name.compare("createXic") == 0) {
             createXic = option.defaultValue.get<bool>();
+          } else if (option.name.compare("zPvPosMax") == 0) {
+            zPvPosMax = option.defaultValue.get<float>();
           }
         }
+        break;
       }
     }
 
@@ -501,7 +505,8 @@ struct HfCandidateCreator3ProngExpressions {
 
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+                 aod::McParticles const& mcParticles,
+                 aod::McCollisions const&)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
 
@@ -617,6 +622,13 @@ struct HfCandidateCreator3ProngExpressions {
       origin = 0;
       channel = 0;
       arrDaughIndex.clear();
+
+      auto mcCollision = particle.mcCollision();
+      float zPv = mcCollision.posZ();
+      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+        rowMcMatchGen(flag, origin, channel);
+        continue;
+      }
 
       // D± → π± K∓ π±
       if (createDplus) {

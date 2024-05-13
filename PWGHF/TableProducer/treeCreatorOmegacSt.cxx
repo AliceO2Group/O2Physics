@@ -683,8 +683,8 @@ struct HfTreeCreatorOmegacSt {
                 }
 
                 // MC-based mass
-                momenta[0] = {mother.px(), mother.py(), mother.pz()};
-                momenta[1] = {mcpart.px(), mcpart.py(), mcpart.pz()};
+                momenta[0] = mother.pVector();
+                momenta[1] = mcpart.pVector();
                 registry.fill(HIST("hMassOmegacGen"), RecoDecay::m(momenta, masses));
               }
             }

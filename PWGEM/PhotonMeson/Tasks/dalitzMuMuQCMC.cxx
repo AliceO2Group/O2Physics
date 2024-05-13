@@ -46,7 +46,9 @@ using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMEventIds>;
 using MyDalitzMuMu = MyDalitzMuMus::iterator;
 
 using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMPrimaryMuonsPrefilterBit>;
+using MyTrack = MyTracks::iterator;
 using MyMCTracks = soa::Join<MyTracks, aod::EMPrimaryMuonMCLabels>;
+using MyMCTrack = MyMCTracks::iterator;
 
 struct DalitzMuMuQCMC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -161,7 +163,7 @@ struct DalitzMuMuQCMC {
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzmumu = static_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
     for (auto& collision : grouped_collisions) {
@@ -189,7 +191,9 @@ struct DalitzMuMuQCMC {
         for (auto& uls_pair : uls_pairs_per_coll) {
           auto pos = uls_pair.template posTrack_as<MyMCTracks>();
           auto ele = uls_pair.template negTrack_as<MyMCTracks>();
-          if (!cut.IsSelected<MyMCTracks>(uls_pair)) {
+
+          std::tuple<MyMCTrack, MyMCTrack, float> uls_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (!cut.IsSelected<MyMCTracks>(uls_pair_tmp)) {
             continue;
           }
           auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
@@ -211,7 +215,6 @@ struct DalitzMuMuQCMC {
               values[0] = uls_pair.mass();
               values[1] = uls_pair.pt();
               values[2] = dca_ee_3d;
-              values[3] = uls_pair.phiv();
               reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
 
               nuls++;

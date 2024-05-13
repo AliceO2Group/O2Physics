@@ -48,7 +48,9 @@ using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
 using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyTrack = MyTracks::iterator;
 using MyMCTracks = soa::Join<MyTracks, aod::EMPrimaryElectronMCLabels>;
+using MyMCTrack = MyMCTracks::iterator;
 
 struct DalitzEEQCMC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -170,7 +172,7 @@ struct DalitzEEQCMC {
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     double values_single[4] = {0, 0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
@@ -192,19 +194,18 @@ struct DalitzEEQCMC {
       auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emeventId, collision.globalIndex(), cache);
       auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzee::emeventId, collision.globalIndex(), cache);
 
-      std::vector<uint64_t> used_trackIds;
-      used_trackIds.reserve(uls_pairs_per_coll.size() * 2);
-
       for (const auto& cut : fDalitzEECuts) {
         THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
         THashList* list_track_cut = static_cast<THashList*>(list_track->FindObject(cut.GetName()));
+        std::vector<uint64_t> used_trackIds;
+        used_trackIds.reserve(uls_pairs_per_coll.size() * 2);
 
         int nuls = 0;
         for (auto& uls_pair : uls_pairs_per_coll) {
           auto pos = uls_pair.template posTrack_as<MyMCTracks>();
           auto ele = uls_pair.template negTrack_as<MyMCTracks>();
-
-          if (!cut.IsSelected<MyMCTracks>(uls_pair)) {
+          std::tuple<MyMCTrack, MyMCTrack, float> uls_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (!cut.IsSelected<MyMCTracks>(uls_pair_tmp)) {
             continue;
           }
 
@@ -228,7 +229,6 @@ struct DalitzEEQCMC {
           values[0] = uls_pair.mass();
           values[1] = uls_pair.pt();
           values[2] = dca_ee_3d;
-          values[3] = uls_pair.phiv();
 
           if (mother_id > -1) {
             auto mcmother = mcparticles.iteratorAt(mother_id);
@@ -332,8 +332,8 @@ struct DalitzEEQCMC {
         for (auto& lspp_pair : lspp_pairs_per_coll) {
           auto pos = lspp_pair.template posTrack_as<MyMCTracks>();
           auto ele = lspp_pair.template negTrack_as<MyMCTracks>();
-
-          if (!cut.IsSelected<MyMCTracks>(lspp_pair)) {
+          std::tuple<MyMCTrack, MyMCTrack, float> lspp_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (!cut.IsSelected<MyMCTracks>(lspp_pair_tmp)) {
             continue;
           }
 
@@ -355,7 +355,6 @@ struct DalitzEEQCMC {
           values[0] = lspp_pair.mass();
           values[1] = lspp_pair.pt();
           values[2] = dca_ee_3d;
-          values[3] = lspp_pair.phiv();
 
           if ((posmc.isPhysicalPrimary() || posmc.producedByGenerator()) && (elemc.isPhysicalPrimary() || elemc.producedByGenerator())) {
             switch (hfee_type) {
@@ -397,7 +396,8 @@ struct DalitzEEQCMC {
           auto pos = lsmm_pair.template posTrack_as<MyMCTracks>();
           auto ele = lsmm_pair.template negTrack_as<MyMCTracks>();
 
-          if (!cut.IsSelected<MyMCTracks>(lsmm_pair)) {
+          std::tuple<MyMCTrack, MyMCTrack, float> lsmm_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (!cut.IsSelected<MyMCTracks>(lsmm_pair_tmp)) {
             continue;
           }
 
@@ -419,7 +419,6 @@ struct DalitzEEQCMC {
           values[0] = lsmm_pair.mass();
           values[1] = lsmm_pair.pt();
           values[2] = dca_ee_3d;
-          values[3] = lsmm_pair.phiv();
 
           if ((posmc.isPhysicalPrimary() || posmc.producedByGenerator()) && (elemc.isPhysicalPrimary() || elemc.producedByGenerator())) {
             switch (hfee_type) {

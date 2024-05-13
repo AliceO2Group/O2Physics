@@ -290,18 +290,38 @@ struct PhotonHBT {
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
       // LOGF(info, "photons1_coll.size() = %d, photons2_coll.size() = %d", photons1_coll.size(), photons2_coll.size());
 
-      double values_1d[4] = {0.f};
-      double values_3d[8] = {0.f};
+      float dca_pos1_3d = 999.f, dca_ele1_3d = 999.f, dca_ee1_3d = 999.f;
+      float dca_pos2_3d = 999.f, dca_ele2_3d = 999.f, dca_ee2_3d = 999.f;
+
+      double values_1d[6] = {0.f};
+      double values_3d[10] = {0.f};
       if constexpr (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC || pairtype == PairType::kDalitzEEDalitzEE) {
         for (auto& cut : cuts1) {
           for (auto& paircut : paircuts) {
             for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
-              if (!IsSelectedPair<pairtype>(g1, g2, cut, cut)) {
+
+              if constexpr (pairtype == PairType::kDalitzEEDalitzEE) {
+                auto pos1 = g1.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele1 = g1.template negTrack_as<TEMPrimaryElectrons>();
+                auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair1 = std::make_tuple(pos1, ele1, collision.bz());
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, collision.bz());
+                if (!IsSelectedPair<pairtype>(pair1, pair2, cut, cut)) {
+                  continue;
+                }
+              } else {
+                if (!IsSelectedPair<pairtype>(g1, g2, cut, cut)) {
+                  continue;
+                }
+              }
+
+              if (!paircut.IsSelected(g1, g2)) {
                 continue;
               }
 
-              values_1d[0] = 0.0, values_1d[1] = 0.0;
-              values_3d[0] = 0.0, values_3d[1] = 0.0;
+              values_1d[0] = 0.0, values_1d[1] = 0.0, values_1d[2] = 0.0, values_1d[3] = 0.0;
+              values_3d[0] = 0.0, values_3d[1] = 0.0, values_3d[2] = 0.0, values_3d[3] = 0.0;
               // center-of-mass system (CMS)
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
@@ -319,6 +339,18 @@ struct PhotonHBT {
                 values_1d[1] = g2.mass();
                 values_3d[0] = g1.mass();
                 values_3d[1] = g2.mass();
+
+                dca_pos1_3d = pos1.dca3DinSigma();
+                dca_ele1_3d = ele1.dca3DinSigma();
+                dca_ee1_3d = std::sqrt((dca_pos1_3d * dca_pos1_3d + dca_ele1_3d * dca_ele1_3d) / 2.);
+                values_1d[2] = dca_ee1_3d;
+                values_3d[2] = dca_ee1_3d;
+
+                dca_pos2_3d = pos2.dca3DinSigma();
+                dca_ele2_3d = ele2.dca3DinSigma();
+                dca_ee2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
+                values_1d[3] = dca_ee2_3d;
+                values_3d[3] = dca_ee2_3d;
               }
 
               ROOT::Math::PtEtaPhiMVector q12 = v1 - v2;
@@ -326,8 +358,8 @@ struct PhotonHBT {
               float qinv = -q12.M();
               float kt = k12.Pt();
 
-              values_1d[2] = kt;
-              values_1d[3] = qinv;
+              values_1d[4] = kt;
+              values_1d[5] = qinv;
 
               if (fConfigDo3D) {
                 // float qt = q12.Pt();
@@ -356,12 +388,12 @@ struct PhotonHBT {
                 // LOGF(info, "v1.Pz() = %f, v2.Pz() = %f",v1.Pz(), v2.Pz());
                 // LOGF(info, "v1_lcms_cartesian.Pz() = %f, v2_lcms_cartesian.Pz() = %f",v1_lcms_cartesian.Pz(), v2_lcms_cartesian.Pz());
                 // LOGF(info, "q12_lcms_cartesian.Pz() = %f", q12_lcms_cartesian.Pz());
-                values_3d[2] = kt;
-                values_3d[3] = qinv;
-                values_3d[4] = qlong_cms;
-                values_3d[5] = qout_cms;
-                values_3d[6] = qside_cms;
-                values_3d[7] = qlong_lcms;
+                values_3d[4] = kt;
+                values_3d[5] = qinv;
+                values_3d[6] = qlong_cms;
+                values_3d[7] = qout_cms;
+                values_3d[8] = qside_cms;
+                values_3d[9] = qlong_lcms;
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values_3d);
               } else {
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values_1d);
@@ -374,12 +406,24 @@ struct PhotonHBT {
           for (auto& cut2 : cuts2) {
             for (auto& paircut : paircuts) {
               for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_coll, photons2_coll))) {
-                if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
-                  continue;
+
+                if constexpr (pairtype == PairType::kPCMDalitzEE) {
+                  auto pos_pv = g2.template posTrack_as<TEMPrimaryElectrons>();
+                  auto ele_pv = g2.template negTrack_as<TEMPrimaryElectrons>();
+                  std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos_pv, ele_pv, collision.bz());
+                  if (!IsSelectedPair<pairtype>(g1, pair2, cut1, cut2)) {
+                    continue;
+                  }
+                } else {
+                  if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+                    continue;
+                  }
                 }
+
                 if (!paircut.IsSelected(g1, g2)) {
                   continue;
                 }
+
                 if constexpr (pairtype == PairType::kPCMPHOS) {
                   auto pos = g1.template posTrack_as<aod::V0Legs>();
                   auto ele = g1.template negTrack_as<aod::V0Legs>();
@@ -388,23 +432,30 @@ struct PhotonHBT {
                   }
                 }
 
-                values_1d[0] = 0.0, values_1d[1] = 0.0;
-                values_3d[0] = 0.0, values_3d[1] = 0.0;
+                values_1d[0] = 0.0, values_1d[1] = 0.0, values_1d[2] = 0.0, values_1d[3] = 0.0;
+                values_3d[0] = 0.0, values_3d[1] = 0.0, values_3d[2] = 0.0, values_3d[3] = 0.0;
                 // center-of-mass system (CMS)
                 ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
                 ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
                 if constexpr (pairtype == PairType::kPCMDalitzEE) {
+                  auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
+                  auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
                   v2.SetM(g2.mass());
                   values_1d[1] = g2.mass();
                   values_3d[1] = g2.mass();
+                  dca_pos2_3d = pos2.dca3DinSigma();
+                  dca_ele2_3d = ele2.dca3DinSigma();
+                  dca_ee2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
+                  values_1d[3] = dca_ee2_3d;
+                  values_3d[3] = dca_ee2_3d;
                 }
                 ROOT::Math::PtEtaPhiMVector q12 = v1 - v2;
                 ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
                 float qinv = -q12.M();
                 float kt = k12.Pt();
 
-                values_1d[2] = kt;
-                values_1d[3] = qinv;
+                values_1d[4] = kt;
+                values_1d[5] = qinv;
 
                 if (fConfigDo3D) {
                   // float qt = q12.Pt();
@@ -425,12 +476,12 @@ struct PhotonHBT {
                   ROOT::Math::Boost bst_z(0, 0, -beta_z); // Boost supports only PxPyPzEVector
                   ROOT::Math::PxPyPzEVector q12_lcms = bst_z(q12_cartesian);
                   float qlong_lcms = q12_lcms.Pz();
-                  values_3d[2] = kt;
-                  values_3d[3] = qinv;
-                  values_3d[4] = qlong_cms;
-                  values_3d[5] = qout_cms;
-                  values_3d[6] = qside_cms;
-                  values_3d[7] = qlong_lcms;
+                  values_3d[4] = kt;
+                  values_3d[5] = qinv;
+                  values_3d[6] = qlong_cms;
+                  values_3d[7] = qout_cms;
+                  values_3d[8] = qside_cms;
+                  values_3d[9] = qlong_lcms;
                   reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values_3d);
                 } else {
                   reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values_1d);
@@ -478,8 +529,10 @@ struct PhotonHBT {
       auto photons_coll2 = photons2.sliceBy(perCollision2, collision2.globalIndex());
       // LOGF(info, "collision1: posZ = %f, numContrib = %d , sel8 = %d | collision2: posZ = %f, numContrib = %d , sel8 = %d", collision1.posZ(), collision1.numContrib(), collision1.sel8(), collision2.posZ(), collision2.numContrib(), collision2.sel8());
 
-      double values_1d[4] = {0.f};
-      double values_3d[8] = {0.f};
+      float dca_pos1_3d = 999.f, dca_ele1_3d = 999.f, dca_ee1_3d = 999.f;
+      float dca_pos2_3d = 999.f, dca_ele2_3d = 999.f, dca_ee2_3d = 999.f;
+      double values_1d[6] = {0.f};
+      double values_3d[10] = {0.f};
       for (auto& cut1 : cuts1) {
         for (auto& cut2 : cuts2) {
           for (auto& paircut : paircuts) {
@@ -489,36 +542,80 @@ struct PhotonHBT {
               if ((pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC || pairtype == PairType::kDalitzEEDalitzEE) && (TString(cut1.GetName()) != TString(cut2.GetName()))) {
                 continue;
               }
-              if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
-                continue;
-              }
-              if (!paircut.IsSelected(g1, g2)) {
-                continue;
+
+              if constexpr (pairtype == PairType::kPCMDalitzEE) {
+                auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, collision1.bz());
+                if (!IsSelectedPair<pairtype>(g1, pair2, cut1, cut2)) {
+                  continue;
+                }
+              } else if constexpr (pairtype == PairType::kDalitzEEDalitzEE) {
+                auto pos1 = g1.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele1 = g1.template negTrack_as<TEMPrimaryElectrons>();
+                auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair1 = std::make_tuple(pos1, ele1, collision1.bz());
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, collision1.bz());
+                if (!IsSelectedPair<pairtype>(pair1, pair2, cut1, cut2)) {
+                  continue;
+                }
+              } else {
+                if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+                  continue;
+                }
               }
 
+              // if (!paircut.IsSelected(g1, g2)) {
+              //   continue;
+              // }
+
               // center-of-mass system (CMS)
-              values_1d[0] = 0.0, values_1d[1] = 0.0;
-              values_3d[0] = 0.0, values_3d[1] = 0.0;
+              values_1d[0] = 0.0, values_1d[1] = 0.0, values_1d[2] = 0.0, values_1d[3] = 0.0;
+              values_3d[0] = 0.0, values_3d[1] = 0.0, values_3d[2] = 0.0, values_3d[3] = 0.0;
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
               if constexpr (pairtype == PairType::kPCMDalitzEE) {
+                auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
                 v2.SetM(g2.mass());
                 values_1d[1] = g2.mass();
                 values_3d[1] = g2.mass();
+                dca_pos2_3d = pos2.dca3DinSigma();
+                dca_ele2_3d = ele2.dca3DinSigma();
+                dca_ee2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
+                values_1d[3] = dca_ee2_3d;
+                values_3d[3] = dca_ee2_3d;
               } else if constexpr (pairtype == PairType::kDalitzEEDalitzEE) {
+                auto pos1 = g1.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele1 = g1.template negTrack_as<TEMPrimaryElectrons>();
+                auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
                 v1.SetM(g1.mass());
                 v2.SetM(g2.mass());
                 values_1d[0] = g1.mass();
                 values_1d[1] = g2.mass();
                 values_3d[0] = g1.mass();
                 values_3d[1] = g2.mass();
+
+                dca_pos1_3d = pos1.dca3DinSigma();
+                dca_ele1_3d = ele1.dca3DinSigma();
+                dca_ee1_3d = std::sqrt((dca_pos1_3d * dca_pos1_3d + dca_ele1_3d * dca_ele1_3d) / 2.);
+                values_1d[2] = dca_ee1_3d;
+                values_3d[2] = dca_ee1_3d;
+
+                dca_pos2_3d = pos2.dca3DinSigma();
+                dca_ele2_3d = ele2.dca3DinSigma();
+                dca_ee2_3d = std::sqrt((dca_pos2_3d * dca_pos2_3d + dca_ele2_3d * dca_ele2_3d) / 2.);
+                values_1d[3] = dca_ee2_3d;
+                values_3d[3] = dca_ee2_3d;
               }
               ROOT::Math::PtEtaPhiMVector q12 = v1 - v2;
               ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
               float qinv = -q12.M();
               float kt = k12.Pt();
-              values_1d[2] = kt;
-              values_1d[3] = qinv;
+              values_1d[4] = kt;
+              values_1d[5] = qinv;
 
               if (fConfigDo3D) {
                 // float qt = q12.Pt();
@@ -540,12 +637,12 @@ struct PhotonHBT {
                 ROOT::Math::PxPyPzEVector q12_lcms = bst_z(q12_cartesian);
                 float qlong_lcms = q12_lcms.Pz();
 
-                values_3d[2] = kt;
-                values_3d[3] = qinv;
-                values_3d[4] = qlong_cms;
-                values_3d[5] = qout_cms;
-                values_3d[6] = qside_cms;
-                values_3d[7] = qlong_lcms;
+                values_3d[4] = kt;
+                values_3d[5] = qinv;
+                values_3d[6] = qlong_cms;
+                values_3d[7] = qout_cms;
+                values_3d[8] = qside_cms;
+                values_3d[9] = qlong_lcms;
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_mix"))->Fill(values_3d);
               } else {
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_mix"))->Fill(values_1d);
@@ -624,7 +721,7 @@ struct PhotonHBT {
 
   PROCESS_SWITCH(PhotonHBT, processPCMPCM, "pairing PCM-PCM", false);
   PROCESS_SWITCH(PhotonHBT, processPCMDalitzEE, "pairing PCM-DalitzEE", false);
-  PROCESS_SWITCH(PhotonHBT, processDalitzEEDalitzEE, "pairing DalitzEE-DalitzEE", false);
+  //  PROCESS_SWITCH(PhotonHBT, processDalitzEEDalitzEE, "pairing DalitzEE-DalitzEE", false);
   PROCESS_SWITCH(PhotonHBT, processPHOSPHOS, "pairing PHOS-PHOS", false);
   PROCESS_SWITCH(PhotonHBT, processPCMPHOS, "pairing PCM-PHOS", false);
   PROCESS_SWITCH(PhotonHBT, processDummy, "Dummy function", true);
