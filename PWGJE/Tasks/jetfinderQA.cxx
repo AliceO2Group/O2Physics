@@ -65,6 +65,7 @@ struct JetFinderQATask {
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
+  Configurable<bool> checkMCcollisionsMatched{"checkMCcollisionsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
 
   std::vector<bool> filledJetR_Both;
   std::vector<bool> filledJetR_Low;
@@ -623,7 +624,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCDWeighted, "jet finder QA mcd with weighted events", false);
 
-  void processJetsMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, JetParticles const&)
+  void processJetsMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, JetParticles const&, JetMcCollisions const &, soa::Filtered<JetCollisionsMCD> const& collisions)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -631,11 +632,23 @@ struct JetFinderQATask {
     if (!isAcceptedJet<JetParticles>(jet)) {
       return;
     }
+    if (checkMCcollisionsMatched) {
+      bool isMatchFound = false;
+      for (auto const& collision : collisions) {
+        if (collision.mcCollision().globalIndex() == jet.mcCollision().globalIndex()) {
+          isMatchFound = true;
+          break; 
+        }
+      }
+      if (!isMatchFound) {
+        return;
+      }
+    }
     fillMCPHistograms(jet);
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCP, "jet finder QA mcp", false);
 
-  void processJetsMCPWeighted(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights>::iterator const& jet, JetParticles const&)
+  void processJetsMCPWeighted(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights>::iterator const& jet, JetParticles const&, JetMcCollisions const &, soa::Filtered<JetCollisionsMCD> const& collisions)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -647,6 +660,18 @@ struct JetFinderQATask {
     for (int N = 1; N < 21; N++) {
       if (jet.pt() < N * 0.25 * pTHat && jet.r() == round(selectedJetsRadius * 100.0f)) {
         registry.fill(HIST("h_jet_ptcut_part"), jet.pt(), N * 0.25, jet.eventWeight());
+      }
+    }
+    if (checkMCcollisionsMatched) {
+      bool isMatchFound = false;
+      for (auto const& collision : collisions) {
+        if (collision.mcCollision().globalIndex() == jet.mcCollision().globalIndex()) {
+          isMatchFound = true;
+          break; 
+        }
+      }
+      if (!isMatchFound) {
+        return;
       }
     }
     fillMCPHistograms(jet, jet.eventWeight());
