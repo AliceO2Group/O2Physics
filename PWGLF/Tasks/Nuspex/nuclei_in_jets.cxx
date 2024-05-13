@@ -138,6 +138,7 @@ struct nuclei_in_jets {
     registryQC.add("eta_leading", "eta_leading", HistType::kTH1F, {{100, -1, 1, "#eta"}});
     registryQC.add("phi_leading", "phi_leading", HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi(), "#phi"}});
     registryQC.add("angle_jet_leading_track", "angle_jet_leading_track", HistType::kTH1F, {{200, 0.0, TMath::Pi() / 4.0, "#theta"}});
+    registryQC.add("deltaPt", "deltaPt", HistType::kTH1F, {{200, -2, 2, "#Delta p_{T}"}});
 
     // Antiprotons
     registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH3F, {{20, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {2, 0, 100, "#it{N}_{ch}"}});
@@ -1125,6 +1126,7 @@ struct nuclei_in_jets {
       // Momentum of the Leading Particle
       auto const& leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
       TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
+      registryQC.fill(HIST("deltaPt"), leading_track.pt() - pt_max);
 
       // Array of Particles inside Jet
       std::vector<int> jet_particle_ID;
