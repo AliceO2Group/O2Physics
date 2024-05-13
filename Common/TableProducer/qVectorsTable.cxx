@@ -199,7 +199,7 @@ struct qVectorsTable {
     fullPath = cfgGainEqPath;
     fullPath += "/FT0";
     auto objft0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
-    if (!objft0Gain || cfgCorrLevel==0) {
+    if (!objft0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 208; i++) {
         FT0RelGainConst.push_back(1.);
       }
@@ -210,7 +210,7 @@ struct qVectorsTable {
     fullPath = cfgGainEqPath;
     fullPath += "/FV0";
     auto objfv0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
-    if (!objfv0Gain || cfgCorrLevel==0) {
+    if (!objfv0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 48; i++) {
         FV0RelGainConst.push_back(1.);
       }
@@ -504,7 +504,7 @@ struct qVectorsTable {
     }
 
     // Fill the columns of the Qvectors table if they are found for a detector.
-    int CorrLevel = cfgCorrLevel==0 ? 0 : cfgCorrLevel - 1;
+    int CorrLevel = cfgCorrLevel == 0 ? 0 : cfgCorrLevel - 1;
     qVector(cent, IsCalibrated, qvecRe, qvecIm, qvecAmp);
     if (useDetector["QvectorFT0Cs"])
       qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + CorrLevel], qvecIm[kFT0C * 4 + CorrLevel], sumAmplFT0C);
