@@ -427,6 +427,7 @@ struct QaEfficiency {
   Configurable<bool> doTr{"do-tr", false, "Flag to run with the PDG code of tritons"};
   Configurable<bool> doHe{"do-he", false, "Flag to run with the PDG code of helium 3"};
   Configurable<bool> doAl{"do-al", false, "Flag to run with the PDG code of helium 4"};
+  Configurable<std::vector<int>> mothersPDGs{"mothersPDGs", std::vector<int>{}, "PDGs of origin of the particle under study"};
   // Track only selection, options to select only specific tracks
   Configurable<bool> trackSelection{"trackSelection", true, "Local track selection"};
   Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks, 6 -> custom track cuts via Configurable"};
@@ -1235,7 +1236,6 @@ struct QaEfficiency {
     if (passedITS && passedTPC && passedTRD && passedTOF) {
       h->fill(HIST(hPtItsTpcTrdTof[histogramIndex]), mcParticle.p());
     }
-
     if (isPhysicalPrimary(mcParticle)) {
       if (passedITS) {
         h->fill(HIST(hPtItsPrm[histogramIndex]), mcParticle.pt());
@@ -1255,7 +1255,24 @@ struct QaEfficiency {
         }
       }
     } else if (mcParticle.getProcess() == 4) { // Particle decay
-      if (passedITS && passedTPC) {
+      // Checking mothers
+      bool motherIsAccepted = true;
+      if (mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
+        motherIsAccepted = false;
+        auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+        for (const auto& mother : mothers) {
+          for (const auto& pdgToCheck : mothersPDGs.value) {
+            if (mother.pdgCode() == pdgToCheck) {
+              motherIsAccepted = true;
+              break;
+            }
+            if (motherIsAccepted) {
+              break;
+            }
+          }
+        }
+      }
+      if (passedITS && passedTPC && motherIsAccepted) {
         h->fill(HIST(hPtItsTpcStr[histogramIndex]), mcParticle.pt());
         h->fill(HIST(hPtTrkItsTpcStr[histogramIndex]), track.pt());
         if (passedTOF) {
@@ -1318,8 +1335,27 @@ struct QaEfficiency {
       h->fill(HIST(hEtaGeneratedPrm[histogramIndex]), mcParticle.eta());
       h->fill(HIST(hPhiGeneratedPrm[histogramIndex]), mcParticle.phi());
     } else {
-      if (mcParticle.getProcess() == 4) { // Particle deday
-        h->fill(HIST(hPtGeneratedStr[histogramIndex]), mcParticle.pt());
+      if (mcParticle.getProcess() == 4) { // Particle decay
+        // Checking mothers
+        bool motherIsAccepted = true;
+        if (mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
+          motherIsAccepted = false;
+          auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+          for (const auto& mother : mothers) {
+            for (const auto& pdgToCheck : mothersPDGs.value) {
+              if (mother.pdgCode() == pdgToCheck) {
+                motherIsAccepted = true;
+                break;
+              }
+              if (motherIsAccepted) {
+                break;
+              }
+            }
+          }
+        }
+        if (motherIsAccepted) {
+          h->fill(HIST(hPtGeneratedStr[histogramIndex]), mcParticle.pt());
+        }
       } else { // Material
         h->fill(HIST(hPtGeneratedMat[histogramIndex]), mcParticle.pt());
       }
@@ -2112,7 +2148,4 @@ struct QaEfficiency {
   PROCESS_SWITCH(QaEfficiency, processHmpid, "process HMPID matching", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<QaEfficiency>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<QaEfficiency>(cfgc)}; }
