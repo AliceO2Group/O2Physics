@@ -1293,6 +1293,8 @@ struct qaMatchEff {
       return false;
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kDCAxy))
       return false;
+    if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kDCAz))
+      return false;
     return true;
   }
   /// Function applying the TPC selections
