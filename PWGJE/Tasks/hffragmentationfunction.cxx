@@ -46,17 +46,17 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-// calculate delta phi such that 0 < delta phi < 2*pi
-double DeltaPhi(double phi1, double phi2)
+// calculate delta phi such that 0 < delta phi < pi
+double deltaPhi(double phi1, double phi2)
 {
   // Compute the absolute difference between phi1 and phi2
   double dphi = std::abs(phi1 - phi2);
-  if (dphi > M_PI) {
-    // subtract 2pi if the difference if bigger than pi
-    dphi = dphi - 2 * M_PI;
-  }
 
-  return dphi;
+  // Constrain angle between [min,min+2pi] = [-pi,-pi+2pi]
+  dphi = RecoDecay::constrainAngle(dphi, -o2::constants::math::PI);
+
+  // Return absolute value of distance
+  return std::abs(dphi);
 }
 
 // creating table for storing distance data
@@ -192,7 +192,7 @@ struct HfFragmentationFunctionTask {
         double z_parallel = (jetVector * d0Vector) / (jetVector * jetVector);
 
         // calculating angular distance in eta-phi plane
-        axisDistance = sqrt(pow(jet.eta() - d0Candidate.eta(), 2) + pow(DeltaPhi(jet.phi(), d0Candidate.phi()), 2));
+        axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), DeltaPhi(jet.phi(), d0Candidate.phi()));
 
         // filling histograms
         registry.fill(HIST("h_d0_jet_projection"), z_parallel);
@@ -237,7 +237,7 @@ struct HfFragmentationFunctionTask {
           auto mcdd0cand = mcdjet.template hfcandidates_first_as<CandidatesD0MCD>();
 
           // calculating angular distance in eta-phi plane
-          axisDistance = sqrt(pow(mcdjet.eta() - mcdd0cand.eta(), 2) + pow(DeltaPhi(mcdjet.phi(), mcdd0cand.phi()), 2));
+          axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), DeltaPhi(jet.phi(), d0Candidate.phi()));
 
           // store data in MC detector level table
           mcddistJetTable(axisDistance, mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), mcdjet.has_matchedJetCand());
@@ -252,7 +252,7 @@ struct HfFragmentationFunctionTask {
         auto mcpd0cand = mcpjet.template hfcandidates_first_as<CandidatesD0MCP>();
 
         // calculating angular distance in eta-phi plane
-        axisDistance = sqrt(pow(mcpjet.eta() - mcpd0cand.eta(), 2) + pow(DeltaPhi(mcpjet.phi(), mcpd0cand.phi()), 2));
+        axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), DeltaPhi(jet.phi(), d0Candidate.phi()));
 
         // store data in MC detector level table
         mcpdistJetTable(axisDistance, mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), mcpjet.has_matchedJetCand());
