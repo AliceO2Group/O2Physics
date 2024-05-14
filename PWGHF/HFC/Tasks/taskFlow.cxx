@@ -204,7 +204,7 @@ struct HfTaskFlow {
     mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", corrAxis, effAxis, {}));
     mixedHF.setObject(new CorrelationContainer("mixedEventHFHadrons", "mixedEventHFHadrons", corrAxis, effAxis, userAxis));
     mixedMFT.setObject(new CorrelationContainer("mixedEventTPCMFTChHadrons", "mixedEventTPCMFTChHadrons", corrAxis, effAxis, {}));
-    }
+  }
 
   //  ---------------
   //    templates
@@ -387,7 +387,7 @@ struct HfTaskFlow {
       }
 
       for (const auto& track2 : tracks2) {
-f
+
         //  case of h-h correlations where the two types of tracks are the same
         //  this avoids autocorrelations and double counting of particle pairs
         if constexpr (std::is_same_v<TTracksAssoc, TTracksTrig>) {
