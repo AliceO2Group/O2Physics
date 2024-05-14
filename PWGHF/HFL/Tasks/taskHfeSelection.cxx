@@ -275,7 +275,6 @@ struct HfTaskElectronSelection {
   {
     fillElectronTrack(mccollision, mctracks, mcClusters, matchedTracks);
   }
-
   PROCESS_SWITCH(HfTaskElectronSelection, processMcRec, "Process MC Reco mode", false);
 };
 
