@@ -108,12 +108,24 @@ struct hJetAnalysis {
     Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut);
   }
 
+  // Constrain from 0 to 2pi
   float dPhi(float phi1, float phi2)
   {
     float dPhi = phi1 - phi2;
     if (dPhi < 0)
       dPhi += 2 * M_PI;
     if (dPhi > 2 * M_PI)
+      dPhi -= 2 * M_PI;
+    return dPhi;
+  }
+
+  // Constrain from -pi to pi
+  float dPhi2(float phi1, float phi2)
+  {
+    float dPhi = phi1 - phi2;
+    if (dPhi < -M_PI)
+      dPhi += 2 * M_PI;
+    if (dPhi > M_PI)
       dPhi -= 2 * M_PI;
     return dPhi;
   }
@@ -171,7 +183,7 @@ struct hJetAnalysis {
       registry.fill(HIST("hJetEta"), jet.eta());
       registry.fill(HIST("hJetPhi"), jet.phi());
       for (auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
-        double deltaPhi = jetWTA.phi() - jet.phi();
+        double deltaPhi = dPhi2(jetWTA.phi(), jet.phi());
         double deltaEta = jetWTA.eta() - jet.eta();
         double dR = sqrt(pow(deltaPhi, 2) + pow(deltaEta, 2));
         registry.fill(HIST("hDeltaR"), dR);
