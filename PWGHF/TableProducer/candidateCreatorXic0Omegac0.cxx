@@ -107,7 +107,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   {
     std::array<bool, 9> allProcesses = {doprocessNoCentToXiPi, doprocessCentFT0CToXiPi, doprocessCentFT0MToXiPi, doprocessNoCentToOmegaPi, doprocessCentFT0CToOmegaPi, doprocessCentFT0MToOmegaPi, doprocessNoCentToOmegaK, doprocessCentFT0CToOmegaK, doprocessCentFT0MToOmegaK};
     if (std::accumulate(allProcesses.begin(), allProcesses.end(), 0) == 0) {
-      LOGP(fatal, "No process function enabled, please select one.");
+      LOGP(fatal, "No process function enabled, please select one for at least one channel.");
     }
 
     std::array<bool, 3> processesToXiPi = {doprocessNoCentToXiPi, doprocessCentFT0CToXiPi, doprocessCentFT0MToXiPi};
