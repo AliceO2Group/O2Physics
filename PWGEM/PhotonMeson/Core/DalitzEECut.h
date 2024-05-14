@@ -21,9 +21,11 @@
 #include <vector>
 #include <utility>
 #include <string>
-// #include "Rtypes.h"
 #include "TNamed.h"
 #include "Math/Vector4D.h"
+
+#include "Tools/ML/MlResponse.h"
+#include "Tools/ML/model.h"
 
 #include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
@@ -78,6 +80,7 @@ class DalitzEECut : public TNamed
     kTPChadrejORTOFreq = 2,
     kTPConly = 3,
     kMuon_lowB = 4,
+    kPIDML = 5,
   };
 
   template <typename T = int, typename TPair>
@@ -101,10 +104,6 @@ class DalitzEECut : public TNamed
   template <typename TTrack1, typename TTrack2>
   bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
   {
-    // if(!IsSelectedTrack(t1) || !IsSelectedTrack(t2)){
-    //   return false;
-    // }
-
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -131,8 +130,8 @@ class DalitzEECut : public TNamed
     return true;
   }
 
-  template <typename T>
-  bool IsSelectedTrack(T const& track) const
+  template <bool isML = false, typename TTrack, typename TCollision = int>
+  bool IsSelectedTrack(TTrack const& track, TCollision const& collision = 0) const
   {
     if (!track.hasITS() || !track.hasTPC()) { // track has to be ITS-TPC matched track
       return false;
@@ -183,16 +182,40 @@ class DalitzEECut : public TNamed
       return false;
     }
 
-    // PID cuts here.
-    if (!PassPID(track)) {
-      return false;
-    }
-
     if (mApplyTOFbeta && (mMinTOFbeta < track.beta() && track.beta() < mMaxTOFbeta)) {
       return false;
     }
 
+    // PID cuts
+    if constexpr (isML) {
+      if (!PassPIDML(track, collision)) {
+        return false;
+      }
+    } else {
+      if (!PassPID(track)) {
+        return false;
+      }
+    }
+
     return true;
+  }
+
+  template <typename TTrack, typename TCollision>
+  bool PassPIDML(TTrack const& track, TCollision const& collision) const
+  {
+    std::vector<float> inputFeatures{static_cast<float>(collision.numContrib()), track.p(), track.tgl(),
+                                     track.tpcNSigmaEl(), /*track.tpcNSigmaMu(),*/ track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                                     track.tofNSigmaEl(), /*track.tofNSigmaMu(),*/ track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                                     track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl()))};
+
+    // calculate classifier
+    float prob_ele = mPIDModel->evalModel(inputFeatures)[0];
+    // LOGF(info, "prob_ele = %f", prob_ele);
+    if (prob_ele < 0.95) {
+      return false;
+    } else {
+      return true;
+    }
   }
 
   template <typename T>
@@ -213,6 +236,9 @@ class DalitzEECut : public TNamed
 
       case static_cast<int>(PIDSchemes::kMuon_lowB):
         return PassMuon_lowB(track);
+
+      case static_cast<int>(PIDSchemes::kPIDML):
+        return true; // don't use kPIDML here.
 
       case static_cast<int>(PIDSchemes::kUnDef):
         return true;
@@ -360,6 +386,11 @@ class DalitzEECut : public TNamed
   void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
 
+  void SetPIDModel(o2::ml::OnnxModel* model)
+  {
+    mPIDModel = model;
+  }
+
   // Getters
   bool IsPhotonConversionSelected() const { return mSelectPC; }
 
@@ -415,6 +446,7 @@ class DalitzEECut : public TNamed
   float mMinTOFNsigmaPi{-1e+10}, mMaxTOFNsigmaPi{+1e+10};
   float mMinTOFNsigmaKa{-1e+10}, mMaxTOFNsigmaKa{+1e+10};
   float mMinTOFNsigmaPr{-1e+10}, mMaxTOFNsigmaPr{+1e+10};
+  o2::ml::OnnxModel* mPIDModel{nullptr};
 
   ClassDef(DalitzEECut, 1);
 };
