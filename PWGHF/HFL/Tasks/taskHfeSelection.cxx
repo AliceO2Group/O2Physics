@@ -44,7 +44,7 @@ struct HfTaskElectronSelection {
   Produces<aod::HfSelEl> electronSel;
   // Configurables
   // Cluster information
-  Configurable<bool> clusterInfo{"clusterInfo", true, "EMCal cluster info before and after track match"};
+  Configurable<bool> fillClusterInfo{"fillClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
 
   // Event Selection
   Configurable<float> mVertexCut{"mVertexCut", 10., "apply z-vertex cut with value in cm"};
@@ -153,7 +153,7 @@ struct HfTaskElectronSelection {
     /////////////////////////////////
     // cluster info before match ///
     ///////////////////////////////
-    if (clusterInfo) {
+    if (fillClusterInfo) {
       for (const auto& clusterBefore : cluster) {
         registry.fill(HIST("hClusterInformationBefore"), clusterBefore.energy(), clusterBefore.eta(), clusterBefore.phi(), clusterBefore.nCells(), clusterBefore.time());
       }
@@ -206,8 +206,8 @@ struct HfTaskElectronSelection {
       float deltaEtaMatch = -999.;
       bool isEMcal = 0;
 
-      float energy = sqrt(track.p() * track.p() + massEl * massEl);
-      float rapidity = 0.5 * log((energy + track.pz()) / (energy - track.pz()));
+      float energy = std::sqrt(track.p() * track.p() + massEl * massEl);
+      float rapidity = 0.5 * std::log((energy + track.pz()) / (energy - track.pz()));
 
       for (const auto& ematchTrack : tracksofcluster) {
 
@@ -237,7 +237,7 @@ struct HfTaskElectronSelection {
           continue;
         if (std::abs(timeCluster) > clusterTimeMax)
           continue;
-        if (clusterInfo)
+        if (fillClusterInfo)
           registry.fill(HIST("hClusterInformationAfter"), eMatchCluster, etaMatchCluster, phiMatchCluster, cluster.nCells(), timeCluster);
         float eop = eMatchCluster / pMatchTrack;
         registry.fill(HIST("hPIDafterMatch"), eop, matchTrack.tpcSignal(), tpcNsigmaMatchTrack, pMatchTrack, ptMatchTrack, etaMatchTrack, phiMatchTrack);
