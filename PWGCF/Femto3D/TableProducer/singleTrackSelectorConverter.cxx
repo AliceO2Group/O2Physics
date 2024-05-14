@@ -28,7 +28,11 @@ using namespace o2::aod;
 struct singleTrackSelectorConverter {
   Produces<o2::aod::SingleTrackSels> tableRow;
 
-  void init(InitContext&) {}
+  int nsigmaHe;
+  void init(InitContext&)
+  {
+    nsigmaHe = -999;
+  }
 
   void process(o2::aod::SingleTrackSels_v0 const& tracks)
   {
@@ -63,8 +67,8 @@ struct singleTrackSelectorConverter {
                singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()),
                singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
                singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()),
-               singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
-               singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
+               nsigmaHe,
+               nsigmaHe);
     }
   }
 };
