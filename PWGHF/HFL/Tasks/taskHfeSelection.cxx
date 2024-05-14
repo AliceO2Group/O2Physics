@@ -257,7 +257,7 @@ struct HfTaskElectronSelection {
       }
 
       /// Electron information without Emcal and use TPC and TOF
-       if (isEMcal == 1)
+      if (isEMcal == 1)
         continue;
       electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, rapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
                   eMatchCluster, etaMatchCluster, phiMatchCluster, m02MatchCluster, m20MatchCluster, cellCluster, timeCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
