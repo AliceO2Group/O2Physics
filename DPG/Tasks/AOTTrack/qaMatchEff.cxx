@@ -260,10 +260,7 @@ struct qaMatchEff {
         LOG(info) << "### Changing analysis DCAZ cut to " << dcaMaxCut->get("TrVtx", "dcaZ");
       }
       if (isChangeAnalysisCutDcaXY) {
-        // clear the pt dependence of DcaXY
-        cutObject.SetMaxDcaXYPtDep(nullptr);
-        LOG(info) << "### DcaXY cut pt dependence cleared";
-        cutObject.SetMaxDcaXY(dcaMaxCut->get("TrVtx", "dcaXY"));
+        cutObject.SetMaxDcaXYPtDep([this](float pt) { return dcaMaxCut->get("TrVtx", "dcaXY"); });
         LOG(info) << "### Changing analysis DcaXY cut to " << dcaMaxCut->get("TrVtx", "dcaXY");
       }
       if (isChangeAnalysisCutNClustersTPC) {
