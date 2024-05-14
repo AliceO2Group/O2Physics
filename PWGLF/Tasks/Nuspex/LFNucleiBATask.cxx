@@ -1852,10 +1852,17 @@ struct LFNucleiBATask {
 
       bool passDCAxyCut = kFALSE;
       bool passDCAzCut = kFALSE;
-      bool passDCAxyCutDe, passDCAzCutDe, passDCAxyCutAntiDe, passDCAzCutAntiDe = kFALSE;
-      bool passDCAxyCutHe, passDCAzCutHe, passDCAxyCutAntiHe, passDCAzCutAntiHe = kFALSE;
+      bool passDCAxyCutDe = kFALSE;
+      bool passDCAzCutDe = kFALSE;
+      bool passDCAxyCutAntiDe = kFALSE;
+      bool passDCAzCutAntiDe = kFALSE;
+      bool passDCAxyCutHe = kFALSE;
+      bool passDCAzCutHe = kFALSE;
+      bool passDCAxyCutAntiHe = kFALSE;
+      bool passDCAzCutAntiHe = kFALSE;
 
-      bool isDeuteron, isHelium = kFALSE;
+      bool isDeuteron = kFALSE;
+      bool isHelium = kFALSE;
       bool isDe = kFALSE;
       bool isAntiDe = kFALSE;
       bool isHe = kFALSE;
