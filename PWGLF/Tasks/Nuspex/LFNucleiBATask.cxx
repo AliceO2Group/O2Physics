@@ -1856,15 +1856,40 @@ struct LFNucleiBATask {
       bool passDCAxyCutHe, passDCAzCutHe, passDCAxyCutAntiHe, passDCAzCutAntiHe = kFALSE;
 
       bool isDeuteron, isHelium = kFALSE;
-      bool isDe, isAntiDe, isHe, isAntiHe = kFALSE;
-      bool isDeWoDCAxy, isAntiDeWoDCAxy, isHeWoDCAxy, isAntiHeWoDCAxy = kFALSE;
-      bool isDeWoDCAz, isAntiDeWoDCAz, isHeWoDCAz, isAntiHeWoDCAz = kFALSE;
+      bool isDe = kFALSE;
+      bool isAntiDe = kFALSE;
+      bool isHe = kFALSE;
+      bool isAntiHe = kFALSE;
 
-      bool isDeWoDCAxyWTPCpid, isAntiDeWoDCAxyWTPCpid, isHeWoDCAxyWTPCpid, isAntiHeWoDCAxyWTPCpid = kFALSE;
-      bool isDeWoDCAzWTPCpid, isAntiDeWoDCAzWTPCpid, isHeWoDCAzWTPCpid, isAntiHeWoDCAzWTPCpid = kFALSE;
+      bool isDeWoDCAxy = kFALSE;
+      bool isAntiDeWoDCAxy = kFALSE;
+      bool isHeWoDCAxy = kFALSE;
+      bool isAntiHeWoDCAxy = kFALSE;
 
-      bool isDeWoTPCpid, isAntiDeWoTPCpid, isHeWoTPCpid, isAntiHeWoTPCpid = kFALSE;
-      bool isDeWTPCpid, isAntiDeWTPCpid, isHeWTPCpid, isAntiHeWTPCpid = kFALSE;
+      bool isDeWoDCAz = kFALSE;
+      bool isAntiDeWoDCAz = kFALSE;
+      bool isHeWoDCAz = kFALSE;
+      bool isAntiHeWoDCAz = kFALSE;
+
+      bool isDeWoDCAxyWTPCpid = kFALSE;
+      bool isAntiDeWoDCAxyWTPCpid = kFALSE;
+      bool isHeWoDCAxyWTPCpid = kFALSE;
+      bool isAntiHeWoDCAxyWTPCpid = kFALSE;
+
+      bool isDeWoDCAzWTPCpid = kFALSE;
+      bool isAntiDeWoDCAzWTPCpid = kFALSE;
+      bool isHeWoDCAzWTPCpid = kFALSE;
+      bool isAntiHeWoDCAzWTPCpid = kFALSE;
+
+      bool isDeWoTPCpid = kFALSE;
+      bool isAntiDeWoTPCpid = kFALSE;
+      bool isHeWoTPCpid = kFALSE;
+      bool isAntiHeWoTPCpid = kFALSE;
+
+      bool isDeWTPCpid = kFALSE;
+      bool isAntiDeWTPCpid = kFALSE;
+      bool isHeWTPCpid = kFALSE;
+      bool isAntiHeWTPCpid = kFALSE;
 
       bool passDCAxyzCut = kFALSE;
 
@@ -2247,48 +2272,6 @@ struct LFNucleiBATask {
           }
         }
       }
-
-      // if (!passDCAzCut)
-      //   continue;
-
-      /*
-      isDeuteron = enableDe && deRapCut;
-      isHelium = enableHe && heRapCut;
-      isDe = isDeuteron && track.sign() > 0;
-      isAntiDe = isDeuteron && track.sign() < 0;
-      isHe = isHelium && track.sign() > 0;
-      isAntiHe = isHelium && track.sign() < 0;
-
-      isDeWoDCAxy = isDe && passDCAzCutDe;
-      isAntiDeWoDCAxy = isAntiDe && passDCAzCutAntiDe;
-      isHeWoDCAxy = isHe && passDCAzCutHe;
-      isAntiHeWoDCAxy = isAntiHe && passDCAzCutAntiHe;
-
-      isDeWoDCAz = isDe && passDCAxyCutDe;
-      isAntiDeWoDCAz = isAntiDe && passDCAxyCutAntiDe;
-      isHeWoDCAz = isHe && passDCAxyCutHe;
-      isAntiHeWoDCAz = isAntiHe && passDCAxyCutAntiHe;
-
-      isDeWoDCAxyWTPCpid = isDeWoDCAxy && std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe;
-      isAntiDeWoDCAxyWTPCpid = isAntiDeWoDCAxy && std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe;
-      isHeWoDCAxyWTPCpid = isHeWoDCAxy && std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe;
-      isAntiHeWoDCAxyWTPCpid = isAntiHeWoDCAxy && std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe;
-
-      isDeWoDCAzWTPCpid = isDeWoDCAz && std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe;
-      isAntiDeWoDCAzWTPCpid = isAntiDeWoDCAz && std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe;
-      isHeWoDCAzWTPCpid = isHeWoDCAz && std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe;
-      isAntiHeWoDCAzWTPCpid = isAntiHeWoDCAz && std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe;
-
-      isDeWoTPCpid = isDe && passDCAzCutDe && passDCAxyCutDe;
-      isAntiDeWoTPCpid = isAntiDe && passDCAzCutAntiDe && passDCAxyCutAntiDe;
-      isHeWoTPCpid = isHe && passDCAzCutHe && passDCAxyCutHe;
-      isAntiHeWoTPCpid = isAntiHe && passDCAzCutAntiHe && passDCAxyCutAntiHe;
-
-      isDeWTPCpid = isDeWoTPCpid && std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe;
-      isAntiDeWTPCpid = isAntiDeWoTPCpid && std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe;
-      isHeWTPCpid = isHeWoTPCpid && std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe;
-      isAntiHeWTPCpid = isAntiHeWoTPCpid && std::abs(track.tpcNSigmaHe()) < nsigmaTPCHe;
-*/
       // Tracks DCA histos fill
       if (makeDCABeforeCutPlots) {
         if (passDCAzCut) {
