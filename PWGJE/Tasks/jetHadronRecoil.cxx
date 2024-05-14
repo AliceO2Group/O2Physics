@@ -164,7 +164,7 @@ struct hJetAnalysis {
       for (auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
         double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -M_PI);
         double deltaEta = jetWTA.eta() - jet.eta();
-        double dR = sqrt(pow(deltaPhi, 2) + pow(deltaEta, 2));
+        double dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
         registry.fill(HIST("hDeltaR"), dR);
         registry.fill(HIST("hDeltaRpT"), jet.pt(), dR);
       }
