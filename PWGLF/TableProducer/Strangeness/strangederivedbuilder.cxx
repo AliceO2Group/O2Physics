@@ -811,7 +811,7 @@ struct strangederivedbuilder {
     for (auto const& findableV0 : findableV0s) {
       bool hasBeenFound = false;
       for (auto const& foundV0 : foundV0s) {
-        if(foundV0.posTrackId()==findableV0.posTrackId() && foundV0.negTrackId()==findableV0.negTrackId()){
+        if (foundV0.posTrackId() == findableV0.posTrackId() && foundV0.negTrackId() == findableV0.negTrackId()) {
           hasBeenFound = true;
         }
       }
