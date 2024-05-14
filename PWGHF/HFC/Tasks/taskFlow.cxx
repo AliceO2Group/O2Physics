@@ -597,64 +597,6 @@ struct HfTaskFlow {
     mixCollisions(collisions, mfttracks, tracks, getTracksSize, mixedMFT);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftHH, "Process mixed-event correlations for h-MFT case", true);
-
-
-// ==================================================================
-
-//                    MONTE CARLO 
-
-// ===================================================================
-
-/*
-
-  // =====================================
-  //    process same event correlations: h-h (MC) case
-  // =====================================
-  void processSameTpcTpcHHmc(MyCollisionsMC::iterator const& collision,
-                           MyTracksMC const& tracks)
-  {
-    if (!(isCollisionSelected(collision, true))) {
-      return;
-    }
-
-    //  the event histograms below are only filled for h-h case
-    //  because there is a possibility of double-filling if more correlation
-    //  options are ran at the same time
-    //  temporary solution, since other correlation options always have to be ran with h-h, too
-    //  TODO: rewrite it in a more intelligent way
-    const auto multiplicity = tracks.size();
-    registry.fill(HIST("hMultiplicity"), multiplicity);
-    registry.fill(HIST("hVtxZ"), collision.posZ());
-
-    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
-    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
-    registry.fill(HIST("hEventCountSame"), bin);
-
-    sameTPCTPCChmc->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-
-    fillQA(multiplicity, tracks);
-    fillCorrelations(sameTPCTPCChmc, tracks, tracks, multiplicity, collision.posZ());
-  }
-  PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcHHmc, "Process same-event correlations for h-h case for MC", true);
-
-  // =====================================
-  //    process mixed event correlations: h-h (MC) case
-  // =====================================
-  void processMixedTpcTpcHHmc(MyCollisionsMC const& collisions,
-                            MyTracksMC const& tracks)
-  {
-    //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](MyCollisionsMC::iterator const& col) {
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
-      auto size = associatedTracks.size();
-      return size;
-    };
-
-    mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCChmc);
-  }
-  PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcHHmc, "Process mixed-event correlations for h-h case for MC", true);
-  */
-
 }; // End of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
