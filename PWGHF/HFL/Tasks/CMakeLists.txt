@@ -24,7 +24,7 @@ o2physics_add_dpl_workflow(task-single-muon-source
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-   o2physics_add_dpl_workflow(task-hfe-selection
+o2physics_add_dpl_workflow(task-hfe-selection
                     SOURCES taskHfeSelection.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
