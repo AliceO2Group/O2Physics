@@ -27,6 +27,7 @@
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -108,28 +109,6 @@ struct hJetAnalysis {
     Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut);
   }
 
-  // Constrain from 0 to 2pi
-  float dPhi(float phi1, float phi2)
-  {
-    float dPhi = phi1 - phi2;
-    if (dPhi < 0)
-      dPhi += 2 * M_PI;
-    if (dPhi > 2 * M_PI)
-      dPhi -= 2 * M_PI;
-    return dPhi;
-  }
-
-  // Constrain from -pi to pi
-  float dPhi2(float phi1, float phi2)
-  {
-    float dPhi = phi1 - phi2;
-    if (dPhi < -M_PI)
-      dPhi += 2 * M_PI;
-    if (dPhi > M_PI)
-      dPhi -= 2 * M_PI;
-    return dPhi;
-  }
-
   template <typename T, typename U, typename W>
   void fillHistograms(T const& jets, W const& jetsWTA, U const& tracks)
   {
@@ -183,14 +162,14 @@ struct hJetAnalysis {
       registry.fill(HIST("hJetEta"), jet.eta());
       registry.fill(HIST("hJetPhi"), jet.phi());
       for (auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<W>>()) {
-        double deltaPhi = dPhi2(jetWTA.phi(), jet.phi());
+        double deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -M_PI);
         double deltaEta = jetWTA.eta() - jet.eta();
         double dR = sqrt(pow(deltaPhi, 2) + pow(deltaEta, 2));
         registry.fill(HIST("hDeltaR"), dR);
         registry.fill(HIST("hDeltaRpT"), jet.pt(), dR);
       }
       if (n_TT > 0) {
-        float dphi = dPhi(jet.phi(), phi_TT);
+        float dphi = RecoDecay::constrainAngle(jet.phi() - phi_TT);
         if (is_sig_col) {
           registry.fill(HIST("hSignalPtDPhi"), dphi, jet.pt());
           if (std::abs(dphi - M_PI) < 0.6) {
@@ -273,7 +252,7 @@ struct hJetAnalysis {
       registry.fill(HIST("hJetEta"), jet.eta());
       registry.fill(HIST("hJetPhi"), jet.phi());
       if (n_TT > 0) {
-        float dphi = dPhi(jet.phi(), phi_TT);
+        float dphi = RecoDecay::constrainAngle(jet.phi() - phi_TT);
         if (is_sig_col) {
           registry.fill(HIST("hSignalPtDPhi"), dphi, jet.pt());
           if (std::abs(dphi - M_PI) < 0.6) {
