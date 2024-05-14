@@ -71,9 +71,6 @@ struct HfTaskFlow {
   using MyTracks = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
   using HfCandidatesSel = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 
-  using MyTracksMC = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksWMc>>;
-  using MyCollisionsMC = soa::Filtered<soa::Join<aod::McCollisions, aod::EvSels, aod::Mults>>;
-
   
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
@@ -112,8 +109,6 @@ struct HfTaskFlow {
   OutputObj<CorrelationContainer> mixedTPCTPCCh{"mixedEventTPCTPCChHadrons"};
   OutputObj<CorrelationContainer> mixedHF{"mixedEventHFHadrons"};
   OutputObj<CorrelationContainer> mixedMFT{"mixedEventTPCMFTChHadrons"};
-  OutputObj<CorrelationContainer> sameTPCTPCChmc{"sameEventTPCTPCChHadronsMC"};
-  OutputObj<CorrelationContainer> mixedTPCTPCChmc{"mixedEventTPCTPCChHadronsMC"};
 
   //  =========================
   //      init()
@@ -209,9 +204,7 @@ struct HfTaskFlow {
     mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", corrAxis, effAxis, {}));
     mixedHF.setObject(new CorrelationContainer("mixedEventHFHadrons", "mixedEventHFHadrons", corrAxis, effAxis, userAxis));
     mixedMFT.setObject(new CorrelationContainer("mixedEventTPCMFTChHadrons", "mixedEventTPCMFTChHadrons", corrAxis, effAxis, {}));
-    sameTPCTPCChmc.setObject(new CorrelationContainer("sameEventTPCTPCChHadronsMC", "sameEventTPCTPCChHadronsMC", corrAxis, effAxis, {}));
-    mixedTPCTPCChmc.setObject(new CorrelationContainer("mixedEventTPCTPCChHadronsMC", "mixedEventTPCTPCChHadronsMC", corrAxis, effAxis, {}));
-  }
+    }
 
   //  ---------------
   //    templates
@@ -394,7 +387,7 @@ struct HfTaskFlow {
       }
 
       for (const auto& track2 : tracks2) {
-
+f
         //  case of h-h correlations where the two types of tracks are the same
         //  this avoids autocorrelations and double counting of particle pairs
         if constexpr (std::is_same_v<TTracksAssoc, TTracksTrig>) {
@@ -439,14 +432,13 @@ struct HfTaskFlow {
     }
   }
 
-  template <typename TTracksTrig, typename TTracksAssoc, typename TLambda, typename TMyCollisions>
-  void mixCollisions(TMyCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
+  template <typename TTracksTrig, typename TTracksAssoc, typename TLambda>
+  void mixCollisions(MyCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
   {
-    // STUCK HERE, HOW TO DECLARE aod::collision::PosZ for both normal particles and MC ? 
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::collision::PosZ, decltype(getPartsSize)>;
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<TMyCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    Pair<MyCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
     
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
