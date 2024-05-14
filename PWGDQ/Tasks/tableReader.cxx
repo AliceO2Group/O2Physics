@@ -39,7 +39,6 @@
 #include "TGeoGlobalMagField.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
-#include "Common/Core/EventPlaneHelper.h"
 
 using std::cout;
 using std::endl;
