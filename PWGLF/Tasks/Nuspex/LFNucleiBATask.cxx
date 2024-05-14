@@ -1595,8 +1595,6 @@ struct LFNucleiBATask {
     spectraGen.add("kaon/histSecTransportPtantiKaon", "generated particles", HistType::kTH1F, {ptAxis});
 
     if (enablePr) {
-      // spectraGen.add("proton/histPtShift_Pr", "PtReco-PtGen vs PtReco (protons)  ", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
-
       spectraGen.add("proton/histGenPtProton", "generated particles", HistType::kTH1F, {ptAxis});
       spectraGen.add("proton/histGenPtProtonPrim", "generated particles", HistType::kTH1F, {ptAxis});
       spectraGen.add("proton/histGenPtProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
@@ -1929,13 +1927,41 @@ struct LFNucleiBATask {
           passDCAxyCutAntiHe = (std::abs(track.dcaXY()) <= 0.004f + 0.013f / antihePt);
           passDCAzCutAntiHe = (std::abs(track.dcaZ()) <= 0.004f + 0.013f / antihePt);
           break;
+        case 2:
+          passDCAxyCut = (std::abs(track.dcaXY()) <= 0.004f + 0.013f / track.pt());
+          passDCAzCut = (std::abs(track.dcaZ()) <= DCAzCustomCut);
+
+          passDCAxyCutDe = (std::abs(track.dcaXY()) <= 0.004f + 0.013f / DPt);
+          passDCAzCutDe = (std::abs(track.dcaZ()) <= DCAzCustomCut);
+          passDCAxyCutAntiDe = (std::abs(track.dcaXY()) <= 0.004f + 0.013f / antiDPt);
+          passDCAzCutAntiDe = (std::abs(track.dcaZ()) <= DCAzCustomCut);
+
+          passDCAxyCutHe = (std::abs(track.dcaXY()) <= 0.004f + 0.013f / hePt);
+          passDCAzCutHe = (std::abs(track.dcaZ()) <= DCAzCustomCut);
+          passDCAxyCutAntiHe = (std::abs(track.dcaXY()) <= 0.004f + 0.013f / antihePt);
+          passDCAzCutAntiHe = (std::abs(track.dcaZ()) <= DCAzCustomCut);
+          break;
+        case 3:
+          passDCAxyCut = (std::abs(track.dcaXY()) <= DCAxyCustomCut);
+          passDCAzCut = (std::abs(track.dcaZ()) <= 0.004f + 0.013f / track.pt());
+
+          passDCAxyCutDe = (std::abs(track.dcaXY()) <= DCAxyCustomCut);
+          passDCAzCutDe = (std::abs(track.dcaZ()) <= 0.004f + 0.013f / DPt);
+          passDCAxyCutAntiDe = (std::abs(track.dcaXY()) <= DCAxyCustomCut);
+          passDCAzCutAntiDe = (std::abs(track.dcaZ()) <= 0.004f + 0.013f / antiDPt);
+
+          passDCAxyCutHe = (std::abs(track.dcaXY()) <= DCAxyCustomCut);
+          passDCAzCutHe = (std::abs(track.dcaZ()) <= 0.004f + 0.013f / hePt);
+          passDCAxyCutAntiHe = (std::abs(track.dcaXY()) <= DCAxyCustomCut);
+          passDCAzCutAntiHe = (std::abs(track.dcaZ()) <= 0.004f + 0.013f / antihePt);
+          break;
       }
 
       // p cut
       if (TMath::Abs(track.tpcInnerParam()) < pCut)
         continue;
 
-      // debug on helium rapidity cut
+      // Rapidity cuts
       prRapCut = track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Proton)) > yLowCut && track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Proton)) < yHighCut;
       deRapCut = track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Deuteron)) > yLowCut && track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Deuteron)) < yHighCut;
       trRapCut = track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton)) > yLowCut && track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Triton)) < yHighCut;
@@ -2373,8 +2399,6 @@ struct LFNucleiBATask {
           pdgCode = track.mcParticle().pdgCode();
           genPt = track.mcParticle().pt();
 
-          // int motherid =  track.mcParticle().mothersIds()[0];
-          // auto mother = track.mcParticle().iteratorAt(motherid);
           for (int i = 0; i < 10; i++) { // From ITS to TPC
             if (track.mcMask() & 1 << i) {
               hasFakeHit = true;
@@ -2689,8 +2713,6 @@ struct LFNucleiBATask {
         } else {
           if (!track.isGlobalTrackWoDCA())
             continue;
-          // if (std::abs(track.dcaXY()) > DCAxyCustomCut)
-          //   continue;
         }
       }
 
@@ -4882,10 +4904,6 @@ struct LFNucleiBATask {
       bool isPhysPrim = mcParticleGen.isPhysicalPrimary();
       bool isProdByGen = mcParticleGen.producedByGenerator();
       bool isWeakDecay = mcParticleGen.getProcess() == 4;
-
-      // if (mcParticleGen.pdgCode() == PDGHelium) {
-      //   LOG(info) << "I AM POSITIVE HELIUM, get process output is: " << mcParticleGen.getProcess();
-      // }
 
       if (mcParticleGen.pdgCode() == PDGPion) {
         spectraGen.fill(HIST("pion/histGenPtPion"), mcParticleGen.pt());
