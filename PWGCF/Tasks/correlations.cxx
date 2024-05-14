@@ -325,7 +325,14 @@ struct CorrelationTask {
         }
       }
 
-      target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
+      if (cfgMassAxis) {
+        if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
+          target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, track1.invMass(), triggerWeight);
+        else
+          LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
+      } else {
+        target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
+      }
 
       for (auto& track2 : tracks2) {
         if constexpr (std::is_same<TTracks1, TTracks2>::value) {
