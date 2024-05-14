@@ -56,7 +56,6 @@ struct JetFinderQATask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
   Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
-  Configurable<float> trackDcaZmax{"trackDcaZmax", -99, "additional cut on dcaZ to PV for tracks; uniformTracks in particular don't cut on this at all"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
@@ -265,8 +264,6 @@ struct JetFinderQATask {
       registry.add("h2_centrality_track_eta", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {100, -1.0, 1.0}}});
       registry.add("h2_centrality_track_phi", "centrality vs track #varphi; centrality; #varphi_{track}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {160, -1.0, 7.}}});
       registry.add("h2_centrality_track_energy", "centrality vs track energy; centrality; Energy GeV", {HistType::kTH2F, {{1200, -10.0, 110.0}, {100, 0.0, 100.0}}});
-      registry.add("h3sparse_centrality_track_pt_track_sigmapt", "#it{p}_{T,track} (GeV/#it{c}); #sigma(#it{p}_{T})", {HistType::kTHnSparseD, {{1200, -10.0, 110.0}, {2000, 0., 200.}, {100, 0.0, 10.0}}});
-      registry.add("h3sparse_centrality_track_pt_track_sigma1overpt", "#it{p}_{T,track} (GeV/#it{c}); #sigma(#it{p}_{T})/#it{p}_{T}", {HistType::kTHnSparseD, {{1200, -10.0, 110.0}, {2000, 0., 200.}, {100, 0.0, 1.0}}});
       if (doprocessTracksWeighted) {
         registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       }
@@ -521,15 +518,13 @@ struct JetFinderQATask {
   void fillTrackHistograms(T const& collision, U const& tracks, float weight = 1.0)
   {
     for (auto const& track : tracks) {
-      if (!(jetderiveddatautilities::selectTrack(track, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(track, trackDcaZmax))) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
       registry.fill(HIST("h2_centrality_track_pt"), collision.centrality(), track.pt(), weight);
       registry.fill(HIST("h2_centrality_track_eta"), collision.centrality(), track.eta(), weight);
       registry.fill(HIST("h2_centrality_track_phi"), collision.centrality(), track.phi(), weight);
       registry.fill(HIST("h2_centrality_track_energy"), collision.centrality(), track.energy(), weight);
-      registry.fill(HIST("h3sparse_centrality_track_pt_track_sigma1overpt"), collision.centrality(), track.pt(), track.sigma1Pt(), weight);
-      registry.fill(HIST("h3sparse_centrality_track_pt_track_sigmapt"), collision.centrality(), track.pt(), track.sigma1Pt() * track.pt(), weight);
     }
   }
 
@@ -825,7 +820,7 @@ struct JetFinderQATask {
   PROCESS_SWITCH(JetFinderQATask, processTriggeredData, "QA for charged jet trigger", false);
 
   void processTracks(soa::Filtered<JetCollisions>::iterator const& collision,
-                     soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras>> const& tracks)
+                     soa::Filtered<JetTracks> const& tracks)
   {
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
@@ -840,7 +835,7 @@ struct JetFinderQATask {
 
   void processTracksWeighted(soa::Join<JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                              JetMcCollisions const&,
-                             soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras>> const& tracks)
+                             soa::Filtered<JetTracks> const& tracks)
   {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
@@ -869,14 +864,14 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processTracksSub, "QA for charged event-wise embedded subtracted tracks", false);
 
-  void processRho(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras>> const& tracks)
+  void processRho(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
     int nTracks = 0;
     for (auto const& track : tracks) {
-      if (jetderiveddatautilities::selectTrack(track, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(track, trackDcaZmax)) {
+      if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
         nTracks++;
       }
     }
@@ -888,7 +883,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processRho, "QA for rho-area subtracted jets", false);
 
-  void processRandomCone(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras>> const& tracks)
+  void processRandomCone(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, soa::Filtered<JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -898,7 +893,7 @@ struct JetFinderQATask {
     float randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
     float randomConePt = 0;
     for (auto const& track : tracks) {
-      if (jetderiveddatautilities::selectTrack(track, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(track, trackDcaZmax)) {
+      if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
         float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-M_PI));
         float dEta = track.eta() - randomConeEta;
         if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
@@ -924,7 +919,7 @@ struct JetFinderQATask {
       if (jetWasInCone) {
         randomConePt = 0.0;
         for (auto const& track : tracks) {
-          if (jetderiveddatautilities::selectTrack(track, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(track, trackDcaZmax)) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
+          if (jetderiveddatautilities::selectTrack(track, trackSelection)) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
             float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-M_PI));
             float dEta = track.eta() - randomConeEta;
             if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {

@@ -384,11 +384,8 @@ float trackEnergy(T const& track, float mass = mPion)
 }
 
 template <typename T>
-bool selectTrackDcaZ(T const& track, double dcaZmax = -99.)
+bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
 {
-  if (dcaZmax < 0) {
-    return true;
-  }
   return abs(track.dcaZ()) < dcaZmax;
 }
 
