@@ -149,6 +149,8 @@ DECLARE_SOA_COLUMN(StoredTOFNSigmaPr, storedTofNSigmaPr, binning::nsigma::binned
 DECLARE_SOA_COLUMN(StoredTPCNSigmaPr, storedTpcNSigmaPr, binning::nsigma::binned_t);
 DECLARE_SOA_COLUMN(StoredTOFNSigmaDe, storedTofNSigmaDe, binning::nsigma::binned_t);
 DECLARE_SOA_COLUMN(StoredTPCNSigmaDe, storedTpcNSigmaDe, binning::nsigma::binned_t);
+DECLARE_SOA_COLUMN(StoredTOFNSigmaHe, storedTofNSigmaHe, binning::nsigma::binned_t);
+DECLARE_SOA_COLUMN(StoredTPCNSigmaHe, storedTpcNSigmaHe, binning::nsigma::binned_t);
 
 DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy, [](float p, float mass) -> float { return sqrt(p * p + mass * mass); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float p, float eta) -> float { return p / std::cosh(eta); });
@@ -200,6 +202,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaDe, tofNSigmaDe,
                            [](binning::nsigma::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaDe, tpcNSigmaDe,
                            [](binning::nsigma::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma>(nsigma_binned); });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaHe, tofNSigmaHe,
+                           [](binning::nsigma::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma>(nsigma_binned); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaHe, tpcNSigmaHe,
+                           [](binning::nsigma::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma>(nsigma_binned); });
 
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float); // Momentum at inner wall of the TPC
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);         // dE/dx TPC
@@ -238,6 +244,8 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels_v0, "SelTracks", "AOD", "SINGLETRACKSEL",
                        singletrackselector::StoredTPCNSigmaPr,
                        singletrackselector::StoredTOFNSigmaDe,
                        singletrackselector::StoredTPCNSigmaDe,
+                       singletrackselector::StoredTOFNSigmaHe,
+                       singletrackselector::StoredTPCNSigmaHe,
 
                        singletrackselector::DcaXY_v0<singletrackselector::StoredDcaXY>,
                        singletrackselector::DcaZ_v0<singletrackselector::StoredDcaZ>,
@@ -254,6 +262,8 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels_v0, "SelTracks", "AOD", "SINGLETRACKSEL",
                        singletrackselector::TPCNSigmaPr<singletrackselector::StoredTPCNSigmaPr>,
                        singletrackselector::TOFNSigmaDe<singletrackselector::StoredTOFNSigmaDe>,
                        singletrackselector::TPCNSigmaDe<singletrackselector::StoredTPCNSigmaDe>,
+                       singletrackselector::TOFNSigmaHe<singletrackselector::StoredTOFNSigmaHe>,
+                       singletrackselector::TPCNSigmaHe<singletrackselector::StoredTPCNSigmaHe>,
 
                        singletrackselector::Rapidity<singletrackselector::P, singletrackselector::Eta>,
                        singletrackselector::Energy<singletrackselector::P>,
@@ -288,6 +298,8 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels_v1, "SelTracks", "AOD", "SINGLETRACKSEL1"
                        singletrackselector::StoredTPCNSigmaPr,
                        singletrackselector::StoredTOFNSigmaDe,
                        singletrackselector::StoredTPCNSigmaDe,
+                       singletrackselector::StoredTOFNSigmaHe,
+                       singletrackselector::StoredTPCNSigmaHe,
 
                        singletrackselector::ITSNClsDyn<singletrackselector::ITSclusterSizes>,
                        track::v001::ITSClsSizeInLayer<singletrackselector::ITSclusterSizes>,
@@ -306,6 +318,8 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels_v1, "SelTracks", "AOD", "SINGLETRACKSEL1"
                        singletrackselector::TPCNSigmaPr<singletrackselector::StoredTPCNSigmaPr>,
                        singletrackselector::TOFNSigmaDe<singletrackselector::StoredTOFNSigmaDe>,
                        singletrackselector::TPCNSigmaDe<singletrackselector::StoredTPCNSigmaDe>,
+                       singletrackselector::TOFNSigmaHe<singletrackselector::StoredTOFNSigmaHe>,
+                       singletrackselector::TPCNSigmaHe<singletrackselector::StoredTPCNSigmaHe>,
 
                        singletrackselector::Rapidity<singletrackselector::P, singletrackselector::Eta>,
                        singletrackselector::Energy<singletrackselector::P>,
@@ -367,6 +381,9 @@ inline bool TPCselection(TrackType const& track, std::pair<int, std::vector<floa
     case 1000010020:
       Nsigma = track.tpcNSigmaDe();
       break;
+    case 1000020030:
+      Nsigma = track.tpcNSigmaHe();
+      break;
     case 211:
       Nsigma = track.tpcNSigmaPi();
       break;
@@ -399,6 +416,9 @@ inline bool TOFselection(TrackType const& track, std::pair<int, std::vector<floa
       break;
     case 1000010020:
       Nsigma = track.tofNSigmaDe();
+      break;
+    case 1000020030:
+      Nsigma = track.tofNSigmaHe();
       break;
     case 211:
       Nsigma = track.tofNSigmaPi();
