@@ -17,7 +17,6 @@
 #include <TH1F.h>
 #include <THn.h>
 
-#include <iostream> // Alexian : To debug with std::cout ?
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -51,7 +50,6 @@ using namespace o2::framework::expressions;
 struct HfTaskFlow {
   //  configurables for processing options
   Configurable<bool> processRun2{"processRun2", false, "Flag to run on Run 2 data"};
-  // Will we ever use Run 2 data ? Otherwise remove this line ? 
   Configurable<bool> processRun3{"processRun3", true, "Flag to run on Run 3 data"};
   Configurable<bool> processMc{"processMc", false, "Flag to run on MC"};
   Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
@@ -73,6 +71,9 @@ struct HfTaskFlow {
   using MyTracks = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
   using HfCandidatesSel = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 
+  using MyTracksMC = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksWMc>>;
+  using MyCollisionsMC = soa::Filtered<soa::Join<aod::McCollisions, aod::EvSels, aod::Mults>>;
+
   
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
@@ -85,15 +86,7 @@ struct HfTaskFlow {
   //  TODO: use Partition instead of filter
   Filter candidateFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
-  // First try to use Partition instead
-  // This would be if we want to partition between D0 and D0 bar, but maybe we when to partition between selected and non-selected ? 
-  Partition<HfCandidatesSel> selectedD0 = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0;
-  Partition<HfCandidatesSel> selectedD0bar = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-
-  // Partition between selected and non-selected
-  Partition<HfCandidatesSel> selectedCandidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<HfCandidatesSel> NotSelectedcandidates = aod::hf_sel_candidate_d0::isSelD0 <= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar <= selectionFlagD0bar;
-
+  
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
   //  configurables for containers
@@ -119,6 +112,8 @@ struct HfTaskFlow {
   OutputObj<CorrelationContainer> mixedTPCTPCCh{"mixedEventTPCTPCChHadrons"};
   OutputObj<CorrelationContainer> mixedHF{"mixedEventHFHadrons"};
   OutputObj<CorrelationContainer> mixedMFT{"mixedEventTPCMFTChHadrons"};
+  OutputObj<CorrelationContainer> sameTPCTPCChmc{"sameEventTPCTPCChHadronsMC"};
+  OutputObj<CorrelationContainer> mixedTPCTPCChmc{"mixedEventTPCTPCChHadronsMC"};
 
   //  =========================
   //      init()
@@ -214,6 +209,8 @@ struct HfTaskFlow {
     mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", corrAxis, effAxis, {}));
     mixedHF.setObject(new CorrelationContainer("mixedEventHFHadrons", "mixedEventHFHadrons", corrAxis, effAxis, userAxis));
     mixedMFT.setObject(new CorrelationContainer("mixedEventTPCMFTChHadrons", "mixedEventTPCMFTChHadrons", corrAxis, effAxis, {}));
+    sameTPCTPCChmc.setObject(new CorrelationContainer("sameEventTPCTPCChHadronsMC", "sameEventTPCTPCChHadronsMC", corrAxis, effAxis, {}));
+    mixedTPCTPCChmc.setObject(new CorrelationContainer("mixedEventTPCTPCChHadronsMC", "mixedEventTPCTPCChHadronsMC", corrAxis, effAxis, {}));
   }
 
   //  ---------------
@@ -316,7 +313,6 @@ struct HfTaskFlow {
   template <typename TTrack>
   bool isAcceptedCandidate(TTrack const& candidate)
   {
-    // Alexian : Why is it only one "&" just beneath ?
     if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
       return false;
     }
@@ -390,23 +386,11 @@ struct HfTaskFlow {
         invmass = hfHelper.invMassD0ToPiK(track1);
       }
 
-      int i = 0;
-      i++;
-
       //  fill single-track distributions
       if (!fillingHFcontainer) {
         target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, triggerWeight);
       } else {
         target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, invmass, triggerWeight);
-        
-        // To fill multiplicity bins artificially just to check
-        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 50, posZ, invmass, triggerWeight);
-        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 60, posZ, invmass, triggerWeight);
-        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 70, posZ, invmass, triggerWeight);
-        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 80, posZ, invmass, triggerWeight);
-        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 90, posZ, invmass, triggerWeight);
-        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 100, posZ, invmass, triggerWeight);
-        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, 130, posZ, invmass, triggerWeight);
       }
 
       for (const auto& track2 : tracks2) {
@@ -440,54 +424,30 @@ struct HfTaskFlow {
         //  set range of delta phi in (-pi/2 , 3/2*pi)
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
 
-        int j = 0;
-        j++;
-
         if (!fillingHFcontainer) {
           //  fill pair correlations
           target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                       triggerWeight * associatedWeight);
         } else {
+          
           target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
-                                      triggerWeight * associatedWeight);
-
-          // To fill multiplicity bins artificially just to check
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, 55, deltaPhi, posZ, invmass,
-                                      triggerWeight * associatedWeight);
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, 65, deltaPhi, posZ, invmass,
-                                      triggerWeight * associatedWeight);
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, 75, deltaPhi, posZ, invmass,
-                                      triggerWeight * associatedWeight);
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, 85, deltaPhi, posZ, invmass,
-                                      triggerWeight * associatedWeight);
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, 95, deltaPhi, posZ, invmass,
-                                      triggerWeight * associatedWeight);
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, 105, deltaPhi, posZ, invmass,
-                                      triggerWeight * associatedWeight);
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, 140, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
         }
       }
     }
   }
 
-  template <typename TTracksTrig, typename TTracksAssoc, typename TLambda>
-  void mixCollisions(MyCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
+  template <typename TTracksTrig, typename TTracksAssoc, typename TLambda, typename TMyCollisions>
+  void mixCollisions(TMyCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
   {
+    // STUCK HERE, HOW TO DECLARE aod::collision::PosZ for both normal particles and MC ? 
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::collision::PosZ, decltype(getPartsSize)>;
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
-
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<MyCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    Pair<TMyCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -585,7 +545,6 @@ struct HfTaskFlow {
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftHH, "Process same-event correlations for h-MFT case", true);
 
-  //  TODO: add also MFT option
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
@@ -604,7 +563,7 @@ struct HfTaskFlow {
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcHH, "Process mixed-event correlations for h-h case", true);
 
   // =====================================
-  //    process mixed event correlations: h-h case
+  //    process mixed event correlations: h-HF case
   // =====================================
   void processMixedHfHadrons(MyCollisions const& collisions,
                              MyTracks const& tracks,
@@ -638,7 +597,65 @@ struct HfTaskFlow {
     mixCollisions(collisions, mfttracks, tracks, getTracksSize, mixedMFT);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftHH, "Process mixed-event correlations for h-MFT case", true);
-};
+
+
+// ==================================================================
+
+//                    MONTE CARLO 
+
+// ===================================================================
+
+/*
+
+  // =====================================
+  //    process same event correlations: h-h (MC) case
+  // =====================================
+  void processSameTpcTpcHHmc(MyCollisionsMC::iterator const& collision,
+                           MyTracksMC const& tracks)
+  {
+    if (!(isCollisionSelected(collision, true))) {
+      return;
+    }
+
+    //  the event histograms below are only filled for h-h case
+    //  because there is a possibility of double-filling if more correlation
+    //  options are ran at the same time
+    //  temporary solution, since other correlation options always have to be ran with h-h, too
+    //  TODO: rewrite it in a more intelligent way
+    const auto multiplicity = tracks.size();
+    registry.fill(HIST("hMultiplicity"), multiplicity);
+    registry.fill(HIST("hVtxZ"), collision.posZ());
+
+    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
+    int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
+    registry.fill(HIST("hEventCountSame"), bin);
+
+    sameTPCTPCChmc->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+
+    fillQA(multiplicity, tracks);
+    fillCorrelations(sameTPCTPCChmc, tracks, tracks, multiplicity, collision.posZ());
+  }
+  PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcHHmc, "Process same-event correlations for h-h case for MC", true);
+
+  // =====================================
+  //    process mixed event correlations: h-h (MC) case
+  // =====================================
+  void processMixedTpcTpcHHmc(MyCollisionsMC const& collisions,
+                            MyTracksMC const& tracks)
+  {
+    //  we want to group collisions based on charged-track multiplicity
+    auto getTracksSize = [&tracks, this](MyCollisionsMC::iterator const& col) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
+      auto size = associatedTracks.size();
+      return size;
+    };
+
+    mixCollisions(collisions, tracks, tracks, getTracksSize, mixedTPCTPCChmc);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcHHmc, "Process mixed-event correlations for h-h case for MC", true);
+  */
+
+}; // End of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
