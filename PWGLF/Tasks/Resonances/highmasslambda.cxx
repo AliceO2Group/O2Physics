@@ -80,6 +80,7 @@ struct highmasslambda {
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
   // proton track cut
+  Configurable<bool> rejectPID{"rejectPID", true, "Reject PID"};
   Configurable<float> confRapidity{"confRapidity", 0.5, "cut on Rapidity"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.3, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
@@ -90,7 +91,7 @@ struct highmasslambda {
   Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
-  Configurable<float> nsigmaCutTPCPre{"nsigmacutTPCPre", 3.0, "Value of the TPC Nsigma cut Pre filter"};
+  Configurable<float> nsigmaCutTPCPre{"nsigmacutTPCPre", 5.0, "Value of the TPC Nsigma cut Pre filter"};
   // Configs for V0
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
   Configurable<double> ConfV0DCADaughMax{"ConfV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
@@ -132,7 +133,7 @@ struct highmasslambda {
   Filter pidFilter = nabs(aod::pidtpc::tpcNSigmaPr) < nsigmaCutTPCPre;
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::EPCalibrationTables, aod::Mults>>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
   using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi>;
   using ResoV0s = aod::V0Datas;
 
@@ -156,10 +157,12 @@ struct highmasslambda {
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec resAxis = {400, -2, 2, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
-    AxisSpec ptProtonAxis = {24, 0.0, 12, "V0M (%)"};
+    AxisSpec ptProtonAxis = {16, 0.0, 8, "V0M (%)"};
     AxisSpec dcaAxis = {50, 0.0, 0.1, "V0M (%)"};
     AxisSpec dcatoPVAxis = {50, 0.0, 0.4, "V0M (%)"};
 
+    histos.add("hRejectPID", "hRejectPID", kTH1F, {{2, 0.0f, 2.0f}});
+    histos.add("hMomCorr", "hMomCorr", kTH3F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}, {8, 0.0f, 80.0f}});
     histos.add("hInvMassKs0", "hInvMassKs0", kTH1F, {{200, 0.4f, 0.6f}});
     histos.add("hV0Dca", "hV0Dca", kTH1F, {{2000, -1.0f, 1.0f}});
     histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
@@ -171,8 +174,9 @@ struct highmasslambda {
     histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{1000, -0.5f, 0.5f}});
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{1000, -0.5f, 0.5f}});
-    histos.add("hNsigmaProtonTPC", "NsigmaProton TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
-    histos.add("hNsigmaProtonTOF", "NsigmaProton TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
+    histos.add("hNsigmaProtonTPCDiff", "Difference NsigmaProton NsigmaKaon TPC distribution", kTH3F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {80, 0.0f, 8.0f}});
+    histos.add("hNsigmaProtonTPC", "NsigmaProton TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {80, 0.0f, 8.0f}});
+    histos.add("hNsigmaProtonTOF", "NsigmaProton TOF distribution", kTH2F, {{100, -5.0f, 5.0f}, {80, 0.0f, 8.0f}});
     histos.add("hPsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
     histos.add("hPsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
     histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
@@ -244,16 +248,16 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (!candidate.hasTOF() && candidate.pt() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+    if (candidate.p() < 0.6 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
       return true;
     }
-    if (!candidate.hasTOF() && candidate.pt() > 2.0 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
+    if (candidate.p() > 0.6 && candidate.p() < 0.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
       return true;
     }
-    if (candidate.hasTOF() && candidate.pt() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
+    if (candidate.p() > 0.8 && candidate.hasTOF() && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
       return true;
     }
-    if (candidate.hasTOF() && candidate.pt() > 2.0 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
+    if (candidate.p() > 0.8 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
       return true;
     }
     return false;
@@ -262,13 +266,34 @@ struct highmasslambda {
   template <typename T>
   bool selectionPIDNew(const T& candidate)
   {
-    if (candidate.hasTOF() && candidate.pt() < 2.0 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
+    if (candidate.p() < 0.6 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
       return true;
     }
-    if (candidate.hasTOF() && candidate.pt() > 2.0 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
+    if (candidate.p() > 0.6 && candidate.p() < 1.0 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
+      return true;
+    }
+    if (candidate.p() > 1.0 && candidate.hasTOF() && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
       return true;
     }
     return false;
+  }
+
+  template <typename T>
+  bool RejectPion(const T& candidate)
+  {
+    if (candidate.p() > 1.0 && candidate.p() < 2.0 && !candidate.hasTOF() && candidate.tpcNSigmaPi() < 2) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T>
+  bool RejectKaon(const T& candidate)
+  {
+    if (candidate.p() > 1.0 && candidate.p() < 2.0 && !candidate.hasTOF() && candidate.tpcNSigmaKa() < 2) {
+      return false;
+    }
+    return true;
   }
 
   template <typename Collision, typename V0>
@@ -404,11 +429,21 @@ struct highmasslambda {
       if (!ispTdepPID && !selectionPID(track1)) {
         continue;
       }
+      if (rejectPID && !RejectPion(track1)) {
+        histos.fill(HIST("hRejectPID"), 0.5);
+        continue;
+      }
+      if (rejectPID && !RejectKaon(track1)) {
+        histos.fill(HIST("hRejectPID"), 1.5);
+        continue;
+      }
+      histos.fill(HIST("hMomCorr"), track1.p() / track1.sign(), track1.p() - track1.tpcInnerParam(), centrality);
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
       histos.fill(HIST("hDcaz"), track1.dcaZ());
-      histos.fill(HIST("hNsigmaProtonTPC"), track1.tpcNSigmaPr());
-      histos.fill(HIST("hNsigmaProtonTOF"), track1.tofNSigmaPr());
+      histos.fill(HIST("hNsigmaProtonTPCDiff"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.pt());
+      histos.fill(HIST("hNsigmaProtonTPC"), track1.tpcNSigmaPr(), track1.pt());
+      histos.fill(HIST("hNsigmaProtonTOF"), track1.tofNSigmaPr(), track1.pt());
       auto track1ID = track1.globalIndex();
       for (auto v0 : V0s) {
         if (firstprimarytrack == 0) {
