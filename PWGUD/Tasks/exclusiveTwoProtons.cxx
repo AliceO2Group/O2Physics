@@ -34,7 +34,66 @@ struct ExclusiveTwoProtons {
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+  //_____________________________________________________________________________
+  Double_t CosThetaHelicityFrame(TLorentzVector posDaughter, TLorentzVector negDaughter, TLorentzVector mother)
+  {
 
+    Double_t HalfSqrtSnn = 2680.;
+    Double_t MassOfLead208 = 193.6823;
+    Double_t MomentumBeam = TMath::Sqrt(HalfSqrtSnn * HalfSqrtSnn * 208 * 208 - MassOfLead208 * MassOfLead208);
+
+    TLorentzVector pProjCM(0., 0., -MomentumBeam, HalfSqrtSnn * 208); // projectile
+    TLorentzVector pTargCM(0., 0., MomentumBeam, HalfSqrtSnn * 208);  // target
+
+    TVector3 beta = (-1. / mother.E()) * mother.Vect();
+    TLorentzVector pPi1Dipion = posDaughter;
+    TLorentzVector pPi2Dipion = negDaughter;
+    TLorentzVector pProjDipion = pProjCM;
+    TLorentzVector pTargDipion = pTargCM;
+
+    pPi1Dipion.Boost(beta);
+    pPi2Dipion.Boost(beta);
+    pProjDipion.Boost(beta);
+    pTargDipion.Boost(beta);
+
+    TVector3 zaxis = (mother.Vect()).Unit();
+
+    Double_t CosThetaHE = zaxis.Dot((pPi1Dipion.Vect()).Unit());
+    return CosThetaHE;
+  }
+  //------------------------------------------------------------------------------------------------------
+  Double_t PhiHelicityFrame(TLorentzVector posDaughter, TLorentzVector negDaughter, TLorentzVector mother)
+  {
+
+    // Half of the energy per pair of the colliding nucleons.
+    Double_t HalfSqrtSnn = 2680.;
+    Double_t MassOfLead208 = 193.6823;
+    Double_t MomentumBeam = TMath::Sqrt(HalfSqrtSnn * HalfSqrtSnn * 208 * 208 - MassOfLead208 * MassOfLead208);
+
+    TLorentzVector pProjCM(0., 0., -MomentumBeam, HalfSqrtSnn * 208); // projectile
+    TLorentzVector pTargCM(0., 0., MomentumBeam, HalfSqrtSnn * 208);  // target
+
+    // Translate the dimuon parameters in the dimuon rest frame
+    TVector3 beta = (-1. / mother.E()) * mother.Vect();
+    TLorentzVector pMu1Dimu = posDaughter;
+    TLorentzVector pMu2Dimu = negDaughter;
+    TLorentzVector pProjDimu = pProjCM;
+    TLorentzVector pTargDimu = pTargCM;
+    pMu1Dimu.Boost(beta);
+    pMu2Dimu.Boost(beta);
+    pProjDimu.Boost(beta);
+    pTargDimu.Boost(beta);
+
+    // Axes
+    TVector3 zaxis = (mother.Vect()).Unit();
+    TVector3 yaxis = ((pProjDimu.Vect()).Cross(pTargDimu.Vect())).Unit();
+    TVector3 xaxis = (yaxis.Cross(zaxis)).Unit();
+    //
+    // --- Calculation of the azimuthal angle (Helicity)
+    //
+    Double_t phi = TMath::ATan2((pMu1Dimu.Vect()).Dot(yaxis), (pMu1Dimu.Vect()).Dot(xaxis));
+    return phi;
+  }
   //-----------------------------------------------------------------------------------------------------------------------
   void init(o2::framework::InitContext&)
   {
@@ -73,6 +132,17 @@ struct ExclusiveTwoProtons {
     registry.add("PP/hMassUnlike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{1000, 0., 10.}});
     registry.add("PP/hUnlikePt", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hCoherentMass", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hUnlikePtLowBand", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
+    registry.add("PP/hUnlikePtLowBand24to275", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
+    registry.add("PP/hUnlikePtLowBand275to300", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
+    registry.add("PP/hUnlikePtHighBand", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
+    registry.add("PP/hUnlikePtJpsi", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
+
+    registry.add("PP/hAngularDstribLab", "Angular distrib in the lab system;#it{#varphi};#it{Cos#Theta};", kTH2F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}, {100, -2, 2}});
+    registry.add("PP/hCosThetaLab", "Angular distrib in the lab system;#it{Cos#Theta};", kTH1F, {{100, -2, 2}});
+    registry.add("PP/hAngularDistribHelicity", "Angular distrib helicity frame;#it{#varphi};#it{Cos#Theta};", kTH2F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}, {100, -2, 2}});
+    registry.add("PP/hCosThetaHelicity", "Angular distrib helicity frame;#it{Cos#Theta};", kTH1F, {{100, -2, 2}});
+    registry.add("PP/hPhiHelicity", "Angular distrib helicity frame;#it{#varphi};", kTH1F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}});
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
@@ -166,6 +236,8 @@ struct ExclusiveTwoProtons {
 
       int signSum = -999.;
       double sigmaTotal = -999.;
+      TLorentzVector a, b;
+      int positiveFlag = -1;
       if (onlyProtonTracksTOF.size() == 1) {
 
         if (!(fabs(onlyProtonTracks[0].Eta()) < 0.8 && fabs(onlyProtonTracksTOF[0].Eta()) < 0.8)) {
@@ -175,6 +247,8 @@ struct ExclusiveTwoProtons {
         registry.fill(HIST("hEta1"), onlyProtonTracksTOF[0].Eta());
         resonance += onlyProtonTracks[0];
         resonance += onlyProtonTracksTOF[0];
+        a = onlyProtonTracks[0];
+        b = onlyProtonTracksTOF[0];
         sigmaTotal = 0;
         sigmaTotal = onlyProtonSigma[0] * onlyProtonSigma[0] + onlyProtonSigmaTOF[0] * onlyProtonSigmaTOF[0];
         ;
@@ -182,6 +256,11 @@ struct ExclusiveTwoProtons {
         signSum = rawProtonTracks[0].sign() + rawProtonTracksTOF[0].sign();
         if (signSum == 0) {
           registry.fill(HIST("PP/hPtProtonVsProton"), onlyProtonTracks[0].Pt(), onlyProtonTracksTOF[0].Pt());
+          if (rawProtonTracks[0].sign() == 1) {
+            positiveFlag = 1;
+          } else {
+            positiveFlag = 2;
+          }
         }
 
       } else if (onlyProtonTracksTOF.size() == 2) {
@@ -193,6 +272,8 @@ struct ExclusiveTwoProtons {
         registry.fill(HIST("hEta1"), onlyProtonTracksTOF[1].Eta());
         resonance += onlyProtonTracksTOF[0];
         resonance += onlyProtonTracksTOF[1];
+        a = onlyProtonTracksTOF[0];
+        b = onlyProtonTracksTOF[1];
         sigmaTotal = 0;
         sigmaTotal = onlyProtonSigmaTOF[0] * onlyProtonSigmaTOF[0] + onlyProtonSigmaTOF[1] * onlyProtonSigmaTOF[1];
         ;
@@ -200,6 +281,11 @@ struct ExclusiveTwoProtons {
         signSum = rawProtonTracksTOF[0].sign() + rawProtonTracksTOF[1].sign();
         if (signSum == 0) {
           registry.fill(HIST("PP/hPtProtonVsProton"), onlyProtonTracksTOF[0].Pt(), onlyProtonTracksTOF[1].Pt());
+          if (rawProtonTracksTOF[0].sign() == 1) {
+            positiveFlag = 1;
+          } else {
+            positiveFlag = 2;
+          }
         }
       }
 
@@ -225,6 +311,39 @@ struct ExclusiveTwoProtons {
         registry.fill(HIST("PP/hRapidity"), resonance.Rapidity());
         if (resonance.Pt() < 0.15) {
           registry.fill(HIST("PP/hCoherentMass"), resonance.M());
+          if (resonance.M() < 3.0) {
+            registry.fill(HIST("PP/hAngularDstribLab"), a.Phi() + TMath::Pi(), a.CosTheta());
+            registry.fill(HIST("PP/hAngularDstribLab"), b.Phi() + TMath::Pi(), b.CosTheta());
+            registry.fill(HIST("PP/hCosThetaLab"), a.CosTheta());
+            registry.fill(HIST("PP/hCosThetaLab"), b.CosTheta());
+          }
+          double costhetaHel = -999.;
+          double phiHel = -999.;
+          if (positiveFlag == 1) {
+            costhetaHel = CosThetaHelicityFrame(a, b, resonance);
+            phiHel = 1. * TMath::Pi() + PhiHelicityFrame(a, b, resonance);
+            registry.fill(HIST("PP/hAngularDistribHelicity"), phiHel, costhetaHel);
+            registry.fill(HIST("PP/hCosThetaHelicity"), costhetaHel);
+            registry.fill(HIST("PP/hPhiHelicity"), phiHel);
+          } else if (positiveFlag == 2) {
+            costhetaHel = CosThetaHelicityFrame(b, a, resonance);
+            phiHel = 1. * TMath::Pi() + PhiHelicityFrame(b, a, resonance);
+            registry.fill(HIST("PP/hAngularDistribHelicity"), phiHel, costhetaHel);
+            registry.fill(HIST("PP/hCosThetaHelicity"), costhetaHel);
+            registry.fill(HIST("PP/hPhiHelicity"), phiHel);
+          }
+
+          if (resonance.M() > 2.4 && resonance.M() < 2.75) {
+            registry.fill(HIST("PP/hUnlikePtLowBand24to275"), resonance.Pt());
+            registry.fill(HIST("PP/hUnlikePtLowBand"), resonance.Pt());
+          } else if (resonance.M() > 2.75 && resonance.M() < 3.) {
+            registry.fill(HIST("PP/hUnlikePtLowBand275to300"), resonance.Pt());
+            registry.fill(HIST("PP/hUnlikePtLowBand"), resonance.Pt());
+          } else if (resonance.M() > 3.0 && resonance.M() < 3.15) {
+            registry.fill(HIST("PP/hUnlikePtJpsi"), resonance.Pt());
+          } else if (resonance.M() > 3.15 && resonance.M() < 3.4) {
+            registry.fill(HIST("PP/hUnlikePtHighBand"), resonance.Pt());
+          }
         }
       }
     }

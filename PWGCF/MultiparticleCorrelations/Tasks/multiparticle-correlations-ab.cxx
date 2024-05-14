@@ -28,10 +28,10 @@ using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::C
 using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator;
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
 using CollisionSim = aod::McCollision; // TBI 20240120 add support for centrality also for this case
-using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
-using TrackRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>::iterator;
-using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
-using TrackRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>::iterator;
+using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
+using TrackRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>::iterator;
+using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
+using TrackRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>::iterator;
 using TracksSim = aod::McParticles;
 using TrackSim = aod::McParticles::iterator;
 
@@ -58,6 +58,7 @@ using CollisionRec_Run1 = soa::Join<aod::Collisions, EventSelection_Run1>::itera
 #include <TRandom3.h>
 #include <TComplex.h>
 #include <TStopwatch.h>
+#include <TExMap.h>
 #include <TF1.h>
 #include <TF3.h>
 using namespace std;
@@ -124,6 +125,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     // *) Book all remaining objects;
     BookAndNestAllLists();
     BookResultsHistograms(); // yes, this one has to be booked first, because it defines the commong binning for other groups of histograms
+    BookQAHistograms();
     BookEventHistograms();
     BookEventCutsHistograms();
     BookParticleHistograms();

@@ -148,11 +148,12 @@ struct phosElId {
       axisP{momentum_binning, "p (GeV/c)"},
       axisPt{momentum_binning, "p_{T} (GeV/c)"},
       axisEta{200, -0.2, 0.2, "#eta"},
-      axisE{200, 0, 10, "E", "E (GeV)"},
+      axisE{200, 0, 10, "E (GeV)", "E (GeV)"},
       axisEp{nBinsEp, mEpmin, mEpmax, "E/p", "E_{cluster}/p_{track}"},
       axisdX{nBinsDeltaX, mDeltaXmin, mDeltaXmax, "x_{tr}-x_{clu} (cm)", "x_{tr}-x_{clu} (cm)"},
       axisdZ{nBinsDeltaZ, mDeltaZmin, mDeltaZmax, "z_{tr}-z_{clu} (cm)", "z_{tr}-z_{clu} (cm)"},
       axisCells{20, 0., 20., "number of cells", "number of cells"},
+      axisTime{100, 2e9 * mMinCluTime, 2e9 * mMaxCluTime, "time (ns)", "time (nanoseconds)"},
       axisModes{4, 1., 5., "module", "module"},
       axisX{150, -75., 75., "x (cm)", "x (cm)"},
       axisZ{150, -75., 75., "z (cm)", "z (cm)"},
@@ -178,10 +179,12 @@ struct phosElId {
     mHistManager.add("hColVZ", "Collision vertex coordinate Z", HistType::kTH1F, {axisVColZ});
     mHistManager.add("hTrackPhosProjMod", "Track projection coordinates on PHOS modules", HistType::kTH3F, {axisX, axisZ, axisModes});
 
-    mHistManager.add("hCluE_mod_full", "Cluster energy spectrum (no if statements) per module ", HistType::kTH2F, {axisE, axisModes});
-    mHistManager.add("hCluE_mod_energy", "Cluster energy spectrum (E > 0.3 GeV) per module", HistType::kTH2F, {axisE, axisModes});
-    mHistManager.add("hCluE_mod_time", "Cluster energy spectrum (E > 0.3 GeV)(time +-25 ns) per module", HistType::kTH2F, {axisE, axisModes});
-    mHistManager.add("hCluE_mod_cells", "Cluster energy spectrum (E > 0.3 GeV)(time +-25 ns)(ncells > 3) per module", HistType::kTH2F, {axisE, axisModes});
+    mHistManager.add("hCluE_v_mod_v_time", "Cluster energy spectrum (E > 0.3 GeV) vs time per module", HistType::kTH3F, {axisE, axisTime, axisModes});
+
+    mHistManager.add("hCluE_mod_full", "Cluster energy spectrum (no if statements) per module", HistType::kTH2F, {axisE, axisModes});
+    mHistManager.add("hCluE_mod_energy_cut", "Cluster energy spectrum (E > 0.3 GeV) per module", HistType::kTH2F, {axisE, axisModes});
+    mHistManager.add("hCluE_mod_time_cut", "Cluster energy spectrum (E > 0.3 GeV)(time +-25 ns) per module", HistType::kTH2F, {axisE, axisModes});
+    mHistManager.add("hCluE_mod_cell_cut", "Cluster energy spectrum (E > 0.3 GeV)(time +-25 ns)(ncells > 3) per module", HistType::kTH2F, {axisE, axisModes});
     mHistManager.add("hCluE_mod_disp", "Cluster energy spectrum OK dispersion and (E > 0.3 GeV)(time +-25 ns)(ncells > 3) per module", HistType::kTH2F, {axisE, axisModes});
 
     mHistManager.add("hCluE_ncells_mod", "Cluster energy spectrum per module", HistType::kTH3F, {axisE, axisCells, axisModes});
@@ -339,15 +342,16 @@ struct phosElId {
     } // end of double loop
 
     for (const auto& clu : clusters) {
-      double cluE = clu.e();
+      double cluE = clu.e(), cluTime = clu.time();
       int mod = clu.mod();
       mHistManager.fill(HIST("hCluE_mod_full"), cluE, mod);
       if (cluE > mMinCluE) {
-        mHistManager.fill(HIST("hCluE_mod_energy"), cluE, mod);
-        if (clu.time() < mMaxCluTime || clu.time() > mMinCluTime) {
-          mHistManager.fill(HIST("hCluE_mod_time"), cluE, mod);
-          if (clu.ncell() > mMinCluNcell) {
-            mHistManager.fill(HIST("hCluE_mod_cells"), cluE, mod);
+        mHistManager.fill(HIST("hCluE_mod_energy_cut"), cluE, mod);
+        mHistManager.fill(HIST("hCluE_v_mod_v_time"), cluE, cluTime * 1e9, mod);
+        if (cluTime < mMaxCluTime && cluTime > mMinCluTime) {
+          mHistManager.fill(HIST("hCluE_mod_time_cut"), cluE, mod);
+          if (clu.ncell() >= mMinCluNcell) {
+            mHistManager.fill(HIST("hCluE_mod_cell_cut"), cluE, mod);
             if (testLambda(cluE, clu.m02(), clu.m20()))
               mHistManager.fill(HIST("hCluE_mod_disp"), cluE, mod);
           }
