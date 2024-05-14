@@ -152,7 +152,6 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     rowEv(collision.sel8(), std::abs(collision.posZ()) < cutZPv);
   }
 
-
   template <typename T>
   void fillCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
   {
