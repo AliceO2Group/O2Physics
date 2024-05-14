@@ -13,7 +13,6 @@
 /// \author Rashi Gupta <rashi.gupta@cern.ch>, IIT Indore
 /// \author Ravindra Singh <ravindra.singh@cern.ch>, IIT Indore
 
-#include <boost/interprocess/detail/mpl.hpp>
 #include "THnSparse.h"
 
 #include "DataFormatsEMCAL/AnalysisCluster.h"
@@ -43,7 +42,6 @@ auto massEl = o2::constants::physics::MassElectron;
 struct HfTaskElectronSelection {
 
   Produces<aod::HfSelEl> electronSel;
-
   // Configurables
   // Cluster information
   Configurable<bool> clusterInfo{"clusterInfo", true, "EMCal cluster info before and after track match"};
@@ -125,7 +123,6 @@ struct HfTaskElectronSelection {
     registry.get<THnSparse>(HIST("hPIDafterPIDcuts"))->Sumw2();
   }
 
-
   // Track Selection Cut
   template <typename T>
   bool selTracks(T const& track)
@@ -157,8 +154,8 @@ struct HfTaskElectronSelection {
     // cluster info before match ///
     ///////////////////////////////
     if (clusterInfo) {
-      for (const auto& clusterbf : cluster) {
-        registry.fill(HIST("hClusterInformationBefore"), clusterbf.energy(), clusterbf.eta(), clusterbf.phi(), clusterbf.nCells(), clusterbf.time());
+      for (const auto& clusterBefore : cluster) {
+        registry.fill(HIST("hClusterInformationBefore"), clusterBefore.energy(), clusterBefore.eta(), clusterBefore.phi(), clusterBefore.nCells(), clusterBefore.time());
       }
     }
     int passEMCal;
@@ -212,17 +209,17 @@ struct HfTaskElectronSelection {
       float energy = sqrt(track.p() * track.p() + massEl * massEl);
       float rapidity = 0.5 * log((energy + track.pz()) / (energy - track.pz()));
 
-      for (const auto& emtrack : tracksofcluster) {
+      for (const auto& ematchTrack : tracksofcluster) {
 
-        auto mtrack = emtrack.template track_as<TracksType>();
+        auto matchTrack = ematchTrack.template track_as<TracksType>();
 
-        auto cluster = emtrack.template emcalcluster_as<ClusterType>();
+        auto cluster = ematchTrack.template emcalcluster_as<ClusterType>();
 
-        phiMatchTrack = mtrack.phi();
-        etaMatchTrack = mtrack.eta();
-        pMatchTrack = mtrack.p();
-        ptMatchTrack = mtrack.pt();
-        tpcNsigmaMatchTrack = mtrack.tpcNSigmaEl();
+        phiMatchTrack = matchTrack.phi();
+        etaMatchTrack = matchTrack.eta();
+        pMatchTrack = matchTrack.p();
+        ptMatchTrack = matchTrack.pt();
+        tpcNsigmaMatchTrack = matchTrack.tpcNSigmaEl();
         phiMatchCluster = cluster.phi();
         etaMatchCluster = cluster.eta();
         eMatchCluster = cluster.energy();
@@ -231,8 +228,8 @@ struct HfTaskElectronSelection {
         timeCluster = cluster.time();
         cellCluster = cluster.nCells();
 
-        deltaPhiMatch = mtrack.trackPhiEmcal() - phiMatchCluster;
-        deltaEtaMatch = mtrack.trackEtaEmcal() - etaMatchCluster;
+        deltaPhiMatch = matchTrack.trackPhiEmcal() - phiMatchCluster;
+        deltaEtaMatch = matchTrack.trackEtaEmcal() - etaMatchCluster;
 
         registry.fill(HIST("hClsTrkEtaPhiDiffTime"), deltaEtaMatch, deltaPhiMatch, cluster.time());
         // Track and cluster Matching
@@ -243,7 +240,7 @@ struct HfTaskElectronSelection {
         if (clusterInfo)
           registry.fill(HIST("hClusterInformationAfter"), eMatchCluster, etaMatchCluster, phiMatchCluster, cluster.nCells(), timeCluster);
         float eop = eMatchCluster / pMatchTrack;
-        registry.fill(HIST("hPIDafterMatch"), eop, mtrack.tpcSignal(), tpcNsigmaMatchTrack, pMatchTrack, ptMatchTrack, etaMatchTrack, phiMatchTrack);
+        registry.fill(HIST("hPIDafterMatch"), eop, matchTrack.tpcSignal(), tpcNsigmaMatchTrack, pMatchTrack, ptMatchTrack, etaMatchTrack, phiMatchTrack);
 
         // Apply Electron Identification cuts
 
@@ -255,12 +252,14 @@ struct HfTaskElectronSelection {
 
         registry.fill(HIST("hPIDafterPIDcuts"), eop, pMatchTrack, ptMatchTrack, tpcNsigmaMatchTrack, eMatchCluster, m02MatchCluster, m20MatchCluster);
         isEMcal = 1;
-        electronSel(mtrack.collisionId(), mtrack.globalIndex(), mtrack.eta(), mtrack.phi(), ptMatchTrack, pMatchTrack, rapidity, mtrack.dcaXY(), mtrack.dcaZ(), mtrack.tpcNSigmaEl(), mtrack.tofNSigmaEl(),
+        electronSel(matchTrack.collisionId(), matchTrack.globalIndex(), matchTrack.eta(), matchTrack.phi(), ptMatchTrack, pMatchTrack, rapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
                     eMatchCluster, etaMatchCluster, phiMatchCluster, m02MatchCluster, m20MatchCluster, cellCluster, timeCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }
-      if (isEMcal == 1)
+
+      /// Electron information without Emcal and use TPC and TOF
+       if (isEMcal == 1)
         continue;
-      electronSel(track.collisionId(), track.globalIndex(), track.eta(), track.phi(), ptTrack, pTrack, rapidity, track.dcaXY(), track.dcaZ(), track.tpcNSigmaEl(), track.tofNSigmaEl(),
+      electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, rapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
                   eMatchCluster, etaMatchCluster, phiMatchCluster, m02MatchCluster, m20MatchCluster, cellCluster, timeCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
     }
   }
@@ -272,7 +271,7 @@ struct HfTaskElectronSelection {
   PROCESS_SWITCH(HfTaskElectronSelection, processData, "process Data info only", true);
 
   // group according to reconstructed Collisions
-  void processMcRec(McCollisionTable::iterator const& mccollision, McTrackTables const& mctracks, McEMcalTable const& mcClusters, o2::aod::EMCALMatchedTracks const& matchedTracks)
+  void processMcRec(McCollisionTables const& mccollision, McTrackTables const& mctracks, McEMcalTable const& mcClusters, o2::aod::EMCALMatchedTracks const& matchedTracks)
   {
     fillElectronTrack(mccollision, mctracks, mcClusters, matchedTracks);
   }
