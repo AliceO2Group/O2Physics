@@ -344,6 +344,7 @@ class VarManager : public TObject
     kNBasicTrackVariables,
     kUsedKF,
     kKFMass,
+    kKFMassGeoTop,
 
     kPt1,
     kEta1,
@@ -579,9 +580,18 @@ class VarManager : public TObject
     kKFTrack1DCAxy,
     kKFTracksDCAxyMax,
     kKFDCAxyBetweenProngs,
+    kKFTrack0DeviationFromPV,
+    kKFTrack1DeviationFromPV,
+    kKFTrack0DeviationxyFromPV,
+    kKFTrack1DeviationxyFromPV,
     kKFChi2OverNDFGeo,
     kKFNContributorsPV,
     kKFCosPA,
+    kKFChi2OverNDFGeoTop,
+    kKFJpsiDCAxyz,
+    kKFJpsiDCAxy,
+    kKFPairDeviationFromPV,
+    kKFPairDeviationxyFromPV,
     kNPairVariables,
 
     // Candidate-track correlation variables
@@ -1024,8 +1034,8 @@ KFPVertex VarManager::createKFPVertexFromCollision(const T& collision)
   kfpVertex.SetXYZ(collision.posX(), collision.posY(), collision.posZ());
   kfpVertex.SetCovarianceMatrix(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
   kfpVertex.SetChi2(collision.chi2());
-  kfpVertex.SetNDF(2 * collision.multNTracksPV() - 3);
-  kfpVertex.SetNContributors(collision.multNTracksPV());
+  kfpVertex.SetNDF(2 * collision.numContrib() - 3);
+  kfpVertex.SetNContributors(collision.numContrib());
   return kfpVertex;
 }
 
@@ -2566,13 +2576,13 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingLxyz] = std::sqrt(values[kVertexingLxyz]);
 
       values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
-      values[kVertexingTauxy] = values[kVertexingLxy] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
+      values[kVertexingTauxy] = values[kVertexingLxy] * v12.M() / (TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py())) * o2::constants::physics::LightSpeedCm2NS);
 
       values[kVertexingPz] = TMath::Abs(v12.Pz());
       values[kVertexingSV] = secondaryVertex[2];
 
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
-      values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
+      values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py())) * o2::constants::physics::LightSpeedCm2NS);
 
       values[kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v12.Px() +
                                    (collision.posY() - secondaryVertex[1]) * v12.Py() +
@@ -2614,7 +2624,11 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       KFGeoTwoProng.AddDaughter(trk1KF);
     }
     if (fgUsedVars[kKFMass]) {
-      values[kKFMass] = KFGeoTwoProng.GetMass();
+      float mass = 0., massErr = 0.;
+      if (!KFGeoTwoProng.GetMass(mass, massErr))
+        values[kKFMass] = mass;
+      else
+        values[kKFMass] = -999.;
     }
 
     if constexpr (eventHasVtxCov) {
@@ -2693,6 +2707,34 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       }
       if (fgUsedVars[kKFTracksDCAxyMax]) {
         values[kKFTracksDCAxyMax] = TMath::Abs(values[kKFTrack0DCAxy]) > TMath::Abs(values[kKFTrack1DCAxy]) ? values[kKFTrack0DCAxy] : values[kKFTrack1DCAxy];
+      }
+      if (fgUsedVars[kKFTrack0DeviationFromPV] || fgUsedVars[kKFTrack1DeviationFromPV]) {
+        values[kKFTrack0DeviationFromPV] = trk0KF.GetDeviationFromVertex(KFPV);
+        values[kKFTrack1DeviationFromPV] = trk1KF.GetDeviationFromVertex(KFPV);
+      }
+      if (fgUsedVars[kKFTrack0DeviationxyFromPV] || fgUsedVars[kKFTrack1DeviationxyFromPV]) {
+        values[kKFTrack0DeviationxyFromPV] = trk0KF.GetDeviationFromVertexXY(KFPV);
+        values[kKFTrack1DeviationxyFromPV] = trk1KF.GetDeviationFromVertexXY(KFPV);
+      }
+      if (fgUsedVars[kKFJpsiDCAxyz]) {
+        values[kKFJpsiDCAxyz] = KFGeoTwoProng.GetDistanceFromVertex(KFPV);
+      }
+      if (fgUsedVars[kKFJpsiDCAxy]) {
+        values[kKFJpsiDCAxy] = KFGeoTwoProng.GetDistanceFromVertexXY(KFPV);
+      }
+      if (fgUsedVars[kKFPairDeviationFromPV] || fgUsedVars[kKFPairDeviationxyFromPV]) {
+        values[kKFPairDeviationFromPV] = KFGeoTwoProng.GetDeviationFromVertex(KFPV);
+        values[kKFPairDeviationxyFromPV] = KFGeoTwoProng.GetDeviationFromVertexXY(KFPV);
+      }
+      if (fgUsedVars[kKFChi2OverNDFGeoTop] || fgUsedVars[kKFMassGeoTop]) {
+        KFParticle KFGeoTopTwoProngBarrel = KFGeoTwoProng;
+        KFGeoTopTwoProngBarrel.SetProductionVertex(KFPV);
+        values[kKFChi2OverNDFGeoTop] = KFGeoTopTwoProngBarrel.GetChi2() / KFGeoTopTwoProngBarrel.GetNDF();
+        float mass = 0., massErr = 0.;
+        if (!KFGeoTopTwoProngBarrel.GetMass(mass, massErr))
+          values[kKFMassGeoTop] = mass;
+        else
+          values[kKFMassGeoTop] = -999.;
       }
       if (propToSV) {
         if constexpr ((pairType == kDecayToMuMu) && muonHasCov) {
@@ -2924,13 +2966,13 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       }
 
       values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
-      values[kVertexingTauxy] = values[kVertexingLxy] * v123.M() / (v123.P() * o2::constants::physics::LightSpeedCm2NS);
+      values[kVertexingTauxy] = values[kVertexingLxy] * v123.M() / (TMath::Sqrt((v123.Px() * v123.Px()) + (v123.Py() * v123.Py())) * o2::constants::physics::LightSpeedCm2NS);
 
       values[kVertexingPz] = TMath::Abs(v123.Pz());
       values[kVertexingSV] = secondaryVertex[2];
 
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
-      values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (v123.P() * o2::constants::physics::LightSpeedCm2NS);
+      values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (TMath::Sqrt((v123.Px() * v123.Px()) + (v123.Py() * v123.Py())) * o2::constants::physics::LightSpeedCm2NS);
 
       if (fgUsedVars[kCosPointingAngle] && fgUsedVars[kVertexingLxyz]) {
         values[VarManager::kCosPointingAngle] = ((collision.posX() - secondaryVertex[0]) * v123.Px() +
