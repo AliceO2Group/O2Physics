@@ -14,6 +14,8 @@
 /// \author Carolina Reetz c.reetz@cern.ch
 /// \brief  QA task to study momentum resolution of Lambda daughter tracks
 
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -538,8 +540,8 @@ struct qaLamMomResolution {
             }
           }
         } // end Anti-Lambda
-      } // end MC
-    } // end V0 loop
+      }   // end MC
+    }     // end V0 loop
   }
   PROCESS_SWITCH(qaLamMomResolution, processMC, "Process MC", true);
 };
