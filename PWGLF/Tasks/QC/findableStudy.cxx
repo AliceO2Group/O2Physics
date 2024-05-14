@@ -84,6 +84,14 @@ struct findableStudy {
   Configurable<v0SelectionGroup> v0Selections{"v0Selections", {}, "V0 selection criteria for analysis"};
   // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
 
+  // pack track quality but separte also afterburner 
+  // dynamic range: 0-31
+  enum selection : int { hasTPC = 0,
+                         hasITSTracker,
+                         hasITSAfterburner,
+                         hasTRD,
+                         hasTOF}; 
+
   uint64_t maskTopological;
   uint64_t maskTrackProperties;
 
@@ -148,6 +156,13 @@ struct findableStudy {
     histos.add("h2dPtVsCentrality_DcaPosToPV", "h2dPtVsCentrality_DcaPosToPV", kTH2D, {axisCentrality, axisPt});
     histos.add("h2dPtVsCentrality_DcaNegToPV", "h2dPtVsCentrality_DcaNegToPV", kTH2D, {axisCentrality, axisPt});
     histos.add("h2dPtVsCentrality_DcaV0Dau", "h2dPtVsCentrality_DcaV0Dau", kTH2D, {axisCentrality, axisPt});
+
+    // Track quality tests in steps 
+    histos.add("h2dTrackPropAcceptablyTracked", "h2dTrackPropAcceptablyTracked", kTH2D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}});
+    histos.add("h2dTrackPropFound", "h2dTrackPropFound", kTH2D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}});
+    histos.add("h2dTrackPropAnalysisTracks", "h2dTrackPropAnalysisTracks", kTH2D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}});
+    histos.add("h2dTrackPropAnalysisTopo", "h2dTrackPropAnalysisTopo", kTH2D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}});
+    histos.add("h2dTrackPropAnalysisSpecies", "h2dTrackPropAnalysisSpecies", kTH2D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}});
   }
 
   void processEvents(
@@ -204,6 +219,9 @@ struct findableStudy {
     int nCandidatesWithTPC = 0;
 
     for (auto& recv0 : recv0s) {  
+      if( recv0.v0Type() != 1)
+        continue; //skip anything other than a standard V0
+
       // define properties for this V0
       bool pTrackOK = false, nTrackOK = false; // tracks are acceptably tracked
 
@@ -254,8 +272,42 @@ struct findableStudy {
       if(pTrackOK && nTrackOK) 
         hasBeenAcceptablyTracked = true;
 
+      // cross-check correctness of new getter 
+      if(pTrack.hasITSTracker() && ( pTrack.hasITS() && pTrack.itsChi2PerNcl() < -1e-3) ) {
+        LOGF(fatal, "Positive track: inconsistent outcome of ITS tracker getter and explicit check!");
+      }
+      if(nTrack.hasITSTracker() && ( pTrack.hasITS() && nTrack.itsChi2PerNcl() < -1e-3) ) {
+        LOGF(fatal, "Negative track: inconsistent outcome of ITS tracker getter and explicit check!");
+      }
+      if(pTrack.hasITSAfterburner() && ( pTrack.hasITS() && pTrack.itsChi2PerNcl() > -1e-3) ) {
+        LOGF(fatal, "Positive track: inconsistent outcome of ITS tracker getter and explicit check!");
+      }
+      if(nTrack.hasITSAfterburner() && ( pTrack.hasITS() && nTrack.itsChi2PerNcl() > -1e-3) ) {
+        LOGF(fatal, "Negative track: inconsistent outcome of ITS tracker getter and explicit check!");
+      }
+
       // Cross-checking consistency: found should be a subset of nTrack, pTrack OK
       histos.fill(HIST("hFoundVsTracksOK"), nTrackOK && pTrackOK, recv0.isFound());
+
+      // encode conditions of tracks
+      uint8_t positiveTrackCode = (
+        (uint8_t(pTrack.hasTPC()) << hasTPC) | 
+        (uint8_t(pTrack.hasITSTracker()) << hasITSTracker) | 
+        (uint8_t(pTrack.hasITSAfterburner()) << hasITSAfterburner) | 
+        (uint8_t(pTrack.hasTRD()) << hasTRD) | 
+        (uint8_t(pTrack.hasTOF()) << hasTOF)); 
+
+      uint8_t negativeTrackCode = (
+        (uint8_t(nTrack.hasTPC()) << hasTPC) | 
+        (uint8_t(nTrack.hasITSTracker()) << hasITSTracker) | 
+        (uint8_t(nTrack.hasITSAfterburner()) << hasITSAfterburner) | 
+        (uint8_t(nTrack.hasTRD()) << hasTRD) | 
+        (uint8_t(nTrack.hasTOF()) << hasTOF));    
+
+      if(pTrackOK && nTrackOK){ 
+        // this particular V0 reco entry has been acceptably tracked. Do bookkeeping
+        histos.fill(HIST("h2dTrackPropAcceptablyTracked"), positiveTrackCode, negativeTrackCode);
+      }     
 
       // determine if this V0 would go to analysis or not
       if( recv0.isFound() ){ 
@@ -264,6 +316,7 @@ struct findableStudy {
         nCandidatesWithTPC ++;
         hasBeenFound = true; 
         histos.fill(HIST("h2dPtVsCentrality_FoundInLoop"), centrality, ptmc);
+        histos.fill(HIST("h2dTrackPropFound"), positiveTrackCode, negativeTrackCode);
 
         uint64_t selMap = v0data::computeReconstructionBitmap(recv0, pTrack, nTrack, coll, recv0.yLambda(), recv0.yK0Short(), v0Selections);
 
@@ -301,12 +354,18 @@ struct findableStudy {
         // trackTPCPIDOK = v0Selections->verifyMask(selMap, tpcPidMask);
 
         // Broad level
-        if(validTrackProperties)
+        if(validTrackProperties){
           histos.fill(HIST("h2dPtVsCentrality_PassesTrackQuality"), centrality, ptmc);
-        if(validTrackProperties && validTopology)
+          histos.fill(HIST("h2dTrackPropAnalysisTracks"), positiveTrackCode, negativeTrackCode);
+        }
+        if(validTrackProperties && validTopology){
           histos.fill(HIST("h2dPtVsCentrality_PassesTopological"), centrality, ptmc);
-        if(validTrackProperties && validTopology && validThisSpecies)
+          histos.fill(HIST("h2dTrackPropAnalysisTopo"), positiveTrackCode, negativeTrackCode);
+        }
+        if(validTrackProperties && validTopology && validThisSpecies){
           histos.fill(HIST("h2dPtVsCentrality_PassesThisSpecies"), centrality, ptmc);
+          histos.fill(HIST("h2dTrackPropAnalysisSpecies"), positiveTrackCode, negativeTrackCode);
+        }
 
         // topological 
         if(validTrackProperties && validThisSpecies && topoV0RadiusOK)
