@@ -152,52 +152,51 @@ struct HfCandidateSelectorToOmegaKa {
     selectorKaon.setRangeNSigmaTof(-nSigmaTofKaMax, nSigmaTofKaMax);
     selectorKaon.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedKaMax, nSigmaTofCombinedKaMax);
 
+    const AxisSpec axisSel{2, -0.5, 1.5, "status"};
+
     registry.add("hSelPID", "hSelPID;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
     registry.add("hStatusCheck", "Check consecutive selections status;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
 
     // for QA of the selections (bin 0 -> candidates that did not pass the selection, bin 1 -> candidates that passed the selection)
-    registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1F, {{3, 0., 3.}}});
-    registry.add("hSelEtaPosV0Dau", "hSelEtaPosV0Dau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelEtaNegV0Dau", "hSelEtaNegV0Dau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelEtaKaFromCasc", "hSelEtaKaFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelEtaKaFromCharm", "hSelEtaKaFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelRadCasc", "hSelRadCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelRadV0", "hSelRadV0;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelCosPACasc", "hSelCosPACasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelCosPAV0", "hSelCosPAV0;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelDCACascDau", "hSelDCACascDau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelDCAV0Dau", "hSelDCAV0Dau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelDCACharmDau", "hSelDCACharmDau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelDCAXYPrimKa", "hSelDCAXYPrimKa;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelDCAZPrimKa", "hSelDCAZPrimKa;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelDCAXYCasc", "hSelDCAXYCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelDCAZCasc", "hSelDCAZCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelPtKaFromCasc", "hSelPtKaFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelPtKaFromCharm", "hSelPtKaFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelNClsTPCKaFromCharm", "hSelNClsTPCKaFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelNClsTPCPiFromLam", "hSelNClsTPCPiFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelNClsTPCPrFromLam", "hSelNClsTPCPrFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelNClsTPCKaFromCasc", "hSelNClsTPCKaFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelNCrossRowsTPCKaFromCharm", "hSelNCrossRowsTPCKaFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelNCrossRowsTPCPiFromLam", "hSelNCrossRowsTPCPiFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelNCrossRowsTPCPrFromLam", "hSelNCrossRowsTPCPrFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelNCrossRowsTPCKaFromCasc", "hSelNCrossRowsTPCKaFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelEtaPosV0Dau", "hSelEtaPosV0Dau;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelEtaNegV0Dau", "hSelEtaNegV0Dau;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelEtaKaFromCasc", "hSelEtaKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelEtaKaFromCharm", "hSelEtaKaFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelRadCasc", "hSelRadCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelRadV0", "hSelRadV0;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelCosPACasc", "hSelCosPACasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelCosPAV0", "hSelCosPAV0;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelDCACascDau", "hSelDCACascDau;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelDCAV0Dau", "hSelDCAV0Dau;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelDCACharmDau", "hSelDCACharmDau;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelDCAXYPrimKa", "hSelDCAXYPrimKa;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelDCAZPrimKa", "hSelDCAZPrimKa;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelDCAXYCasc", "hSelDCAXYCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelDCAZCasc", "hSelDCAZCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelPtKaFromCasc", "hSelPtKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelPtKaFromCharm", "hSelPtKaFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelNClsTPCKaFromCharm", "hSelNClsTPCKaFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelNClsTPCPiFromLam", "hSelNClsTPCPiFromLam;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelNClsTPCPrFromLam", "hSelNClsTPCPrFromLam;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelNClsTPCKaFromCasc", "hSelNClsTPCKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelNCrossRowsTPCKaFromCharm", "hSelNCrossRowsTPCKaFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelNCrossRowsTPCPiFromLam", "hSelNCrossRowsTPCPiFromLam;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelNCrossRowsTPCPrFromLam", "hSelNCrossRowsTPCPrFromLam;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelNCrossRowsTPCKaFromCasc", "hSelNCrossRowsTPCKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelCrossRowsOverFindClsTPCAllTracks", "hSelCrossRowsOverFindClsTPCAllTracks;status;entries", {HistType::kTH1F, {{10, 0., 10.}}});
-    registry.add("hSelNClsITSKaFromCharm", "hSelNClsITSKaFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelNClsITSInnerKaFromCharm", "hSelNClsITSInnerKaFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelMassLam", "hSelMassLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-    registry.add("hSelDcaXYToPvKaFromCasc", "hSelDcaXYToPvKaFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsITSKaFromCharm", "hSelNClsITSKaFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelNClsITSInnerKaFromCharm", "hSelNClsITSInnerKaFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelMassLam", "hSelMassLam;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelDcaXYToPvKaFromCasc", "hSelDcaXYToPvKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
   }
 
   void process(aod::HfCandToOmegaK const& candidates,
                TracksSel const&)
   {
-
-    double massLambdaFromPDG = o2::constants::physics::MassLambda0;
-    double massOmegaFromPDG = o2::constants::physics::MassOmegaMinus;
 
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {
@@ -541,7 +540,7 @@ struct HfCandidateSelectorToOmegaKa {
       double invMassCascade = candidate.invMassCascade();
       double invMassCharmBaryon = candidate.invMassCharmBaryon();
 
-      if (std::abs(invMassLambda - massLambdaFromPDG) < v0MassWindow) {
+      if (std::abs(invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
         statusInvMassLambda = true;
         registry.fill(HIST("hSelMassLam"), 1);
         if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && resultSelections) {
@@ -551,7 +550,7 @@ struct HfCandidateSelectorToOmegaKa {
         registry.fill(HIST("hSelMassLam"), 0);
       }
 
-      if (std::abs(invMassCascade - massOmegaFromPDG) < cascadeMassWindow) {
+      if (std::abs(invMassCascade - o2::constants::physics::MassOmegaMinus) < cascadeMassWindow) {
         statusInvMassCascade = true;
         registry.fill(HIST("hSelMassCasc"), 1);
         if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && resultSelections) {

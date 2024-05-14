@@ -46,22 +46,13 @@ DECLARE_SOA_COLUMN(ZDecayVtxCascade, zDecayVtxCascade, float);
 DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
-DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
-DECLARE_SOA_COLUMN(CovVtxCharmBaryonXX, covVtxCharmBaryonXX, float);
-DECLARE_SOA_COLUMN(CovVtxCharmBaryonYY, covVtxCharmBaryonYY, float);
-DECLARE_SOA_COLUMN(CovVtxCharmBaryonZZ, covVtxCharmBaryonZZ, float);
+DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of ka <- omega
 DECLARE_SOA_COLUMN(PxCharmBaryon, pxCharmBaryon, float);
 DECLARE_SOA_COLUMN(PyCharmBaryon, pyCharmBaryon, float);
 DECLARE_SOA_COLUMN(PzCharmBaryon, pzCharmBaryon, float);
-DECLARE_SOA_COLUMN(PxCasc, pxCasc, float);
-DECLARE_SOA_COLUMN(PyCasc, pyCasc, float);
-DECLARE_SOA_COLUMN(PzCasc, pzCasc, float);
 DECLARE_SOA_COLUMN(PxPiFromCharmBaryon, pxPiFromCharmBaryon, float);
 DECLARE_SOA_COLUMN(PyPiFromCharmBaryon, pyPiFromCharmBaryon, float);
 DECLARE_SOA_COLUMN(PzPiFromCharmBaryon, pzPiFromCharmBaryon, float);
-DECLARE_SOA_COLUMN(PxLambda, pxLambda, float);
-DECLARE_SOA_COLUMN(PyLambda, pyLambda, float);
-DECLARE_SOA_COLUMN(PzLambda, pzLambda, float);
 DECLARE_SOA_COLUMN(PxKaFromCasc, pxKaFromCasc, float);
 DECLARE_SOA_COLUMN(PyKaFromCasc, pyKaFromCasc, float);
 DECLARE_SOA_COLUMN(PzKaFromCasc, pzKaFromCasc, float);
@@ -73,61 +64,31 @@ DECLARE_SOA_COLUMN(PyNegV0Dau, pyNegV0Dau, float);
 DECLARE_SOA_COLUMN(PzNegV0Dau, pzNegV0Dau, float);
 DECLARE_SOA_COLUMN(ImpactParCascXY, impactParCascXY, float);
 DECLARE_SOA_COLUMN(ImpactParPiFromCharmBaryonXY, impactParPiFromCharmBaryonXY, float);
-DECLARE_SOA_COLUMN(ImpactParCascZ, impactParCascZ, float);
-DECLARE_SOA_COLUMN(ImpactParPiFromCharmBaryonZ, impactParPiFromCharmBaryonZ, float);
 DECLARE_SOA_COLUMN(ErrImpactParCascXY, errImpactParCascXY, float);
 DECLARE_SOA_COLUMN(ErrImpactParPiFromCharmBaryonXY, errImpactParPiFromCharmBaryonXY, float);
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
 DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
 DECLARE_SOA_COLUMN(InvMassCharmBaryon, invMassCharmBaryon, double);
-DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, double);
-DECLARE_SOA_COLUMN(CosPACharmBaryon, cosPACharmBaryon, double);
-DECLARE_SOA_COLUMN(CosPACasc, cosPACasc, double);
-DECLARE_SOA_COLUMN(CosPAXYV0, cosPAXYV0, double);
-DECLARE_SOA_COLUMN(CosPAXYCharmBaryon, cosPAXYCharmBaryon, double);
-DECLARE_SOA_COLUMN(CosPAXYCasc, cosPAXYCasc, double);
-DECLARE_SOA_COLUMN(CTauOmegac, ctauOmegac, double);
-DECLARE_SOA_COLUMN(CTauCascade, ctauCascade, double);
-DECLARE_SOA_COLUMN(CTauV0, ctauV0, double);
 DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, double);
 DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, double);
 DECLARE_SOA_COLUMN(EtaKaFromCasc, etaKaFromCasc, double);
 DECLARE_SOA_COLUMN(EtaPiFromCharmBaryon, etaPiFromCharmBaryon, double);
-DECLARE_SOA_COLUMN(EtaCharmBaryon, etaCharmBaryon, double);
-DECLARE_SOA_COLUMN(EtaCascade, etaCascade, double);
-DECLARE_SOA_COLUMN(EtaV0, etaV0, double);
 DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float);
 DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0Dau1, float);
 DECLARE_SOA_COLUMN(DcaXYToPvCascDau, dcaXYToPvCascDau, float);
-DECLARE_SOA_COLUMN(DcaZToPvV0Dau0, dcaZToPvV0Dau0, float);
-DECLARE_SOA_COLUMN(DcaZToPvV0Dau1, dcaZToPvV0Dau1, float);
-DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
 DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaCharmBaryonDau, dcaCharmBaryonDau, float);
-DECLARE_SOA_COLUMN(DecLenCharmBaryon, decLenCharmBaryon, double);
-DECLARE_SOA_COLUMN(DecLenCascade, decLenCascade, double);
-DECLARE_SOA_COLUMN(DecLenV0, decLenV0, double);
 DECLARE_SOA_COLUMN(ErrorDecayLengthCharmBaryon, errorDecayLengthCharmBaryon, float);
-DECLARE_SOA_COLUMN(ErrorDecayLengthXYCharmBaryon, errorDecayLengthXYCharmBaryon, float);
 DECLARE_SOA_COLUMN(NormImpParCascade, normImpParCascade, double);
 DECLARE_SOA_COLUMN(NormImpParPiFromCharmBar, normImpParPiFromCharmBar, double);
-DECLARE_SOA_COLUMN(NormDecayLenCharmBar, normDecayLenCharmBar, double);
 DECLARE_SOA_COLUMN(IsPionGlbTrkWoDca, isPionGlbTrkWoDca, bool);
 DECLARE_SOA_COLUMN(PionItsNCls, pionItsNCls, uint8_t);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
 DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(CollisionMatched, collisionMatched, bool);
 // from selector
-DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
-DECLARE_SOA_COLUMN(StatusPidCascade, statusPidCascade, bool);
-DECLARE_SOA_COLUMN(StatusPidCharmBaryon, statusPidCharmBaryon, bool);
-DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, bool);
-DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, bool);
-DECLARE_SOA_COLUMN(StatusInvMassCharmBaryon, statusInvMassCharmBaryon, bool);
-DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
 DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
 DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
 DECLARE_SOA_COLUMN(TpcNSigmaPiFromCharmBaryon, tpcNSigmaPiFromCharmBaryon, float);
@@ -143,39 +104,6 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 
 DECLARE_SOA_TABLE(HfToOmegaPiEvs, "AOD", "HFTOOMEPIEV",
                   full::IsEventSel8, full::IsEventSelZ);
-
-DECLARE_SOA_TABLE(HfOmegac0ToOmegaPiFulls, "AOD", "HFTOOMEPIFULL",
-                  full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
-                  full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
-                  full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
-                  full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
-                  full::SignDecay,
-                  full::CovVtxCharmBaryonXX, full::CovVtxCharmBaryonYY, full::CovVtxCharmBaryonZZ,
-                  full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
-                  full::PxCasc, full::PyCasc, full::PzCasc,
-                  full::PxPiFromCharmBaryon, full::PyPiFromCharmBaryon, full::PzPiFromCharmBaryon,
-                  full::PxLambda, full::PyLambda, full::PzLambda,
-                  full::PxKaFromCasc, full::PyKaFromCasc, full::PzKaFromCasc,
-                  full::PxPosV0Dau, full::PyPosV0Dau, full::PzPosV0Dau,
-                  full::PxNegV0Dau, full::PyNegV0Dau, full::PzNegV0Dau,
-                  full::ImpactParCascXY, full::ImpactParPiFromCharmBaryonXY,
-                  full::ImpactParCascZ, full::ImpactParPiFromCharmBaryonZ,
-                  full::ErrImpactParCascXY, full::ErrImpactParPiFromCharmBaryonXY,
-                  full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
-                  full::CosPAV0, full::CosPACharmBaryon, full::CosPACasc, full::CosPAXYV0, full::CosPAXYCharmBaryon, full::CosPAXYCasc,
-                  full::CTauOmegac, full::CTauCascade, full::CTauV0,
-                  full::EtaV0PosDau, full::EtaV0NegDau, full::EtaKaFromCasc, full::EtaPiFromCharmBaryon,
-                  full::EtaCharmBaryon, full::EtaCascade, full::EtaV0,
-                  full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
-                  full::DcaZToPvV0Dau0, full::DcaZToPvV0Dau1, full::DcaZToPvCascDau,
-                  full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau,
-                  full::DecLenCharmBaryon, full::DecLenCascade, full::DecLenV0, full::ErrorDecayLengthCharmBaryon, full::ErrorDecayLengthXYCharmBaryon,
-                  full::NormImpParCascade, full::NormImpParPiFromCharmBar, full::NormDecayLenCharmBar, full::IsPionGlbTrkWoDca, full::PionItsNCls,
-                  full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharmBaryon,
-                  full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections, full::PidTpcInfoStored, full::PidTofInfoStored,
-                  full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaKaFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
-                  full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaKaFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
-                  full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
 
 DECLARE_SOA_TABLE(HfOmegac0ToOmegaPiLites, "AOD", "HFTOOMEPILITE",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
@@ -206,7 +134,6 @@ DECLARE_SOA_TABLE(HfOmegac0ToOmegaPiLites, "AOD", "HFTOOMEPILITE",
 /// Writes the full information in an output TTree
 struct HfTreeCreatorOmegac0ToOmegaPi {
 
-  Produces<o2::aod::HfOmegac0ToOmegaPiFulls> rowCandidateFull;
   Produces<o2::aod::HfOmegac0ToOmegaPiLites> rowCandidateLite;
   Produces<o2::aod::HfToOmegaPiEvs> rowEv;
 
@@ -225,115 +152,6 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     rowEv(collision.sel8(), std::abs(collision.posZ()) < cutZPv);
   }
 
-  template <typename T>
-  void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
-  {
-    rowCandidateFull(
-      candidate.xPv(),
-      candidate.yPv(),
-      candidate.zPv(),
-      candidate.template collision_as<MyEventTable>().numContrib(),
-      candidate.template collision_as<MyEventTable>().chi2(),
-      candidate.xDecayVtxCharmBaryon(),
-      candidate.yDecayVtxCharmBaryon(),
-      candidate.zDecayVtxCharmBaryon(),
-      candidate.xDecayVtxCascade(),
-      candidate.yDecayVtxCascade(),
-      candidate.zDecayVtxCascade(),
-      candidate.xDecayVtxV0(),
-      candidate.yDecayVtxV0(),
-      candidate.zDecayVtxV0(),
-      candidate.signDecay(),
-      candidate.covVtxCharmBaryon0(),
-      candidate.covVtxCharmBaryon3(),
-      candidate.covVtxCharmBaryon5(),
-      candidate.pxCharmBaryon(),
-      candidate.pyCharmBaryon(),
-      candidate.pzCharmBaryon(),
-      candidate.pxCasc(),
-      candidate.pyCasc(),
-      candidate.pzCasc(),
-      candidate.pxBachFromCharmBaryon(),
-      candidate.pyBachFromCharmBaryon(),
-      candidate.pzBachFromCharmBaryon(),
-      candidate.pxLambda(),
-      candidate.pyLambda(),
-      candidate.pzLambda(),
-      candidate.pxBachFromCasc(),
-      candidate.pyBachFromCasc(),
-      candidate.pzBachFromCasc(),
-      candidate.pxPosV0Dau(),
-      candidate.pyPosV0Dau(),
-      candidate.pzPosV0Dau(),
-      candidate.pxNegV0Dau(),
-      candidate.pyNegV0Dau(),
-      candidate.pzNegV0Dau(),
-      candidate.impactParCascXY(),
-      candidate.impactParBachFromCharmBaryonXY(),
-      candidate.impactParCascZ(),
-      candidate.impactParBachFromCharmBaryonZ(),
-      candidate.errImpactParCascXY(),
-      candidate.errImpactParBachFromCharmBaryonXY(),
-      candidate.invMassLambda(),
-      candidate.invMassCascade(),
-      candidate.invMassCharmBaryon(),
-      candidate.cosPAV0(),
-      candidate.cosPACharmBaryon(),
-      candidate.cosPACasc(),
-      candidate.cosPAXYV0(),
-      candidate.cosPAXYCharmBaryon(),
-      candidate.cosPAXYCasc(),
-      candidate.ctauOmegac(),
-      candidate.ctauCascade(),
-      candidate.ctauV0(),
-      candidate.etaV0PosDau(),
-      candidate.etaV0NegDau(),
-      candidate.etaBachFromCasc(),
-      candidate.etaBachFromCharmBaryon(),
-      candidate.etaCharmBaryon(),
-      candidate.etaCascade(),
-      candidate.etaV0(),
-      candidate.dcaXYToPvV0Dau0(),
-      candidate.dcaXYToPvV0Dau1(),
-      candidate.dcaXYToPvCascDau(),
-      candidate.dcaZToPvV0Dau0(),
-      candidate.dcaZToPvV0Dau1(),
-      candidate.dcaZToPvCascDau(),
-      candidate.dcaCascDau(),
-      candidate.dcaV0Dau(),
-      candidate.dcaCharmBaryonDau(),
-      candidate.decLenCharmBaryon(),
-      candidate.decLenCascade(),
-      candidate.decLenV0(),
-      candidate.errorDecayLengthCharmBaryon(),
-      candidate.errorDecayLengthXYCharmBaryon(),
-      candidate.impactParCascXY() / candidate.errImpactParCascXY(),
-      candidate.impactParBachFromCharmBaryonXY() / candidate.errImpactParBachFromCharmBaryonXY(),
-      candidate.decLenCharmBaryon() / candidate.errorDecayLengthCharmBaryon(),
-      candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().isGlobalTrackWoDCA(),
-      candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().itsNCls(),
-      candidate.statusPidLambda(),
-      candidate.statusPidCascade(),
-      candidate.statusPidCharmBaryon(),
-      candidate.statusInvMassLambda(),
-      candidate.statusInvMassCascade(),
-      candidate.statusInvMassCharmBaryon(),
-      candidate.resultSelections(),
-      candidate.pidTpcInfoStored(),
-      candidate.pidTofInfoStored(),
-      candidate.tpcNSigmaPiFromCharmBaryon(),
-      candidate.tpcNSigmaKaFromCasc(),
-      candidate.tpcNSigmaPiFromLambda(),
-      candidate.tpcNSigmaPrFromLambda(),
-      candidate.tofNSigmaPiFromCharmBaryon(),
-      candidate.tofNSigmaKaFromCasc(),
-      candidate.tofNSigmaPiFromLambda(),
-      candidate.tofNSigmaPrFromLambda(),
-      flagMc,
-      debugMc,
-      originMc,
-      collisionMatched);
-  }
 
   template <typename T>
   void fillCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
@@ -409,40 +227,6 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
   }
 
-  void processDataFull(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi> const& candidates)
-  {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
-    }
-
-    // Filling candidate properties
-    rowCandidateFull.reserve(candidates.size());
-    for (const auto& candidate : candidates) {
-      fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
-    }
-  }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataFull, "Process data with full information", true);
-
-  void processMcFull(MyEventTable const& collisions, MyTrackTable const&,
-                     soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
-  {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision, zPvCut);
-    }
-
-    // Filling candidate properties
-    rowCandidateFull.reserve(candidates.size());
-    for (const auto& candidate : candidates) {
-      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
-    }
-  }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcFull, "Process MC with full information", false);
-
   void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
                        soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi> const& candidates)
   {
@@ -458,7 +242,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
       fillCandidateLite(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataLite, "Process data and produce lite table version", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataLite, "Process data", true);
 
   void processMcLite(MyEventTable const& collisions, MyTrackTable const&,
                      soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
@@ -475,7 +259,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
       fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcLite, "Process MC and produce lite table version", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcLite, "Process MC", false);
 
 }; // end of struct
 
