@@ -41,7 +41,7 @@ struct SGPIDSpectra {
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
-  //Track Selections
+  // Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -63,102 +63,102 @@ struct SGPIDSpectra {
     // Collision histograms
     registry.add("collisions/GapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("collisions/TrueGapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{4, -1.5, 2.5}}});
-    registry.add("tracks/pPion_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nPion_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pPion_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nPion_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pPion_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nPion_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pPion_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nPion_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pPion_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nPion_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pPion_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nPion_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pPion_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nPion_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pPion_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nPion_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pKaon_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nKaon_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pKaon_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nKaon_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pKaon_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nKaon_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pKaon_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nKaon_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pKaon_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nKaon_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pKaon_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nKaon_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pKaon_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nKaon_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pKaon_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nKaon_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pProton_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nProton_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pProton_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nProton_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pProton_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nProton_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pProton_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nProton_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pProton_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nProton_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pProton_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nProton_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pProton_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nProton_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/pProton_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("tracks/nProton_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt,axistpc,axistof}});
-    registry.add("ttracks/pPion_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
+    registry.add("tracks/pPion_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nPion_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pPion_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nPion_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pPion_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nPion_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pPion_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nPion_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pPion_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nPion_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pPion_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nPion_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pPion_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nPion_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pPion_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nPion_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pKaon_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nKaon_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pKaon_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nKaon_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pKaon_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nKaon_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pKaon_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nKaon_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pKaon_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nKaon_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pKaon_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nKaon_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pKaon_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nKaon_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pKaon_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nKaon_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pProton_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nProton_Pt_TPC_TOF_p_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pProton_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nProton_Pt_TPC_TOF_n_0", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pProton_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nProton_Pt_TPC_TOF_p_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pProton_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nProton_Pt_TPC_TOF_n_1", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pProton_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nProton_Pt_TPC_TOF_p_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pProton_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nProton_Pt_TPC_TOF_n_2", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pProton_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nProton_Pt_TPC_TOF_p_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/pProton_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("tracks/nProton_Pt_TPC_TOF_n_3", "", {HistType::kTH3F, {axispt, axistpc, axistof}});
+    registry.add("ttracks/pPion_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
   }
 
   // define data types
@@ -179,188 +179,188 @@ struct SGPIDSpectra {
     // check rho0 signals
     for (auto t : tracks) {
       if (trackselector(t, parameters) && t.hasTPC()) {
-        if (t.hasTOF()){
-          if (truegapSide == 0){
-	   if(t.sign()>0){
-             if (t.pz()>0){
-               registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     } else {
-               registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     }
-	   } else { 
-             if (t.pz()>0){
-               registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     } else {
-               registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     }
-	   }  
-	} else if (truegapSide == 1){
-	   if(t.sign()>0){
-             if (t.pz()>0){
-               registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     } else {
-               registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     }
-	   } else { 
-             if (t.pz()>0){
-               registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     } else {
-               registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     }
-	   }  
-	} else if (truegapSide == 2){
-	   if(t.sign()>0){
-             if (t.pz()>0){
-               registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     } else {
-               registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     }
-	   } else { 
-             if (t.pz()>0){
-               registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     } else {
-               registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     }
-	   }  
-	} else {
-	   if(t.sign()>0){
-             if (t.pz()>0){
-               registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     } else {
-               registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     }
-	   } else { 
-             if (t.pz()>0){
-               registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     } else {
-               registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
-               registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
-               registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
-	     }
-	   }  
-	} 
-       } 
-          if (truegapSide == 0){
-	   if(t.sign()>0){
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   } else { 
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   }  
-	} else if (truegapSide == 1){
-	   if(t.sign()>0){
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   } else { 
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   }  
-	} else if (truegapSide == 2){
-	   if(t.sign()>0){
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   } else { 
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   }  
-	} else {
-	   if(t.sign()>0){
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   } else { 
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   }  
-	} 
+        if (t.hasTOF()) {
+          if (truegapSide == 0) {
+            if (t.sign() > 0) {
+              if (t.pz() > 0) {
+                registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              } else {
+                registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              }
+            } else {
+              if (t.pz() > 0) {
+                registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              } else {
+                registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              }
+            }
+          } else if (truegapSide == 1) {
+            if (t.sign() > 0) {
+              if (t.pz() > 0) {
+                registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              } else {
+                registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              }
+            } else {
+              if (t.pz() > 0) {
+                registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              } else {
+                registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              }
+            }
+          } else if (truegapSide == 2) {
+            if (t.sign() > 0) {
+              if (t.pz() > 0) {
+                registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              } else {
+                registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              }
+            } else {
+              if (t.pz() > 0) {
+                registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              } else {
+                registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              }
+            }
+          } else {
+            if (t.sign() > 0) {
+              if (t.pz() > 0) {
+                registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              } else {
+                registry.fill(HIST("tracks/pPion_Pt_TPC_TOF_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/pKaon_Pt_TPC_TOF_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/pProton_Pt_TPC_TOF_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              }
+            } else {
+              if (t.pz() > 0) {
+                registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              } else {
+                registry.fill(HIST("tracks/nPion_Pt_TPC_TOF_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi(), t.tofNSigmaPi());
+                registry.fill(HIST("tracks/nKaon_Pt_TPC_TOF_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa(), t.tofNSigmaKa());
+                registry.fill(HIST("tracks/nProton_Pt_TPC_TOF_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr(), t.tofNSigmaPr());
+              }
+            }
+          }
+        }
+        if (truegapSide == 0) {
+          if (t.sign() > 0) {
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          } else {
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          }
+        } else if (truegapSide == 1) {
+          if (t.sign() > 0) {
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          } else {
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          }
+        } else if (truegapSide == 2) {
+          if (t.sign() > 0) {
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          } else {
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          }
+        } else {
+          if (t.sign() > 0) {
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          } else {
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          }
+        }
     }
-   }
+    }
   }
 };
 
