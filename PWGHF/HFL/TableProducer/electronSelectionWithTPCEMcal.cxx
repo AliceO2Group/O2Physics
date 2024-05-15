@@ -177,7 +177,7 @@ struct HfElectronSelectionWithTPCEMcal {
       dcaxyTrack = track.dcaXY();
       dcazTrack = track.dcaZ();
       tpcNsigmaTrack = track.tpcNSigmaEl();
-      
+
       // Apply Track Selection Cut
       if (!selTracks(track))
         continue;
@@ -206,9 +206,9 @@ struct HfElectronSelectionWithTPCEMcal {
       float deltaPhiMatch = -999.;
       float deltaEtaMatch = -999.;
       bool isEMcal = 0;
-      
+
       float trackRapidity = track.rapidity(massEl);
-      
+
       for (const auto& ematchTrack : tracksofcluster) {
 
         auto matchTrack = ematchTrack.template track_as<TracksType>();
