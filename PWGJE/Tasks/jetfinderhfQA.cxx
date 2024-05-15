@@ -127,6 +127,7 @@ struct JetFinderHFQATask {
       registry.add("h3_jet_r_jet_pt_candidate_y", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});y_{candidate}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_candidate_invmass_jet_pt_candidate_pt", ";#it{m}_{inv, candidate} (GeV/#it{c}^{2}); #it{p}_{T,jet} (GeV/#it{c}) ;#it{p}_{T,candidate} (GeV/#it{c})", {HistType::kTH3F, {{500, 0.0, 5.0}, {200, 0.0, 200.0}, {200, 0.0, 200.0}}});
       registry.add("h3_candidatebar_invmass_jet_pt_candidate_pt", ";#it{m}_{inv, candidate bar} (GeV/#it{c}^{2}); #it{p}_{T,jet} (GeV/#it{c}) ;#it{p}_{T,candidate} (GeV/#it{c})", {HistType::kTH3F, {{500, 0.0, 5.0}, {200, 0.0, 200.0}, {200, 0.0, 200.0}}});
+      registry.add("h_jet_phat_weighted", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0, 350}}});
     }
 
     if (doprocessJetsRhoAreaSubData) {
@@ -208,6 +209,7 @@ struct JetFinderHFQATask {
       registry.add("h3_jet_r_part_jet_pt_part_candidate_eta_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#eta_{candidate}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_part_jet_pt_part_candidate_phi_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});#varphi{candidate}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {160, -1.0, 7.}}});
       registry.add("h3_jet_r_part_jet_pt_part_candidate_y_part", "#it{R}_{jet}^{part};#it{p}_{T,jet}^{part} (GeV/#it{c});y_{candidate}^{part}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
+      registry.add("h_jet_phat_part_weighted", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0, 350}}});
     }
 
     if (doprocessJetsMCPMCDMatched || doprocessJetsMCPMCDMatchedWeighted || doprocessJetsSubMatched) {
@@ -503,6 +505,7 @@ struct JetFinderHFQATask {
     if (jet.pt() > pTHatMaxMCD * pTHat) {
       return;
     }
+    registry.fill(HIST("h_jet_phat_weighted"), pTHat, weight);
 
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt"), jet.pt(), weight);
@@ -631,6 +634,7 @@ struct JetFinderHFQATask {
     if (jet.pt() > pTHatMaxMCP * pTHat) {
       return;
     }
+    registry.fill(HIST("h_jet_phat_part_weighted"), pTHat, weight);
 
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt_part"), jet.pt(), weight);
@@ -912,12 +916,12 @@ struct JetFinderHFQATask {
     }
   }
 
-  void processDummy(JetCollisions const& collision)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processDummy, "dummy task", true);
 
-  void processJetsData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataJoined const& jets, CandidateTableData const& candidates, JetTracks const& tracks)
+  void processJetsData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataJoined const& jets, CandidateTableData const&, JetTracks const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -934,8 +938,8 @@ struct JetFinderHFQATask {
   void processJetsRhoAreaSubData(soa::Filtered<JetCollisions>::iterator const& collision,
                                  BkgRhoTable const& bkgRhos,
                                  JetTableDataJoined const& jets,
-                                 CandidateTableData const& candidates,
-                                 JetTracks const& tracks)
+                                 CandidateTableData const&,
+                                 JetTracks const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -951,7 +955,7 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsRhoAreaSubData, "jet finder HF QA for rho-area subtracted jets", false);
 
-  void processEvtWiseConstSubJetsData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataSubJoined const& jets, CandidateTableData const& candidates, JetTracksDataSub const& tracks)
+  void processEvtWiseConstSubJetsData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataSubJoined const& jets, CandidateTableData const&, JetTracksDataSub const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -965,10 +969,10 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processEvtWiseConstSubJetsData, "jet finder HF QA for eventwise constituent-subtracted jets data", false);
 
-  void processJetsSubMatched(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processJetsSubMatched(soa::Filtered<JetCollisions>::iterator const&,
                              JetTableDataMatchedJoined const& jets,
-                             JetTableDataSubMatchedJoined const& jetSubs,
-                             JetTracks const& tracks, JetTracksDataSub const& tracksSub, CandidateTableData const& candidates)
+                             JetTableDataSubMatchedJoined const&,
+                             JetTracks const&, JetTracksDataSub const&, CandidateTableData const&)
   {
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -982,7 +986,7 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsSubMatched, "jet finder HF QA matched unsubtracted and constituent subtracted jets", false);
 
-  void processJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDJoined const& jets, CandidateTableMCD const& candidates, JetTracks const& tracks)
+  void processJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDJoined const& jets, CandidateTableMCD const&, JetTracks const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -996,7 +1000,7 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCD, "jet finder HF QA mcd", false);
 
-  void processJetsMCDWeighted(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDWeightedJoined const& jets, CandidateTableMCD const& candidates, JetTracks const& tracks)
+  void processJetsMCDWeighted(soa::Filtered<JetCollisions>::iterator const& collision, JetTableMCDWeightedJoined const& jets, CandidateTableMCD const&, JetTracks const&)
   {
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -1010,7 +1014,7 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCDWeighted, "jet finder HF QA mcd on weighted events", false);
 
-  void processJetsMCP(typename JetTableMCPJoined::iterator const& jet, JetParticles const& particles, CandidateTableMCP const& candidates)
+  void processJetsMCP(typename JetTableMCPJoined::iterator const& jet, JetParticles const&, CandidateTableMCP const&)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -1022,7 +1026,7 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCP, "jet finder HF QA mcp", false);
 
-  void processJetsMCPWeighted(typename JetTableMCPWeightedJoined::iterator const& jet, JetParticles const& particles, CandidateTableMCP const& candidates)
+  void processJetsMCPWeighted(typename JetTableMCPWeightedJoined::iterator const& jet, JetParticles const&, CandidateTableMCP const&)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -1034,12 +1038,12 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCPWeighted, "jet finder HF QA mcp on weighted events", false);
 
-  void processJetsMCPMCDMatched(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processJetsMCPMCDMatched(soa::Filtered<JetCollisions>::iterator const&,
                                 JetTableMCDMatchedJoined const& mcdjets,
-                                JetTableMCPMatchedJoined const& mcpjets,
-                                CandidateTableMCD const& candidatesMCD,
-                                JetTracks const& tracks, JetParticles const& particles,
-                                CandidateTableMCP const& candidatesMCP)
+                                JetTableMCPMatchedJoined const&,
+                                CandidateTableMCD const&,
+                                JetTracks const&, JetParticles const&,
+                                CandidateTableMCP const&)
   {
 
     for (const auto& mcdjet : mcdjets) {
@@ -1054,12 +1058,12 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCPMCDMatched, "jet finder HF QA matched mcp and mcd", false);
 
-  void processJetsMCPMCDMatchedWeighted(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processJetsMCPMCDMatchedWeighted(soa::Filtered<JetCollisions>::iterator const&,
                                         JetTableMCDMatchedWeightedJoined const& mcdjets,
-                                        JetTableMCPMatchedWeightedJoined const& mcpjets,
-                                        CandidateTableMCD const& candidatesMCD,
-                                        JetTracks const& tracks, JetParticles const& particles,
-                                        CandidateTableMCP const& candidatesMCP)
+                                        JetTableMCPMatchedWeightedJoined const&,
+                                        CandidateTableMCD const&,
+                                        JetTracks const&, JetParticles const&,
+                                        CandidateTableMCP const&)
   {
 
     for (const auto& mcdjet : mcdjets) {
@@ -1082,7 +1086,7 @@ struct JetFinderHFQATask {
 
   void processTriggeredData(soa::Join<JetCollisions, aod::JChTrigSels>::iterator const& collision,
                             JetTableDataJoined const& jets,
-                            CandidateTableData const& candidates,
+                            CandidateTableData const&,
                             soa::Filtered<JetTracks> const& tracks)
   {
     registry.fill(HIST("h_collision_trigger_events"), 0.5); // all events
@@ -1236,8 +1240,8 @@ struct JetFinderHFQATask {
 
   void processHFTriggeredData(soa::Join<JetCollisions, aod::JChHFTrigSels>::iterator const& collision,
                               JetTableDataJoined const& jets,
-                              CandidateTableData const& candidates,
-                              soa::Filtered<JetTracks> const& tracks)
+                              CandidateTableData const&,
+                              soa::Filtered<JetTracks> const&)
   {
 
     int hfLowTrigger = -2;
@@ -1378,7 +1382,7 @@ struct JetFinderHFQATask {
   PROCESS_SWITCH(JetFinderHFQATask, processTracks, "QA for charged tracks", false);
 
   void processTracksWeighted(soa::Join<JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
-                             JetMcCollisions const& mcCollisions,
+                             JetMcCollisions const&,
                              soa::Filtered<JetTracks> const& tracks)
   {
     float eventWeight = collision.mcCollision().weight();

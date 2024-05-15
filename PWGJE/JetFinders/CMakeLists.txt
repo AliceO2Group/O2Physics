@@ -9,6 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(Duplicates)
 
 if(FastJet_FOUND)
 
@@ -88,5 +89,19 @@ o2physics_add_dpl_workflow(jet-finder-lc-mcp-charged
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(jet-finder-v0-data-charged
+                    SOURCES jetfinderV0datacharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-v0-mcd-charged
+                    SOURCES jetfinderV0mcdcharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-v0-mcp-charged
+                    SOURCES jetfinderV0mcpcharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
 
 endif()

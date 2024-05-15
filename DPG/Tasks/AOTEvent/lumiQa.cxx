@@ -59,7 +59,7 @@ struct LumiQaTask {
     histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
   }
 
-  void process(BCsRun3 const& bcs, aod::Zdcs const& zdcs, aod::FT0s const& ft0s)
+  void process(BCsRun3 const& bcs, aod::Zdcs const&, aod::FT0s const&)
   {
     int runNumber = bcs.iteratorAt(0).runNumber();
     LOGP(info, "runNumber={}", runNumber);
@@ -73,10 +73,16 @@ struct LumiQaTask {
       bcPatternB = grplhcif->getBunchFilling().getBCPattern();
 
       TList* callst = ccdb->getForTimeStamp<TList>("Centrality/Estimators", ts);
+      if (callst == nullptr) {
+        LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", runNumber, ts);
+        return;
+      }
+
       hCalibT0C = reinterpret_cast<TH1*>(callst->FindObject("hCalibZeqFT0C"));
-    }
-    if (!hCalibT0C) {
-      return;
+      if (hCalibT0C == nullptr) {
+        LOGF(info, "hCalibZeqFT0C histogram is not available for run=%d at timestamp=%llu", runNumber, ts);
+        return;
+      }
     }
 
     for (const auto& bc : bcs) {

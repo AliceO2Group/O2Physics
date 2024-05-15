@@ -68,6 +68,21 @@ double getDeltaPhi(double phiD, double phiDbar)
   return RecoDecay::constrainAngle(phiDbar - phiD, -o2::constants::math::PIHalf);
 }
 
+/// Returns deltaPhi value within the range [0, pi]
+///
+double wrapDeltaPhi0PI(double phiD, double phiDbar)
+{
+  double deltaPhi = 0.0;
+  deltaPhi = RecoDecay::constrainAngle(phiDbar - phiD, 0.0);
+  if (deltaPhi < 0.) {
+    deltaPhi = deltaPhi + o2::constants::math::TwoPI;
+  }
+  if (deltaPhi > o2::constants::math::TwoPI) {
+    deltaPhi = o2::constants::math::TwoPI - deltaPhi;
+  }
+  return deltaPhi;
+}
+
 struct femtoUniversePairTaskTrackD0 {
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
@@ -167,8 +182,10 @@ struct femtoUniversePairTaskTrackD0 {
 
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
   Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
 
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::same, femtoUniverseFemtoContainer::Observable::kstar> sameEventFemtoCont;
@@ -342,7 +359,7 @@ struct femtoUniversePairTaskTrackD0 {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCutMin.value, ConfCPRdeltaPhiCutMax.value, ConfCPRdeltaEtaCutMin.value, ConfCPRdeltaEtaCutMax.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value);
     }
 
     vPIDTrack = ConfTrack.ConfPIDTrack.value;
@@ -353,12 +370,12 @@ struct femtoUniversePairTaskTrackD0 {
     registry.add("hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassVsPtFinerBinning", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassFinerBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hInvMassVsPtOnlyD0D0bar", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDeltaPhiSigSig", "SxS correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{50, -0.5 * o2::constants::math::PI, 1.5 * o2::constants::math::PI}}});
-    registry.add("hDeltaPhiD0BgD0barSig", "B(D0)x S(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{50, -0.5 * o2::constants::math::PI, 1.5 * o2::constants::math::PI}}});
-    registry.add("hDeltaPhiD0SigD0barBg", "S(D0)x B(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{50, -0.5 * o2::constants::math::PI, 1.5 * o2::constants::math::PI}}});
-    registry.add("hDeltaPhiBgBg", "BxB correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{50, -0.5 * o2::constants::math::PI, 1.5 * o2::constants::math::PI}}});
+    registry.add("hDeltaPhiSigSig", "SxS correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{14, 0.0, o2::constants::math::PI}}});
+    registry.add("hDeltaPhiD0BgD0barSig", "B(D0)x S(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{14, 0.0, o2::constants::math::PI}}});
+    registry.add("hDeltaPhiD0SigD0barBg", "S(D0)x B(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{14, 0.0, o2::constants::math::PI}}});
+    registry.add("hDeltaPhiBgBg", "BxB correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{14, 0.0, o2::constants::math::PI}}});
     registry.add("hPtCand1VsPtCand2", "2-prong candidates;#it{p}_{T} (GeV/#it{c});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDeltaEtaDeltaPhi", "2-prong candidates;#Delta #eta;#Delta #varphi (rad)", {HistType::kTH2F, {{29, -2., 2.}, {29, -0.5 * o2::constants::math::PI, 1.5 * o2::constants::math::PI}}});
+    registry.add("hDeltaEtaDeltaPhi", "2-prong candidates;#Delta #eta;#Delta #varphi (rad)", {HistType::kTH2F, {{29, -2., 2.}, {29, 0.0, o2::constants::math::PI}}});
   }
 
   template <typename CollisionType>
@@ -368,7 +385,7 @@ struct femtoUniversePairTaskTrackD0 {
     eventHisto.fillQA(col);
   }
 
-  void processD0mesons(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  void processD0mesons(o2::aod::FDCollision& col, FemtoFullParticles&)
   {
     auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsAllDmesons = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -425,7 +442,7 @@ struct femtoUniversePairTaskTrackD0 {
   PROCESS_SWITCH(femtoUniversePairTaskTrackD0, processD0mesons, "Enable processing D0 mesons", true);
 
   // D0-D0bar pair correlations (side-band methode)
-  void processSideBand(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  void processSideBand(o2::aod::FDCollision& col, FemtoFullParticles&)
   {
     auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
@@ -435,16 +452,17 @@ struct femtoUniversePairTaskTrackD0 {
     // loop over D0/D0bar candidates (ONLY)
     for (auto const& cand1 : groupPartsOnlyD0D0bar) {
       // Check if the first candidate is D0 meson
-      if (cand1.mLambda() > 0.0f && cand1.mAntiLambda() < 0.0f) {
+      if (cand1.mLambda() < 0.0f && cand1.mAntiLambda() > 0.0f) {
         continue;
       }
 
       for (auto const& cand2 : groupPartsOnlyD0D0bar) {
         // Check if the second candidate is D0bar meson
-        if (cand2.mLambda() < 0.0f && cand2.mAntiLambda() > 0.0f) {
+        if (cand2.mLambda() > 0.0f && cand2.mAntiLambda() < 0.0f) {
           continue;
         }
-        deltaPhi = getDeltaPhi(cand1.phi(), cand2.phi());
+        // deltaPhi = getDeltaPhi(cand1.phi(), cand2.phi());
+        deltaPhi = wrapDeltaPhi0PI(cand1.phi(), cand2.phi());
         deltaEta = cand2.eta() - cand1.eta();
 
         // General histograms

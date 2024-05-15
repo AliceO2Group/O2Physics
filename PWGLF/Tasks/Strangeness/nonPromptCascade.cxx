@@ -39,9 +39,18 @@ using namespace o2::framework::expressions;
 
 struct NPCascCandidate {
   int globalIndex;
+  float pvX;
+  float pvY;
+  float pvZ;
   float cascPt;
   float cascEta;
   float cascPhi;
+  float protonPt;
+  float protonEta;
+  float pionPt;
+  float pionEta;
+  float bachPt;
+  float bachEta;
   float cascDCAxy;
   float cascDCAz;
   float protonDCAxy;
@@ -153,6 +162,10 @@ struct NonPromptCascadeTask {
   HistogramRegistry registry{
     "registry",
     {
+      {"h_PV_x", "Primary vertex x;x (cm)", {HistType::kTH1D, {{100, -1., 1.}}}},
+      {"h_PV_y", "Primary vertex y;y (cm)", {HistType::kTH1D, {{100, -1., 1.}}}},
+      {"h_PV_z", "Primary vertex z;z (cm)", {HistType::kTH1D, {{100, -1., 1.}}}},
+
       {"h_dca_Omega", "DCA;DCA (cm)", {HistType::kTH1D, {{200, 0., .5}}}},
       {"h_dcaxy_Omega", "DCA xy;DCA_{xy} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
       {"h_dcaz_Omega", "DCA z;DCA_{z} (cm)", {HistType::kTH1D, {{200, -.5, .5}}}},
@@ -341,8 +354,8 @@ struct NonPromptCascadeTask {
   }
 
   void processTrackedCascadesMC(CollisionCandidatesRun3 const& collision,
-                                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
-                                aod::V0s const& v0s, TracksExtMC const& tracks,
+                                aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
+                                aod::V0s const& /*v0s*/, TracksExtMC const& /*tracks*/,
                                 aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     candidates.clear();
@@ -409,6 +422,11 @@ struct NonPromptCascadeTask {
       } else {
         continue;
       }
+
+      // PV
+      registry.fill(HIST("h_PV_x"), primaryVertex.getX());
+      registry.fill(HIST("h_PV_y"), primaryVertex.getY());
+      registry.fill(HIST("h_PV_z"), primaryVertex.getZ());
 
       // Omega
       masses = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
@@ -538,7 +556,9 @@ struct NonPromptCascadeTask {
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
       candidates.emplace_back(NPCascCandidate{static_cast<int>(track.globalIndex()),
+                                              primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
+                                              protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
                                               mDCA.DCAxy, mDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
                                               cascCpa, v0Cpa,
                                               massXi, massOmega, v0mass,
@@ -562,7 +582,9 @@ struct NonPromptCascadeTask {
       auto particle = mcParticles.iteratorAt(mcParticleId[i]);
       auto& c = candidates[i];
 
-      NPCTableMC(c.cascPt, c.cascEta, c.cascPhi,
+      NPCTableMC(c.pvX, c.pvY, c.pvZ,
+                 c.cascPt, c.cascEta, c.cascPhi,
+                 c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                  c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
                  c.casccosPA, c.v0cosPA,
                  c.massXi, c.massOmega, c.massV0,
@@ -577,8 +599,8 @@ struct NonPromptCascadeTask {
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
 
   void processTrackedCascadesData(CollisionCandidatesRun3 const& collision,
-                                  aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
-                                  aod::V0s const& v0s, TracksExtData const& tracks,
+                                  aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
+                                  aod::V0s const& /*v0s*/, TracksExtData const& /*tracks*/,
                                   aod::BCsWithTimestamps const&)
   {
     candidates.clear();
@@ -643,6 +665,11 @@ struct NonPromptCascadeTask {
       } else {
         continue;
       }
+
+      // PV
+      registry.fill(HIST("h_PV_x"), primaryVertex.getX());
+      registry.fill(HIST("h_PV_y"), primaryVertex.getY());
+      registry.fill(HIST("h_PV_z"), primaryVertex.getZ());
 
       // Omega
       masses = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
@@ -764,7 +791,9 @@ struct NonPromptCascadeTask {
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
       candidates.emplace_back(NPCascCandidate{static_cast<int>(track.globalIndex()),
+                                              primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
+                                              protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
                                               mDCA.DCAxy, mDCA.DCAz, dDCA.protonDCAxy, dDCA.protonDCAz, dDCA.pionDCAxy, dDCA.pionDCAz, dDCA.bachDCAxy, dDCA.bachDCAz,
                                               cascCpa, v0Cpa,
                                               massXi, massOmega, v0mass,
@@ -778,7 +807,9 @@ struct NonPromptCascadeTask {
 
     for (auto& c : candidates) {
 
-      NPCTable(c.cascPt, c.cascEta, c.cascPhi,
+      NPCTable(c.pvX, c.pvY, c.pvZ,
+               c.cascPt, c.cascEta, c.cascPhi,
+               c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
                c.casccosPA, c.v0cosPA,
                c.massXi, c.massOmega, c.massV0,

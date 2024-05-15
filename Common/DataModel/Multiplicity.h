@@ -75,6 +75,12 @@ DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);       //!
 
 DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
 
+// even further QA: timing information for neighboring events
+DECLARE_SOA_COLUMN(TimeToPrePrevious, timeToPrePrevious, float); //!
+DECLARE_SOA_COLUMN(TimeToPrevious, timeToPrevious, float);       //!
+DECLARE_SOA_COLUMN(TimeToNext, timeToNext, float);               //!
+DECLARE_SOA_COLUMN(TimeToNeNext, timeToNeNext, float);           //!
+
 } // namespace mult
 DECLARE_SOA_TABLE(FV0Mults, "AOD", "FV0MULT", //! Multiplicity with the FV0 detector
                   mult::MultFV0A, mult::MultFV0C,
@@ -108,6 +114,10 @@ DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
                   mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
                   mult::BCNumber);
+
+DECLARE_SOA_TABLE(MultNeighs, "AOD", "MULTNEIGH", //!
+                  mult::TimeToPrePrevious, mult::TimeToPrevious,
+                  mult::TimeToNext, mult::TimeToNeNext);
 
 // for QA purposes
 DECLARE_SOA_TABLE(MultsGlobal, "AOD", "MULTGLOBAL", //! counters that use Track Selection (optional)

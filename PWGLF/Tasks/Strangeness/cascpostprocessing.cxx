@@ -215,6 +215,11 @@ struct cascpostprocessing {
     // Info for eff x acc from MC
     registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
     registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+
+    registry.add("hCascMinusMassvsPtTrueRec", "hCascMinusMassvsPtTrueRec", {HistType::kTH2F, {ptAxis, massAxis}});
+    registry.add("hCascPlusMassvsPtTrueRec", "hCascPlusMassvsPtTrueRec", {HistType::kTH2F, {ptAxis, massAxis}});
+    registry.add("hCascMinusMassvsPtBG", "hCascMinusMassvsPtBG", {HistType::kTH2F, {ptAxis, massAxis}});
+    registry.add("hCascPlusMassvsPtBG", "hCascPlusMassvsPtBG", {HistType::kTH2F, {ptAxis, massAxis}});
     if (isMC) {
       registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
       registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
@@ -484,6 +489,9 @@ struct cascpostprocessing {
       if (candidate.sign() < 0) {
         if (isCorrectlyRec) {
           registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, candidate.multFT0M()); // 3rd axis is N charged in FT0M region from gen. MC
+          registry.fill(HIST("hCascMinusMassvsPtTrueRec"), candidate.pt(), invmass);
+        } else {
+          registry.fill(HIST("hCascMinusMassvsPtBG"), candidate.pt(), invmass);
         }
         registry.fill(HIST("hCascMinusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascMinusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
@@ -492,6 +500,9 @@ struct cascpostprocessing {
       if (candidate.sign() > 0) {
         if (isCorrectlyRec) {
           registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, candidate.multFT0M()); // 3rd axis is N charged in FT0M region from gen. MC
+          registry.fill(HIST("hCascPlusMassvsPtTrueRec"), candidate.pt(), invmass);
+        } else {
+          registry.fill(HIST("hCascPlusMassvsPtBG"), candidate.pt(), invmass);
         }
         registry.fill(HIST("hCascPlusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascPlusInvMassvsPt_FT0M"), candidate.multFT0M(), candidate.pt(), invmass);
@@ -528,6 +539,9 @@ struct cascpostprocessing {
           LOGF(fatal, "incorrect evSelFlag in cascpostprocessing task");
           break;
       }
+
+      if (TMath::Abs(genCascade.y()) > rap)
+        continue;
 
       // Histos of generated cascades from generated events with accepted z vrtx + chosen event type (evSelFlag) (for signal loss correction)
       if (genCascade.pdgCode() == -3312) {

@@ -45,7 +45,7 @@ struct cpvQa {
     }
   }
 
-  void process(aod::BC const& bc, aod::CPVClusters const& clusters)
+  void process(aod::BC const&, aod::CPVClusters const& clusters)
   {
     histos.get<TH1>(HIST("hClustersPerEventTotal"))->Fill(clusters.size());
     if (clusters.size() == 0) {

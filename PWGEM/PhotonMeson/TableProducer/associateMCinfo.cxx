@@ -78,7 +78,7 @@ struct AssociateMCInfo {
   Preslice<MyEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   template <uint8_t system, typename TTracks, typename TPCMs, typename TPCMLegs, typename TPHOSs, typename TEMCs, typename TEMPrimaryElectrons, typename TEMPrimaryMuons>
-  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const& o2tracks, TPCMs const& v0photons, TPCMLegs const& v0legs, TPHOSs const& phosclusters, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
+  void skimmingMC(MyCollisionsMC const& collisions, aod::BCs const&, aod::McCollisions const&, aod::McParticles const& mcTracks, TTracks const& o2tracks, TPCMs const& v0photons, TPCMLegs const& /*v0legs*/, TPHOSs const& /*phosclusters*/, TEMCs const& emcclusters, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons)
   {
     // temporary variables used for the indexing of the skimmed MC stack
     std::map<uint64_t, int> fNewLabels;
@@ -116,6 +116,9 @@ struct AssociateMCInfo {
           continue;
         }
         int pdg = mctrack.pdgCode();
+        if (abs(pdg) > 1e+9) {
+          continue;
+        }
 
         // fill basic histograms
         if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && abs(mctrack.y()) < 0.5) {
@@ -164,6 +167,12 @@ struct AssociateMCInfo {
           && (abs(pdg) != 100553) // Upsilon(2S)
           && (abs(pdg) != 200553) // Upsilon(3S)
 
+          // heavy flavor hadrons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 3] != '4') // charmed mesons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 3] != '5') // beauty mesons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 4] != '4') // charmed baryons
+          && (std::to_string(abs(pdg))[std::to_string(abs(pdg)).length() - 4] != '5') // beauty baryons
+
           // strange hadrons
           // && (abs(pdg) != 310)  // K0S
           // && (abs(pdg) != 130)  // K0L
@@ -206,6 +215,54 @@ struct AssociateMCInfo {
           // fMCFlags[mctrack.globalIndex()] = mcflags;
           fEventIdx[mctrack.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
           fCounters[0]++;
+        }
+
+        bool is_used_for_gen = false;
+        if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && (abs(pdg) == 11 || abs(pdg) == 13) && mctrack.has_mothers()) {
+          auto mp = mctrack.template mothers_first_as<aod::McParticles>(); // mother particle of electron
+          int pdg_mother = abs(mp.pdgCode());
+
+          bool is_from_sm = pdg_mother == 111 || pdg_mother == 221 || pdg_mother == 331 || pdg_mother == 113 || pdg_mother == 223 || pdg_mother == 333 || pdg_mother == 443 || pdg_mother == 100443 || pdg_mother == 553 || pdg_mother == 100553 || pdg_mother == 200553;
+          bool is_from_c_hadron = std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 3] == '4' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 4] == '4';
+          bool is_from_b_hadron = std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 3] == '5' || std::to_string(pdg_mother)[std::to_string(pdg_mother).length() - 4] == '5';
+
+          if ((is_from_sm || is_from_c_hadron || is_from_b_hadron)) {
+            is_used_for_gen = true;
+          }
+        }
+
+        if (is_used_for_gen) {
+          // Next, store mother-chain for only HF->l, because HF->ll analysis requires correlation between HF hadrons or quarks. PLEASE DON'T do this for other partices.
+          int motherid = -999; // first mother index
+          if (mctrack.has_mothers()) {
+            motherid = mctrack.mothersIds()[0]; // first mother index
+          }
+          while (motherid > -1) {
+            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mcTracks.iteratorAt(motherid);
+
+              if (abs(mp.pdgCode()) < 100) { // don't store quark/gluon informaiton, because data size explodes.
+                break;
+              }
+
+              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                fNewLabels[mp.globalIndex()] = fCounters[0];
+                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                // fMCFlags[mp.globalIndex()] = mcflags;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                fCounters[0]++;
+              }
+
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0]; // first mother index
+              } else {
+                motherid = -999;
+              }
+            } else {
+              motherid = -999;
+            }
+          } // end of mother chain loop
         }
       } // end of mc track loop
 
@@ -433,13 +490,15 @@ struct AssociateMCInfo {
         }
       }
 
-      // TODO: Check that the daughter slice in the skimmed table works as expected
-      //       Note that not all daughters from the original table are preserved in the skimmed MC stack
+      // Note that not all daughters from the original table are preserved in the skimmed MC stack
       std::vector<int> daughters;
       if (mctrack.has_daughters()) {
+        // LOGF(info, "daughter range in original MC stack pdg = %d | %d - %d , n dau = %d", mctrack.pdgCode(), mctrack.daughtersIds()[0], mctrack.daughtersIds()[1], mctrack.daughtersIds()[1] -mctrack.daughtersIds()[0] +1);
         for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
           // TODO: remove this check as soon as issues with MC production are fixed
           if (d < mcTracks.size()) { // protect against bad daughter indices
+            // auto dau_tmp = mcTracks.iteratorAt(d);
+            // LOGF(info, "daughter pdg = %d", dau_tmp.pdgCode());
             if (fNewLabels.find(d) != fNewLabels.end()) {
               daughters.push_back(fNewLabels.find(d)->second);
             }
@@ -449,14 +508,9 @@ struct AssociateMCInfo {
           }
         }
       }
-      int daughterRange[2] = {-1, -1};
-      if (daughters.size() > 0) {
-        daughterRange[0] = daughters[0];
-        daughterRange[1] = daughters[daughters.size() - 1];
-      }
 
       emmcparticles(fEventIdx.find(oldLabel)->second, mctrack.pdgCode(), mctrack.flags(),
-                    mothers, daughterRange,
+                    mothers, daughters,
                     mctrack.px(), mctrack.py(), mctrack.pz(), mctrack.e(),
                     mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt());
     } // end loop over labels
@@ -478,6 +532,11 @@ struct AssociateMCInfo {
   {
     const uint8_t sysflag = kPCM | kDalitzEE;
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, nullptr, nullptr, emprimaryelectrons, nullptr);
+  }
+  void processMC_DalitzEE(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::EMPrimaryElectrons const& emprimaryelectrons)
+  {
+    const uint8_t sysflag = kDalitzEE;
+    skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, nullptr, nullptr, nullptr, emprimaryelectrons, nullptr);
   }
   void processMC_PCM_DalitzEE_DalitzMuMu(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectrons const& emprimaryelectrons, aod::EMPrimaryMuons const& emprimarymuons)
   {
@@ -529,10 +588,11 @@ struct AssociateMCInfo {
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, v0photons, v0legs, phosclusters, emcclusters, emprimaryelectrons, nullptr);
   }
 
-  void processDummy(MyCollisionsMC const& collisions) {}
+  void processDummy(MyCollisionsMC const&) {}
 
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM, "create em mc event table for PCM", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE, "create em mc event table for PCM, DalitzEE", false);
+  PROCESS_SWITCH(AssociateMCInfo, processMC_DalitzEE, "create em mc event table for DalitzEE", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PCM_DalitzEE_DalitzMuMu, "create em mc event table for PCM, DalitzEE, DalitzMuMu", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_PHOS, "create em mc event table for PHOS", false);
   PROCESS_SWITCH(AssociateMCInfo, processMC_EMC, "create em mc event table for EMCal", false);

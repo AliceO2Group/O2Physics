@@ -11,6 +11,8 @@
 
 #ifndef PWGMM_MULT_DATAMODEL_REDUCEDTABLES_H_
 #define PWGMM_MULT_DATAMODEL_REDUCEDTABLES_H_
+#include <vector>
+
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
@@ -34,7 +36,7 @@ namespace rcol
 {
 DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
 DECLARE_SOA_COLUMN(MapEtaPhi, mapetaphi, std::vector<int>);
-}
+} // namespace rcol
 
 #define Ccols o2::soa::Index<>,            \
               rcol::RBCId,                 \
@@ -240,22 +242,19 @@ DECLARE_SOA_COLUMN(GeneratedForwardMultiplicityA, tfA, int);
 DECLARE_SOA_COLUMN(GeneratedForwardMultiplicityC, tfC, int);
 DECLARE_SOA_COLUMN(ReconstructedForwardMultiplicityA, mfA, float);
 DECLARE_SOA_COLUMN(ReconstructedForwardMultiplicityC, mfC, float);
-DECLARE_SOA_COLUMN(ImpactParameter, b, float);
-DECLARE_SOA_COLUMN(ProcessId, id, int);
 } // namespace features
 
 DECLARE_SOA_TABLE(RFeatMins, "AOD", "RFEATMIN",
                   soa::Index<>,
                   features::GeneratedCentralMultiplicity,
                   features::ReconstructedCentralMultiplicity,
-                  features::ProcessId,
-                  features::ImpactParameter,
                   features::ReconstructedVertexX,
                   features::ReconstructedVertexY,
                   features::ReconstructedVertexZ,
                   features::TimeRes,
                   features::ReconstructedForwardMultiplicityA,
-                  features::ReconstructedForwardMultiplicityC);
+                  features::ReconstructedForwardMultiplicityC,
+                  rcol::MapEtaPhi);
 
 } // namespace o2::aod
 namespace o2::soa

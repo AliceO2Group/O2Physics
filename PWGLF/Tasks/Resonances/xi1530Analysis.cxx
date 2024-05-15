@@ -144,7 +144,7 @@ struct cascadeXiAnalysis {
   }
 
   template <bool mix, bool mc, typename cascType, typename trackType>
-  void fillDataHisto(trackType const& bachTrks, cascType const& cascTrks, const float cent)
+  void fillDataHisto(trackType const& bachTrks, cascType const& cascTrks, const float /*cent*/)
   {
     TLorentzVector p1, p2, p;
     float pi_p_tot = 0;
@@ -200,7 +200,7 @@ struct cascadeXiAnalysis {
     fillDataHisto<false, false>(resoTracks, cascTracks, resoCollision.cent());
   }
 
-  void processReso(aod::ResoCollisions::iterator const& col, aod::ResoCascades const& cascTracks)
+  void processReso(aod::ResoCollisions::iterator const& /*col*/, aod::ResoCascades const& cascTracks)
   {
 
     for (auto const& casc : cascTracks) {

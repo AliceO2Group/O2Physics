@@ -57,25 +57,36 @@ enum class PairType {
 enum class PairAxisType {
   im,
   pt,
-  mu1,
+  mu,
   ns1,
   ns2,
+  eta,
   y,
-  zv1,
-  mu2,
-  zv2,
+  vz,
+  mum,
+  vzm,
   unknown
 };
-namespace PariAxis
+
+enum class SystematicsAxisType {
+  ncl,
+  unknown
+};
+namespace PairAxis
 {
-std::vector<std::string> names{"im", "pt", "mu1", "ns1", "ns2", "y", "zv1", "mu2", "zv2"};
+std::vector<std::string> names{"im", "pt", "mu", "ns1", "ns2", "eta", "y", "vz", "mum", "vzm"};
+}
+
+namespace SystematicsAxis
+{
+std::vector<std::string> names{"ncl"};
 }
 class Output
 {
  public:
   virtual ~Output() = default;
 
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, bool produceTrue = false, bool eventMixing = false, bool produceLikesign = false, HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<AxisSpec> const& allAxes_sys, bool /*produceTrue*/ = false, bool /*eventMixing*/ = false, bool /*produceLikesign*/ = false, HistogramRegistry* registry = nullptr)
   {
     mHistogramRegistry = registry;
     if (mHistogramRegistry == nullptr)
@@ -85,8 +96,8 @@ class Output
     for (int i = 0; i < static_cast<int>(PairAxisType::unknown); i++) {
       auto aname = *std::move(allAxes[i].name);
       LOGF(debug, "Check axis '%s' %d", aname.c_str(), i);
-      if (aname.compare(PariAxis::names[static_cast<int>(i)])) {
-        LOGF(fatal, "rsn::Output::Error: Order in allAxes is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), PariAxis::names[static_cast<int>(i)]);
+      if (aname.compare(PairAxis::names[static_cast<int>(i)])) {
+        LOGF(fatal, "rsn::Output::Error: Order in allAxes is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), PairAxis::names[static_cast<int>(i)]);
       }
     }
 
@@ -107,8 +118,36 @@ class Output
     mFillPoint = new double[mCurrentAxisTypes.size()];
 
     LOGF(info, "Number of axis added: %d", mCurrentAxes.size());
-    mPairHisto = new HistogramConfigSpec({HistType::kTHnSparseF}, mCurrentAxes);
-  };
+    mPairHisto = new HistogramConfigSpec(HistType::kTHnSparseF, mCurrentAxes);
+
+    // check if all systematic axes are added in correct order
+    for (int i = 0; i < static_cast<int>(SystematicsAxisType::unknown); i++) {
+      auto aname = *std::move(allAxes_sys[i].name);
+      LOGF(debug, "Check axis '%s' %d", aname.c_str(), i);
+      if (aname.compare(SystematicsAxis::names[static_cast<int>(i)])) {
+        LOGF(fatal, "rsn::Output::Error: Order in allAxes_sys is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), SystematicsAxis::names[static_cast<int>(i)]);
+      }
+    }
+
+    SystematicsAxisType currentType_sys;
+    for (auto& c : sysAxes) {
+      currentType_sys = type_sys(c);
+      if (currentType_sys >= SystematicsAxisType::unknown) {
+        LOGF(warning, "Found unknown axis (rsn::SystematicsAxisType = %d)!!! Skipping ...", static_cast<int>(currentType_sys));
+        continue;
+      }
+      LOGF(info, "Adding axis '%s' to systematic histogram", c.c_str());
+      mCurrentAxesSys.push_back(allAxes_sys[static_cast<int>(currentType_sys)]);
+      mCurrentAxisTypesSys.push_back(currentType_sys);
+    }
+
+    if (mFillPointSys != nullptr)
+      delete mFillPointSys;
+    mFillPointSys = new double[mCurrentAxisTypesSys.size()];
+
+    LOGF(info, "Number of systematic axis added: %d", mCurrentAxesSys.size());
+    mPairHistoSys = new HistogramConfigSpec(HistType::kTHnSparseF, mCurrentAxesSys);
+  }
 
   template <typename T>
   void fillSparse(const T& h, double* point)
@@ -120,15 +159,25 @@ class Output
     mHistogramRegistry->get<THnSparse>(h)->Fill(mFillPoint);
   }
 
-  virtual void fill(EventType t, double* point)
+  template <typename T>
+  void fillSparseSys(const T& h, double* point)
+  {
+    int i = 0;
+    for (auto& at : mCurrentAxisTypesSys) {
+      mFillPointSys[i++] = point[static_cast<int>(at)];
+    }
+    mHistogramRegistry->get<THnSparse>(h)->Fill(mFillPointSys);
+  }
+
+  virtual void fill(EventType /*t*/, double* /*point*/)
   {
     LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(EventType t, double* point)' !!! Please implement it first.");
   };
-  virtual void fill(TrackType t, double* point)
+  virtual void fill(TrackType /*t*/, double* /*point*/)
   {
     LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(TrackType t, double* point)' !!! Please implement it first.");
   };
-  virtual void fill(PairType t, double* point)
+  virtual void fill(PairType /*t*/, double* /*point*/)
   {
     LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(PairType t, double* point)' !!! Please implement it first.");
   };
@@ -143,19 +192,34 @@ class Output
   virtual void fillMixingpp(double* point) = 0;
   virtual void fillMixingmm(double* point) = 0;
   virtual void fillMixingmp(double* point) = 0;
+  virtual void fillSystematics(double* point) = 0;
 
   PairAxisType type(std::string name)
   {
-    auto it = std::find(PariAxis::names.begin(), PariAxis::names.end(), name);
-    if (it == PariAxis::names.end()) {
+    auto it = std::find(PairAxis::names.begin(), PairAxis::names.end(), name);
+    if (it == PairAxis::names.end()) {
       return PairAxisType::unknown;
     }
-    return static_cast<PairAxisType>(std::distance(PariAxis::names.begin(), it));
+    return static_cast<PairAxisType>(std::distance(PairAxis::names.begin(), it));
+  }
+
+  SystematicsAxisType type_sys(std::string name)
+  {
+    auto it = std::find(SystematicsAxis::names.begin(), SystematicsAxis::names.end(), name);
+    if (it == SystematicsAxis::names.end()) {
+      return SystematicsAxisType::unknown;
+    }
+    return static_cast<SystematicsAxisType>(std::distance(SystematicsAxis::names.begin(), it));
   }
 
   std::string name(PairAxisType type)
   {
-    return PariAxis::names[(static_cast<int>(type))];
+    return PairAxis::names[(static_cast<int>(type))];
+  }
+
+  std::string name_sys(SystematicsAxisType type)
+  {
+    return SystematicsAxis::names[(static_cast<int>(type))];
   }
 
   AxisSpec axis(std::vector<AxisSpec> const& allAxes, PairAxisType type)
@@ -169,21 +233,24 @@ class Output
  protected:
   HistogramRegistry* mHistogramRegistry = nullptr;
   HistogramConfigSpec* mPairHisto = nullptr;
+  HistogramConfigSpec* mPairHistoSys = nullptr;
   std::vector<AxisSpec> mCurrentAxes;
   std::vector<PairAxisType> mCurrentAxisTypes;
+  std::vector<AxisSpec> mCurrentAxesSys;
+  std::vector<SystematicsAxisType> mCurrentAxisTypesSys;
   double* mFillPoint = nullptr;
+  double* mFillPointSys = nullptr;
 };
 
 class OutputSparse : public Output
 {
  public:
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, bool produceTrue = false, bool eventMixing = false, bool produceLikesign = false, HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<AxisSpec> const& allAxes_sys, bool produceTrue = false, bool eventMixing = false, bool produceLikesign = false, HistogramRegistry* registry = nullptr)
   {
-    Output::init(sparseAxes, allAxes, produceTrue, eventMixing, produceLikesign, registry);
-    mHistogramRegistry->add("hVz", "; vtx_{z} (cm); Entries", kTH1F, {{40, -20., 20.}});
+    Output::init(sparseAxes, allAxes, sysAxes, allAxes_sys, produceTrue, eventMixing, produceLikesign, registry);
 
     mHistogramRegistry->add("unlikepm", "Unlike pm", *mPairHisto);
-    mHistogramRegistry->add("unlikemp", "Unlike mp", *mPairHisto);
+    // mHistogramRegistry->add("unlikemp", "Unlike mp", *mPairHisto);
     if (produceLikesign) {
       mHistogramRegistry->add("likepp", "Like PP", *mPairHisto);
       mHistogramRegistry->add("likemm", "Like MM", *mPairHisto);
@@ -200,6 +267,8 @@ class OutputSparse : public Output
       }
       mHistogramRegistry->add("mixingmp", "Event Mixing mp", *mPairHisto);
     }
+
+    mHistogramRegistry->add("Mapping/systematics", "Systematics mapping", *mPairHistoSys);
   }
 
   virtual void
@@ -294,6 +363,10 @@ class OutputSparse : public Output
   virtual void fillMixingmp(double* point)
   {
     fillSparse(HIST("mixingmp"), point);
+  }
+  virtual void fillSystematics(double* point)
+  {
+    fillSparse(HIST("Mapping/systematics"), point);
   }
 };
 } // namespace rsn

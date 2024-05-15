@@ -158,7 +158,7 @@ struct lmeelfcocktail {
 
   Configurable<std::vector<double>> fConfigDCATemplateEdges{"cfgDCATemplateEdges", {0., .3, .4, .6, 1., 2.}, "DCA template edges"};
 
-  void init(o2::framework::InitContext& ic)
+  void init(o2::framework::InitContext&)
   {
     if (fConfigWriteTTree) {
       SetTree();

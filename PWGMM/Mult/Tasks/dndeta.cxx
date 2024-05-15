@@ -58,15 +58,27 @@ struct MultiplicityCounter {
   Configurable<bool> addFDD{"addFDD", false, "add FDD estimators"};
 
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
+  Configurable<bool> checkTF{"checkTF", true, "check TF border"};
+  Configurable<bool> checkITSROF{"checkITSROF", true, "check ITS readout frame border"};
   Configurable<bool> checkFT0PVcoincidence{"checkFT0PVcoincidence", true, "Check coincidence between FT0 and PV"};
   Configurable<bool> rejectITSonly{"rejectITSonly", false, "Reject ITS-only vertex"};
 
   template <typename C>
   inline bool isCollisionSelected(C const& collision)
   {
-    return collision.sel8() &&
+    return collision.selection_bit(aod::evsel::kIsTriggerTVX) &&
+           (!checkTF || collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+           (!checkITSROF || collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
            (!checkFT0PVcoincidence || collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) &&
            (!rejectITSonly || collision.selection_bit(aod::evsel::kIsVertexITSTPC));
+  }
+
+  template <typename B>
+  inline bool isBCSelected(B const& bc)
+  {
+    return bc.selection_bit(aod::evsel::kIsTriggerTVX) &&
+           (!checkTF || bc.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+           (!checkITSROF || bc.selection_bit(aod::evsel::kNoITSROFrameBorder));
   }
 
   HistogramRegistry commonRegistry{
@@ -321,9 +333,7 @@ struct MultiplicityCounter {
   {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
-      if (!useEvSel || (bc.selection_bit(aod::evsel::kNoITSROFrameBorder) &&
-                        bc.selection_bit(aod::evsel::kIsBBT0A) &&
-                        bc.selection_bit(aod::evsel::kIsBBT0C)) != 0) {
+      if (!useEvSel || isBCSelected(bc)) {
         commonRegistry.fill(HIST(BCSelection), 1.);
         cols.clear();
         for (auto& collision : collisions) {

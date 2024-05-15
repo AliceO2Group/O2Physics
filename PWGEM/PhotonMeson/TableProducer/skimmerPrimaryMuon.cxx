@@ -343,7 +343,7 @@ struct skimmerPrimaryMuon {
   }
 
   template <bool isMC, EM_EEPairType pairtype, typename TCollision, typename TTracks1, typename TTracks2>
-  void fillPairInfo(TCollision const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
+  void fillPairInfo(TCollision const& /*collision*/, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
     if constexpr (pairtype == EM_EEPairType::kULS) { // ULS
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {

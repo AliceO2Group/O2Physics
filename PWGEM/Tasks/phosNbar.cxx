@@ -62,6 +62,7 @@ struct phosNbar {
 
   // using MatchedClusters = soa::Join<aod::CaloClusters, aod::PHOSMatchedTrack>;
 
+  Configurable<int> mPairingMethod{"mPairingMethod", 0, "0:max CPA, 1: min DCA"};
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
   // nbar selection
   Configurable<double> mMinCluE{"minCluE", 0.3, "Minimum cluster energy"};
@@ -75,6 +76,8 @@ struct phosNbar {
   // track selection
   Configurable<double> mPionDeDxCut{"piondEdx", 3., "pion dE/dx cut in sigma"};
   // Topological cuts
+  Configurable<double> mDCAcut{"DCAmax", 0.2, "DCA max cut"};
+  Configurable<double> mCPAcut{"CPAmin", 0.96, "CPA min cut"};
   Configurable<uint> mNmix{"nMix", 5, "depth of mixing buffer"};
 
   static constexpr double c = 29979245800.; // speed of light in cm/sec
@@ -107,11 +110,11 @@ struct phosNbar {
   std::array<std::deque<std::vector<nbar>>, mNZbins> mixNbarEvts;
 
   TH2 *hRePP, *hRePM, *hMiPP, *hMiPM, *hSignalSP, *hSignalSM;
+  TH3 *hRePPDCA, *hRePMDCA, *hMiPPDCA, *hMiPMDCA, *hRePPCPA, *hRePMCPA, *hMiPPCPA, *hMiPMCPA;
 
   /// \brief Create output histograms
   void init(o2::framework::InitContext const&)
   {
-
     mHistManager.add("evsel", "event selection", HistType::kTH1F, {{10, 0., 10.}});
     mHistManager.add("vtxZ", "Vertex z distribution", HistType::kTH1F, {{100, -20., 20., "z_{vtx} (cm)", "z_{vtx} (cm)"}});
     mHistManager.add("cluCuts", "Spectrum vs cut", HistType::kTH2F, {{100, 0., 5., "E (GeV)", "E (GeV)"}, {10, 0., 10., "cut"}});
@@ -125,13 +128,25 @@ struct phosNbar {
 
     const AxisSpec
       massAxis{500, 1., 1.5},
-      ptAxis{100, 0., 10.};
+      ptAxis{100, 0., 10.},
+      dcaAxis{100, 0., 5},
+      cpaAxis{100, 0., 1.};
     hRePP = (std::get<std::shared_ptr<TH2>>(mHistManager.add("RePiP", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hRePM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("RePiM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hMiPP = (std::get<std::shared_ptr<TH2>>(mHistManager.add("MiPiP", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hMiPM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("MiPiM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hSignalSP = (std::get<std::shared_ptr<TH2>>(mHistManager.add("SignalSP", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hSignalSM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("SignalSM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
+
+    hRePPDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiPDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
+    hRePMDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiMDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
+    hMiPPDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("MiPiPDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
+    hMiPMDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("MiPiMDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
+
+    hRePPCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiPCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
+    hRePMCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiMCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
+    hMiPPCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("MiPiPCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
+    hMiPMCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("MiPiMCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
 
     ccdb->setURL(o2::base::NameConf::getCCDBServer());
     ccdb->setCaching(true);
@@ -153,13 +168,33 @@ struct phosNbar {
     math_utils::Point3D<float> vtxV0;
     for (auto tr : piEvent) {
       for (auto nbar : nbarEvent) {
-        if (!minimizeCPA(nbar, tr, cpa, vtxV0, m, pt)) {
-          continue;
+        double dca = 999.;
+        switch (mPairingMethod) {
+          case 0: // maximize CPA
+            if (!minimizeCPA(nbar, tr, cpa, vtxV0, m, pt)) {
+              continue;
+            }
+            break;
+          case 1: // Minimize DCA
+            if (!propagateToDCA(nbar, tr, cpa, dca, vtxV0, m, pt)) {
+              continue;
+            }
+            break;
+          default: // do nothing
+            continue;
         }
         if (tr.getCharge2Pt() > 0) {
-          hRePP->Fill(m, pt);
+          hRePPDCA->Fill(m, pt, dca);
+          hRePPCPA->Fill(m, pt, cpa);
+          if (dca < mDCAcut && cpa > mCPAcut) {
+            hRePP->Fill(m, pt);
+          }
         } else {
-          hRePM->Fill(m, pt);
+          hRePMDCA->Fill(m, pt, dca);
+          hRePMCPA->Fill(m, pt, cpa);
+          if (dca < mDCAcut && cpa > mCPAcut) {
+            hRePM->Fill(m, pt);
+          }
         }
         if constexpr (isMC) { // test parent
           int cp = commonParentPDG(tr.getUserField(), nbar.label, mcParticles);
@@ -182,13 +217,33 @@ struct phosNbar {
     for (auto tr : piEvent) {
       for (auto nbarMixEv : mixNbarEvts[mixIndex]) {
         for (auto nbar : nbarMixEv) {
-          if (!minimizeCPA(nbar, tr, cpa, vtxV0, m, pt)) {
-            continue;
+          double dca = 999.;
+          switch (mPairingMethod) {
+            case 0: // maximize CPA
+              if (!minimizeCPA(nbar, tr, cpa, vtxV0, m, pt)) {
+                continue;
+              }
+              break;
+            case 1: // Minimize DCA
+              if (!propagateToDCA(nbar, tr, cpa, dca, vtxV0, m, pt)) {
+                continue;
+              }
+              break;
+            default: // do nothing
+              continue;
           }
           if (tr.getCharge2Pt() > 0) {
-            hMiPP->Fill(m, pt);
+            hMiPPDCA->Fill(m, pt, dca);
+            hMiPPCPA->Fill(m, pt, cpa);
+            if (dca < mDCAcut && cpa > mCPAcut) {
+              hMiPP->Fill(m, pt);
+            }
           } else {
-            hMiPM->Fill(m, pt);
+            hMiPMDCA->Fill(m, pt, dca);
+            hMiPMCPA->Fill(m, pt, cpa);
+            if (dca < mDCAcut && cpa > mCPAcut) {
+              hMiPM->Fill(m, pt);
+            }
           }
         }
       }
@@ -196,13 +251,33 @@ struct phosNbar {
     for (auto trMixEvent : mixTrackEvts[mixIndex]) {
       for (auto tr : trMixEvent) {
         for (auto nbar : nbarEvent) {
-          if (!minimizeCPA(nbar, tr, cpa, vtxV0, m, pt)) {
-            continue;
+          double dca = 999.;
+          switch (mPairingMethod) {
+            case 0: // maximize CPA
+              if (!minimizeCPA(nbar, tr, cpa, vtxV0, m, pt)) {
+                continue;
+              }
+              break;
+            case 1: // Minimize DCA
+              if (!propagateToDCA(nbar, tr, cpa, dca, vtxV0, m, pt)) {
+                continue;
+              }
+              break;
+            default: // do nothing
+              continue;
           }
           if (tr.getCharge2Pt() > 0) {
-            hMiPP->Fill(m, pt);
+            hMiPPDCA->Fill(m, pt, dca);
+            hMiPPCPA->Fill(m, pt, cpa);
+            if (dca < mDCAcut && cpa > mCPAcut) {
+              hMiPP->Fill(m, pt);
+            }
           } else {
-            hMiPM->Fill(m, pt);
+            hMiPMDCA->Fill(m, pt, dca);
+            hMiPMCPA->Fill(m, pt, cpa);
+            if (dca < mDCAcut && cpa > mCPAcut) {
+              hMiPM->Fill(m, pt);
+            }
           }
         }
       }
@@ -509,8 +584,145 @@ struct phosNbar {
     return true;
   }
 
+  bool propagateToDCA(nbar& n, track::TrackParametrization<float>& pion,
+                      double& cpa, double& dca, math_utils::Point3D<float>& vtxV0, double& m, double& pt)
+  {
+    //--------------------------------------------------------------------
+    // This function returns the DCA between the neutron and the track
+    // Proparate track to primary vertex,
+    // rotate perp. to nbar and propagate to minimal DCA vertex (in fact it will minimize distance in x)
+    const double k = (sqrt(5.) - 1.) / 2.; // 0.61803399
+    const double minX = -10., maxX = 10.;
+    const double eps = 1.e-3;
+    double step = 1.; // initial step 1 cm
+
+    o2::math_utils::Point3D<float> vtxPrim(0., 0., mVtxZ); // Primary vertex
+    // unit vector in nbar direction
+    o2::math_utils::Vector3D<float> pNbar(n.x - vtxPrim.x(), n.y - vtxPrim.y(), n.z - vtxPrim.z());
+    pNbar /= sqrt(pNbar.Mag2()); // unit vector
+
+    auto tmpT(pion); // operate on the copy
+    // 1: find most probable position
+    double phiN = pNbar.phi();
+    double xv = -vtxPrim.x() * sin(phiN) - vtxPrim.y() * cos(phiN); // Rotation by phiN+pi/2
+    tmpT.rotateParam(phiN + 0.5 * o2::math_utils::pi());            // If rotation failed, it only increases number of iterations
+    if (!tmpT.propagateParamTo(xv, mBz)) {                          // Failed to propagate???
+      return false;
+    }
+    vtxV0 = tmpT.getXYZGlo();
+    dca = sqrt((vtxV0 - vtxPrim).Cross(pNbar).Mag2());
+
+    // 2: DCA(t) has V-shape. Find range around estimated minimum which has larger DCA
+    double x[4] = {xv - k * step, xv + (1. - 2. * k) * step, xv, xv + (1. - k) * step};
+    double dcaP[4] = {dca, dca, dca, dca};
+    for (int i = 0; i < 4; i++) {
+      if (i == 2)
+        continue;
+      if (!tmpT.propagateParamTo(x[i], mBz)) {
+        return false;
+      }
+      vtxV0 = tmpT.getXYZGlo();
+      dcaP[i] = sqrt((vtxV0 - vtxPrim).Cross(pNbar).Mag2());
+    }
+    while (dcaP[0] < dcaP[1]) { // too narrow range, should be expanded/shifted
+      x[2] = x[1];
+      dcaP[2] = dcaP[1];
+      x[1] = x[0];
+      dcaP[1] = dcaP[0];
+      x[0] = x[3] - (x[3] - x[0]) / k;
+      if (x[0] < minX) {
+        return false; // DCA too far from vertex
+      }
+      if (!tmpT.propagateParamTo(x[0], mBz)) {
+        return false;
+      }
+      vtxV0 = tmpT.getXYZGlo();
+      dcaP[0] = sqrt((vtxV0 - vtxPrim).Cross(pNbar).Mag2());
+    }
+    // same to the right
+    while (dcaP[3] < dcaP[2]) {
+      x[1] = x[2];
+      dcaP[1] = dcaP[2];
+      x[2] = x[3];
+      dcaP[2] = dcaP[3];
+      x[3] = x[0] + (x[3] - x[0]) / k;
+      if (x[3] > maxX) {
+        return false; // DCA too far from vertex
+      }
+      if (!tmpT.propagateParamTo(x[3], mBz)) {
+        return false;
+      }
+      vtxV0 = tmpT.getXYZGlo();
+      dcaP[3] = sqrt((vtxV0 - vtxPrim).Cross(pNbar).Mag2());
+    }
+
+    // 3: minimize using golden section
+    math_utils::Point3D<float> vtx[4];
+    while (x[2] - x[1] > eps) {
+      if (dcaP[1] < dcaP[2]) {
+        x[3] = x[2];
+        dcaP[3] = dcaP[2];
+        x[2] = x[1];
+        dcaP[2] = dcaP[1];
+        x[1] = x[3] - k * (x[3] - x[0]);
+        if (!tmpT.propagateParamTo(x[1], mBz)) {
+          return false;
+        }
+        vtx[1] = tmpT.getXYZGlo();
+        dcaP[1] = sqrt((vtx[1] - vtxPrim).Cross(pNbar).Mag2());
+      } else {
+        x[0] = x[1];
+        dcaP[0] = dcaP[1];
+        x[1] = x[2];
+        dcaP[1] = dcaP[2];
+        x[2] = x[0] + k * (x[3] - x[0]);
+        if (!tmpT.propagateParamTo(x[2], mBz)) {
+          return false;
+        }
+        vtx[2] = tmpT.getXYZGlo();
+        dcaP[2] = sqrt((vtx[2] - vtxPrim).Cross(pNbar).Mag2());
+      }
+    }
+    if (dcaP[1] < dcaP[2]) {
+      vtxV0 = vtx[1];
+      dca = dcaP[1];
+    } else {
+      vtxV0 = vtx[2];
+      dca = dcaP[2];
+    }
+
+    // calculate topological and kinematic parameters
+    //  CPA, Sigma inv mass using find pion and nbar momenta
+    //  may be re-calculate nbar |p| using reconstructed vertex
+    //  tmpT was extrapolated last time to vtx
+    float ptp = tmpT.getPt();
+    float cs = cosf(tmpT.getAlpha()), sn = sinf(tmpT.getAlpha());
+    float rp = std::sqrt((1.f - tmpT.getSnp()) * (1.f + tmpT.getSnp()));
+    math_utils::Vector3D<float> pPi(ptp * (rp * cs - tmpT.getSnp() * sn), ptp * (tmpT.getSnp() * cs + rp * sn), ptp * tmpT.getTgl());
+
+    // recalculate Nbar momentum
+    pNbar *= n.mom;
+
+    math_utils::Vector3D<float> pSum = pPi + pNbar;
+    double denom = sqrt(pSum.Mag2() * (vtxV0 - vtxPrim).Mag2());
+    if (denom > 0) {
+      cpa = (vtxV0 - vtxPrim).Dot(pSum) / denom;
+    } else { // in primary vertex, step off a bit
+      cpa = -1.;
+    }
+    // m^2 = (E1+E2)^2 - (p1+p2)^2 =
+    double Epi2 = pPi.mag2() + mpi * mpi;
+    double En = pNbar.mag2() + mNbar * mNbar;
+    m = Epi2 + En + 2. * sqrt(Epi2 * En) - pSum.mag2();
+    if (m > 0)
+      m = sqrt(m);
+    pt = pSum.Rho();
+    // asymalpha = (pNbar.mag()-pPi.mag())/(pNbar.mag()+pPi.mag());
+    return true;
+  }
+
   void processData(SelCollision const& coll,
-                   aod::BCsWithTimestamps const& bcs, aod::CaloClusters const& clusters, TrackCandidates const& tracks)
+                   aod::BCsWithTimestamps const&, aod::CaloClusters const& clusters, TrackCandidates const& tracks)
   {
     // Initialize B-field
     if (mBz == 123456.) {
@@ -523,7 +735,7 @@ struct phosNbar {
   PROCESS_SWITCH(phosNbar, processData, "process data", false);
 
   void processMc(SelCollision const& coll,
-                 aod::BCsWithTimestamps const& bcs, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart)
+                 aod::BCsWithTimestamps const&, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart)
   {
     // Initialize B-field
     if (mBz == 123456.) {

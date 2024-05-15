@@ -155,7 +155,7 @@ struct taskMuonMchTrkEfficiency {
 
   /// Method to define and apply the weight required to optimise the generated distributions
   ///  TO BE UPDATED with realistic distributions and probably using input TF1 as weights
-  void FillHistosWeight(double eta, double pt, double phi, uint16_t map, double etaGen, double ptGen, double phiGen)
+  void FillHistosWeight(double eta, double pt, double phi, uint16_t map, double /*etaGen*/, double /*ptGen*/, double /*phiGen*/)
   {
     double weighteta = 1, weightpt = 1, weightphi = 1; // default weight set to unity for now: no effect
     double etaw = eta * weighteta;
