@@ -168,9 +168,10 @@ struct upcPionAnalysis {
     registry.add("hTPCsig", "TPC signal;signal_{TPC} t2; signal_{TPC} t2", kTH2F, {{300, 0., 150.}, {300, 0, 150}});
     registry.add("hP2", "P vs TPC signal;#it{P_{track}}, GeV/c; signal_{TPC} t1", kTH2F, {{100, 0., 2.}, {300, 0, 150}});
     registry.add("hTPCsig1", "TPC signal;signal_{TPC} t2; signal_{TPC} t2", kTH2F, {{300, 0., 150.}, {300, 0, 150}});
-    registry.add("hCostheta_Phi", "Phi vs Costheta;#it{#phi};#it{Cos#Theta};", kTH2F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}, {120, -1, 1}});
 
-    registry.add("hMass", "Raw Inv.M;#it{M_{#pi#pi}} (GeV/c^{2});", kTH1D, {{1000, 0., 10.}});
+    registry.add("hMassFourPionsCoherent", "Raw Inv.M;#it{M_{#pi#pi}} (GeV/c^{2});", kTH1D, {{1000, 0., 10.}});
+    registry.add("hMassSixPionsCoherent", "Raw Inv.M;#it{M_{6#pi}} (GeV/c^{2});", kTH1D, {{1000, 0., 10.}});
+    registry.add("hMassEightPionsCoherent", "Raw Inv.M;#it{M_{6#pi}} (GeV/c^{2});", kTH1D, {{1000, 0., 10.}});
     registry.add("hMassFourPions", "Raw Inv.M;#it{M_{4#pi}} (GeV/c^{2});", kTH1D, {{1000, 0., 10.}});
     registry.add("hMassSixPions", "Raw Inv.M;#it{M_{6#pi}} (GeV/c^{2});", kTH1D, {{1000, 0., 10.}});
     registry.add("hMassEightPions", "Raw Inv.M;#it{M_{8#pi}} (GeV/c^{2});", kTH1D, {{1000, 0., 10.}});
@@ -214,70 +215,6 @@ struct upcPionAnalysis {
     registry.add("hMPt1", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2F, {{100, 0., 10.}, {100, 0., 10.}});
     registry.add("hMPt2", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2F, {{100, 0., 10.}, {100, 0., 10.}});
     registry.add("hMPt3", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2F, {{100, 0., 20.}, {100, 0., 10.}});
-
-    registry.add("Ang/hMassCosTheta_0", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_1", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_2", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_3", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_4", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_5", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_6", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_7", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_8", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_9", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_10", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_11", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_12", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_13", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_14", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_15", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassCosTheta_16", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-
-    registry.add("Ang/hMassPhi_0", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_1", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_2", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_3", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_4", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_5", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_6", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_7", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_8", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_9", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_10", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_11", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-    registry.add("Ang/hMassPhi_12", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-
-    /* registry.add("Ang2/hMassCosTheta_0", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_1", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_2", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_3", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_4", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_5", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_6", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_7", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_8", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_9", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_10", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_11", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_12", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_13", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_14", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_15", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassCosTheta_16", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-
-     registry.add("Ang2/hMassPhi_0", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_1", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_2", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_3", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_4", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_5", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_6", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_7", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_8", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_9", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_10", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_11", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});
-     registry.add("Ang2/hMassPhi_12", "Raw Inv.M; M_{#pi#pi} (GeV/c^{2});", kTH1D, {{100, 0., 2.}});*/
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
@@ -309,7 +246,8 @@ struct upcPionAnalysis {
       TLorentzVector p;
       registry.fill(HIST("hTracks"), tracks.size());
 
-      float sign = 1.;
+      // if(collision.numContrib() > 10) return;
+
       for (auto t : tracks) {
         if (!t.isPVContributor()) {
           continue;
@@ -321,7 +259,7 @@ struct upcPionAnalysis {
           continue;
         }
 
-        if (t.pt() < 0.1) {
+        if (t.pt() < 0.15) {
           continue;
         }
 
@@ -331,11 +269,10 @@ struct upcPionAnalysis {
         allTracks.push_back(a);
         auto nSigmaPi = t.tpcNSigmaPi();
 
-        if (fabs(nSigmaPi) < 5.) {
+        if (fabs(nSigmaPi) < 3.) {
           onlyPionTracks.push_back(a);
           onlyPionSigma.push_back(nSigmaPi);
           rawPionTracks.push_back(t);
-          sign *= t.sign();
           registry.fill(HIST("hdEdxPion"), t.tpcInnerParam() / t.sign(), dEdx);
         }
       }
@@ -346,423 +283,249 @@ struct upcPionAnalysis {
         p += pion;
       }
       //_____________________________________
-      // Four pions analysis
-      if (onlyPionTracks.size() == 4) {
+      if (collision.numContrib() == 4) {
+        // Four pions analysis
+        if ((rawPionTracks.size() == 4) && (onlyPionTracks.size() == 4)) {
 
-        registry.fill(HIST("hEta_t1"), onlyPionTracks[0].Eta());
-        registry.fill(HIST("hEta_t2"), onlyPionTracks[1].Eta());
+          registry.fill(HIST("hEta_t1"), onlyPionTracks[0].Eta());
+          registry.fill(HIST("hEta_t2"), onlyPionTracks[1].Eta());
 
-        // Quality Control
-        registry.fill(HIST("h2TracksPions"), onlyPionTracks.size());
-        registry.fill(HIST("hNsigPi1vsPi2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
-        registry.fill(HIST("hNsigEl1vsEl2"), rawPionTracks[2].tpcNSigmaPi(), rawPionTracks[3].tpcNSigmaPi());
-        registry.fill(HIST("hNsigPivsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaPi());
-        registry.fill(HIST("hNsigPivsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaPi());
-        registry.fill(HIST("hNsigElvsPt1"), onlyPionTracks[2].Pt(), rawPionTracks[2].tpcNSigmaPi());
-        registry.fill(HIST("hNsigElvsPt2"), onlyPionTracks[3].Pt(), rawPionTracks[3].tpcNSigmaPi());
+          /*if ((onlyPionSigma[0] * onlyPionSigma[0] + onlyPionSigma[1] * onlyPionSigma[1]) > 9) {
+           return;
+           }
+           if ((onlyPionSigma[2] * onlyPionSigma[2] + onlyPionSigma[3] * onlyPionSigma[3]) > 9) {
+           return;
+           }*/
 
-        registry.fill(HIST("hNsigMuvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaMu());
-        registry.fill(HIST("hNsigMuvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaMu());
+          // Quality Control
+          registry.fill(HIST("hNsigPi1vsPi2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
+          registry.fill(HIST("hNsigEl1vsEl2"), rawPionTracks[2].tpcNSigmaPi(), rawPionTracks[3].tpcNSigmaPi());
+          registry.fill(HIST("hNsigPivsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaPi());
+          registry.fill(HIST("hNsigPivsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaPi());
+          registry.fill(HIST("hNsigElvsPt1"), onlyPionTracks[2].Pt(), rawPionTracks[2].tpcNSigmaPi());
+          registry.fill(HIST("hNsigElvsPt2"), onlyPionTracks[3].Pt(), rawPionTracks[3].tpcNSigmaPi());
 
-        registry.fill(HIST("hPtsingle_track1"), onlyPionTracks[0].Pt());
-        registry.fill(HIST("hPtsingle_track2"), onlyPionTracks[1].Pt());
-        registry.fill(HIST("hP1"), onlyPionTracks[0].P(), rawPionTracks[0].tpcSignal());
-        registry.fill(HIST("hTPCsig"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
-        registry.fill(HIST("hP2"), onlyPionTracks[2].P(), rawPionTracks[2].tpcSignal());
-        registry.fill(HIST("hTPCsig1"), rawPionTracks[2].tpcSignal(), rawPionTracks[3].tpcSignal());
+          registry.fill(HIST("hNsigMuvsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaMu());
+          registry.fill(HIST("hNsigMuvsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaMu());
 
-        bool isRightSign = ((rawPionTracks[0].sign()) * (rawPionTracks[1].sign()) * (rawPionTracks[2].sign()) * (rawPionTracks[3].sign())) == 1;
+          registry.fill(HIST("hPtsingle_track1"), onlyPionTracks[0].Pt());
+          registry.fill(HIST("hPtsingle_track2"), onlyPionTracks[1].Pt());
+          registry.fill(HIST("hP1"), onlyPionTracks[0].P(), rawPionTracks[0].tpcSignal());
+          registry.fill(HIST("hTPCsig"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
+          registry.fill(HIST("hP2"), onlyPionTracks[2].P(), rawPionTracks[2].tpcSignal());
+          registry.fill(HIST("hTPCsig1"), rawPionTracks[2].tpcSignal(), rawPionTracks[3].tpcSignal());
 
-        TLorentzVector piplus, piminus;
-        if (rawPionTracks[0].sign() > 0) {
-          piplus = onlyPionTracks[0];
-        } else {
-          piminus = onlyPionTracks[0];
-        }
-        if (rawPionTracks[1].sign() < 0) {
-          piminus = onlyPionTracks[1];
-        } else {
-          piplus = onlyPionTracks[1];
-        }
-        if (rawPionTracks[2].sign() > 0) {
-          piplus = onlyPionTracks[2];
-        } else {
-          piminus = onlyPionTracks[2];
-        }
-        if (rawPionTracks[3].sign() < 0) {
-          piminus = onlyPionTracks[3];
-        } else {
-          piplus = onlyPionTracks[3];
-        }
-
-        auto costheta = CosThetaHelicityFrame(piplus, piminus, p);
-        registry.fill(HIST("hCostheta4Pion"), costheta);
-        auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(piplus, piminus, p);
-        registry.fill(HIST("hPhi4Pion"), phihel);
-
-        if (p.Rapidity() > -0.9 && p.Rapidity() < 0.9) {
-
-          if (!isRightSign) {
-            registry.fill(HIST("hMassFourPions"), p.M());
-            registry.fill(HIST("hPt4Pion"), p.Pt());
+          int sign = 0;
+          TLorentzVector piplus, piminus;
+          for (auto rawPion : rawPionTracks) {
+            sign += rawPion.sign();
+            if (rawPion.sign() > 0) {
+              piplus = onlyPionTracks[0];
+              piplus = onlyPionTracks[1];
+              piplus = onlyPionTracks[2];
+              piplus = onlyPionTracks[3];
+            } else if (rawPion.sign() < 0) {
+              piminus = onlyPionTracks[0];
+              piminus = onlyPionTracks[1];
+              piminus = onlyPionTracks[2];
+              piminus = onlyPionTracks[3];
+            }
           }
 
-          if (isRightSign) {
-            registry.fill(HIST("hCharge"), sign);
-            registry.fill(HIST("h4TracksPions"), onlyPionTracks.size());
-            if (p.Pt() < 0.15) {
-              registry.fill(HIST("hMassFourPionsRightSign"), p.M());
+          auto costheta = CosThetaHelicityFrame(piplus, piminus, p);
+          registry.fill(HIST("hCostheta4Pion"), costheta);
+          auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(piplus, piminus, p);
+          registry.fill(HIST("hPhi4Pion"), phihel);
+
+          if (p.Rapidity() > -0.9 && p.Rapidity() < 0.9) {
+
+            if (sign != 0) {
+              registry.fill(HIST("hMassFourPions"), p.M());
+              registry.fill(HIST("hPt4Pion"), p.Pt());
             }
-            if ((p.M() > 0.8) && (p.M() < 2.5)) {
+
+            if (sign == 0) {
+              registry.fill(HIST("hCharge"), sign);
+              registry.fill(HIST("h4TracksPions"), onlyPionTracks.size());
+              if (p.Pt() < 0.15) {
+                registry.fill(HIST("hMassFourPionsCoherent"), p.M());
+              }
+              // if ((p.M() > 0.8) && (p.M() < 2.5)) {
               registry.fill(HIST("hPt4PionRightSign"), p.Pt());
-            }
-            registry.fill(HIST("hMPt1"), p.M(), p.Pt());
-            registry.fill(HIST("hRap4Pion"), p.Rapidity());
-            registry.fill(HIST("hEta4Pion"), p.Eta());
-            for (auto pion : onlyPionTracks) {
-              registry.fill(HIST("hPhiEtaFourPionsRightSign"), pion.Phi(), pion.Eta());
-            }
+              // }
+              registry.fill(HIST("hMassFourPionsRightSign"), p.M());
+              registry.fill(HIST("hMPt1"), p.M(), p.Pt());
+              registry.fill(HIST("hRap4Pion"), p.Rapidity());
+              registry.fill(HIST("hEta4Pion"), p.Eta());
 
-            // Invariant mass in angular bins
-            /* if (p.Pt() < 0.2) {
-                 if (costheta > -1. && costheta < -0.7) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_0"), p.M());
-                 }
-                 if (costheta > -0.7 && costheta < -0.55) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_1"), p.M());
-                 }
-                 if (costheta > -0.55 && costheta < -0.45) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_2"), p.M());
-                 }
-                 if (costheta > -0.45 && costheta < -0.35) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_3"), p.M());
-                 }
-                 if (costheta > -0.35 && costheta < -0.25) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_4"), p.M());
-                 }
-                 if (costheta > -0.25 && costheta < -0.15) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_5"), p.M());
-                 }
-                 if (costheta > -0.15 && costheta < -0.05) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_6"), p.M());
-                 }
-                 if (costheta > -0.05 && costheta < 0.) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_7"), p.M());
-                 }
-                 if (costheta > 0. && costheta < 0.05) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_8"), p.M());
-                 }
-                 if (costheta > 0.05 && costheta < 0.15) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_9"), p.M());
-                 }
-                 if (costheta > 0.15 && costheta < 0.25) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_10"), p.M());
-                 }
-                 if (costheta > 0.25 && costheta < 0.35) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_11"), p.M());
-                 }
-                 if (costheta > 0.35 && costheta < 0.45) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_12"), p.M());
-                 }
-                 if (costheta > 0.45 && costheta < 0.55) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_13"), p.M());
-                 }
-                 if (costheta > 0.55 && costheta < 0.7) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_14"), p.M());
-                 }
-                 if (costheta > 0.7 && costheta < 1.) {
-                     registry.fill(HIST("Ang2/hMassCosTheta_15"), p.M());
-                 }
-
-                 if (phihel > 2. * TMath::Pi() / 12. * 0. && phihel < 2. * TMath::Pi() / 12. * 1.) {
-                     registry.fill(HIST("Ang2/hMassPhi_0"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 1. && phihel < 2. * TMath::Pi() / 12. * 2.) {
-                     registry.fill(HIST("Ang2/hMassPhi_1"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 2. && phihel < 2. * TMath::Pi() / 12. * 3.) {
-                     registry.fill(HIST("Ang2/hMassPhi_2"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 3. && phihel < 2. * TMath::Pi() / 12. * 4.) {
-                     registry.fill(HIST("Ang2/hMassPhi_3"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 4. && phihel < 2. * TMath::Pi() / 12. * 5.) {
-                     registry.fill(HIST("Ang2/hMassPhi_4"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 5. && phihel < 2. * TMath::Pi() / 12. * 6.) {
-                     registry.fill(HIST("Ang2/hMassPhi_5"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 6. && phihel < 2. * TMath::Pi() / 12. * 7.) {
-                     registry.fill(HIST("Ang2/hMassPhi_6"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 7. && phihel < 2. * TMath::Pi() / 12. * 8.) {
-                     registry.fill(HIST("Ang2/hMassPhi_7"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 8. && phihel < 2. * TMath::Pi() / 12. * 9.) {
-                     registry.fill(HIST("Ang2/hMassPhi_8"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 9. && phihel < 2. * TMath::Pi() / 12. * 10.) {
-                     registry.fill(HIST("Ang2/hMassPhi_9"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 10. && phihel < 2. * TMath::Pi() / 12. * 11.) {
-                     registry.fill(HIST("Ang2/hMassPhi_10"), p.M());
-                 }
-                 if (phihel > 2. * TMath::Pi() / 12. * 11. && phihel < 2. * TMath::Pi() / 12. * 12.) {
-                     registry.fill(HIST("Ang2/hMassPhi_11"), p.M());
-                   }
-                }//end of angular distribution mass plots*/
+              for (auto pion : onlyPionTracks) {
+                registry.fill(HIST("hPhiEtaFourPionsRightSign"), pion.Phi(), pion.Eta());
+              }
+            }
           }
         }
       }
       //_____________________________________
       // Six pions analysis
-      if (onlyPionTracks.size() == 6) {
+      if (collision.numContrib() == 6) {
+        if ((rawPionTracks.size() == 6) && (onlyPionTracks.size() == 6)) {
 
-        int signSum = 0;
-        TLorentzVector piplus, piminus;
-        for (auto rawPion : rawPionTracks) {
-          if (rawPion.sign() > 0) {
-            signSum += 1;
-            piplus = onlyPionTracks[0];
-            piplus = onlyPionTracks[1];
-            piplus = onlyPionTracks[2];
-            piplus = onlyPionTracks[3];
-            piplus = onlyPionTracks[4];
-            piplus = onlyPionTracks[5];
+          int sign = 0;
+          TLorentzVector piplus, piminus;
+          for (auto rawPion : rawPionTracks) {
+            sign += rawPion.sign();
+            if (rawPion.sign() > 0) {
+              piplus = onlyPionTracks[0];
+              piplus = onlyPionTracks[1];
+              piplus = onlyPionTracks[2];
+              piplus = onlyPionTracks[3];
+              piplus = onlyPionTracks[4];
+              piplus = onlyPionTracks[5];
 
-          } else if (rawPion.sign() < 0) {
-            signSum -= 1;
-            piminus = onlyPionTracks[0];
-            piminus = onlyPionTracks[1];
-            piminus = onlyPionTracks[2];
-            piminus = onlyPionTracks[3];
-            piminus = onlyPionTracks[4];
-            piminus = onlyPionTracks[5];
-          }
-        }
-
-        auto costheta = CosThetaHelicityFrame(piplus, piminus, p);
-        registry.fill(HIST("hCostheta6Pion"), costheta);
-        auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(piplus, piminus, p);
-        registry.fill(HIST("hPhi6Pion"), phihel);
-
-        if (p.Rapidity() > -0.9 && p.Rapidity() < 0.9) {
-          if (signSum != 0) {
-            registry.fill(HIST("hMassSixPions"), p.M());
-            registry.fill(HIST("hPt6Pion"), p.Pt());
-          }
-
-          if (signSum == 0) {
-            registry.fill(HIST("h6TracksPions"), onlyPionTracks.size());
-            if (p.Pt() < 0.15) {
-              registry.fill(HIST("hMassSixPionsRightSign"), p.M());
+            } else if (rawPion.sign() < 0) {
+              piminus = onlyPionTracks[0];
+              piminus = onlyPionTracks[1];
+              piminus = onlyPionTracks[2];
+              piminus = onlyPionTracks[3];
+              piminus = onlyPionTracks[4];
+              piminus = onlyPionTracks[5];
             }
-            registry.fill(HIST("hMPt2"), p.M(), p.Pt());
-            registry.fill(HIST("hRap6Pion"), p.Rapidity());
-            registry.fill(HIST("hEta6Pion"), p.Eta());
-            registry.fill(HIST("hPt6PionRightSign"), p.Pt());
-            for (auto pion : onlyPionTracks) {
-              registry.fill(HIST("hPhiEtaSixPionsRightSign"), pion.Phi(), pion.Eta());
+          }
+
+          auto costheta = CosThetaHelicityFrame(piplus, piminus, p);
+          registry.fill(HIST("hCostheta6Pion"), costheta);
+          auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(piplus, piminus, p);
+          registry.fill(HIST("hPhi6Pion"), phihel);
+
+          if (p.Rapidity() > -0.9 && p.Rapidity() < 0.9) {
+            if (sign != 0) {
+              registry.fill(HIST("hMassSixPions"), p.M());
+              registry.fill(HIST("hPt6Pion"), p.Pt());
+            }
+
+            if (sign == 0) {
+              registry.fill(HIST("h6TracksPions"), onlyPionTracks.size());
+              if (p.Pt() < 0.15) {
+                registry.fill(HIST("hMassSixPionsCoherent"), p.M());
+              }
+              registry.fill(HIST("hMassSixPionsRightSign"), p.M());
+              registry.fill(HIST("hMPt2"), p.M(), p.Pt());
+              registry.fill(HIST("hRap6Pion"), p.Rapidity());
+              registry.fill(HIST("hEta6Pion"), p.Eta());
+              registry.fill(HIST("hPt6PionRightSign"), p.Pt());
+              for (auto pion : onlyPionTracks) {
+                registry.fill(HIST("hPhiEtaSixPionsRightSign"), pion.Phi(), pion.Eta());
+              }
             }
           }
         }
       }
       //_____________________________________
       // Eight pions analysis
-      if (onlyPionTracks.size() == 8) {
-        TLorentzVector piplus, piminus;
-        int signSum = 0;
-        for (auto rawPion : rawPionTracks) {
-          if (rawPion.sign() > 0) {
-            signSum += 1;
-            piplus = onlyPionTracks[0];
-            piplus = onlyPionTracks[1];
-            piplus = onlyPionTracks[2];
-            piplus = onlyPionTracks[3];
-            piplus = onlyPionTracks[4];
-            piplus = onlyPionTracks[5];
-            piplus = onlyPionTracks[6];
-            piplus = onlyPionTracks[7];
+      if (collision.numContrib() == 8) {
+        if ((rawPionTracks.size() == 8) && (onlyPionTracks.size() == 8)) {
+          TLorentzVector piplus, piminus;
+          int sign = 0;
+          for (auto rawPion : rawPionTracks) {
+            sign += rawPion.sign();
 
-          } else if (rawPion.sign() < 0) {
-            signSum -= 1;
-            piminus = onlyPionTracks[0];
-            piminus = onlyPionTracks[1];
-            piminus = onlyPionTracks[2];
-            piminus = onlyPionTracks[3];
-            piminus = onlyPionTracks[4];
-            piminus = onlyPionTracks[5];
-            piminus = onlyPionTracks[6];
-            piminus = onlyPionTracks[7];
-          }
-        }
+            if (rawPion.sign() > 0) {
+              piplus = onlyPionTracks[0];
+              piplus = onlyPionTracks[1];
+              piplus = onlyPionTracks[2];
+              piplus = onlyPionTracks[3];
+              piplus = onlyPionTracks[4];
+              piplus = onlyPionTracks[5];
+              piplus = onlyPionTracks[6];
+              piplus = onlyPionTracks[7];
 
-        auto costheta = CosThetaHelicityFrame(piplus, piminus, p);
-        registry.fill(HIST("hCostheta8Pion"), costheta);
-        auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(piplus, piminus, p);
-        registry.fill(HIST("hPhi8Pion"), phihel);
-
-        if (p.Rapidity() > -0.9 && p.Rapidity() < 0.9) {
-          if (signSum != 0) {
-            registry.fill(HIST("hMassEightPions"), p.M());
-            registry.fill(HIST("hPt8Pion"), p.Pt());
-          }
-          if (signSum == 0) {
-            registry.fill(HIST("h8TracksPions"), onlyPionTracks.size());
-            if (p.Pt() < 0.15) {
-              registry.fill(HIST("hMass8PionsRightSign"), p.M());
+            } else if (rawPion.sign() < 0) {
+              piminus = onlyPionTracks[0];
+              piminus = onlyPionTracks[1];
+              piminus = onlyPionTracks[2];
+              piminus = onlyPionTracks[3];
+              piminus = onlyPionTracks[4];
+              piminus = onlyPionTracks[5];
+              piminus = onlyPionTracks[6];
+              piminus = onlyPionTracks[7];
             }
-            registry.fill(HIST("hPt8PionRightSign"), p.Pt());
-            registry.fill(HIST("hMPt3"), p.M(), p.Pt());
-            registry.fill(HIST("hRap8pion"), p.Rapidity());
-            registry.fill(HIST("hEta8Pion"), p.Eta());
-            for (auto pion : onlyPionTracks) {
-              registry.fill(HIST("hPhiEta8PionsRightSign"), pion.Phi(), pion.Eta());
+          }
+
+          auto costheta = CosThetaHelicityFrame(piplus, piminus, p);
+          registry.fill(HIST("hCostheta8Pion"), costheta);
+          auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(piplus, piminus, p);
+          registry.fill(HIST("hPhi8Pion"), phihel);
+
+          if (p.Rapidity() > -0.9 && p.Rapidity() < 0.9) {
+            if (sign != 0) {
+              registry.fill(HIST("hMassEightPions"), p.M());
+              registry.fill(HIST("hPt8Pion"), p.Pt());
+            }
+            if (sign == 0) {
+              registry.fill(HIST("h8TracksPions"), onlyPionTracks.size());
+              if (p.Pt() < 0.15) {
+                registry.fill(HIST("hMassEightPionsCoherent"), p.M());
+              }
+              registry.fill(HIST("hMass8PionsRightSign"), p.M());
+              registry.fill(HIST("hPt8PionRightSign"), p.Pt());
+              registry.fill(HIST("hMPt3"), p.M(), p.Pt());
+              registry.fill(HIST("hRap8pion"), p.Rapidity());
+              registry.fill(HIST("hEta8Pion"), p.Eta());
+              for (auto pion : onlyPionTracks) {
+                registry.fill(HIST("hPhiEta8PionsRightSign"), pion.Phi(), pion.Eta());
+              }
             }
           }
         }
       }
       //_____________________________________
       // CUTS
+      if (collision.numContrib() == 2) {
+        if (onlyPionTracks.size() != 2) {
+          return;
+        }
+        registry.fill(HIST("h2TracksPions"), onlyPionTracks.size());
+        if ((onlyPionSigma[0] * onlyPionSigma[0] + onlyPionSigma[1] * onlyPionSigma[1]) > 9) {
+          return;
+        }
 
-      if (onlyPionTracks.size() != 2) {
-        return;
-      }
-      if ((onlyPionSigma[0] * onlyPionSigma[0] + onlyPionSigma[1] * onlyPionSigma[1]) > 25) {
-        return;
-      }
+        if (onlyPionTracks[0].P() < 0.3 || onlyPionTracks[1].P() < 0.3) {
+          return;
+        }
+        if (p.Rapidity() < -0.9 || p.Rapidity() > 0.9) {
+          return;
+        }
+        if (rawPionTracks[0].sign() == rawPionTracks[1].sign()) {
+          registry.fill(HIST("hMassLike"), p.M());
+          return;
+        }
+        registry.fill(HIST("hMassUnlike"), p.M());
 
-      if (onlyPionTracks[0].P() < 0.3 || onlyPionTracks[1].P() < 0.3) {
-        return;
-      }
-      if (p.Rapidity() < -0.9 || p.Rapidity() > 0.9) {
-        return;
-      }
-      if (rawPionTracks[0].sign() == rawPionTracks[1].sign()) {
-        registry.fill(HIST("hMassLike"), p.M());
-        return;
-      }
-      registry.fill(HIST("hMassUnlike"), p.M());
-
-      TLorentzVector tplus, tminus;
-      if (rawPionTracks[0].sign() > 0) {
-        tplus = onlyPionTracks[0];
-      } else {
-        tminus = onlyPionTracks[0];
-      }
-      if (rawPionTracks[1].sign() < 0) {
-        tminus = onlyPionTracks[1];
-      } else {
-        tplus = onlyPionTracks[1];
-      }
-
-      //______________________________
-
-      registry.fill(HIST("hPt"), p.Pt());
-      registry.fill(HIST("hMass"), p.M());
-      registry.fill(HIST("hEta"), p.Eta());
-      registry.fill(HIST("hRap"), p.Rapidity());
-      // registry.fill(HIST("hPhi"),  p.Phi());
-      registry.fill(HIST("hMPt"), p.M(), p.Pt());
-
-      if (p.Pt() < 0.2) {
-        registry.fill(HIST("hMassUnlikeCoherent"), p.M());
-      }
-
-      //____________________________
-      // Polarisation of two pions
-      if (p.Pt() < 0.2) {
+        TLorentzVector tplus, tminus;
+        if (rawPionTracks[0].sign() > 0) {
+          tplus = onlyPionTracks[0];
+        } else {
+          tminus = onlyPionTracks[0];
+        }
+        if (rawPionTracks[1].sign() < 0) {
+          tminus = onlyPionTracks[1];
+        } else {
+          tplus = onlyPionTracks[1];
+        }
 
         auto costheta = CosThetaHelicityFrame(tplus, tminus, p);
         registry.fill(HIST("hCostheta"), costheta);
         auto phihel = 1. * TMath::Pi() + PhiHelicityFrame(tplus, tminus, p);
         registry.fill(HIST("hPhi"), phihel);
-        registry.fill(HIST("hCostheta_Phi"), phihel, costheta);
 
-        if (costheta > -1. && costheta < -0.7) {
-          registry.fill(HIST("Ang/hMassCosTheta_0"), p.M());
-        }
-        if (costheta > -0.7 && costheta < -0.55) {
-          registry.fill(HIST("Ang/hMassCosTheta_1"), p.M());
-        }
-        if (costheta > -0.55 && costheta < -0.45) {
-          registry.fill(HIST("Ang/hMassCosTheta_2"), p.M());
-        }
-        if (costheta > -0.45 && costheta < -0.35) {
-          registry.fill(HIST("Ang/hMassCosTheta_3"), p.M());
-        }
-        if (costheta > -0.35 && costheta < -0.25) {
-          registry.fill(HIST("Ang/hMassCosTheta_4"), p.M());
-        }
-        if (costheta > -0.25 && costheta < -0.15) {
-          registry.fill(HIST("Ang/hMassCosTheta_5"), p.M());
-        }
-        if (costheta > -0.15 && costheta < -0.05) {
-          registry.fill(HIST("Ang/hMassCosTheta_6"), p.M());
-        }
-        if (costheta > -0.05 && costheta < 0.) {
-          registry.fill(HIST("Ang/hMassCosTheta_7"), p.M());
-        }
-        if (costheta > 0. && costheta < 0.05) {
-          registry.fill(HIST("Ang/hMassCosTheta_8"), p.M());
-        }
-        if (costheta > 0.05 && costheta < 0.15) {
-          registry.fill(HIST("Ang/hMassCosTheta_9"), p.M());
-        }
-        if (costheta > 0.15 && costheta < 0.25) {
-          registry.fill(HIST("Ang/hMassCosTheta_10"), p.M());
-        }
-        if (costheta > 0.25 && costheta < 0.35) {
-          registry.fill(HIST("Ang/hMassCosTheta_11"), p.M());
-        }
-        if (costheta > 0.35 && costheta < 0.45) {
-          registry.fill(HIST("Ang/hMassCosTheta_12"), p.M());
-        }
-        if (costheta > 0.45 && costheta < 0.55) {
-          registry.fill(HIST("Ang/hMassCosTheta_13"), p.M());
-        }
-        if (costheta > 0.55 && costheta < 0.7) {
-          registry.fill(HIST("Ang/hMassCosTheta_14"), p.M());
-        }
-        if (costheta > 0.7 && costheta < 1.) {
-          registry.fill(HIST("Ang/hMassCosTheta_15"), p.M());
-        }
+        registry.fill(HIST("hPt"), p.Pt());
+        registry.fill(HIST("hEta"), p.Eta());
+        registry.fill(HIST("hRap"), p.Rapidity());
+        // registry.fill(HIST("hPhi"),  p.Phi());
+        registry.fill(HIST("hMPt"), p.M(), p.Pt());
 
-        if (phihel > 2. * TMath::Pi() / 12. * 0. && phihel < 2. * TMath::Pi() / 12. * 1.) {
-          registry.fill(HIST("Ang/hMassPhi_0"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 1. && phihel < 2. * TMath::Pi() / 12. * 2.) {
-          registry.fill(HIST("Ang/hMassPhi_1"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 2. && phihel < 2. * TMath::Pi() / 12. * 3.) {
-          registry.fill(HIST("Ang/hMassPhi_2"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 3. && phihel < 2. * TMath::Pi() / 12. * 4.) {
-          registry.fill(HIST("Ang/hMassPhi_3"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 4. && phihel < 2. * TMath::Pi() / 12. * 5.) {
-          registry.fill(HIST("Ang/hMassPhi_4"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 5. && phihel < 2. * TMath::Pi() / 12. * 6.) {
-          registry.fill(HIST("Ang/hMassPhi_5"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 6. && phihel < 2. * TMath::Pi() / 12. * 7.) {
-          registry.fill(HIST("Ang/hMassPhi_6"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 7. && phihel < 2. * TMath::Pi() / 12. * 8.) {
-          registry.fill(HIST("Ang/hMassPhi_7"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 8. && phihel < 2. * TMath::Pi() / 12. * 9.) {
-          registry.fill(HIST("Ang/hMassPhi_8"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 9. && phihel < 2. * TMath::Pi() / 12. * 10.) {
-          registry.fill(HIST("Ang/hMassPhi_9"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 10. && phihel < 2. * TMath::Pi() / 12. * 11.) {
-          registry.fill(HIST("Ang/hMassPhi_10"), p.M());
-        }
-        if (phihel > 2. * TMath::Pi() / 12. * 11. && phihel < 2. * TMath::Pi() / 12. * 12.) {
-          registry.fill(HIST("Ang/hMassPhi_11"), p.M());
+        if (p.Pt() < 0.2) {
+          registry.fill(HIST("hMassUnlikeCoherent"), p.M());
         }
       }
     } // double gap
