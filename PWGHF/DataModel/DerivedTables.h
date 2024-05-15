@@ -147,78 +147,15 @@ DECLARE_SOA_COLUMN(Eta, eta, float);                              //! pseudorapi
 DECLARE_SOA_COLUMN(M, m, float);                                  //! invariant mass
 DECLARE_SOA_COLUMN(Phi, phi, float);                              //! azimuth
 DECLARE_SOA_COLUMN(Pt, pt, float);                                //! transverse momentum
-
-/// Helper functions for dynamic columns
-/// \todo Move to RecoDecayPtEtaPhi
-namespace functions_pt_eta_phi
-{
-/// px as a function of pT, phi
-/// \todo Move to RecoDecay
-template <typename TPt, typename TPhi>
-auto px(TPt pt, TPhi phi)
-{
-  return pt * std::cos(phi);
-}
-
-/// py as a function of pT, phi
-/// \todo Move to RecoDecay
-template <typename TPt, typename TPhi>
-auto py(TPt pt, TPhi phi)
-{
-  return pt * std::sin(phi);
-}
-
-/// pz as a function of pT, eta
-/// \todo Move to RecoDecay
-template <typename TPt, typename TEta>
-auto pz(TPt pt, TEta eta)
-{
-  return pt * std::sinh(eta);
-}
-
-/// p as a function of pT, eta
-/// \todo Move to RecoDecay
-template <typename TPt, typename TEta>
-auto p(TPt pt, TEta eta)
-{
-  return pt * std::cosh(eta);
-}
-
-/// Rapidity as a function of pT, eta, mass
-/// \todo Move to RecoDecay
-template <typename TPt, typename TEta, typename TM>
-auto y(TPt pt, TEta eta, TM m)
-{
-  return std::log((RecoDecay::sqrtSumOfSquares(m, pt * std::cosh(eta)) + pt * std::sinh(eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
-}
-
-/// Energy as a function of pT, eta, mass
-/// \todo Move to RecoDecay
-template <typename TPt, typename TEta, typename TM>
-auto e(TPt pt, TEta eta, TM m)
-{
-  return RecoDecay::sqrtSumOfSquares(m, p(pt, eta));
-}
-} // namespace functions_pt_eta_phi
-
-namespace d0
-{
-DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! D0 rapidity
-                           [](float pt, float eta) -> float { return functions_pt_eta_phi::y(pt, eta, o2::constants::physics::MassD0); });
-}
-namespace lc
-{
-DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Lambda_c rapidity
-                           [](float pt, float eta) -> float { return functions_pt_eta_phi::y(pt, eta, o2::constants::physics::MassLambdaCPlus); });
-}
+DECLARE_SOA_COLUMN(Y, y, float);                                  //! rapidity
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! px
-                           [](float pt, float phi) -> float { return functions_pt_eta_phi::px(pt, phi); });
+                           [](float pt, float phi) -> float { return RecoDecayPtEtaPhi::px(pt, phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! py
-                           [](float pt, float phi) -> float { return functions_pt_eta_phi::py(pt, phi); });
+                           [](float pt, float phi) -> float { return RecoDecayPtEtaPhi::py(pt, phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! px
-                           [](float pt, float eta) -> float { return functions_pt_eta_phi::pz(pt, eta); });
+                           [](float pt, float eta) -> float { return RecoDecayPtEtaPhi::pz(pt, eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! momentum
-                           [](float pt, float eta) -> float { return functions_pt_eta_phi::p(pt, eta); });
+                           [](float pt, float eta) -> float { return RecoDecayPtEtaPhi::p(pt, eta); });
 } // namespace hf_cand_base
 
 // Candidate properties used for selection
@@ -304,7 +241,7 @@ DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE", //! Table with basic candidate p
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
                   hf_cand_base::M,
-                  hf_cand_base::d0::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::Y,
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
@@ -398,7 +335,7 @@ DECLARE_SOA_TABLE(Hf3PBases, "AOD", "HF3PBASE", //! Table with basic candidate p
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
                   hf_cand_base::M,
-                  hf_cand_base::lc::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::Y,
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
@@ -517,9 +454,9 @@ DECLARE_SOA_TABLE(HfD0PBases, "AOD", "HFD0PBASE", //! Table with MC particle inf
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
+                  hf_cand_base::Y,
                   hf_mc_particle::FlagMcMatchGen,
                   hf_mc_particle::OriginMcGen,
-                  hf_cand_base::d0::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
@@ -539,9 +476,9 @@ DECLARE_SOA_TABLE(Hf3PPBases, "AOD", "HF3PPBASE", //! Table with MC particle inf
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
+                  hf_cand_base::Y,
                   hf_mc_particle::FlagMcMatchGen,
                   hf_mc_particle::OriginMcGen,
-                  hf_cand_base::lc::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
