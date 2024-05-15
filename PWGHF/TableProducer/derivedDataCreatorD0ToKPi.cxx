@@ -47,6 +47,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   Produces<o2::aod::HfD0CollIds> rowCollId;
   // MC collisions
   Produces<o2::aod::HfD0McCollBases> rowMcCollBase;
+  Produces<o2::aod::HfD0McCollIds> rowMcCollId;
   Produces<o2::aod::HfD0McRCollIds> rowMcRCollId;
   // MC particles
   Produces<o2::aod::HfD0PBases> rowParticleBase;
@@ -63,6 +64,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   Configurable<bool> fillCollBase{"fillCollBase", true, "Fill collision base properties"};
   Configurable<bool> fillCollId{"fillCollId", true, "Fill original collision indices"};
   Configurable<bool> fillMcCollBase{"fillMcCollBase", true, "Fill MC collision base properties"};
+  Configurable<bool> fillMcCollId{"fillMcCollId", true, "Fill original MC collision indices"};
   Configurable<bool> fillMcRCollId{"fillMcRCollId", true, "Fill indices of saved derived reconstructed collisions matched to saved derived MC collisions"};
   Configurable<bool> fillParticleBase{"fillParticleBase", true, "Fill MC particle properties"};
   Configurable<bool> fillParticleId{"fillParticleId", true, "Fill original MC indices"};
@@ -177,6 +179,10 @@ struct HfDerivedDataCreatorD0ToKPi {
         mcCollision.posX(),
         mcCollision.posY(),
         mcCollision.posZ());
+    }
+    if (fillMcCollId) {
+      rowMcCollId(
+        mcCollision.globalIndex());
     }
     if (fillMcRCollId) {
       // Fill the table with the vector of indices of derived reconstructed collisions matched to mcCollision.globalIndex()
