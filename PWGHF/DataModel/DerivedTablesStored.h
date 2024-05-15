@@ -87,11 +87,11 @@ namespace hf_mc_coll
 {
 namespace der_d0
 {
-DECLARE_SOA_ARRAY_INDEX_COLUMN(StoredHfD0CollBase, storedHfCollBases); //! collision index array pointing to the derived reconstructed-collisions for D0 candidates
+DECLARE_SOA_ARRAY_INDEX_COLUMN(StoredHfD0CollBase, hfCollBases); //! collision index array pointing to the derived reconstructed-collisions for D0 candidates
 }
 namespace der_3p
 {
-DECLARE_SOA_ARRAY_INDEX_COLUMN(StoredHf3PCollBase, storedHfCollBases); //! collision index array pointing to the derived reconstructed-collisions for 3-prong candidates
+DECLARE_SOA_ARRAY_INDEX_COLUMN(StoredHf3PCollBase, hfCollBases); //! collision index array pointing to the derived reconstructed-collisions for 3-prong candidates
 }
 } // namespace hf_mc_coll
 
@@ -140,11 +140,11 @@ namespace hf_cand_base
 {
 namespace der_d0
 {
-DECLARE_SOA_INDEX_COLUMN(StoredHfD0CollBase, storedHfCollBase); //! collision index pointing to the derived collision table for D0 candidates
+DECLARE_SOA_INDEX_COLUMN(StoredHfD0CollBase, hfCollBase); //! collision index pointing to the derived collision table for D0 candidates
 }
 namespace der_3p
 {
-DECLARE_SOA_INDEX_COLUMN(StoredHf3PCollBase, storedHfCollBase); //! collision index pointing to the derived collision table for 3-prong candidates
+DECLARE_SOA_INDEX_COLUMN(StoredHf3PCollBase, hfCollBase); //! collision index pointing to the derived collision table for 3-prong candidates
 }
 } // namespace hf_cand_base
 
@@ -349,11 +349,11 @@ namespace hf_mc_particle
 {
 namespace der_d0
 {
-DECLARE_SOA_INDEX_COLUMN(StoredHfD0McCollBase, storedHfMcCollBase); //! collision index pointing to the derived MC collision table for D0 candidates
+DECLARE_SOA_INDEX_COLUMN(StoredHfD0McCollBase, hfMcCollBase); //! collision index pointing to the derived MC collision table for D0 candidates
 }
 namespace der_3p
 {
-DECLARE_SOA_INDEX_COLUMN(StoredHf3PMcCollBase, storedHfMcCollBase); //! collision index pointing to the derived MC collision table for 3-prong candidates
+DECLARE_SOA_INDEX_COLUMN(StoredHf3PMcCollBase, hfMcCollBase); //! collision index pointing to the derived MC collision table for 3-prong candidates
 }
 } // namespace hf_mc_particle
 
