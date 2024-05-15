@@ -38,7 +38,7 @@ using namespace o2::hf_trkcandsel;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
+  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Perform MC matching."}};
   workflowOptions.push_back(optionDoMC);
 }
 
@@ -139,7 +139,8 @@ struct HfCandidateCreatorLb {
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
-      auto collision = track0.collision();
+      auto collision = lcCand.collision();
+      //auto collision = track0.collision();
 
       // reconstruct the 3-prong secondary vertex
       hCandidatesLc->Fill(SVFitting::BeforeFit);
