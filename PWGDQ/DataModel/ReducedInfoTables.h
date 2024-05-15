@@ -517,7 +517,44 @@ DECLARE_SOA_COLUMN(FwdDcaX1, fwdDcaX1, float); //! X component of forward DCA
 DECLARE_SOA_COLUMN(FwdDcaY1, fwdDcaY1, float); //! Y component of forward DCA
 DECLARE_SOA_COLUMN(FwdDcaX2, fwdDcaX2, float); //! X component of forward DCA
 DECLARE_SOA_COLUMN(FwdDcaY2, fwdDcaY2, float); //! Y component of forward DCA
+DECLARE_SOA_COLUMN(ITSNCls1, itsNCls1, int);   //! Number of ITS clusters
+DECLARE_SOA_COLUMN(TPCNClsFound1, tpcNClsFound1, float); //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(TPCNClsCR1, tpcNClsCR1, float);       //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TPCChi2NCl1, tpcChi2NCl1, float);     //! TPC chi2/Ncls
+DECLARE_SOA_COLUMN(DcaXY1, dcaXY1, float);               //! DCA in XY plane
+DECLARE_SOA_COLUMN(DcaZ1, dcaZ1, float);                 //! DCA in Z
+DECLARE_SOA_COLUMN(TPCSignal1, tpcSignal1, float);       //! TPC dE/dx signal
+DECLARE_SOA_COLUMN(TPCNSigmaEl1, tpcNSigmaEl1, float);   //! TPC nSigma electron
+DECLARE_SOA_COLUMN(TPCNSigmaPi1, tpcNSigmaPi1, float);   //! TPC nSigma pion
+DECLARE_SOA_COLUMN(TPCNSigmaPr1, tpcNSigmaPr1, float);   //! TPC nSigma proton
+DECLARE_SOA_COLUMN(TOFBeta1, tofBeta1, float);           //! TOF beta
+DECLARE_SOA_COLUMN(TOFNSigmaEl1, tofNSigmaEl1, float);   //! TOF nSigma electron
+DECLARE_SOA_COLUMN(TOFNSigmaPi1, tofNSigmaPi1, float);   //! TOF nSigma pion
+DECLARE_SOA_COLUMN(TOFNSigmaPr1, tofNSigmaPr1, float);   //! TOF nSigma proton
+DECLARE_SOA_COLUMN(ITSNCls2, itsNCls2, int);             //! Number of ITS clusters
+DECLARE_SOA_COLUMN(TPCNClsFound2, tpcNClsFound2, float); //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(TPCNClsCR2, tpcNClsCR2, float);       //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TPCChi2NCl2, tpcChi2NCl2, float);     //! TPC chi2/Ncls
+DECLARE_SOA_COLUMN(DcaXY2, dcaXY2, float);               //! DCA in XY plane
+DECLARE_SOA_COLUMN(DcaZ2, dcaZ2, float);                 //! DCA in Z
+DECLARE_SOA_COLUMN(TPCSignal2, tpcSignal2, float);       //! TPC dE/dx signal
+DECLARE_SOA_COLUMN(TPCNSigmaEl2, tpcNSigmaEl2, float);   //! TPC nSigma electron
+DECLARE_SOA_COLUMN(TPCNSigmaPi2, tpcNSigmaPi2, float);   //! TPC nSigma pion
+DECLARE_SOA_COLUMN(TPCNSigmaPr2, tpcNSigmaPr2, float);   //! TPC nSigma proton
+DECLARE_SOA_COLUMN(TOFBeta2, tofBeta2, float);           //! TOF beta
+DECLARE_SOA_COLUMN(TOFNSigmaEl2, tofNSigmaEl2, float);   //! TOF nSigma electron
+DECLARE_SOA_COLUMN(TOFNSigmaPi2, tofNSigmaPi2, float);   //! TOF nSigma pion
+DECLARE_SOA_COLUMN(TOFNSigmaPr2, tofNSigmaPr2, float);   //! TOF nSigma proton
 
+DECLARE_SOA_COLUMN(DCAxyzTrk0KF, dcaxyztrk0KF, float); //! 3D DCA to primary vertex of the first track
+DECLARE_SOA_COLUMN(DCAxyzTrk1KF, dcaxyztrk1KF, float); //! 3D DCA to primary vertex of the second track
+DECLARE_SOA_COLUMN(DCAxyTrk0KF, dcaxytrk0KF, float);   //! 2D DCA to primary vertex of the first track
+DECLARE_SOA_COLUMN(DCAxyTrk1KF, dcaxytrk1KF, float);   //! 2D DCA to primary vertex of the second track
+
+DECLARE_SOA_COLUMN(DeviationTrk0KF, deviationTrk0KF, float);     //! 3D chi2 deviation to primary vertex of the first track
+DECLARE_SOA_COLUMN(DeviationTrk1KF, deviationTrk1KF, float);     //! 3D chi2 deviation to primary vertex of the second track
+DECLARE_SOA_COLUMN(DeviationxyTrk0KF, deviationxyTrk0KF, float); //! 2D chi2 deviation to primary vertex of the first track
+DECLARE_SOA_COLUMN(DeviationxyTrk1KF, deviationxyTrk1KF, float); //! 2D chi2 deviation to primary vertex of the second track
 } // namespace dilepton_track_index
 
 // pair information
@@ -563,6 +600,24 @@ DECLARE_SOA_COLUMN(M0111POI, m0111poi, float);                           //! POI
 DECLARE_SOA_COLUMN(MultDimuons, multdimuons, int);                       //! Dimuon multiplicity
 DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                           //! Centrality information from FT0C
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int32_t);                   //!
+DECLARE_SOA_COLUMN(IsFirst, isfirst, int);                               //! Flag for the first dilepton in the collision
+DECLARE_SOA_COLUMN(DCAxyzBetweenTrksKF, dcaxyzbetweentrksKF, float);     //! DCAxyz between the two tracks
+DECLARE_SOA_COLUMN(DCAxyBetweenTrksKF, dcaxybetweentrksKF, float);       //! DCAxy between the two tracks
+DECLARE_SOA_COLUMN(MassKFGeo, massKFGeo, float);                         //! Pair mass from KFParticle
+DECLARE_SOA_COLUMN(CosPAKFGeo, cosPAKFGeo, float);                       //! Cosine of the pointing angle from KFParticle
+DECLARE_SOA_COLUMN(Chi2OverNDFKFGeo, chi2overndfKFGeo, float);           //! Chi2 over NDF from KFParticle
+DECLARE_SOA_COLUMN(DecayLengthKFGeo, decaylengthKFGeo, float);           //! Decay length from KFParticle
+DECLARE_SOA_COLUMN(DecayLengthOverErrKFGeo, decaylengthovererrKFGeo, float);             //! Decay length over error from KFParticle
+DECLARE_SOA_COLUMN(DecayLengthXYKFGeo, decaylengthxyKFGeo, float);                       //! Decay length XY from KFParticle
+DECLARE_SOA_COLUMN(DecayLengthXYOverErrKFGeo, decaylengthxyovererrKFGeo, float);         //! Decay length XY over error from KFParticle
+DECLARE_SOA_COLUMN(PseudoproperDecayTimeKFGeo, pseudoproperdecaytimeKFGeo, float);       //! Pseudoproper decay time from KFParticle
+DECLARE_SOA_COLUMN(PseudoproperDecayTimeErrKFGeo, pseudoproperdecaytimeErrKFGeo, float); //! Pseudoproper decay time error from KFParticle
+DECLARE_SOA_COLUMN(MassKFGeoTop, massKFGeoTop, float);                                   //! Pair mass after topological constraint from KFParticle
+DECLARE_SOA_COLUMN(Chi2OverNDFKFGeoTop, chi2overndfKFGeoTop, float);                     //! Chi2 over NDF after topological constraint from KFParticle
+DECLARE_SOA_COLUMN(PairDCAxyz, pairDCAxyz, float);                                       //! Pair DCAxyz to PV from KFParticle
+DECLARE_SOA_COLUMN(PairDCAxy, pairDCAxy, float);                                         //! Pair DCAxy to PV from KFParticle
+DECLARE_SOA_COLUMN(DeviationPairKF, deviationPairKF, float);                             //! Pair chi2 deviation to PV from KFParticle
+DECLARE_SOA_COLUMN(DeviationxyPairKF, deviationxyPairKF, float);                         //! Pair chi2 deviation to PV in XY from KFParticle
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -613,6 +668,7 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::Mass,
                   reducedpair::CentFT0C,
                   reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::IsFirst,
                   reducedpair::U2Q2, reducedpair::R2SP_AB, reducedpair::R2SP_AC, reducedpair::R2SP_BC,
                   reducedpair::U3Q3, reducedpair::R3SP,
                   reducedpair::Cos2DeltaPhi, reducedpair::R2EP_AB, reducedpair::R2EP_AC, reducedpair::R2EP_BC,
@@ -624,6 +680,20 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
 // Dilepton collision information (joined with DileptonsExtra) allowing to connect different tables (cross PWGs)
 DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
                   reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
+
+DECLARE_SOA_TABLE(DielectronsAll, "AOD", "RTDIELECTRONALL", //!
+                  reducedpair::ReducedEventId,
+                  reducedpair::Mass,
+                  reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::FilterMap,
+                  reducedpair::McDecision,
+                  dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::TPCNClsCR1, dilepton_track_index::TPCNClsFound1, dilepton_track_index::TPCChi2NCl1, dilepton_track_index::DcaXY1, dilepton_track_index::DcaZ1, dilepton_track_index::TPCSignal1, dilepton_track_index::TPCNSigmaEl1, dilepton_track_index::TPCNSigmaPi1, dilepton_track_index::TPCNSigmaPr1, dilepton_track_index::TOFBeta1, dilepton_track_index::TOFNSigmaEl1, dilepton_track_index::TOFNSigmaPi1, dilepton_track_index::TOFNSigmaPr1,
+                  dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2, dilepton_track_index::TPCNClsCR2, dilepton_track_index::TPCNClsFound2, dilepton_track_index::TPCChi2NCl2, dilepton_track_index::DcaXY2, dilepton_track_index::DcaZ2, dilepton_track_index::TPCSignal2, dilepton_track_index::TPCNSigmaEl2, dilepton_track_index::TPCNSigmaPi2, dilepton_track_index::TPCNSigmaPr2, dilepton_track_index::TOFBeta2, dilepton_track_index::TOFNSigmaEl2, dilepton_track_index::TOFNSigmaPi2, dilepton_track_index::TOFNSigmaPr2,
+                  dilepton_track_index::DCAxyzTrk0KF, dilepton_track_index::DCAxyzTrk1KF, reducedpair::DCAxyzBetweenTrksKF, dilepton_track_index::DCAxyTrk0KF, dilepton_track_index::DCAxyTrk1KF, reducedpair::DCAxyBetweenTrksKF,
+                  dilepton_track_index::DeviationTrk0KF, dilepton_track_index::DeviationTrk1KF, dilepton_track_index::DeviationxyTrk0KF, dilepton_track_index::DeviationxyTrk1KF,
+                  reducedpair::MassKFGeo, reducedpair::Chi2OverNDFKFGeo, reducedpair::DecayLengthKFGeo, reducedpair::DecayLengthOverErrKFGeo, reducedpair::DecayLengthXYKFGeo, reducedpair::DecayLengthXYOverErrKFGeo, reducedpair::PseudoproperDecayTimeKFGeo, reducedpair::PseudoproperDecayTimeErrKFGeo, reducedpair::CosPAKFGeo, reducedpair::PairDCAxyz, reducedpair::PairDCAxy,
+                  reducedpair::DeviationPairKF, reducedpair::DeviationxyPairKF,
+                  reducedpair::MassKFGeoTop, reducedpair::Chi2OverNDFKFGeoTop);
 
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
@@ -667,6 +737,7 @@ using DielectronExtra = DielectronsExtra::iterator;
 using DimuonExtra = DimuonsExtra::iterator;
 using DileptonFlow = DileptonsFlow::iterator;
 using DileptonInfo = DileptonsInfo::iterator;
+using DielectronAll = DielectronsAll::iterator;
 using DimuonAll = DimuonsAll::iterator;
 
 // mft PID reduced data model

@@ -772,7 +772,17 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "KFTracksDCAxyMax", "", false, 400, -2.0, 2.0, VarManager::kKFTracksDCAxyMax);
         hm->AddHistogram(histClass, "KFDCAxyBetweenProngs", "", false, 400, -2.0, 2.0, VarManager::kKFDCAxyBetweenProngs);
         hm->AddHistogram(histClass, "KFChi2OverNDFGeo", "", false, 150, -5, 10, VarManager::kKFChi2OverNDFGeo);
+        hm->AddHistogram(histClass, "KFTrack0DeviationFromPV", "", false, 150, 0, 15e+6, VarManager::kKFTrack0DeviationFromPV);
+        hm->AddHistogram(histClass, "KFTrack1DeviationFromPV", "", false, 150, 0, 15e+6, VarManager::kKFTrack1DeviationFromPV);
+        hm->AddHistogram(histClass, "KFTrack0DeviationxyFromPV", "", false, 150, 0, 15e+6, VarManager::kKFTrack0DeviationxyFromPV);
+        hm->AddHistogram(histClass, "KFTrack1DeviationxyFromPV", "", false, 150, 0, 15e+6, VarManager::kKFTrack1DeviationxyFromPV);
+        hm->AddHistogram(histClass, "KFPairDCAxyz", "", false, 400, -2.0, 2.0, VarManager::kKFJpsiDCAxyz);
+        hm->AddHistogram(histClass, "KFPairDCAxy", "", false, 400, -2.0, 2.0, VarManager::kKFJpsiDCAxy);
+        hm->AddHistogram(histClass, "KFPairDeviationFromPV", "", false, 150, 0, 15e+6, VarManager::kKFPairDeviationFromPV);
+        hm->AddHistogram(histClass, "KFPairDeviationxyFromPV", "", false, 150, 0, 15e+6, VarManager::kKFPairDeviationxyFromPV);
         hm->AddHistogram(histClass, "KFCosPA", "", false, 300, -1.5, 1.5, VarManager::kKFCosPA);
+        hm->AddHistogram(histClass, "KFMassGeoTop", "", false, 500, 0.0, 5.0, VarManager::kKFMassGeoTop);
+        hm->AddHistogram(histClass, "KFChi2OverNDFGeoTop", "", false, 150, -5, 10, VarManager::kKFChi2OverNDFGeoTop);
         hm->AddHistogram(histClass, "KFNTrks2PV", "", false, 210, -10, 200, VarManager::kKFNContributorsPV);
         hm->AddHistogram(histClass, "Mass_DCAxyzTwoProngs", "", false, 500, 0.0, 5.0, VarManager::kMass, 400, -2.0, 2.0, VarManager::kKFDCAxyzBetweenProngs);
         hm->AddHistogram(histClass, "Mass_DCAxyTwoProngs", "", false, 500, 0.0, 5.0, VarManager::kMass, 400, -2.0, 2.0, VarManager::kKFDCAxyBetweenProngs);
@@ -972,7 +982,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         int nbins_ptee = sizeof(ptee_bins) / sizeof(*ptee_bins) - 1;
 
         // binning for phiv:
-        // every 0.2 GeV/c from 0 to 10 GeV/c
+        // steps of size pi/100
         double phiv_bins[101];
         for (int i = 0; i <= 100; i++)
           phiv_bins[i] = TMath::Pi() / 100. * i;

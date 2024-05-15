@@ -808,21 +808,11 @@ struct strangederivedbuilder {
     histos.fill(HIST("hFoundTagsCounters"), 0.0f, foundV0s.size());
     histos.fill(HIST("hFoundTagsCounters"), 1.0f, findableV0s.size());
 
-    // pack the found V0s in a long long
-    std::vector<uint64_t> foundV0sPacked;
-    foundV0sPacked.reserve(foundV0s.size());
-    for (auto const& foundV0 : foundV0s) {
-      foundV0sPacked[foundV0.globalIndex()] = combineProngIndices(foundV0.posTrackId(), foundV0.negTrackId());
-    }
-
     for (auto const& findableV0 : findableV0s) {
       bool hasBeenFound = false;
-      uint64_t indexPack = combineProngIndices(findableV0.posTrackId(), findableV0.negTrackId());
-      for (uint32_t ic = 0; ic < foundV0s.size(); ic++) {
-        if (indexPack == foundV0sPacked[ic]) {
+      for (auto const& foundV0 : foundV0s) {
+        if (foundV0.posTrackId() == findableV0.posTrackId() && foundV0.negTrackId() == findableV0.negTrackId()) {
           hasBeenFound = true;
-          histos.fill(HIST("hFoundTagsCounters"), 2.0f);
-          break;
         }
       }
       v0FoundTags(hasBeenFound);

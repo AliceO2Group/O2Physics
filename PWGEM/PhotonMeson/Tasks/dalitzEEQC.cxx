@@ -22,13 +22,18 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-
 #include "Common/Core/RecoDecay.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Tools/ML/MlResponse.h"
+#include "Tools/ML/model.h"
+
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/EMEventCut.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/EMTrack.h"
+// #include "PWGEM/PhotonMeson/Utils/EventMixingHandler.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -38,7 +43,7 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsBz>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
 using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
@@ -92,6 +97,17 @@ struct DalitzEEQC {
   Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3.0, "min. TOF n sigma for electron inclusion"};
   Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3.0, "max. TOF n sigma for electron inclusion"};
 
+  // CCDB configuration for ML
+  o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> BDTLocalPathGamma{"BDTLocalPathGamma", "pid_ml_xgboost.onnx", "Path to the local .onnx file"};
+
+  Configurable<std::string> BDTPathCCDB{"BDTPathCCDB", "Users/d/dsekihat/pwgem/pidml/", "Path on CCDB"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
+
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
   static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
@@ -109,7 +125,11 @@ struct DalitzEEQC {
 
     DefineEMEventCut();
     DefineDielectronCut();
-    addhistograms(); // please call this after DefinCuts();
+    addhistograms();
+
+    if (cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) { // please call this after DefineDielectronCut
+      setupPIDML();
+    }
   }
 
   ~DalitzEEQC()
@@ -272,6 +292,27 @@ struct DalitzEEQC {
     fDielectronCut.SetTOFNsigmaElRange(cfg_min_TOFNsigmaEl, cfg_max_TOFNsigmaEl);
   }
 
+  void setupPIDML()
+  {
+    // o2::ml::OnnxModel *eid_bdt = nullptr;
+    o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
+
+    if (loadModelsFromCCDB) {
+      ccdbApi.init(ccdbUrl);
+      std::map<std::string, std::string> metadata;
+      bool retrieveSuccessGamma = ccdbApi.retrieveBlob(BDTPathCCDB.value, ".", metadata, timestampCCDB.value, false, BDTLocalPathGamma.value);
+      if (retrieveSuccessGamma) {
+        eid_bdt->initModel(BDTLocalPathGamma.value, enableOptimizations.value);
+      } else {
+        LOG(fatal) << "Error encountered while fetching/loading the Gamma model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
+      }
+    } else {
+      eid_bdt->initModel(BDTLocalPathGamma.value, enableOptimizations.value);
+    }
+
+    fDielectronCut.SetPIDModel(eid_bdt);
+  }
+
   template <const int ev_id, typename TCollision>
   void fillEventInfo(TCollision const& collision, const float weight = 1.f)
   {
@@ -320,8 +361,14 @@ struct DalitzEEQC {
     }
 
     if constexpr (ev_id == 0) {
-      if (!fDielectronCut.IsSelectedTrack(t1) || !fDielectronCut.IsSelectedTrack(t2)) {
-        return false;
+      if (cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) {
+        if (!fDielectronCut.IsSelectedTrack<true>(t1, collision) || !fDielectronCut.IsSelectedTrack<true>(t2, collision)) {
+          return false;
+        }
+      } else { // cut-based
+        if (!fDielectronCut.IsSelectedTrack(t1) || !fDielectronCut.IsSelectedTrack(t2)) {
+          return false;
+        }
       }
     }
 
@@ -377,11 +424,17 @@ struct DalitzEEQC {
     return true;
   }
 
-  template <typename TTrack>
-  void fillTrackInfo(TTrack const& track, const float weight = 1.f)
+  template <typename TTrack, typename TCollision>
+  void fillTrackInfo(TTrack const& track, TCollision const& collision, const float weight = 1.f)
   {
-    if (!fDielectronCut.IsSelectedTrack(track)) {
-      return;
+    if (cfg_pid_scheme == static_cast<int>(DalitzEECut::PIDSchemes::kPIDML)) {
+      if (!fDielectronCut.IsSelectedTrack<true>(track, collision)) {
+        return;
+      }
+    } else {
+      if (!fDielectronCut.IsSelectedTrack(track)) {
+        return;
+      }
     }
 
     fRegistry.fill(HIST("Track/hPt"), track.pt());
@@ -455,11 +508,11 @@ struct DalitzEEQC {
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
 
       for (auto& pos : posTracks_per_coll) {
-        fillTrackInfo(pos);
+        fillTrackInfo(pos, collision);
       }
 
       for (auto& ele : negTracks_per_coll) {
-        fillTrackInfo(ele);
+        fillTrackInfo(ele, collision);
       }
 
       int nuls = 0, nlspp = 0, nlsmm = 0;
@@ -480,6 +533,10 @@ struct DalitzEEQC {
         if (is_pair_ok) {
           nlsmm++;
         }
+      }
+
+      if (!cfgDoMix) {
+        continue;
       }
 
       // event mixing
@@ -543,14 +600,14 @@ struct DalitzEEQC {
 
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) { // prepare fill bins
         if (static_cast<int>(map_mix_bins[std::make_tuple(zbin, centbin, 0)].size()) >= ndepth) {
-          // LOGF(info, "nev = %d , erase elements.",  map_mix_bins[std::make_tuple(zbin, centbin, 0)].size() );
-          map_mix_bins[std::make_tuple(zbin, centbin, 0)].erase(map_mix_bins[std::make_tuple(zbin, centbin, 0)].begin());
-          // LOGF(info, "after erase : nev = %d",  map_mix_bins[std::make_tuple(zbin, centbin, 0)].size() );
-
           map_posTracks_to_collision[map_mix_bins[std::make_tuple(zbin, centbin, 0)][0]].clear();
           map_posTracks_to_collision[map_mix_bins[std::make_tuple(zbin, centbin, 0)][0]].shrink_to_fit();
           map_negTracks_to_collision[map_mix_bins[std::make_tuple(zbin, centbin, 0)][0]].clear();
           map_negTracks_to_collision[map_mix_bins[std::make_tuple(zbin, centbin, 0)][0]].shrink_to_fit();
+
+          // LOGF(info, "nev = %d , erase elements.",  map_mix_bins[std::make_tuple(zbin, centbin, 0)].size() );
+          map_mix_bins[std::make_tuple(zbin, centbin, 0)].erase(map_mix_bins[std::make_tuple(zbin, centbin, 0)].begin());
+          // LOGF(info, "after erase : nev = %d",  map_mix_bins[std::make_tuple(zbin, centbin, 0)].size() );
         }
         // LOGF(info, "npos = %d , nele = %d after remove",  map_posTracks_to_collision[map_mix_bins[std::make_tuple(zbin, centbin, 0)][0]].size(),map_negTracks_to_collision[map_mix_bins[std::make_tuple(zbin, centbin, 0)][0]].size() );
         map_mix_bins[std::make_tuple(zbin, centbin, 0)].emplace_back(std::make_pair(ndf, collision.globalIndex()));

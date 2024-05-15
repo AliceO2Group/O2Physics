@@ -414,6 +414,7 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fConfigMCRecSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
   Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
+  Configurable<bool> fConfigRunMCGenPair{"cfgRunMCGenPair", false, "Do pairing of true MC particles"};
   Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
   Configurable<bool> fConfigDoSecVtxProp{"cfgDoSecVtxProp", false, "Propagate tracks to secondary vertex"};
   // TODO: here we specify signals, however signal decisions are precomputed and stored in mcReducedFlags
@@ -627,7 +628,8 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkTrackFillMap>(tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGenPair(groupedMCTracks);
+    if (fConfigRunMCGenPair)
+      runMCGenPair(groupedMCTracks);
   }
 
   void processDecayToEESkimmedWithCov(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
@@ -642,7 +644,8 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkTrackFillMapWithCov>(tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGenPair(groupedMCTracks);
+    if (fConfigRunMCGenPair)
+      runMCGenPair(groupedMCTracks);
   }
 
   void processDecayToEEAOD(soa::Filtered<MyEventsSelectedAOD>::iterator const& event,
@@ -657,7 +660,8 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkTrackFillMapAOD>(tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGenPair(groupedMCTracks);
+    if (fConfigRunMCGenPair)
+      runMCGenPair(groupedMCTracks);
   }
 
   void processDummy(MyEvents&)
