@@ -73,6 +73,14 @@ struct MultiplicityCounter {
            (!rejectITSonly || collision.selection_bit(aod::evsel::kIsVertexITSTPC));
   }
 
+  template <typename B>
+  inline bool isBCSelected(B const& bc)
+  {
+    return bc.selection_bit(aod::evsel::kIsTriggerTVX) &&
+           (!checkTF || bc.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+           (!checkITSROF || bc.selection_bit(aod::evsel::kNoITSROFrameBorder));
+  }
+
   HistogramRegistry commonRegistry{
     "Common",
     {
@@ -325,9 +333,7 @@ struct MultiplicityCounter {
   {
     std::vector<typename std::decay_t<decltype(collisions)>::iterator> cols;
     for (auto& bc : bcs) {
-      if (!useEvSel || (bc.selection_bit(aod::evsel::kNoITSROFrameBorder) &&
-                        bc.selection_bit(aod::evsel::kIsBBT0A) &&
-                        bc.selection_bit(aod::evsel::kIsBBT0C)) != 0) {
+      if (!useEvSel || isBCSelected(bc)) {
         commonRegistry.fill(HIST(BCSelection), 1.);
         cols.clear();
         for (auto& collision : collisions) {

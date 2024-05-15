@@ -36,6 +36,21 @@ class MomentumSmearer
     setResEtaHistName(resEtaHistName);
     setResPhiPosHistName(resPhiPosHistName);
     setResPhiNegHistName(resPhiNegHistName);
+    setResPhiNegHistName("");
+    setResPhiNegHistName("");
+    init();
+  }
+
+  /// Constructor with resolution histograms and efficiency
+  MomentumSmearer(TString resFileName, TString resPtHistName, TString resEtaHistName, TString resPhiPosHistName, TString resPhiNegHistName, TString effFileName, TString effHistName)
+  {
+    setResFileName(resFileName);
+    setResPtHistName(resPtHistName);
+    setResEtaHistName(resEtaHistName);
+    setResPhiPosHistName(resPhiPosHistName);
+    setResPhiNegHistName(resPhiNegHistName);
+    setResPhiNegHistName(resPhiNegHistName);
+    setResPhiNegHistName(resPhiNegHistName);
     init();
   }
 
@@ -47,51 +62,84 @@ class MomentumSmearer
     if (fInitialized)
       return;
 
-    if (fResFileName.BeginsWith("alien://")) {
+    // ToDo: make it possible to access .root files from CCDB
+
+    if (fResFileName.BeginsWith("alien://") || fEffFileName.BeginsWith("alien://")) {
       TGrid::Connect("alien://");
     }
 
     // get resolution histo
-    LOGP(info, "Set Resolution histo");
-    // Get Resolution map
-    TFile* fFile = TFile::Open(fResFileName);
-    if (!fFile) {
-      LOGP(error, "Could not open Resolution file {}", fResFileName.Data());
-      return;
-    }
-    TObjArray* ArrResoPt = nullptr;
-    if (fFile->GetListOfKeys()->Contains(fResPtHistName)) {
-      ArrResoPt = reinterpret_cast<TObjArray*>(fFile->Get(fResPtHistName));
-    } else {
-      LOGP(error, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
+    if (fResFileName.CompareTo("") != 0) {
+      LOGP(info, "Set Resolution histo");
+      // Get Resolution map
+      TFile* fFile = TFile::Open(fResFileName);
+      if (!fFile) {
+        LOGP(fatal, "Could not open Resolution file {}", fResFileName.Data());
+        return;
+      }
+      TObjArray* ArrResoPt = nullptr;
+      if (fFile->GetListOfKeys()->Contains(fResPtHistName)) {
+        ArrResoPt = reinterpret_cast<TObjArray*>(fFile->Get(fResPtHistName));
+      } else {
+        LOGP(fatal, "Could not open {} from file {}", fResPtHistName.Data(), fResFileName.Data());
+      }
+
+      TObjArray* ArrResoEta = nullptr;
+      if (fFile->GetListOfKeys()->Contains(fResEtaHistName)) {
+        ArrResoEta = reinterpret_cast<TObjArray*>(fFile->Get(fResEtaHistName));
+      } else {
+        LOGP(fatal, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
+      }
+
+      TObjArray* ArrResoPhi_Pos = nullptr;
+      if (fFile->GetListOfKeys()->Contains(TString(fResPhiPosHistName))) {
+        ArrResoPhi_Pos = reinterpret_cast<TObjArray*>(fFile->Get(fResPhiPosHistName));
+      } else {
+        LOGP(fatal, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
+      }
+
+      TObjArray* ArrResoPhi_Neg = nullptr;
+      if (fFile->GetListOfKeys()->Contains(TString(fResPhiNegHistName))) {
+        ArrResoPhi_Neg = reinterpret_cast<TObjArray*>(fFile->Get(fResPhiNegHistName));
+      } else {
+        LOGP(fatal, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
+      }
+
+      fArrResoPt = ArrResoPt;
+      fArrResoEta = ArrResoEta;
+      fArrResoPhi_Pos = ArrResoPhi_Pos;
+      fArrResoPhi_Neg = ArrResoPhi_Neg;
+      fFile->Close();
     }
 
-    TObjArray* ArrResoEta = nullptr;
-    if (fFile->GetListOfKeys()->Contains(fResEtaHistName)) {
-      ArrResoEta = reinterpret_cast<TObjArray*>(fFile->Get(fResEtaHistName));
-    } else {
-      LOGP(error, "Could not open {} from file {}", fResEtaHistName.Data(), fResFileName.Data());
+    // get efficiency histo
+    fEffType = 0;
+    if (fEffFileName.CompareTo("") != 0) {
+      LOGP(info, "Set Efficiency histo");
+      TFile* fEffFile = TFile::Open(fEffFileName);
+      if (!fEffFile) {
+        LOGP(fatal, "Could not open efficiency file {}", fEffFileName.Data());
+        return;
+      }
+      if (fEffFile->GetListOfKeys()->Contains(fEffHistName.Data())) {
+        fArrEff = reinterpret_cast<TObject*>(fEffFile->Get(fEffHistName.Data()));
+        // check which type is used
+        if (dynamic_cast<TH3*>(fArrEff)) {
+          fEffType = 3;
+          LOGP(info, "Use 3d efficiency histo (pt, eta, phi)");
+        } else if (dynamic_cast<TH2*>(fArrEff)) {
+          fEffType = 2;
+          LOGP(info, "Use 2d efficiency histo (pt, eta)");
+        } else if (dynamic_cast<TH1*>(fArrEff)) {
+          fEffType = 1;
+          LOGP(info, "Use 1d efficiency histo (pt)");
+        } else {
+          LOGP(fatal, "Could not identify type of histogram {}", fEffHistName.Data());
+        }
+      } else {
+        LOGP(fatal, "Could not find histogram {} in file {}", fEffHistName.Data(), fEffFileName.Data());
+      }
     }
-
-    TObjArray* ArrResoPhi_Pos = nullptr;
-    if (fFile->GetListOfKeys()->Contains(TString(fResPhiPosHistName))) {
-      ArrResoPhi_Pos = reinterpret_cast<TObjArray*>(fFile->Get(fResPhiPosHistName));
-    } else {
-      LOGP(error, "Could not open {} from file {}", fResPhiPosHistName.Data(), fResFileName.Data());
-    }
-
-    TObjArray* ArrResoPhi_Neg = nullptr;
-    if (fFile->GetListOfKeys()->Contains(TString(fResPhiNegHistName))) {
-      ArrResoPhi_Neg = reinterpret_cast<TObjArray*>(fFile->Get(fResPhiNegHistName));
-    } else {
-      LOGP(error, "Could not open {} from file {}", fResPhiNegHistName.Data(), fResFileName.Data());
-    }
-
-    fArrResoPt = ArrResoPt;
-    fArrResoEta = ArrResoEta;
-    fArrResoPhi_Pos = ArrResoPhi_Pos;
-    fArrResoPhi_Neg = ArrResoPhi_Neg;
-    fFile->Close();
 
     fInitialized = true;
   }
@@ -148,12 +196,78 @@ class MomentumSmearer
     phismeared = phigen - smearing;
   }
 
+  float getEfficiency(float pt, float eta, float phi)
+  {
+
+    if (fEffType == 0) {
+      return 1.;
+    }
+
+    if (fEffType == 1) {
+      TH1F* hist = reinterpret_cast<TH1F*>(fArrEff);
+      int ptbin = hist->GetXaxis()->FindBin(pt);
+      int ptbin_max = hist->GetXaxis()->GetNbins();
+      // make sure that no underflow or overflow bins are used
+      if (ptbin < 1)
+        ptbin = 1;
+      else if (ptbin > ptbin_max)
+        ptbin = ptbin_max;
+      return hist->GetBinContent(ptbin);
+    }
+
+    if (fEffType == 2) {
+      TH2F* hist = reinterpret_cast<TH2F*>(fArrEff);
+      int ptbin = hist->GetXaxis()->FindBin(pt);
+      int ptbin_max = hist->GetXaxis()->GetNbins();
+      int etabin = hist->GetYaxis()->FindBin(eta);
+      int etabin_max = hist->GetYaxis()->GetNbins();
+      // make sure that no underflow or overflow bins are used
+      if (ptbin < 1)
+        ptbin = 1;
+      else if (ptbin > ptbin_max)
+        ptbin = ptbin_max;
+      if (etabin < 1)
+        etabin = 1;
+      else if (etabin > etabin_max)
+        etabin = etabin_max;
+      return hist->GetBinContent(ptbin, etabin);
+    }
+
+    if (fEffType == 3) {
+      TH3F* hist = reinterpret_cast<TH3F*>(fArrEff);
+      int ptbin = hist->GetXaxis()->FindBin(pt);
+      int ptbin_max = hist->GetXaxis()->GetNbins();
+      int etabin = hist->GetYaxis()->FindBin(eta);
+      int etabin_max = hist->GetYaxis()->GetNbins();
+      int phibin = hist->GetZaxis()->FindBin(phi);
+      int phibin_max = hist->GetZaxis()->GetNbins();
+      // make sure that no underflow or overflow bins are used
+      if (ptbin < 1)
+        ptbin = 1;
+      else if (ptbin > ptbin_max)
+        ptbin = ptbin_max;
+      if (etabin < 1)
+        etabin = 1;
+      else if (etabin > etabin_max)
+        etabin = etabin_max;
+      if (phibin < 1)
+        phibin = 1;
+      else if (phibin > phibin_max)
+        phibin = phibin_max;
+      return hist->GetBinContent(ptbin, etabin, phibin);
+    }
+
+    return 1.;
+  }
+
   // setters
   void setResFileName(TString resFileName) { fResFileName = resFileName; }
   void setResPtHistName(TString resPtHistName) { fResPtHistName = resPtHistName; }
   void setResEtaHistName(TString resEtaHistName) { fResEtaHistName = resEtaHistName; }
   void setResPhiPosHistName(TString resPhiPosHistName) { fResPhiPosHistName = resPhiPosHistName; }
   void setResPhiNegHistName(TString resPhiNegHistName) { fResPhiNegHistName = resPhiNegHistName; }
+  void setEffFileName(TString effFileName) { fEffFileName = effFileName; }
+  void setEffHistName(TString effHistName) { fEffHistName = effHistName; }
 
   // getters
   TString getResFileName() { return fResFileName; }
@@ -161,10 +275,13 @@ class MomentumSmearer
   TString getResEtaHistName() { return fResEtaHistName; }
   TString getResPhiPosHistName() { return fResPhiPosHistName; }
   TString getResPhiNegHistName() { return fResPhiNegHistName; }
+  TString getEffFileName() { return fEffFileName; }
+  TString getEffHistName() { return fEffHistName; }
   TObjArray* getArrResoPt() { return fArrResoPt; }
   TObjArray* getArrResoEta() { return fArrResoEta; }
   TObjArray* getArrResoPhiPos() { return fArrResoPhi_Pos; }
   TObjArray* getArrResoPhiNeg() { return fArrResoPhi_Neg; }
+  TObject* getArrEff() { return fArrEff; }
 
  private:
   bool fInitialized = false;
@@ -173,10 +290,14 @@ class MomentumSmearer
   TString fResEtaHistName;
   TString fResPhiPosHistName;
   TString fResPhiNegHistName;
+  TString fEffFileName;
+  TString fEffHistName;
+  int fEffType = 0;
   TObjArray* fArrResoPt;
   TObjArray* fArrResoEta;
   TObjArray* fArrResoPhi_Pos;
   TObjArray* fArrResoPhi_Neg;
+  TObject* fArrEff;
 };
 
 #endif // PWGEM_DILEPTON_UTILS_MOMENTUMSMEARER_H_

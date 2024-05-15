@@ -39,6 +39,7 @@
 #include "TGeoGlobalMagField.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
+#include "Common/Core/EventPlaneHelper.h"
 
 using std::cout;
 using std::endl;
@@ -201,6 +202,17 @@ struct AnalysisEventSelection {
     }
 
     if (fMixHandler != nullptr) {
+      constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
+      if constexpr (eventHasQvector) {
+        EventPlaneHelper epHelper;
+        float Psi2A = epHelper.GetEventPlane(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], 2);
+        float Psi2B = epHelper.GetEventPlane(VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], 2);
+        float Psi2C = epHelper.GetEventPlane(VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], 2);
+
+        VarManager::fgValues[VarManager::kPsi2A] = Psi2A;
+        VarManager::fgValues[VarManager::kPsi2B] = Psi2B;
+        VarManager::fgValues[VarManager::kPsi2C] = Psi2C;
+      }
       int hh = fMixHandler->FindEventCategory(VarManager::fgValues);
       hash(hh);
     }
@@ -210,12 +222,17 @@ struct AnalysisEventSelection {
   {
     runEventSelection<gkEventFillMap>(event);
   }
+  void processSkimmedQVector(MyEventsQvector::iterator const& event)
+  {
+    runEventSelection<gkEventFillMapWithQvector>(event);
+  }
   void processDummy(MyEvents&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedQVector, "Run event selection on DQ skimmed events with Q vector", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", false);
   // TODO: Add process functions subscribing to Framework Collision
 };
@@ -449,6 +466,13 @@ struct AnalysisPrefilterSelection {
 
   // Configurables
   Configurable<std::string> fConfigPrefilterPairCut{"cfgPrefilterPairCut", "", "Prefilter pair cut"};
+  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  o2::parameters::GRPMagField* grpmag = nullptr;
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter barrelTracksSelectedPrefilter = aod::dqanalysisflags::isBarrelSelectedPrefilter > 0;
 
@@ -459,6 +483,12 @@ struct AnalysisPrefilterSelection {
 
   void init(o2::framework::InitContext&)
   {
+    fCurrentRun = 0;
+
+    ccdb->setURL(ccdburl.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
     fPairCut = new AnalysisCompositeCut(true);
     TString pairCutStr = fConfigPrefilterPairCut.value;
     if (!pairCutStr.IsNull()) {
@@ -468,6 +498,7 @@ struct AnalysisPrefilterSelection {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
     VarManager::SetDefaultVarNames();
 
+    // Do we need this ?
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
     VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
   }
@@ -494,6 +525,16 @@ struct AnalysisPrefilterSelection {
   {
     const int pairType = VarManager::kDecayToEE;
     fPrefiltermap.clear();
+
+    if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
+      if (grpmag != nullptr) {
+        VarManager::SetMagneticField(grpmag->getNominalL3Field());
+      } else {
+        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+      }
+      fCurrentRun = events.begin().runNumber();
+    }
 
     for (auto& event : events) {
       if (event.isEventSelected()) {
@@ -527,6 +568,13 @@ struct AnalysisEventMixing {
   Configurable<string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
   Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 100, "Number of Events stored for event mixing"};
   Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
+  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  o2::parameters::GRPMagField* grpmag = nullptr;
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   Filter filterTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
@@ -544,6 +592,12 @@ struct AnalysisEventMixing {
 
   void init(o2::framework::InitContext& context)
   {
+    fCurrentRun = 0;
+
+    ccdb->setURL(ccdburl.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
@@ -670,6 +724,16 @@ struct AnalysisEventMixing {
   template <int TPairType, uint32_t TEventFillMap, typename TEvents, typename TTracks>
   void runSameSide(TEvents& events, TTracks const& tracks, Preslice<TTracks>& preSlice)
   {
+    if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
+      if (grpmag != nullptr) {
+        VarManager::SetMagneticField(grpmag->getNominalL3Field());
+      } else {
+        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+      }
+      fCurrentRun = events.begin().runNumber();
+    }
+
     events.bindExternalIndices(&tracks);
     int mixingDepth = fConfigMixingDepth.value;
     for (auto& [event1, event2] : selfCombinations(hashBin, mixingDepth, -1, events, events)) {
@@ -691,6 +755,16 @@ struct AnalysisEventMixing {
   template <uint32_t TEventFillMap, typename TEvents, typename TTracks, typename TMuons>
   void runBarrelMuon(TEvents& events, TTracks const& tracks, TMuons const& muons)
   {
+    if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
+      if (grpmag != nullptr) {
+        VarManager::SetMagneticField(grpmag->getNominalL3Field());
+      } else {
+        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+      }
+      fCurrentRun = events.begin().runNumber();
+    }
+
     events.bindExternalIndices(&muons);
 
     for (auto& [event1, event2] : selfCombinations(hashBin, 100, -1, events, events)) {
@@ -975,23 +1049,21 @@ struct AnalysisSameEventPairing {
           if (fConfigUseKFVertexing.value) {
             VarManager::SetupTwoProngKFParticle(mMagField);
           } else {
-            VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value); // TODO: get these parameters from Configurables
+            VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value);
             VarManager::SetupTwoProngFwdDCAFitter(mMagField, true, 200.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value);
           }
-        } else {
-          VarManager::SetupTwoProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
         }
+        VarManager::SetMagneticField(mMagField);
       } else {
         if constexpr (TTwoProngFitter == true) {
           if (fConfigUseKFVertexing.value) {
             VarManager::SetupTwoProngKFParticle(fConfigMagField.value);
           } else {
-            VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value); // TODO: get these parameters from Configurables
+            VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value);
             VarManager::SetupTwoProngFwdDCAFitter(fConfigMagField.value, true, 200.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value);
           }
-        } else {
-          VarManager::SetupTwoProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fUseAbsDCA.value); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
         }
+        VarManager::SetMagneticField(fConfigMagField.value);
       }
       fCurrentRun = event.runNumber();
     }
@@ -1038,7 +1110,7 @@ struct AnalysisSameEventPairing {
 
       VarManager::fgValues[VarManager::kMultDimuons] = mult_dimuons;
     }
-
+    bool isFirst = true;
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE || TPairType == VarManager::kDecayToPiPi) {
         twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
@@ -1119,15 +1191,18 @@ struct AnalysisSameEventPairing {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
           if constexpr (eventHasQvector == true || eventHasQvectorCentr == true) {
             dileptonFlowList(t1.collisionId(), VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kCentFT0C],
-                             VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(),
+                             VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), isFirst,
                              VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kR2SP_AB], VarManager::fgValues[VarManager::kR2SP_AC], VarManager::fgValues[VarManager::kR2SP_BC],
                              VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kR3SP],
                              VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kR2EP_AB], VarManager::fgValues[VarManager::kR2EP_AC], VarManager::fgValues[VarManager::kR2EP_BC],
                              VarManager::fgValues[VarManager::kCos3DeltaPhi], VarManager::fgValues[VarManager::kR3EP],
                              VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kCORR2POI], VarManager::fgValues[VarManager::kM01POI], VarManager::fgValues[VarManager::kM0111POI],
-                             VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM11REF],
+                             VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF],
                              VarManager::fgValues[VarManager::kMultDimuons], VarManager::fgValues[VarManager::kMultA]);
           }
+        }
+        if (t1.sign() != t2.sign()) {
+          isFirst = false;
         }
       }
 

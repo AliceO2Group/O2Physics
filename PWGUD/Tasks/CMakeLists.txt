@@ -19,8 +19,23 @@ o2physics_add_dpl_workflow(sg-spectra
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sg-pid-spectra
+                           SOURCES sgPIDSpectra.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-excl-universe
+                           SOURCES sgExcUniverse.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(sg-fourpi
                            SOURCES sgFourPiAnalyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-sixpi
+                           SOURCES sgSixPiAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
@@ -98,6 +113,7 @@ o2physics_add_dpl_workflow(polarisation-rho
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
+
 o2physics_add_dpl_workflow(upc-jpsi-corr
                            SOURCES upcJpsiCentralBarrelCorr.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
@@ -115,5 +131,30 @@ o2physics_add_dpl_workflow(upc-photonuclear-jmg
 
 o2physics_add_dpl_workflow(exclusive-two-protons
                            SOURCES exclusiveTwoProtons.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(exclusive-phi-leptons
+                           SOURCES exclusivePhiLeptons.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(exclusive-pentaquark
+                           SOURCES exclusivePentaquark.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(inclusive-phikstar-sd
+                           SOURCES sginclusivePhiKstarSD.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-exclusive-phi
+                           SOURCES sgExclusivePhi.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-pion-analysis
+                           SOURCES upcPionAnalysis.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)

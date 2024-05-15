@@ -33,6 +33,8 @@ struct lambda1520analysis {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  using ResoMCCols = soa::Join<aod::ResoCollisions, aod::ResoMCCollisions>;
+
   // Configurables
   // switches
   Configurable<bool> cEtaAssym{"cEtaAssym", false, "Turn on/off EtaAssym calculation"};
@@ -43,10 +45,12 @@ struct lambda1520analysis {
   Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
   Configurable<bool> cTPCNClsFound{"cTPCNClsFound", false, "Switch to turn on/off TPCNClsFound cut"};
   Configurable<bool> additionalEvsel{"additionalEvsel", true, "Additional event selcection"};
+  Configurable<bool> additionalQAeventPlots{"additionalQAeventPlots", false, "Additional QA event plots"};
+  Configurable<bool> additionalMEPlots{"additionalMEPlots", false, "Additional Mixed event plots"};
 
   // Pre-selection Track cuts
   Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
-  Configurable<float> cMinRtpccut{"cMinRtpccut", 0.8f, "minimum ratio of number of Xrows to findable clusters in TPC"};
+  Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.8f, "minimum ratio of number of Xrows to findable clusters in TPC"};
   Configurable<float> cMaxChi2ITScut{"cMaxChi2ITScut", 36.0f, "Maximal pT for Chi2/cluster for ITS"};
   Configurable<float> cMaxChi2TPCcut{"cMaxChi2TPCcut", 4.0f, "Maximal pT for Chi2/cluster for TPC"};
   Configurable<float> cMinTPCNClsFound{"cMinTPCNClsFound", 120, "minimum TPCNClsFound value for good track"};
@@ -57,19 +61,23 @@ struct lambda1520analysis {
   // DCAr to PV
   Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.1f, "Track DCAr cut to PV Maximum"};
   // DCAz to PV
-  Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
+  Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 0.1f, "Track DCAz cut to PV Maximum"};
 
   // Track selections
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
+  Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
+  Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
+  Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
   /// PID Selections
   Configurable<float> cRejNsigmaTpc{"cRejNsigmaTpc", 3.0, "Reject tracks to improve purity of TPC PID"}; // Reject missidentified particles when tpc bands merge
   Configurable<float> cRejNsigmaTof{"cRejNsigmaTof", 3.0, "Reject tracks to improve purity of TOF PID"}; // Reject missidentified particles when tpc bands merge
   Configurable<bool> cUseRejNsigma{"cUseRejNsigma", false, "Switch on/off track rejection method to improve purity"};
   Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
+  Configurable<bool> cByPassTOF{"cByPassTOF", false, "By pass TOF PID selection"}; // By pass TOF PID selection
 
   // Kaon
   // Old PID use case
@@ -104,6 +112,14 @@ struct lambda1520analysis {
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
 
+  // MC Event selection
+  Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
+
+  // cuts on mother
+  Configurable<bool> cfgCutsOnMother{"cfgCutsOnMother", false, "Enamble additional cuts on mother"};
+  Configurable<double> cMaxPtMotherCut{"cMaxPtMotherCut", 10.0, "Maximum pt of mother cut"};
+  Configurable<double> cMaxMinvMotherCut{"cMaxMinvMotherCut", 3.0, "Maximum Minv of mother cut"};
+
   /// Figures
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.0}, "Binning of the pT axis"};
   ConfigurableAxis binsEta{"binsEta", {100, -1, 1}, ""};
@@ -134,6 +150,26 @@ struct lambda1520analysis {
     AxisSpec axisTPCXrow{binsTPCXrows, "#Xrows_{TPC}"};
     AxisSpec pidQAAxis = {binsnSigma, "#sigma"};
     AxisSpec axisTPCSignal = {binsnTPCSignal, ""};
+    AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
+
+    if (additionalQAeventPlots) {
+      // Test on Mixed event
+      histos.add("TestME/hCollisionIndexSameE", "coll index sameE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
+      histos.add("TestME/hCollisionIndexMixedE", "coll index mixedE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
+      histos.add("TestME/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+      histos.add("TestME/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+      histos.add("TestME/hPairsCounterSameE", "tot n pairs sameE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
+      histos.add("TestME/hPairsCounterMixedE", "tot n pairs mixedE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
+
+      // event histograms
+      histos.add("QAevent/hEvtCounterSameE", "Number of analyzed Same Events", HistType::kTH1F, {{1, 0.5, 1.5}});
+      histos.add("QAevent/hVertexZSameE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
+      histos.add("QAevent/hMultiplicityPercentSameE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
+
+      histos.add("QAevent/hEvtCounterMixedE", "Number of analyzed Mixed Events", HistType::kTH1F, {{1, 0.5, 1.5}});
+      histos.add("QAevent/hVertexZMixedE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
+      histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
+    }
 
     if (doprocessData) {
       // Track QA before cuts
@@ -141,11 +177,11 @@ struct lambda1520analysis {
       histos.add("QA/QAbefore/Track/TOF_TPC_Map_ka_all", "TOF + TPC Combined PID for Kaon;#sigma_{TOF}^{Kaon};#sigma_{TPC}^{Kaon}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
       histos.add("QA/QAbefore/Track/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3F, {axisMult, axisPt, pidQAAxis}});
       histos.add("QA/QAbefore/Track/TPC_Nsigma_ka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH3F, {axisMult, axisPt, pidQAAxis}});
-      histos.add("QA/QAbefore/Track/TPC_Nsigma_ka_only", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2F, {axisPt, pidQAAxis}});
+      histos.add("QA/QAbefore/Track/TPConly_Nsigma_ka", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH2F, {axisPt, pidQAAxis}});
       histos.add("QA/QAbefore/Track/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
       histos.add("QA/QAbefore/Track/TOF_Nsigma_pr_all", "TOF NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Proton};", {HistType::kTH3F, {axisMult, axisPt, pidQAAxis}});
       histos.add("QA/QAbefore/Track/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {axisMult, axisPt, pidQAAxis}});
-      histos.add("QA/QAbefore/Track/TPC_Nsigma_pr_only", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH2F, {axisPt, pidQAAxis}});
+      histos.add("QA/QAbefore/Track/TPConly_Nsigma_pr", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH2F, {axisPt, pidQAAxis}});
       histos.add("QA/QAbefore/Track/dcaZ", "DCA_{Z} distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{Z} (cm); ", HistType::kTH2F, {axisPt, axisDCAz});
       histos.add("QA/QAbefore/Track/dcaXY", "DCA_{XY} momentum distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); DCA_{XY} (cm);", HistType::kTH2F, {axisPt, axisDCAxy});
       histos.add("QA/QAbefore/Track/TPC_CR", "# TPC Xrows distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTH2F, {axisPt, axisTPCXrow});
@@ -212,6 +248,13 @@ struct lambda1520analysis {
     if (doprocessME) {
       histos.add("Result/Data/lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}; Invariant Mass (GeV/#it{c}^2); Counts;", {HistType::kTH1F, {axisMassLambda1520}});
       histos.add("Result/Data/h3lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
+
+      if (additionalMEPlots) {
+        histos.add("Result/Data/lambda1520invmassME_DS", "Invariant mass of #Lambda(1520) mixed event DS", kTH1F, {axisMassLambda1520});
+        histos.add("Result/Data/lambda1520invmassME_DSAnti", "Invariant mass of #Lambda(1520) mixed event DSAnti", kTH1F, {axisMassLambda1520});
+        histos.add("Result/Data/h3lambda1520invmassME_DS", "Invariant mass of #Lambda(1520) mixed event DS", kTH3F, {axisMult, axisPt, axisMassLambda1520});
+        histos.add("Result/Data/h3lambda1520invmassME_DSAnti", "Invariant mass of #Lambda(1520) mixed event DSAnti", kTH3F, {axisMult, axisPt, axisMassLambda1520});
+      }
     }
 
     if (cEtaAssym) {
@@ -235,8 +278,8 @@ struct lambda1520analysis {
     //}
     // MC QA
     if (doprocessMCTrue) {
-      histos.add("Result/MC/Genlambda1520pt", "pT distribution of True MC #Lambda(1520)0", kTH2F, {axisPt, axisMult});
-      histos.add("Result/MC/Genantilambda1520pt", "pT distribution of True MC Anti-#Lambda(1520)0", kTH2F, {axisPt, axisMult});
+      histos.add("Result/MC/Genlambda1520pt", "pT distribution of True MC #Lambda(1520)0", kTH3F, {mcLabelAxis, axisPt, axisMult});
+      histos.add("Result/MC/Genantilambda1520pt", "pT distribution of True MC Anti-#Lambda(1520)0", kTH3F, {mcLabelAxis, axisPt, axisMult});
     }
     if (doprocessMC) {
       histos.add("QA/MC/trkDCAxy_pr", "DCAxy distribution of proton track candidates", HistType::kTH1F, {axisDCAxy});
@@ -255,9 +298,7 @@ struct lambda1520analysis {
       histos.add("Result/MC/hlambda1520Recoinvmass", "Inv mass distribution of Reconstructed MC #Lambda(1520)", kTH1F, {axisMassLambda1520});
       histos.add("Result/MC/hantilambda1520Recoinvmass", "Inv mass distribution of Reconstructed MC Anti-#Lambda(1520)", kTH1F, {axisMassLambda1520});
     }
-    // Print output histograms statistics
-    LOG(info) << "Size of the histograms in spectraTOF";
-    histos.print();
+
     if (additionalEvsel) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
@@ -270,6 +311,9 @@ struct lambda1520analysis {
       fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
       fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
     }
+    // Print output histograms statistics
+    LOG(info) << "Size of the histograms in spectraTOF";
+    histos.print();
   }
 
   template <typename TCollision>
@@ -317,7 +361,7 @@ struct lambda1520analysis {
     if (cAddlTrackcut) {
       if (!track.passedITSRefit() || !track.passedTPCRefit())
         return false;
-      if (track.tpcCrossedRowsOverFindableCls() < cMinRtpccut)
+      if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls)
         return false;
       if (track.itsChi2NCl() > cMaxChi2ITScut)
         return false;
@@ -335,6 +379,12 @@ struct lambda1520analysis {
     if (cfgPVContributor && !track.isPVContributor())
       return false;
     if (cfgGlobalTrack && !track.isGlobalTrack())
+      return false;
+    if (cfgHasITS && !track.hasITS())
+      return false;
+    if (cfgHasTPC && !track.hasTPC())
+      return false;
+    if (cfgHasTOF && !track.hasTOF())
       return false;
 
     return true;
@@ -361,6 +411,9 @@ struct lambda1520analysis {
         } else if (!cUseRejNsigma) {
           tpcPIDPassed = true;
         }
+      }
+      if (cByPassTOF && tpcPIDPassed) {
+        return true;
       }
       if (candidate.hasTOF()) {
         if ((nsigmaCutCombinedProton > 0) && ((candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (nsigmaCutCombinedProton * nsigmaCutCombinedProton))) {
@@ -410,6 +463,9 @@ struct lambda1520analysis {
         } else if (!cUseRejNsigma) {
           tpcPIDPassed = true;
         }
+      }
+      if (cByPassTOF && tpcPIDPassed) {
+        return true;
       }
       if (candidate.hasTOF()) {
         if ((nsigmaCutCombinedKaon > 0) && ((candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < (nsigmaCutCombinedKaon * nsigmaCutCombinedKaon))) {
@@ -559,12 +615,34 @@ struct lambda1520analysis {
       }
     }
 
+    if (additionalQAeventPlots) {
+      if constexpr (!IsMix) {
+        histos.fill(HIST("QAevent/hVertexZSameE"), collision.posZ());
+        histos.fill(HIST("QAevent/hMultiplicityPercentSameE"), multiplicity);
+        histos.fill(HIST("TestME/hCollisionIndexSameE"), collision.globalIndex());
+        histos.fill(HIST("TestME/hnTrksSameE"), dTracks1.size());
+      } else {
+        histos.fill(HIST("QAevent/hVertexZMixedE"), collision.posZ());
+        histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), multiplicity);
+        histos.fill(HIST("TestME/hCollisionIndexMixedE"), collision.globalIndex());
+        histos.fill(HIST("TestME/hnTrksMixedE"), dTracks1.size());
+      }
+    }
+
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
 
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
         continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
+
+      if (additionalQAeventPlots) {
+        if constexpr (IsData) {
+          histos.fill(HIST("TestME/hPairsCounterSameE"), 1.0);
+        } else if (IsMix) {
+          histos.fill(HIST("TestME/hPairsCounterMixedE"), 1.0);
+        }
+      }
 
       // apply the track cut
       if (!trackCut(trk1) || !trackCut(trk2))
@@ -591,7 +669,7 @@ struct lambda1520analysis {
           histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_pr_all"), trk1NSigmaPrTOF, trk1NSigmaPrTPC);
         }
         if (!isTrk1hasTOF) {
-          histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_pr_only"), trk1ptPr, trk1NSigmaPrTPC);
+          histos.fill(HIST("QA/QAbefore/Track/TPConly_Nsigma_pr"), trk1ptPr, trk1NSigmaPrTPC);
         }
         histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_ka_all"), multiplicity, trk2ptKa, trk2NSigmaKaTPC);
         if (isTrk2hasTOF) {
@@ -599,7 +677,7 @@ struct lambda1520analysis {
           histos.fill(HIST("QA/QAbefore/Track/TOF_TPC_Map_ka_all"), trk2NSigmaKaTOF, trk2NSigmaKaTPC);
         }
         if (!isTrk2hasTOF) {
-          histos.fill(HIST("QA/QAbefore/Track/TPC_Nsigma_ka_only"), trk2ptKa, trk2NSigmaKaTPC);
+          histos.fill(HIST("QA/QAbefore/Track/TPConly_Nsigma_ka"), trk2ptKa, trk2NSigmaKaTPC);
         }
 
         histos.fill(HIST("QA/QAbefore/Track/dcaZ"), trk1ptPr, trk1.dcaZ());
@@ -680,32 +758,49 @@ struct lambda1520analysis {
       // Rapidity cut
       if (abs(lResonance.Rapidity()) > 0.5)
         continue;
+
+      if (cfgCutsOnMother) {
+        if (lResonance.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
+          continue;
+        if (lResonance.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
+          continue;
+      }
+
       //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (IsData) {
           if (trk1.sign() < 0) {
             histos.fill(HIST("Result/Data/lambda1520invmass"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmass"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmass"), multiplicity, lResonance.Pt(), lResonance.M());
           } else {
             histos.fill(HIST("Result/Data/antilambda1520invmass"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3antilambda1520invmass"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3antilambda1520invmass"), multiplicity, lResonance.Pt(), lResonance.M());
           }
           if (cEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassUnlikeSignAside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignAside"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignAside"), multiplicity, lResonance.Pt(), lResonance.M());
           } else if (cEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassUnlikeSignCside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignCside"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignCside"), multiplicity, lResonance.Pt(), lResonance.M());
           }
         } else if (IsMix) {
           histos.fill(HIST("Result/Data/lambda1520invmassME"), lResonance.M());
-          histos.fill(HIST("Result/Data/h3lambda1520invmassME"), collision.cent(), lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("Result/Data/h3lambda1520invmassME"), multiplicity, lResonance.Pt(), lResonance.M());
           if (cEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassMixedAside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedAside"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedAside"), multiplicity, lResonance.Pt(), lResonance.M());
           } else if (cEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassMixedCside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedCside"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassMixedCside"), multiplicity, lResonance.Pt(), lResonance.M());
+          }
+          if (additionalMEPlots) {
+            if (trk1.sign() < 0) {
+              histos.fill(HIST("Result/Data/lambda1520invmassME_DS"), lResonance.M());
+              histos.fill(HIST("Result/Data/h3lambda1520invmassME_DS"), multiplicity, lResonance.Pt(), lResonance.M());
+            } else if (trk1.sign() > 0) {
+              histos.fill(HIST("Result/Data/lambda1520invmassME_DSAnti"), lResonance.M());
+              histos.fill(HIST("Result/Data/h3lambda1520invmassME_DSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
+            }
           }
         }
 
@@ -739,29 +834,29 @@ struct lambda1520analysis {
           if (trk1.motherPDG() > 0) {
             histos.fill(HIST("Result/MC/lambda1520Reco"), lResonance.Pt(), multiplicity);
             histos.fill(HIST("Result/MC/hlambda1520Recoinvmass"), lResonance.M());
-            histos.fill(HIST("Result/MC/h3lambda1520Recoinvmass"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/MC/h3lambda1520Recoinvmass"), multiplicity, lResonance.Pt(), lResonance.M());
           } else {
             histos.fill(HIST("Result/MC/antilambda1520Reco"), lResonance.Pt(), multiplicity);
             histos.fill(HIST("Result/MC/hantilambda1520Recoinvmass"), lResonance.M());
-            histos.fill(HIST("Result/MC/h3antilambda1520Recoinvmass"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/MC/h3antilambda1520Recoinvmass"), multiplicity, lResonance.Pt(), lResonance.M());
           }
         }
       } else {
         if constexpr (IsData) {
           if (cEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassLikeSignAside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignAside"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignAside"), multiplicity, lResonance.Pt(), lResonance.M());
           } else if (cEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassLikeSignCside"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignCside"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignCside"), multiplicity, lResonance.Pt(), lResonance.M());
           }
           // Like sign pair ++
           if (trk1.sign() > 0) {
             histos.fill(HIST("Result/Data/lambda1520invmassLSPP"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLSPP"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLSPP"), multiplicity, lResonance.Pt(), lResonance.M());
           } else { // Like sign pair --
             histos.fill(HIST("Result/Data/lambda1520invmassLSMM"), lResonance.M());
-            histos.fill(HIST("Result/Data/h3lambda1520invmassLSMM"), collision.cent(), lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("Result/Data/h3lambda1520invmassLSMM"), multiplicity, lResonance.Pt(), lResonance.M());
           }
         }
       }
@@ -771,18 +866,22 @@ struct lambda1520analysis {
   void processData(aod::ResoCollision& collision,
                    aod::ResoTracks const& resotracks)
   {
+    if (additionalQAeventPlots)
+      histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
     fillHistograms<true, false, false>(collision, resotracks, resotracks);
   }
   PROCESS_SWITCH(lambda1520analysis, processData, "Process Event for data without partition", false);
 
-  void processMC(aod::ResoCollision& collision,
+  void processMC(ResoMCCols::iterator const& collision,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
+    if (!collision.isInAfterAllCuts() || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
+      return;
     fillHistograms<false, true, false>(collision, resotracks, resotracks);
   }
   PROCESS_SWITCH(lambda1520analysis, processMC, "Process Event for MC Light without partition", false);
 
-  void processMCTrue(aod::ResoCollision& collision, aod::ResoMCParents& resoParents)
+  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents& resoParents)
   {
     auto multiplicity = collision.cent();
     // Not related to the real collisions
@@ -801,11 +900,34 @@ struct lambda1520analysis {
       }
       if (!pass1 || !pass2) // If we have both decay products
         continue;
-      // histos.fill(HIST("Result/MC/GenTruelambda1520pt"), part.pt());
-      if (part.pdgCode() > 0)
-        histos.fill(HIST("Result/MC/Genlambda1520pt"), part.pt(), multiplicity);
-      else
-        histos.fill(HIST("Result/MC/Genantilambda1520pt"), part.pt(), multiplicity);
+      if (collision.isVtxIn10()) // INEL10
+      {
+        if (part.pdgCode() > 0)
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 0, part.pt(), multiplicity);
+        else
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 0, part.pt(), multiplicity);
+      }
+      if (collision.isVtxIn10() && collision.isInSel8()) // INEL>10, vtx10
+      {
+        if (part.pdgCode() > 0)
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 1, part.pt(), multiplicity);
+        else
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 1, part.pt(), multiplicity);
+      }
+      if (collision.isVtxIn10() && collision.isTriggerTVX()) // vtx10, TriggerTVX
+      {
+        if (part.pdgCode() > 0)
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 2, part.pt(), multiplicity);
+        else
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 2, part.pt(), multiplicity);
+      }
+      if (collision.isInAfterAllCuts()) // after all event selection
+      {
+        if (part.pdgCode() > 0)
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 3, part.pt(), multiplicity);
+        else
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 3, part.pt(), multiplicity);
+      }
     }
   }
   PROCESS_SWITCH(lambda1520analysis, processMCTrue, "Process Event for MC only", false);
@@ -819,6 +941,8 @@ struct lambda1520analysis {
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+      if (additionalQAeventPlots)
+        histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
       fillHistograms<false, false, true>(collision1, tracks1, tracks2);
     }
   };

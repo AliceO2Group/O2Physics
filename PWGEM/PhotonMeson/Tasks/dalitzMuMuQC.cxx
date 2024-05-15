@@ -186,8 +186,9 @@ struct DalitzMuMuQC {
         for (auto& uls_pair : uls_pairs_per_coll) {
           auto pos = uls_pair.template posTrack_as<MyTracks>();
           auto ele = uls_pair.template negTrack_as<MyTracks>();
+          std::tuple<MyTrack, MyTrack, float> uls_pair_tmp = std::make_tuple(pos, ele, -1);
 
-          if (cut.IsSelected<MyTracks>(uls_pair)) {
+          if (cut.IsSelected<MyTracks>(uls_pair_tmp)) {
             dca_pos_3d = pos.dca3DinSigma();
             dca_ele_3d = ele.dca3DinSigma();
             dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
@@ -210,7 +211,8 @@ struct DalitzMuMuQC {
         for (auto& lspp_pair : lspp_pairs_per_coll) {
           auto pos = lspp_pair.template posTrack_as<MyTracks>();
           auto ele = lspp_pair.template negTrack_as<MyTracks>();
-          if (cut.IsSelected<MyTracks>(lspp_pair)) {
+          std::tuple<MyTrack, MyTrack, float> lspp_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (cut.IsSelected<MyTracks>(lspp_pair_tmp)) {
             dca_pos_3d = pos.dca3DinSigma();
             dca_ele_3d = ele.dca3DinSigma();
             dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
@@ -227,7 +229,8 @@ struct DalitzMuMuQC {
         for (auto& lsmm_pair : lsmm_pairs_per_coll) {
           auto pos = lsmm_pair.template posTrack_as<MyTracks>();
           auto ele = lsmm_pair.template negTrack_as<MyTracks>();
-          if (cut.IsSelected<MyTracks>(lsmm_pair)) {
+          std::tuple<MyTrack, MyTrack, float> lsmm_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (cut.IsSelected<MyTracks>(lsmm_pair_tmp)) {
             dca_pos_3d = pos.dca3DinSigma();
             dca_ele_3d = ele.dca3DinSigma();
             dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
@@ -270,7 +273,7 @@ struct DalitzMuMuQC {
     THashList* list_dalitzmumu = static_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
     double values[3] = {0, 0, 0};
     ROOT::Math::PtEtaPhiMVector v1, v2, v12;
-    float phiv = 0;
+    // float phiv = 0;
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
@@ -310,7 +313,7 @@ struct DalitzMuMuQC {
           values[1] = v12.Pt();
           values[2] = dca_ee_3d;
 
-          if (cut.IsSelectedTrack(t1) && cut.IsSelectedTrack(t2) && cut.IsSelectedPair(v12.M(), dca_ee_3d, phiv)) {
+          if (cut.IsSelectedTrack(t1) && cut.IsSelectedTrack(t2) && cut.IsSelectedPair(t1, t2, -1)) {
             if (t1.sign() * t2.sign() < 0) {
               reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
             } else if (t1.sign() > 0 && t2.sign() > 0) {

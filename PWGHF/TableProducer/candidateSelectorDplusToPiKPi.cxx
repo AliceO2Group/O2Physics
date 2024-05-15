@@ -56,7 +56,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_dplus_to_pi_k_pi::cuts[0], hf_cuts_dplus_to_pi_k_pi::nBinsPt, hf_cuts_dplus_to_pi_k_pi::nCutVars, hf_cuts_dplus_to_pi_k_pi::labelsPt, hf_cuts_dplus_to_pi_k_pi::labelsCutVar}, "Dplus candidate selection per pT bin"};
   // DCAxy selections
   Configurable<LabeledArray<double>> cutsSingleTrack{"cutsSingleTrack", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections"};
-  Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA XY pT-dependent cut"};
+  Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA pT-dependent cut"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
@@ -164,7 +164,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     if (std::abs(candidate.maxNormalisedDeltaIP()) > cuts->get(pTBin, "max normalized deltaIP")) {
       return false;
     }
-    if (!isSelectedCandidateDcaXY(candidate)) {
+    if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }
     return true;
@@ -174,11 +174,11 @@ struct HfCandidateSelectorDplusToPiKPi {
   /// \param candidate is the Ds candidate
   /// \return true if all the prongs pass the selections
   template <typename T1>
-  bool isSelectedCandidateDcaXY(const T1& candidate)
+  bool isSelectedCandidateProngDca(const T1& candidate)
   {
-    return (isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0()) &&
-            isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1()) &&
-            isSelectedTrackDcaXY(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2()));
+    return (isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
+            isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()) &&
+            isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2(), candidate.impactParameterZ2()));
   }
 
   /// Apply PID selection

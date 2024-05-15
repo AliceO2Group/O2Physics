@@ -147,6 +147,26 @@ DECLARE_SOA_TABLE(ReducedMCEventLabels, "AOD", "REMCCOLLBL", //! Table joined to
                   reducedeventlabel::ReducedMCEventId, reducedeventlabel::McMask);
 using ReducedMCEventLabel = ReducedMCEventLabels::iterator;
 
+namespace reducedzdc
+{
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float); //!
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float); //!
+DECLARE_SOA_COLUMN(EnergyCommonZPA, energyCommonZPA, float); //!
+DECLARE_SOA_COLUMN(EnergyCommonZPC, energyCommonZPC, float); //!
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);                 //!
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);                 //!
+DECLARE_SOA_COLUMN(TimeZPA, timeZPA, float);                 //!
+DECLARE_SOA_COLUMN(TimeZPC, timeZPC, float);                 //!
+} // namespace reducedzdc
+
+DECLARE_SOA_TABLE(ReducedZdcs, "AOD", "REDUCEDZDC", //!   Event ZDC information
+                  reducedzdc::EnergyCommonZNA, reducedzdc::EnergyCommonZNC,
+                  reducedzdc::EnergyCommonZPA, reducedzdc::EnergyCommonZPC,
+                  reducedzdc::TimeZNA, reducedzdc::TimeZNC,
+                  reducedzdc::TimeZPA, reducedzdc::TimeZPC);
+
+using ReducedZdc = ReducedZdcs::iterator;
+
 namespace reducedtrack
 {
 // basic track information
@@ -438,10 +458,11 @@ namespace smearedtrack
 DECLARE_SOA_COLUMN(PtSmeared, ptSmeared, float);
 DECLARE_SOA_COLUMN(EtaSmeared, etaSmeared, float);
 DECLARE_SOA_COLUMN(PhiSmeared, phiSmeared, float);
+DECLARE_SOA_COLUMN(Efficiency, efficiency, float);
 } // namespace smearedtrack
 
 DECLARE_SOA_TABLE(SmearedTracks, "AOD", "SMEAREDTRACK", // use like this Join<ReducedMCTracks, SmearedTracks>
-                  smearedtrack::PtSmeared, smearedtrack::EtaSmeared, smearedtrack::PhiSmeared);
+                  smearedtrack::PtSmeared, smearedtrack::EtaSmeared, smearedtrack::PhiSmeared, smearedtrack::Efficiency);
 using SmearedTrack = SmearedTracks::iterator;
 
 namespace dilepton_track_index
@@ -542,6 +563,7 @@ DECLARE_SOA_COLUMN(M0111POI, m0111poi, float);                           //! POI
 DECLARE_SOA_COLUMN(MultDimuons, multdimuons, int);                       //! Dimuon multiplicity
 DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                           //! Centrality information from FT0C
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int32_t);                   //!
+DECLARE_SOA_COLUMN(IsFirst, isfirst, int);                               //! Flag for the first dilepton in the collision
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -592,6 +614,7 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::Mass,
                   reducedpair::CentFT0C,
                   reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::IsFirst,
                   reducedpair::U2Q2, reducedpair::R2SP_AB, reducedpair::R2SP_AC, reducedpair::R2SP_BC,
                   reducedpair::U3Q3, reducedpair::R3SP,
                   reducedpair::Cos2DeltaPhi, reducedpair::R2EP_AB, reducedpair::R2EP_AC, reducedpair::R2EP_BC,

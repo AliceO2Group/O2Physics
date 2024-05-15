@@ -47,6 +47,9 @@ DECLARE_SOA_COLUMN(DCATrack0ToPV, dcatrack0topv, float);     //! DCA of prong0 t
 DECLARE_SOA_COLUMN(DCATrack1ToPV, dcatrack1topv, float);     //! DCA of prong1 to PV
 DECLARE_SOA_COLUMN(DCATrack2ToPV, dcatrack2topv, float);     //! DCA of prong2 to PV
 
+// Recalculated TOF PID information of bachelor
+DECLARE_SOA_COLUMN(TOFNSigmaBachDe, tofNSigmaBachDe, float); //! Recalculated Nsigma seperation with TOF for deuteron
+
 // Derived expressions
 // Momenta
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! 3 body p
@@ -130,6 +133,7 @@ DECLARE_SOA_TABLE_FULL(StoredVtx3BodyDatas, "Vtx3BodyDatas", "AOD", "Vtx3BodyDAT
                        vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2,
                        vtx3body::DCAVtxDaughters,
                        vtx3body::DCATrack0ToPV, vtx3body::DCATrack1ToPV, vtx3body::DCATrack2ToPV,
+                       vtx3body::TOFNSigmaBachDe,
 
                        // Dynamic columns
                        vtx3body::P<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0, vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1, vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>,

@@ -32,29 +32,36 @@ struct : ConfigurableGroup {
 } cf_tc;
 
 // *) QA:
-//    TBI 20240426 add here configurables for QA histograms
+struct : ConfigurableGroup {
+  Configurable<bool> cfCheckUnderflowAndOverflow{"cfCheckUnderflowAndOverflow", false, "check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins"};
+} cf_qa;
 
 // *) Event histograms:
 struct : ConfigurableGroup {
   Configurable<bool> cfFillEventHistograms{"cfFillEventHistograms", true, "if false, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled"};
   Configurable<vector<int>> cfBookEventHistograms{"cfBookEventHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) event histogram, ordering is the same as in enum eEventHistograms"};
+  Configurable<bool> cfFillEventHistograms2D{"cfFillEventHistograms2D", true, "if false, all 2D event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms2D[...] is kTRUE, are filled"};
+  Configurable<vector<int>> cfBookEventHistograms2D{"cfBookEventHistograms2D", {1, 1}, "Book (1) or do not book (0) this 2D event histogram, ordering is the same as in enum eEventHistograms2D"};
 } cf_eh;
 
 // *) Event cuts:
 struct : ConfigurableGroup {
   Configurable<vector<int>> cfUseEventCuts{"cfUseEventCuts", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0}, "Use (1) or do not use (0) event cuts, ordering is the same as in enums eEventHistograms + eEventCuts"};
+  Configurable<bool> cfUseEventCutCounterAbsolute{"cfUseEventCutCounterAbsolute", false, "profile and save how many times each event cut counter triggered (absolute). Use with care, as this is computationally heavy"};
+  Configurable<bool> cfUseEventCutCounterSequential{"cfUseEventCutCounterSequential", false, "profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy"};
   Configurable<string> cfTrigger{"cfTrigger", "some supported trigger", "set here some supported trigger (kINT7, ...) "};
   Configurable<bool> cfUseSel7{"cfUseSel7", false, "use for Run 2 data and MC (see official doc)"};
   Configurable<bool> cfUseSel8{"cfUseSel8", false, "use for Run 3 data and MC (see official doc)"};
   Configurable<string> cfCentralityEstimator{"cfCentralityEstimator", "some supported centrality estimator", "set here some supported centrality estimator (CentFT0M, CentFV0A, CentNTPV, ... for Run 3, CentRun2V0M, CentRun2SPDTracklets, ..., for Run 2) "};
-  Configurable<vector<int>> cfNumberOfEvents{"cfNumberOfEvents", {-1, 1000000000}, "Number of events to process: {min, max}, with convention: min <= N < max"};
+  Configurable<vector<int>> cfNumberOfEvents{"cfNumberOfEvents", {-1, 1000000000}, "Total number of events to process (whether or not they survive event cuts): {min, max}, with convention: min <= N < max"};
+  Configurable<vector<int>> cfSelectedEvents{"cfSelectedEvents", {-1, 1000000000}, "Selected number of events to process (i.e. only events which survive event cuts): {min, max}, with convention: min <= N < max"};
   Configurable<vector<int>> cfTotalMultiplicity{"cfTotalMultiplicity", {-1, 1000000000}, "Total multiplicity range: {min, max}, with convention: min <= M < max"};
   Configurable<vector<int>> cfSelectedTracks{"cfSelectedTracks", {-1, 1000000000}, "Selected tracks range: {min, max}, with convention: min <= M < max"};
   Configurable<vector<float>> cfCentrality{"cfCentrality", {-10., 110.}, "Centrality range: {min, max}, with convention: min <= cent < max"};
   Configurable<vector<float>> cfVertex_x{"cfVertex_x", {-10., 10.}, "Vertex x position range: {min, max}[cm], with convention: min <= Vx < max"};
   Configurable<vector<float>> cfVertex_y{"cfVertex_y", {-10., 10.}, "Vertex y position range: {min, max}[cm], with convention: min <= Vy < max"};
   Configurable<vector<float>> cfVertex_z{"cfVertex_z", {-10., 10.}, "Vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
-  Configurable<vector<int>> cfNContributors{"cfNContributors", {-1, 1000000000}, "Number of vertex contributors: {min, max}, with convention: min <= IP < max"};
+  Configurable<vector<int>> cfNContributors{"cfNContributors", {2, 1000000000}, "Number of vertex contributors: {min, max}, with convention: min <= IP < max"};
   Configurable<vector<float>> cfImpactParameter{"cfImpactParameter", {-1, 1000000000}, "Impact parameter range (can be used osnly for sim): {min, max}, with convention: min <= IP < max"};
   // TBI 20240426 do I need to add separate support for booleans to use each specific cut?
 } cf_ec;
@@ -62,18 +69,38 @@ struct : ConfigurableGroup {
 // *) Particle histograms:
 struct : ConfigurableGroup {
   Configurable<bool> cfFillParticleHistograms{"cfFillParticleHistograms", true, "if false, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled"};
-  Configurable<vector<int>> cfBookParticleHistograms{"cfBookParticleHistograms", {1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms"};
+  Configurable<vector<int>> cfBookParticleHistograms{"cfBookParticleHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms"};
   Configurable<bool> cfFillParticleHistograms2D{"cfFillParticleHistograms2D", true, "if false, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled"};
-  Configurable<vector<int>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms2D"};
+  Configurable<vector<int>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {1, 1}, "Book (1) or do not book (0) this 2D particle histogram, ordering is the same as in enum eParticleHistograms2D"};
 } cf_ph;
 
 // *) Particle cuts:
 struct : ConfigurableGroup {
   Configurable<vector<int>> cfUseParticleCuts{"cfUseParticleCuts", {0, 1, 1, 1, 1, 1, 1, 1}, "Use (1) or do not use (0) event cuts, ordering is the same as in enums eEventHistograms + eEventCuts"};
+  Configurable<bool> cfUseParticleCutCounterAbsolute{"cfUseParticleCutCounterAbsolute", false, "profile and save how many times each particle cut counter triggered (absolute). Use with care, as this is computationally heavy"};
+  Configurable<bool> cfUseParticleCutCounterSequential{"cfUseParticleCutCounterSequential", false, "profile and save how many times each particle cut counter triggered (sequential). Use with care, as this is computationally heavy"};
   Configurable<vector<float>> cfPhi{"cfPhi", {0.0, TMath::TwoPi()}, "phi range: {min, max}[rad], with convention: min <= phi < max"};
   Configurable<vector<float>> cfPt{"cfPt", {0.2, 5.0}, "pt range: {min, max}[GeV], with convention: min <= pt < max"};
   Configurable<vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range: {min, max}, with convention: min <= eta < max"};
-  // TBI 20240426 add suport for etpcNClsCrossedRows, eDCA_xy, eDCA_z, eDPG, ...
+  Configurable<vector<float>> cfCharge{"cfCharge", {-1.5, 1.5}, "particle charge. {-1.5,0} = only negative, {0,1.5} = only positive"};
+  Configurable<vector<float>> cftpcNClsFindable{"cftpcNClsFindable", {-1000., 1000.}, "tpcNClsFindable range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcNClsShared{"cftpcNClsShared", {-1000., 1000.}, "tpcNClsShared range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcNClsFound{"cftpcNClsFound", {-1000., 1000.}, "tpcNClsFound range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcNClsCrossedRows{"cftpcNClsCrossedRows", {-1000., 1000.}, "tpcNClsCrossedRows range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfitsNCls{"cfitsNCls", {-1000., 1000.}, "itsNCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfitsNClsInnerBarrel{"cfitsNClsInnerBarrel", {-1000., 1000.}, "itsNClsInnerBarrel range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcCrossedRowsOverFindableCls{"cftpcCrossedRowsOverFindableCls", {-1000., 1000.}, "tpcCrossedRowsOverFindableCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcFoundOverFindableCls{"cftpcFoundOverFindableCls", {-1000., 1000.}, "tpcFoundOverFindableCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cftpcFractionSharedCls{"cftpcFractionSharedCls", {-1000., 1000.}, "tpcFractionSharedCls range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfdcaXY{"cfdcaXY", {-1000., 1000.}, "dcaXY range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfdcaZ{"cfdcaZ", {-1000., 1000.}, "dcaZ range: {min, max}, with convention: min <= eta < max"};
+  Configurable<vector<float>> cfPDG{"cfPDG", {-5000., 5000.}, "PDG code"};
+  Configurable<bool> cftrackCutFlagFb1{"cftrackCutFlagFb1", false, "TBI 20240510 add description"};
+  Configurable<bool> cftrackCutFlagFb2{"cftrackCutFlagFb2", false, "TBI 20240510 add description"};
+  Configurable<bool> cfisQualityTrack{"cfisQualityTrack", false, "TBI 20240510 add description"};
+  Configurable<bool> cfisPrimaryTrack{"cfisPrimaryTrack", false, "TBI 20240510 add description"};
+  Configurable<bool> cfisInAcceptanceTrack{"cfisInAcceptanceTrack", false, "TBI 20240510 add description"};
+  Configurable<bool> cfisGlobalTrack{"cfisGlobalTrack", false, "TBI 20240510 add description"};
   // TBI 20240426 do I need to add separate support for booleans to use each specific cut?
 } cf_pc;
 
@@ -120,6 +147,8 @@ struct : ConfigurableGroup {
 struct : ConfigurableGroup {
   Configurable<vector<int>> cfApplyNUAPDF{"cfApplyNUAPDF", {0, 0, 0}, "Apply (1) or do not apply (0) NUA on variable, ordering is the same as in enum eNUAPDF (phi, pt, eta)"};
   Configurable<vector<int>> cfUseDefaultNUAPDF{"cfUseDefaultNUAPDF", {1, 1, 1}, "Use (1) or do not use (0) default NUA profile, ordering is the same as in enum eNUAPDF (phi, pt, eta)"};
+  Configurable<vector<string>> cfCustomNUAPDFHistNames{"cfCustomNUAPDFHistNames", {"a", "bb", "ccc"}, "the names of histograms holding custom NUA in an external file."};
+  Configurable<string> cfFileWithCustomNUA{"cfFileWithCustomNUA", "/home/abilandz/DatasetsO2/customNUA.root", "path to external ROOT file which holds all histograms with custom NUA"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
 } cf_nua;
 
 // *) Internal validation:

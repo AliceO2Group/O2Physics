@@ -40,6 +40,13 @@ static constexpr int kFDDMultZeqs = 11;
 static constexpr int kPVMultZeqs = 12;
 static constexpr int kMultsExtraMC = 13;
 static constexpr int nTables = 14;
+
+// Checking that the Zeq tables are after the normal ones
+static_assert(kFV0Mults < kFV0MultZeqs);
+static_assert(kFT0Mults < kFT0MultZeqs);
+static_assert(kFDDMults < kFDDMultZeqs);
+static_assert(kPVMults < kPVMultZeqs);
+
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "FT0Mults",       // 1
@@ -151,6 +158,7 @@ struct MultiplicityTable {
       mEnabledTables.push_back(kPVMults);
       LOG(info) << "Cannot have the " << tableNames[kPVMultZeqs] << " table enabled and not the one on " << tableNames[kPVMults] << ". Enabling it.";
     }
+    std::sort(mEnabledTables.begin(), mEnabledTables.end());
 
     mRunNumber = 0;
     lCalibLoaded = false;

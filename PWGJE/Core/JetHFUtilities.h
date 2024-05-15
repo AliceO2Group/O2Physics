@@ -38,6 +38,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGHF/DataModel/DerivedTablesStored.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
@@ -341,6 +342,34 @@ bool isDaughterParticle(const T& particle, int globalIndex)
 }
 
 /**
+ * returns the index of the JMcParticle matched to the candidate
+ *
+ * @param candidate hf candidate that is being checked
+ * @param tracks track table
+ * @param particles particle table
+ */
+template <typename T, typename U, typename V>
+auto matchedParticleId(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
+{
+  const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+  return candidateDaughterParticle.template mothers_first_as<V>().globalIndex(); // can we get the Id directly?
+}
+
+/**
+ * returns the JMcParticle matched to the candidate
+ *
+ * @param candidate hf candidate that is being checked
+ * @param tracks track table
+ * @param particles particle table
+ */
+template <typename T, typename U, typename V>
+auto matchedParticle(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
+{
+  const auto candidateDaughterParticle = candidate.template prong1_as<U>().template mcParticle_as<V>();
+  return candidateDaughterParticle.template mothers_first_as<V>();
+}
+
+/**
  * returns a slice of the table depending on the index of the candidate
  *
  * @param candidate HF candidate that is being checked
@@ -621,13 +650,13 @@ void fillCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseTab
 template <typename T, typename U>
 void fillD0CandidateMcTable(T const& candidate, U& D0PBaseTable, int32_t& D0CandidateTableIndex)
 {
-  D0PBaseTable(candidate.pt(), candidate.eta(), candidate.phi(), candidate.flagMcMatchGen(), candidate.originMcGen());
+  D0PBaseTable(candidate.hfD0McCollBaseId(), candidate.pt(), candidate.eta(), candidate.phi(), candidate.flagMcMatchGen(), candidate.originMcGen());
   D0CandidateTableIndex = D0PBaseTable.lastIndex();
 }
 template <typename T, typename U>
 void fillLcCandidateMcTable(T const& candidate, U& LcPBaseTable, int32_t& LcCandidateTableIndex)
 {
-  LcPBaseTable(candidate.pt(), candidate.eta(), candidate.phi(), candidate.flagMcMatchGen(), candidate.originMcGen());
+  LcPBaseTable(candidate.hf3PMcCollBaseId(), candidate.pt(), candidate.eta(), candidate.phi(), candidate.flagMcMatchGen(), candidate.originMcGen());
   LcCandidateTableIndex = LcPBaseTable.lastIndex();
 }
 

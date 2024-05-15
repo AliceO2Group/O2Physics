@@ -35,7 +35,6 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "Common/DataModel/Qvectors.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
@@ -43,6 +42,8 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
+
+#include "EventFiltering/Zorro.h"
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -52,6 +53,7 @@
 
 #include "ReconstructionDataFormats/Track.h"
 
+#include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFSlimNucleiTables.h"
 
 #include "TRandom3.h"
@@ -211,6 +213,7 @@ struct nucleiSpectra {
   Produces<o2::aod::NucleiTableMC> nucleiTableMC;
   Produces<o2::aod::NucleiTableFlow> nucleiTableFlow;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Zorro zorro;
 
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
 
@@ -253,6 +256,8 @@ struct nucleiSpectra {
   ConfigurableAxis cfgV2Bins{"cfgV2Bins", {100, -1.f, 1.f}, "Binning for v2"};
   ConfigurableAxis cfgNITSClusBins{"cfgNITSClusBins", {3, 4.5, 7.5}, "N ITS clusters binning"};
   ConfigurableAxis cfgNTPCClusBins{"cfgNTPCClusBins", {3, 89.5, 159.5}, "N TPC clusters binning"};
+
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
 
   // CCDB options
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
@@ -308,19 +313,22 @@ struct nucleiSpectra {
 
   float computeEventPlane(float y, float x)
   {
-    return 0.5 * TMath::ATan2(y, x);
+    return 0.5 * std::atan2(y, x);
   }
 
   template <class collision_t>
   bool eventSelection(collision_t& collision)
   {
-    return collision.sel8() && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
+    return collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+    if (cfgSkimmedProcessing) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fHe3");
     }
     auto timestamp = bc.timestamp();
     mRunNumber = bc.runNumber();
@@ -368,6 +376,9 @@ struct nucleiSpectra {
     const AxisSpec etaAxis{40, -1., 1., "#eta"};
 
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
+    if (doprocessMC) {
+      spectra.add("hGenVtxZ", " generated collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
+    }
     spectra.add("hRecVtxZDataITSrof", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
@@ -545,13 +556,13 @@ struct nucleiSpectra {
                 if (cfgFlowHist->get(iS) && doprocessDataFlow) {
                   if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
                     auto deltaPhiInRange = getPhiInRange(fvector.phi() - collision.psiFT0C());
-                    auto v2 = TMath::Cos(2.0 * deltaPhiInRange);
+                    auto v2 = std::cos(2.0 * deltaPhiInRange);
                     nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMass, v2, track.itsNCls(), track.tpcNClsFound(), track.hasTRD());
                   }
                 } else if (cfgFlowHist->get(iS) && doprocessDataFlowAlternative) {
                   if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
                     auto deltaPhiInRange = getPhiInRange(fvector.phi() - computeEventPlane(collision.qvecFT0CIm(), collision.qvecFT0CRe()));
-                    auto v2 = TMath::Cos(2.0 * deltaPhiInRange);
+                    auto v2 = std::cos(2.0 * deltaPhiInRange);
                     nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMass, v2, track.itsNCls(), track.tpcNClsFound(), track.hasTRD());
                   }
                 }
@@ -614,6 +625,10 @@ struct nucleiSpectra {
     if (!eventSelection(collision)) {
       return;
     }
+    if (cfgSkimmedProcessing) {
+      zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+    }
+
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
@@ -628,7 +643,7 @@ struct nucleiSpectra {
     if (!eventSelection(collision)) {
       return;
     }
-    if (!collision.triggereventep()) {
+    if (!collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return;
     }
     fillDataInfo(collision, tracks);
@@ -648,6 +663,9 @@ struct nucleiSpectra {
     if (!eventSelection(collision)) {
       return;
     }
+    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
@@ -662,6 +680,9 @@ struct nucleiSpectra {
   void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
+    for (auto& c : mcCollisions) {
+      spectra.fill(HIST("hGenVtxZ"), c.posZ());
+    }
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
     for (auto& collision : collisions) {
       if (!eventSelection(collision)) {

@@ -78,7 +78,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(EP2BNeg, ep2bneg, [](float q2x, float q2y) -> float {
 DECLARE_SOA_TABLE(EMEvents, "AOD", "EMEVENT", //!   Main event information table
                   o2::soa::Index<>, emevent::CollisionId, bc::GlobalBC, bc::RunNumber, evsel::Sel8, evsel::Alias, evsel::Selection, emevent::NcollsPerBC,
                   collision::PosX, collision::PosY, collision::PosZ,
-                  collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes);
+                  collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes, emevent::Bz);
 using EMEvent = EMEvents::iterator;
 
 DECLARE_SOA_TABLE(EMEventsBz, "AOD", "EMEVENTBZ", emevent::Bz); // joinable to EMEvents
