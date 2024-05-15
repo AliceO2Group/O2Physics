@@ -187,9 +187,6 @@ DECLARE_SOA_TABLE(StoredHfD0Pars, "AOD1", "HFD0PAR", //! Table with candidate pr
                   soa::Marker<MarkerD0Stored>);
 
 DECLARE_SOA_TABLE(StoredHfD0ParEs, "AOD1", "HFD0PARE", //! Table with additional candidate properties used for selection
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
                   hf_cand::XSecondaryVertex,
                   hf_cand::YSecondaryVertex,
                   hf_cand::ZSecondaryVertex,
@@ -286,9 +283,6 @@ DECLARE_SOA_TABLE(StoredHf3PPars, "AOD1", "HF3PPAR", //! Table with candidate pr
                   soa::Marker<Marker3PStored>);
 
 DECLARE_SOA_TABLE(StoredHf3PParEs, "AOD1", "HF3PPARE", //! Table with additional candidate properties used for selection
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
                   hf_cand::XSecondaryVertex,
                   hf_cand::YSecondaryVertex,
                   hf_cand::ZSecondaryVertex,

@@ -224,9 +224,6 @@ struct HfDerivedDataCreatorLcToPKPi {
     }
     if (fillCandidateParE) {
       rowCandidateParE(
-        candidate.posX(),
-        candidate.posY(),
-        candidate.posZ(),
         candidate.xSecondaryVertex(),
         candidate.ySecondaryVertex(),
         candidate.zSecondaryVertex(),

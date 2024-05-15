@@ -520,9 +520,6 @@ void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseT
     candidate.impactParameterProduct());
 
   D0ParETable(
-    candidate.posX(),
-    candidate.posY(),
-    candidate.posZ(),
     candidate.xSecondaryVertex(),
     candidate.ySecondaryVertex(),
     candidate.zSecondaryVertex(),
@@ -597,9 +594,6 @@ void fillLcCandidateTable(T const& candidate, int32_t collisionIndex, U& LcBaseT
     candidate.nSigTpcTofPr2());
 
   LcParETable(
-    candidate.posX(),
-    candidate.posY(),
-    candidate.posZ(),
     candidate.xSecondaryVertex(),
     candidate.ySecondaryVertex(),
     candidate.zSecondaryVertex(),
