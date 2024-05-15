@@ -164,6 +164,20 @@ class DalitzEECut : public TNamed
       return false;
     }
 
+    if (mRequireITSibAny) {
+      auto hits_ib = std::count_if(its_ib_any_Requirement.second.begin(), its_ib_any_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      if (hits_ib < its_ib_any_Requirement.first) {
+        return false;
+      }
+    }
+
+    if (mRequireITSib1st) {
+      auto hits_ib = std::count_if(its_ib_1st_Requirement.second.begin(), its_ib_1st_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      if (hits_ib < its_ib_1st_Requirement.first) {
+        return false;
+      }
+    }
+
     // TPC cuts
     if (!IsSelectedTrack(track, DalitzEECuts::kTPCNCls)) {
       return false;
@@ -378,6 +392,8 @@ class DalitzEECut : public TNamed
   void SetTOFNsigmaKaRange(float min = -1e+10, float max = 1e+10);
   void SetTOFNsigmaPrRange(float min = -1e+10, float max = 1e+10);
   void SetMaxPinMuonTPConly(float max);
+  void RequireITSibAny(bool flag);
+  void RequireITSib1st(bool flag);
 
   void SetDca3DRange(float min, float max); // in sigma
   void SetMaxDcaXY(float maxDcaXY);         // in cm
@@ -398,6 +414,8 @@ class DalitzEECut : public TNamed
   void print() const;
 
  private:
+  static const std::pair<int8_t, std::set<uint8_t>> its_ib_any_Requirement;
+  static const std::pair<int8_t, std::set<uint8_t>> its_ib_1st_Requirement;
   // pair cuts
   float mMinMee{0.f}, mMaxMee{1e10f};
   float mMinPairPt{0.f}, mMaxPairPt{1e10f};       // range in pT
@@ -419,6 +437,8 @@ class DalitzEECut : public TNamed
   int mMinNClustersITS{0}, mMaxNClustersITS{7};                      // range in number of ITS clusters
   float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
   float mMaxPinMuonTPConly{0.2f};                                    // max pin cut for muon ID with TPConly
+  bool mRequireITSibAny{true};
+  bool mRequireITSib1st{false};
 
   float mMinDca3D{0.0f};                        // min dca in 3D in units of sigma
   float mMaxDca3D{1e+10};                       // max dca in 3D in units of sigma

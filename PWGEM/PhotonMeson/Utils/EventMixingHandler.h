@@ -42,7 +42,7 @@ class EventMixingHandler : public TNamed
 
   void SetNdepth(int ndepth) { fNdepth = ndepth; }
 
-  void AddLast(U key_df_collision, V obj)
+  void AddTracksPerCollisionAtLast(U key_df_collision, V obj)
   {
     fMap_Tracks_per_collision[key_df_collision].emplace_back(obj);
   }
@@ -51,7 +51,7 @@ class EventMixingHandler : public TNamed
   std::vector<V> GetTracksPerCollision(T key_bin, int index) { return fMap_Tracks_per_collision[fMapMixBins[key_bin][index]]; }
   std::vector<V> GetTracksPerCollision(U key_df_collision) { return fMap_Tracks_per_collision[key_df_collision]; }
 
-  void Update(T key_bin, U key_df_collision)
+  void AddCollisionIdAtLast(T key_bin, U key_df_collision)
   {
     if (static_cast<int>(fMapMixBins[key_bin].size()) >= fNdepth) {
       fMap_Tracks_per_collision[fMapMixBins[key_bin][0]].clear();
