@@ -347,27 +347,27 @@ struct HfCandidateSelectorToXiPi {
       }
 
       //  TPC clusters selections
-      if(applyTrkSelLf){
-        if(!isSelectedTrackTpcQuality(trackPiFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)){
+      if (applyTrkSelLf) {
+        if (!isSelectedTrackTpcQuality(trackPiFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
           resultSelections = false;
           registry.fill(HIST("hSelTPCQualityPiFromLam"), 0);
         } else {
           registry.fill(HIST("hSelTPCQualityPiFromLam"), 1);
         }
-          if(!isSelectedTrackTpcQuality(trackPrFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)){
+        if (!isSelectedTrackTpcQuality(trackPrFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
           resultSelections = false;
           registry.fill(HIST("hSelTPCQualityPrFromLam"), 0);
         } else {
           registry.fill(HIST("hSelTPCQualityPrFromLam"), 1);
         }
-          if(!isSelectedTrackTpcQuality(trackPiFromCasc, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)){
+        if (!isSelectedTrackTpcQuality(trackPiFromCasc, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
           resultSelections = false;
           registry.fill(HIST("hSelTPCQualityPiFromCasc"), 0);
         } else {
           registry.fill(HIST("hSelTPCQualityPiFromCasc"), 1);
         }
       }
-      if(!isSelectedTrackTpcQuality(trackPiFromCharm, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)){
+      if (!isSelectedTrackTpcQuality(trackPiFromCharm, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
         resultSelections = false;
         registry.fill(HIST("hSelTPCQualityPiFromCharm"), 0);
       } else {
@@ -375,7 +375,7 @@ struct HfCandidateSelectorToXiPi {
       }
 
       //  ITS clusters selection
-      if(!isSelectedTrackItsQuality(trackPiFromCharm, nClustersItsMin, itsChi2PerClusterMax) || trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin){
+      if (!isSelectedTrackItsQuality(trackPiFromCharm, nClustersItsMin, itsChi2PerClusterMax) || trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
         resultSelections = false;
         registry.fill(HIST("hSelITSQualityPiFromCharm"), 0);
       } else {
