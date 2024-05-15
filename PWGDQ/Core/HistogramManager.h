@@ -67,22 +67,22 @@ class HistogramManager : public TNamed
                     int nYbins = 0, double ymin = 0, double ymax = 0, int varY = -1,
                     int nZbins = 0, double zmin = 0, double zmax = 0, int varZ = -1,
                     const char* xLabels = "", const char* yLabels = "", const char* zLabels = "",
-                    int varT = -1, int varW = -1);
+                    int varT = -1, int varW = -1, bool isdouble = false);
   // Similar to the above function, with the difference that the user can specify non-equidistant binning
   void AddHistogram(const char* histClass, const char* name, const char* title, bool isProfile,
                     int nXbins, double* xbins, int varX,
                     int nYbins = 0, double* ybins = nullptr, int varY = -1,
                     int nZbins = 0, double* zbins = nullptr, int varZ = -1,
                     const char* xLabels = "", const char* yLabels = "", const char* zLabels = "",
-                    int varT = -1, int varW = -1);
+                    int varT = -1, int varW = -1, bool isdouble = false);
   // Create a THn histogram (either THnF or THnSparse) with equidistant binning
   void AddHistogram(const char* histClass, const char* name, const char* title,
                     int nDimensions, int* vars, int* nBins, double* xmin, double* xmax,
-                    TString* axLabels = nullptr, int varW = -1, bool useSparse = kFALSE);
+                    TString* axLabels = nullptr, int varW = -1, bool useSparse = kFALSE, bool isdouble = false);
   // Create a THn histogram (either THnF or THnSparse) with non-equidistant binning
   void AddHistogram(const char* histClass, const char* name, const char* title,
                     int nDimensions, int* vars, TArrayD* binLimits,
-                    TString* axLabels = nullptr, int varW = -1, bool useSparse = kFALSE);
+                    TString* axLabels = nullptr, int varW = -1, bool useSparse = kFALSE, bool isdouble = false);
 
   void FillHistClass(const char* className, float* values);
 
