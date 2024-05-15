@@ -13,8 +13,8 @@
 /// \author Rashi Gupta <rashi.gupta@cern.ch>, IIT Indore
 /// \author Ravindra Singh <ravindra.singh@cern.ch>, IIT Indore
 
-#ifndef PWGHF_DATAMODEL_ELECTRONSELECTIONTABLE_H_
-#define PWGHF_DATAMODEL_ELECTRONSELECTIONTABLE_H_
+#ifndef PWGHF_HFL_DATAMODEL_ELECTRONSELECTIONTABLE_H_
+#define PWGHF_HFL_DATAMODEL_ELECTRONSELECTIONTABLE_H_
 
 #include "Framework/AnalysisDataModel.h"
 
@@ -76,5 +76,5 @@ DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
 
 } // namespace o2::aod
 
-#endif // PWGHF_DATAMODEL_ELECTRONSELECTIONTABLE_H_
+#endif // PWGHF_HFL_DATAMODEL_ELECTRONSELECTIONTABLE_H_
 
