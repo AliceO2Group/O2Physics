@@ -39,7 +39,6 @@
 #include "TGeoGlobalMagField.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
-#include "Common/Core/EventPlaneHelper.h"
 
 using std::cout;
 using std::endl;
@@ -202,17 +201,6 @@ struct AnalysisEventSelection {
     }
 
     if (fMixHandler != nullptr) {
-      constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
-      if constexpr (eventHasQvector) {
-        EventPlaneHelper epHelper;
-        float Psi2A = epHelper.GetEventPlane(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], 2);
-        float Psi2B = epHelper.GetEventPlane(VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], 2);
-        float Psi2C = epHelper.GetEventPlane(VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], 2);
-
-        VarManager::fgValues[VarManager::kPsi2A] = Psi2A;
-        VarManager::fgValues[VarManager::kPsi2B] = Psi2B;
-        VarManager::fgValues[VarManager::kPsi2C] = Psi2C;
-      }
       int hh = fMixHandler->FindEventCategory(VarManager::fgValues);
       hash(hh);
     }

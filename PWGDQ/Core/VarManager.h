@@ -1377,6 +1377,15 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ4X0C] = event.q4x0c();
     values[kQ4Y0C] = event.q4y0c();
 
+    EventPlaneHelper epHelper;
+    float Psi2A = epHelper.GetEventPlane(values[kQ2X0A], values[kQ2Y0A], 2);
+    float Psi2B = epHelper.GetEventPlane(values[kQ2X0B], values[kQ2Y0B], 2);
+    float Psi2C = epHelper.GetEventPlane(values[kQ2X0C], values[kQ2Y0C], 2);
+
+    values[VarManager::kPsi2A] = Psi2A;
+    values[VarManager::kPsi2B] = Psi2B;
+    values[VarManager::kPsi2C] = Psi2C;
+
     if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
       values[kQ42XA] = event.q42xa();
       values[kQ42YA] = event.q42ya();
