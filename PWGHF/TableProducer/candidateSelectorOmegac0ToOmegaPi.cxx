@@ -27,6 +27,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
+using namespace o2::analysis;
 
 enum pidInfoStored {
   kPiFromLam = 0,
