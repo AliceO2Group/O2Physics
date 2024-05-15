@@ -102,7 +102,7 @@ DECLARE_SOA_TABLE(Hf3PCollIds, "AOD", "HF3PCOLLID", //! Table with original glob
 // MC collision columns
 namespace hf_mc_coll
 {
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);          //! original global index of the MC collision
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! original global index of the MC collision
 namespace der_d0
 {
 DECLARE_SOA_ARRAY_INDEX_COLUMN(HfD0CollBase, hfCollBases); //! collision index array pointing to the derived reconstructed collisions for D0 candidates
@@ -158,18 +158,18 @@ namespace hf_cand_base
 {
 namespace der_d0
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfCollBase);             //! collision index pointing to the derived collision table for D0 candidates
+DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfCollBase); //! collision index pointing to the derived collision table for D0 candidates
 }
 namespace der_3p
 {
-DECLARE_SOA_INDEX_COLUMN(Hf3PCollBase, hfCollBase);             //! collision index pointing to the derived collision table for 3-prong candidates
+DECLARE_SOA_INDEX_COLUMN(Hf3PCollBase, hfCollBase); //! collision index pointing to the derived collision table for 3-prong candidates
 }
-DECLARE_SOA_COLUMN(Eta, eta, float);                              //! pseudorapidity
-DECLARE_SOA_COLUMN(M, m, float);                                  //! invariant mass
-DECLARE_SOA_COLUMN(Phi, phi, float);                              //! azimuth
-DECLARE_SOA_COLUMN(Pt, pt, float);                                //! transverse momentum
-DECLARE_SOA_COLUMN(Y, y, float);                                  //! rapidity
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                                //! px
+DECLARE_SOA_COLUMN(Eta, eta, float); //! pseudorapidity
+DECLARE_SOA_COLUMN(M, m, float);     //! invariant mass
+DECLARE_SOA_COLUMN(Phi, phi, float); //! azimuth
+DECLARE_SOA_COLUMN(Pt, pt, float);   //! transverse momentum
+DECLARE_SOA_COLUMN(Y, y, float);     //! rapidity
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,   //! px
                            [](float pt, float phi) -> float { return RecoDecayPtEtaPhi::px(pt, phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! py
                            [](float pt, float phi) -> float { return RecoDecayPtEtaPhi::py(pt, phi); });
@@ -456,11 +456,11 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);                 //! MC colli
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                   //! MC particle
 namespace der_d0
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0McCollBase, hfMcCollBase);           //! collision index pointing to the derived MC collision table for D0 candidates
+DECLARE_SOA_INDEX_COLUMN(HfD0McCollBase, hfMcCollBase); //! collision index pointing to the derived MC collision table for D0 candidates
 }
 namespace der_3p
 {
-DECLARE_SOA_INDEX_COLUMN(Hf3PMcCollBase, hfMcCollBase);           //! collision index pointing to the derived MC collision table for 3-prong candidates
+DECLARE_SOA_INDEX_COLUMN(Hf3PMcCollBase, hfMcCollBase); //! collision index pointing to the derived MC collision table for 3-prong candidates
 }
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         //! flag for generator level matching
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle origin, generator level
