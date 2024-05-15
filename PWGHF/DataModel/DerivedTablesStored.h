@@ -16,6 +16,7 @@
 ///       - Prefix "Stored" in table definitions
 ///       - Prefix "Stored" in names of index columns pointing to derived tables
 ///       - Suffix "Stored" in Marker name
+///       - Prefix "der_stored_" in namespace names (if needed to avoid redefinitions in "der_")
 ///       - Origin AOD1
 
 #ifndef PWGHF_DATAMODEL_DERIVEDTABLESSTORED_H_
