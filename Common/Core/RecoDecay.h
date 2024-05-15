@@ -950,7 +950,7 @@ struct RecoDecay {
             if (searchUpToQuark) {
               if (idxBhadMothers) {
                 if (PDGParticleIMother / 100 == 5 || // b mesons
-                 PDGParticleIMother / 1000 == 5)  // b baryons
+                    PDGParticleIMother / 1000 == 5)  // b baryons
                 {
                   idxBhadMothers->push_back(iMother);
                 }
