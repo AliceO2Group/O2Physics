@@ -14,8 +14,8 @@
 // Class to define and fill histograms
 //
 
-#ifndef HistogramManager_H
-#define HistogramManager_H
+#ifndef PWGDQ_CORE_HISTOGRAMMANAGER_H_
+#define PWGDQ_CORE_HISTOGRAMMANAGER_H_
 
 #include <TString.h>
 #include <TNamed.h>
@@ -86,13 +86,13 @@ class HistogramManager : public TNamed
 
   void FillHistClass(const char* className, float* values);
 
-  void SetUseDefaultVariableNames(bool flag) { fUseDefaultVariableNames = flag; };
+  void SetUseDefaultVariableNames(bool flag) { fUseDefaultVariableNames = flag; }
   void SetDefaultVarNames(TString* vars, TString* units);
   const bool* GetUsedVars() const { return fUsedVars; }
 
   THashList* GetMainHistogramList() { return fMainList; } // get a histogram list
 
-  unsigned long int GetAllocatedBins() const { return fBinsAllocated; }
+  uint64_t GetAllocatedBins() const { return fBinsAllocated; }
   void Print(Option_t*) const override;
 
  private:
@@ -104,7 +104,7 @@ class HistogramManager : public TNamed
 
   // various
   bool fUseDefaultVariableNames;    //! toggle the usage of default variable names and units
-  unsigned long int fBinsAllocated; //! number of allocated bins
+  uint64_t fBinsAllocated; //! number of allocated bins
   TString* fVariableNames;          //! variable names
   TString* fVariableUnits;          //! variable units
 
@@ -113,7 +113,7 @@ class HistogramManager : public TNamed
   HistogramManager& operator=(const HistogramManager& c);
   HistogramManager(const HistogramManager& c);
 
-  ClassDef(HistogramManager, 1)
+  ClassDef(HistogramManager, 2)
 };
 
-#endif
+#endif  // PWGDQ_CORE_HISTOGRAMMANAGER_H_
