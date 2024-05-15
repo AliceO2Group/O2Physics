@@ -47,7 +47,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   Produces<o2::aod::Hf3PCollIds> rowCollId;
   // MC collisions
   Produces<o2::aod::Hf3PMcCollBases> rowMcCollBase;
-  Produces<o2::aod::Hf3PMcCollIds> rowMcCollId;
+  Produces<o2::aod::Hf3PMcRCollIds> rowMcRCollId;
   // MC particles
   Produces<o2::aod::Hf3PPBases> rowParticleBase;
   Produces<o2::aod::Hf3PPIds> rowParticleId;
@@ -63,7 +63,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   Configurable<bool> fillCollBase{"fillCollBase", true, "Fill collision base properties"};
   Configurable<bool> fillCollId{"fillCollId", true, "Fill original collision indices"};
   Configurable<bool> fillMcCollBase{"fillMcCollBase", true, "Fill MC collision base properties"};
-  Configurable<bool> fillMcCollId{"fillMcCollId", true, "Fill indices of saved derived reconstructed collisions matched to saved derived MC collisions"};
+  Configurable<bool> fillMcRCollId{"fillMcRCollId", true, "Fill indices of saved derived reconstructed collisions matched to saved derived MC collisions"};
   Configurable<bool> fillParticleBase{"fillParticleBase", true, "Fill MC particle properties"};
   Configurable<bool> fillParticleId{"fillParticleId", true, "Fill original MC indices"};
   // Parameters for production of training samples
@@ -144,7 +144,7 @@ struct HfDerivedDataCreatorLcToPKPi {
         collision.globalIndex());
     }
     if constexpr (isMC) {
-      if (fillMcCollId && collision.has_mcCollision()) {
+      if (fillMcRCollId && collision.has_mcCollision()) {
         // Save rowCollBase.lastIndex() at key collision.mcCollisionId()
         LOGF(debug, "Rec. collision %d: Filling derived-collision index %d for MC collision %d", collision.globalIndex(), rowCollBase.lastIndex(), collision.mcCollisionId());
         matchedCollisions[collision.mcCollisionId()].push_back(rowCollBase.lastIndex()); // [] inserts an empty element if it does not exist
@@ -161,9 +161,9 @@ struct HfDerivedDataCreatorLcToPKPi {
         mcCollision.posY(),
         mcCollision.posZ());
     }
-    if (fillMcCollId) {
+    if (fillMcRCollId) {
       // Fill the table with the vector of indices of derived reconstructed collisions matched to mcCollision.globalIndex()
-      rowMcCollId(
+      rowMcRCollId(
         matchedCollisions[mcCollision.globalIndex()]);
     }
   }
@@ -295,7 +295,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   {
     // Fill collision properties
     if constexpr (isMc) {
-      if (fillMcCollId) {
+      if (fillMcRCollId) {
         matchedCollisions.clear();
       }
     }
@@ -310,10 +310,10 @@ struct HfDerivedDataCreatorLcToPKPi {
       // Skip collisions without HF candidates (and without HF particles in matched MC collisions if saving indices of reconstructed collisions matched to MC collisions)
       bool mcCollisionHasMcParticles{false};
       if constexpr (isMc) {
-        mcCollisionHasMcParticles = fillMcCollId && collision.has_mcCollision() && hasMcParticles[collision.mcCollisionId()];
+        mcCollisionHasMcParticles = fillMcRCollId && collision.has_mcCollision() && hasMcParticles[collision.mcCollisionId()];
         LOGF(debug, "Rec. collision %d has MC collision %d with MC particles? %s", thisCollId, collision.mcCollisionId(), mcCollisionHasMcParticles ? "yes" : "no");
       }
-      if (sizeTableCand == 0 && (!fillMcCollId || !mcCollisionHasMcParticles)) {
+      if (sizeTableCand == 0 && (!fillMcRCollId || !mcCollisionHasMcParticles)) {
         LOGF(debug, "Skipping rec. collision %d", thisCollId);
         continue;
       }
@@ -379,7 +379,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   void preProcessMcCollisions(CollisionType const& mcCollisions,
                               ParticleType const& mcParticles)
   {
-    if (!fillMcCollId) {
+    if (!fillMcRCollId) {
       return;
     }
     hasMcParticles.clear();
@@ -399,7 +399,7 @@ struct HfDerivedDataCreatorLcToPKPi {
     // Fill MC collision properties
     auto sizeTableMcColl = mcCollisions.size();
     reserveTable(rowMcCollBase, fillMcCollBase, sizeTableMcColl);
-    reserveTable(rowMcCollId, fillMcCollId, sizeTableMcColl);
+    reserveTable(rowMcRCollId, fillMcRCollId, sizeTableMcColl);
     for (const auto& mcCollision : mcCollisions) {
       auto thisMcCollId = mcCollision.globalIndex();
       auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
@@ -407,7 +407,7 @@ struct HfDerivedDataCreatorLcToPKPi {
       LOGF(debug, "MC collision %d has %d MC particles", thisMcCollId, sizeTablePart);
       // Skip MC collisions without HF particles (and without HF candidates in matched reconstructed collisions if saving indices of reconstructed collisions matched to MC collisions)
       LOGF(debug, "MC collision %d has %d saved derived rec. collisions", thisMcCollId, matchedCollisions[thisMcCollId].size());
-      if (sizeTablePart == 0 && (!fillMcCollId || matchedCollisions[thisMcCollId].empty())) {
+      if (sizeTablePart == 0 && (!fillMcRCollId || matchedCollisions[thisMcCollId].empty())) {
         LOGF(debug, "Skipping MC collision %d", thisMcCollId);
         continue;
       }

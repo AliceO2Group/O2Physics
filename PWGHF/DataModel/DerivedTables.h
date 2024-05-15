@@ -117,7 +117,7 @@ DECLARE_SOA_TABLE(HfD0McCollBases, "AOD", "HFD0MCCOLLBASE", //! Table with basic
 
 using HfD0McCollBase = HfD0McCollBases::iterator;
 
-DECLARE_SOA_TABLE(HfD0McCollIds, "AOD", "HFD0MCCOLLID", //! Table with indices pointing to the derived collision table
+DECLARE_SOA_TABLE(HfD0McRCollIds, "AOD", "HFD0MCRCOLLID", //! Table with indices pointing to the derived collision table
                   hf_mc_coll::HfD0CollBaseIds);
 
 // 3-prong decays
@@ -131,7 +131,7 @@ DECLARE_SOA_TABLE(Hf3PMcCollBases, "AOD", "HF3PMCCOLLBASE", //! Table with basic
 
 using Hf3PMcCollBase = Hf3PMcCollBases::iterator;
 
-DECLARE_SOA_TABLE(Hf3PMcCollIds, "AOD", "HF3PMCCOLLID", //! Table with indices pointing to the derived collision table
+DECLARE_SOA_TABLE(Hf3PMcRCollIds, "AOD", "HF3PMCRCOLLID", //! Table with indices pointing to the derived collision table
                   hf_mc_coll::Hf3PCollBaseIds);
 
 // ================
