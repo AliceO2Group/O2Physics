@@ -72,6 +72,8 @@ struct DalitzEEQC {
   Configurable<float> cfg_max_pair_dca3d{"cfg_max_pair_dca3d", 1e+10, "max pair dca3d in sigma"};
   Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
   Configurable<bool> cfg_apply_pf{"cfg_apply_pf", false, "flag to apply phiv prefilter"};
+  Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", true, "flag to require ITS ib any hits"};
+  Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
 
   Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
   Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", 0.9, "max eta for single track"};
@@ -268,6 +270,8 @@ struct DalitzEEQC {
     fDielectronCut.SetPairDCARange(cfg_min_pair_dca3d, cfg_max_pair_dca3d); // in sigma
     fDielectronCut.ApplyPhiV(cfg_apply_phiv);
     fDielectronCut.ApplyPrefilter(cfg_apply_pf);
+    fDielectronCut.RequireITSibAny(cfg_require_itsib_any);
+    fDielectronCut.RequireITSib1st(cfg_require_itsib_1st);
 
     // for track
     fDielectronCut.SetTrackPtRange(cfg_min_pt_track, 1e+10f);
