@@ -54,7 +54,6 @@ struct HfCandidateSelectorToOmegaKa {
   Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
   Configurable<bool> applyTrkSelLf{"applyTrkSelLf", true, "Apply track selection for LF daughters"};
 
-
   // limit charm baryon invariant mass spectrum
   Configurable<double> invMassCharmBaryonMin{"invMassCharmBaryonMin", 2.3, "Lower limit invariant mass spectrum charm baryon"}; // 2.4 Omegac0 only
   Configurable<double> invMassCharmBaryonMax{"invMassCharmBaryonMax", 3.1, "Upper limit invariant mass spectrum charm baryon"};
@@ -186,7 +185,7 @@ struct HfCandidateSelectorToOmegaKa {
     registry.add("hSelTPCQualityPiFromLam", "hSelTPCQualityPiFromLam;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelTPCQualityPrFromLam", "hSelTPCQualityPrFromLam;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelTPCQualityKaFromCasc", "hSelTPCQualityKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelITSQualityKaFromCharm", "hSelITSQualityKaFromCharm;status;entries", {HistType::kTH1F, {axisSel}});    
+    registry.add("hSelITSQualityKaFromCharm", "hSelITSQualityKaFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelMassLam", "hSelMassLam;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1F, {axisSel}});
@@ -363,27 +362,27 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       //  TPC clusters selections
-      if(applyTrkSelLf){
-        if(!isSelectedTrackTpcQuality(trackPiFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)){
+      if (applyTrkSelLf) {
+        if (!isSelectedTrackTpcQuality(trackPiFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
           resultSelections = false;
           registry.fill(HIST("hSelTPCQualityPiFromLam"), 0);
         } else {
           registry.fill(HIST("hSelTPCQualityPiFromLam"), 1);
         }
-          if(!isSelectedTrackTpcQuality(trackPrFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)){
+        if (!isSelectedTrackTpcQuality(trackPrFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
           resultSelections = false;
           registry.fill(HIST("hSelTPCQualityPrFromLam"), 0);
         } else {
           registry.fill(HIST("hSelTPCQualityPrFromLam"), 1);
         }
-          if(!isSelectedTrackTpcQuality(trackKaFromCasc, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)){
+        if (!isSelectedTrackTpcQuality(trackKaFromCasc, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
           resultSelections = false;
           registry.fill(HIST("hSelTPCQualityKaFromCasc"), 0);
         } else {
           registry.fill(HIST("hSelTPCQualityKaFromCasc"), 1);
         }
       }
-      if(!isSelectedTrackTpcQuality(trackKaFromCharm, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)){
+      if (!isSelectedTrackTpcQuality(trackKaFromCharm, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
         resultSelections = false;
         registry.fill(HIST("hSelTPCQualityKaFromCharm"), 0);
       } else {
@@ -391,7 +390,7 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       //  ITS clusters selection
-      if(!isSelectedTrackItsQuality(trackKaFromCharm, nClustersItsMin, itsChi2PerClusterMax) || trackKaFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin){
+      if (!isSelectedTrackItsQuality(trackKaFromCharm, nClustersItsMin, itsChi2PerClusterMax) || trackKaFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
         resultSelections = false;
         registry.fill(HIST("hSelITSQualityKaFromCharm"), 0);
       } else {
