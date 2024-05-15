@@ -38,8 +38,8 @@ DECLARE_SOA_COLUMN(TrackTOFNSigmaE, trackTOFNSigmaE, float); //! NSigma electron
 
 // cluster values
 DECLARE_SOA_COLUMN(ClusterEnergy, clusterE, float);        //! cluster energy (GeV)
-DECLARE_SOA_COLUMN(ClusterEta, clusterEta, float);         //! cluster pseudorapidity (calculated using vertex)
-DECLARE_SOA_COLUMN(ClusterPhi, clusterPhi, float);         //! cluster azimuthal angle (calculated using vertex)
+DECLARE_SOA_COLUMN(ClusterEta, clusterEta, float);         //! cluster pseudorapidity
+DECLARE_SOA_COLUMN(ClusterPhi, clusterPhi, float);         //! cluster azimuthal angle
 DECLARE_SOA_COLUMN(M02, m02, float);                       //! shower shape long axis
 DECLARE_SOA_COLUMN(M20, m20, float);                       //! shower shape short axis
 DECLARE_SOA_COLUMN(ClusterNCells, clusterNCells, uint8_t); //! number of cells in cluster
@@ -77,4 +77,3 @@ DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
 } // namespace o2::aod
 
 #endif // PWGHF_HFL_DATAMODEL_ELECTRONSELECTIONTABLE_H_
-
