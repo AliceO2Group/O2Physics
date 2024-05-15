@@ -1542,7 +1542,7 @@ struct AnalysisAsymmetricPairing {
     getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
     TString tempCutsStr = tempCuts;
     std::unique_ptr<TObjArray> objArray(tempCutsStr.Tokenize(","));
-    bool isThreeProng[fNLegCuts];
+    std::vector<bool> isThreeProng;
     int legAIdx;
     int legBIdx;
     int legCIdx;
@@ -1551,11 +1551,11 @@ struct AnalysisAsymmetricPairing {
       TString legsStr = objArrayLegs->At(icut)->GetName();
       std::unique_ptr<TObjArray> legs(legsStr.Tokenize(":"));
       if (legs->GetEntries() == 3) {
-        isThreeProng[icut] = true;
+        isThreeProng.push_back(true);
       } else if (legs->GetEntries() == 2) {
-        isThreeProng[icut] = false;
+        isThreeProng.push_back(false);
       } else {
-        LOGF(warning, "Leg cuts %s has the wrong format and could not be parsed!", legsStr.Data());
+        LOGF(fatal, "Leg cuts %s has the wrong format and could not be parsed!", legsStr.Data());
         continue;
       }
       // Find leg cuts in the track selection cuts
@@ -1643,7 +1643,7 @@ struct AnalysisAsymmetricPairing {
     }
     // Make sure only pairs or only triplets of leg cuts were given
     bool allTriplets = false;
-    int tripletCheckSum = std::accumulate(isThreeProng, isThreeProng + fNLegCuts, 0);
+    int tripletCheckSum = std::count(isThreeProng.begin(), isThreeProng.end(), true);
     if (tripletCheckSum == fNLegCuts) {
       allTriplets = true;
     } else if (tripletCheckSum != 0) {
