@@ -226,7 +226,8 @@ struct upcRhoAnalysis {
 
     // apply some cuts on collisions
     if (std::abs(collision.posZ()) > collisionsPosZMaxCut) return;
-    // if (collision.has_<aod::UDZdcsReduced>()) return; // this doesn't work for some reason
+    // if (collision.has_udzdcreduce()) return; // something like this should work, but I don't know the exact syntax
+    if (collision.energyCommonZNA() != -999) return; // workaround for the above
 
     registry.fill(HIST("QC/collisions/cut/hNetCharge"), collision.netCharge());
     registry.fill(HIST("QC/collisions/cut/hNumContributors"), collision.numContrib());
