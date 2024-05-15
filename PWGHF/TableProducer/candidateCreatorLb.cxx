@@ -140,7 +140,6 @@ struct HfCandidateCreatorLb {
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
       auto collision = lcCand.collision();
-      //auto collision = track0.collision();
 
       // reconstruct the 3-prong secondary vertex
       hCandidatesLc->Fill(SVFitting::BeforeFit);
