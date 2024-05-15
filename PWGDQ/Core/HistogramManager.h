@@ -104,7 +104,7 @@ class HistogramManager : public TNamed
 
   // various
   bool fUseDefaultVariableNames;    //! toggle the usage of default variable names and units
-  uint64_t fBinsAllocated; //! number of allocated bins
+  uint64_t fBinsAllocated;          //! number of allocated bins
   TString* fVariableNames;          //! variable names
   TString* fVariableUnits;          //! variable units
 
@@ -116,4 +116,4 @@ class HistogramManager : public TNamed
   ClassDef(HistogramManager, 2)
 };
 
-#endif  // PWGDQ_CORE_HISTOGRAMMANAGER_H_
+#endif // PWGDQ_CORE_HISTOGRAMMANAGER_H_
