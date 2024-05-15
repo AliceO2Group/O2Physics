@@ -600,7 +600,7 @@ struct HfCorrelatorDsHadrons {
         std::vector<int> listDaughters{};
         std::array<int, 3> prongsId;
         listDaughters.clear();
-        RecoDecay::getDaughters(particle, &listDaughters, std::array{0}, 1);
+        RecoDecay::getDaughters(particle, &listDaughters, std::array{0}, 2);
         if (listDaughters.size() == 3) {
           for (auto iProng = 0; iProng < listDaughters.size(); ++iProng) {
             auto daughI = mcParticles.rawIteratorAt(listDaughters[iProng]);
