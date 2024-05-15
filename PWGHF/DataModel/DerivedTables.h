@@ -103,8 +103,8 @@ DECLARE_SOA_TABLE(Hf3PCollIds, "AOD", "HF3PCOLLID", //! Table with original glob
 namespace hf_mc_coll
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);          //! original global index of the MC collision
-DECLARE_SOA_ARRAY_INDEX_COLUMN(HfD0CollBase, hfD0CollBases); //! collision index array pointing to the derived reconstructed-collisions for D0 candidates
-DECLARE_SOA_ARRAY_INDEX_COLUMN(Hf3PCollBase, hf3PCollBases); //! collision index array pointing to the derived reconstructed-collisions for 3-prong candidates
+DECLARE_SOA_ARRAY_INDEX_COLUMN(HfD0CollBase, hfD0CollBases); //! collision index array pointing to the derived reconstructed collisions for D0 candidates
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Hf3PCollBase, hf3PCollBases); //! collision index array pointing to the derived reconstructed collisions for 3-prong candidates
 } // namespace hf_mc_coll
 
 // DO
