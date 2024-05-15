@@ -636,7 +636,7 @@ struct IdentifiedBfFilterTracks {
       fhDCAzA = new TH1F("DCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
       fhFineDCAzA = new TH1F("FineDCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 4000, -1.0, 1.0);
 
-      fhDoublePID = new TH2S("DoublePID","PIDs for double match;Original Species;Secondary Species", kIdBfNoOfSpecies, 0, kIdBfNoOfSpecies, kIdBfNoOfSpecies, 0, kIdBfNoOfSpecies);
+      fhDoublePID = new TH2S("DoublePID", "PIDs for double match;Original Species;Secondary Species", kIdBfNoOfSpecies, 0, kIdBfNoOfSpecies, kIdBfNoOfSpecies, 0, kIdBfNoOfSpecies);
 
       fhWrongTrackID = new TH1F("WrongTrackId", "Wrong Tracks From Double Track Id distribution in p", ptbins, ptlow, ptup);
       if (checkAmbiguousTracks) {
@@ -667,20 +667,20 @@ struct IdentifiedBfFilterTracks {
                                  TString::Format("N(%s^{#plus}) #minus N(%s^{#minus}) distribution for reconstructed;N(%s^{#plus}) #minus N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
                                  79, -39.5, 39.5);
         fhNSigmaTPC[sp] = new TH2F(TString::Format("fhNSigmaTPC_%s", speciesName[sp]).Data(),
-                                  TString::Format("N Sigma from TPC vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                  48, -6, 6,
-                                  ptbins, ptlow, ptup);
+                                   TString::Format("N Sigma from TPC vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                   48, -6, 6,
+                                   ptbins, ptlow, ptup);
         fhNSigmaTOF[sp] = new TH2F(TString::Format("fhNSigmaTOF_%s", speciesName[sp]).Data(),
-                                  TString::Format("N Sigma from TOF vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
-                                  48, -6, 6,
-                                  ptbins, ptlow, ptup);
+                                   TString::Format("N Sigma from TOF vs P for %s;N #sigma;p (GeV/c)", speciesTitle[sp]).Data(),
+                                   48, -6, 6,
+                                   ptbins, ptlow, ptup);
         fhdEdxA[sp] = new TH2F(TString::Format("fhdEdxA_%s", speciesName[sp]).Data(),
                                TString::Format("dE/dx vs P reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
                                ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       }
       fhdEdxA[kIdBfNoOfSpecies] = new TH2F(TString::Format("fhdEdxA_WrongSpecies").Data(),
-                                TString::Format("dE/dx vs P reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
-                                ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                           TString::Format("dE/dx vs P reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
+                                           ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       /* add the hstograms to the output list */
       fOutputList->Add(fhPB);
       fOutputList->Add(fhPtB);
@@ -1057,7 +1057,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   fhNSigmaTPC[kIdBfKaon]->Fill(track.tpcNSigmaKa(), track.p());
   fhNSigmaTPC[kIdBfProton]->Fill(track.tpcNSigmaPr(), track.p());
 
-  fhNSigmaTOF[kIdBfElectron] -> Fill(track.tofNSigmaEl(), track.p());
+  fhNSigmaTOF[kIdBfElectron]->Fill(track.tofNSigmaEl(), track.p());
   fhNSigmaTOF[kIdBfPion]->Fill(track.tofNSigmaPi(), track.p());
   fhNSigmaTOF[kIdBfKaon]->Fill(track.tofNSigmaKa(), track.p());
   fhNSigmaTOF[kIdBfProton]->Fill(track.tofNSigmaPr(), track.p());
@@ -1095,18 +1095,18 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   float min_nsigma = 999.0f;
   MatchRecoGenSpecies sp_min_nsigma = kWrongSpecies;
   for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
-    if (nsigmas[sp] < min_nsigma) { // Check if species nsigma is less than current nsigma
-      min_nsigma = nsigmas[sp]; // If yes, set species nsigma to current nsigma
-      sp_min_nsigma = MatchRecoGenSpecies(sp);  // set current species sp number to current sp
+    if (nsigmas[sp] < min_nsigma) {            // Check if species nsigma is less than current nsigma
+      min_nsigma = nsigmas[sp];                // If yes, set species nsigma to current nsigma
+      sp_min_nsigma = MatchRecoGenSpecies(sp); // set current species sp number to current sp
     }
   }
   bool doublematch = false;
   int spDouble = 0;
-  if (min_nsigma < minPIDSigma) { // Check that current nsigma is less than required minimum
+  if (min_nsigma < minPIDSigma) {                                     // Check that current nsigma is less than required minimum
     for (int sp = 0; (sp < kIdBfNoOfSpecies) && !doublematch; ++sp) { // iterate over all species while there's no double match and we're in the list
-      if (sp != sp_min_nsigma) {  // for species not current minimum nsigma species
-        if (nsigmas[sp] < minPIDSigma) {  // If secondary species nsigma ALSO less than required minimum
-          doublematch = true; // Set double match true
+      if (sp != sp_min_nsigma) {                                      // for species not current minimum nsigma species
+        if (nsigmas[sp] < minPIDSigma) {                              // If secondary species nsigma ALSO less than required minimum
+          doublematch = true;                                         // Set double match true
           spDouble = sp;
         }
       }
@@ -1278,13 +1278,13 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
       fhFineDCAzA->Fill(track.dcaZ());
     }
   } else {
-  fhPA[sp]->Fill(track.p());
-  fhPtA[sp]->Fill(track.pt());
+    fhPA[sp]->Fill(track.p());
+    fhPtA[sp]->Fill(track.pt());
     fhdEdxA[sp]->Fill(track.p(), track.tpcSignal());
-  if (track.sign() > 0) {
-    fhPtPosA[sp]->Fill(track.pt());
-  } else {
-    fhPtNegA[sp]->Fill(track.pt());
+    if (track.sign() > 0) {
+      fhPtPosA[sp]->Fill(track.pt());
+    } else {
+      fhPtNegA[sp]->Fill(track.pt());
     }
   }
 }
@@ -1332,12 +1332,12 @@ void IdentifiedBfFilterTracks::fillParticleHistosAfterSelection(ParticleObject c
                                    (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
     fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
   } else {
-  fhTruePA[sp]->Fill(particle.p());
-  fhTruePtA[sp]->Fill(particle.pt());
-  if (charge > 0) {
-    fhTruePtPosA[sp]->Fill(particle.pt());
-  } else {
-    fhTruePtNegA[sp]->Fill(particle.pt());
+    fhTruePA[sp]->Fill(particle.p());
+    fhTruePtA[sp]->Fill(particle.pt());
+    if (charge > 0) {
+      fhTruePtPosA[sp]->Fill(particle.pt());
+    } else {
+      fhTruePtNegA[sp]->Fill(particle.pt());
     }
   }
 }
