@@ -879,7 +879,7 @@ struct TaskPolarisationCharmHadrons {
       }
       origin = mcParticle.originMcGen();
       if (origin == RecoDecay::OriginType::NonPrompt) {
-        auto bHadMother = mcParticles.rawIteratorAt(mcParticle.idxBhadMotherPart());
+        auto bHadMother = mcParticles.rawIteratorAt(mcParticle.idxBhadMotherPart() - mcParticles.offset());
         ptBhadMother = bHadMother.pt();
       }
 
