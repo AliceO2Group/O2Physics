@@ -391,7 +391,7 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       //  ITS clusters selection
-      if(!isSelectedTrackItsQuality(trackKaFromCharm, nClustersItsMin, itsChi2PerClusterMax) || trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin){
+      if(!isSelectedTrackItsQuality(trackKaFromCharm, nClustersItsMin, itsChi2PerClusterMax) || trackKaFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin){
         resultSelections = false;
         registry.fill(HIST("hSelITSQualityKaFromCharm"), 0);
       } else {
