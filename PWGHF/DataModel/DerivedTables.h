@@ -157,7 +157,7 @@ DECLARE_SOA_COLUMN(M, m, float);                                  //! invariant 
 DECLARE_SOA_COLUMN(Phi, phi, float);                              //! azimuth
 DECLARE_SOA_COLUMN(Pt, pt, float);                                //! transverse momentum
 DECLARE_SOA_COLUMN(Y, y, float);                                  //! rapidity
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! px
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                                //! px
                            [](float pt, float phi) -> float { return RecoDecayPtEtaPhi::px(pt, phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! py
                            [](float pt, float phi) -> float { return RecoDecayPtEtaPhi::py(pt, phi); });
