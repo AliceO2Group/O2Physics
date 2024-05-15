@@ -910,11 +910,13 @@ struct RecoDecay {
   /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param searchUpToQuark if true tag origin based on charm/beauty quark otherwise on the presence of a b-hadron or c-hadron, with c-hadrons themselves marked as prompt
+  /// \param idxBhadMothers optional vector of b-hadron indices (might be more than one in case of searchUpToQuark in case of beauty resonances)
   /// \return an integer corresponding to the origin (0: none, 1: prompt, 2: nonprompt) as in OriginType
   template <typename T>
   static int getCharmHadronOrigin(const T& particlesMC,
                                   const typename T::iterator& particle,
-                                  const bool searchUpToQuark = false)
+                                  const bool searchUpToQuark = false,
+                                  std::vector<int>* idxBhadMothers = nullptr)
   {
     int stage = 0; // mother tree level (just for debugging)
 
@@ -946,6 +948,13 @@ struct RecoDecay {
             // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
 
             if (searchUpToQuark) {
+              if (idxBhadMothers) {
+                if (PDGParticleIMother / 100 == 5 || // b mesons
+                 PDGParticleIMother / 1000 == 5)  // b baryons
+                {
+                  idxBhadMothers->push_back(iMother);
+                }
+              }
               if (PDGParticleIMother == 5) { // b quark
                 return OriginType::NonPrompt;
               }
@@ -957,6 +966,9 @@ struct RecoDecay {
                 (PDGParticleIMother / 100 == 5 || // b mesons
                  PDGParticleIMother / 1000 == 5)  // b baryons
               ) {
+                if (idxBhadMothers) {
+                  idxBhadMothers->push_back(iMother);
+                }
                 return OriginType::NonPrompt;
               }
               if (
