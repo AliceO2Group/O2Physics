@@ -170,7 +170,7 @@ struct HfDerivedDataCreatorLcToPKPi {
 
   template <typename T, typename U>
   void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prong2, int candFlag, double invMass,
-                           double ct, int8_t flagMc, int8_t origin, int8_t swapping, const std::vector<float>& mlScores)
+                           double ct, double y, int8_t flagMc, int8_t origin, int8_t swapping, const std::vector<float>& mlScores)
   {
     if (fillCandidateBase) {
       rowCandidateBase(
@@ -178,7 +178,8 @@ struct HfDerivedDataCreatorLcToPKPi {
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
-        invMass);
+        invMass,
+        y);
     }
     if (fillCandidatePar) {
       rowCandidatePar(
@@ -267,7 +268,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
 
   template <typename T, typename U>
-  void fillTablesParticle(const T& particle, U /*mass*/)
+  void fillTablesParticle(const T& particle, U mass)
   {
     if (fillParticleBase) {
       rowParticleBase(
@@ -275,6 +276,7 @@ struct HfDerivedDataCreatorLcToPKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
+        RecoDecayPtEtaPhi::y(particle.pt(), particle.eta(), mass),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }
@@ -355,6 +357,7 @@ struct HfDerivedDataCreatorLcToPKPi {
         auto prong1 = candidate.template prong1_as<TracksWPid>();
         auto prong2 = candidate.template prong2_as<TracksWPid>();
         double ct = hfHelper.ctLc(candidate);
+        double y = hfHelper.yLc(candidate);
         float massLcToPKPi = hfHelper.invMassLcToPKPi(candidate);
         float massLcToPiKP = hfHelper.invMassLcToPiKP(candidate);
         std::vector<float> mlScoresLcToPKPi, mlScoresLcToPiKP;
@@ -363,10 +366,10 @@ struct HfDerivedDataCreatorLcToPKPi {
           std::copy(candidate.mlProbLcToPiKP().begin(), candidate.mlProbLcToPiKP().end(), std::back_inserter(mlScoresLcToPiKP));
         }
         if (candidate.isSelLcToPKPi()) {
-          fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massLcToPKPi, ct, flagMcRec, origin, swapping, mlScoresLcToPKPi);
+          fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massLcToPKPi, ct, y, flagMcRec, origin, swapping, mlScoresLcToPKPi);
         }
         if (candidate.isSelLcToPiKP()) {
-          fillTablesCandidate(candidate, prong0, prong1, prong2, 1, massLcToPiKP, ct, flagMcRec, origin, swapping, mlScoresLcToPiKP);
+          fillTablesCandidate(candidate, prong0, prong1, prong2, 1, massLcToPiKP, ct, y, flagMcRec, origin, swapping, mlScoresLcToPiKP);
         }
       }
     }

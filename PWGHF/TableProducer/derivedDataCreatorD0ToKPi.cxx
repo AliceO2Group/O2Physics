@@ -187,7 +187,7 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   template <typename T, typename U>
   void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMass, double cosThetaStar, double topoChi2,
-                           double ct, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
+                           double ct, double y, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
   {
     if (fillCandidateBase) {
       rowCandidateBase(
@@ -195,7 +195,8 @@ struct HfDerivedDataCreatorD0ToKPi {
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
-        invMass);
+        invMass,
+        y);
     }
     if (fillCandidatePar) {
       rowCandidatePar(
@@ -274,7 +275,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   }
 
   template <typename T, typename U>
-  void fillTablesParticle(const T& particle, U /*mass*/)
+  void fillTablesParticle(const T& particle, U mass)
   {
     if (fillParticleBase) {
       rowParticleBase(
@@ -282,6 +283,7 @@ struct HfDerivedDataCreatorD0ToKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
+        RecoDecayPtEtaPhi::y(particle.pt(), particle.eta(), mass),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }
@@ -359,7 +361,8 @@ struct HfDerivedDataCreatorD0ToKPi {
         }
         auto prong0 = candidate.template prong0_as<TracksWPid>();
         auto prong1 = candidate.template prong1_as<TracksWPid>();
-        double ctD = hfHelper.ctD0(candidate);
+        double ct = hfHelper.ctD0(candidate);
+        double y = hfHelper.yD0(candidate);
         float massD0, massD0bar;
         float topolChi2PerNdf = -999.;
         if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
@@ -376,10 +379,10 @@ struct HfDerivedDataCreatorD0ToKPi {
           std::copy(candidate.mlProbD0bar().begin(), candidate.mlProbD0bar().end(), std::back_inserter(mlScoresD0bar));
         }
         if (candidate.isSelD0()) {
-          fillTablesCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, flagMcRec, origin, mlScoresD0);
+          fillTablesCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, mlScoresD0);
         }
         if (candidate.isSelD0bar()) {
-          fillTablesCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, flagMcRec, origin, mlScoresD0bar);
+          fillTablesCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, mlScoresD0bar);
         }
       }
     }
