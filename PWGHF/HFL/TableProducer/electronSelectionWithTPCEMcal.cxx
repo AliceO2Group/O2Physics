@@ -44,7 +44,7 @@ struct HfElectronSelectionWithTPCEMcal {
   Produces<aod::HfSelEl> electronSel;
   // Configurables
   // Cluster information
- Configurable<bool> fillClusterInfo{"fillClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
+  Configurable<bool> fillClusterInfo{"fillClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
 
   // Event Selection
   Configurable<float> mVertexCut{"mVertexCut", 10., "apply z-vertex cut with value in cm"};
@@ -177,8 +177,8 @@ struct HfElectronSelectionWithTPCEMcal {
       dcaxyTrack = track.dcaXY();
       dcazTrack = track.dcaZ();
       tpcNsigmaTrack = track.tpcNSigmaEl();
-      // process the track `track` of type `Track`
-
+      
+      // Apply Track Selection Cut
       if (!selTracks(track))
         continue;
       passEMCal = 0;
@@ -206,12 +206,9 @@ struct HfElectronSelectionWithTPCEMcal {
       float deltaPhiMatch = -999.;
       float deltaEtaMatch = -999.;
       bool isEMcal = 0;
-
-      float trackEnergy = std::sqrt(track.p() * track.p() + massEl * massEl);
-      float Rapidity = 0.5 * std::log((trackEnergy + track.pz()) / (trackEnergy - track.pz()));
+      
       float trackRapidity = track.rapidity(massEl);
-
-      std::cout << " rapadity of electron " <<  trackRapidity << "  rapadity1  "<< Rapidity <<  std::endl;
+      
       for (const auto& ematchTrack : tracksofcluster) {
 
         auto matchTrack = ematchTrack.template track_as<TracksType>();
