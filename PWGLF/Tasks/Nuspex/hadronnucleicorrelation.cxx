@@ -523,7 +523,7 @@ struct hadronnucleicorrelation {
               }
             }
           } // netaBins loop
-        } // debug eta
+        }   // debug eta
 
         if (debugphi) {
           for (int k = 0; k < nBinsphi; k++) {
@@ -566,7 +566,7 @@ struct hadronnucleicorrelation {
               }
             }
           } // nphiBins loop
-        } // debug phi
+        }   // debug phi
       }
     }
   }
