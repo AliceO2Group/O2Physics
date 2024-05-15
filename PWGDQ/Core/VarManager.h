@@ -17,6 +17,7 @@
 #ifndef PWGDQ_CORE_VARMANAGER_H_
 #define PWGDQ_CORE_VARMANAGER_H_
 
+#include <Math/Vector4Dfwd.h>
 #include <cstdint>
 #ifndef HomogeneousField
 #define HomogeneousField
@@ -135,8 +136,11 @@ class VarManager : public TObject
     kBtoJpsiEEK,                // e.g. B+           -> e+ e- K+
     kXtoJpsiPiPi,               // e.g. X(3872)      -> J/psi pi+ pi-
     kChictoJpsiEE,              // e.g. Chi_c1      -> J/psi e+ e-
+    kDstarToD0KPiPi,            // e.g. D*+ -> D0 pi+ -> K- pi+ pi+
     kTripleCandidateToEEPhoton, // e.g. chi_c   -> e+ e- photon or pi0 -> e+ e- photon
     kDecayToKPi,                // e.g. D0           -> K+ pi- or cc.
+    kTripleCandidateToKPiPi,    // e.g. D+ -> K- pi+ pi+
+    kTripleCandidateToPKPi,     // e.g. Lambda_c -> p K- pi+
     kNMaxCandidateTypes
   };
 
@@ -851,6 +855,8 @@ class VarManager : public TObject
   static void FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, bool propToSV = false, float* values = nullptr);
+  template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
+  static void FillTripletVertexing(C const& collision, T const& t1, T const& t2, T const& t3, PairCandidateType tripletType, float* values = nullptr);
   template <int candidateType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1>
   static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values);
   template <typename T1, typename T2>
@@ -2317,6 +2323,37 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
     values[kPt1] = t1.pt();
     values[kPt2] = t2.pt();
   }
+
+  if (pairType == kTripleCandidateToKPiPi) {
+    float m1 = o2::constants::physics::MassKMinus;
+    float m2 = o2::constants::physics::MassPiPlus;
+
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+    ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m2);
+    ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
+    values[kMass] = v123.M();
+    values[kPt] = v123.Pt();
+    values[kEta] = v123.Eta();
+    values[kPhi] = v123.Phi();
+    values[kRap] = -v123.Rapidity();
+  }
+
+  if (pairType == kTripleCandidateToPKPi) {
+    float m1 = o2::constants::physics::MassProton;
+    float m2 = o2::constants::physics::MassKMinus;
+    float m3 = o2::constants::physics::MassPiPlus;
+
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+    ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m3);
+    ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
+    values[kMass] = v123.M();
+    values[kPt] = v123.Pt();
+    values[kEta] = v123.Eta();
+    values[kPhi] = v123.Phi();
+    values[kRap] = -v123.Rapidity();
+  }
 }
 
 template <int pairType, typename T1, typename T2>
@@ -2603,9 +2640,9 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()));
       values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v12.Px()) + ((secondaryVertex[1] - collision.posY()) * v12.Py()) + ((secondaryVertex[2] - collision.posZ()) * v12.Pz());
       values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v12.Px() * v12.Px()) + (v12.Py() * v12.Py()) + (v12.Pz() * v12.Pz()));
-      values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.P());
+      values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v12.M() / (v12.Pt());
       values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
-      values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / (v12.P());
+      values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / TMath::Abs(v12.Pz());
       values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v12.M() / (v12.P());
     }
   } else {
@@ -2681,9 +2718,9 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((KFGeoTwoProng.GetPx() * KFGeoTwoProng.GetPx()) + (KFGeoTwoProng.GetPy() * KFGeoTwoProng.GetPy()));
         values[kVertexingLxyzProjected] = (dxPair2PV * KFGeoTwoProng.GetPx()) + (dyPair2PV * KFGeoTwoProng.GetPy()) + (dzPair2PV * KFGeoTwoProng.GetPz());
         values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((KFGeoTwoProng.GetPx() * KFGeoTwoProng.GetPx()) + (KFGeoTwoProng.GetPy() * KFGeoTwoProng.GetPy()) + (KFGeoTwoProng.GetPz() * KFGeoTwoProng.GetPz()));
-        values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * KFGeoTwoProng.GetMass() / (KFGeoTwoProng.GetP());
+        values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * KFGeoTwoProng.GetMass() / (KFGeoTwoProng.GetPt());
         values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
-        values[kVertexingTauzProjected] = values[kVertexingLzProjected] * KFGeoTwoProng.GetMass() / (KFGeoTwoProng.GetP());
+        values[kVertexingTauzProjected] = values[kVertexingLzProjected] * KFGeoTwoProng.GetMass() / TMath::Abs(KFGeoTwoProng.GetPz());
       }
 
       if (fgUsedVars[kVertexingLxyOverErr] || fgUsedVars[kVertexingLzOverErr] || fgUsedVars[kVertexingLxyzOverErr]) {
@@ -2822,6 +2859,106 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   }
 }
 
+template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
+void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& t2, T const& t3, VarManager::PairCandidateType tripletType, float* values)
+{
+  // TODO: Vertexing error variables
+  constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
+  bool trackHasCov = ((fillMap & ReducedTrackBarrelCov) > 0);
+
+  if (!values) {
+    values = fgValues;
+  }
+
+  float m1, m2, m3;
+
+  if (tripletType == kTripleCandidateToKPiPi) {
+    m1 = o2::constants::physics::MassKaonCharged;
+    m2 = o2::constants::physics::MassPionCharged;
+    m3 = o2::constants::physics::MassPionCharged;
+  }
+  if (tripletType == kTripleCandidateToPKPi) {
+    m1 = o2::constants::physics::MassProton;
+    m2 = o2::constants::physics::MassKaonCharged;
+    m3 = o2::constants::physics::MassPionCharged;
+  }
+
+  int procCode = 0;
+
+  if (trackHasCov) {
+    std::array<float, 5> t1pars = {t1.y(), t1.z(), t1.snp(), t1.tgl(), t1.signed1Pt()};
+    std::array<float, 15> t1covs = {t1.cYY(), t1.cZY(), t1.cZZ(), t1.cSnpY(), t1.cSnpZ(),
+                                    t1.cSnpSnp(), t1.cTglY(), t1.cTglZ(), t1.cTglSnp(), t1.cTglTgl(),
+                                    t1.c1PtY(), t1.c1PtZ(), t1.c1PtSnp(), t1.c1PtTgl(), t1.c1Pt21Pt2()};
+    o2::track::TrackParCov pars1{t1.x(), t1.alpha(), t1pars, t1covs};
+    std::array<float, 5> t2pars = {t2.y(), t2.z(), t2.snp(), t2.tgl(), t2.signed1Pt()};
+    std::array<float, 15> t2covs = {t2.cYY(), t2.cZY(), t2.cZZ(), t2.cSnpY(), t2.cSnpZ(),
+                                    t2.cSnpSnp(), t2.cTglY(), t2.cTglZ(), t2.cTglSnp(), t2.cTglTgl(),
+                                    t2.c1PtY(), t2.c1PtZ(), t2.c1PtSnp(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
+    o2::track::TrackParCov pars2{t2.x(), t2.alpha(), t2pars, t2covs};
+    std::array<float, 5> t3pars = {t3.y(), t3.z(), t3.snp(), t3.tgl(), t3.signed1Pt()};
+    std::array<float, 15> t3covs = {t3.cYY(), t3.cZY(), t3.cZZ(), t3.cSnpY(), t3.cSnpZ(),
+                                    t3.cSnpSnp(), t3.cTglY(), t3.cTglZ(), t3.cTglSnp(), t3.cTglTgl(),
+                                    t3.c1PtY(), t3.c1PtZ(), t3.c1PtSnp(), t3.c1PtTgl(), t3.c1Pt21Pt2()};
+    o2::track::TrackParCov pars3{t3.x(), t3.alpha(), t3pars, t3covs};
+    procCode = VarManager::fgFitterThreeProngBarrel.process(pars1, pars2, pars3);
+  } else {
+    return;
+  }
+
+  ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+  ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
+  ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m3);
+  ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
+
+  values[VarManager::kVertexingProcCode] = procCode;
+  if (procCode == 0) {
+    // TODO: set the other variables to appropriate values and return
+    values[VarManager::kVertexingLz] = -999.;
+    values[VarManager::kVertexingLxy] = -999.;
+    values[VarManager::kVertexingLxyz] = -999.;
+    values[VarManager::kVertexingTauz] = -999.;
+    values[VarManager::kVertexingTauxy] = -999.;
+
+    values[kVertexingLzProjected] = -999.;
+    values[kVertexingLxyProjected] = -999.;
+    values[kVertexingLxyzProjected] = -999.;
+    values[kVertexingTauzProjected] = -999.;
+    values[kVertexingTauxyProjected] = -999.;
+    values[kVertexingTauxyzProjected] = -999.;
+
+    return;
+  }
+
+  Vec3D secondaryVertex = fgFitterThreeProngBarrel.getPCACandidate();
+
+  if constexpr (eventHasVtxCov) {
+    if (fgUsedVars[kVertexingLxy] || fgUsedVars[kVertexingLz] || fgUsedVars[kVertexingLxyz]) {
+      values[kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
+                              (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
+      values[kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
+      values[kVertexingLxyz] = values[kVertexingLxy] + values[kVertexingLz];
+      values[kVertexingLxy] = std::sqrt(values[kVertexingLxy]);
+      values[kVertexingLz] = std::sqrt(values[kVertexingLz]);
+      values[kVertexingLxyz] = std::sqrt(values[kVertexingLxyz]);
+      values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+      values[kVertexingTauxy] = values[kVertexingLxy] * v123.M() / (v123.Pt() * o2::constants::physics::LightSpeedCm2NS);
+    }
+    // run 2 definitions: Lxy projected onto the momentum vector of the candidate
+    if (fgUsedVars[kVertexingLxyProjected] || fgUsedVars[kVertexingLxyzProjected] || values[kVertexingTauxyProjected]) {
+      values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v123.Pz();
+      values[kVertexingLzProjected] = values[kVertexingLzProjected] / TMath::Sqrt(v123.Pz() * v123.Pz());
+      values[kVertexingLxyProjected] = ((secondaryVertex[0] - collision.posX()) * v123.Px()) + ((secondaryVertex[1] - collision.posY()) * v123.Py());
+      values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v123.Px() * v123.Px()) + (v123.Py() * v123.Py()));
+      values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v123.Px()) + ((secondaryVertex[1] - collision.posY()) * v123.Py()) + ((secondaryVertex[2] - collision.posZ()) * v123.Pz());
+      values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v123.Px() * v123.Px()) + (v123.Py() * v123.Py()) + (v123.Pz() * v123.Pz()));
+      values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v123.M() / TMath::Abs(v123.Pz());
+      values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v123.M() / (v123.Pt());
+      values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v123.M() / (v123.P());
+    }
+  }
+}
+
 template <int candidateType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1>
 void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values)
 {
@@ -2834,7 +2971,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   }
 
   float mtrack;
-  float mlepton;
+  float mlepton1, mlepton2;
 
   int procCode = 0;
   int procCodeJpsi = 0;
@@ -2842,7 +2979,8 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   values[kUsedKF] = fgUsedKF;
   if (!fgUsedKF) {
     if constexpr ((candidateType == kBcToThreeMuons) && muonHasCov) {
-      mlepton = o2::constants::physics::MassMuon;
+      mlepton1 = o2::constants::physics::MassMuon;
+      mlepton2 = o2::constants::physics::MassMuon;
       mtrack = o2::constants::physics::MassMuon;
 
       double chi21 = lepton1.chi2();
@@ -2870,9 +3008,16 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       o2::track::TrackParCovFwd pars3{track.z(), t3pars, t3covs, chi23};
       procCode = VarManager::fgFitterThreeProngFwd.process(pars1, pars2, pars3);
       procCodeJpsi = VarManager::fgFitterTwoProngFwd.process(pars1, pars2);
-    } else if constexpr ((candidateType == kBtoJpsiEEK) && trackHasCov) {
-      mlepton = o2::constants::physics::MassElectron;
-      mtrack = o2::constants::physics::MassKaonCharged;
+    } else if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi) && trackHasCov) {
+      if constexpr ((candidateType == kBtoJpsiEEK) && trackHasCov) {
+        mlepton1 = o2::constants::physics::MassElectron;
+        mlepton2 = o2::constants::physics::MassElectron;
+        mtrack = o2::constants::physics::MassKaonCharged;
+      } else if constexpr ((candidateType == kDstarToD0KPiPi) && trackHasCov) {
+        mlepton1 = o2::constants::physics::MassKaonCharged;
+        mlepton2 = o2::constants::physics::MassPionCharged;
+        mtrack = o2::constants::physics::MassPionCharged;
+      }
       std::array<float, 5> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
       std::array<float, 15> lepton1covs = {lepton1.cYY(), lepton1.cZY(), lepton1.cZZ(), lepton1.cSnpY(), lepton1.cSnpZ(),
                                            lepton1.cSnpSnp(), lepton1.cTglY(), lepton1.cTglZ(), lepton1.cTglSnp(), lepton1.cTglTgl(),
@@ -2894,13 +3039,15 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       return;
     }
 
-    ROOT::Math::PtEtaPhiMVector v1(lepton1.pt(), lepton1.eta(), lepton1.phi(), mlepton);
-    ROOT::Math::PtEtaPhiMVector v2(lepton2.pt(), lepton2.eta(), lepton2.phi(), mlepton);
+    ROOT::Math::PtEtaPhiMVector v1(lepton1.pt(), lepton1.eta(), lepton1.phi(), mlepton1);
+    ROOT::Math::PtEtaPhiMVector v2(lepton2.pt(), lepton2.eta(), lepton2.phi(), mlepton2);
     ROOT::Math::PtEtaPhiMVector v3(track.pt(), track.eta(), track.phi(), mtrack);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
     ROOT::Math::PtEtaPhiMVector vdilepton(v12.pt(), v12.eta(), v12.phi(), v12.M());
     ROOT::Math::PtEtaPhiMVector v123 = vdilepton + v3;
     values[VarManager::kPairMass] = v123.M();
+    values[VarManager::kMassDau] = mtrack;
+    values[VarManager::kDeltaMass] = v123.M() - v12.M();
     values[VarManager::kPairPt] = v123.Pt();
     values[VarManager::kPairEta] = v123.Eta();
     if (fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau]) {
@@ -2941,7 +3088,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
       auto covMatrixPV = primaryVertex.getCov();
 
-      if constexpr (candidateType == kBtoJpsiEEK && trackHasCov) {
+      if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi) && trackHasCov) {
         secondaryVertex = fgFitterThreeProngBarrel.getPCACandidate();
         covMatrixPCA = fgFitterThreeProngBarrel.calcPCACovMatrixFlat();
       } else if constexpr (candidateType == kBcToThreeMuons && muonHasCov) {
@@ -2997,8 +3144,8 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
         values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v123.Px() * v123.Px()) + (v123.Py() * v123.Py()));
         values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v123.Px()) + ((secondaryVertex[1] - collision.posY()) * v123.Py()) + ((secondaryVertex[2] - collision.posZ()) * v123.Pz());
         values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v123.Px() * v123.Px()) + (v123.Py() * v123.Py()) + (v123.Pz() * v123.Pz()));
-        values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v123.M() / (v123.P());
-        values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v123.M() / (v123.P());
+        values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v123.M() / TMath::Abs(v123.Pz());
+        values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v123.M() / v123.Pt();
       }
     }
   } else {
@@ -3079,9 +3226,9 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
           values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((KFGeoThreeProng.GetPx() * KFGeoThreeProng.GetPx()) + (KFGeoThreeProng.GetPy() * KFGeoThreeProng.GetPy()));
           values[kVertexingLxyzProjected] = (dxTriplet3PV * KFGeoThreeProng.GetPx()) + (dyTriplet3PV * KFGeoThreeProng.GetPy()) + (dzTriplet3PV * KFGeoThreeProng.GetPz());
           values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((KFGeoThreeProng.GetPx() * KFGeoThreeProng.GetPx()) + (KFGeoThreeProng.GetPy() * KFGeoThreeProng.GetPy()) + (KFGeoThreeProng.GetPz() * KFGeoThreeProng.GetPz()));
-          values[kVertexingTauxyProjected] = (values[kVertexingLxyProjected] * KFGeoThreeProng.GetMass()) / (KFGeoThreeProng.GetP());
+          values[kVertexingTauxyProjected] = (values[kVertexingLxyProjected] * KFGeoThreeProng.GetMass()) / (KFGeoThreeProng.GetPt());
           values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
-          values[kVertexingTauzProjected] = (values[kVertexingLzProjected] * KFGeoThreeProng.GetMass()) / KFGeoThreeProng.GetP();
+          values[kVertexingTauzProjected] = (values[kVertexingLzProjected] * KFGeoThreeProng.GetMass()) / TMath::Abs(KFGeoThreeProng.GetPz());
         } // end Run 2 quantities
       }   // end eventHasVtxCov
     }     // end (candidateType == kBtoJpsiEEK) && trackHasCov
@@ -3398,6 +3545,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kPairMassDau] = dilepton.mass();
     values[kPairPtDau] = dilepton.pt();
     values[kMassDau] = hadronMass;
+    values[kDeltaMass] = v12.M() - dilepton.mass();
   }
   if (fgUsedVars[kDeltaPhi]) {
     double delta = dilepton.phi() - hadron.phi();

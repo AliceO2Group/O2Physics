@@ -749,6 +749,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairMass] = "GeV/c2";
   fgVariableNames[kPairMassDau] = "mass dilepton";
   fgVariableUnits[kPairMassDau] = "GeV/c2";
+  fgVariableNames[kDeltaMass] = "mass - dilepton mass";
+  fgVariableUnits[kDeltaMass] = "GeV/c2";
   fgVariableNames[kMassDau] = "mass HF";
   fgVariableUnits[kMassDau] = "GeV/c2";
   fgVariableNames[kPairPt] = "p_{T}";
