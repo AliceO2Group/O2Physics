@@ -393,7 +393,7 @@ void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
 }
 
 template <bool isMc, typename T>
-auto constexpr getTrackId(T const& track)
+auto constexpr getConstituentId(T const& track)
 {
   if constexpr (isMc) {
 
@@ -413,9 +413,9 @@ float getPtSum(T const& tracksBase, U const& tracksTag)
 {
   float ptSum = 0.;
   for (const auto& trackBase : tracksBase) {
-    auto trackBaseId = getTrackId<jetsTagIsMc>(trackBase);
+    auto trackBaseId = getConstituentId<jetsTagIsMc>(trackBase);
     for (const auto& trackTag : tracksTag) {
-      auto trackTagId = getTrackId<jetsBaseIsMc>(trackTag);
+      auto trackTagId = getConstituentId<jetsBaseIsMc>(trackTag);
       if (trackBaseId != -1 && trackBaseId == trackTagId) {
         ptSum += trackBase.pt();
         break;
