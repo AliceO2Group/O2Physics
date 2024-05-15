@@ -292,8 +292,8 @@ struct HfTaskLb {
         registry.fill(HIST("hInvMassLc"), hfHelper.invMassLcToPKPi(candLc), candidate.pt());
       }
     } // candidate loop
-  } // process
-}; // struct
+  }   // process
+};   // struct
 
 /// Lb MC analysis and fill histograms
 struct HfTaskLbMc {
@@ -454,8 +454,8 @@ struct HfTaskLbMc {
         registry.fill(HIST("hEtaGen"), particle.eta(), particle.pt());
       }
     } // gen
-  } // process
-}; // struct
+  }   // process
+};   // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
