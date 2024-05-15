@@ -714,7 +714,7 @@ struct IdentifiedBfFilterTracks {
         fOutputList->Add(fhNPosNegA[sp]);
         fOutputList->Add(fhDeltaNA[sp]);
         fOutputList->Add(fhNSigmaTPC[sp]);
-        fOutputList->Add(fhNSigmaTOF[sp]);        
+        fOutputList->Add(fhNSigmaTOF[sp]);
         fOutputList->Add(fhdEdxA[sp]);
       }
       fOutputList->Add(fhdEdxA[kIdBfNoOfSpecies]);
@@ -1060,7 +1060,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   fhNSigmaTOF[kIdBfElectron] -> Fill(track.tofNSigmaEl(),track.p());
   fhNSigmaTOF[kIdBfPion]->Fill(track.tofNSigmaPi(),track.p());
   fhNSigmaTOF[kIdBfKaon]->Fill(track.tofNSigmaKa(),track.p());
-  fhNSigmaTOF[kIdBfProton]->Fill(track.tofNSigmaPr(),track.p());  
+  fhNSigmaTOF[kIdBfProton]->Fill(track.tofNSigmaPr(),track.p());
 
   float nsigmas[kIdBfNoOfSpecies];
   if (track.p() < 0.8 && !reqTOF && !onlyTOF) {
@@ -1076,8 +1076,6 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
       nsigmas[kIdBfPion] = sqrtf(track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi());
       nsigmas[kIdBfKaon] = sqrtf(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa());
       nsigmas[kIdBfProton] = sqrtf(track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr());
-
-      
 
     } else if (!reqTOF|| !onlyTOF){
       nsigmas[kIdBfElectron] = track.tpcNSigmaEl();
