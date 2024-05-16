@@ -231,6 +231,46 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
   mothers_pdg2.shrink_to_fit();
   return static_cast<int>(EM_HFeeType::kUndef);
 }
+
+template <typename T, typename U>
+int searchMothers(T& p, U& mcParticles, int pdg, bool equal){ // find the first ancestor that is equal/not-equal pdg
+  if (!p.has_mothers()){
+    return -1;
+  }
+  auto mothersids = p.mothersIds();
+  for (auto const& motherid : mothersids){ // first check direct mothers
+    auto mother = mcParticles.iteratorAt(motherid);
+    int mpdg = abs(mother.pdgCode());
+    if ((equal && mpdg == pdg) || ((!equal) && mpdg!=pdg)){
+      return motherid; // found it
+    }
+  }
+  for (auto const& motherid : mothersids){ // in case we did not find anything for direct mothers, go deeper
+    auto mother = mcParticles.iteratorAt(motherid);
+    return searchMothers(mother, mcParticles, pdg, equal); //search recursivly through entire history
+  }
+  return -1;
+}
+
+template <typename T, typename U>
+int findHFOrigin(T& p, U& mcParticles, int pdg){
+  int quark_id = searchMothers(p, mcParticles, pdg, true); // try to find the hf quark
+  if (quark_id == -1){
+    return -1;
+  }
+
+  auto quark = mcParticles.iteratorAt(quark_id);
+  int id = searchMothers(quark, mcParticles, pdg, false); // try to find the first ancestor that is not the hf quark anymore
+
+  return id;
+}
+
+template <typename T, typename U>
+bool checkFromSameQuarkPair(T& p1, T& p2, U& mcParticles, int pdg){ // check if two particles come from the same hf q-qbar pair
+  int id1 = findHFOrigin(p1, mcParticles, pdg);
+  int id2 = findHFOrigin(p2, mcParticles, pdg);
+  return id1==id2 && id1>-1 && id2>-1;
+}
 //_______________________________________________________________________
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::dilepton::mcutil

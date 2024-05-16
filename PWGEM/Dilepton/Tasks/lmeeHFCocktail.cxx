@@ -96,6 +96,16 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
   }
 }
 
+struct MyConfigs : ConfigurableGroup {
+  Configurable<float> fConfigPtMin{"cfgPtMin", 0.2, "min. pT"};
+  Configurable<float> fConfigEtaMax{"cfgEtaMax", 0.8, "max. |eta|"};
+  ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "pT binning"};
+  ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -10.f, 10.f}, "eta binning"};
+  ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {800, 0.f, 8.f}, "Mee binning"};
+  ConfigurableAxis fConfigPteeBins{"cfgPteeBins", {400, 0.f, 10.f}, "pTee binning"};
+  Configurable<bool> fConfigCheckPartonic{"cfgCheckPartonic", false, "check entire partonic history for pairs"};
+};
+
 struct lmeehfcocktailprefilter {
 
   Produces<o2::aod::HfTable> hfTable;
@@ -130,12 +140,7 @@ struct lmeehfcocktailbeauty {
   std::vector<std::shared_ptr<TH1>> hLSpp_Mee, hLSmm_Mee;
   std::vector<std::shared_ptr<TH2>> hLSpp_MeePtee, hLSmm_MeePtee;
 
-  Configurable<float> fConfigPtMin{"cfgPtMin", 0.2, "min. pT"};
-  Configurable<float> fConfigEtaMax{"cfgEtaMax", 0.8, "max. |eta|"};
-  ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "pT binning"};
-  ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -10.f, 10.f}, "eta binning"};
-  ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {800, 0.f, 8.f}, "Mee binning"};
-  ConfigurableAxis fConfigPteeBins{"cfgPteeBins", {400, 0.f, 10.f}, "pTee binning"};
+  MyConfigs myConfigs;
 
   Filter hfFilter = o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kBE) || o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kBCE);
   using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedTracks, aod::HfTable>>;
@@ -154,10 +159,10 @@ struct lmeehfcocktailbeauty {
     const char* typeNamesSingle[2] = {"be", "bce"};
     const char* typeTitlesSingle[2] = {"b->e", "b->c->e"};
 
-    AxisSpec eta_axis = {fConfigEtaBins, "#eta"};
-    AxisSpec pt_axis = {fConfigPtBins, "#it{p}_{T} (GeV/c)"};
-    AxisSpec mass_axis = {fConfigMeeBins, "m_{ee} (GeV/c^{2})"};
-    AxisSpec ptee_axis = {fConfigPteeBins, "#it{p}_{T,ee} (GeV/c)"};
+    AxisSpec eta_axis = {myConfigs.fConfigEtaBins, "#eta"};
+    AxisSpec pt_axis = {myConfigs.fConfigPtBins, "#it{p}_{T} (GeV/c)"};
+    AxisSpec mass_axis = {myConfigs.fConfigMeeBins, "m_{ee} (GeV/c^{2})"};
+    AxisSpec ptee_axis = {myConfigs.fConfigPteeBins, "#it{p}_{T,ee} (GeV/c)"};
 
     // single histograms
     for (int i = 0; i < 2; i++) {
@@ -202,7 +207,7 @@ struct lmeehfcocktailbeauty {
 
       for (auto const& p : mcParticles) {
         int from_quark = p.isHF() - 2;
-        doSingle(p, hEta[from_quark], hPt[from_quark], hPtEta[from_quark], fConfigPtMin, fConfigEtaMax);
+        doSingle(p, hEta[from_quark], hPt[from_quark], hPtEta[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
 
       auto const electronsGrouped = Electrons->sliceBy(perCollision, collision.globalIndex());
@@ -215,8 +220,12 @@ struct lmeehfcocktailbeauty {
         if ((type < static_cast<int>(EM_HFeeType::kBe_Be)) || (type > static_cast<int>(EM_HFeeType::kBCe_Be_SameB))) {
           LOG(error) << "Something is wrong here. There should only be pairs of type kBe_Be = 1, kBCe_BCe = 2 and kBCe_Be_SameB = 3 left at this point.";
         }
-        doPair(particle1, particle2, hULS_Mee[type - 1], hULS_MeePtee[type - 1], fConfigPtMin, fConfigEtaMax);
-        doPair(particle1, particle2, hULS_Mee[3], hULS_MeePtee[3], fConfigPtMin, fConfigEtaMax); // fill the 'allB' histograms that holds the sum of the others
+        if (myConfigs.fConfigCheckPartonic){
+          if (!checkFromSameQuarkPair(particle1, particle2, mcParticlesAll, 5))
+            continue;
+        }
+        doPair(particle1, particle2, hULS_Mee[type - 1], hULS_MeePtee[type - 1], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        doPair(particle1, particle2, hULS_Mee[3], hULS_MeePtee[3], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax); // fill the 'allB' histograms that holds the sum of the others
       }
       // LS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
@@ -226,7 +235,11 @@ struct lmeehfcocktailbeauty {
         if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
           LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
         }
-        doPair(particle1, particle2, hLSmm_Mee, hLSmm_MeePtee, fConfigPtMin, fConfigEtaMax);
+        if (myConfigs.fConfigCheckPartonic){
+          if (!checkFromSameQuarkPair(particle1, particle2, mcParticlesAll, 5))
+            continue;
+        }
+        doPair(particle1, particle2, hLSmm_Mee, hLSmm_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
         int type = IsHF(particle1, particle2, mcParticlesAll);
@@ -235,7 +248,11 @@ struct lmeehfcocktailbeauty {
         if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
           LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
         }
-        doPair(particle1, particle2, hLSpp_Mee, hLSpp_MeePtee, fConfigPtMin, fConfigEtaMax);
+        if (myConfigs.fConfigCheckPartonic){
+          if (!checkFromSameQuarkPair(particle1, particle2, mcParticlesAll, 5))
+            continue;
+        }
+        doPair(particle1, particle2, hLSpp_Mee, hLSpp_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
     }
   }
@@ -256,12 +273,7 @@ struct lmeehfcocktailcharm {
   std::vector<std::shared_ptr<TH1>> hEta, hPt, hULS_Mee;
   std::vector<std::shared_ptr<TH2>> hPtEta, hULS_MeePtee;
 
-  Configurable<float> fConfigPtMin{"cfgPtMin", 0.2f, "min. pT"};
-  Configurable<float> fConfigEtaMax{"cfgEtaMax", 0.8f, "max. |eta|"};
-  ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "pT binning"};
-  ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -10.f, 10.f}, "eta binning"};
-  ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {800, 0.f, 8.f}, "Mee binning"};
-  ConfigurableAxis fConfigPteeBins{"cfgPteeBins", {400, 0.f, 10.f}, "pTee binning"};
+  MyConfigs myConfigs;
 
   Filter hfFilter = o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kCE);
   using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedTracks, aod::HfTable>>;
@@ -279,10 +291,10 @@ struct lmeehfcocktailcharm {
     const char* typeNamesSingle = "ce";
     const char* typeTitlesSingle = "c->e";
 
-    AxisSpec eta_axis = {fConfigEtaBins, "#eta"};
-    AxisSpec pt_axis = {fConfigPtBins, "#it{p}_{T} (GeV/c)"};
-    AxisSpec mass_axis = {fConfigMeeBins, "m_{ee} (GeV/c^{2})"};
-    AxisSpec ptee_axis = {fConfigPteeBins, "#it{p}_{T,ee} (GeV/c)"};
+    AxisSpec eta_axis = {myConfigs.fConfigEtaBins, "#eta"};
+    AxisSpec pt_axis = {myConfigs.fConfigPtBins, "#it{p}_{T} (GeV/c)"};
+    AxisSpec mass_axis = {myConfigs.fConfigMeeBins, "m_{ee} (GeV/c^{2})"};
+    AxisSpec ptee_axis = {myConfigs.fConfigPteeBins, "#it{p}_{T,ee} (GeV/c)"};
 
     // single histograms
     for (int j = 0; j < 3; j++) {
@@ -306,7 +318,7 @@ struct lmeehfcocktailcharm {
       registry.fill(HIST("NEvents"), 0.5);
 
       for (auto const& p : mcParticles) {
-        doSingle(p, hEta, hPt, hPtEta, fConfigPtMin, fConfigEtaMax);
+        doSingle(p, hEta, hPt, hPtEta, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
 
       auto const electronsGrouped = Electrons->sliceBy(perCollision, collision.globalIndex());
@@ -319,7 +331,11 @@ struct lmeehfcocktailcharm {
         if (type != static_cast<int>(EM_HFeeType::kCe_Ce)) {
           LOG(error) << "Something is wrong here. There should only be pairs of type kCe_Ce = 0 left at this point.";
         }
-        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, fConfigPtMin, fConfigEtaMax);
+        if (myConfigs.fConfigCheckPartonic){
+          if (!checkFromSameQuarkPair(particle1, particle2, mcParticlesAll, 4))
+            continue;
+        }
+        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
     }
   }
