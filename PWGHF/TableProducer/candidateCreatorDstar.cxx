@@ -548,6 +548,7 @@ struct HfCandidateCreatorDstarExpressions {
     int8_t signDstar = 0, signD0 = 0;
     int8_t flagDstar = 0, flagD0 = 0;
     int8_t originDstar = 0, originD0 = 0;
+    std::vector<int> idxBhadMothers{};
 
     // Match reconstructed candidates.
     for (const auto& rowCandidateDstar : *rowsCandidateDstar) {
@@ -578,13 +579,18 @@ struct HfCandidateCreatorDstarExpressions {
       // check wether the particle is non-promt (from a B0 hadron)
       if (flagDstar != 0) {
         auto particleDstar = mcParticles.iteratorAt(indexRecDstar);
-        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particleDstar);
+        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particleDstar, false, &idxBhadMothers);
       }
       if (flagD0 != 0) {
         auto particleD0 = mcParticles.iteratorAt(indexRecD0);
         originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particleD0);
       }
-      rowsMcMatchRecDstar(flagDstar, originDstar);
+      if (originDstar == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowsMcMatchRecDstar(flagDstar, originDstar, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
+      }
       rowsMcMatchRecD0(flagD0, originD0);
     }
 
@@ -594,11 +600,12 @@ struct HfCandidateCreatorDstarExpressions {
       flagD0 = 0;
       originDstar = 0;
       originD0 = 0;
+      idxBhadMothers.clear();
 
       auto mcCollision = particle.mcCollision();
       float zPv = mcCollision.posZ();
       if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
-        rowsMcMatchGenDstar(flagDstar, originDstar);
+        rowsMcMatchGenDstar(flagDstar, originDstar, -1);
         rowsMcMatchGenD0(flagD0, originD0);
         continue;
       }
@@ -614,12 +621,17 @@ struct HfCandidateCreatorDstarExpressions {
 
       // check wether the particle is non-promt (from a B0 hadron)
       if (flagDstar != 0) {
-        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
       if (flagD0 != 0) {
         originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
-      rowsMcMatchGenDstar(flagDstar, originDstar);
+
+      if (originDstar == RecoDecay::OriginType::NonPrompt) {
+        rowsMcMatchGenDstar(flagDstar, originDstar, idxBhadMothers[0]);
+      } else {
+        rowsMcMatchGenDstar(flagDstar, originDstar, -1);
+      }
       rowsMcMatchGenD0(flagD0, originD0);
     }
   }

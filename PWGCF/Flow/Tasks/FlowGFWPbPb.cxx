@@ -337,27 +337,27 @@ struct FlowGFWPbPb {
   {
     if (collision.alias_bit(kTVXinTRD)) {
       // TRD triggered
-      return 0;
+      return false;
     }
     if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       // reject collisions close to Time Frame borders
       // https://its.cern.ch/jira/browse/O2-4623
-      return 0;
+      return false;
     }
     if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       // reject events affected by the ITS ROF border
       // https://its.cern.ch/jira/browse/O2-4309
-      return 0;
+      return false;
     }
     if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
-      return 0;
+      return false;
     }
     if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
-      return 0;
+      return false;
     }
     float vtxz = -999;
     if (collision.numContrib() > 1) {
@@ -370,23 +370,23 @@ struct FlowGFWPbPb {
     auto multNTracksPV = collision.multNTracksPV();
 
     if (centrality >= 70. || centrality < 0)
-      return 0;
+      return false;
     if (abs(vtxz) > cfgCutVertex)
-      return 0;
+      return false;
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-      return 0;
+      return false;
     if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-      return 0;
+      return false;
     if (multTrk < fMultCutLow->Eval(centrality))
-      return 0;
+      return false;
     if (multTrk > fMultCutHigh->Eval(centrality))
-      return 0;
+      return false;
 
     // V0A T0A 5 sigma cut
     if (abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
-      return 0;
+      return false;
 
-    return 1;
+    return true;
   }
 
   int getMagneticField(uint64_t timestamp)
@@ -432,6 +432,7 @@ struct FlowGFWPbPb {
     int Ntot = tracks.size();
     if (Ntot < 1)
       return;
+
     registry.fill(HIST("BeforeCut_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
     registry.fill(HIST("BeforeCut_PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
     registry.fill(HIST("BeforeCut_globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());

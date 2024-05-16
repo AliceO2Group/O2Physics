@@ -1763,10 +1763,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtSoftPi, ptSoftPi, [](float pxSoftPi, float pySoftPi
 DECLARE_SOA_DYNAMIC_COLUMN(PVecSoftPi, pVecSoftPi, [](float px, float py, float pz) -> std::array<float, 3> { return std::array{px, py, pz}; });
 
 // MC matching result:
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);    //! reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);    //! generator level
+DECLARE_SOA_COLUMN(PtBhadMotherPart, ptBhadMotherPart, float); //! pt of the first B-hadron mother particle (only in case of non-prompt)
+DECLARE_SOA_COLUMN(PdgBhadMotherPart, pdgBhadMotherPart, int); //! pdg of the first B-hadron mother particle (only in case of non-prompt)
+
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);          //! particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);          //! particle origin, generator level
+DECLARE_SOA_COLUMN(IdxBhadMotherPart, idxBhadMotherPart, int); //! index of the first B-hadron mother particle (only in case of non-prompt)
 
 enum DecayType {
   DstarToD0Pi = 0,
@@ -1878,12 +1882,15 @@ using HfCandDstar = HfCandDstars::iterator;
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
                   hf_cand_dstar::FlagMcMatchRec,
-                  hf_cand_dstar::OriginMcRec);
+                  hf_cand_dstar::OriginMcRec,
+                  hf_cand_dstar::PtBhadMotherPart,
+                  hf_cand_dstar::PdgBhadMotherPart);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcGen, "AOD", "HFCANDDSTRMCGEN",
                   hf_cand_dstar::FlagMcMatchGen,
-                  hf_cand_dstar::OriginMcGen);
+                  hf_cand_dstar::OriginMcGen,
+                  hf_cand_dstar::IdxBhadMotherPart);
 
 #undef HFCAND_COLUMNS
 
