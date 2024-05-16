@@ -95,6 +95,8 @@ struct phosNbar {
     nbar() = default;
     nbar(double p, double xPHS, double yPHS, bool zPHS, int mcLabel) : mom(p), x(xPHS), y(yPHS), z(zPHS), label(mcLabel) {}
     ~nbar() = default;
+    bool testPIDBit(int ibit) { return (mPIDbits & (1 << ibit)) > 0; }
+    void setPIDBit(int ibit) { mPIDbits |= (1 << ibit); }
 
    public:
     double mom = 0.;  // momentum estimated from Time
@@ -102,14 +104,33 @@ struct phosNbar {
     double y = 9999.; // y coordinate in PHOS plane
     double z = 9999.; // z coordinate in PHOS plane
     int label = -1;   // label of MC particle
+    int mPIDbits = 0; // keep PID cuts
   };
 
-  std::vector<o2::track::TrackParametrization<float>> piEvent;
+  // class to keep nbar candidate parameters
+  class pion
+  {
+   public:
+    pion() = default;
+    pion(const pion&) = default;
+    pion(const o2::track::TrackParametrization<float>& tr, int mcLabel) : mom(tr), label(mcLabel) {}
+    ~pion() = default;
+    bool testPIDBit(int ibit) { return (mPIDbits & (1 << ibit)) > 0; }
+    void setPIDBit(int ibit) { mPIDbits |= (1 << ibit); }
+
+   public:
+    o2::track::TrackParametrization<float> mom; // track parameterization
+    int label = -1;                             // label of MC particle
+    int mPIDbits = 0;                           // keep PID cuts
+  };
+
+  std::vector<pion> piEvent;
   std::vector<nbar> nbarEvent;
-  std::array<std::deque<std::vector<o2::track::TrackParametrization<float>>>, mNZbins> mixTrackEvts;
+  std::array<std::deque<std::vector<pion>>, mNZbins> mixTrackEvts;
   std::array<std::deque<std::vector<nbar>>, mNZbins> mixNbarEvts;
 
-  TH2 *hRePP, *hRePM, *hMiPP, *hMiPM, *hSignalSP, *hSignalSM;
+  TH2 *hRePP, *hRePM, *hMiPP, *hMiPM;
+  TH3 *hSignalSP, *hSignalSM;
   TH3 *hRePPDCA, *hRePMDCA, *hMiPPDCA, *hMiPMDCA, *hRePPCPA, *hRePMCPA, *hMiPPCPA, *hMiPMCPA;
 
   /// \brief Create output histograms
@@ -123,20 +144,21 @@ struct phosNbar {
 
     mHistManager.add("cluTime", "Time vs E clu", HistType::kTH2F, {{200, -100.e-9, 100.e-9, "t (s)", "t (s)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
     mHistManager.add("nbarTime", "Time vs E clu nbar", HistType::kTH2F, {{200, -100.e-9, 100.e-9, "t (s)", "t (s)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
-    mHistManager.add("cluRveto", "CPV radius vs E clu", HistType::kTH2F, {{100, 0., 20., "R (sigmas)", "R (sigmas)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
-    mHistManager.add("nbarRveto", "CPV radius vs E clu nbar", HistType::kTH2F, {{100, 0., 20., "R (sigmas)", "R (sigmas)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
+    mHistManager.add("cluRveto", "CPV radius vs E clu", HistType::kTH2F, {{100, 0., 10., "R (sigmas)", "R (sigmas)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
+    mHistManager.add("nbarRveto", "CPV radius vs E clu nbar", HistType::kTH2F, {{100, 0., 10., "R (sigmas)", "R (sigmas)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
 
     const AxisSpec
       massAxis{500, 1., 1.5},
       ptAxis{100, 0., 10.},
       dcaAxis{100, 0., 5},
-      cpaAxis{100, 0., 1.};
+      cpaAxis{100, 0., 1.},
+      pidAxis{5, 0., 5.};
     hRePP = (std::get<std::shared_ptr<TH2>>(mHistManager.add("RePiP", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hRePM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("RePiM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hMiPP = (std::get<std::shared_ptr<TH2>>(mHistManager.add("MiPiP", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hMiPM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("MiPiM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
-    hSignalSP = (std::get<std::shared_ptr<TH2>>(mHistManager.add("SignalSP", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
-    hSignalSM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("SignalSM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
+    hSignalSP = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSP", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
+    hSignalSM = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSM", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
 
     hRePPDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiPDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
     hRePMDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiMDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
@@ -168,6 +190,10 @@ struct phosNbar {
     math_utils::Point3D<float> vtxV0;
     for (auto tr : piEvent) {
       for (auto nbar : nbarEvent) {
+        int cp = 0;
+        if constexpr (isMC) { // test parent
+          cp = commonParentPDG(tr.label, nbar.label, mcParticles);
+        }
         double dca = 999.;
         switch (mPairingMethod) {
           case 0: // maximize CPA
@@ -183,26 +209,35 @@ struct phosNbar {
           default: // do nothing
             continue;
         }
-        if (tr.getCharge2Pt() > 0) {
+        if (tr.mom.getCharge2Pt() > 0) {
           hRePPDCA->Fill(m, pt, dca);
           hRePPCPA->Fill(m, pt, cpa);
-          if (dca < mDCAcut && cpa > mCPAcut) {
+          if ((mPairingMethod == 0 && cpa > mCPAcut) ||
+              (mPairingMethod == 1 && dca < mDCAcut && cpa > mCPAcut)) {
             hRePP->Fill(m, pt);
           }
         } else {
           hRePMDCA->Fill(m, pt, dca);
           hRePMCPA->Fill(m, pt, cpa);
-          if (dca < mDCAcut && cpa > mCPAcut) {
+          if ((mPairingMethod == 0 && cpa > mCPAcut) ||
+              (mPairingMethod == 1 && dca < mDCAcut && cpa > mCPAcut)) {
             hRePM->Fill(m, pt);
           }
         }
-        if constexpr (isMC) { // test parent
-          int cp = commonParentPDG(tr.getUserField(), nbar.label, mcParticles);
-          if (cp == -3112) { // Sigma+
-            hSignalSP->Fill(m, pt);
+        if (cp == -3112) { // Sigma+
+          hSignalSP->Fill(m, pt, static_cast<float>(0));
+          for (int iPIDbit = 1; iPIDbit < 5; iPIDbit++) {
+            if (nbar.testPIDBit(iPIDbit)) {
+              hSignalSP->Fill(m, pt, static_cast<float>(iPIDbit));
+            }
           }
-          if (cp == -3222) { // Sigmap
-            hSignalSM->Fill(m, pt);
+        }
+        if (cp == -3222) { // Sigma-
+          hSignalSM->Fill(m, pt, static_cast<float>(0));
+          for (int iPIDbit = 1; iPIDbit < 5; iPIDbit++) {
+            if (nbar.testPIDBit(iPIDbit)) {
+              hSignalSM->Fill(m, pt, static_cast<float>(iPIDbit));
+            }
           }
         }
       }
@@ -232,7 +267,7 @@ struct phosNbar {
             default: // do nothing
               continue;
           }
-          if (tr.getCharge2Pt() > 0) {
+          if (tr.mom.getCharge2Pt() > 0) {
             hMiPPDCA->Fill(m, pt, dca);
             hMiPPCPA->Fill(m, pt, cpa);
             if (dca < mDCAcut && cpa > mCPAcut) {
@@ -266,7 +301,7 @@ struct phosNbar {
             default: // do nothing
               continue;
           }
-          if (tr.getCharge2Pt() > 0) {
+          if (tr.mom.getCharge2Pt() > 0) {
             hMiPPDCA->Fill(m, pt, dca);
             hMiPPCPA->Fill(m, pt, cpa);
             if (dca < mDCAcut && cpa > mCPAcut) {
@@ -361,54 +396,23 @@ struct phosNbar {
       if (isNbar) {
         mHistManager.fill(HIST("nbarCuts"), clu.e(), 1.);
       }
-      if (clu.m02() < 0.2) { // standard exotics cut
+
+      if (clu.time() < mTimeMin || clu.time() > mTimeMax) {
         continue;
       }
       mHistManager.fill(HIST("cluCuts"), clu.e(), 2.);
       if (isNbar) {
         mHistManager.fill(HIST("nbarCuts"), clu.e(), 2.);
       }
-      if (clu.ncell() < mNCellMin) {
-        continue;
-      }
-      mHistManager.fill(HIST("cluCuts"), clu.e(), 3.);
-      if (isNbar) {
-        mHistManager.fill(HIST("nbarCuts"), clu.e(), 3.);
-      }
-      if (clu.time() < mTimeMin || clu.time() > mTimeMax) {
-        continue;
-      }
-      mHistManager.fill(HIST("cluCuts"), clu.e(), 4.);
-      if (isNbar) {
-        mHistManager.fill(HIST("nbarCuts"), clu.e(), 4.);
-      }
-
       mHistManager.fill(HIST("cluRveto"), clu.trackdist(), clu.e());
       if (isNbar) {
         mHistManager.fill(HIST("nbarRveto"), clu.trackdist(), clu.e());
       }
-
-      if (clu.trackdist() < mRvetoSigma) // neutrality
-      {
-        continue;
-      }
-      mHistManager.fill(HIST("cluCuts"), clu.e(), 5.);
-      if (isNbar) {
-        mHistManager.fill(HIST("nbarCuts"), clu.e(), 5.);
-      }
-      if (clu.m02() < mDispA * clu.m20() + mDispB) {
-        continue;
-      }
-      mHistManager.fill(HIST("cluCuts"), clu.e(), 6.);
-      if (isNbar) {
-        mHistManager.fill(HIST("nbarCuts"), clu.e(), 6.);
-      }
-
       mHistManager.fill(HIST("cluTime"), clu.time(), clu.e());
       if (isNbar) {
         mHistManager.fill(HIST("nbarTime"), clu.time(), clu.e());
       }
-
+      // estimate momentum
       float t = clu.time();
       float r = sqrt(clu.globalx() * clu.globalx() + clu.globaly() * clu.globaly() + (clu.globalz() - mVtxZ) * (clu.globalz() - mVtxZ));
       float tgamma = r / c;
@@ -427,6 +431,36 @@ struct phosNbar {
       }
       double mom = mNbar / std::sqrt(std::pow(t * c / r, 2) - 1.);
       nbarEvent.emplace_back(mom, clu.globalx(), clu.globaly(), clu.globalz(), label);
+      // set PID cuts
+      if (clu.m02() > 0.2) { // standard exotics cut
+        nbarEvent.back().setPIDBit(1);
+        mHistManager.fill(HIST("cluCuts"), clu.e(), 3.);
+        if (isNbar) {
+          mHistManager.fill(HIST("nbarCuts"), clu.e(), 3.);
+        }
+      }
+      if (clu.ncell() >= mNCellMin) {
+        nbarEvent.back().setPIDBit(2);
+        mHistManager.fill(HIST("cluCuts"), clu.e(), 4.);
+        if (isNbar) {
+          mHistManager.fill(HIST("nbarCuts"), clu.e(), 4.);
+        }
+      }
+      if (clu.trackdist() > mRvetoSigma) // neutrality
+      {
+        nbarEvent.back().setPIDBit(3);
+        mHistManager.fill(HIST("cluCuts"), clu.e(), 5.);
+        if (isNbar) {
+          mHistManager.fill(HIST("nbarCuts"), clu.e(), 5.);
+        }
+      }
+      if (clu.m02() > mDispA * clu.m20() + mDispB) {
+        nbarEvent.back().setPIDBit(4);
+        mHistManager.fill(HIST("cluCuts"), clu.e(), 6.);
+        if (isNbar) {
+          mHistManager.fill(HIST("nbarCuts"), clu.e(), 6.);
+        }
+      }
     }
   } // selectNbars
 
@@ -446,21 +480,22 @@ struct phosNbar {
         continue;
       }
       mHistManager.fill(HIST("trackCuts"), piontrack.pt(), 2.);
-      if (std::abs(piontrack.tpcNSigmaPi()) > mPionDeDxCut) {
-        continue;
-      }
-      mHistManager.fill(HIST("trackCuts"), piontrack.pt(), 2.);
-      // DCA cut???
-
-      piEvent.emplace_back(getTrackPar(piontrack));
+      int label = -1;
       if constexpr (isMC) {
-        piEvent.back().setUserField(piontrack.mcParticleId());
+        label = piontrack.mcParticleId();
       }
+      piEvent.emplace_back(getTrackPar(piontrack), label);
+
+      if (std::abs(piontrack.tpcNSigmaPi()) < mPionDeDxCut) {
+        piEvent.back().setPIDBit(0);
+        mHistManager.fill(HIST("trackCuts"), piontrack.pt(), 2.);
+      }
+      // DCA cut???
     }
   }
 
   //----------------------------------------
-  int commonParentPDG(uint16_t labPi, int labNbar, aod::McParticles const* mcParticles)
+  int commonParentPDG(int labPi, int labNbar, aod::McParticles const* mcParticles)
   {
     // Tests if two labels contain common ancestor
     // return 0 if no common parent
@@ -473,13 +508,13 @@ struct phosNbar {
           return mcParticles->iteratorAt(iparentPi).pdgCode();
         }
         auto parentN = mcParticles->iteratorAt(iparentN);
-        if (parentN.mothersIds().size() == 0 || parentN.pdgCode() == 21 || abs(parentN.pdgCode()) < 11 || abs(parentN.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
+        if (!parentN.has_mothers() || parentN.pdgCode() == 21 || abs(parentN.pdgCode()) < 11 || abs(parentN.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
           break;
         }
         iparentN = parentN.mothersIds()[0];
       }
       auto parentPi = mcParticles->iteratorAt(iparentPi);
-      if (parentPi.mothersIds().size() == 0 || parentPi.pdgCode() == 21 || abs(parentPi.pdgCode()) < 11 || abs(parentPi.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
+      if (!parentPi.has_mothers() || parentPi.pdgCode() == 21 || abs(parentPi.pdgCode()) < 11 || abs(parentPi.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
         break;
       }
       iparentPi = parentPi.mothersIds()[0];
@@ -488,7 +523,7 @@ struct phosNbar {
   }
 
   //----------------------------------------
-  bool minimizeCPA(nbar& n, track::TrackParametrization<float>& pion, double& cpa, math_utils::Point3D<float>& vtxV0, double& m, double& pt)
+  bool minimizeCPA(nbar& n, pion& pn, double& cpa, math_utils::Point3D<float>& vtxV0, double& m, double& pt)
   {
     //--------------------------------------------------------------------
     // Function finds optimal decay vertex where CPA (cosine of Pointing Angle) is maximal
@@ -501,18 +536,20 @@ struct phosNbar {
     const double eps = 0.2; // accuracy of vertex reconstruction
     double xMax = 10., xMin = -10.;
     std::pair<double, double> st[npoints];
+    // operate on copy
+    o2::track::TrackParametrization<float> tmpT(pn.mom);
     // Maximal number of minimization steps
     int nsteps = 20;
     while (nsteps && xMax - xMin > eps) {
       double dx = (xMax - xMin) / npoints;
       for (int i = 0; i < npoints; i++) {
         double t = xMin + dx * i;
-        pion.propagateTo(t, mBz);
-        vtxV0 = pion.getXYZGlo();
-        float ptp = pion.getPt();
-        float cs = cosf(pion.getAlpha()), sn = sinf(pion.getAlpha());
-        float rp = std::sqrt((1.f - pion.getSnp()) * (1.f + pion.getSnp()));
-        math_utils::Vector3D<float> pPi(ptp * (rp * cs - pion.getSnp() * sn), ptp * (pion.getSnp() * cs + rp * sn), ptp * pion.getTgl());
+        tmpT.propagateTo(t, mBz);
+        vtxV0 = tmpT.getXYZGlo();
+        float ptp = tmpT.getPt();
+        float cs = cosf(tmpT.getAlpha()), sn = sinf(tmpT.getAlpha());
+        float rp = std::sqrt((1.f - tmpT.getSnp()) * (1.f + tmpT.getSnp()));
+        math_utils::Vector3D<float> pPi(ptp * (rp * cs - tmpT.getSnp() * sn), ptp * (tmpT.getSnp() * cs + rp * sn), ptp * tmpT.getTgl());
 
         // recalculate Nbar momentum
         math_utils::Vector3D<float> pNbar(n.x - vtxV0.x(), n.y - vtxV0.y(), n.z - vtxV0.z());
@@ -552,14 +589,14 @@ struct phosNbar {
       }
       nsteps--;
     }
-    pion.propagateTo(0.5 * (xMin + xMax), mBz);
+    tmpT.propagateTo(0.5 * (xMin + xMax), mBz);
     // calculate final CPA, Sigma inv mass using find pion and nbar momenta
     // may be re-calculate nbar |p| using reconstructed vertex
-    vtxV0 = pion.getXYZGlo();
-    float ptp = pion.getPt();
-    float cs = cosf(pion.getAlpha()), sn = sinf(pion.getAlpha());
-    float rp = std::sqrt((1.f - pion.getSnp()) * (1.f + pion.getSnp()));
-    math_utils::Vector3D<float> pPi(ptp * (rp * cs - pion.getSnp() * sn), ptp * (pion.getSnp() * cs + rp * sn), ptp * pion.getTgl());
+    vtxV0 = tmpT.getXYZGlo();
+    float ptp = tmpT.getPt();
+    float cs = cosf(tmpT.getAlpha()), sn = sinf(tmpT.getAlpha());
+    float rp = std::sqrt((1.f - tmpT.getSnp()) * (1.f + tmpT.getSnp()));
+    math_utils::Vector3D<float> pPi(ptp * (rp * cs - tmpT.getSnp() * sn), ptp * (tmpT.getSnp() * cs + rp * sn), ptp * tmpT.getTgl());
 
     // recalculate Nbar momentum
     math_utils::Vector3D<float> pNbar(n.x - vtxV0.x(), n.y - vtxV0.y(), n.z - vtxV0.z());
@@ -584,7 +621,7 @@ struct phosNbar {
     return true;
   }
 
-  bool propagateToDCA(nbar& n, track::TrackParametrization<float>& pion,
+  bool propagateToDCA(nbar& n, pion& pn,
                       double& cpa, double& dca, math_utils::Point3D<float>& vtxV0, double& m, double& pt)
   {
     //--------------------------------------------------------------------
@@ -601,7 +638,7 @@ struct phosNbar {
     o2::math_utils::Vector3D<float> pNbar(n.x - vtxPrim.x(), n.y - vtxPrim.y(), n.z - vtxPrim.z());
     pNbar /= sqrt(pNbar.Mag2()); // unit vector
 
-    auto tmpT(pion); // operate on the copy
+    auto tmpT(pn.mom); // operate on the copy
     // 1: find most probable position
     double phiN = pNbar.phi();
     double xv = -vtxPrim.x() * sin(phiN) - vtxPrim.y() * cos(phiN); // Rotation by phiN+pi/2
