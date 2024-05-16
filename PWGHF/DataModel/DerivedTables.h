@@ -68,7 +68,7 @@ DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE", //! Table with basic col
 
 using HfD0CollBase = HfD0CollBases::iterator;
 
-DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID", //! Table with global indices for collisions
+DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID", //! Table with original global indices of collisions
                   hf_cand::CollisionId,
                   soa::Marker<MarkerD0>);
 
@@ -91,7 +91,7 @@ DECLARE_SOA_TABLE(Hf3PCollBases, "AOD", "HF3PCOLLBASE", //! Table with basic col
 
 using Hf3PCollBase = Hf3PCollBases::iterator;
 
-DECLARE_SOA_TABLE(Hf3PCollIds, "AOD", "HF3PCOLLID", //! Table with global indices for collisions
+DECLARE_SOA_TABLE(Hf3PCollIds, "AOD", "HF3PCOLLID", //! Table with original global indices of collisions
                   hf_cand::CollisionId,
                   soa::Marker<Marker3P>);
 
@@ -102,8 +102,15 @@ DECLARE_SOA_TABLE(Hf3PCollIds, "AOD", "HF3PCOLLID", //! Table with global indice
 // MC collision columns
 namespace hf_mc_coll
 {
-DECLARE_SOA_ARRAY_INDEX_COLUMN(HfD0CollBase, hfD0CollBases); //! collision index array pointing to the derived collision table for D0 candidates
-DECLARE_SOA_ARRAY_INDEX_COLUMN(Hf3PCollBase, hf3PCollBases); //! collision index array pointing to the derived collision table for 3-prong candidates
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! original global index of the MC collision
+namespace der_d0
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(HfD0CollBase, hfCollBases); //! collision index array pointing to the derived reconstructed collisions for D0 candidates
+}
+namespace der_3p
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Hf3PCollBase, hfCollBases); //! collision index array pointing to the derived reconstructed collisions for 3-prong candidates
+}
 } // namespace hf_mc_coll
 
 // DO
@@ -117,8 +124,12 @@ DECLARE_SOA_TABLE(HfD0McCollBases, "AOD", "HFD0MCCOLLBASE", //! Table with basic
 
 using HfD0McCollBase = HfD0McCollBases::iterator;
 
-DECLARE_SOA_TABLE(HfD0McCollIds, "AOD", "HFD0MCCOLLID", //! Table with indices pointing to the derived collision table
-                  hf_mc_coll::HfD0CollBaseIds);
+DECLARE_SOA_TABLE(HfD0McCollIds, "AOD", "HFD0MCCOLLID", //! Table with original global indices of MC collisions
+                  hf_mc_coll::McCollisionId,
+                  soa::Marker<MarkerD0>);
+
+DECLARE_SOA_TABLE(HfD0McRCollIds, "AOD", "HFD0MCRCOLLID", //! Table with indices pointing to the derived reconstructed-collision table
+                  hf_mc_coll::der_d0::HfD0CollBaseIds);
 
 // 3-prong decays
 
@@ -131,8 +142,12 @@ DECLARE_SOA_TABLE(Hf3PMcCollBases, "AOD", "HF3PMCCOLLBASE", //! Table with basic
 
 using Hf3PMcCollBase = Hf3PMcCollBases::iterator;
 
-DECLARE_SOA_TABLE(Hf3PMcCollIds, "AOD", "HF3PMCCOLLID", //! Table with indices pointing to the derived collision table
-                  hf_mc_coll::Hf3PCollBaseIds);
+DECLARE_SOA_TABLE(Hf3PMcCollIds, "AOD", "HF3PMCCOLLID", //! Table with original global indices of MC collisions
+                  hf_mc_coll::McCollisionId,
+                  soa::Marker<Marker3P>);
+
+DECLARE_SOA_TABLE(Hf3PMcRCollIds, "AOD", "HF3PMCRCOLLID", //! Table with indices pointing to the derived reconstructed-collision table
+                  hf_mc_coll::der_3p::Hf3PCollBaseIds);
 
 // ================
 // Candidate tables
@@ -141,84 +156,27 @@ DECLARE_SOA_TABLE(Hf3PMcCollIds, "AOD", "HF3PMCCOLLID", //! Table with indices p
 // Basic candidate properties
 namespace hf_cand_base
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfD0CollBase);             //! collision index pointing to the derived collision table for D0 candidates
-DECLARE_SOA_INDEX_COLUMN(Hf3PCollBase, hf3PCollBase);             //! collision index pointing to the derived collision table for 3-prong candidates
-DECLARE_SOA_COLUMN(Eta, eta, float);                              //! pseudorapidity
-DECLARE_SOA_COLUMN(M, m, float);                                  //! invariant mass
-DECLARE_SOA_COLUMN(Phi, phi, float);                              //! azimuth
-DECLARE_SOA_COLUMN(Pt, pt, float);                                //! transverse momentum
-
-/// Helper functions for dynamic columns
-/// \todo Move to RecoDecayPtEtaPhi
-namespace functions_pt_eta_phi
+namespace der_d0
 {
-/// px as a function of pT, phi
-/// \todo Move to RecoDecay
-template <typename TPt, typename TPhi>
-auto px(TPt pt, TPhi phi)
-{
-  return pt * std::cos(phi);
+DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfCollBase); //! collision index pointing to the derived collision table for D0 candidates
 }
-
-/// py as a function of pT, phi
-/// \todo Move to RecoDecay
-template <typename TPt, typename TPhi>
-auto py(TPt pt, TPhi phi)
+namespace der_3p
 {
-  return pt * std::sin(phi);
+DECLARE_SOA_INDEX_COLUMN(Hf3PCollBase, hfCollBase); //! collision index pointing to the derived collision table for 3-prong candidates
 }
-
-/// pz as a function of pT, eta
-/// \todo Move to RecoDecay
-template <typename TPt, typename TEta>
-auto pz(TPt pt, TEta eta)
-{
-  return pt * std::sinh(eta);
-}
-
-/// p as a function of pT, eta
-/// \todo Move to RecoDecay
-template <typename TPt, typename TEta>
-auto p(TPt pt, TEta eta)
-{
-  return pt * std::cosh(eta);
-}
-
-/// Rapidity as a function of pT, eta, mass
-/// \todo Move to RecoDecay
-template <typename TPt, typename TEta, typename TM>
-auto y(TPt pt, TEta eta, TM m)
-{
-  return std::log((RecoDecay::sqrtSumOfSquares(m, pt * std::cosh(eta)) + pt * std::sinh(eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
-}
-
-/// Energy as a function of pT, eta, mass
-/// \todo Move to RecoDecay
-template <typename TPt, typename TEta, typename TM>
-auto e(TPt pt, TEta eta, TM m)
-{
-  return RecoDecay::sqrtSumOfSquares(m, p(pt, eta));
-}
-} // namespace functions_pt_eta_phi
-
-namespace d0
-{
-DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! D0 rapidity
-                           [](float pt, float eta) -> float { return functions_pt_eta_phi::y(pt, eta, o2::constants::physics::MassD0); });
-}
-namespace lc
-{
-DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Lambda_c rapidity
-                           [](float pt, float eta) -> float { return functions_pt_eta_phi::y(pt, eta, o2::constants::physics::MassLambdaCPlus); });
-}
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! px
-                           [](float pt, float phi) -> float { return functions_pt_eta_phi::px(pt, phi); });
+DECLARE_SOA_COLUMN(Eta, eta, float); //! pseudorapidity
+DECLARE_SOA_COLUMN(M, m, float);     //! invariant mass
+DECLARE_SOA_COLUMN(Phi, phi, float); //! azimuth
+DECLARE_SOA_COLUMN(Pt, pt, float);   //! transverse momentum
+DECLARE_SOA_COLUMN(Y, y, float);     //! rapidity
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,   //! px
+                           [](float pt, float phi) -> float { return RecoDecayPtEtaPhi::px(pt, phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! py
-                           [](float pt, float phi) -> float { return functions_pt_eta_phi::py(pt, phi); });
+                           [](float pt, float phi) -> float { return RecoDecayPtEtaPhi::py(pt, phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! px
-                           [](float pt, float eta) -> float { return functions_pt_eta_phi::pz(pt, eta); });
+                           [](float pt, float eta) -> float { return RecoDecayPtEtaPhi::pz(pt, eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! momentum
-                           [](float pt, float eta) -> float { return functions_pt_eta_phi::p(pt, eta); });
+                           [](float pt, float eta) -> float { return RecoDecayPtEtaPhi::p(pt, eta); });
 } // namespace hf_cand_base
 
 // Candidate properties used for selection
@@ -299,12 +257,12 @@ DECLARE_SOA_COLUMN(MlScores, mlScores, std::vector<float>);         //! vector o
 
 DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE", //! Table with basic candidate properties used in the analyses
                   o2::soa::Index<>,
-                  hf_cand_base::HfD0CollBaseId,
+                  hf_cand_base::der_d0::HfD0CollBaseId,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
                   hf_cand_base::M,
-                  hf_cand_base::d0::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::Y,
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
@@ -346,9 +304,6 @@ DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR", //! Table with candidate propertie
                   soa::Marker<MarkerD0>);
 
 DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE", //! Table with additional candidate properties used for selection
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
                   hf_cand::XSecondaryVertex,
                   hf_cand::YSecondaryVertex,
                   hf_cand::ZSecondaryVertex,
@@ -378,7 +333,7 @@ DECLARE_SOA_TABLE(HfD0Mls, "AOD", "HFD0ML", //! Table with candidate selection M
                   hf_cand_mc::MlScores,
                   soa::Marker<MarkerD0>);
 
-DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID", //! Table with global indices for candidates
+DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID", //! Table with original global indices for candidates
                   hf_cand::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
@@ -393,12 +348,12 @@ DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC", //! Table with MC candidate info
 
 DECLARE_SOA_TABLE(Hf3PBases, "AOD", "HF3PBASE", //! Table with basic candidate properties used in the analyses
                   o2::soa::Index<>,
-                  hf_cand_base::Hf3PCollBaseId,
+                  hf_cand_base::der_3p::Hf3PCollBaseId,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
                   hf_cand_base::M,
-                  hf_cand_base::lc::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::Y,
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
@@ -445,9 +400,6 @@ DECLARE_SOA_TABLE(Hf3PPars, "AOD", "HF3PPAR", //! Table with candidate propertie
                   soa::Marker<Marker3P>);
 
 DECLARE_SOA_TABLE(Hf3PParEs, "AOD", "HF3PPARE", //! Table with additional candidate properties used for selection
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
                   hf_cand::XSecondaryVertex,
                   hf_cand::YSecondaryVertex,
                   hf_cand::ZSecondaryVertex,
@@ -480,7 +432,7 @@ DECLARE_SOA_TABLE(Hf3PMls, "AOD", "HF3PML", //! Table with candidate selection M
                   hf_cand_mc::MlScores,
                   soa::Marker<Marker3P>);
 
-DECLARE_SOA_TABLE(Hf3PIds, "AOD", "HF3PID", //! Table with global indices for candidates
+DECLARE_SOA_TABLE(Hf3PIds, "AOD", "HF3PID", //! Table with original global indices for candidates
                   hf_cand::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
@@ -502,8 +454,14 @@ namespace hf_mc_particle
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);                 //! MC collision of this particle
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                   //! MC particle
-DECLARE_SOA_INDEX_COLUMN(HfD0McCollBase, hfD0McCollBase);           //! collision index pointing to the derived MC collision table for D0 candidates
-DECLARE_SOA_INDEX_COLUMN(Hf3PMcCollBase, hf3PMcCollBase);           //! collision index pointing to the derived MC collision table for 3-prong candidates
+namespace der_d0
+{
+DECLARE_SOA_INDEX_COLUMN(HfD0McCollBase, hfMcCollBase); //! collision index pointing to the derived MC collision table for D0 candidates
+}
+namespace der_3p
+{
+DECLARE_SOA_INDEX_COLUMN(Hf3PMcCollBase, hfMcCollBase); //! collision index pointing to the derived MC collision table for 3-prong candidates
+}
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         //! flag for generator level matching
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle origin, generator level
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant decay channel flag, generator level
@@ -513,20 +471,20 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 
 DECLARE_SOA_TABLE(HfD0PBases, "AOD", "HFD0PBASE", //! Table with MC particle info
                   o2::soa::Index<>,
-                  hf_mc_particle::HfD0McCollBaseId,
+                  hf_mc_particle::der_d0::HfD0McCollBaseId,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
+                  hf_cand_base::Y,
                   hf_mc_particle::FlagMcMatchGen,
                   hf_mc_particle::OriginMcGen,
-                  hf_cand_base::d0::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
                   hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
                   soa::Marker<MarkerD0>);
 
-DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID", //! Table with global indices for MC particles
+DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID", //! Table with original global indices for MC particles
                   hf_mc_particle::McCollisionId,
                   hf_mc_particle::McParticleId,
                   soa::Marker<MarkerD0>);
@@ -535,20 +493,20 @@ DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID", //! Table with global indices for 
 
 DECLARE_SOA_TABLE(Hf3PPBases, "AOD", "HF3PPBASE", //! Table with MC particle info
                   o2::soa::Index<>,
-                  hf_mc_particle::Hf3PMcCollBaseId,
+                  hf_mc_particle::der_3p::Hf3PMcCollBaseId,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
+                  hf_cand_base::Y,
                   hf_mc_particle::FlagMcMatchGen,
                   hf_mc_particle::OriginMcGen,
-                  hf_cand_base::lc::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
                   hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
                   soa::Marker<Marker3P>);
 
-DECLARE_SOA_TABLE(Hf3PPIds, "AOD", "HF3PPID", //! Table with global indices for MC particles
+DECLARE_SOA_TABLE(Hf3PPIds, "AOD", "HF3PPID", //! Table with original global indices for MC particles
                   hf_mc_particle::McCollisionId,
                   hf_mc_particle::McParticleId,
                   soa::Marker<Marker3P>);
