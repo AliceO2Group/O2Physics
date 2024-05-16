@@ -913,6 +913,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
             rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
           }
+          continue;
         }
       }
 
