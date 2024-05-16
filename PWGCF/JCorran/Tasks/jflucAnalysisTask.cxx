@@ -190,12 +190,6 @@ struct jflucAnalysisTask {
     pcf->FillQA(tracks);
     qvecs.Calculate(tracks, etamin, etamax);
     pcf->SetJQVectors(&qvecs);
-    /*const auto& edges = AxisSpec(axisMultiplicity).binEdges;
-    for (UInt_t i = 0, n = AxisSpec(axisMultiplicity).getNbins(); i < n; ++i)
-      if (collision.multiplicity() < edges[i + 1]) {
-        pcf->SetEventCentralityAndBin(collision.multiplicity(), i);
-        break;
-      }*/
     pcf->UserExec("");
   }
 
@@ -203,13 +197,13 @@ struct jflucAnalysisTask {
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(jflucAnalysisTask, processJDerived, "Process data", false);
+  PROCESS_SWITCH(jflucAnalysisTask, processJDerived, "Process derived data", false);
 
   void processJDerivedCorrected(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::JTracks, aod::JWeights>> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(jflucAnalysisTask, processJDerivedCorrected, "Process data with corrections", false);
+  PROCESS_SWITCH(jflucAnalysisTask, processJDerivedCorrected, "Process derived data with corrections", false);
 
   void processCFDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {

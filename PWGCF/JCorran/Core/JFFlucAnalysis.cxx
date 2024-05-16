@@ -12,14 +12,9 @@
 /// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \since Sep 2022
 
-#include <TH1D.h>
-#include <TH2D.h>
-#include <TH3D.h>
-#include <TF3.h>
 #include <TMath.h>
 #include <TComplex.h>
 #include <algorithm>
-
 #include "JFFlucAnalysis.h"
 
 JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
@@ -73,175 +68,7 @@ void JFFlucAnalysis::Init()
 //________________________________________________________________________
 void JFFlucAnalysis::UserCreateOutputObjects()
 {
-  // const double phiBins[] = {-2
-  // new(&fh_phietaz) THnF("phietaz","phietaz",4,numBins,pbins,
-#if 0
-  fHMG = new JHistManager("JFFlucHistManager", "jfluc");
-  // set JBin here //
-  fBin_Subset.Set("Sub", "Sub", "Sub:%d", JBin::kSingle).SetBin(2);
-  fBin_h.Set("NH", "NH", "NH:%d", JBin::kSingle).SetBin(kNH);
-  fBin_k.Set("K", "K", "K:%d", JBin::kSingle).SetBin(nKL);
-
-  fBin_hh.Set("NHH", "NHH", "NHH:%d", JBin::kSingle).SetBin(kcNH);
-  fBin_kk.Set("KK", "KK", "KK:%d", JBin::kSingle).SetBin(nKL);
-
-  // TODO: index with binning the array of pointers
-  fHistCentBin.Set("CentBin", "CentBin", "Cent:%d", JBin::kSingle).SetBin(numBins);
-
-  fVertexBin.Set("Vtx", "Vtx", "Vtx:%d", JBin::kSingle).SetBin(3);
-  fCorrBin.Set("C", "C", "C:%d", JBin::kSingle).SetBin(28);
-
-  fBin_Nptbins.Set("PtBin", "PtBin", "Pt:%d", JBin::kSingle).SetBin(N_ptbins);
-
-  // set JTH1D here //
-  fh_cent
-    << TH1D("h_cent", "h_cent", 200, 0, 100)
-    << "END";
-
-  fh_ImpactParameter
-    << TH1D("h_IP", "h_IP", 400, -2, 20)
-    << "END";
-
-  fh_TrkQA_TPCvsCent
-    << TH2D("h_trk_Cent_vs_TPC", "h_trk_Cent_vs_TPC", 100, 0, 100, 100, 0, 3000)
-    << "END";
-
-  fh_TrkQA_TPCvsGlob
-    << TH2D("h_trk_Glob_vs_TPC", "h_trk_Glob_vs_TPC", 100, 0, 2000, 100, 0, 3000)
-    << "END";
-
-  fh_TrkQA_FB32_vs_FB32TOF
-    << TH2D("h_trk_FB32_vs_FB32TOF", "h_trk_FB32_vs_FB32TOF", 200, 0, 4000, 100, 0, 2000)
-    << "END";
-
-  fh_vertex
-    << TH1D("h_vertex", "h_vertex", 400, -20, 20)
-    << fVertexBin
-    << "END";
-  fh_pt
-    << TH1D("hChargedPtJacek", "", JFFlucAnalysis::NpttJacek, JFFlucAnalysis::pttJacek)
-    << fHistCentBin
-    << "END";
-
-  fh_eta
-    << TH1D("h_eta", "h_eta", 40, -2.0, 2.0)
-    << fHistCentBin
-    << "END";
-  fh_phi
-    << TH1D("h_phi", "h_phi", 50, -TMath::Pi(), TMath::Pi())
-    << fHistCentBin << fBin_Subset
-    << "END";
-  if (!(flags & kFlucPhiCorrection)) {
-    fh_phieta
-      << TH2D("h_phieta", "h_phieta", 50, -TMath::Pi(), TMath::Pi(), 40, -2.0, 2.0)
-      << fHistCentBin
-      << "END";
-    fh_phietaz
-      << TH3D("h_phietaz", "h_phietaz", 50, -TMath::Pi(), TMath::Pi(), 40, -2.0, 2.0, 20, -10.0, 10.0)
-      << fHistCentBin
-      << "END";
-  }
-
-  fh_psi_n
-    << TH1D("h_psi", "h_psi", 50, -0.5 * TMath::Pi(), 0.5 * TMath::Pi())
-    << fBin_h
-    << fHistCentBin
-    << "END";
-
-  fh_cos_n_phi
-    << TH1D("h_cos_n_phi", "h_cos_n_phi", 50, -1, 1)
-    << fBin_h
-    << fHistCentBin
-    << "END";
-
-  fh_sin_n_phi
-    << TH1D("h_sin_n_phi", "h_sin_n_phi", 50, -1, 1)
-    << fBin_h
-    << fHistCentBin
-    << "END";
-
-  fh_cos_n_psi_n
-    << TH1D("h_cos_n_psi", "h_cos_n_psi", 50, -1, 1)
-    << fBin_h
-    << fHistCentBin
-    << "END";
-
-  fh_sin_n_psi_n
-    << TH1D("h_sin_n_psi", "h_sin_n_psi", 50, -1, 1)
-    << fBin_h
-    << fHistCentBin
-    << "END";
-
-  fh_ntracks
-    << TH1D("h_tracks", "h_tracks", 100, 0, 5000)
-    << fHistCentBin
-    << "END";
-
-  fh_vn
-    << TH1D("hvn", "hvn", 1024, -1.0, 1.0)
-    << fBin_h << fBin_k
-    << fHistCentBin
-    << "END"; // histogram of vn_h^k values for [ih][ik][iCent]
-  fh_vna
-    << TH1D("hvna", "hvna", 1024, -1.0, 1.0)
-    << fBin_h << fBin_k
-    << fHistCentBin
-    << "END"; // histogram of vn_h^k values for [ih][ik][iCent]
-  fh_vn_vn
-    << TH1D("hvn_vn", "hvn_vn", 1024, -1.0, 1.0)
-    << fBin_h << fBin_k
-    << fBin_hh << fBin_kk
-    << fHistCentBin
-    << "END"; // histo of < vn * vn > for [ih][ik][ihh][ikk][iCent]
-  fh_correlator
-    << TH1D("h_corr", "h_corr", 1024, -3.0, 3.0)
-    << fCorrBin
-    << fHistCentBin
-    << "END";
-
-  fh_SC_ptdep_4corr
-    << TH1D("hvnvm_SC", "hvnvm_SC", 1024, -1.5, 1.5)
-    << fBin_h << fBin_k
-    << fBin_hh << fBin_kk
-    << fHistCentBin << fBin_Nptbins
-    << "END";
-  fh_SC_ptdep_2corr
-    << TH1D("hvn_SC", "hvn_SC", 1024, -1.5, 1.5)
-    << fBin_h << fBin_k
-    << fHistCentBin << fBin_Nptbins
-    << "END";
-
-  fh_SC_with_QC_4corr
-    << TH1D("hQC_SC4p", "hQC_SC4p", 1024, -1.5, 1.5)
-    << fBin_h << fBin_hh
-    << fHistCentBin
-    << "END";
-  fh_SC_with_QC_2corr
-    << TH1D("hQC_SC2p", "hQC_SC2p", 1024, -1.5, 1.5)
-    << fBin_h
-    << fHistCentBin
-    << "END";
-  fh_SC_with_QC_2corr_gap
-    << TH1D("hQC_SC2p_eta10", "hQC_SC2p_eta10", 1024, -1.5, 1.5)
-    << fBin_h
-    << fHistCentBin
-    << "END";
-  /*fh_evt_SP_QC_ratio_4p
-    << TH1D("hSPQCratio4p", "hSPQCratio4p", 1024, -100, 100)
-    << fBin_h
-    << fHistCentBin
-    << "END"; // fBin_h > not stand for harmonics, just case(32, 42, 52, 53, 43)
-
-  fh_evt_SP_QC_ratio_2p
-    << TH1D("hSPQCratio", "hSPQCratio", 1024, -100, 100)
-    << fBin_h
-    << fHistCentBin
-    << "END"; // fBin_h > not stand for harmonics, only for v2, v3, v4, v5*/
-  // JTH1D set done.
-
-  fHMG->Print();
-  // fHMG->WriteConfig();
-#endif
+  //
 }
 
 //________________________________________________________________________
@@ -300,22 +127,8 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
+void JFFlucAnalysis::UserExec(Option_t* popt)
 {
-#if 0
-  for (UInt_t ih = 2; ih < kNH; ih++) {
-    fh_cos_n_phi[ih][fCBin]->Fill(pqvecs->QvectorQC[ih][1].Re() / pqvecs->QvectorQC[0][1].Re());
-    fh_sin_n_phi[ih][fCBin]->Fill(pqvecs->QvectorQC[ih][1].Im() / pqvecs->QvectorQC[0][1].Re());
-    //
-    //
-    Double_t psi = pqvecs->QvectorQC[ih][1].Theta();
-    fh_psi_n[ih][fCBin]->Fill(psi);
-    fh_cos_n_psi_n[ih][fCBin]->Fill(TMath::Cos((Double_t)ih * psi));
-    fh_sin_n_psi_n[ih][fCBin]->Fill(TMath::Sin((Double_t)ih * psi));
-  }
-#endif
-  Double_t vn2_vn2[kNH][nKL][kNH][nKL];
-
   TComplex corr[kNH][nKL];
   TComplex ncorr[kNH][nKL];
   TComplex ncorr2[kNH][nKL][kcNH][nKL];
@@ -390,12 +203,11 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
                                             // vn2[ih][ik] = corr[ih][ik].Re() / ref_2Np[ik - 1];
         // fh_vn[ih][ik][fCBin]->Fill(vn2[ih][ik], ebe_2Np_weight[ik - 1]);
         // fh_vna[ih][ik][fCBin]->Fill(ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
-        pht[HIST_THN_VN]->Fill(fCent, ih, ik, ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
+        phs[HIST_THN_SPARSE_VN]->Fill(fCent, ih, ik, ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
         for (UInt_t ihh = 2; ihh < kcNH; ihh++) {
           for (UInt_t ikk = 1; ikk < nKL; ikk++) {
-            vn2_vn2[ih][ik][ihh][ikk] = ncorr2[ih][ik][ihh][ikk] / ref_2Np[ik + ikk - 1];
-            // fh_vn_vn[ih][ik][ihh][ikk][fCBin]->Fill(vn2_vn2[ih][ik][ihh][ikk], ebe_2Np_weight[ik + ikk - 1]);
-            pht[HIST_THN_VN_VN]->Fill(fCent, ih, ik, ihh, ikk, vn2_vn2[ih][ik][ihh][ikk], ebe_2Np_weight[ik + ikk - 1]);
+            Double_t vn2_vn2 = ncorr2[ih][ik][ihh][ikk] / ref_2Np[ik + ikk - 1];
+            phs[HIST_THN_SPARSE_VN_VN]->Fill(fCent, ih, ik, ihh, ikk, vn2_vn2, ebe_2Np_weight[ik + ikk - 1]);
           }
         }
       }
@@ -470,38 +282,37 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
     pht[HIST_THN_V7V2starV5star]->Fill(fCent, nV7V2starV5star.Re(), ebe_3p_weight);
     pht[HIST_THN_V7V3starV4star]->Fill(fCent, nV7V3starV4star.Re(), ebe_3p_weight);
 
-#if 0
-  enum { kSubA,
-         kSubB,
-         kNSub };
+    enum { kSubA,
+           kSubB,
+           kNSub };
 
-  Double_t event_weight_four = 1.0;
-  Double_t event_weight_two = 1.0;
-  Double_t event_weight_two_gap = 1.0;
-  if (flags & kFlucEbEWeighting) {
-    event_weight_four = Four(0, 0, 0, 0).Re();
-    event_weight_two = Two(0, 0).Re();
-    event_weight_two_gap = (pqvecs->QvectorQCgap[kSubA][0][1] * pqvecs->QvectorQCgap[kSubB][0][1]).Re();
-  }
-
-  for (UInt_t ih = 2; ih < kNH; ih++) {
-    for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : kcNH); ihh < mm; ihh++) {
-      TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
-
-      fh_SC_with_QC_4corr[ih][ihh][fCBin]->Fill(scfour.Re(), event_weight_four);
+    Double_t event_weight_four = 1.0;
+    Double_t event_weight_two = 1.0;
+    Double_t event_weight_two_gap = 1.0;
+    if (flags & kFlucEbEWeighting) {
+      event_weight_four = Four(0, 0, 0, 0).Re();
+      event_weight_two = Two(0, 0).Re();
+      event_weight_two_gap = (pqvecs->QvectorQCgap[kSubA][0][1] * pqvecs->QvectorQCgap[kSubB][0][1]).Re();
     }
 
-    TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
-    fh_SC_with_QC_2corr[ih][fCBin]->Fill(sctwo.Re(), event_weight_two);
+    for (UInt_t ih = 2; ih < kNH; ih++) {
+      for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : kcNH); ihh < mm; ihh++) {
+        TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
 
-    TComplex sctwoGap = (pqvecs->QvectorQCgap[kSubA][ih][1] * TComplex::Conjugate(pqvecs->QvectorQCgap[kSubB][ih][1])) / (pqvecs->QvectorQCgap[kSubA][0][1] * pqvecs->QvectorQCgap[kSubB][0][1]).Re();
-    fh_SC_with_QC_2corr_gap[ih][fCBin]->Fill(sctwoGap.Re(), event_weight_two_gap);
-#endif
+        pht[HIST_THN_SC_with_QC_4corr]->Fill(fCent, ih, ihh, scfour.Re(), event_weight_four);
+      }
+
+      TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
+      pht[HIST_THN_SC_with_QC_2corr]->Fill(fCent, ih, sctwo.Re(), event_weight_two);
+
+      TComplex sctwoGap = (pqvecs->QvectorQCgap[kSubA][ih][1] * TComplex::Conjugate(pqvecs->QvectorQCgap[kSubB][ih][1])) / (pqvecs->QvectorQCgap[kSubA][0][1] * pqvecs->QvectorQCgap[kSubB][0][1]).Re();
+      pht[HIST_THN_SC_with_QC_2corr_gap]->Fill(fCent, ih, sctwoGap.Re(), event_weight_two_gap);
+    }
   }
 }
 
 //________________________________________________________________________
-void JFFlucAnalysis::Terminate(Option_t* /*popt*/)
+void JFFlucAnalysis::Terminate(Option_t* popt)
 {
   //
 }

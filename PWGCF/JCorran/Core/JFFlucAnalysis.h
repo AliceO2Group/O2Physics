@@ -16,22 +16,21 @@
 #define PWGCF_JCORRAN_CORE_JFFLUCANALYSIS_H_
 
 #include <experimental/type_traits>
-// #include "JHistManager.h"
 #include "JQVectors.h"
 #include <TComplex.h>
 #include <TNamed.h>
 #include <TH1.h>
 #include <THn.h>
-#include <tuple>
+#include <THnSparse.h>
 
 class JFFlucAnalysis : public TNamed
 {
- public:
+ protected:
   JFFlucAnalysis();
   explicit JFFlucAnalysis(const char* name);
   explicit JFFlucAnalysis(const JFFlucAnalysis& a);    // not implemented
   JFFlucAnalysis& operator=(const JFFlucAnalysis& ap); // not implemented
-
+ public:
   ~JFFlucAnalysis();
   void UserCreateOutputObjects();
   void Init();
@@ -41,10 +40,7 @@ class JFFlucAnalysis : public TNamed
   void UserExec(Option_t* option);
   void Terminate(Option_t*);
 
-  inline void SetEventCentrality(float cent)
-  {
-    fCent = cent;
-  }
+  inline void SetEventCentrality(float cent) { fCent = cent; }
   inline float GetEventCentrality() const { return fCent; }
   inline void SetEventImpactParameter(float ip) { fImpactParameter = ip; }
   inline void SetEventVertex(const Double_t* vtx) { fVertex = vtx; }
@@ -57,11 +53,7 @@ class JFFlucAnalysis : public TNamed
     kSubEvent_A = 0x1,
     kSubEvent_B = 0x2
   };
-  inline void SelectSubevents(UInt_t _subeventMask)
-  {
-    subeventMask = _subeventMask;
-  }
-  // set the number of bins before initialization (UserCreateOutputObjects)
+  inline void SelectSubevents(UInt_t _subeventMask) { subeventMask = _subeventMask; }
   enum HIST_TH1 {
     HIST_TH1_CENTRALITY,
     HIST_TH1_IMPACTPARAM,
@@ -72,8 +64,11 @@ class JFFlucAnalysis : public TNamed
     HIST_THN_PHIETAZ,
     HIST_THN_PTETA,
     HIST_THN_PHIETA,
-    HIST_THN_VN,
-    HIST_THN_VN_VN,
+    // HIST_THN_VN,
+    // HIST_THN_VN_VN,
+    HIST_THN_SC_with_QC_4corr,
+    HIST_THN_SC_with_QC_2corr,
+    HIST_THN_SC_with_QC_2corr_gap,
     HIST_THN_V4V2star_2,
     HIST_THN_V4V2starv2_2,
     HIST_THN_V4V2starv2_4,
@@ -102,7 +97,12 @@ class JFFlucAnalysis : public TNamed
     HIST_THN_nV5V5V2V2,
     HIST_THN_nV5V5V3V3,
     HIST_THN_nV4V4V3V3,
-    HIST_THN_COUNT,
+    HIST_THN_COUNT
+  };
+  enum HIST_THN_SPARSE {
+    HIST_THN_SPARSE_VN,
+    HIST_THN_SPARSE_VN_VN,
+    HIST_THN_SPARSE_COUNT
   };
   enum {
     kFlucEbEWeighting = 0x1
@@ -177,61 +177,10 @@ class JFFlucAnalysis : public TNamed
 
   const JQVectorsT* pqvecs; //!
 
-  TH1* ph1[HIST_TH1_COUNT]; //!
-  THn* pht[HIST_THN_COUNT]; //!
-  /*JBin fBin_Subset;  //!
-  JBin fBin_h;       //!
-  JBin fBin_k;       //!
-  JBin fBin_hh;      //!
-  JBin fBin_kk;      //!
-  JBin fHistCentBin; //!
-  JBin fVertexBin;   //! // x, y, z
-  JBin fCorrBin;     //!
+  TH1* ph1[HIST_TH1_COUNT];              //!
+  THn* pht[HIST_THN_COUNT];              //!
+  THnSparse* phs[HIST_THN_SPARSE_COUNT]; //!
 
-  JTH1D fh_cent;            //! // for cent dist
-  JTH1D fh_ImpactParameter; //! // for impact parameter for mc
-  JTH1D fh_vertex;          //!
-  JTH1D fh_pt;              //! // for pt dist of tracks
-  JTH1D fh_eta;             //! // for eta dist of tracks
-  JTH1D fh_phi;             //! // for phi dist [ic][isub]
-  JTH2D fh_phieta;          //!
-  JTH3D fh_phietaz;         //!
-
-
-  JTH1D fh_psi_n;       //!
-  JTH1D fh_cos_n_phi;   //!
-  JTH1D fh_sin_n_phi;   //!
-  JTH1D fh_cos_n_psi_n; //!
-  JTH1D fh_sin_n_psi_n; //!
-
-  JTH1D fh_ntracks; //! // for number of tracks dist
-  JTH1D fh_vn;      //!  // single vn^k  array [ih][ik][iCent]
-  JTH1D fh_vna;     //! // single vn^k with autocorrelation removed (up to a limited order)
-  JTH1D fh_vn_vn;   //! // combination for <vn*vn> [ih][ik][ihh][ikk][iCent]
-
-  JTH1D fh_correlator;            //! // some more complex correlators
-  JTH2D fh_TrkQA_TPCvsGlob;       //! // QA histos
-  JTH2D fh_TrkQA_TPCvsCent;       //! // QA histos
-  JTH2D fh_TrkQA_FB32_vs_FB32TOF; //!*/
-
-  // additional variables for ptbins(Standard Candles only)
-  /*enum { kPt0,
-         kPt1,
-         kPt2,
-         kPt3,
-         kPt4,
-         kPt5,
-         kPt6,
-         kPt7,
-         N_ptbins };
-  JBin fBin_Nptbins;             //!
-  JTH1D fh_SC_ptdep_4corr;       //! // for < vn^2 vm^2 >
-  JTH1D fh_SC_ptdep_2corr;       //!  // for < vn^2 >
-  JTH1D fh_SC_with_QC_4corr;     //! // for <vn^2 vm^2>
-  JTH1D fh_SC_with_QC_2corr;     //! // for <vn^2>
-  JTH1D fh_SC_with_QC_2corr_gap; //!*/
-  // JTH1D fh_evt_SP_QC_ratio_2p;     //! // check SP QC evt by evt ratio
-  // JTH1D fh_evt_SP_QC_ratio_4p;     //! // check SP QC evt by evt ratio
   ClassDef(JFFlucAnalysis, 1)
 };
 
