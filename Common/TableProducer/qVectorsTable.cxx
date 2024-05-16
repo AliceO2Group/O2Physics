@@ -139,7 +139,7 @@ struct qVectorsTable {
           for (auto det : useDetector) {
             useDetector[det.first.data()] = true;
           }
-          LOGF(info, Form("Using all detectors.", input.matcher.binding.data()));
+          LOGF(info, "Using all detectors.");
           goto allDetectorsInUse; // Added to break from nested loop if all detectors are in use.
         }
         for (auto det : useDetector) {
