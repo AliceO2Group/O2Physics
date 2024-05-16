@@ -17,7 +17,6 @@
 #include <TH1F.h>
 #include <THn.h>
 
-
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/AnalysisDataModel.h"
@@ -71,7 +70,6 @@ struct HfTaskFlow {
   using MyTracks = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
   using HfCandidatesSel = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 
-  
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < zVertexMax;
@@ -83,7 +81,6 @@ struct HfTaskFlow {
   //  TODO: use Partition instead of filter
   Filter candidateFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
-  
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
   //  configurables for containers
@@ -423,7 +420,7 @@ struct HfTaskFlow {
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                       triggerWeight * associatedWeight);
         } else {
-          
+
           target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
@@ -439,7 +436,6 @@ struct HfTaskFlow {
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
     Pair<MyCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
-    
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -576,8 +572,8 @@ struct HfTaskFlow {
   //    process mixed event correlations: h-MFT case
   // =====================================
   void processMixedTpcMftHH(MyCollisions const& collisions,
-                             MyTracks const& tracks,
-                             aod::MFTTracks const& mfttracks)
+                            MyTracks const& tracks,
+                            aod::MFTTracks const& mfttracks)
   {
     //  we want to group collisions based on charged-track multiplicity
     auto getTracksSize = [&tracks, this](MyCollisions::iterator const& col) {
