@@ -62,7 +62,7 @@ using namespace o2::constants::physics;
 
 struct lambdapolarization {
 
-//  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
+  //  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using V0TrackCandidate = aod::V0Datas;
@@ -72,25 +72,25 @@ struct lambdapolarization {
     {},
     OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<float> cfgv0radiusMin{"cfgv0radiusMin",1.2,"minimum decay radius"};
-  Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin",0.05,"minimum DCA to PV for positive track"};
-  Configurable<float> cfgDCANegToPVMin{"cfgDCANegToPVMin",0.2,"minimum DCA to PV for negative track"};
-  Configurable<float> cfgv0CosPA{"cfgv0CosPA",0.995,"minimum v0 cosine"};
-  Configurable<float> cfgDCAV0Dau{"cfgDCAV0Dau",1.0,"maximum DCA between daughters"};
+  Configurable<float> cfgv0radiusMin{"cfgv0radiusMin", 1.2, "minimum decay radius"};
+  Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin", 0.05, "minimum DCA to PV for positive track"};
+  Configurable<float> cfgDCANegToPVMin{"cfgDCANegToPVMin", 0.2, "minimum DCA to PV for negative track"};
+  Configurable<float> cfgv0CosPA{"cfgv0CosPA", 0.995, "minimum v0 cosine"};
+  Configurable<float> cfgDCAV0Dau{"cfgDCAV0Dau", 1.0, "maximum DCA between daughters"};
 
-  Configurable<float> cfgV0PtMin{"cfgV0PtMin",0,"minimum pT for lambda"};
-  Configurable<float> cfgV0EtaMin{"cfgV0EtaMin",-0.5,"maximum rapidity"};
-  Configurable<float> cfgV0EtaMax{"cfgV0EtaMax",0.5,"maximum rapidity"};
-  Configurable<float> cfgV0LifeTime{"cfgV0LifeTime",30.,"maximum lambda lifetime"};
+  Configurable<float> cfgV0PtMin{"cfgV0PtMin", 0, "minimum pT for lambda"};
+  Configurable<float> cfgV0EtaMin{"cfgV0EtaMin", -0.5, "maximum rapidity"};
+  Configurable<float> cfgV0EtaMax{"cfgV0EtaMax", 0.5, "maximum rapidity"};
+  Configurable<float> cfgV0LifeTime{"cfgV0LifeTime", 30., "maximum lambda lifetime"};
 
-  Configurable<bool> cfgQAv0{"cfgQAv0",false,"QA plot"};
+  Configurable<bool> cfgQAv0{"cfgQAv0", false, "QA plot"};
 
-  Configurable<int> cfgDaughTPCnclsMin{"cfgDaughTPCnclsMin",70,"minimum fired crossed rows"};
-  Configurable<float> cfgDaughPIDCutsTPC{"cfgDaughPIDCutsTPC",5,"nsigma for TPC"};
-  Configurable<float> cfgDaughEtaMin{"cfgDaughEtaMin",-0.8,"minimum daughter eta"};
-  Configurable<float> cfgDaughEtaMax{"cfgDaughEtaMax",0.8,"maximum daughter eta"};
-  Configurable<float> cfgDaughPrPt{"cfgDaughPrPt",0.6,"minimum daughter proton pt"};
-  Configurable<float> cfgDaughPiPt{"cfgDaughPiPt",0.2,"minimum daughter pion pt"};
+  Configurable<int> cfgDaughTPCnclsMin{"cfgDaughTPCnclsMin", 70, "minimum fired crossed rows"};
+  Configurable<float> cfgDaughPIDCutsTPC{"cfgDaughPIDCutsTPC", 5, "nsigma for TPC"};
+  Configurable<float> cfgDaughEtaMin{"cfgDaughEtaMin", -0.8, "minimum daughter eta"};
+  Configurable<float> cfgDaughEtaMax{"cfgDaughEtaMax", 0.8, "maximum daughter eta"};
+  Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.6, "minimum daughter proton pt"};
+  Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
 
   Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
 
@@ -103,7 +103,7 @@ struct lambdapolarization {
   void init(o2::framework::InitContext&)
   {
     if (cfgnMods > 1)
-      LOGF(fatal, "multiple harmonics not implemented yet"); //FIXME: will be updated after Qvector task updates
+      LOGF(fatal, "multiple harmonics not implemented yet"); // FIXME: will be updated after Qvector task updates
 
     AxisSpec massAxis = {100, 1.0, 1.2};
     AxisSpec ptAxis = {100, 0.0, 10.0};
@@ -111,23 +111,19 @@ struct lambdapolarization {
     AxisSpec centAxis = {80, 0.0, 80.0};
     AxisSpec epAxis = {6, 0.0, 2.0 * constants::math::PI};
 
-    AxisSpec pidAxis = {100,-10,10};
-    for (auto i=2; i<cfgnMods+2; i++){
-      histos.add(Form("h_lambda_cos_psi%d",i), "", {HistType::kTHnSparseF,
-        {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
-      histos.add(Form("h_alambda_cos_psi%d",i), "", {HistType::kTHnSparseF,
-        {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
-      histos.add(Form("h_lambda_cos2_psi%d",i), "", {HistType::kTHnSparseF,
-        {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
-      histos.add(Form("h_alambda_cos2_psi%d",i), "", {HistType::kTHnSparseF,
-        {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
+    AxisSpec pidAxis = {100, -10, 10};
+    for (auto i = 2; i < cfgnMods + 2; i++) {
+      histos.add(Form("h_lambda_cos_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
+      histos.add(Form("h_alambda_cos_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
+      histos.add(Form("h_lambda_cos2_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
+      histos.add(Form("h_alambda_cos2_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
     }
 
     if (cfgQAv0) {
-      histos.add("QA/nsigma_tpc_pt_ppr","",{HistType::kTH2F, {ptAxis, pidAxis}});
-      histos.add("QA/nsigma_tpc_pt_ppi","",{HistType::kTH2F, {ptAxis, pidAxis}});
-      histos.add("QA/nsigma_tpc_pt_mpr","",{HistType::kTH2F, {ptAxis, pidAxis}});
-      histos.add("QA/nsigma_tpc_pt_mpi","",{HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA/nsigma_tpc_pt_ppr", "", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA/nsigma_tpc_pt_ppi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA/nsigma_tpc_pt_mpr", "", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA/nsigma_tpc_pt_mpi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
     }
 
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -151,11 +147,11 @@ struct lambdapolarization {
     auto centrality = collision.centFT0C();
     auto multNTracksPV = collision.multNTracksPV();
 
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality)){
+    if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
       return 0;
     }
 
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality)){
+    if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
       return 0;
     }
 
@@ -164,7 +160,7 @@ struct lambdapolarization {
     }
 
     return 1;
-  } //event selection
+  } // event selection
 
   template <typename TCollision, typename V0>
   bool SelectionV0(TCollision const& collision, V0 const& candidate)
@@ -202,9 +198,9 @@ struct lambdapolarization {
       return false;
     if (track.eta() < cfgDaughEtaMin)
       return false;
-    if (pid==0 && track.pt() < cfgDaughPrPt)
+    if (pid == 0 && track.pt() < cfgDaughPrPt)
       return false;
-    if (pid==1 && track.pt() < cfgDaughPiPt)
+    if (pid == 1 && track.pt() < cfgDaughPiPt)
       return false;
 
     return true;
@@ -231,14 +227,14 @@ struct lambdapolarization {
         histos.fill(HIST("QA/nsigma_tpc_pt_mpi"), negtrack.pt(), nTPCSigmaNegPi);
       }
 
-      int LambdaTag=0;
-      int aLambdaTag=0;
+      int LambdaTag = 0;
+      int aLambdaTag = 0;
 
       if (isSelectedV0Daughter(postrack, 0) && isSelectedV0Daughter(negtrack, 1)) {
-        LambdaTag=1;
+        LambdaTag = 1;
       }
       if (isSelectedV0Daughter(negtrack, 0) && isSelectedV0Daughter(postrack, 1)) {
-        aLambdaTag=1;
+        aLambdaTag = 1;
       }
 
       if (!LambdaTag && !aLambdaTag)
@@ -259,39 +255,38 @@ struct lambdapolarization {
       ProtonBoostedVec = boost(ProtonVec);
 
       angle = ProtonBoostedVec.Pz() / ProtonBoostedVec.P();
-      relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - TMath::ATan2(collision.qvecIm()[3 + (nmode-2)*24], collision.qvecRe()[3 + (nmode-2)*24])));
+      relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24])));
 
-      if (nmode==2) { ////////////
+      if (nmode == 2) { ////////////
         if (LambdaTag) {
           histos.fill(HIST("h_lambda_cos_psi2"), v0.mLambda(), v0.pt(), angle, collision.centFT0C(), relphi);
-          histos.fill(HIST("h_lambda_cos2_psi2"), v0.mLambda(), v0.pt(), angle*angle, collision.centFT0C(), relphi);
+          histos.fill(HIST("h_lambda_cos2_psi2"), v0.mLambda(), v0.pt(), angle * angle, collision.centFT0C(), relphi);
         }
         if (aLambdaTag) {
           histos.fill(HIST("h_alambda_cos_psi2"), v0.mLambda(), v0.pt(), angle, collision.centFT0C(), relphi);
-          histos.fill(HIST("h_alambda_cos2_psi2"), v0.mLambda(), v0.pt(), angle*angle, collision.centFT0C(), relphi);
+          histos.fill(HIST("h_alambda_cos2_psi2"), v0.mLambda(), v0.pt(), angle * angle, collision.centFT0C(), relphi);
         }
-      }
-      else if (nmode==3) {
+      } else if (nmode == 3) {
         if (LambdaTag) {
           histos.fill(HIST("h_lambda_cos_psi3"), v0.mLambda(), v0.pt(), angle, collision.centFT0C(), relphi);
-          histos.fill(HIST("h_lambda_cos2_psi3"), v0.mLambda(), v0.pt(), angle*angle, collision.centFT0C(), relphi);
+          histos.fill(HIST("h_lambda_cos2_psi3"), v0.mLambda(), v0.pt(), angle * angle, collision.centFT0C(), relphi);
         }
         if (aLambdaTag) {
           histos.fill(HIST("h_alambda_cos_psi3"), v0.mLambda(), v0.pt(), angle, collision.centFT0C(), relphi);
-          histos.fill(HIST("h_alambda_cos2_psi3"), v0.mLambda(), v0.pt(), angle*angle, collision.centFT0C(), relphi);
+          histos.fill(HIST("h_alambda_cos2_psi3"), v0.mLambda(), v0.pt(), angle * angle, collision.centFT0C(), relphi);
         }
       } ////////// FIXME: not possible to get histograms using nmode
     }
   }
 
   void processData(EventCandidates::iterator const& collision,
-                 TrackCandidates const& tracks, aod::V0Datas const& V0s,
-                 aod::BCs const&)
+                   TrackCandidates const& tracks, aod::V0Datas const& V0s,
+                   aod::BCs const&)
   {
     if (!eventSelected(collision)) {
       return;
     }
-    for (auto i=2; i<cfgnMods+2; i++){
+    for (auto i = 2; i < cfgnMods + 2; i++) {
       FillHistograms(collision, V0s, i);
     }
   }
