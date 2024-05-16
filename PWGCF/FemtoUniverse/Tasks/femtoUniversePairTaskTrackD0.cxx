@@ -118,6 +118,8 @@ struct femtoUniversePairTaskTrackD0 {
   struct : o2::framework::ConfigurableGroup {
     Configurable<int> ConfPDGCodeD0{"ConfPDGCodeD0", 421, "D0 meson - PDG code"};
     Configurable<int> ConfPDGCodeD0bar{"ConfPDGCodeD0bar", -421, "D0bar meson - PDG code"};
+    Configurable<float> ConfMinPtD0D0bar{"ConfMinPtD0D0bar", 3.0, "D0/D0bar sel. - min. pT"};
+    Configurable<float> ConfMaxPtD0D0bar{"ConfMaxPtD0D0bar", 5.0, "D0/D0bar sel. - max. pT"};
     Configurable<float> ConfMinInvMassD0D0bar{"ConfMinInvMassD0D0bar", 1.65, "D0/D0bar sel. - min. invMass"};
     Configurable<float> ConfMaxInvMassD0D0bar{"ConfMaxInvMassD0D0bar", 2.05, "D0/D0bar sel. - max. invMass"};
   } ConfDmesons;
@@ -133,6 +135,8 @@ struct femtoUniversePairTaskTrackD0 {
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<bool> ConfUseAllD0mesons{"ConfUseAllD0mesons", false, "Include cand. which are both D0 and D0bar cand."};
+  Configurable<bool> ConfUsePtCutForD0D0bar{"ConfUsePtCutForD0D0bar", false, "Include pT cut for D0/D0bar in same and mixed processes."};
+  Configurable<bool> ConfUseMassCutForD0D0bar{"ConfUseMassCutForD0D0bar", false, "Switch to save D0/D0bar within declared inv. mass range"};
 
   /// Partitions for particle 1
   Partition<FemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(ConfTrack.ConfTrackSign));
@@ -370,10 +374,10 @@ struct femtoUniversePairTaskTrackD0 {
     registry.add("hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassVsPtFinerBinning", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassFinerBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hInvMassVsPtOnlyD0D0bar", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDeltaPhiSigSig", "SxS correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{14, 0.0, o2::constants::math::PI}}});
-    registry.add("hDeltaPhiD0BgD0barSig", "B(D0)x S(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{14, 0.0, o2::constants::math::PI}}});
-    registry.add("hDeltaPhiD0SigD0barBg", "S(D0)x B(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{14, 0.0, o2::constants::math::PI}}});
-    registry.add("hDeltaPhiBgBg", "BxB correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{14, 0.0, o2::constants::math::PI}}});
+    registry.add("hDeltaPhiSigSig", "SxS correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{10, 0.0, o2::constants::math::PI}}});
+    registry.add("hDeltaPhiD0BgD0barSig", "B(D0)x S(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{10, 0.0, o2::constants::math::PI}}});
+    registry.add("hDeltaPhiD0SigD0barBg", "S(D0)x B(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{10, 0.0, o2::constants::math::PI}}});
+    registry.add("hDeltaPhiBgBg", "BxB correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{10, 0.0, o2::constants::math::PI}}});
     registry.add("hPtCand1VsPtCand2", "2-prong candidates;#it{p}_{T} (GeV/#it{c});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDeltaEtaDeltaPhi", "2-prong candidates;#Delta #eta;#Delta #varphi (rad)", {HistType::kTH2F, {{29, -2., 2.}, {29, 0.0, o2::constants::math::PI}}});
   }
@@ -534,6 +538,19 @@ struct femtoUniversePairTaskTrackD0 {
           continue;
         }
       }
+      // // Set pT cut for D0/D0bar candidates
+      if(ConfUsePtCutForD0D0bar) {
+        if(d0candidate.pt() < ConfDmesons.ConfMinPtD0D0bar && d0candidate.pt() > ConfDmesons.ConfMaxPtD0D0bar) {
+          continue;
+        }
+      }
+      // // Set inv. mass cut for D0/D0bar candidates
+      if(ConfUseMassCutForD0D0bar) {
+        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) 
+          || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
+            continue;
+        }
+      }
       // // Close Pair Rejection
       if (ConfIsCPR.value) {
         if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
@@ -607,6 +624,20 @@ struct femtoUniversePairTaskTrackD0 {
           continue;
         }
       }
+      // // Set pT cut for D0/D0bar candidates
+      if(ConfUsePtCutForD0D0bar) {
+        if(d0candidate.pt() < ConfDmesons.ConfMinPtD0D0bar && d0candidate.pt() > ConfDmesons.ConfMaxPtD0D0bar) {
+          continue;
+        }
+      }
+      // // Set inv. mass cut for D0/D0bar candidates
+      if(ConfUseMassCutForD0D0bar) {
+        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) 
+          || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
+            continue;
+        }
+      }
+      // // Close Pair Rejection
       if (ConfIsCPR.value) {
         if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla, femtoUniverseContainer::EventType::mixed)) {
           continue;
