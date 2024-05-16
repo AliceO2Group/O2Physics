@@ -192,8 +192,7 @@ struct AnalysisEventSelection {
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
     // Not later than now objects
-    //fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
-    
+    // fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
 
     fLastRun = -1;
   }

@@ -177,14 +177,14 @@ class VarManager : public TObject
     kBC,
     kBCOrbit,
     kIsPhysicsSelection,
-    kIsNoTFBorder,       // No time frame border
-    kIsNoITSROFBorder,   // No ITS read out frame border (from event selection)
-    kIsNoITSROFBorderRecomputed,   // No ITS read out frame border, computed here
-    kIsNoSameBunch,      // No collisions with same T0 BC
-    kIsGoodZvtxFT0vsPV,  // No collisions w/ difference between z_ {PV, tracks} and z_{PV FT0A-C}
-    kIsVertexITSTPC,     // At least one ITS-TPC track
-    kIsVertexTOFmatched, // At least one TOF-matched track
-    kIsSel8,             // TVX in Run3
+    kIsNoTFBorder,               // No time frame border
+    kIsNoITSROFBorder,           // No ITS read out frame border (from event selection)
+    kIsNoITSROFBorderRecomputed, // No ITS read out frame border, computed here
+    kIsNoSameBunch,              // No collisions with same T0 BC
+    kIsGoodZvtxFT0vsPV,          // No collisions w/ difference between z_ {PV, tracks} and z_{PV FT0A-C}
+    kIsVertexITSTPC,             // At least one ITS-TPC track
+    kIsVertexTOFmatched,         // At least one TOF-matched track
+    kIsSel8,                     // TVX in Run3
     kIsINT7,
     kIsEMC7,
     kIsINT7inMUON,
@@ -913,7 +913,8 @@ class VarManager : public TObject
   {
     fgTPCInterSectorBoundary = boundarySize;
   }
-  static void SetITSROFBorderselection(int bias, int length, int marginLow, int marginHigh) {
+  static void SetITSROFBorderselection(int bias, int length, int marginLow, int marginHigh)
+  {
     fgITSROFbias = bias;
     fgITSROFlength = length;
     fgITSROFBorderMarginLow = marginLow;
@@ -939,7 +940,7 @@ class VarManager : public TObject
   static float fgCenterOfMassEnergy;      // collision energy
   static float fgMassofCollidingParticle; // mass of the colliding particle
   static float fgTPCInterSectorBoundary;  // TPC inter-sector border size at the TPC outer radius, in cm
-  static int fgITSROFbias;                // ITS ROF bias (from ALPIDE parameters) 
+  static int fgITSROFbias;                // ITS ROF bias (from ALPIDE parameters)
   static int fgITSROFlength;              // ITS ROF length (from ALPIDE parameters)
   static int fgITSROFBorderMarginLow;     // ITS ROF border low margin
   static int fgITSROFBorderMarginHigh;    // ITS ROF border high margin
