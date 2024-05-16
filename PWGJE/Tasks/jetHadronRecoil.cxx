@@ -75,7 +75,7 @@ struct hJetAnalysis {
                               {"hSignalPtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, 2 * o2::constants::math::PI}, {150, 0, 150}}}},
                               {"hReferencePt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
                               {"hSignalPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
-                              {"hSignalLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, 2 * o2::constants::math::PII}, {150, 0, 150}}}},
+                              {"hSignalLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, 2 * o2::constants::math::PI}, {150, 0, 150}}}},
                               {"hReferenceLeadingTrack", "leading track p_{T};p_{T,jet};#Delta#phi;leading track p_{T}", {HistType::kTH3F, {{150, 0, 150}, {100, 0, 2 * o2::constants::math::PI}, {150, 0, 150}}}},
                               {"hJetSignalMultiplicity", "jet multiplicity;N_{jets};entries", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hJetReferenceMultiplicity", "jet multiplicity;N_{jets};entries", {HistType::kTH1F, {{10, 0, 10}}}},
