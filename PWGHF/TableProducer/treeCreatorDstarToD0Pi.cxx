@@ -147,7 +147,7 @@ DECLARE_SOA_TABLE(HfCandDstLites, "AOD", "HFCANDDSTLITE",
                   full::PtBhadMother)
 
 DECLARE_SOA_TABLE(HfCandDstFulls, "AOD", "HFCANDDSTFULL",
-                  full::CollisionId,
+                  collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
