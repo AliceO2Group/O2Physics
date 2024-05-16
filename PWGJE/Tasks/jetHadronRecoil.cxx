@@ -17,7 +17,6 @@
 
 #include "TRandom3.h"
 
-#include "CommonConstants/MathConstants.h"
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
