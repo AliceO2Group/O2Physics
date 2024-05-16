@@ -23,93 +23,37 @@
 #include "JFFlucAnalysis.h"
 
 JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
-                                   fCent(0)
-#if 0
-                                   fHMG(0),
-                                   fBin_Subset(),
-                                   fBin_h(),
-                                   fBin_k(),
-                                   fBin_hh(),
-                                   fBin_kk(),
-                                   fHistCentBin(),
-                                   fh_cent(),
-                                   fh_ImpactParameter(),
-                                   fh_vertex(),
-                                   fh_eta(),
-                                   fh_phi(),
-                                   fh_phieta(),
-                                   fh_phietaz(),
-                                   fh_ntracks(),
-                                   fh_vn(),
-                                   fh_vna(),
-                                   fh_vn_vn()
-#endif
+                                   fCent(0),
+                                   fImpactParameter(-1),
+                                   subeventMask(kSubEvent_A | kSubEvent_B),
+                                   flags(0),
+                                   fEta_min(0),
+                                   fEta_max(0)
 {
-  subeventMask = kSubEvent_A | kSubEvent_B;
-  flags = 0;
-  fEta_min = 0;
-  fEta_max = 0;
-  fImpactParameter = -1;
+  //
 }
 
 //________________________________________________________________________
 JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
-                                                       fCent(0)
-#if 0
-                                                       fHMG(0),
-                                                       fBin_Subset(),
-                                                       fBin_h(),
-                                                       fBin_k(),
-                                                       fBin_hh(),
-                                                       fBin_kk(),
-                                                       fHistCentBin(),
-                                                       fh_cent(),
-                                                       fh_ImpactParameter(),
-                                                       fh_vertex(),
-                                                       fh_eta(),
-                                                       fh_phi(),
-                                                       fh_phieta(),
-                                                       fh_phietaz(),
-                                                       fh_ntracks(),
-                                                       fh_vn(),
-                                                       fh_vna(),
-                                                       fh_vn_vn()
-#endif
+                                                       fCent(0),
+                                                       fImpactParameter(-1),
+                                                       subeventMask(kSubEvent_A | kSubEvent_B),
+                                                       flags(0),
+                                                       fEta_min(0),
+                                                       fEta_max(0)
 {
-  // cout << "analysis task created " << endl;
-
-  subeventMask = kSubEvent_A | kSubEvent_B;
-  flags = 0;
-  fEta_min = 0;
-  fEta_max = 0;
-  fImpactParameter = -1;
+  //
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : // AliAnalysisTaskSE(a.GetName()),
-
-                                                          fVertex(a.fVertex),
-                                                          fCent(a.fCent)
-#if 0
-                                                          fHMG(a.fHMG),
-                                                          fBin_Subset(a.fBin_Subset),
-                                                          fBin_h(a.fBin_h),
-                                                          fBin_k(a.fBin_k),
-                                                          fBin_hh(a.fBin_hh),
-                                                          fBin_kk(a.fBin_kk),
-                                                          fHistCentBin(a.fHistCentBin),
-                                                          fh_cent(a.fh_cent),
-                                                          fh_ImpactParameter(a.fh_ImpactParameter),
-                                                          fh_vertex(a.fh_vertex),
-                                                          fh_eta(a.fh_eta),
-                                                          fh_phi(a.fh_phi),
-                                                          fh_phieta(a.fh_phieta),
-                                                          fh_phietaz(a.fh_phietaz),
-                                                          fh_ntracks(a.fh_ntracks),
-                                                          fh_vn(a.fh_vn),
-                                                          fh_vna(a.fh_vna),
-                                                          fh_vn_vn(a.fh_vn_vn)
-#endif
+JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : fVertex(a.fVertex),
+                                                          fCent(a.fCent),
+                                                          fImpactParameter(a.fImpactParameter),
+                                                          subeventMask(a.subeventMask),
+                                                          flags(a.flags),
+                                                          fEta_min(a.fEta_min),
+                                                          fEta_max(a.fEta_max),
+                                                          pqvecs(a.pqvecs)
 {
   // copy constructor
 }
@@ -303,9 +247,7 @@ void JFFlucAnalysis::UserCreateOutputObjects()
 //________________________________________________________________________
 JFFlucAnalysis::~JFFlucAnalysis()
 {
-#if 0
-  delete fHMG;
-#endif
+  //
 }
 
 #define A i
@@ -372,8 +314,6 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
     fh_sin_n_psi_n[ih][fCBin]->Fill(TMath::Sin((Double_t)ih * psi));
   }
 #endif
-
-  // Double_t vn2[kNH][nKL];
   Double_t vn2_vn2[kNH][nKL][kNH][nKL];
 
   TComplex corr[kNH][nKL];
@@ -460,9 +400,6 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
         }
       }
     }
-    (void)ebe_3p_weight;
-    (void)ebe_4p_weightB;
-#if 0
 
     //************************************************************************
     TComplex V4V2star_2 = pQq[A][4][1] * pQq[B][2][1] * pQq[B][2][1];
@@ -497,43 +434,43 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
     TComplex nV5V5V3V3 = FourGap22(pQq, i, 5, 3, 5, 3) / ref_4p;
     TComplex nV4V4V3V3 = FourGap22(pQq, i, 4, 3, 4, 3) / ref_4p;
 
-    fh_correlator[0][fCBin]->Fill(V4V2starv2_2.Re());
-    fh_correlator[1][fCBin]->Fill(V4V2starv2_4.Re());
-    fh_correlator[2][fCBin]->Fill(V4V2star_2.Re(), ebe_3p_weight); // added 2015.3.18
-    fh_correlator[3][fCBin]->Fill(V5V2starV3starv2_2.Re());
-    fh_correlator[4][fCBin]->Fill(V5V2starV3star.Re(), ebe_3p_weight);
-    fh_correlator[5][fCBin]->Fill(V5V2starV3startv3_2.Re());
-    fh_correlator[6][fCBin]->Fill(V6V2star_3.Re(), ebe_4p_weightB);
-    fh_correlator[7][fCBin]->Fill(V6V3star_2.Re(), ebe_3p_weight);
-    fh_correlator[8][fCBin]->Fill(V7V2star_2V3star.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V4V2starv2_2]->Fill(fCent, V4V2starv2_2.Re());
+    pht[HIST_THN_V4V2starv2_4]->Fill(fCent, V4V2starv2_4.Re());
+    pht[HIST_THN_V4V2star_2]->Fill(fCent, V4V2star_2.Re(), ebe_3p_weight); // added 2015.3.18
+    pht[HIST_THN_V5V2starV3starv2_2]->Fill(fCent, V5V2starV3starv2_2.Re());
+    pht[HIST_THN_V5V2starV3star]->Fill(fCent, V5V2starV3star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V5V2starV3startv3_2]->Fill(fCent, V5V2starV3startv3_2.Re());
+    pht[HIST_THN_V6V2star_3]->Fill(fCent, V6V2star_3.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V6V3star_2]->Fill(fCent, V6V3star_2.Re(), ebe_3p_weight);
+    pht[HIST_THN_V7V2star_2V3star]->Fill(fCent, V7V2star_2V3star.Re(), ebe_4p_weightB);
 
-    fh_correlator[9][fCBin]->Fill(nV4V2star_2.Re(), ebe_3p_weight); // added 2015.6.10
-    fh_correlator[10][fCBin]->Fill(nV5V2starV3star.Re(), ebe_3p_weight);
-    fh_correlator[11][fCBin]->Fill(nV6V3star_2.Re(), ebe_3p_weight);
+    pht[HIST_THN_V4V2star_2]->Fill(fCent, nV4V2star_2.Re(), ebe_3p_weight); // added 2015.6.10
+    pht[HIST_THN_V5V2starV3star]->Fill(fCent, nV5V2starV3star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V6V3star_2]->Fill(fCent, nV6V3star_2.Re(), ebe_3p_weight);
 
     // use this to avoid self-correlation 4p correlation (2 particles from A, 2 particles from B) -> MA(MA-1)MB(MB-1) : evt weight..
-    fh_correlator[12][fCBin]->Fill(nV4V4V2V2.Re(), ebe_2Np_weight[1]);
-    fh_correlator[13][fCBin]->Fill(nV3V3V2V2.Re(), ebe_2Np_weight[1]);
+    pht[HIST_THN_nV4V4V2V2]->Fill(fCent, nV4V4V2V2.Re(), ebe_2Np_weight[1]);
+    pht[HIST_THN_nV3V3V2V2]->Fill(fCent, nV3V3V2V2.Re(), ebe_2Np_weight[1]);
 
-    fh_correlator[14][fCBin]->Fill(nV5V5V2V2.Re(), ebe_2Np_weight[1]);
-    fh_correlator[15][fCBin]->Fill(nV5V5V3V3.Re(), ebe_2Np_weight[1]);
-    fh_correlator[16][fCBin]->Fill(nV4V4V3V3.Re(), ebe_2Np_weight[1]);
+    pht[HIST_THN_nV5V5V2V2]->Fill(fCent, nV5V5V2V2.Re(), ebe_2Np_weight[1]);
+    pht[HIST_THN_nV5V5V3V3]->Fill(fCent, nV5V5V3V3.Re(), ebe_2Np_weight[1]);
+    pht[HIST_THN_nV4V4V3V3]->Fill(fCent, nV4V4V3V3.Re(), ebe_2Np_weight[1]);
 
     // higher order correlators, added 2017.8.10
-    fh_correlator[17][fCBin]->Fill(V8V2starV3star_2.Re(), ebe_4p_weightB);
-    fh_correlator[18][fCBin]->Fill(V8V2star_4.Re()); // 5p weight
-    fh_correlator[19][fCBin]->Fill(nV6V2star_3.Re(), ebe_4p_weightB);
-    fh_correlator[20][fCBin]->Fill(nV7V2star_2V3star.Re(), ebe_4p_weightB);
-    fh_correlator[21][fCBin]->Fill(nV8V2starV3star_2.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V8V2starV3star_2]->Fill(fCent, V8V2starV3star_2.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V8V2star_4]->Fill(fCent, V8V2star_4.Re()); // 5p weight
+    pht[HIST_THN_V6V2star_3]->Fill(fCent, nV6V2star_3.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V7V2star_2V3star]->Fill(fCent, nV7V2star_2V3star.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V8V2starV3star_2]->Fill(fCent, nV8V2starV3star_2.Re(), ebe_4p_weightB);
 
-    fh_correlator[22][fCBin]->Fill(V6V2starV4star.Re(), ebe_3p_weight);
-    fh_correlator[23][fCBin]->Fill(V7V2starV5star.Re(), ebe_3p_weight);
-    fh_correlator[24][fCBin]->Fill(V7V3starV4star.Re(), ebe_3p_weight);
-    fh_correlator[25][fCBin]->Fill(nV6V2starV4star.Re(), ebe_3p_weight);
-    fh_correlator[26][fCBin]->Fill(nV7V2starV5star.Re(), ebe_3p_weight);
-    fh_correlator[27][fCBin]->Fill(nV7V3starV4star.Re(), ebe_3p_weight);
-  }
+    pht[HIST_THN_V6V2starV4star]->Fill(fCent, V6V2starV4star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V7V2starV5star]->Fill(fCent, V7V2starV5star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V7V3starV4star]->Fill(fCent, V7V3starV4star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V6V2starV4star]->Fill(fCent, nV6V2starV4star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V7V2starV5star]->Fill(fCent, nV7V2starV5star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V7V3starV4star]->Fill(fCent, nV7V3starV4star.Re(), ebe_3p_weight);
 
+#if 0
   enum { kSubA,
          kSubB,
          kNSub };
@@ -566,4 +503,5 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 //________________________________________________________________________
 void JFFlucAnalysis::Terminate(Option_t* /*popt*/)
 {
+  //
 }

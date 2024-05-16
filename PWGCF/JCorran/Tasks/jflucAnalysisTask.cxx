@@ -169,12 +169,12 @@ struct jflucAnalysisTask {
   Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax); // eta cuts done by jfluc
 
   HistogramRegistry registry{"registry"};
-  //OutputObj<JFFlucAnalysis> output{JFFlucAnalysis("jflucO2")};
+  // OutputObj<JFFlucAnalysis> output{JFFlucAnalysis("jflucO2")};
 
   void init(InitContext const&)
   {
-	auto a = AxisSpec(axisMultiplicity);
-    pcf = new JFFlucAnalysisO2Hist(registry,a);
+    auto a = AxisSpec(axisMultiplicity);
+    pcf = new JFFlucAnalysisO2Hist(registry, a);
     pcf->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
     pcf->UserCreateOutputObjects();
   }
@@ -183,7 +183,7 @@ struct jflucAnalysisTask {
   void analyze(CollisionT const& collision, TrackT const& tracks)
   {
     pcf->Init();
-	pcf->SetEventCentrality(collision.multiplicity());
+    pcf->SetEventCentrality(collision.multiplicity());
     const double fVertex[3] = {0.0f, 0.0f, collision.posZ()}; // TODO: check if posX/Y is really needed
     pcf->SetEventVertex(fVertex);
     pcf->SetEtaRange(etamin, etamax);

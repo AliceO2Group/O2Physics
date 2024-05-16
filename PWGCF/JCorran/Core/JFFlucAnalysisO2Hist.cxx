@@ -33,6 +33,8 @@ JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec
   AxisSpec vnAxis = {1024, -1.0, 1.0, "#it{V}_#it{n}"};
   pht[HIST_THN_VN] = std::get<std::shared_ptr<THn>>(registry.add("hvna", "#it{V}_#it{n}^#it{k}", {HistType::kTHnF, {axisMultiplicity, hAxis, kAxis, vnAxis}})).get();
   pht[HIST_THN_VN_VN] = std::get<std::shared_ptr<THn>>(registry.add("hvn_vn", "#it{V}_#it{n_1}^#it{k_1}#it{V}_#it{n_2}^#it{k_2}", {HistType::kTHnF, {axisMultiplicity, hAxis, kAxis, hAxis, kAxis, vnAxis}})).get();
+  for (UInt_t i = HIST_THN_V4V2star_2; i < HIST_THN_COUNT; ++i)
+    pht[i] = std::get<std::shared_ptr<THn>>(registry.add(Form("h_corrC%02u", i - HIST_THN_V4V2star_2), "correlator", {HistType::kTHnF, {axisMultiplicity, {1024, -3.0, 3.0, "correlation"}}})).get();
   for (UInt_t i = 0; i < HIST_THN_COUNT; ++i)
     pht[i]->Sumw2();
 
