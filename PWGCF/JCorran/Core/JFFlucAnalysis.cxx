@@ -23,8 +23,8 @@
 #include "JFFlucAnalysis.h"
 
 JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
-                                   fCent(0),
-                                   fCBin(0),
+                                   fCent(0)
+#if 0
                                    fHMG(0),
                                    fBin_Subset(),
                                    fBin_h(),
@@ -43,6 +43,7 @@ JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
                                    fh_vn(),
                                    fh_vna(),
                                    fh_vn_vn()
+#endif
 {
   subeventMask = kSubEvent_A | kSubEvent_B;
   flags = 0;
@@ -53,8 +54,8 @@ JFFlucAnalysis::JFFlucAnalysis() : fVertex(0),
 
 //________________________________________________________________________
 JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
-                                                       fCent(0),
-                                                       fCBin(0),
+                                                       fCent(0)
+#if 0
                                                        fHMG(0),
                                                        fBin_Subset(),
                                                        fBin_h(),
@@ -73,6 +74,7 @@ JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
                                                        fh_vn(),
                                                        fh_vna(),
                                                        fh_vn_vn()
+#endif
 {
   // cout << "analysis task created " << endl;
 
@@ -83,15 +85,12 @@ JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : fVertex(0),
   fImpactParameter = -1;
 }
 
-Double_t JFFlucAnalysis::pttJacek[74] = {0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4, 4.5, 5, 5.5, 6, 6.5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 40, 45, 50, 60, 70, 80, 90, 100};
-UInt_t JFFlucAnalysis::NpttJacek = sizeof(JFFlucAnalysis::pttJacek) / sizeof(JFFlucAnalysis::pttJacek[0]) - 1;
-
 //________________________________________________________________________
 JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : // AliAnalysisTaskSE(a.GetName()),
 
                                                           fVertex(a.fVertex),
-                                                          fCent(a.fCent),
-                                                          fCBin(a.fCBin),
+                                                          fCent(a.fCent)
+#if 0
                                                           fHMG(a.fHMG),
                                                           fBin_Subset(a.fBin_Subset),
                                                           fBin_h(a.fBin_h),
@@ -110,6 +109,7 @@ JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : // AliAnalysisTaskSE(a
                                                           fh_vn(a.fh_vn),
                                                           fh_vna(a.fh_vna),
                                                           fh_vn_vn(a.fh_vn_vn)
+#endif
 {
   // copy constructor
 }
@@ -129,6 +129,9 @@ void JFFlucAnalysis::Init()
 //________________________________________________________________________
 void JFFlucAnalysis::UserCreateOutputObjects()
 {
+  // const double phiBins[] = {-2
+  // new(&fh_phietaz) THnF("phietaz","phietaz",4,numBins,pbins,
+#if 0
   fHMG = new JHistManager("JFFlucHistManager", "jfluc");
   // set JBin here //
   fBin_Subset.Set("Sub", "Sub", "Sub:%d", JBin::kSingle).SetBin(2);
@@ -294,12 +297,15 @@ void JFFlucAnalysis::UserCreateOutputObjects()
 
   fHMG->Print();
   // fHMG->WriteConfig();
+#endif
 }
 
 //________________________________________________________________________
 JFFlucAnalysis::~JFFlucAnalysis()
 {
+#if 0
   delete fHMG;
+#endif
 }
 
 #define A i
@@ -354,6 +360,7 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 //________________________________________________________________________
 void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 {
+#if 0
   for (UInt_t ih = 2; ih < kNH; ih++) {
     fh_cos_n_phi[ih][fCBin]->Fill(pqvecs->QvectorQC[ih][1].Re() / pqvecs->QvectorQC[0][1].Re());
     fh_sin_n_phi[ih][fCBin]->Fill(pqvecs->QvectorQC[ih][1].Im() / pqvecs->QvectorQC[0][1].Re());
@@ -364,8 +371,9 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
     fh_cos_n_psi_n[ih][fCBin]->Fill(TMath::Cos((Double_t)ih * psi));
     fh_sin_n_psi_n[ih][fCBin]->Fill(TMath::Sin((Double_t)ih * psi));
   }
+#endif
 
-  Double_t vn2[kNH][nKL];
+  // Double_t vn2[kNH][nKL];
   Double_t vn2_vn2[kNH][nKL][kNH][nKL];
 
   TComplex corr[kNH][nKL];
@@ -439,17 +447,22 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 
     for (UInt_t ih = 2; ih < kNH; ih++) {
       for (UInt_t ik = 1; ik < nKL; ik++) { // 2k(0) =1, 2k(1) =2, 2k(2)=4....
-        vn2[ih][ik] = corr[ih][ik].Re() / ref_2Np[ik - 1];
-        fh_vn[ih][ik][fCBin]->Fill(vn2[ih][ik], ebe_2Np_weight[ik - 1]);
-        fh_vna[ih][ik][fCBin]->Fill(ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
+                                            // vn2[ih][ik] = corr[ih][ik].Re() / ref_2Np[ik - 1];
+        // fh_vn[ih][ik][fCBin]->Fill(vn2[ih][ik], ebe_2Np_weight[ik - 1]);
+        // fh_vna[ih][ik][fCBin]->Fill(ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
+        pht[HIST_THN_VN]->Fill(fCent, ih, ik, ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
         for (UInt_t ihh = 2; ihh < kcNH; ihh++) {
           for (UInt_t ikk = 1; ikk < nKL; ikk++) {
             vn2_vn2[ih][ik][ihh][ikk] = ncorr2[ih][ik][ihh][ikk] / ref_2Np[ik + ikk - 1];
-            fh_vn_vn[ih][ik][ihh][ikk][fCBin]->Fill(vn2_vn2[ih][ik][ihh][ikk], ebe_2Np_weight[ik + ikk - 1]);
+            // fh_vn_vn[ih][ik][ihh][ikk][fCBin]->Fill(vn2_vn2[ih][ik][ihh][ikk], ebe_2Np_weight[ik + ikk - 1]);
+            pht[HIST_THN_VN_VN]->Fill(fCent, ih, ik, ihh, ikk, vn2_vn2[ih][ik][ihh][ikk], ebe_2Np_weight[ik + ikk - 1]);
           }
         }
       }
     }
+    (void)ebe_3p_weight;
+    (void)ebe_4p_weightB;
+#if 0
 
     //************************************************************************
     TComplex V4V2star_2 = pQq[A][4][1] * pQq[B][2][1] * pQq[B][2][1];
@@ -546,6 +559,7 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 
     TComplex sctwoGap = (pqvecs->QvectorQCgap[kSubA][ih][1] * TComplex::Conjugate(pqvecs->QvectorQCgap[kSubB][ih][1])) / (pqvecs->QvectorQCgap[kSubA][0][1] * pqvecs->QvectorQCgap[kSubB][0][1]).Re();
     fh_SC_with_QC_2corr_gap[ih][fCBin]->Fill(sctwoGap.Re(), event_weight_two_gap);
+#endif
   }
 }
 

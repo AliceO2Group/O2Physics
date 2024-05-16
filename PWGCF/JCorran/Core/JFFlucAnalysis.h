@@ -16,12 +16,15 @@
 #define PWGCF_JCORRAN_CORE_JFFLUCANALYSIS_H_
 
 #include <experimental/type_traits>
-#include "JHistManager.h"
+// #include "JHistManager.h"
 #include "JQVectors.h"
 #include <TComplex.h>
+#include <TNamed.h>
+#include <TH1.h>
+#include <THn.h>
 #include <tuple>
 
-class JFFlucAnalysis
+class JFFlucAnalysis : public TNamed
 {
  public:
   JFFlucAnalysis();
@@ -38,10 +41,9 @@ class JFFlucAnalysis
   void UserExec(Option_t* option);
   void Terminate(Option_t*);
 
-  inline void SetEventCentralityAndBin(float cent, UInt_t cbin)
+  inline void SetEventCentrality(float cent)
   {
     fCent = cent;
-    fCBin = cbin;
   }
   inline float GetEventCentrality() const { return fCent; }
   inline void SetEventImpactParameter(float ip) { fImpactParameter = ip; }
@@ -50,16 +52,6 @@ class JFFlucAnalysis
   {
     fEta_min = eta_min;
     fEta_max = eta_max;
-  }
-  inline void SetEventTracksQA(unsigned int tpc, unsigned int glb)
-  {
-    fTPCtrks = static_cast<float>(tpc);
-    fGlbtrks = static_cast<float>(glb);
-  }
-  inline void SetEventFB32TracksQA(unsigned int fb32, unsigned int fb32tof)
-  {
-    fFB32trks = static_cast<float>(fb32);
-    fFB32TOFtrks = static_cast<float>(fb32tof);
   }
   enum SubEvent {
     kSubEvent_A = 0x1,
@@ -70,18 +62,24 @@ class JFFlucAnalysis
     subeventMask = _subeventMask;
   }
   // set the number of bins before initialization (UserCreateOutputObjects)
-  inline void SetNumBins(UInt_t _numBins)
-  {
-    numBins = _numBins;
-  }
-  enum {
-    kFlucPhiCorrection = 0x2,
-    kFlucEbEWeighting = 0x4
+  enum HIST_TH1 {
+    HIST_TH1_CENTRALITY,
+    HIST_TH1_IMPACTPARAM,
+    HIST_TH1_ZVERTEX,
+    HIST_TH1_COUNT
   };
-  inline void AddFlags(UInt_t _flags)
-  {
-    flags |= _flags;
-  }
+  enum HIST_THN {
+    HIST_THN_PHIETAZ,
+    HIST_THN_PTETA,
+    HIST_THN_PHIETA,
+    HIST_THN_VN,
+    HIST_THN_VN_VN,
+    HIST_THN_COUNT,
+  };
+  enum {
+    kFlucEbEWeighting = 0x1
+  };
+  inline void AddFlags(UInt_t _flags) { flags |= _flags; }
 
   enum { kH0,
          kH1,
@@ -114,19 +112,11 @@ class JFFlucAnalysis
   template <class JInputClass>
   inline void FillQA(JInputClass& inputInst)
   {
-    fh_ntracks[fCBin]->Fill(inputInst.size());
-    fh_ImpactParameter->Fill(fImpactParameter);
-    fh_cent->Fill(fCent);
-
-    fh_TrkQA_TPCvsCent->Fill(fCent, fTPCtrks);
-    fh_TrkQA_TPCvsGlob->Fill(fGlbtrks, fTPCtrks);
-    fh_TrkQA_FB32_vs_FB32TOF->Fill(fFB32trks, fFB32TOFtrks);
+    ph1[HIST_TH1_CENTRALITY]->Fill(fCent);
+    ph1[HIST_TH1_IMPACTPARAM]->Fill(fImpactParameter);
 
     for (auto& track : inputInst) {
-      if (!(flags & kFlucPhiCorrection)) {
-        fh_phieta[fCBin]->Fill(track.phi(), track.eta());
-        fh_phietaz[fCBin]->Fill(track.phi(), track.eta(), fVertex[2]);
-      }
+      pht[HIST_THN_PHIETAZ]->Fill(fCent, track.phi(), track.eta(), fVertex[2]);
 
       if (TMath::Abs(track.eta()) < fEta_min || TMath::Abs(track.eta()) > fEta_max)
         continue;
@@ -135,42 +125,33 @@ class JFFlucAnalysis
       using JInputClassIter = typename JInputClass::iterator;
       if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
         corrInv /= track.weightEff();
-      fh_eta[fCBin]->Fill(track.eta(), corrInv);
-      fh_pt[fCBin]->Fill(track.pt(), corrInv);
+      pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), corrInv);
       if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
         corrInv /= track.weightNUA();
-      fh_phi[fCBin][(UInt_t)(track.eta() > 0.0)]->Fill(track.phi(), corrInv);
+      pht[HIST_THN_PHIETA]->Fill(fCent, track.phi(), track.eta(), corrInv);
     }
 
-    for (UInt_t iaxis = 0; iaxis < 3; iaxis++)
-      fh_vertex[iaxis]->Fill(fVertex[iaxis]);
+    // for (UInt_t iaxis = 0; iaxis < 3; iaxis++)
+    // fh_vertex[iaxis]->Fill(fVertex[iaxis]);
+    ph1[HIST_TH1_ZVERTEX]->Fill(fVertex[2]);
   }
 
-  static Double_t pttJacek[74];
-  static UInt_t NpttJacek;
-
 #define kcNH kH6 // max second dimension + 1
- private:
-  const Double_t* fVertex; //!
-  Float_t fCent;
-  Float_t fImpactParameter;
-  UInt_t fCBin;
-  float fTPCtrks;
-  float fGlbtrks;
-  float fFB32trks;
-  float fFB32TOFtrks;
-  UInt_t subeventMask;
-  UInt_t numBins; // total number of bins
-  UInt_t flags;
+ protected:
+  const Double_t* fVertex;  //!
+  Float_t fCent;            //!
+  Float_t fImpactParameter; //!
+  UInt_t subeventMask;      //!
+  UInt_t flags;             //!
 
   Double_t fEta_min;
   Double_t fEta_max;
 
-  const JQVectorsT* pqvecs;
+  const JQVectorsT* pqvecs; //!
 
-  JHistManager* fHMG; //!
-
-  JBin fBin_Subset;  //!
+  TH1* ph1[HIST_TH1_COUNT]; //!
+  THn* pht[HIST_THN_COUNT]; //!
+  /*JBin fBin_Subset;  //!
   JBin fBin_h;       //!
   JBin fBin_k;       //!
   JBin fBin_hh;      //!
@@ -188,6 +169,7 @@ class JFFlucAnalysis
   JTH2D fh_phieta;          //!
   JTH3D fh_phietaz;         //!
 
+
   JTH1D fh_psi_n;       //!
   JTH1D fh_cos_n_phi;   //!
   JTH1D fh_sin_n_phi;   //!
@@ -202,10 +184,10 @@ class JFFlucAnalysis
   JTH1D fh_correlator;            //! // some more complex correlators
   JTH2D fh_TrkQA_TPCvsGlob;       //! // QA histos
   JTH2D fh_TrkQA_TPCvsCent;       //! // QA histos
-  JTH2D fh_TrkQA_FB32_vs_FB32TOF; //!
+  JTH2D fh_TrkQA_FB32_vs_FB32TOF; //!*/
 
   // additional variables for ptbins(Standard Candles only)
-  enum { kPt0,
+  /*enum { kPt0,
          kPt1,
          kPt2,
          kPt3,
@@ -219,9 +201,10 @@ class JFFlucAnalysis
   JTH1D fh_SC_ptdep_2corr;       //!  // for < vn^2 >
   JTH1D fh_SC_with_QC_4corr;     //! // for <vn^2 vm^2>
   JTH1D fh_SC_with_QC_2corr;     //! // for <vn^2>
-  JTH1D fh_SC_with_QC_2corr_gap; //!
+  JTH1D fh_SC_with_QC_2corr_gap; //!*/
   // JTH1D fh_evt_SP_QC_ratio_2p;     //! // check SP QC evt by evt ratio
   // JTH1D fh_evt_SP_QC_ratio_4p;     //! // check SP QC evt by evt ratio
+  ClassDef(JFFlucAnalysis, 1)
 };
 
 #endif // PWGCF_JCORRAN_CORE_JFFLUCANALYSIS_H_

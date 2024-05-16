@@ -8,18 +8,23 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+/// \author Jasper Parkkila (jparkkil@cern.ch)
+/// \since Sep 2024
 
-#ifndef PWGCF_JCORRAN_CORE_JCORRANLINKDEF_H_
-#define PWGCF_JCORRAN_CORE_JCORRANLINKDEF_H_
+#ifndef PWGCF_JCORRAN_CORE_JFFLUCANALYSISO2HIST_H_
+#define PWGCF_JCORRAN_CORE_JFFLUCANALYSISO2HIST_H_
 
-#pragma link off all globals;
-#pragma link off all classes;
-#pragma link off all functions;
+#include "JFFlucAnalysis.h"
+#include "Framework/HistogramRegistry.h"
 
-#pragma link C++ class JFFlucAnalysis + ;
-#pragma link C++ class JFFlucAnalysisO2Hist + ;
-#pragma link C++ class FlowJHistManager + ;
-#pragma link C++ class FlowJSPCAnalysis + ;
-#pragma link C++ class FlowJSPCObservables + ;
+using namespace o2;
+using namespace o2::framework;
 
-#endif // PWGCF_JCORRAN_CORE_JCORRANLINKDEF_H_
+class JFFlucAnalysisO2Hist : public JFFlucAnalysis
+{
+ public:
+  JFFlucAnalysisO2Hist(HistogramRegistry&, AxisSpec&);
+  ~JFFlucAnalysisO2Hist();
+};
+
+#endif // PWGCF_JCORRAN_CORE_JFFLUCANALYSISO2HIST_H_
