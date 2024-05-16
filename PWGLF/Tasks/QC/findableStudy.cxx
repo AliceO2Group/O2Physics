@@ -63,6 +63,8 @@ using std::array;
 
 using recoStraCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraRawCents_003, aod::StraCollLabels>;
 using reconstructedV0s = soa::Join<aod::V0CoreMCLabels, aod::V0Cores, aod::V0FoundTags, aod::V0MCCollRefs, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+using reconstructedV0sNoMC = soa::Join<aod::V0Cores,aod::V0Extras>;
+
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
 // simple checkers, but ensure 64 bit integers
@@ -158,11 +160,11 @@ struct findableStudy {
     histos.add("h2dPtVsCentrality_DcaV0Dau", "h2dPtVsCentrality_DcaV0Dau", kTH2D, {axisCentrality, axisPt});
 
     // Track quality tests in steps 
-    histos.add("h2dTrackPropAcceptablyTracked", "h2dTrackPropAcceptablyTracked", kTH2D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}});
-    histos.add("h2dTrackPropFound", "h2dTrackPropFound", kTH2D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}});
-    histos.add("h2dTrackPropAnalysisTracks", "h2dTrackPropAnalysisTracks", kTH2D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}});
-    histos.add("h2dTrackPropAnalysisTopo", "h2dTrackPropAnalysisTopo", kTH2D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}});
-    histos.add("h2dTrackPropAnalysisSpecies", "h2dTrackPropAnalysisSpecies", kTH2D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}});
+    histos.add("h2dTrackPropAcceptablyTracked", "h2dTrackPropAcceptablyTracked", kTH3D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f},axisCentrality});
+    histos.add("h2dTrackPropFound", "h2dTrackPropFound", kTH3D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}, axisCentrality});
+    histos.add("h2dTrackPropAnalysisTracks", "h2dTrackPropAnalysisTracks", kTH3D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}, axisCentrality});
+    histos.add("h2dTrackPropAnalysisTopo", "h2dTrackPropAnalysisTopo", kTH3D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f}, axisCentrality});
+    histos.add("h2dTrackPropAnalysisSpecies", "h2dTrackPropAnalysisSpecies", kTH3D, {{32, -0.5, 31.5f}, {32, -0.5, 31.5f},axisCentrality});
   }
 
   void processEvents(
@@ -170,6 +172,46 @@ struct findableStudy {
   )
   {
     histos.fill(HIST("hCentrality"), collision.centFT0C());
+  }
+
+  void processDebugCrossCheck(
+    reconstructedV0sNoMC::iterator const& recV0, // reco V0s for cross-check
+    dauTracks const&                                  // daughter track extras
+  )
+  {
+    if(recV0.v0Type() == 1){
+      // de-reference daughter track extras
+      auto pTrack = recV0.posTrackExtra_as<dauTracks>();
+      auto nTrack = recV0.negTrackExtra_as<dauTracks>();
+
+      // cross-check correctness of new getter 
+      if(pTrack.hasTPC() && !pTrack.hasITS() && !pTrack.hasTRD() && !pTrack.hasTOF() ) {
+        LOGF(info, "X-check: Positive track is TPC only and this is a found V0. Puzzling!");
+      }
+      if(nTrack.hasTPC() && !nTrack.hasITS() && !nTrack.hasTRD() && !nTrack.hasTOF() ) {
+        LOGF(info, "X-check: Negative track is TPC only and this is a found V0. Puzzling!");
+      }
+    }
+  }
+
+  void processDebugCrossCheckMC(
+    reconstructedV0s::iterator const& recV0, // reco V0s for cross-check
+    dauTracks const&                                  // daughter track extras
+  )
+  {
+    if(recV0.isFound() && recV0.v0Type() == 1){
+      // de-reference daughter track extras
+      auto pTrack = recV0.posTrackExtra_as<dauTracks>();
+      auto nTrack = recV0.negTrackExtra_as<dauTracks>();
+
+      // cross-check correctness of new getter 
+      if(pTrack.hasTPC() && !pTrack.hasITS() && !pTrack.hasTRD() && !pTrack.hasTOF() ) {
+        LOGF(info, "X-check: Positive track is TPC only and this is a found V0. Puzzling!");
+      }
+      if(nTrack.hasTPC() && !nTrack.hasITS() && !nTrack.hasTRD() && !nTrack.hasTOF() ) {
+        LOGF(info, "X-check: Negative track is TPC only and this is a found V0. Puzzling!");
+      }
+    }
   }
 
   void processV0s(
@@ -222,6 +264,16 @@ struct findableStudy {
       if( recv0.v0Type() != 1)
         continue; //skip anything other than a standard V0
 
+      // de-reference daughter track extras
+      auto pTrack = recv0.posTrackExtra_as<dauTracks>();
+      auto nTrack = recv0.negTrackExtra_as<dauTracks>();
+
+      // skip ITS-only for simplicity
+      if(skipITSonly){
+        if(!pTrack.hasTPC() || !nTrack.hasTPC())
+          continue;
+      }
+
       // define properties for this V0
       bool pTrackOK = false, nTrackOK = false; // tracks are acceptably tracked
 
@@ -238,18 +290,10 @@ struct findableStudy {
         // N.B.: this could still be an issue if collision <-> mc collision is imperfect
         centrality = coll.centFT0C();
       }
+
+
       if( recv0.isFound() ){ 
         hasBeenFoundAny = true; // includes also ITS-only, checked before skipITSonly check
-      }
-
-      // de-reference daughter track extras
-      auto pTrack = recv0.posTrackExtra_as<dauTracks>();
-      auto nTrack = recv0.negTrackExtra_as<dauTracks>();
-
-      // skip ITS-only for simplicity
-      if(skipITSonly){
-        if(!pTrack.hasTPC() || !nTrack.hasTPC())
-          continue;
       }
 
       if (
@@ -304,19 +348,28 @@ struct findableStudy {
         (uint8_t(nTrack.hasTRD()) << hasTRD) | 
         (uint8_t(nTrack.hasTOF()) << hasTOF));    
 
-      if(pTrackOK && nTrackOK){ 
+      if(pTrackOK && nTrackOK && ptmc > 1.0 && ptmc < 1.1){ 
         // this particular V0 reco entry has been acceptably tracked. Do bookkeeping
-        histos.fill(HIST("h2dTrackPropAcceptablyTracked"), positiveTrackCode, negativeTrackCode);
+        histos.fill(HIST("h2dTrackPropAcceptablyTracked"), positiveTrackCode, negativeTrackCode, centrality);
       }     
 
       // determine if this V0 would go to analysis or not
-      if( recv0.isFound() ){ 
+      if( recv0.isFound() && pTrackOK && nTrackOK ){ // hack to avoid type check; only interested in found type 1
         // at this stage, this should be REALLY mostly unique (unless you switch skipITSonly to false or so)
         // ... but we will cross-check this assumption (hNRecoV0sWithTPC, h2dPtVsCentrality_FoundInLoop)
+        if(pTrack.hasTPC() && !pTrack.hasITS() && !pTrack.hasTRD() && !pTrack.hasTOF() ) {
+          LOGF(info, "Positive track is TPC only and this is a found V0. Puzzling!");
+        }
+        if(nTrack.hasTPC() && !nTrack.hasITS() && !nTrack.hasTRD() && !nTrack.hasTOF() ) {
+          LOGF(info, "Negative track is TPC only and this is a found V0. Puzzling!");
+        }
+
         nCandidatesWithTPC ++;
         hasBeenFound = true; 
         histos.fill(HIST("h2dPtVsCentrality_FoundInLoop"), centrality, ptmc);
-        histos.fill(HIST("h2dTrackPropFound"), positiveTrackCode, negativeTrackCode);
+        if( ptmc > 1.0 && ptmc < 1.1 ){ 
+          histos.fill(HIST("h2dTrackPropFound"), positiveTrackCode, negativeTrackCode, centrality);
+        }
 
         uint64_t selMap = v0data::computeReconstructionBitmap(recv0, pTrack, nTrack, coll, recv0.yLambda(), recv0.yK0Short(), v0Selections);
 
@@ -356,15 +409,21 @@ struct findableStudy {
         // Broad level
         if(validTrackProperties){
           histos.fill(HIST("h2dPtVsCentrality_PassesTrackQuality"), centrality, ptmc);
-          histos.fill(HIST("h2dTrackPropAnalysisTracks"), positiveTrackCode, negativeTrackCode);
+          if( ptmc > 1.0 && ptmc < 1.1 ){ 
+            histos.fill(HIST("h2dTrackPropAnalysisTracks"), positiveTrackCode, negativeTrackCode, centrality);
+          }
         }
         if(validTrackProperties && validTopology){
           histos.fill(HIST("h2dPtVsCentrality_PassesTopological"), centrality, ptmc);
-          histos.fill(HIST("h2dTrackPropAnalysisTopo"), positiveTrackCode, negativeTrackCode);
+          if( ptmc > 1.0 && ptmc < 1.1 ){ 
+            histos.fill(HIST("h2dTrackPropAnalysisTopo"), positiveTrackCode, negativeTrackCode, centrality);
+          }
         }
         if(validTrackProperties && validTopology && validThisSpecies){
           histos.fill(HIST("h2dPtVsCentrality_PassesThisSpecies"), centrality, ptmc);
-          histos.fill(HIST("h2dTrackPropAnalysisSpecies"), positiveTrackCode, negativeTrackCode);
+          if( ptmc > 1.0 && ptmc < 1.1 ){ 
+            histos.fill(HIST("h2dTrackPropAnalysisSpecies"), positiveTrackCode, negativeTrackCode, centrality);
+          }
         }
 
         // topological 
@@ -401,6 +460,8 @@ struct findableStudy {
   }
 
   PROCESS_SWITCH(findableStudy, processEvents, "process collision counters", true);
+  PROCESS_SWITCH(findableStudy, processDebugCrossCheck, "process debug cross-check of V0 with TPC-only", true);
+  PROCESS_SWITCH(findableStudy, processDebugCrossCheckMC, "process debug cross-check of V0 with TPC-only, MC version", false);
   PROCESS_SWITCH(findableStudy, processV0s, "process V0s", true);
 };
 
