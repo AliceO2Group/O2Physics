@@ -539,16 +539,15 @@ struct femtoUniversePairTaskTrackD0 {
         }
       }
       // // Set pT cut for D0/D0bar candidates
-      if(ConfUsePtCutForD0D0bar) {
-        if(d0candidate.pt() < ConfDmesons.ConfMinPtD0D0bar && d0candidate.pt() > ConfDmesons.ConfMaxPtD0D0bar) {
+      if (ConfUsePtCutForD0D0bar) {
+        if (d0candidate.pt() < ConfDmesons.ConfMinPtD0D0bar && d0candidate.pt() > ConfDmesons.ConfMaxPtD0D0bar) {
           continue;
         }
       }
       // // Set inv. mass cut for D0/D0bar candidates
-      if(ConfUseMassCutForD0D0bar) {
-        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) 
-          || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
-            continue;
+      if (ConfUseMassCutForD0D0bar) {
+        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
+          continue;
         }
       }
       // // Close Pair Rejection
@@ -625,16 +624,15 @@ struct femtoUniversePairTaskTrackD0 {
         }
       }
       // // Set pT cut for D0/D0bar candidates
-      if(ConfUsePtCutForD0D0bar) {
-        if(d0candidate.pt() < ConfDmesons.ConfMinPtD0D0bar && d0candidate.pt() > ConfDmesons.ConfMaxPtD0D0bar) {
+      if (ConfUsePtCutForD0D0bar) {
+        if (d0candidate.pt() < ConfDmesons.ConfMinPtD0D0bar && d0candidate.pt() > ConfDmesons.ConfMaxPtD0D0bar) {
           continue;
         }
       }
       // // Set inv. mass cut for D0/D0bar candidates
-      if(ConfUseMassCutForD0D0bar) {
-        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) 
-          || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
-            continue;
+      if (ConfUseMassCutForD0D0bar) {
+        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
+          continue;
         }
       }
       // // Close Pair Rejection
