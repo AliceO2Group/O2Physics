@@ -81,27 +81,27 @@ JFFlucAnalysis::~JFFlucAnalysis()
 #define B (1 - i)
 #define C(u) TComplex::Conjugate(u)
 // TODO: conjugate macro
-inline TComplex TwoGap(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], uint i, uint a, uint b)
+inline TComplex TwoGap(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t i, UInt_t a, UInt_t b)
 {
   return pQq[A][a][1] * C(pQq[B][b][1]);
 }
 
-inline TComplex ThreeGap(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], uint i, uint a, uint b, uint c)
+inline TComplex ThreeGap(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t i, UInt_t a, UInt_t b, UInt_t c)
 {
   return pQq[A][a][1] * C(pQq[B][b][1] * pQq[B][c][1] - pQq[B][b + c][2]);
 }
 
-inline TComplex FourGap22(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], uint i, uint a, uint b, uint c, uint d)
+inline TComplex FourGap22(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t i, UInt_t a, UInt_t b, UInt_t c, UInt_t d)
 {
   return pQq[A][a][1] * pQq[A][b][1] * C(pQq[B][c][1] * pQq[B][d][1]) - pQq[A][a + b][2] * C(pQq[B][c][1] * pQq[B][d][1]) - pQq[A][a][1] * pQq[A][b][1] * C(pQq[B][c + d][2]) + pQq[A][a + b][2] * C(pQq[B][c + d][2]);
 }
 
-inline TComplex FourGap13(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], uint i, uint a, uint b, uint c, uint d)
+inline TComplex FourGap13(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t i, UInt_t a, UInt_t b, UInt_t c, UInt_t d)
 {
   return pQq[A][a][1] * C(pQq[B][b][1] * pQq[B][c][1] * pQq[B][d][1] - pQq[B][b + c][2] * pQq[B][d][1] - pQq[B][b + d][2] * pQq[B][c][1] - pQq[B][c + d][2] * pQq[B][b][1] + 2.0 * pQq[B][b + c + d][3]);
 }
 
-inline TComplex SixGap33(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], uint i, uint n1, uint n2, uint n3, uint n4, uint n5, uint n6)
+inline TComplex SixGap33(const TComplex (*pQq)[JFFlucAnalysis::kNH][JFFlucAnalysis::nKL], UInt_t i, UInt_t n1, UInt_t n2, UInt_t n3, UInt_t n4, UInt_t n5, UInt_t n6)
 {
   return pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) - pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) + 2.0 * pQq[A][n1][1] * pQq[A][n2][1] * pQq[A][n3][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n1 + n2][2] * pQq[A][n3][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n1 + n3][2] * pQq[A][n2][1] * C(pQq[B][n4 + n5 + n6][3]) - pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) + pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) - 2.0 * pQq[A][n2 + n3][2] * pQq[A][n1][1] * C(pQq[B][n4 + n5 + n6][3]) + 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4][1] * pQq[B][n5][1] * pQq[B][n6][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n5][2] * pQq[B][n6][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n6][2] * pQq[B][n5][1]) - 2.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n5 + n6][2] * pQq[B][n4][1]) + 4.0 * pQq[A][n1 + n2 + n3][3] * C(pQq[B][n4 + n5 + n6][3]);
 }
