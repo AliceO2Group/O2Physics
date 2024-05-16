@@ -210,6 +210,9 @@ struct ExclusiveTwoProtons {
       if (trk.itsNCls() < 7) {
         continue;
       }
+      if (trk.pt() < 0.7) {
+        continue;
+      }
       registry.fill(HIST("hSelectionCounter"), 3);
       registry.fill(HIST("hITSCluster"), trk.itsNCls());
 
