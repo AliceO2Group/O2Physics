@@ -55,6 +55,7 @@
 #include "DCAFitter/FwdDCAFitterN.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "CommonConstants/LHCConstants.h"
 
 #include "KFParticle.h"
 #include "KFPTrack.h"
@@ -174,9 +175,11 @@ class VarManager : public TObject
     kCollisionTime,
     kCollisionTimeRes,
     kBC,
+    kBCOrbit,
     kIsPhysicsSelection,
     kIsNoTFBorder,       // No time frame border
-    kIsNoITSROFBorder,   // No ITS read out frame border
+    kIsNoITSROFBorder,   // No ITS read out frame border (from event selection)
+    kIsNoITSROFBorderRecomputed,   // No ITS read out frame border, computed here
     kIsNoSameBunch,      // No collisions with same T0 BC
     kIsGoodZvtxFT0vsPV,  // No collisions w/ difference between z_ {PV, tracks} and z_{PV FT0A-C}
     kIsVertexITSTPC,     // At least one ITS-TPC track
@@ -910,6 +913,12 @@ class VarManager : public TObject
   {
     fgTPCInterSectorBoundary = boundarySize;
   }
+  static void SetITSROFBorderselection(int bias, int length, int marginLow, int marginHigh) {
+    fgITSROFbias = bias;
+    fgITSROFlength = length;
+    fgITSROFBorderMarginLow = marginLow;
+    fgITSROFBorderMarginHigh = marginHigh;
+  }
 
  public:
   VarManager();
@@ -930,6 +939,10 @@ class VarManager : public TObject
   static float fgCenterOfMassEnergy;      // collision energy
   static float fgMassofCollidingParticle; // mass of the colliding particle
   static float fgTPCInterSectorBoundary;  // TPC inter-sector border size at the TPC outer radius, in cm
+  static int fgITSROFbias;                // ITS ROF bias (from ALPIDE parameters) 
+  static int fgITSROFlength;              // ITS ROF length (from ALPIDE parameters)
+  static int fgITSROFBorderMarginLow;     // ITS ROF border low margin
+  static int fgITSROFBorderMarginHigh;    // ITS ROF border high margin
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
@@ -1316,9 +1329,14 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & ReducedEventExtended) > 0) {
     values[kBC] = event.globalBC();
+    values[kBCOrbit] = event.globalBC() % o2::constants::lhc::LHCMaxBunches;
     values[kTimestamp] = event.timestamp();
     values[kCentVZERO] = event.centRun2V0M();
     values[kCentFT0C] = event.centFT0C();
+    if (fgUsedVars[kIsNoITSROFBorderRecomputed]) {
+      uint16_t bcInITSROF = (event.globalBC() + 3564 - fgITSROFbias) % fgITSROFlength;
+      values[kIsNoITSROFBorderRecomputed] = bcInITSROF > fgITSROFBorderMarginLow && bcInITSROF < fgITSROFlength - fgITSROFBorderMarginHigh ? 1.0 : 0.0;
+    }
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
     }
