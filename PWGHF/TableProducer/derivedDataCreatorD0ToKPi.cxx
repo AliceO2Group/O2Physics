@@ -48,6 +48,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   // MC collisions
   Produces<o2::aod::HfD0McCollBases> rowMcCollBase;
   Produces<o2::aod::HfD0McCollIds> rowMcCollId;
+  Produces<o2::aod::HfD0McRCollIds> rowMcRCollId;
   // MC particles
   Produces<o2::aod::HfD0PBases> rowParticleBase;
   Produces<o2::aod::HfD0PIds> rowParticleId;
@@ -63,7 +64,8 @@ struct HfDerivedDataCreatorD0ToKPi {
   Configurable<bool> fillCollBase{"fillCollBase", true, "Fill collision base properties"};
   Configurable<bool> fillCollId{"fillCollId", true, "Fill original collision indices"};
   Configurable<bool> fillMcCollBase{"fillMcCollBase", true, "Fill MC collision base properties"};
-  Configurable<bool> fillMcCollId{"fillMcCollId", true, "Fill indices of saved derived reconstructed collisions matched to saved derived MC collisions"};
+  Configurable<bool> fillMcCollId{"fillMcCollId", true, "Fill original MC collision indices"};
+  Configurable<bool> fillMcRCollId{"fillMcRCollId", true, "Fill indices of saved derived reconstructed collisions matched to saved derived MC collisions"};
   Configurable<bool> fillParticleBase{"fillParticleBase", true, "Fill MC particle properties"};
   Configurable<bool> fillParticleId{"fillParticleId", true, "Fill original MC indices"};
   // Parameters for production of training samples
@@ -161,7 +163,7 @@ struct HfDerivedDataCreatorD0ToKPi {
         collision.globalIndex());
     }
     if constexpr (isMC) {
-      if (fillMcCollId && collision.has_mcCollision()) {
+      if (fillMcRCollId && collision.has_mcCollision()) {
         // Save rowCollBase.lastIndex() at key collision.mcCollisionId()
         LOGF(debug, "Rec. collision %d: Filling derived-collision index %d for MC collision %d", collision.globalIndex(), rowCollBase.lastIndex(), collision.mcCollisionId());
         matchedCollisions[collision.mcCollisionId()].push_back(rowCollBase.lastIndex()); // [] inserts an empty element if it does not exist
@@ -179,15 +181,19 @@ struct HfDerivedDataCreatorD0ToKPi {
         mcCollision.posZ());
     }
     if (fillMcCollId) {
-      // Fill the table with the vector of indices of derived reconstructed collisions matched to mcCollision.globalIndex()
       rowMcCollId(
+        mcCollision.globalIndex());
+    }
+    if (fillMcRCollId) {
+      // Fill the table with the vector of indices of derived reconstructed collisions matched to mcCollision.globalIndex()
+      rowMcRCollId(
         matchedCollisions[mcCollision.globalIndex()]);
     }
   }
 
   template <typename T, typename U>
   void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMass, double cosThetaStar, double topoChi2,
-                           double ct, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
+                           double ct, double y, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
   {
     if (fillCandidateBase) {
       rowCandidateBase(
@@ -195,7 +201,8 @@ struct HfDerivedDataCreatorD0ToKPi {
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
-        invMass);
+        invMass,
+        y);
     }
     if (fillCandidatePar) {
       rowCandidatePar(
@@ -229,9 +236,6 @@ struct HfDerivedDataCreatorD0ToKPi {
     }
     if (fillCandidateParE) {
       rowCandidateParE(
-        candidate.posX(),
-        candidate.posY(),
-        candidate.posZ(),
         candidate.xSecondaryVertex(),
         candidate.ySecondaryVertex(),
         candidate.zSecondaryVertex(),
@@ -274,7 +278,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   }
 
   template <typename T, typename U>
-  void fillTablesParticle(const T& particle, U /*mass*/)
+  void fillTablesParticle(const T& particle, U mass)
   {
     if (fillParticleBase) {
       rowParticleBase(
@@ -282,6 +286,7 @@ struct HfDerivedDataCreatorD0ToKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
+        RecoDecayPtEtaPhi::y(particle.pt(), particle.eta(), mass),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }
@@ -300,7 +305,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     // Fill collision properties
     if constexpr (isMc) {
-      if (fillMcCollId) {
+      if (fillMcRCollId) {
         matchedCollisions.clear();
       }
     }
@@ -315,10 +320,10 @@ struct HfDerivedDataCreatorD0ToKPi {
       // Skip collisions without HF candidates (and without HF particles in matched MC collisions if saving indices of reconstructed collisions matched to MC collisions)
       bool mcCollisionHasMcParticles{false};
       if constexpr (isMc) {
-        mcCollisionHasMcParticles = fillMcCollId && collision.has_mcCollision() && hasMcParticles[collision.mcCollisionId()];
+        mcCollisionHasMcParticles = fillMcRCollId && collision.has_mcCollision() && hasMcParticles[collision.mcCollisionId()];
         LOGF(debug, "Rec. collision %d has MC collision %d with MC particles? %s", thisCollId, collision.mcCollisionId(), mcCollisionHasMcParticles ? "yes" : "no");
       }
-      if (sizeTableCand == 0 && (!fillMcCollId || !mcCollisionHasMcParticles)) {
+      if (sizeTableCand == 0 && (!fillMcRCollId || !mcCollisionHasMcParticles)) {
         LOGF(debug, "Skipping rec. collision %d", thisCollId);
         continue;
       }
@@ -359,7 +364,8 @@ struct HfDerivedDataCreatorD0ToKPi {
         }
         auto prong0 = candidate.template prong0_as<TracksWPid>();
         auto prong1 = candidate.template prong1_as<TracksWPid>();
-        double ctD = hfHelper.ctD0(candidate);
+        double ct = hfHelper.ctD0(candidate);
+        double y = hfHelper.yD0(candidate);
         float massD0, massD0bar;
         float topolChi2PerNdf = -999.;
         if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
@@ -376,10 +382,10 @@ struct HfDerivedDataCreatorD0ToKPi {
           std::copy(candidate.mlProbD0bar().begin(), candidate.mlProbD0bar().end(), std::back_inserter(mlScoresD0bar));
         }
         if (candidate.isSelD0()) {
-          fillTablesCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, flagMcRec, origin, mlScoresD0);
+          fillTablesCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, mlScoresD0);
         }
         if (candidate.isSelD0bar()) {
-          fillTablesCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, flagMcRec, origin, mlScoresD0bar);
+          fillTablesCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, mlScoresD0bar);
         }
       }
     }
@@ -389,7 +395,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   void preProcessMcCollisions(CollisionType const& mcCollisions,
                               ParticleType const& mcParticles)
   {
-    if (!fillMcCollId) {
+    if (!fillMcRCollId) {
       return;
     }
     hasMcParticles.clear();
@@ -409,7 +415,7 @@ struct HfDerivedDataCreatorD0ToKPi {
     // Fill MC collision properties
     auto sizeTableMcColl = mcCollisions.size();
     reserveTable(rowMcCollBase, fillMcCollBase, sizeTableMcColl);
-    reserveTable(rowMcCollId, fillMcCollId, sizeTableMcColl);
+    reserveTable(rowMcRCollId, fillMcRCollId, sizeTableMcColl);
     for (const auto& mcCollision : mcCollisions) {
       auto thisMcCollId = mcCollision.globalIndex();
       auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
@@ -417,7 +423,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       LOGF(debug, "MC collision %d has %d MC particles", thisMcCollId, sizeTablePart);
       // Skip MC collisions without HF particles (and without HF candidates in matched reconstructed collisions if saving indices of reconstructed collisions matched to MC collisions)
       LOGF(debug, "MC collision %d has %d saved derived rec. collisions", thisMcCollId, matchedCollisions[thisMcCollId].size());
-      if (sizeTablePart == 0 && (!fillMcCollId || matchedCollisions[thisMcCollId].empty())) {
+      if (sizeTablePart == 0 && (!fillMcRCollId || matchedCollisions[thisMcCollId].empty())) {
         LOGF(debug, "Skipping MC collision %d", thisMcCollId);
         continue;
       }

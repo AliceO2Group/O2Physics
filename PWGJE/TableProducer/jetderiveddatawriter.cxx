@@ -294,7 +294,7 @@ struct JetDerivedDataWriter {
         int32_t collisionD0Index = -1;
         for (const auto& D0 : D0s) {
           if (nD0InCollision == 0) {
-            jethfutilities::fillD0CollisionTable(D0.hfD0CollBase_as<aod::HfD0CollBases>(), storedD0CollisionsTable, collisionD0Index);
+            jethfutilities::fillD0CollisionTable(D0.hfCollBase_as<aod::HfD0CollBases>(), storedD0CollisionsTable, collisionD0Index);
           }
           nD0InCollision++;
 
@@ -320,7 +320,7 @@ struct JetDerivedDataWriter {
         int32_t collisionLcIndex = -1;
         for (const auto& Lc : Lcs) {
           if (nLcInCollision == 0) {
-            jethfutilities::fillLcCollisionTable(Lc.hf3PCollBase_as<aod::Hf3PCollBases>(), storedLcCollisionsTable, collisionLcIndex);
+            jethfutilities::fillLcCollisionTable(Lc.hfCollBase_as<aod::Hf3PCollBases>(), storedLcCollisionsTable, collisionLcIndex);
           }
           nLcInCollision++;
 
@@ -525,7 +525,7 @@ struct JetDerivedDataWriter {
             int32_t collisionD0Index = -1;
             for (const auto& D0 : d0sPerCollision) {
               if (nD0InCollision == 0) {
-                jethfutilities::fillD0CollisionTable(D0.hfD0CollBase_as<aod::HfD0CollBases>(), storedD0CollisionsTable, collisionD0Index);
+                jethfutilities::fillD0CollisionTable(D0.hfCollBase_as<aod::HfD0CollBases>(), storedD0CollisionsTable, collisionD0Index);
               }
               nD0InCollision++;
 
@@ -552,7 +552,7 @@ struct JetDerivedDataWriter {
             int32_t collisionLcIndex = -1;
             for (const auto& Lc : lcsPerCollision) {
               if (nLcInCollision == 0) {
-                jethfutilities::fillLcCollisionTable(Lc.hf3PCollBase_as<aod::Hf3PCollBases>(), storedLcCollisionsTable, collisionLcIndex);
+                jethfutilities::fillLcCollisionTable(Lc.hfCollBase_as<aod::Hf3PCollBases>(), storedLcCollisionsTable, collisionLcIndex);
               }
               nLcInCollision++;
 
