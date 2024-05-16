@@ -34,6 +34,7 @@ struct UpcCandProducer {
 
   Produces<o2::aod::UDFwdTracks> udFwdTracks;
   Produces<o2::aod::UDFwdTracksExtra> udFwdTracksExtra;
+  Produces<o2::aod::UDGlobalFwdTracks> udGlobalFwdTracks;
   Produces<o2::aod::UDFwdTracksCls> udFwdTrkClusters;
   Produces<o2::aod::UDMcFwdTrackLabels> udFwdTrackLabels;
 
@@ -367,6 +368,7 @@ struct UpcCandProducer {
       udFwdTracks(candID, track.px(), track.py(), track.pz(), track.sign(), globalBC, trTime, track.trackTimeRes());
       udFwdTracksExtra(track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), mchmidChi2,
                        track.mchBitMap(), track.midBitMap(), track.midBoards());
+      udGlobalFwdTracks(candID, track.px(), track.py(), track.pz(), track.sign(), globalBC, trTime, track.trackTimeRes());
       // fill MC labels and masks if needed
       if (fDoMC) {
         const auto& label = mcTrackLabels->iteratorAt(trackID);
