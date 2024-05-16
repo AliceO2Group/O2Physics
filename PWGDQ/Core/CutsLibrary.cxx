@@ -2940,6 +2940,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
     return cut;
   }
+  if (!nameStr.compare("eventStandardSel8WithITSROFRecomputedCut")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoITSROFBorderRecomputed, 0.5, 1.5);
+    return cut;
+  }
 
   if (!nameStr.compare("eventStandardSel8NoTFBorder")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
