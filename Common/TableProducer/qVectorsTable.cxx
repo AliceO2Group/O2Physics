@@ -85,6 +85,13 @@ struct qVectorsTable {
 
   ConfigurableAxis cfgaxisFITamp{"cfgaxisFITamp", {1000, 0, 5000}, ""};
 
+  Configurable<bool> cfgUseFT0C{"cfgUseFT0C", false, "Initial value for using FT0C. By default obtained from DataModel."};
+  Configurable<bool> cfgUseFT0A{"cfgUseFT0A", false, "Initial value for using FT0A. By default obtained from DataModel."};
+  Configurable<bool> cfgUseFT0M{"cfgUseFT0M", false, "Initial value for using FT0M. By default obtained from DataModel."};
+  Configurable<bool> cfgUseFV0A{"cfgUseFV0A", false, "Initial value for using FV0A. By default obtained from DataModel."};
+  Configurable<bool> cfgUseBPos{"cfgUseBPos", false, "Initial value for using BPos. By default obtained from DataModel."};
+  Configurable<bool> cfgUseBNeg{"cfgUseBNeg", false, "Initial value for using BNeg. By default obtained from DataModel."};
+
   // Table.
   Produces<aod::Qvectors> qVector;
   Produces<aod::QvectorFT0Cs> qVectorFT0C;
@@ -115,21 +122,26 @@ struct qVectorsTable {
   TH3F* objQvec = nullptr;
 
   std::unordered_map<string, bool> useDetector = {
-    {"QvectorBNegs", false},
-    {"QvectorBPoss", false},
-    {"QvectorFV0As", false},
-    {"QvectorFT0Ms", false},
-    {"QvectorFT0As", false},
-    {"QvectorFT0Cs", false}};
+    {"QvectorBNegs", cfgUseBNeg},
+    {"QvectorBPoss", cfgUseBPos},
+    {"QvectorFV0As", cfgUseFV0A},
+    {"QvectorFT0Ms", cfgUseFT0M},
+    {"QvectorFT0As", cfgUseFT0A},
+    {"QvectorFT0Cs", cfgUseFT0C}};
 
   void init(InitContext& initContext)
   {
-
     // Check the sub-detector used
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       for (auto const& input : device.inputs) {
-        LOGF(info, Form("%s", input.matcher.binding.data()));
+        if (input.matcher.binding == "Qvectors") {
+          for (auto det : useDetector) {
+            useDetector[det.first.data()] = true;
+          }
+          LOGF(info, Form("Using all detectors.", input.matcher.binding.data()));
+          goto allDetectorsInUse; // Added to break from nested loop if all detectors are in use.
+        }
         for (auto det : useDetector) {
           if (input.matcher.binding == det.first) {
             useDetector[det.first.data()] = true;
@@ -139,6 +151,8 @@ struct qVectorsTable {
       }
     }
 
+  // Exit point in case all detectors are being used.
+  allDetectorsInUse:
     // Setup the access to the CCDB objects of interest.
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdb->setCaching(true);
