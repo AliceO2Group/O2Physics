@@ -185,6 +185,7 @@ struct HfCorrelatorD0Hadrons {
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<float> ptSoftPionMax{"ptSoftPionMax", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification"};
   Configurable<bool> correlateD0WithLeadingParticle{"correlateD0WithLeadingParticle", false, "Switch for correlation of D0 mesons with leading particle only"};
+  Configurable<bool> setCorrelationState{"setCorrelationState", false, "Set correlation state"};
 
   HfHelper hfHelper;
 
@@ -367,8 +368,12 @@ struct HfCorrelatorD0Hadrons {
       for (const auto& track : tracks) {
         registry.fill(HIST("hTrackCounter"), 1); // fill total no. of tracks
         // Remove D0 daughters by checking track indices
+        int correlationState = 0;
         if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
-          continue;
+          if (!setCorrelationState) {
+            continue;
+          }
+          correlationState = 1;
         }
         if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.)
           continue; // Remove secondary tracks
@@ -416,7 +421,8 @@ struct HfCorrelatorD0Hadrons {
                           track.eta() - candidate1.eta(),
                           candidate1.pt(),
                           track.pt(),
-                          poolBin);
+                          poolBin,
+                          correlationState);
         entryD0HadronRecoInfo(hfHelper.invMassD0ToPiK(candidate1), hfHelper.invMassD0barToKPi(candidate1), signalStatus);
 
       } // end inner loop (tracks)
