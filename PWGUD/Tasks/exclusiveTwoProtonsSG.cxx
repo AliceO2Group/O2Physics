@@ -31,7 +31,10 @@ using namespace o2::framework::expressions;
 struct ExclusiveTwoProtons {
   SGSelector sgSelector;
   Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
+  Configurable<float> FT0A_cut{"FT0A", 200., "FT0A threshold"};
+  Configurable<float> FT0C_cut{"FT0C", 100., "FT0C threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
+  Configurable<float> gap_Side{"gap", 2, "gap selection"};
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   //_____________________________________________________________________________
@@ -97,6 +100,11 @@ struct ExclusiveTwoProtons {
   //-----------------------------------------------------------------------------------------------------------------------
   void init(o2::framework::InitContext&)
   {
+    registry.add("GapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
+    registry.add("TrueGapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
+    registry.add("posx", "Vertex position in x", kTH1F, {{100, -0.5, 0.5}});
+    registry.add("posy", "Vertex position in y", kTH1F, {{100, -0.5, 0.5}});
+    registry.add("posz", "Vertex position in z", kTH1F, {{1000, -100., 100.}});
     registry.add("hITSCluster", "N_{cluster}", kTH1F, {{100, -0.5, 99.5}});
     registry.add("hChi2ITSTrkSegment", "N_{cluster}", kTH1F, {{100, -0.5, 99.5}});
     registry.add("hTPCCluster", "N_{cluster}", kTH1F, {{200, -0.5, 199.5}});
@@ -156,10 +164,23 @@ struct ExclusiveTwoProtons {
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
-  void process(UDCollisions::iterator const& collision, udtracksfull const& tracks)
-  //  void process(UDCollisionsFull::iterator const& collision, udtracksfull const& tracks)
+  void process(UDCollisionsFull::iterator const& collision, udtracksfull const& tracks)
   {
     registry.fill(HIST("hSelectionCounter"), 0);
+    int gapSide = collision.gapSide();
+    if (gapSide < 0 || gapSide > 2)
+      return;
+
+    registry.fill(HIST("posx"), collision.posX());
+    registry.fill(HIST("posy"), collision.posY());
+    registry.fill(HIST("posz"), collision.posZ());
+    int truegapSide = sgSelector.trueGap(collision, FV0_cut, FT0A_cut, FT0C_cut, ZDC_cut);
+    registry.fill(HIST("GapSide"), gapSide);
+    registry.fill(HIST("TrueGapSide"), truegapSide);
+    gapSide = truegapSide;
+    if (gapSide != gap_Side) {
+      return;
+    }
     TLorentzVector resonance; // lorentz vectors of tracks and the mother
 
     // ===================================

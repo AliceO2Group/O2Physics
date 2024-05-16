@@ -134,6 +134,11 @@ o2physics_add_dpl_workflow(exclusive-two-protons
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(exclusive-two-protons-sg
+                           SOURCES exclusiveTwoProtonsSG.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(exclusive-phi-leptons
                            SOURCES exclusivePhiLeptons.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
