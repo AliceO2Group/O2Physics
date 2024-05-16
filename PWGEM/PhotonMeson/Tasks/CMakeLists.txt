@@ -36,7 +36,7 @@ o2physics_add_dpl_workflow(pcm-qc-mc
 
 o2physics_add_dpl_workflow(dalitz-ee-qc
                     SOURCES dalitzEEQC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dalitz-ee-qc-mc

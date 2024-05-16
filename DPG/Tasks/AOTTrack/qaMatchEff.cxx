@@ -75,8 +75,8 @@ struct qaMatchEff {
   Configurable<bool> isUseAnalysisTrackSelections{"isUseAnalysisTrackSelections", false, "Boolean to switch if the analysis track selections are used. If true, all the Explicit track cuts are ignored."};
   // analysis track selections changes
   Configurable<bool> isChangeAnalysisCutEta{"isChangeAnalysisCutEta", false, "Boolean to switch if the analysis eta cut is changed."};
-  Configurable<bool> isChangeAnalysisCutDcaXY{"isChangeAnalysisCutDcaXY", false, "Boolean to switch if the analysis DcaXY cut is changed."};
   Configurable<bool> isChangeAnalysisCutDcaZ{"isChangeAnalysisCutDcaZ", false, "Boolean to switch if the analysis DcaZ cut is changed."};
+  Configurable<bool> isChangeAnalysisCutDcaXY{"isChangeAnalysisCutDcaXY", false, "Boolean to switch if the analysis DcaXY cut is changed."};
   Configurable<bool> isChangeAnalysisCutNClustersTPC{"isChangeAnalysisCutNClustersTPC", false, "Boolean to switch if the analysis NClustersTPC cut is changed."};
   Configurable<bool> isChangeAnalysisITSHitmap{"isChangeAnalysisITSHitmap", false, "Boolean to switch if the analysis ITSHitmap is changed."};
   // kinematics
@@ -106,11 +106,6 @@ struct qaMatchEff {
   Configurable<bool> doDebug{"doDebug", false, "Flag of debug information"};
   // Histogram configuration
   //
-  // histos axes limits
-  Configurable<float> etaMin{"eta-min", -2.0f, "Lower limit in eta"};
-  Configurable<float> etaMax{"eta-max", 2.0f, "Upper limit in eta"};
-  Configurable<float> phiMin{"phi-min", 0.0f, "Lower limit in phi"};
-  Configurable<float> phiMax{"phi-max", 1.0f * TwoPI, "Upper limit in phi"};
   // histos bins
   Configurable<int> etaBins{"eta-bins", 40, "Number of eta bins"};
   Configurable<int> phiBins{"phi-bins", 18, "Number of phi bins"};
@@ -141,9 +136,9 @@ struct qaMatchEff {
   //
   AxisSpec axisQoPt{qoptBins, -20, 20, "#Q/it{p}_{T} (GeV/#it{c})^{-1}"};
   //
-  AxisSpec axisEta{etaBins, etaMin, etaMax, "#eta"};
-  AxisSpec axisPhi{phiBins, phiMin, phiMax, "#it{#varphi} (rad)"};
-  AxisSpec axisDEta{etaBins, etaMin, etaMax, "D#eta"};
+  AxisSpec axisEta{etaBins, -2.f, 2.f, "#eta"};
+  AxisSpec axisPhi{phiBins, 0.f, TwoPI, "#it{#varphi} (rad)"};
+  AxisSpec axisDEta{etaBins, -2.f, 2.f, "D#eta"};
   AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
   //
   // pdg codes vector
@@ -156,7 +151,7 @@ struct qaMatchEff {
   ConfigurableAxis thnd0{"thnd0", {150, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
   ConfigurableAxis thndz{"thndz", {150, -10.0f, 10.0f}, "impact parameter in z [cm]"};
   ConfigurableAxis thnPt{"thnPt", {80, 0.0f, 20.0f}, "pt [GeV/c]"};
-  ConfigurableAxis thnPhi{"thnPhi", {180, 0.0f, TMath::TwoPi()}, "phi"};
+  ConfigurableAxis thnPhi{"thnPhi", {180, 0.0f, TwoPI}, "phi"};
   ConfigurableAxis thnEta{"thnEta", {20, -2.0f, 2.0f}, "eta"};
   ConfigurableAxis thnType{"thnType", {3, -0.5f, 2.5f}, "0: primary, 1: physical secondary, 2: sec. from material"};
   ConfigurableAxis thnSpec{"thnSpec", {19, -9.5f, 9.5f}, "signed particle ID"};
@@ -260,16 +255,13 @@ struct qaMatchEff {
         cutObject.SetEtaRange(etaMinCut, etaMaxCut);
         LOG(info) << "### Changing analysis eta cut to " << etaMinCut << " - " << etaMaxCut;
       }
-      if (isChangeAnalysisCutDcaXY) {
-        // clear the pt dependence of DcaXY
-        cutObject.SetMaxDcaXYPtDep(nullptr);
-        LOG(info) << "### DcaXY cut pt dependence cleared";
-        cutObject.SetMaxDcaXY(dcaMaxCut->get("TrVtx", "dcaXY"));
-        LOG(info) << "### Changing analysis DcaXY cut to " << dcaMaxCut->get("TrVtx", "dcaXY");
-      }
       if (isChangeAnalysisCutDcaZ) {
         cutObject.SetMaxDcaZ(dcaMaxCut->get("TrVtx", "dcaZ"));
         LOG(info) << "### Changing analysis DCAZ cut to " << dcaMaxCut->get("TrVtx", "dcaZ");
+      }
+      if (isChangeAnalysisCutDcaXY) {
+        cutObject.SetMaxDcaXYPtDep([this](float pt) { return dcaMaxCut->get("TrVtx", "dcaXY"); });
+        LOG(info) << "### Changing analysis DcaXY cut to " << dcaMaxCut->get("TrVtx", "dcaXY");
       }
       if (isChangeAnalysisCutNClustersTPC) {
         cutObject.SetMinNClustersTPC(tpcNClusterMin);
@@ -1343,8 +1335,7 @@ struct qaMatchEff {
       return false;
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kDCAxy))
       return false;
-    // dcaZ selection to simulate the dca cut in QC ()
-    if (abs(track.dcaZ()) > dcaMaxCut->get("TrVtx", "dcaZ"))
+    if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kDCAz))
       return false;
     return true;
   }

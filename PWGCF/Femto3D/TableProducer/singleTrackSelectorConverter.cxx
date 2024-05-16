@@ -62,7 +62,9 @@ struct singleTrackSelectorConverter {
                singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaPr()),
                singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()),
                singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
-               singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()));
+               singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()),
+               singletrackselector::binning::nsigma::underflowBin,
+               singletrackselector::binning::nsigma::underflowBin);
     }
   }
 };
