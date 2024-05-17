@@ -183,9 +183,11 @@ struct lambdakzeromcfinder {
 
     int positivePdg = 211;
     int negativePdg = -211;
+    int relevantProcess = 4; // normal search: decay
     if (mcParticle.pdgCode() == 22) {
       positivePdg = -11;
       negativePdg = +11;
+      relevantProcess = 5; //look for pair production if photon
     }
     if (mcParticle.pdgCode() == 3122) {
       positivePdg = 2212;
@@ -204,7 +206,7 @@ struct lambdakzeromcfinder {
       auto const& daughters = mcParticle.template daughters_as<FullMcParticles>();
       if (daughters.size() >= 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
-          if (daughter.getProcess() != 4)
+          if (daughter.getProcess() != relevantProcess)
             continue; // skip deltarays (if ever), stick to decay products only
           if (daughter.pdgCode() == positivePdg) {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
