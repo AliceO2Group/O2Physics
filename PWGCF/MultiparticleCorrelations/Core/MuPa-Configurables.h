@@ -34,14 +34,14 @@ struct : ConfigurableGroup {
 // *) QA:
 struct : ConfigurableGroup {
   Configurable<bool> cfCheckUnderflowAndOverflow{"cfCheckUnderflowAndOverflow", false, "check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins"};
+  Configurable<bool> cfFillQAEventHistograms2D{"cfFillQAEventHistograms2D", true, "if false, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled"};
+  Configurable<vector<int>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) this 2D QA event histogram, ordering is the same as in enum eQAEventHistograms2D"};
 } cf_qa;
 
 // *) Event histograms:
 struct : ConfigurableGroup {
   Configurable<bool> cfFillEventHistograms{"cfFillEventHistograms", true, "if false, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled"};
   Configurable<vector<int>> cfBookEventHistograms{"cfBookEventHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) event histogram, ordering is the same as in enum eEventHistograms"};
-  Configurable<bool> cfFillEventHistograms2D{"cfFillEventHistograms2D", true, "if false, all 2D event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms2D[...] is kTRUE, are filled"};
-  Configurable<vector<int>> cfBookEventHistograms2D{"cfBookEventHistograms2D", {1, 1}, "Book (1) or do not book (0) this 2D event histogram, ordering is the same as in enum eEventHistograms2D"};
 } cf_eh;
 
 // *) Event cuts:
@@ -49,10 +49,11 @@ struct : ConfigurableGroup {
   Configurable<vector<int>> cfUseEventCuts{"cfUseEventCuts", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0}, "Use (1) or do not use (0) event cuts, ordering is the same as in enums eEventHistograms + eEventCuts"};
   Configurable<bool> cfUseEventCutCounterAbsolute{"cfUseEventCutCounterAbsolute", false, "profile and save how many times each event cut counter triggered (absolute). Use with care, as this is computationally heavy"};
   Configurable<bool> cfUseEventCutCounterSequential{"cfUseEventCutCounterSequential", false, "profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy"};
+  Configurable<bool> cfPrintCutCounterContent{"cfPrintCutCounterContent", false, "if true, prints on the screen content of fEventCutCounterHist[][] (all which were booked)"};
   Configurable<string> cfTrigger{"cfTrigger", "some supported trigger", "set here some supported trigger (kINT7, ...) "};
   Configurable<bool> cfUseSel7{"cfUseSel7", false, "use for Run 2 data and MC (see official doc)"};
   Configurable<bool> cfUseSel8{"cfUseSel8", false, "use for Run 3 data and MC (see official doc)"};
-  Configurable<string> cfCentralityEstimator{"cfCentralityEstimator", "some supported centrality estimator", "set here some supported centrality estimator (CentFT0M, CentFV0A, CentNTPV, ... for Run 3, CentRun2V0M, CentRun2SPDTracklets, ..., for Run 2) "};
+  Configurable<string> cfCentralityEstimator{"cfCentralityEstimator", "some supported centrality estimator", "set here some supported centrality estimator (CentFT0M, CentFV0A, CentNTPV, ... for Run 3, and CentRun2V0M, CentRun2SPDTracklets, ..., for Run 2 and 1) "};
   Configurable<vector<int>> cfNumberOfEvents{"cfNumberOfEvents", {-1, 1000000000}, "Total number of events to process (whether or not they survive event cuts): {min, max}, with convention: min <= N < max"};
   Configurable<vector<int>> cfSelectedEvents{"cfSelectedEvents", {-1, 1000000000}, "Selected number of events to process (i.e. only events which survive event cuts): {min, max}, with convention: min <= N < max"};
   Configurable<vector<int>> cfTotalMultiplicity{"cfTotalMultiplicity", {-1, 1000000000}, "Total multiplicity range: {min, max}, with convention: min <= M < max"};
