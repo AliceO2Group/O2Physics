@@ -82,8 +82,8 @@ DECLARE_SOA_COLUMN(DcaCharmBaryonDau, dcaCharmBaryonDau, float);
 DECLARE_SOA_COLUMN(ErrorDecayLengthCharmBaryon, errorDecayLengthCharmBaryon, float);
 DECLARE_SOA_COLUMN(NormImpParCascade, normImpParCascade, double);
 DECLARE_SOA_COLUMN(NormImpParKaFromCharmBar, normImpParKaFromCharmBar, double);
-DECLARE_SOA_COLUMN(IsPionGlbTrkWoDca, isPionGlbTrkWoDca, bool);
-DECLARE_SOA_COLUMN(PionItsNCls, pionItsNCls, uint8_t);
+DECLARE_SOA_COLUMN(IsKaonGlbTrkWoDca, isKaonGlbTrkWoDca, bool);
+DECLARE_SOA_COLUMN(KaonItsNCls, kaonItsNCls, uint8_t);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
@@ -123,7 +123,7 @@ DECLARE_SOA_TABLE(HfOmegac0ToOmegaKaLites, "AOD", "HFTOOMEKALITE",
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau,
                   full::ErrorDecayLengthCharmBaryon, full::NormImpParCascade, full::NormImpParKaFromCharmBar,
-                  full::IsPionGlbTrkWoDca, full::PionItsNCls,
+                  full::IsKaonGlbTrkWoDca, full::KaonItsNCls,
                   full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaKaFromCharmBaryon, full::TpcNSigmaKaFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaKaFromCharmBaryon, full::TofNSigmaKaFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
