@@ -105,9 +105,9 @@ struct ExclusivePentaquark {
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
     gapSide = truegapSide;
-    if (gapSide != gap_Side) {
-      return;
-    }
+    // if (gapSide != gap_Side) {
+    //   return;
+    // }
 
     TLorentzVector resonance; // lorentz vectors of tracks and the mother
 
