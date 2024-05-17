@@ -27,7 +27,7 @@ JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec
   // TODO: these shall be configurable
   std::vector<double> ptBinning = {0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0};
   AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/c)"};
-  AxisSpec phiAxis = {50, 0.0, 2.0 * TMath::Pi(), "#phi"};
+  AxisSpec phiAxis = {50, 0.0, o2::constants::math::TwoPI, "#phi"};
   AxisSpec etaAxis = {40, -2.0, 2.0, "#eta"};
   AxisSpec zvtAxis = {20, -10.0, 10.0, "zvtx"};
   pht[HIST_THN_PHIETAZ] = std::get<std::shared_ptr<THn>>(registry.add("h_phietaz", "multiplicity/centrality, phi, eta, z", {HistType::kTHnF, {axisMultiplicity, phiAxis, etaAxis, zvtAxis}})).get();
