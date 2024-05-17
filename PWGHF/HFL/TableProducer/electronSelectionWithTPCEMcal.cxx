@@ -58,8 +58,8 @@ struct HfElectronSelectionWithTPCEMcal {
   Configurable<float> ptTrackMin{"ptTrackMin", 3.0f, "Transverse MOmentum range for electron tracks"};
 
   // EMcal and Dcal selection cut
-  Configurable<float> etaTrackDCalNegetiveMax{"etaTrackDCalNegetiveMax", -0.22f, "Eta range for electron Dcal tracks"};
-  Configurable<float> etaTrackDCalNegetiveMin{"etaTrackDCalNegetiveMin", -0.6f, "Eta range for electron tracks"};
+  Configurable<float> etaTrackDCalNegativeMax{"etaTrackDCalNegativeMax", -0.22f, "Eta range for electron Dcal tracks"};
+  Configurable<float> etaTrackDCalNegativeMin{"etaTrackDCalNegativeMin", -0.6f, "Eta range for electron tracks"};
   Configurable<float> etaTrackDCalPositiveMax{"etaTrackDCalPositiveMax", 0.6f, "Eta range for electron Dcal tracks"};
   Configurable<float> etaTrackDCalPositiveMin{"etaTrackDCalPositiveMin", 0.22f, "Eta range for electron tracks"};
   Configurable<float> phiTrackDCalMax{"phiTrackDCalMax", 3.3621f, "phi range for electron tracks associated Dcal"};
@@ -185,7 +185,7 @@ struct HfElectronSelectionWithTPCEMcal {
 
       if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
         passEMCal = 1; // EMcal acceptance passed
-      if ((phiTrack > phiTrackDCalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDCalPositiveMin && etaTrack < etaTrackDCalPositiveMax) || (etaTrack > etaTrackDCalNegetiveMin && etaTrack < etaTrackDCalNegetiveMax)))
+      if ((phiTrack > phiTrackDCalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDCalPositiveMin && etaTrack < etaTrackDCalPositiveMax) || (etaTrack > etaTrackDCalNegativeMin && etaTrack < etaTrackDCalNegativeMax)))
         passEMCal = 2; // Dcal acceptance passed
 
       registry.fill(HIST("hTrackInformation"), track.tpcSignal(), tpcNsigmaTrack, pTrack, ptTrack, etaTrack, phiTrack, passEMCal); // track infor after filter bit
