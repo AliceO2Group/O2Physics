@@ -241,7 +241,7 @@ struct HfTreeCreatorOmegac0ToOmegaKa {
       fillCandidateLite(candidate, -7, RecoDecay::OriginType::None, true);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaKa, processDataLite, "Process data", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaKa, processDataLite, "Process data", true);
 
   void processMcLite(MyEventTable const& collisions, MyTrackTable const&,
                      soa::Join<aod::HfCandToOmegaK, aod::HfSelToOmegaKa, aod::HfToOmegaKMCRec> const& candidates)
