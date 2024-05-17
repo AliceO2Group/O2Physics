@@ -106,13 +106,11 @@ struct midEfficiency {
     LOGF(debug, "Calling process function");
 
     // Loop over all forward tracks
-    // LOGP(info, "collision index = {} ,  nTracks = {}", event.globalIndex(), muons.size());
     for (auto& track : muons) {
 
       LOGF(debug, "Processing a track");
 
       histos.fill(HIST("hTrackType"), track.trackType());
-      LOGP(info, "track type = {}", track.trackType());
 
       trk.setEfficiencyWord(track.midBoards());
 
@@ -179,7 +177,6 @@ struct midEfficiency {
 
   } // end of runMidEffCounters
 
-  // void processMidEffCounter(aod::ReducedEvents::iterator const& event, MyMuonTracks const& muons)
   void processMidEffCounter(aod::ReducedEvents::iterator const& event, soa::Filtered<MyMuonTracks> const& muons)
   {
     runMidEffCounters(event, muons); // call efficiency calculator function
