@@ -535,7 +535,7 @@ struct rsn_analysis {
   //  Processing Monte Carlo A02D
   void processMC(kCollisionsTableMC::iterator const& kCurrentCollision,
                  kTracksTableMC const& kTracks,
-                 aod::McParticles const& mcParticles)
+                 aod::McParticles const& /*mcParticles*/)
   {
     //
     //  Collision QA
@@ -711,7 +711,7 @@ struct rsn_analysis {
   }
   PROCESS_SWITCH(rsn_analysis, processMC, "Process Monte Carlo", false);
   //
-  void processMCTruth(aod::McCollision const& mcCollision,
+  void processMCTruth(aod::McCollision const& /*mcCollision*/,
                       aod::McParticles const& mcParticles)
   {
 

@@ -13,7 +13,7 @@
 /// \brief FemtoUniversePairCleaner - Makes sure only proper candidates are paired
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Laura Serksnyte, TU München,laura.serksnyte@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRCLEANER_H_
@@ -109,10 +109,11 @@ class FemtoUniversePairCleaner
       // Getting D0 (part2) children
       const auto& posChild = particles.iteratorAt(part2.index() - 2);
       const auto& negChild = particles.iteratorAt(part2.index() - 1);
-      if (part1.globalIndex() == posChild.globalIndex() || part1.globalIndex() == negChild.globalIndex()) {
-        return false;
+
+      if (part1.globalIndex() != posChild.globalIndex() && part1.globalIndex() != negChild.globalIndex()) {
+        return true;
       }
-      return part1.globalIndex() != part2.globalIndex();
+      return false;
     } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
       /// Track-Phi combination part1 is Phi and part 2 is hadron
       if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kPhi) {

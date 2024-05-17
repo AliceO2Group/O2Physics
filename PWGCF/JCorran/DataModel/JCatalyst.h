@@ -11,38 +11,37 @@
 /// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
-#ifndef JFLUC_CATALYST_H
-#define JFLUC_CATALYST_H
+#ifndef PWGCF_JCORRAN_DATAMODEL_JCATALYST_H_
+#define PWGCF_JCORRAN_DATAMODEL_JCATALYST_H_
 
 namespace o2::aod
 {
-namespace particleTrack
+namespace jcollision
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);  //! collision ID
-DECLARE_SOA_COLUMN(Pt, pt, float);               //! p_T (GeV/c)
-DECLARE_SOA_COLUMN(Eta, eta, float);             //! Eta
-DECLARE_SOA_COLUMN(Phi, phi, float);             //! Phi
-DECLARE_SOA_COLUMN(WeightNUA, weightNUA, float); //! Phi acceptance correction weight
-DECLARE_SOA_COLUMN(WeightEff, weightEff, float); //! Efficiency correction factor
-} // namespace particleTrack
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Collision centrality or multiplicity
+} // namespace jcollision
 
-namespace collisionData
+DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION", //! Reduced collision table
+                  o2::soa::Index<>,
+                  bc::RunNumber,
+                  collision::PosZ,
+                  jcollision::Multiplicity);
+using JCollision = JCollisions::iterator;
+
+namespace jtrack
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(Cent, cent, float); //! Collision centrality
-DECLARE_SOA_COLUMN(CBin, cbin, Int_t); //! Centrality bin
-} // namespace collisionData
+DECLARE_SOA_INDEX_COLUMN(JCollision, jcollision); //! collision ID
+DECLARE_SOA_COLUMN(Pt, pt, float);                //! p_T (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);              //! Eta
+DECLARE_SOA_COLUMN(Phi, phi, float);              //! Phi
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);           //! Phi
+} // namespace jtrack
 
-DECLARE_SOA_TABLE(ParticleTrack, "AOD", "PARTICLETRACK",
-                  particleTrack::CollisionId,
-                  particleTrack::Pt, particleTrack::Eta, particleTrack::Phi,
-                  particleTrack::WeightNUA, particleTrack::WeightEff);
-DECLARE_SOA_TABLE(CollisionData, "AOD", "COLLISIONDATA",
-                  collisionData::CollisionId,
-                  collisionData::Cent,
-                  collisionData::CBin);
+DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK", //! Reduced track table
+                  o2::soa::Index<>,
+                  jtrack::JCollisionId,
+                  jtrack::Pt, jtrack::Eta, jtrack::Phi, jtrack::Sign);
+using JTrack = JTracks::iterator;
 } // namespace o2::aod
 
-static float jflucCentBins[] = {0.0f, 1.0f, 2.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f};
-
-#endif
+#endif // PWGCF_JCORRAN_DATAMODEL_JCATALYST_H_

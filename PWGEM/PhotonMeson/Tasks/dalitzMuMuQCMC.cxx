@@ -39,14 +39,16 @@ using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNmumu, aod::EMReducedMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsNmumu, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMReducedEventIds>;
+using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMEventIds>;
 using MyDalitzMuMu = MyDalitzMuMus::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds, aod::EMPrimaryMuonsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMPrimaryMuonsPrefilterBit>;
+using MyTrack = MyTracks::iterator;
 using MyMCTracks = soa::Join<MyTracks, aod::EMPrimaryMuonMCLabels>;
+using MyMCTrack = MyMCTracks::iterator;
 
 struct DalitzMuMuQCMC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -124,7 +126,7 @@ struct DalitzMuMuQCMC {
     LOGF(info, "Number of Dalitz cuts = %d", fDalitzMuMuCuts.size());
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     DefineCuts();
     addhistograms(); // please call this after DefineCuts();
@@ -150,18 +152,18 @@ struct DalitzMuMuQCMC {
   Partition<MyDalitzMuMus> uls_pairs = o2::aod::dalitzmumu::sign == 0;
 
   SliceCache cache;
-  Preslice<MyDalitzMuMus> perCollision = aod::dalitzmumu::emreducedeventId;
+  Preslice<MyDalitzMuMus> perCollision = aod::dalitzmumu::emeventId;
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
   std::vector<uint64_t> used_trackIds;
 
-  void processQCMC(MyCollisions const& collisions, MyDalitzMuMus const& dileptons, MyMCTracks const& tracks, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
+  void processQCMC(MyCollisions const&, MyDalitzMuMus const&, MyMCTracks const&, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzmumu = static_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
     for (auto& collision : grouped_collisions) {
@@ -178,7 +180,7 @@ struct DalitzMuMuQCMC {
       reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
       reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
-      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
+      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzmumu::emeventId, collision.globalIndex(), cache);
 
       for (const auto& cut : fDalitzMuMuCuts) {
         THashList* list_dalitzmumu_cut = static_cast<THashList*>(list_dalitzmumu->FindObject(cut.GetName()));
@@ -189,7 +191,9 @@ struct DalitzMuMuQCMC {
         for (auto& uls_pair : uls_pairs_per_coll) {
           auto pos = uls_pair.template posTrack_as<MyMCTracks>();
           auto ele = uls_pair.template negTrack_as<MyMCTracks>();
-          if (!cut.IsSelected<MyMCTracks>(uls_pair)) {
+
+          std::tuple<MyMCTrack, MyMCTrack, float> uls_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (!cut.IsSelected<MyMCTracks>(uls_pair_tmp)) {
             continue;
           }
           auto posmc = pos.template emmcparticle_as<aod::EMMCParticles>();
@@ -203,7 +207,7 @@ struct DalitzMuMuQCMC {
           }
           if (mother_id > 0) {
             auto mcmother = mcparticles.iteratorAt(mother_id);
-            if (IsPhysicalPrimary(mcmother.emreducedmcevent(), mcmother, mcparticles)) {
+            if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
               dca_pos_3d = pos.dca3DinSigma();
               dca_ele_3d = ele.dca3DinSigma();
               dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
@@ -211,7 +215,6 @@ struct DalitzMuMuQCMC {
               values[0] = uls_pair.mass();
               values[1] = uls_pair.pt();
               values[2] = dca_ee_3d;
-              values[3] = uls_pair.phiv();
               reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
 
               nuls++;
@@ -242,8 +245,8 @@ struct DalitzMuMuQCMC {
   Configurable<float> max_mcEta{"max_mcEta", 0.9, "max. MC eta"};
   Partition<aod::EMMCParticles> posTracks = o2::aod::mcparticle::pdgCode == -13; // mu+
   Partition<aod::EMMCParticles> negTracks = o2::aod::mcparticle::pdgCode == +13; // mu-
-  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  void processGen(MyCollisions const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
+  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
+  void processGen(MyCollisions const&, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -253,7 +256,7 @@ struct DalitzMuMuQCMC {
         continue;
       }
 
-      auto mccollision = collision.emreducedmcevent();
+      auto mccollision = collision.emmcevent();
 
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
@@ -276,8 +279,8 @@ struct DalitzMuMuQCMC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
 
-      auto posTracks_per_coll = posTracks->sliceByCachedUnsorted(o2::aod::emmcparticle::emreducedmceventId, mccollision.globalIndex(), cache);
-      auto negTracks_per_coll = negTracks->sliceByCachedUnsorted(o2::aod::emmcparticle::emreducedmceventId, mccollision.globalIndex(), cache);
+      auto posTracks_per_coll = posTracks->sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
         // LOGF(info, "pdg1 = %d, pdg2 = %d", t1.pdgCode(), t2.pdgCode());
 
@@ -293,7 +296,7 @@ struct DalitzMuMuQCMC {
           continue;
         }
         auto mcmother = mcparticles.iteratorAt(mother_id);
-        if (IsPhysicalPrimary(mcmother.emreducedmcevent(), mcmother, mcparticles)) {
+        if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
           ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
           ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -304,7 +307,7 @@ struct DalitzMuMuQCMC {
   }
   PROCESS_SWITCH(DalitzMuMuQCMC, processGen, "run genrated info", true);
 
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DalitzMuMuQCMC, processDummy, "Dummy function", false);
 };
 

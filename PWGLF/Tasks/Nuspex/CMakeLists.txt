@@ -109,11 +109,6 @@ o2physics_add_dpl_workflow(qa-hist
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-    o2physics_add_dpl_workflow(nuclei-flow
-    SOURCES nucleiFlow.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(qc-spectra-tpc
     SOURCES QCspectraTPC.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -121,5 +116,10 @@ o2physics_add_dpl_workflow(qc-spectra-tpc
 
 o2physics_add_dpl_workflow(deut-rt-task
     SOURCES deutRtTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hadronnucleicorrelation
+    SOURCES hadronnucleicorrelation.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

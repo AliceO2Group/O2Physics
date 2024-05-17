@@ -42,6 +42,7 @@ double eta2y(double pt, double m, double eta)
 struct deutRtTask {
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgCutLeadingPtMin{"cfgCutLeadingPtMin", 0.15f, "Accepted min range for leading pt"};
   Configurable<float> cfgAverage_Nch_Transv{"cfgAverage_Nch_Transv", 6.81f, "Average charge multiplicity for pp"};
   Configurable<float> cfgCutDCAXY{"cfgCutDCAXY", 0.05f, "DCAXY range for tracks"};
   Configurable<float> cfgCutDCAZ{"cfgCutDCAZ", 2.0f, "DCAZ range for tracks"};
@@ -130,6 +131,8 @@ struct deutRtTask {
     histos.add("anti-deuterons/hnsigmaTOF_antideuterons_Away", "", kTHnSparseD, {Nch_TrAxis, nsigmaTOFAxis, pT_TOFAxis});
     histos.add("deuterons/hnsigmaTOF_deuterons_Transverse", "", kTHnSparseD, {Nch_TrAxis, nsigmaTOFAxis, pT_TOFAxis});
     histos.add("anti-deuterons/hnsigmaTOF_antideuterons_Transverse", "", kTHnSparseD, {Nch_TrAxis, nsigmaTOFAxis, pT_TOFAxis});
+    histos.add("histTpcSignal_Deut", "Specific energy loss of Deuteron", HistType::kTH2F, {{600, -6., 6., "#it{p/z} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
+    histos.add("histTpcSignal_CleanDeut", "Specific energy loss of Clean Deuteron", HistType::kTH2F, {{600, -6., 6., "#it{p/z} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
   }
 
   //***********************************************************************************************************************************
@@ -395,7 +398,7 @@ struct deutRtTask {
       histos.fill(HIST("etaHistogram"), track.eta());
 
       if (PassedTrackQualityCuts_LeadingTrack(track)) {
-        if (track.pt() > 5.0 && track.pt() < 10.0) {
+        if (track.pt() > cfgCutLeadingPtMin && track.pt() < 10.0) {
           if (track.pt() > leadingTrackpT) {
             leadingTrackpT = track.pt();
             leadingTrackPhi = track.phi();
@@ -434,9 +437,11 @@ struct deutRtTask {
 
       double Rt = static_cast<double>(mult_Transverse) / cfgAverage_Nch_Transv;
       histos.fill(HIST("hRtDistribution"), Rt);
-
+      if (IsCleanDeuteron(track)) {
+        histos.fill(HIST("histTpcSignal_CleanDeut"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+      }
       if (IsDeuteronCandidate(track)) {
-
+        histos.fill(HIST("histTpcSignal_Deut"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
         FillHistograms_StandardCuts(mult_Transverse, delta_phi, track);
       }
     } // end of tracks loop

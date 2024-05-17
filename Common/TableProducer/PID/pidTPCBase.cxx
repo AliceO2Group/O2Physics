@@ -53,7 +53,7 @@ struct PidMultiplicity {
 
   using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
   Partition<TrksIU> tracksWithTPCIU = (aod::track::tpcNClsFindable > (uint8_t)0);
-  void processIU(aod::Collision const& collision, TrksIU const& tracksExtra)
+  void processIU(aod::Collision const& collision, TrksIU const&)
   {
     if (!enableTable) {
       return;
@@ -65,7 +65,7 @@ struct PidMultiplicity {
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra>;
   Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
-  void processStandard(aod::Collision const& collision, Trks const& tracksExtra)
+  void processStandard(aod::Collision const& collision, Trks const&)
   {
     if (!enableTable) {
       return;

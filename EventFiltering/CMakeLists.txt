@@ -67,6 +67,11 @@ o2physics_add_dpl_workflow(je-filter
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(je-hf-filter
+    SOURCES PWGJE/jetHFFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(fje-filter
     SOURCES PWGJE/fullJetFilter.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib Boost::system
@@ -96,3 +101,11 @@ o2physics_add_dpl_workflow(lf-f1proton-filter
     SOURCES PWGLF/filterf1proton.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
+
+o2physics_add_library(EventFilteringUtils
+    SOURCES Zorro.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+
+o2physics_target_root_dictionary(EventFilteringUtils
+   HEADERS Zorro.h
+   LINKDEF EventFilteringUtilsLinkDef.h)

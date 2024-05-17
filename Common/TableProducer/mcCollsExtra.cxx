@@ -76,7 +76,7 @@ struct mcCollisionExtra {
     return idx;
   }
 
-  void processNoCentrality(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
+  void processNoCentrality(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
   {
     int biggestNContribs = -1;
     int bestCollisionIndex = -1;
@@ -88,7 +88,7 @@ struct mcCollisionExtra {
     }
     mcCollsExtra(collisions.size(), bestCollisionIndex, 0.0f);
   }
-  void processWithCentrality(aod::McCollision const& mcCollision, soa::SmallGroups<FullCollisions> const& collisions)
+  void processWithCentrality(aod::McCollision const&, soa::SmallGroups<FullCollisions> const& collisions)
   {
     int biggestNContribs = -1;
     int bestCollisionIndex = -1;
@@ -97,6 +97,7 @@ struct mcCollisionExtra {
       if (biggestNContribs < collision.numContrib()) {
         biggestNContribs = collision.numContrib();
         bestCollisionIndex = collision.globalIndex();
+        bestCollisionCentFT0C = collision.centFT0C();
       }
     }
     mcCollsExtra(collisions.size(), bestCollisionIndex, bestCollisionCentFT0C);

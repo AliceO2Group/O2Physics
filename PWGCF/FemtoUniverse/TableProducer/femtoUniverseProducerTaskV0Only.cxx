@@ -11,7 +11,7 @@
 /// \file femtoUniverseProducerTaskV0Only.cxx
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"

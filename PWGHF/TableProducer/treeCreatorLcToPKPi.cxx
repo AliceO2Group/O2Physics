@@ -21,11 +21,12 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -272,11 +273,11 @@ struct HfTreeCreatorLcToPKPi {
   {
   }
 
-  void processMc(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultZeqs, Cents> const& collisions,
-                 aod::McCollisions const& mcCollisions,
+  void processMc(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents> const& collisions,
+                 aod::McCollisions const&,
                  soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                 TracksWPid const& tracks, aod::BCs const&)
+                 TracksWPid const&, aod::BCs const&)
   {
 
     // Filling event properties
@@ -470,7 +471,7 @@ struct HfTreeCreatorLcToPKPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen(),
           particle.globalIndex());
@@ -479,9 +480,9 @@ struct HfTreeCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfTreeCreatorLcToPKPi, processMc, "Process MC tree writer", true);
 
-  void processData(soa::Join<aod::Collisions, aod::MultZeqs, Cents> const& collisions,
+  void processData(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents> const& collisions,
                    soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
-                   TracksWPid const& tracks, aod::BCs const&)
+                   TracksWPid const&, aod::BCs const&)
   {
 
     // Filling event properties

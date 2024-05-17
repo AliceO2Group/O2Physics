@@ -41,7 +41,7 @@ DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float); //! Second harmonic event pla
 DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float); //! Second harmonic event plane resolution of B-C sub events
 DECLARE_SOA_COLUMN(BMagField, bMagField, float);   //! Magnetic field
 } // namespace resocollisiondf
-DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLDF",
+DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDF",
                   o2::soa::Index<>,
                   collision::PosX,
                   collision::PosY,
@@ -74,7 +74,10 @@ DECLARE_SOA_COLUMN(Indices, indices, int[2]);                        //! Field f
 DECLARE_SOA_COLUMN(CascadeIndices, cascIndices, int[3]);             //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                              //! Sign of the track charge
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t); //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);             //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                       //! Number of ITS clusters found
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);    //! Is global track without DCA
+DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);              //! Is global track
 DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);            //! Is primary track
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);          //! Is primary vertex contributor
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                            //! Has TOF
@@ -117,6 +120,8 @@ DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFs",
                   resodaughterdf::Phi,
                   resodaughterdf::Sign,
                   resodaughterdf::TPCNClsCrossedRows,
+                  resodaughterdf::TPCNClsFound,
+                  resodaughterdf::ITSNCls,
                   o2::aod::track::DcaXY,
                   o2::aod::track::DcaZ,
                   o2::aod::track::X,
@@ -125,13 +130,16 @@ DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDFs",
                   o2::aod::pidtpc::TPCNSigmaPi,
                   o2::aod::pidtpc::TPCNSigmaKa,
                   o2::aod::pidtpc::TPCNSigmaPr,
+                  o2::aod::pidtpc::TPCNSigmaEl,
                   o2::aod::pidtof::TOFNSigmaPi,
                   o2::aod::pidtof::TOFNSigmaKa,
                   o2::aod::pidtof::TOFNSigmaPr,
+                  o2::aod::pidtof::TOFNSigmaEl,
                   o2::aod::track::TPCSignal,
                   o2::aod::track::PassedITSRefit,
                   o2::aod::track::PassedTPCRefit,
                   resodaughterdf::IsGlobalTrackWoDCA,
+                  resodaughterdf::IsGlobalTrack,
                   resodaughterdf::IsPrimaryTrack,
                   resodaughterdf::IsPVContributor,
                   resodaughterdf::TPCCrossedRowsOverFindableCls,

@@ -100,6 +100,30 @@ static constexpr std::string_view hdcaxyphi[NpCharge] = {"dcaxyphi/pos/el", "dca
                                                          "dcaxyphi/neg/ka", "dcaxyphi/neg/pr", "dcaxyphi/neg/de",
                                                          "dcaxyphi/neg/tr", "dcaxyphi/neg/he", "dcaxyphi/neg/al"};
 // MC
+static constexpr std::string_view hpt_mism_its_prm[NpCharge] = {"MC/el/pos/prm/pt/mismITS", "MC/mu/pos/prm/pt/mismITS", "MC/pi/pos/prm/pt/mismITS",
+                                                                "MC/ka/pos/prm/pt/mismITS", "MC/pr/pos/prm/pt/mismITS", "MC/de/pos/prm/pt/mismITS",
+                                                                "MC/tr/pos/prm/pt/mismITS", "MC/he/pos/prm/pt/mismITS", "MC/al/pos/prm/pt/mismITS",
+                                                                "MC/el/neg/prm/pt/mismITS", "MC/mu/neg/prm/pt/mismITS", "MC/pi/neg/prm/pt/mismITS",
+                                                                "MC/ka/neg/prm/pt/mismITS", "MC/pr/neg/prm/pt/mismITS", "MC/de/neg/prm/pt/mismITS",
+                                                                "MC/tr/neg/prm/pt/mismITS", "MC/he/neg/prm/pt/mismITS", "MC/al/neg/prm/pt/mismITS"};
+static constexpr std::string_view hpt_mism_tpc_prm[NpCharge] = {"MC/el/pos/prm/pt/mismTPC", "MC/mu/pos/prm/pt/mismTPC", "MC/pi/pos/prm/pt/mismTPC",
+                                                                "MC/ka/pos/prm/pt/mismTPC", "MC/pr/pos/prm/pt/mismTPC", "MC/de/pos/prm/pt/mismTPC",
+                                                                "MC/tr/pos/prm/pt/mismTPC", "MC/he/pos/prm/pt/mismTPC", "MC/al/pos/prm/pt/mismTPC",
+                                                                "MC/el/neg/prm/pt/mismTPC", "MC/mu/neg/prm/pt/mismTPC", "MC/pi/neg/prm/pt/mismTPC",
+                                                                "MC/ka/neg/prm/pt/mismTPC", "MC/pr/neg/prm/pt/mismTPC", "MC/de/neg/prm/pt/mismTPC",
+                                                                "MC/tr/neg/prm/pt/mismTPC", "MC/he/neg/prm/pt/mismTPC", "MC/al/neg/prm/pt/mismTPC"};
+static constexpr std::string_view hpt_mism_trd_prm[NpCharge] = {"MC/el/pos/prm/pt/mismTRD", "MC/mu/pos/prm/pt/mismTRD", "MC/pi/pos/prm/pt/mismTRD",
+                                                                "MC/ka/pos/prm/pt/mismTRD", "MC/pr/pos/prm/pt/mismTRD", "MC/de/pos/prm/pt/mismTRD",
+                                                                "MC/tr/pos/prm/pt/mismTRD", "MC/he/pos/prm/pt/mismTRD", "MC/al/pos/prm/pt/mismTRD",
+                                                                "MC/el/neg/prm/pt/mismTRD", "MC/mu/neg/prm/pt/mismTRD", "MC/pi/neg/prm/pt/mismTRD",
+                                                                "MC/ka/neg/prm/pt/mismTRD", "MC/pr/neg/prm/pt/mismTRD", "MC/de/neg/prm/pt/mismTRD",
+                                                                "MC/tr/neg/prm/pt/mismTRD", "MC/he/neg/prm/pt/mismTRD", "MC/al/neg/prm/pt/mismTRD"};
+static constexpr std::string_view hpt_mism_tof_prm[NpCharge] = {"MC/el/pos/prm/pt/mismTOF", "MC/mu/pos/prm/pt/mismTOF", "MC/pi/pos/prm/pt/mismTOF",
+                                                                "MC/ka/pos/prm/pt/mismTOF", "MC/pr/pos/prm/pt/mismTOF", "MC/de/pos/prm/pt/mismTOF",
+                                                                "MC/tr/pos/prm/pt/mismTOF", "MC/he/pos/prm/pt/mismTOF", "MC/al/pos/prm/pt/mismTOF",
+                                                                "MC/el/neg/prm/pt/mismTOF", "MC/mu/neg/prm/pt/mismTOF", "MC/pi/neg/prm/pt/mismTOF",
+                                                                "MC/ka/neg/prm/pt/mismTOF", "MC/pr/neg/prm/pt/mismTOF", "MC/de/neg/prm/pt/mismTOF",
+                                                                "MC/tr/neg/prm/pt/mismTOF", "MC/he/neg/prm/pt/mismTOF", "MC/al/neg/prm/pt/mismTOF"};
 static constexpr std::string_view hpt_num_prm[NpCharge] = {"MC/el/pos/prm/pt/num", "MC/mu/pos/prm/pt/num", "MC/pi/pos/prm/pt/num",
                                                            "MC/ka/pos/prm/pt/num", "MC/pr/pos/prm/pt/num", "MC/de/pos/prm/pt/num",
                                                            "MC/tr/pos/prm/pt/num", "MC/he/pos/prm/pt/num", "MC/al/pos/prm/pt/num",
@@ -112,6 +136,12 @@ static constexpr std::string_view hpt_numtof_prm[NpCharge] = {"MC/el/pos/prm/pt/
                                                               "MC/el/neg/prm/pt/numtof", "MC/mu/neg/prm/pt/numtof", "MC/pi/neg/prm/pt/numtof",
                                                               "MC/ka/neg/prm/pt/numtof", "MC/pr/neg/prm/pt/numtof", "MC/de/neg/prm/pt/numtof",
                                                               "MC/tr/neg/prm/pt/numtof", "MC/he/neg/prm/pt/numtof", "MC/al/neg/prm/pt/numtof"};
+static constexpr std::string_view hpt_numtofgoodmatch_prm[NpCharge] = {"MC/el/pos/prm/pt/numtofgoodmatch", "MC/mu/pos/prm/pt/numtofgoodmatch", "MC/pi/pos/prm/pt/numtofgoodmatch",
+                                                                       "MC/ka/pos/prm/pt/numtofgoodmatch", "MC/pr/pos/prm/pt/numtofgoodmatch", "MC/de/pos/prm/pt/numtofgoodmatch",
+                                                                       "MC/tr/pos/prm/pt/numtofgoodmatch", "MC/he/pos/prm/pt/numtofgoodmatch", "MC/al/pos/prm/pt/numtofgoodmatch",
+                                                                       "MC/el/neg/prm/pt/numtofgoodmatch", "MC/mu/neg/prm/pt/numtofgoodmatch", "MC/pi/neg/prm/pt/numtofgoodmatch",
+                                                                       "MC/ka/neg/prm/pt/numtofgoodmatch", "MC/pr/neg/prm/pt/numtofgoodmatch", "MC/de/neg/prm/pt/numtofgoodmatch",
+                                                                       "MC/tr/neg/prm/pt/numtofgoodmatch", "MC/he/neg/prm/pt/numtofgoodmatch", "MC/al/neg/prm/pt/numtofgoodmatch"};
 
 //********************************************RD**********************************************************************************************
 static constexpr std::string_view hpt_numtof_str[NpCharge] = {"MC/el/pos/str/pt/numtof", "MC/mu/pos/str/pt/numtof", "MC/pi/pos/str/pt/numtof",
@@ -291,29 +321,29 @@ DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
 DECLARE_SOA_COLUMN(MultNTracksPVeta1, multNTracksPVeta1, int);
 DECLARE_SOA_DYNAMIC_COLUMN(CentFV0A, centFV0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(CentFT0A, centFT0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(CentFT0C, centFT0C, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFV0A, multZeqFV0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFT0A, multZeqFT0A, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFT0C, multZeqFT0C, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFDDA, multZeqFDDA, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqFDDC, multZeqFDDC, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultTracklets, multTracklets, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultTPC, multTPC, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(SelectionBit, selection_bit, //! Dummy
-                           [](aod::evsel::EventSelectionFlags v) -> bool { return true; });
+                           [](aod::evsel::EventSelectionFlags /*v*/) -> bool { return true; });
 
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
@@ -354,19 +384,19 @@ DECLARE_SOA_DYNAMIC_COLUMN(DCAz, dcaZ, //! Unpacked dcaz
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! Absolute value of signed pT
                            [](float signedPt) -> float { return std::abs(signedPt); });
 DECLARE_SOA_DYNAMIC_COLUMN(HasITS, hasITS, //! Dummy
-                           [](float v) -> bool { return true; });
+                           [](float /*v*/) -> bool { return true; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTPC, hasTPC, //! Dummy
-                           [](float v) -> bool { return true; });
+                           [](float /*v*/) -> bool { return true; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF measurement
                            [](float tofSignal) -> bool { return tofSignal > 0; });
 DECLARE_SOA_DYNAMIC_COLUMN(TRDSignal, trdSignal, //! Dummy
-                           [](float v) -> float { return 0.f; });
+                           [](float /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signedpt, float eta) -> float { return std::abs(signedpt) * cosh(eta); });
-DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float v) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
+DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float /*v*/) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
-DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float v) -> uint32_t { return 0; });          // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float v) -> uint8_t { return 0; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float /*v*/) -> uint32_t { return 0; });      // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float /*v*/) -> uint8_t { return 0; }); // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                            //! Track rapidity, computed under the mass assumption given as input
                            [](float signedPt, float eta, float mass) -> float {
                              const auto pt = std::abs(signedPt);
@@ -375,9 +405,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                  
                              const auto energy = sqrt(p * p + mass * mass);
                              return 0.5f * log((energy + pz) / (energy - pz));
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, [](float v) -> bool { return false; }); // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackITS, isQualityTrackITS, [](float v) -> bool { return false; });     // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, [](float v) -> bool { return false; });     // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsInAcceptanceTrack, isInAcceptanceTrack, [](float /*v*/) -> bool { return false; }); // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackITS, isQualityTrackITS, [](float /*v*/) -> bool { return false; });     // Dummy
+DECLARE_SOA_DYNAMIC_COLUMN(IsQualityTrackTPC, isQualityTrackTPC, [](float /*v*/) -> bool { return false; });     // Dummy
 
 } // namespace spectra
 

@@ -34,6 +34,7 @@ struct UpcCandProducer {
 
   Produces<o2::aod::UDFwdTracks> udFwdTracks;
   Produces<o2::aod::UDFwdTracksExtra> udFwdTracksExtra;
+  Produces<o2::aod::UDFwdTracksCls> udFwdTrkClusters;
   Produces<o2::aod::UDMcFwdTrackLabels> udFwdTrackLabels;
 
   Produces<o2::aod::UDTracks> udTracks;
@@ -105,6 +106,8 @@ struct UpcCandProducer {
     const AxisSpec axisTrgCounters{10, 0.5, 10.5, ""};
     histRegistry.add("hCountersTrg", "", kTH1F, {axisTrgCounters});
     histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(1, "TCE");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(2, "ZNA");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(3, "ZNC");
 
     const AxisSpec axisBcDist{201, 0.5, 200.5, ""};
     histRegistry.add("hDistToITSTPC", "", kTH1F, {axisBcDist});
@@ -264,7 +267,7 @@ struct UpcCandProducer {
   template <typename TBCs>
   void skimMCInfo(o2::aod::McCollisions const& mcCollisions,
                   o2::aod::McParticles const& mcParticles,
-                  TBCs const& bcs)
+                  TBCs const& /*bcs*/)
   {
     std::vector<int32_t> newEventIDs(mcCollisions.size(), -1);
 
@@ -279,7 +282,7 @@ struct UpcCandProducer {
         continue;
       int32_t mcEventID = mcPart.mcCollisionId();
       const auto& mcEvent = mcCollisions.iteratorAt(mcEventID);
-      bool isSignal = mcEvent.generatorsID() == fSignalGenID;
+      bool isSignal = mcEvent.getSourceId() == fSignalGenID;
       if (!isSignal) {
         continue;
       }
@@ -291,6 +294,8 @@ struct UpcCandProducer {
       }
     }
 
+    std::vector<int32_t> newMotherIDs{};
+
     // storing MC particles
     for (const auto& item : fNewPartIDs) {
       int32_t mcPartID = item.first;
@@ -298,22 +303,22 @@ struct UpcCandProducer {
       int32_t mcEventID = mcPart.mcCollisionId();
       int32_t newEventID = newEventIDs[mcEventID];
       // collecting new mother IDs
-      const auto& motherIDs = mcPart.mothersIds();
-      std::vector<int32_t> newMotherIDs;
-      newMotherIDs.reserve(motherIDs.size());
-      for (auto motherID : motherIDs) {
-        if (motherID >= nMCParticles) {
-          continue;
-        }
-        auto it = fNewPartIDs.find(motherID);
-        if (it != fNewPartIDs.end()) {
-          newMotherIDs.push_back(it->second);
+      if (mcPart.has_mothers()) {
+        const auto& motherIDs = mcPart.mothersIds();
+        for (auto motherID : motherIDs) {
+          if (motherID >= nMCParticles) {
+            continue;
+          }
+          auto it = fNewPartIDs.find(motherID);
+          if (it != fNewPartIDs.end()) {
+            newMotherIDs.push_back(it->second);
+          }
         }
       }
       // collecting new daughter IDs
-      const auto& daughterIDs = mcPart.daughtersIds();
       int32_t newDaughterIDs[2] = {-1, -1};
-      if (daughterIDs.size() > 0) {
+      if (mcPart.has_daughters()) {
+        const auto& daughterIDs = mcPart.daughtersIds();
         int32_t firstDaughter = daughterIDs.front();
         int32_t lastDaughter = daughterIDs.back();
         if (firstDaughter >= nMCParticles || lastDaughter >= nMCParticles) {
@@ -328,6 +333,7 @@ struct UpcCandProducer {
       }
       udMCParticles(newEventID, mcPart.pdgCode(), mcPart.getHepMCStatusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
                     mcPart.weight(), mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
+      newMotherIDs.clear();
     }
 
     // storing MC events
@@ -374,13 +380,31 @@ struct UpcCandProducer {
     }
   }
 
+  void fillFwdClusters(const std::vector<int>& trackIds,
+                       o2::aod::FwdTrkCls const& fwdTrkCls)
+  {
+    std::map<int, std::vector<int>> clustersPerTrack;
+    for (const auto& cls : fwdTrkCls) {
+      clustersPerTrack[cls.fwdtrackId()].push_back(cls.globalIndex());
+    }
+    int newId = 0;
+    for (auto trackId : trackIds) {
+      const auto& clusters = clustersPerTrack.at(trackId);
+      for (auto clsId : clusters) {
+        const auto& clsInfo = fwdTrkCls.iteratorAt(clsId);
+        udFwdTrkClusters(newId, clsInfo.x(), clsInfo.y(), clsInfo.z(), clsInfo.clInfo());
+      }
+      newId++;
+    }
+  }
+
   void fillBarrelTracks(BarrelTracks const& tracks,
                         std::vector<int64_t> const& trackIDs,
                         int32_t candID,
                         uint64_t globalBC,
                         uint64_t closestBcITSTPC,
                         const o2::aod::McTrackLabels* mcTrackLabels,
-                        std::unordered_map<int64_t, uint64_t>& ambBarrelTrBCs)
+                        std::unordered_map<int64_t, uint64_t>& /*ambBarrelTrBCs*/)
   {
     for (auto trackID : trackIDs) {
       const auto& track = tracks.iteratorAt(trackID);
@@ -438,9 +462,9 @@ struct UpcCandProducer {
                       uint64_t midbc,
                       std::vector<std::pair<uint64_t, int64_t>>& v,
                       BCsWithBcSels const& bcs,
-                      o2::aod::FT0s const& ft0s,
-                      o2::aod::FDDs const& fdds,
-                      o2::aod::FV0As const& fv0as)
+                      o2::aod::FT0s const& /*ft0s*/,
+                      o2::aod::FDDs const& /*fdds*/,
+                      o2::aod::FV0As const& /*fv0as*/)
   {
     auto it = std::find_if(v.begin(),
                            v.end(),
@@ -578,10 +602,10 @@ struct UpcCandProducer {
   template <typename TBCs>
   void collectBarrelTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
                            int trackType,
-                           TBCs const& bcs,
-                           o2::aod::Collisions const& collisions,
+                           TBCs const& /*bcs*/,
+                           o2::aod::Collisions const& /*collisions*/,
                            BarrelTracks const& barrelTracks,
-                           o2::aod::AmbiguousTracks const& ambBarrelTracks,
+                           o2::aod::AmbiguousTracks const& /*ambBarrelTracks*/,
                            std::unordered_map<int64_t, uint64_t>& ambBarrelTrBCs)
   {
     for (const auto& trk : barrelTracks) {
@@ -616,10 +640,10 @@ struct UpcCandProducer {
   template <typename TBCs>
   void collectForwardTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
                             int typeFilter,
-                            TBCs const& bcs,
-                            o2::aod::Collisions const& collisions,
+                            TBCs const& /*bcs*/,
+                            o2::aod::Collisions const& /*collisions*/,
                             ForwardTracks const& fwdTracks,
-                            o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                            o2::aod::AmbiguousFwdTracks const& /*ambFwdTracks*/,
                             std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
   {
     for (const auto& trk : fwdTracks) {
@@ -693,7 +717,7 @@ struct UpcCandProducer {
                                o2::aod::BCs const& bcs,
                                o2::aod::Collisions const& collisions,
                                o2::aod::FT0s const& ft0s,
-                               o2::aod::FDDs const& fdds,
+                               o2::aod::FDDs const& /*fdds*/,
                                o2::aod::FV0As const& fv0as,
                                o2::aod::Zdcs const& zdcs,
                                const o2::aod::McTrackLabels* mcBarrelTrackLabels)
@@ -755,6 +779,10 @@ struct UpcCandProducer {
     for (const auto& zdc : zdcs) {
       if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
         continue;
+      if (!(std::abs(zdc.timeZNA()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNA", 1);
+      if (!(std::abs(zdc.timeZNC()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNC", 1);
       auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
     }
@@ -969,6 +997,7 @@ struct UpcCandProducer {
   void createCandidatesSemiFwd(BarrelTracks const& barrelTracks,
                                o2::aod::AmbiguousTracks const& ambBarrelTracks,
                                ForwardTracks const& fwdTracks,
+                               o2::aod::FwdTrkCls const& fwdTrkClusters,
                                o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                                BCsWithBcSels const& bcs,
                                o2::aod::Collisions const& collisions,
@@ -1171,11 +1200,12 @@ struct UpcCandProducer {
   }
 
   void createCandidatesFwd(ForwardTracks const& fwdTracks,
+                           o2::aod::FwdTrkCls const& fwdTrkClusters,
                            o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                            o2::aod::BCs const& bcs,
                            o2::aod::Collisions const& collisions,
                            o2::aod::FT0s const& ft0s,
-                           o2::aod::FDDs const& fdds,
+                           o2::aod::FDDs const& /*fdds*/,
                            o2::aod::FV0As const& fv0as,
                            o2::aod::Zdcs const& zdcs,
                            const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
@@ -1231,6 +1261,10 @@ struct UpcCandProducer {
     for (const auto& zdc : zdcs) {
       if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
         continue;
+      if (!(std::abs(zdc.timeZNA()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNA", 1);
+      if (!(std::abs(zdc.timeZNC()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNC", 1);
       auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
     }
@@ -1246,6 +1280,8 @@ struct UpcCandProducer {
     float dummyZ = 0.;
 
     int32_t runNumber = bcs.iteratorAt(0).runNumber();
+
+    std::vector<int> selTrackIds{};
 
     // storing n-prong matches
     int32_t candID = 0;
@@ -1330,6 +1366,7 @@ struct UpcCandProducer {
       for (auto id : trkCandIDs) {
         auto tr = fwdTracks.iteratorAt(id);
         netCharge += tr.sign();
+        selTrackIds.push_back(id);
       }
       // store used tracks
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
@@ -1350,6 +1387,9 @@ struct UpcCandProducer {
       trkCandIDs.clear();
     }
 
+    fillFwdClusters(selTrackIds, fwdTrkClusters);
+
+    selTrackIds.clear();
     ambFwdTrBCs.clear();
     bcsMatchedTrIdsMID.clear();
     bcsMatchedTrIdsMCH.clear();
@@ -1364,6 +1404,7 @@ struct UpcCandProducer {
   // forward:     n fwd tracks + 0 barrel tracks
   // semiforward: n fwd tracks + m barrel tracks
   void processSemiFwd(ForwardTracks const& fwdTracks,
+                      o2::aod::FwdTrkCls const& fwdTrkClusters,
                       o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                       BarrelTracks const& barrelTracks,
                       o2::aod::AmbiguousTracks const& ambTracks,
@@ -1375,7 +1416,7 @@ struct UpcCandProducer {
   {
     fDoMC = false;
     createCandidatesSemiFwd(barrelTracks, ambTracks,
-                            fwdTracks, ambFwdTracks,
+                            fwdTracks, fwdTrkClusters, ambFwdTracks,
                             bcs, collisions,
                             ft0s, fdds, fv0as,
                             (o2::aod::McTrackLabels*)nullptr, (o2::aod::McFwdTrackLabels*)nullptr);
@@ -1405,6 +1446,7 @@ struct UpcCandProducer {
   // forward:     n fwd tracks + 0 barrel tracks
   // semiforward: n fwd tracks + m barrel tracks
   void processSemiFwdMC(ForwardTracks const& fwdTracks,
+                        o2::aod::FwdTrkCls const& fwdTrkClusters,
                         o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                         BarrelTracks const& barrelTracks,
                         o2::aod::AmbiguousTracks const& ambTracks,
@@ -1419,7 +1461,7 @@ struct UpcCandProducer {
     fDoMC = true;
     skimMCInfo(mcCollisions, mcParticles, bcs);
     createCandidatesSemiFwd(barrelTracks, ambTracks,
-                            fwdTracks, ambFwdTracks,
+                            fwdTracks, fwdTrkClusters, ambFwdTracks,
                             bcs, collisions,
                             ft0s, fdds, fv0as,
                             &mcBarrelTrackLabels, &mcFwdTrackLabels);
@@ -1450,6 +1492,7 @@ struct UpcCandProducer {
   // create candidates for forward region
   // forward: n fwd tracks
   void processForward(ForwardTracks const& fwdTracks,
+                      o2::aod::FwdTrkCls const& fwdTrkClusters,
                       o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                       o2::aod::BCs const& bcs,
                       o2::aod::Collisions const& collisions,
@@ -1459,13 +1502,14 @@ struct UpcCandProducer {
                       o2::aod::Zdcs const& zdcs)
   {
     fDoMC = false;
-    createCandidatesFwd(fwdTracks, ambFwdTracks,
+    createCandidatesFwd(fwdTracks, fwdTrkClusters, ambFwdTracks,
                         bcs, collisions,
                         ft0s, fdds, fv0as, zdcs,
                         (o2::aod::McFwdTrackLabels*)nullptr);
   }
 
   void processForwardMC(ForwardTracks const& fwdTracks,
+                        o2::aod::FwdTrkCls const& fwdTrkClusters,
                         o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                         o2::aod::BCs const& bcs,
                         o2::aod::Collisions const& collisions,
@@ -1478,10 +1522,11 @@ struct UpcCandProducer {
   {
     fDoMC = true;
     skimMCInfo(mcCollisions, mcParticles, bcs);
-    createCandidatesFwd(fwdTracks, ambFwdTracks,
+    createCandidatesFwd(fwdTracks, fwdTrkClusters, ambFwdTracks,
                         bcs, collisions,
                         ft0s, fdds, fv0as, zdcs,
                         &mcFwdTrackLabels);
+    fNewPartIDs.clear();
   }
 
   PROCESS_SWITCH(UpcCandProducer, processSemiFwd, "Produce candidates in semiforward/forward region", false);

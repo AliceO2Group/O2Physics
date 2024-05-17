@@ -46,7 +46,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfD0Bases, "_0");
 
 namespace bkglc
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, Hf3PBases, "_0");
 } // namespace bkglc
 
 namespace bkgbplus

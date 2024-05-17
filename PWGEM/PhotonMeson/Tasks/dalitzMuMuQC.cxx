@@ -37,13 +37,13 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNmumu>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsNmumu>;
 using MyCollision = MyCollisions::iterator;
 
-using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMReducedEventIds>;
+using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMEventIds>;
 using MyDalitzMuMu = MyDalitzMuMus::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds, aod::EMPrimaryMuonsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMPrimaryMuonsPrefilterBit>;
 using MyTrack = MyTracks::iterator;
 
 struct DalitzMuMuQC {
@@ -144,19 +144,19 @@ struct DalitzMuMuQC {
   Partition<MyDalitzMuMus> lsmm_pairs = o2::aod::dalitzmumu::sign == -1;
 
   SliceCache cache;
-  Preslice<MyDalitzMuMus> perCollision = aod::dalitzmumu::emreducedeventId;
-  Preslice<MyTracks> perCollision_track = aod::emprimarymuon::emreducedeventId;
+  Preslice<MyDalitzMuMus> perCollision = aod::dalitzmumu::emeventId;
+  Preslice<MyTracks> perCollision_track = aod::emprimarymuon::emeventId;
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
   std::vector<uint64_t> used_trackIds;
 
-  void processQC(MyCollisions const& collisions, MyDalitzMuMus const& dileptons, MyTracks const& tracks)
+  void processQC(MyCollisions const&, MyDalitzMuMus const&, MyTracks const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzmumu = static_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
     for (auto& collision : grouped_collisions) {
@@ -173,9 +173,9 @@ struct DalitzMuMuQC {
       reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
       reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
-      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
-      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
-      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
+      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzmumu::emeventId, collision.globalIndex(), cache);
+      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzmumu::emeventId, collision.globalIndex(), cache);
+      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzmumu::emeventId, collision.globalIndex(), cache);
 
       for (const auto& cut : fDalitzMuMuCuts) {
         THashList* list_dalitzmumu_cut = static_cast<THashList*>(list_dalitzmumu->FindObject(cut.GetName()));
@@ -186,8 +186,9 @@ struct DalitzMuMuQC {
         for (auto& uls_pair : uls_pairs_per_coll) {
           auto pos = uls_pair.template posTrack_as<MyTracks>();
           auto ele = uls_pair.template negTrack_as<MyTracks>();
+          std::tuple<MyTrack, MyTrack, float> uls_pair_tmp = std::make_tuple(pos, ele, -1);
 
-          if (cut.IsSelected<MyTracks>(uls_pair)) {
+          if (cut.IsSelected<MyTracks>(uls_pair_tmp)) {
             dca_pos_3d = pos.dca3DinSigma();
             dca_ele_3d = ele.dca3DinSigma();
             dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
@@ -195,7 +196,6 @@ struct DalitzMuMuQC {
             values[0] = uls_pair.mass();
             values[1] = uls_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = uls_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
             nuls++;
             for (auto& track : {pos, ele}) {
@@ -211,7 +211,8 @@ struct DalitzMuMuQC {
         for (auto& lspp_pair : lspp_pairs_per_coll) {
           auto pos = lspp_pair.template posTrack_as<MyTracks>();
           auto ele = lspp_pair.template negTrack_as<MyTracks>();
-          if (cut.IsSelected<MyTracks>(lspp_pair)) {
+          std::tuple<MyTrack, MyTrack, float> lspp_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (cut.IsSelected<MyTracks>(lspp_pair_tmp)) {
             dca_pos_3d = pos.dca3DinSigma();
             dca_ele_3d = ele.dca3DinSigma();
             dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
@@ -219,7 +220,6 @@ struct DalitzMuMuQC {
             values[0] = lspp_pair.mass();
             values[1] = lspp_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = lspp_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_lspp_same"))->Fill(values);
             nlspp++;
           }
@@ -229,7 +229,8 @@ struct DalitzMuMuQC {
         for (auto& lsmm_pair : lsmm_pairs_per_coll) {
           auto pos = lsmm_pair.template posTrack_as<MyTracks>();
           auto ele = lsmm_pair.template negTrack_as<MyTracks>();
-          if (cut.IsSelected<MyTracks>(lsmm_pair)) {
+          std::tuple<MyTrack, MyTrack, float> lsmm_pair_tmp = std::make_tuple(pos, ele, -1);
+          if (cut.IsSelected<MyTracks>(lsmm_pair_tmp)) {
             dca_pos_3d = pos.dca3DinSigma();
             dca_ele_3d = ele.dca3DinSigma();
             dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
@@ -237,7 +238,6 @@ struct DalitzMuMuQC {
             values[0] = lsmm_pair.mass();
             values[1] = lsmm_pair.pt();
             values[2] = dca_ee_3d;
-            values[3] = lsmm_pair.phiv();
             reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_lsmm_same"))->Fill(values);
             nlsmm++;
           }
@@ -263,7 +263,7 @@ struct DalitzMuMuQC {
 
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_subsys = (o2::aod::emreducedevent::nmumuuls >= 1) || (o2::aod::emreducedevent::nmumulspp >= 1) || (o2::aod::emreducedevent::nmumulsmm >= 1);
+  Filter collisionFilter_subsys = (o2::aod::emevent::nmumuuls >= 1) || (o2::aod::emevent::nmumulspp >= 1) || (o2::aod::emevent::nmumulsmm >= 1);
   using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to mixed event.
 
   // mu+, mu- enter to event mixing, only if any pair exists. If you want to do mixed event, please store LS for mumu
@@ -271,9 +271,9 @@ struct DalitzMuMuQC {
   void MixedEventPairing(TEvents const& collisions, TTracks const& tracks, TMixedBinning const& colBinning)
   {
     THashList* list_dalitzmumu = static_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
-    double values[4] = {0, 0, 0, 0};
+    double values[3] = {0, 0, 0};
     ROOT::Math::PtEtaPhiMVector v1, v2, v12;
-    float phiv = 0;
+    // float phiv = 0;
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
@@ -297,6 +297,10 @@ struct DalitzMuMuQC {
       for (auto& cut : fDalitzMuMuCuts) {
         THashList* list_dalitzmumu_cut = static_cast<THashList*>(list_dalitzmumu->FindObject(cut.GetName()));
         for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks_coll1, tracks_coll2))) {
+          if (t1.trackId() == t2.trackId()) { // this is protection against pairing identical 2 tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
+            continue;
+          }
+
           v1 = ROOT::Math::PtEtaPhiMVector(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
           v2 = ROOT::Math::PtEtaPhiMVector(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
           v12 = v1 + v2;
@@ -308,9 +312,8 @@ struct DalitzMuMuQC {
           values[0] = v12.M();
           values[1] = v12.Pt();
           values[2] = dca_ee_3d;
-          values[3] = phiv;
 
-          if (cut.IsSelectedTrack(t1) && cut.IsSelectedTrack(t2) && cut.IsSelectedPair(v12.M(), dca_ee_3d, phiv)) {
+          if (cut.IsSelectedTrack(t1) && cut.IsSelectedTrack(t2) && cut.IsSelectedPair(t1, t2, -1)) {
             if (t1.sign() * t2.sign() < 0) {
               reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
             } else if (t1.sign() > 0 && t2.sign() > 0) {
@@ -338,7 +341,7 @@ struct DalitzMuMuQC {
   }
   PROCESS_SWITCH(DalitzMuMuQC, processEventMixing, "run Dalitz MuMu QC event mixing", true);
 
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DalitzMuMuQC, processDummy, "Dummy function", false);
 };
 

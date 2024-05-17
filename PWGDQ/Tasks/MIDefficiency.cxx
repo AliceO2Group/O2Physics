@@ -101,12 +101,12 @@ struct midEfficiency {
   } // end of init
 
   template <typename TEvent, typename Muons>
-  void runMidEffCounters(TEvent const& event, Muons const& muons)
+  void runMidEffCounters(TEvent const& /*event*/, Muons const& muons)
   {
     LOGF(debug, "Calling process function");
 
     // Loop over all forward tracks
-    LOGP(info, "collision index = {} ,  nTracks = {}", event.globalIndex(), muons.size());
+    // LOGP(info, "collision index = {} ,  nTracks = {}", event.globalIndex(), muons.size());
     for (auto& track : muons) {
 
       LOGF(debug, "Processing a track");
