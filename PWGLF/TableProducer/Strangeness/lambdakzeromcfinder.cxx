@@ -187,7 +187,7 @@ struct lambdakzeromcfinder {
     if (mcParticle.pdgCode() == 22) {
       positivePdg = -11;
       negativePdg = +11;
-      relevantProcess = 5; //look for pair production if photon
+      relevantProcess = 5; // look for pair production if photon
     }
     if (mcParticle.pdgCode() == 3122) {
       positivePdg = 2212;

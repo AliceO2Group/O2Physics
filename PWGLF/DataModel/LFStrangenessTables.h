@@ -133,11 +133,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTRD, hasTRD, //! Flag to check if track has a TRD 
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF measurement
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasITSTracker, hasITSTracker, //! Flag to check if track is from ITS tracker
-                           [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { 
-                            return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl > -1e-3f) : false; });
+                           [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl > -1e-3f) : false; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasITSAfterburner, hasITSAfterburner, //! Flag to check if track is from ITS AB
-                           [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { 
-                            return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl <  -1e-3f) : false; });
+                           [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl < -1e-3f) : false; });
 } // namespace dautrack
 
 DECLARE_SOA_TABLE(DauTrackExtras_000, "AOD", "DAUTRACKEXTRA", //! detector properties of decay daughters
@@ -150,7 +148,7 @@ DECLARE_SOA_TABLE(DauTrackExtras_000, "AOD", "DAUTRACKEXTRA", //! detector prope
                   dautrack::HasITS<dautrack::DetectorMap>,
                   dautrack::HasTPC<dautrack::DetectorMap>,
                   dautrack::HasTRD<dautrack::DetectorMap>,
-                  dautrack::HasTOF<dautrack::DetectorMap>, 
+                  dautrack::HasTOF<dautrack::DetectorMap>,
                   dautrack::HasITSTracker<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>,
                   dautrack::HasITSAfterburner<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>);
 
@@ -165,7 +163,7 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_001, "AOD", "DAUTRACKEXTRA", 1, //! d
                             dautrack::HasITS<dautrack::DetectorMap>,
                             dautrack::HasTPC<dautrack::DetectorMap>,
                             dautrack::HasTRD<dautrack::DetectorMap>,
-                            dautrack::HasTOF<dautrack::DetectorMap>, 
+                            dautrack::HasTOF<dautrack::DetectorMap>,
                             dautrack::HasITSTracker<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>,
                             dautrack::HasITSAfterburner<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>);
 
