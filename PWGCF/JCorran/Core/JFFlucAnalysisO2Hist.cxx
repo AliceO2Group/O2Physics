@@ -14,6 +14,7 @@
 #include "JFFlucAnalysisO2Hist.h"
 #include <vector>
 #include <memory>
+#include "CommonConstants/MathConstants.h"
 
 using namespace o2;
 
