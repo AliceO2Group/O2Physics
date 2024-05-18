@@ -70,12 +70,12 @@ void uploadOTSobjects(std::string inputList)
       cefpTree->SetBranchAddress("selMask", &bci.selMask);
       cefpTree->SetBranchAddress("triMask", &bci.trigMask);
       for (int i = 0; i < cefpTree->GetEntries(); i++) {
-        if((i < Nmax) || (Nmax == 0)) {
+        if ((i < Nmax) || (Nmax == 0)) {
           cefpTree->GetEntry(i);
           // Check consistency
-          if(~bci.trigMask & bci.selMask) {
+          if (~bci.trigMask & bci.selMask) {
             std::cout << "ERROR selMask is not subset of trigMask:";
-            //bcAO2D.print();
+            // bcAO2D.print();
           }
           bcRanges.push_back({bci.bcAOD, bci.bcEvSel});
           filterBitMask.push_back({bci.trigMask, 0ull});
