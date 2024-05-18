@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef V0SELECTIONGROUP_H
-#define V0SELECTIONGROUP_H
+#ifndef PWGLF_UTILS_V0SELECTIONGROUP_H_
+#define PWGLF_UTILS_V0SELECTIONGROUP_H_
 
 #include <iosfwd>
 #include <Rtypes.h>
@@ -102,4 +102,4 @@ class v0SelectionGroup
   ClassDefNV(v0SelectionGroup, 1);
 };
 
-#endif // V0SELECTIONGROUP_H
+#endif // PWGLF_UTILS_V0SELECTIONGROUP_H_

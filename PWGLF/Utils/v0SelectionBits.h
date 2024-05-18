@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef V0SELECTIONBITS_H
-#define V0SELECTIONBITS_H
+#ifndef PWGLF_UTILS_V0SELECTIONBITS_H_
+#define PWGLF_UTILS_V0SELECTIONBITS_H_
 
 namespace v0data
 {
@@ -59,4 +59,4 @@ enum selection : uint64_t { selCosPA = 0,
 };
 } // namespace v0data
 
-#endif // V0SELECTIONBITS_H
+#endif // PWGLF_UTILS_V0SELECTIONBITS_H_
