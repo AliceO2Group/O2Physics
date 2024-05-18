@@ -381,10 +381,10 @@ struct qaMatchEff {
 
     //
     //  local X,Z of track
-    histos.add("data/control/trackXhist_tpcONLY", "x distribution - data TPC ONLY tag", kTH1D, {axisX}, true);
-    histos.add("data/control/trackXhist_tpcits", "x distribution - data TPC+ITS tag", kTH1D, {axisX}, true);
-    histos.add("data/control/trackZhist_tpcONLY", "z distribution - data TPC ONLY tag", kTH1D, {axisZ}, true);
-    histos.add("data/control/trackZhist_tpcits", "z distribution - data TPC+ITS tag", kTH1D, {axisZ}, true);
+    // histos.add("data/control/trackXhist_tpcONLY", "x distribution - data TPC ONLY tag", kTH1D, {axisX}, true);
+    // histos.add("data/control/trackXhist_tpcits", "x distribution - data TPC+ITS tag", kTH1D, {axisX}, true);
+    // histos.add("data/control/trackZhist_tpcONLY", "z distribution - data TPC ONLY tag", kTH1D, {axisZ}, true);
+    // histos.add("data/control/trackZhist_tpcits", "z distribution - data TPC+ITS tag", kTH1D, {axisZ}, true);
 
     // pt, phi, eta TOF tagged
     histos.add("data/pthist_toftpc", "#it{p}_{T} distribution - data TOF+TPC tag", kTH1D, {axisPt}, true);
@@ -1849,10 +1849,10 @@ struct qaMatchEff {
           //   if (!trkWITS)
           //     histos.fill(HIST("MC/control/ptptconfTPCo"), reco_pt, tpcinner_pt);
           // }
-          if (!trkWITS) {
-            histos.get<TH1>(HIST("MC/control/trackXhist_tpcONLY"))->Fill(track.x());
-            histos.get<TH1>(HIST("MC/control/trackZhist_tpcONLY"))->Fill(track.z());
-          }
+          // if (!trkWITS) {
+          //   histos.get<TH1>(HIST("MC/control/trackXhist_tpcONLY"))->Fill(track.x());
+          //   histos.get<TH1>(HIST("MC/control/trackZhist_tpcONLY"))->Fill(track.z());
+          // }
           histos.get<TH1>(HIST("MC/qopthist_tpc"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(track.phi());
@@ -1985,10 +1985,10 @@ struct qaMatchEff {
           //   if (!trkWITS)
           //     histos.fill(HIST("data/control/ptptconfTPCo"), reco_pt, tpcinner_pt);
           // }
-          if (!trkWITS) {
-            histos.get<TH1>(HIST("data/control/trackXhist_tpcONLY"))->Fill(track.x());
-            histos.get<TH1>(HIST("data/control/trackZhist_tpcONLY"))->Fill(track.z());
-          }
+          // if (!trkWITS) {
+          //   histos.get<TH1>(HIST("data/control/trackXhist_tpcONLY"))->Fill(track.x());
+          //   histos.get<TH1>(HIST("data/control/trackZhist_tpcONLY"))->Fill(track.z());
+          // }
           histos.get<TH1>(HIST("data/qopthist_tpc"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(track.phi());
@@ -2268,8 +2268,8 @@ struct qaMatchEff {
             histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(track.eta());
             //
-            histos.get<TH1>(HIST("MC/control/trackXhist_tpcits"))->Fill(track.x());
-            histos.get<TH1>(HIST("MC/control/trackZhist_tpcits"))->Fill(track.z());
+            // histos.get<TH1>(HIST("MC/control/trackXhist_tpcits"))->Fill(track.x());
+            // histos.get<TH1>(HIST("MC/control/trackZhist_tpcits"))->Fill(track.z());
 
             if (trkWTOF) {
               histos.get<TH1>(HIST("MC/pthist_toftpcits"))->Fill(trackPt);
@@ -2299,8 +2299,8 @@ struct qaMatchEff {
             //
             histos.get<TH1>(HIST("data/qopthist_tpcits"))->Fill(track.signed1Pt());
             //
-            histos.get<TH1>(HIST("data/control/trackXhist_tpcits"))->Fill(track.x());
-            histos.get<TH1>(HIST("data/control/trackZhist_tpcits"))->Fill(track.z());
+            // histos.get<TH1>(HIST("data/control/trackXhist_tpcits"))->Fill(track.x());
+            // histos.get<TH1>(HIST("data/control/trackZhist_tpcits"))->Fill(track.z());
             //
             //  PID is applied
             if (isPion) {

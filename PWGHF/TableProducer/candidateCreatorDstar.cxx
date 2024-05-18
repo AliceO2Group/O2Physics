@@ -338,7 +338,8 @@ struct HfCandidateCreatorDstar {
                        rowTrackIndexDstar.prong0Id(), rowTrackIndexDstar.prongD0Id(),
                        pVecSoftPi[0], pVecSoftPi[1], pVecSoftPi[2],
                        signSoftPi,
-                       impactParameterPi.getY(), std::sqrt(impactParameterPi.getSigmaY2()),
+                       impactParameterPi.getY(), impactParameterPi.getZ(),
+                       std::sqrt(impactParameterPi.getSigmaY2()), std::sqrt(impactParameterPi.getSigmaZ2()),
                        pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
                        pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2],
                        prongD0.prong0Id(), prongD0.prong1Id());
@@ -351,7 +352,9 @@ struct HfCandidateCreatorDstar {
                     pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
                     pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2],
                     impactParameter0.getY(), impactParameter1.getY(),
+                    impactParameter0.getZ(), impactParameter1.getZ(),
                     std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
+                    std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()),
                     prongD0.prong0Id(), prongD0.prong1Id(),
                     prongD0.hfflag());
 

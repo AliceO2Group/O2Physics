@@ -86,7 +86,7 @@ struct kstarqa {
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
-  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 120, "Number of TPC cluster"};
   Configurable<float> cfgRCRFC{"cfgRCRFC", 0.8f, "Crossed Rows to Findable Clusters"};
   Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 36.0, "ITS Chi2/NCl"};
   Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 4.0, "TPC Chi2/NCl"};
@@ -111,6 +111,7 @@ struct kstarqa {
   Configurable<float> pTbinhigh{"pTbinhigh", 20.0, "pT bin high"};
   ConfigurableAxis binsMultPlot{"binsCent", {201, -0.5f, 200.5f}, "Binning of the centrality axis for plots"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", true, "avoid split track in MC"};
+  Configurable<bool> AllGenCollisions{"AllGenCollisions", true, "To fill all generated collisions for the signal loss calculations"};
 
   void init(InitContext const&)
   {
@@ -198,8 +199,8 @@ struct kstarqa {
         return false;
       if (cfgPVContributor && !candidate.isPVContributor())
         return false;
-      if (cfgPrimaryTrack && !candidate.isPrimaryTrack())
-        return false;
+      // if (cfgPrimaryTrack && !candidate.isPrimaryTrack())
+      //   return false;
       if (cfgGlobalWoDCATrack && !candidate.isGlobalTrackWoDCA())
         return false;
       if (cfgGlobalTrack && !candidate.isGlobalTrack())
@@ -639,8 +640,8 @@ struct kstarqa {
         }
       }
     }
-    // if (Nchinel > 0 && std::abs(mcCollision.posZ()) < cutzvertex)
-    // histos.fill(HIST("events_check"), 2.5);
+    if (Nchinel > 0 && std::abs(mcCollision.posZ()) < cutzvertex)
+      histos.fill(HIST("events_check"), 2.5);
     std::vector<int64_t> SelectedEvents(collisions.size());
     int nevts = 0;
     for (const auto& collision : collisions) {
@@ -659,38 +660,38 @@ struct kstarqa {
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
     SelectedEvents.resize(nevts);
-    histos.fill(HIST("events_check"), 2.5);
+    histos.fill(HIST("events_check"), 3.5);
     const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
 
-    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+    if (!AllGenCollisions && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
-    histos.fill(HIST("events_check"), 3.5);
+    histos.fill(HIST("events_check"), 4.5);
     for (auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.y()) >= 0.5) {
         continue;
       }
-      histos.fill(HIST("events_check"), 4.5);
+      histos.fill(HIST("events_check"), 5.5);
       if (abs(mcParticle.pdgCode()) != 313) {
         continue;
       }
-      histos.fill(HIST("events_check"), 5.5);
+      histos.fill(HIST("events_check"), 6.5);
       auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
       if (kDaughters.size() != 2) {
         continue;
       }
-      histos.fill(HIST("events_check"), 6.5);
+      histos.fill(HIST("events_check"), 7.5);
       auto passkaon = false;
       auto passpion = false;
       for (auto kCurrentDaughter : kDaughters) {
         if (!kCurrentDaughter.isPhysicalPrimary()) {
           continue;
         }
-        histos.fill(HIST("events_check"), 7.5);
+        histos.fill(HIST("events_check"), 8.5);
         if (abs(kCurrentDaughter.pdgCode()) == 321) {
           // if (kCurrentDaughter.pdgCode() == +321) {
           passkaon = true;
-          histos.fill(HIST("events_check"), 8.5);
+          histos.fill(HIST("events_check"), 9.5);
         } else if (abs(kCurrentDaughter.pdgCode()) == 211) {
           //} else if (kCurrentDaughter.pdgCode() == -321) {
           passpion = true;

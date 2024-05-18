@@ -91,10 +91,16 @@ enum class InputFeaturesDstarToD0Pi : uint8_t {
   ptSoftPi,
   impactParameter0,
   impactParameter1,
+  impactParameterZ0,
+  impactParameterZ1,
   impParamSoftPi,
+  impParamZSoftPi,
   impactParameterNormalised0,
   impactParameterNormalised1,
+  impactParameterZNormalised0,
+  impactParameterZNormalised1,
   normalisedImpParamSoftPi,
+  normalisedImpParamZSoftPi,
   cosThetaStarD0,
   massD0,
   deltaMassD0,
@@ -155,10 +161,16 @@ class HfMlResponseDstarToD0Pi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DSTAR(ptSoftPi);
         CHECK_AND_FILL_VEC_DSTAR(impactParameter0);
         CHECK_AND_FILL_VEC_DSTAR(impactParameter1);
+        CHECK_AND_FILL_VEC_DSTAR(impactParameterZ0);
+        CHECK_AND_FILL_VEC_DSTAR(impactParameterZ1);
         CHECK_AND_FILL_VEC_DSTAR(impParamSoftPi);
+        CHECK_AND_FILL_VEC_DSTAR(impParamZSoftPi);
         CHECK_AND_FILL_VEC_DSTAR(impactParameterNormalised0);
         CHECK_AND_FILL_VEC_DSTAR(impactParameterNormalised1);
+        CHECK_AND_FILL_VEC_DSTAR(impactParameterZNormalised0);
+        CHECK_AND_FILL_VEC_DSTAR(impactParameterZNormalised1);
         CHECK_AND_FILL_VEC_DSTAR(normalisedImpParamSoftPi);
+        CHECK_AND_FILL_VEC_DSTAR(normalisedImpParamZSoftPi);
         CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(cosThetaStarD0, cosThetaStarD0Bar, cosThetaStarD0);
         CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(invMassD0, invMassD0Bar, massD0);
         CHECK_AND_FILL_VEC_DSTAR_DELTA_MASS_D0(deltaMassD0);
@@ -205,10 +217,16 @@ class HfMlResponseDstarToD0Pi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DSTAR(ptSoftPi),
       FILL_MAP_DSTAR(impactParameter0),
       FILL_MAP_DSTAR(impactParameter1),
+      FILL_MAP_DSTAR(impactParameterZ0),
+      FILL_MAP_DSTAR(impactParameterZ1),
       FILL_MAP_DSTAR(impParamSoftPi),
+      FILL_MAP_DSTAR(impParamZSoftPi),
       FILL_MAP_DSTAR(impactParameterNormalised0),
       FILL_MAP_DSTAR(impactParameterNormalised1),
+      FILL_MAP_DSTAR(impactParameterZNormalised0),
+      FILL_MAP_DSTAR(impactParameterZNormalised1),
       FILL_MAP_DSTAR(normalisedImpParamSoftPi),
+      FILL_MAP_DSTAR(normalisedImpParamZSoftPi),
       FILL_MAP_DSTAR(cosThetaStarD0),
       FILL_MAP_DSTAR(massD0),
       FILL_MAP_DSTAR(deltaMassD0),

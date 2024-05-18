@@ -30,6 +30,10 @@ std::vector<int> VarManager::fgRunList = {0};
 float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
 float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
 float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
+int VarManager::fgITSROFbias = 0;
+int VarManager::fgITSROFlength = 100;
+int VarManager::fgITSROFBorderMarginLow = 0;
+int VarManager::fgITSROFBorderMarginHigh = 0;
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
