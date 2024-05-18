@@ -37,6 +37,7 @@ using namespace o2::constants::math;
 struct UpcJpsiCentralBarrel {
   // configurable axes
   ConfigurableAxis IVMAxis{"IVMAxis", {350.0f, 2.0f, 4.5f}, "M_#it{inv} (GeV/#it{c}^{2})"};
+  ConfigurableAxis IVMAxisWide{"IVMAxisWide", {350.0f, 0.0f, 4.5f}, "M_#it{inv} (GeV/#it{c}^{2})"};
   ConfigurableAxis ptAxis{"ptAxis", {250.0f, 0.1f, 3.0f}, "#it{p}_T (GeV/#it{c})"};
   ConfigurableAxis pAxis{"pAxis", {250.0f, 0.1f, 3.0f}, "#it{p} (GeV/#it{c})"};
   ConfigurableAxis etaAxis{"etaAxis", {250.0f, -1.5f, 1.5f}, "#eta (-)"};
@@ -49,10 +50,12 @@ struct UpcJpsiCentralBarrel {
 
   // configurable cuts (modify in json)
   Configurable<int> TPCNClsCrossedRows{"TPCNClsCrossedRows", 70, "number of crossed rows in TPC"};
-  Configurable<int> TPCNClsCrossedRows100{"TPCNClsCrossedRows100", 100, "number of crossed rows in TPC"};
   Configurable<bool> TOFBothTracks{"TOFBothTracks", false, "both candidate tracks have TOF hits"};
   Configurable<bool> TOFOneTrack{"TOFOneTrack", false, "one candidate track has TOF hits"};
+  Configurable<bool> TOFBothProtons{"TOFBothProtons", false, "both candidate protons have TOF hits"};
+  Configurable<bool> TOFOneProton{"TOFOneProton", false, "one candidate proton has TOF hits"};
   Configurable<bool> TPCNsigmaCut{"TPCNsigmaCut", false, "cut on nSigma"};
+  Configurable<bool> TPCPIDOnly{"TPCPIDOnly", false, "Only TPC PID"};
   Configurable<float> TPCNSigmaMu{"TPCNSigmaMu", 3, "PID for TPC Mu track"};
   Configurable<float> EtaCut{"EtaCut", 0.9f, "acceptance cut per track"};
   Configurable<float> RapCut{"RapCut", 0.8f, "choose event in midrapidity"};
@@ -131,6 +134,7 @@ struct UpcJpsiCentralBarrel {
   {
 
     const AxisSpec axisIVM{IVMAxis, "IVM axis"};
+    const AxisSpec axisIVMWide{IVMAxisWide, "IVM axis wide"};
     const AxisSpec axispt{ptAxis, "pt axis"};
     const AxisSpec axiseta{etaAxis, "eta axis"};
     const AxisSpec axisCounter{countAxis, "counter axis"};
@@ -149,6 +153,10 @@ struct UpcJpsiCentralBarrel {
     Statistics.add("Statistics/hNumberGTel", "hNumberGTel", {HistType::kTH1F, {axisCounter}});
     Statistics.add("Statistics/hNumberGTmu", "hNumberGTmu", {HistType::kTH1F, {axisCounter}});
     Statistics.add("Statistics/hNumberGTp", "hNumberGTp", {HistType::kTH1F, {axisCounter}});
+    Statistics.add("Statistics/hNumberGTelSigma", "hNumberGTelSigma", {HistType::kTH1F, {axisCounter}});
+    Statistics.add("Statistics/hNumberGTmuSigma", "hNumberGTmuSigma", {HistType::kTH1F, {axisCounter}});
+    Statistics.add("Statistics/hNumberGTpSigma", "hNumberGTpSigma", {HistType::kTH1F, {axisCounter}});
+    Statistics.add("Statistics/hNumberGTpSigmaTOF", "hNumberGTpSigmaTOF", {HistType::kTH1F, {axisCounter}});
 
     // raw data histograms
     RawData.add("RawData/hTrackPt", "hTrackPt", {HistType::kTH1F, {axispt}});
@@ -193,8 +201,10 @@ struct UpcJpsiCentralBarrel {
     TGmuCand.add("TGmuCand/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
     TGmuCand.add("TGmuCand/hTrackITSNcls1", "hTrackITSNcls1", {HistType::kTH1F, {axisCounter}});
     TGmuCand.add("TGmuCand/hTrackITSNcls2", "hTrackITSNcls2", {HistType::kTH1F, {axisCounter}});
+    TGmuCand.add("TGmuCand/hPairPt", "hPairPt", {HistType::kTH1F, {axispt}});
+    TGmuCand.add("TGmuCand/hPairIVM", "hPairIVM", {HistType::kTH1F, {axisIVMWide}});
     TGmuCand.add("TGmuCand/hJpsiPt", "hJpsiPt", {HistType::kTH1F, {axispt}});
-    TGmuCand.add("TGmuCand/hJpsiIVM", "hJpsiIVM", {HistType::kTH1F, {axisIVM}});
+    TGmuCand.add("TGmuCand/hJpsiRap", "hJpsiRap", {HistType::kTH1F, {axiseta}});
 
     // TGel histograms
     TGel.add("TGel/hTrackPt1", "hTrackPt1", {HistType::kTH1F, {axispt}});
@@ -213,8 +223,10 @@ struct UpcJpsiCentralBarrel {
     TGelCand.add("TGelCand/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
     TGelCand.add("TGelCand/hTrackITSNcls1", "hTrackITSNcls1", {HistType::kTH1F, {axisCounter}});
     TGelCand.add("TGelCand/hTrackITSNcls2", "hTrackITSNcls2", {HistType::kTH1F, {axisCounter}});
+    TGelCand.add("TGelCand/hPairPt", "hPairPt", {HistType::kTH1F, {axispt}});
+    TGelCand.add("TGelCand/hPairIVM", "hPairIVM", {HistType::kTH1F, {axisIVMWide}});
     TGelCand.add("TGelCand/hJpsiPt", "hJpsiPt", {HistType::kTH1F, {axispt}});
-    TGelCand.add("TGelCand/hJpsiIVM", "hJpsiIVM", {HistType::kTH1F, {axisIVM}});
+    TGelCand.add("TGelCand/hJpsiRap", "hJpsiRap", {HistType::kTH1F, {axiseta}});
 
     // TGp histograms
     TGp.add("TGp/hTrackPt1", "hTrackPt1", {HistType::kTH1F, {axispt}});
@@ -233,8 +245,10 @@ struct UpcJpsiCentralBarrel {
     TGpCand.add("TGpCand/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
     TGpCand.add("TGpCand/hTrackITSNcls1", "hTrackITSNcls1", {HistType::kTH1F, {axisCounter}});
     TGpCand.add("TGpCand/hTrackITSNcls2", "hTrackITSNcls2", {HistType::kTH1F, {axisCounter}});
+    TGpCand.add("TGpCand/hPairPt", "hPairPt", {HistType::kTH1F, {axispt}});
+    TGpCand.add("TGpCand/hPairIVM", "hPairIVM", {HistType::kTH1F, {axisIVMWide}});
     TGpCand.add("TGpCand/hJpsiPt", "hJpsiPt", {HistType::kTH1F, {axispt}});
-    TGpCand.add("TGpCand/hJpsiIVM", "hJpsiIVM", {HistType::kTH1F, {axisIVM}});
+    TGpCand.add("TGpCand/hJpsiRap", "hJpsiRap", {HistType::kTH1F, {axiseta}});
 
     // JPsiToEl histograms
     JPsiToEl.add("JPsiToEl/Coherent/hPt", "Pt of J/Psi ; p_{T} {GeV/c]", {HistType::kTH1F, {axispt}});
@@ -503,6 +517,10 @@ struct UpcJpsiCentralBarrel {
     int countGTel = 0;
     int countGTmu = 0;
     int countGTp = 0;
+    int countGTMuSigma = 0;
+    int countGTElSigma = 0;
+    int countGTPSigma = 0;
+    int countGTPSigmaTOF = 0;
     std::vector<int> trkIdx;
     // loop over tracks with selections
     for (auto& track : tracks) {
@@ -515,7 +533,12 @@ struct UpcJpsiCentralBarrel {
         continue;
       }
       countGT++;
-      int hypoID = testPIDhypo(track);
+      int hypoID;
+      if (TPCPIDOnly) {
+        hypoID = testPIDhypoTPC(track);
+      } else {
+        hypoID = testPIDhypo(track);
+      }
       if (hypoID == P_ELECTRON || hypoID == P_MUON || hypoID == P_PROTON) {
         countGTselected++;
         trkIdx.push_back(track.index());
@@ -529,6 +552,18 @@ struct UpcJpsiCentralBarrel {
           countGTp++;
         }
       }
+      if (std::abs(track.tpcNSigmaMu()) < 3) {
+        countGTMuSigma++;
+      }
+      if (std::abs(track.tpcNSigmaEl()) < 3) {
+        countGTElSigma++;
+      }
+      if (std::abs(track.tpcNSigmaPr()) < 3) {
+        countGTPSigma++;
+      }
+      if (std::abs(track.tofNSigmaPr()) < 3) {
+        countGTPSigmaTOF++;
+      }
     }
 
     Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(2., countGT);
@@ -540,6 +575,10 @@ struct UpcJpsiCentralBarrel {
     Statistics.get<TH1>(HIST("Statistics/hNumberGTel"))->Fill(countGTel);
     Statistics.get<TH1>(HIST("Statistics/hNumberGTmu"))->Fill(countGTmu);
     Statistics.get<TH1>(HIST("Statistics/hNumberGTp"))->Fill(countGTp);
+    Statistics.get<TH1>(HIST("Statistics/hNumberGTelSigma"))->Fill(countGTElSigma);
+    Statistics.get<TH1>(HIST("Statistics/hNumberGTmuSigma"))->Fill(countGTMuSigma);
+    Statistics.get<TH1>(HIST("Statistics/hNumberGTpSigma"))->Fill(countGTPSigma);
+    Statistics.get<TH1>(HIST("Statistics/hNumberGTpSigmaTOF"))->Fill(countGTPSigmaTOF);
 
     float massEl = o2::constants::physics::MassElectron;
     float massMu = o2::constants::physics::MassMuonMinus;
@@ -598,45 +637,52 @@ struct UpcJpsiCentralBarrel {
         TGelCand.get<TH1>(HIST("TGelCand/hTrackPhi2"))->Fill(RecoDecay::phi(daughter2));
         TGelCand.get<TH1>(HIST("TGelCand/hTrackITSNcls1"))->Fill(trkDaughter1.itsNCls());
         TGelCand.get<TH1>(HIST("TGelCand/hTrackITSNcls2"))->Fill(trkDaughter2.itsNCls());
-        TGelCand.get<TH1>(HIST("TGelCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
-        TGelCand.get<TH1>(HIST("TGelCand/hJpsiIVM"))->Fill(massJpsi);
-        if (RecoDecay::pt(mother) < 0.2f) {
-          // fill track histos
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPt1"))->Fill(trkDaughter1.pt());
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPt2"))->Fill(trkDaughter2.pt());
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
-          if (trkDaughter1.hasTPC()) {
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
-          }
-          if (trkDaughter2.hasTPC()) {
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
-          }
+        TGelCand.get<TH1>(HIST("TGelCand/hPairPt"))->Fill(RecoDecay::pt(mother));
+        TGelCand.get<TH1>(HIST("TGelCand/hPairIVM"))->Fill(massJpsi);
 
-          if (trkDaughter1.hasTOF()) {
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
-          }
-          if (trkDaughter2.hasTOF()) {
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
-          }
-          // fill J/psi histos
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPt"))->Fill(RecoDecay::pt(mother));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hEta"))->Fill(RecoDecay::eta(mother));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPhi"))->Fill(RecoDecay::phi(mother));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hRap"))->Fill(rapJpsi);
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hIVM"))->Fill(massJpsi);
+        if (massJpsi < maxJpsiMass && massJpsi > minJpsiMass) {
+          TGelCand.get<TH1>(HIST("TGelCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
+          TGelCand.get<TH1>(HIST("TGelCand/hJpsiRap"))->Fill(rapJpsi);
+          if (RecoDecay::pt(mother) < 0.2f) {
+            // fill track histos
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPt1"))->Fill(trkDaughter1.pt());
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPt2"))->Fill(trkDaughter2.pt());
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
+            if (trkDaughter1.hasTPC()) {
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
+            }
+            if (trkDaughter2.hasTPC()) {
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
+            }
 
-          if (massJpsi > maxJpsiMass || massJpsi < minJpsiMass) {
+            if (trkDaughter1.hasTOF()) {
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
+            }
+            if (trkDaughter2.hasTOF()) {
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
+            }
+            // fill J/psi histos
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPt"))->Fill(RecoDecay::pt(mother));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hEta"))->Fill(RecoDecay::eta(mother));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPhi"))->Fill(RecoDecay::phi(mother));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hRap"))->Fill(rapJpsi);
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hIVM"))->Fill(massJpsi);
+
             float* q = correlation(&daughter[0], &daughter[1], &mom);
             Correlation.get<TH1>(HIST("Correlation/Electron/Coherent/Phi1"))->Fill(RecoDecay::phi(daughter1), 1.);
             Correlation.get<TH1>(HIST("Correlation/Electron/Coherent/Phi2"))->Fill(RecoDecay::phi(daughter2), 1.);
@@ -650,44 +696,46 @@ struct UpcJpsiCentralBarrel {
 
             delete[] q;
           }
-        }
-        if (RecoDecay::pt(mother) > 0.2f) {
-          // fill track histos
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPt1"))->Fill(trkDaughter1.pt());
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPt2"))->Fill(trkDaughter2.pt());
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
-          if (trkDaughter1.hasTPC()) {
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
-          }
-          if (trkDaughter2.hasTPC()) {
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
-          }
+          if (RecoDecay::pt(mother) > 0.2f) {
+            // fill track histos
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPt1"))->Fill(trkDaughter1.pt());
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPt2"))->Fill(trkDaughter2.pt());
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
+            if (trkDaughter1.hasTPC()) {
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
+            }
+            if (trkDaughter2.hasTPC()) {
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
+            }
 
-          if (trkDaughter1.hasTOF()) {
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
-          }
-          if (trkDaughter2.hasTOF()) {
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
-            JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
-          }
-          // fill J/psi histos
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPt"))->Fill(RecoDecay::pt(mother));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hEta"))->Fill(RecoDecay::eta(mother));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPhi"))->Fill(RecoDecay::phi(mother));
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hRap"))->Fill(rapJpsi);
-          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hIVM"))->Fill(massJpsi);
+            if (trkDaughter1.hasTOF()) {
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
+            }
+            if (trkDaughter2.hasTOF()) {
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
+              JPsiToEl.get<TH2>(HIST("JPsiToEl/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
+            }
+            // fill J/psi histos
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPt"))->Fill(RecoDecay::pt(mother));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hEta"))->Fill(RecoDecay::eta(mother));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPhi"))->Fill(RecoDecay::phi(mother));
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hRap"))->Fill(rapJpsi);
+            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hIVM"))->Fill(massJpsi);
 
-          if (massJpsi > maxJpsiMass || massJpsi < minJpsiMass) {
             float* q = correlation(&daughter[0], &daughter[1], &mom);
             Correlation.get<TH1>(HIST("Correlation/Electron/Incoherent/Phi1"))->Fill(RecoDecay::phi(daughter1), 1.);
             Correlation.get<TH1>(HIST("Correlation/Electron/Incoherent/Phi2"))->Fill(RecoDecay::phi(daughter2), 1.);
@@ -757,35 +805,52 @@ struct UpcJpsiCentralBarrel {
         TGmuCand.get<TH1>(HIST("TGmuCand/hTrackPhi2"))->Fill(RecoDecay::phi(daughter2));
         TGmuCand.get<TH1>(HIST("TGmuCand/hTrackITSNcls1"))->Fill(trkDaughter1.itsNCls());
         TGmuCand.get<TH1>(HIST("TGmuCand/hTrackITSNcls2"))->Fill(trkDaughter2.itsNCls());
-        TGmuCand.get<TH1>(HIST("TGmuCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
-        TGmuCand.get<TH1>(HIST("TGmuCand/hJpsiIVM"))->Fill(massJpsi);
+        TGmuCand.get<TH1>(HIST("TGmuCand/hPairPt"))->Fill(RecoDecay::pt(mother));
+        TGmuCand.get<TH1>(HIST("TGmuCand/hPairIVM"))->Fill(massJpsi);
 
-        if (RecoDecay::pt(mother) < 0.2f) {
-          // fill track histos
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPt1"))->Fill(trkDaughter1.pt());
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPt2"))->Fill(trkDaughter2.pt());
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
-          if (trkDaughter1.hasTPC()) {
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
-          }
-          if (trkDaughter2.hasTPC()) {
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
-          }
-          // fill J/psi histos
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPt"))->Fill(RecoDecay::pt(mother));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hEta"))->Fill(RecoDecay::eta(mother));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPhi"))->Fill(RecoDecay::phi(mother));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hRap"))->Fill(rapJpsi);
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hIVM"))->Fill(massJpsi);
+        if (massJpsi < maxJpsiMass && massJpsi > minJpsiMass) {
+          TGmuCand.get<TH1>(HIST("TGmuCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
+          TGmuCand.get<TH1>(HIST("TGmuCand/hJpsiRap"))->Fill(rapJpsi);
 
-          if (massJpsi > maxJpsiMass || massJpsi < minJpsiMass) {
+          if (RecoDecay::pt(mother) < 0.2f) {
+            // fill track histos
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPt1"))->Fill(trkDaughter1.pt());
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPt2"))->Fill(trkDaughter2.pt());
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
+            if (trkDaughter1.hasTPC()) {
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
+            }
+            if (trkDaughter2.hasTPC()) {
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
+            }
+            if (trkDaughter1.hasTOF()) {
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
+            }
+            if (trkDaughter2.hasTOF()) {
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
+            }
+            // fill J/psi histos
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPt"))->Fill(RecoDecay::pt(mother));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hEta"))->Fill(RecoDecay::eta(mother));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPhi"))->Fill(RecoDecay::phi(mother));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hRap"))->Fill(rapJpsi);
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hIVM"))->Fill(massJpsi);
+
             float* q = correlation(&daughter[0], &daughter[1], &mom);
             Correlation.get<TH1>(HIST("Correlation/Muon/Coherent/Phi1"))->Fill(RecoDecay::phi(daughter1), 1.);
             Correlation.get<TH1>(HIST("Correlation/Muon/Coherent/Phi2"))->Fill(RecoDecay::phi(daughter2), 1.);
@@ -799,33 +864,46 @@ struct UpcJpsiCentralBarrel {
 
             delete[] q;
           }
-        }
-        if (RecoDecay::pt(mother) > 0.2f) {
-          // fill track histos
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPt1"))->Fill(trkDaughter1.pt());
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPt2"))->Fill(trkDaughter2.pt());
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
-          if (trkDaughter1.hasTPC()) {
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
-          }
-          if (trkDaughter2.hasTPC()) {
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
-            JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
-          }
-          // fill J/psi histos
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPt"))->Fill(RecoDecay::pt(mother));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hEta"))->Fill(RecoDecay::eta(mother));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPhi"))->Fill(RecoDecay::phi(mother));
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hRap"))->Fill(rapJpsi);
-          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hIVM"))->Fill(massJpsi);
+          if (RecoDecay::pt(mother) > 0.2f) {
+            // fill track histos
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPt1"))->Fill(trkDaughter1.pt());
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPt2"))->Fill(trkDaughter2.pt());
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
+            if (trkDaughter1.hasTPC()) {
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
+            }
+            if (trkDaughter2.hasTPC()) {
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
+            }
+            if (trkDaughter1.hasTOF()) {
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
+            }
+            if (trkDaughter2.hasTOF()) {
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
+              JPsiToMu.get<TH2>(HIST("JPsiToMu/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
+            }
 
-          if (massJpsi > maxJpsiMass || massJpsi < minJpsiMass) {
+            // fill J/psi histos
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPt"))->Fill(RecoDecay::pt(mother));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hEta"))->Fill(RecoDecay::eta(mother));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPhi"))->Fill(RecoDecay::phi(mother));
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hRap"))->Fill(rapJpsi);
+            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hIVM"))->Fill(massJpsi);
+
             float* q = correlation(&daughter[0], &daughter[1], &mom);
             Correlation.get<TH1>(HIST("Correlation/Muon/Incoherent/Phi1"))->Fill(RecoDecay::phi(daughter1), 1.);
             Correlation.get<TH1>(HIST("Correlation/Muon/Incoherent/Phi2"))->Fill(RecoDecay::phi(daughter2), 1.);
@@ -848,11 +926,12 @@ struct UpcJpsiCentralBarrel {
         if ((trkDaughter1.sign() * trkDaughter2.sign()) > 0) {
           return;
         }
-        if (TOFBothTracks) {
+
+        if (TOFBothProtons) {
           if (!trkDaughter1.hasTOF() && !trkDaughter2.hasTOF())
             return;
         }
-        if (TOFOneTrack) {
+        if (TOFOneProton) {
           if ((trkDaughter1.hasTOF() && trkDaughter2.hasTOF()) || (!trkDaughter1.hasTOF() && !trkDaughter2.hasTOF()))
             return;
         }
@@ -891,58 +970,90 @@ struct UpcJpsiCentralBarrel {
         TGpCand.get<TH1>(HIST("TGpCand/hTrackPhi2"))->Fill(RecoDecay::phi(daughter2));
         TGpCand.get<TH1>(HIST("TGpCand/hTrackITSNcls1"))->Fill(trkDaughter1.itsNCls());
         TGpCand.get<TH1>(HIST("TGpCand/hTrackITSNcls2"))->Fill(trkDaughter2.itsNCls());
-        TGpCand.get<TH1>(HIST("TGpCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
-        TGpCand.get<TH1>(HIST("TGpCand/hJpsiIVM"))->Fill(massJpsi);
+        TGpCand.get<TH1>(HIST("TGpCand/hPairPt"))->Fill(RecoDecay::pt(mother));
+        TGpCand.get<TH1>(HIST("TGpCand/hPairIVM"))->Fill(massJpsi);
 
-        if (RecoDecay::pt(mother) < 0.2f) {
-          // fill track histos
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPt1"))->Fill(trkDaughter1.pt());
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPt2"))->Fill(trkDaughter2.pt());
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
-          if (trkDaughter1.hasTPC()) {
-            JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
-            JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
-            JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
+        if (massJpsi < maxJpsiMass && massJpsi > minJpsiMass) {
+          TGpCand.get<TH1>(HIST("TGpCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
+          TGpCand.get<TH1>(HIST("TGpCand/hJpsiRap"))->Fill(rapJpsi);
+          if (RecoDecay::pt(mother) < 0.2f) {
+            // fill track histos
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPt1"))->Fill(trkDaughter1.pt());
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPt2"))->Fill(trkDaughter2.pt());
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
+            if (trkDaughter1.hasTPC()) {
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
+            }
+            if (trkDaughter2.hasTPC()) {
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
+            }
+            if (trkDaughter1.hasTOF()) {
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
+            }
+            if (trkDaughter2.hasTOF()) {
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
+            }
+            // fill J/psi histos
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPt"))->Fill(RecoDecay::pt(mother));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hEta"))->Fill(RecoDecay::eta(mother));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPhi"))->Fill(RecoDecay::phi(mother));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hRap"))->Fill(rapJpsi);
+            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hIVM"))->Fill(massJpsi);
           }
-          if (trkDaughter2.hasTPC()) {
-            JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
-            JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
-            JPsiToP.get<TH2>(HIST("JPsiToP/Coherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
+          if (RecoDecay::pt(mother) > 0.2f) {
+            // fill track histos
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPt1"))->Fill(trkDaughter1.pt());
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPt2"))->Fill(trkDaughter2.pt());
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
+            if (trkDaughter1.hasTPC()) {
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
+            }
+            if (trkDaughter2.hasTPC()) {
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
+            }
+            if (trkDaughter1.hasTOF()) {
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tofSignal());
+            }
+            if (trkDaughter2.hasTOF()) {
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tofSignal());
+              JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTOFVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tofSignal());
+            }
+            // fill J/psi histos
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPt"))->Fill(RecoDecay::pt(mother));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hEta"))->Fill(RecoDecay::eta(mother));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPhi"))->Fill(RecoDecay::phi(mother));
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hRap"))->Fill(rapJpsi);
+            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hIVM"))->Fill(massJpsi);
           }
-          // fill J/psi histos
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPt"))->Fill(RecoDecay::pt(mother));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hEta"))->Fill(RecoDecay::eta(mother));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPhi"))->Fill(RecoDecay::phi(mother));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hRap"))->Fill(rapJpsi);
-          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hIVM"))->Fill(massJpsi);
-        }
-        if (RecoDecay::pt(mother) > 0.2f) {
-          // fill track histos
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPt1"))->Fill(trkDaughter1.pt());
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPt2"))->Fill(trkDaughter2.pt());
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hEta1"))->Fill(RecoDecay::eta(daughter1));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hEta2"))->Fill(RecoDecay::eta(daughter2));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPhi1"))->Fill(RecoDecay::phi(daughter1));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPhi2"))->Fill(RecoDecay::phi(daughter2));
-          if (trkDaughter1.hasTPC()) {
-            JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
-            JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
-            JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
-          }
-          if (trkDaughter2.hasTPC()) {
-            JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
-            JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
-            JPsiToP.get<TH2>(HIST("JPsiToP/Incoherent/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
-          }
-          // fill J/psi histos
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPt"))->Fill(RecoDecay::pt(mother));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hEta"))->Fill(RecoDecay::eta(mother));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPhi"))->Fill(RecoDecay::phi(mother));
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hRap"))->Fill(rapJpsi);
-          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hIVM"))->Fill(massJpsi);
         }
       } // end protons
     }   // end two tracks
