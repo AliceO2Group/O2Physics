@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#ifndef PWGLF_UTILS_V0SELECTIONGROUPLINKDEF_H_
+#define PWGLF_UTILS_V0SELECTIONGROUPLINKDEF_H_
+
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
@@ -18,3 +21,5 @@
 #pragma link C++ class std::vector < float> + ;
 #pragma link C++ class std::vector < double> + ;
 #pragma link C++ class std::vector < bool> + ;
+
+#endif // PWGLF_UTILS_V0SELECTIONGROUPLINKDEF_H_

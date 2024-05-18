@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef V0SELECTIONTOOLS_H
-#define V0SELECTIONTOOLS_H
+#ifndef PWGLF_UTILS_V0SELECTIONTOOLS_H_
+#define PWGLF_UTILS_V0SELECTIONTOOLS_H_
 
 #include "v0SelectionBits.h"
 #include "v0SelectionGroup.h"
@@ -128,4 +128,4 @@ uint64_t computeReconstructionBitmap(TV0 v0, TTrack posTrackExtra, TTrack negTra
 }
 } // namespace v0data
 
-#endif // V0SELECTIONTOOLS_H
+#endif // PWGLF_UTILS_V0SELECTIONTOOLS_H_
