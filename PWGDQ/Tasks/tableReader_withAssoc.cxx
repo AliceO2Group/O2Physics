@@ -819,6 +819,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::Dimuons> dimuonList;
   Produces<aod::DielectronsExtra> dielectronsExtraList;
   Produces<aod::DimuonsExtra> dimuonsExtraList;
+  Produces<aod::DielectronsAll> dielectronAllList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
   Produces<aod::DileptonsInfo> dileptonInfoList;
@@ -1153,6 +1154,7 @@ struct AnalysisSameEventPairing {
     dileptonInfoList.reserve(1);
     dileptonFlowList.reserve(1);
     if (fConfigFlatTables.value) {
+      dielectronAllList.reserve(1);
       dimuonAllList.reserve(1);
     }
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
