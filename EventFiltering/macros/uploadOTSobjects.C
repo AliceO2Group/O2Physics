@@ -24,10 +24,14 @@
 
 #include "CCDB/BasicCCDBManager.h"
 
-const std::string kBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
+const std::string kBaseCCDBPath = "Users/r/rlietava/EventFiltering/OTS/";
 
 #pragma link C++ class std::vector < std::array < uint64_t, 2>> + ;
-
+struct bcInfo {
+  bcInfo() = default;
+  ULong64_t bcAOD, bcEvSel, trigMask, selMask;
+  void print() const;
+};
 void uploadOTSobjects(std::string inputList)
 {
   o2::ccdb::CcdbApi api;
@@ -45,7 +49,7 @@ void uploadOTSobjects(std::string inputList)
     std::pair<int64_t, int64_t> duration = o2::ccdb::BasicCCDBManager::getRunDuration(api, runNumber);
     duration.first -= 10000;   // subtract 3 minutes from the run start
     duration.second += 180000; // add 3 minutes to the run duration
-    TFile scalersFile((path + "AnalysisResults_fullrun.root").data(), "READ");
+    TFile scalersFile((path + "/AnalysisResults_fullrun.root").data(), "READ");
     TH1* scalers = (TH1*)scalersFile.Get("central-event-filter-task/scalers/mScalers");
     TH1* filters = (TH1*)scalersFile.Get("central-event-filter-task/scalers/mFiltered");
     api.storeAsTFile(scalers, kBaseCCDBPath + "FilterCounters", metadata, duration.first, duration.second);
@@ -54,22 +58,28 @@ void uploadOTSobjects(std::string inputList)
     api.storeAsTFile(hCounterTVX, kBaseCCDBPath + "InspectedTVX", metadata, duration.first, duration.second);
 
     std::vector<std::array<uint64_t, 2>> bcRanges, filterBitMask, selectionBitMask;
-    TFile bcRangesFile((path + "bcRanges_fullrun.root").data(), "READ");
-    TKey* key;
-    auto klst = bcRangesFile.GetListOfKeys();
-    TIter nextkey(klst);
-    while ((key = (TKey*)nextkey())) {
-      std::string kcl(key->GetClassName());
-      if (kcl == "TDirectoryFile") {
-        ROOT::RDataFrame bcRangesFrame(std::string(key->GetName()) + "/selectedBC", &bcRangesFile);
-        auto bcAO2D = bcRangesFrame.Take<uint64_t>("bcAO2D");
-        auto bcEvSel = bcRangesFrame.Take<uint64_t>("bcEvSel");
-        auto selMask = bcRangesFrame.Take<uint64_t>("selMask");
-        auto triMask = bcRangesFrame.Take<uint64_t>("triMask");
-        for (size_t i = 0; i < bcAO2D->size(); i++) {
-          bcRanges.push_back({bcAO2D->at(i), bcEvSel->at(i)});
-          filterBitMask.push_back({bcAO2D->at(i), 0ull});
-          selectionBitMask.push_back({bcAO2D->at(i), 0ull});
+    TFile bcRangesFile((path + "/bcRanges_fullrun.root").data(), "READ");
+    int Nmax = 0;
+    for (auto key : *(bcRangesFile.GetListOfKeys())) {
+      TTree* cefpTree = (TTree*)bcRangesFile.Get(Form("%s/selectedBC", key->GetName()));
+      if (!cefpTree)
+        continue;
+      bcInfo bci;
+      cefpTree->SetBranchAddress("bcAO2D", &bci.bcAOD);
+      cefpTree->SetBranchAddress("bcEvSel", &bci.bcEvSel);
+      cefpTree->SetBranchAddress("selMask", &bci.selMask);
+      cefpTree->SetBranchAddress("triMask", &bci.trigMask);
+      for (int i = 0; i < cefpTree->GetEntries(); i++) {
+        if((i < Nmax) || (Nmax == 0)) {
+          cefpTree->GetEntry(i);
+          // Check consistency
+          if(~bci.trigMask & bci.selMask) {
+            std::cout << "ERROR selMask is not subset of trigMask:";
+            //bcAO2D.print();
+          }
+          bcRanges.push_back({bci.bcAOD, bci.bcEvSel});
+          filterBitMask.push_back({bci.trigMask, 0ull});
+          selectionBitMask.push_back({bci.selMask, 0ull});
         }
       }
     }
