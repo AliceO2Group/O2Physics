@@ -39,10 +39,12 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_trkcandsel;
 
 namespace o2::aod
 {
@@ -228,6 +230,7 @@ struct HfTreeCreatorOmegacSt {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::AssignedTrackedCascades> assignedTrackedCascadesPerCollision = aod::track::collisionId;
 
+  std::shared_ptr<TH1> hCandidatesPrPi, hCandidatesV0Pi, hCandidatesCascPi;
   HistogramRegistry registry{
     "registry",
     {
@@ -272,13 +275,21 @@ struct HfTreeCreatorOmegacSt {
       auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
       o2::base::Propagator::Instance(true)->setMatLUT(lut);
     }
+
+    /// candidate monitoring
+    hCandidatesPrPi = registry.add<TH1>("hCandidatesPrPi", "Pr-Pi candidates counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesV0Pi = registry.add<TH1>("hCandidatesV0Pi", "V0-Pi candidates counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesCascPi = registry.add<TH1>("hCandidatesCascPi", "Casc-Pi candidates counter", {HistType::kTH1D, {axisCands}});
+    setLabelHistoCands(hCandidatesPrPi);
+    setLabelHistoCands(hCandidatesV0Pi);
+    setLabelHistoCands(hCandidatesCascPi);
   }
 
   // processMC: loop over MC objects
   // processData: loop over reconstructed objects, no MC information
   // processGen: loop over reconstructed objects, use MC information (mutually exclusive? combine?)
 
-  void processMc(aod::McCollision const& mcCollision,
+  void processMc(aod::McCollision const&,
                  aod::McParticles const& mcParticles)
   {
     for (const auto& mcParticle : mcParticles) {
@@ -298,9 +309,9 @@ struct HfTreeCreatorOmegacSt {
   void processData(Collisions const& collisions,
                    aod::AssignedTrackedCascades const& trackedCascades,
                    aod::TrackAssoc const& trackIndices,
-                   aod::Cascades const& cascades,
-                   aod::V0s const& v0s,
-                   TracksExt const& tracks,
+                   aod::Cascades const&,
+                   aod::V0s const&,
+                   TracksExt const&,
                    aod::BCsWithTimestamps const&)
   {
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
@@ -357,9 +368,18 @@ struct HfTreeCreatorOmegacSt {
         const auto& v0TrackPi = trackCasc.sign() < 0 ? v0TrackNeg : v0TrackPos;
 
         // track propagation
-        if (!df2.process(getTrackParCov(v0TrackPr), getTrackParCov(v0TrackPi))) {
+        hCandidatesPrPi->Fill(SVFitting::BeforeFit);
+        try {
+          if (!df2.process(getTrackParCov(v0TrackPr), getTrackParCov(v0TrackPi))) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Pr-Pi cannot work, skipping the candidate.";
+          hCandidatesPrPi->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidatesPrPi->Fill(SVFitting::FitOk);
+
         std::array<double, 2> massesV0Daughters{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
         std::array<std::array<float, 3>, 2> momentaV0Daughters;
         o2::track::TrackPar trackParV0Pr = df2.getTrackParamAtPCA(0);
@@ -369,9 +389,18 @@ struct HfTreeCreatorOmegacSt {
         const auto massV0 = RecoDecay::m(momentaV0Daughters, massesV0Daughters);
 
         o2::track::TrackParCov trackParCovV0 = df2.createParentTrackParCov(0);
-        if (!df2.process(trackParCovV0, getTrackParCov(bachelor))) {
+        hCandidatesV0Pi->Fill(SVFitting::BeforeFit);
+        try {
+          if (!df2.process(trackParCovV0, getTrackParCov(bachelor))) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for V0-bachelor cannot work, skipping the candidate.";
+          hCandidatesV0Pi->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidatesV0Pi->Fill(SVFitting::FitOk);
+
         const auto& secondaryVertex = df2.getPCACandidate();
         const auto decayLengthCasc = RecoDecay::distance(secondaryVertex, primaryVertexPos);
         const auto decayLengthCascXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
@@ -448,75 +477,85 @@ struct HfTreeCreatorOmegacSt {
                   o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPion, 2.f, matCorr, &impactParameterPion);
                 }
 
-                if (df2.process(trackParCovCasc, trackParCovPion)) {
-                  const auto& secondaryVertex = df2.getPCACandidate();
-                  const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
-                  const auto decayLengthXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
-                  const auto chi2TopCharmedBaryon = df2.getChi2AtPCACandidate();
-                  std::array<float, 3> pCharmedBaryon;
-                  df2.createParentTrackParCov().getPxPyPzGlo(pCharmedBaryon);
-                  const auto cpaCharmedBaryon = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCharmedBaryon);
-                  const auto cpaXYCharmedBaryon = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCharmedBaryon);
+                hCandidatesCascPi->Fill(SVFitting::BeforeFit);
+                try {
+                  if (df2.process(trackParCovCasc, trackParCovPion)) {
+                    const auto& secondaryVertex = df2.getPCACandidate();
+                    const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
+                    const auto decayLengthXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
+                    const auto chi2TopCharmedBaryon = df2.getChi2AtPCACandidate();
+                    std::array<float, 3> pCharmedBaryon;
+                    df2.createParentTrackParCov().getPxPyPzGlo(pCharmedBaryon);
+                    const auto cpaCharmedBaryon = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCharmedBaryon);
+                    const auto cpaXYCharmedBaryon = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCharmedBaryon);
 
-                  df2.getTrackParamAtPCA(0).getPxPyPzGlo(momenta[0]);
-                  df2.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
-                  const auto massOmegaC = RecoDecay::m(momenta, massesOmegacDaughters);
-                  const auto massXiC = RecoDecay::m(momenta, massesXicDaughters);
-                  registry.fill(HIST("hMassOmegac"), massOmegaC);
-                  registry.fill(HIST("hMassOmegacVsPt"), massOmegaC, RecoDecay::pt(momenta[0], momenta[1]));
+                    df2.getTrackParamAtPCA(0).getPxPyPzGlo(momenta[0]);
+                    df2.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
+                    const auto massOmegaC = RecoDecay::m(momenta, massesOmegacDaughters);
+                    const auto massXiC = RecoDecay::m(momenta, massesXicDaughters);
+                    registry.fill(HIST("hMassOmegac"), massOmegaC);
+                    registry.fill(HIST("hMassOmegacVsPt"), massOmegaC, RecoDecay::pt(momenta[0], momenta[1]));
 
-                  if ((std::abs(massOmegaC - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
-                      (std::abs(massXiC - o2::constants::physics::MassXiC0) < massWindowXiC)) {
-                    registry.fill(HIST("hDecayLength"), decayLength * 1e4);
-                    registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
-                    outputTable(massOmega,
-                                massXi,
-                                massV0,
-                                track.tpcNSigmaPi(),
-                                track.tofNSigmaPi(),
-                                v0TrackPr.tpcNSigmaPr(),
-                                v0TrackPr.tofNSigmaPr(),
-                                v0TrackPi.tpcNSigmaPi(),
-                                v0TrackPi.tofNSigmaPi(),
-                                bachelor.tpcNSigmaPi(),
-                                bachelor.tofNSigmaPi(),
-                                bachelor.tpcNSigmaKa(),
-                                bachelor.tofNSigmaKa(),
-                                momenta[0][0], // cascade momentum
-                                momenta[0][1],
-                                momenta[0][2],
-                                trackCasc.sign() > 0 ? true : false,
-                                momenta[1][0], // pion momentum
-                                momenta[1][1],
-                                momenta[1][2],
-                                track.sign() > 0 ? true : false,
-                                track.itsClusterMap(),
-                                cpaCharmedBaryon,
-                                cpaXYCharmedBaryon,
-                                cpaCasc,
-                                cpaXYCasc,
-                                impactParameterCasc.getY(),
-                                std::sqrt(impactParameterCasc.getSigmaY2()),
-                                impactParameterCasc.getZ(),
-                                std::sqrt(impactParameterCasc.getSigmaZ2()),
-                                impactParameterPion.getY(),
-                                std::sqrt(impactParameterPion.getSigmaY2()),
-                                impactParameterPion.getZ(),
-                                std::sqrt(impactParameterPion.getSigmaZ2()),
-                                impactParameterPr.getY(),
-                                impactParameterPr.getZ(),
-                                impactParameterKa.getY(),
-                                impactParameterKa.getZ(),
-                                impactParameterPi.getY(),
-                                impactParameterPi.getZ(),
-                                chi2TopCharmedBaryon,
-                                trackedCascade.topologyChi2(),
-                                decayLength,
-                                decayLengthXY,
-                                decayLengthCasc,
-                                decayLengthCascXY);
+                    if ((std::abs(massOmegaC - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
+                        (std::abs(massXiC - o2::constants::physics::MassXiC0) < massWindowXiC)) {
+                      registry.fill(HIST("hDecayLength"), decayLength * 1e4);
+                      registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                      outputTable(massOmega,
+                                  massXi,
+                                  massV0,
+                                  track.tpcNSigmaPi(),
+                                  track.tofNSigmaPi(),
+                                  v0TrackPr.tpcNSigmaPr(),
+                                  v0TrackPr.tofNSigmaPr(),
+                                  v0TrackPi.tpcNSigmaPi(),
+                                  v0TrackPi.tofNSigmaPi(),
+                                  bachelor.tpcNSigmaPi(),
+                                  bachelor.tofNSigmaPi(),
+                                  bachelor.tpcNSigmaKa(),
+                                  bachelor.tofNSigmaKa(),
+                                  momenta[0][0], // cascade momentum
+                                  momenta[0][1],
+                                  momenta[0][2],
+                                  trackCasc.sign() > 0 ? true : false,
+                                  momenta[1][0], // pion momentum
+                                  momenta[1][1],
+                                  momenta[1][2],
+                                  track.sign() > 0 ? true : false,
+                                  track.itsClusterMap(),
+                                  cpaCharmedBaryon,
+                                  cpaXYCharmedBaryon,
+                                  cpaCasc,
+                                  cpaXYCasc,
+                                  impactParameterCasc.getY(),
+                                  std::sqrt(impactParameterCasc.getSigmaY2()),
+                                  impactParameterCasc.getZ(),
+                                  std::sqrt(impactParameterCasc.getSigmaZ2()),
+                                  impactParameterPion.getY(),
+                                  std::sqrt(impactParameterPion.getSigmaY2()),
+                                  impactParameterPion.getZ(),
+                                  std::sqrt(impactParameterPion.getSigmaZ2()),
+                                  impactParameterPr.getY(),
+                                  impactParameterPr.getZ(),
+                                  impactParameterKa.getY(),
+                                  impactParameterKa.getZ(),
+                                  impactParameterPi.getY(),
+                                  impactParameterPi.getZ(),
+                                  chi2TopCharmedBaryon,
+                                  trackedCascade.topologyChi2(),
+                                  decayLength,
+                                  decayLengthXY,
+                                  decayLengthCasc,
+                                  decayLengthCascXY);
+                    }
+                  } else {
+                    continue;
                   }
+                } catch (const std::runtime_error& error) {
+                  LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Casc-Pi cannot work, skipping the candidate.";
+                  hCandidatesCascPi->Fill(SVFitting::Fail);
+                  continue;
                 }
+                hCandidatesCascPi->Fill(SVFitting::FitOk);
               }
             }
           }
@@ -527,12 +566,12 @@ struct HfTreeCreatorOmegacSt {
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processData, "Process data", true);
 
   void processMcGen(aod::Collision const& collision,
-                    aod::McCollisions const& mcCollisions,
+                    aod::McCollisions const&,
                     aod::AssignedTrackedCascades const& trackedCascades,
-                    aod::Cascades const& cascades,
-                    aod::V0s const& v0s,
+                    aod::Cascades const&,
+                    aod::V0s const&,
                     TracksExtMc const& tracks,
-                    aod::McParticles const& mcParticles,
+                    aod::McParticles const&,
                     aod::BCsWithTimestamps const&)
   {
     const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -614,30 +653,38 @@ struct HfTreeCreatorOmegacSt {
                 registry.fill(HIST("hDeltaPtVsPt"), mcpart.pt(), (trackParCovPion.getPt() - mcpart.pt()) / mcpart.pt());
                 registry.fill(HIST("hMassOmegacId"), RecoDecay::m(momenta, masses));
 
-                if (df2.process(trackParCovCasc, trackParCovPion)) {
-                  const auto& secondaryVertex = df2.getPCACandidate();
-                  const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
-                  if (mother.has_mothers()) {
-                    const auto& cand = mother.template mothers_first_as<aod::McParticles>();
-                    if (std::abs(cand.pdgCode()) == constants::physics::Pdg::kOmegaC0 && mcpart.has_mothers()) {
-                      if (mcpart.mothersIds()[0] == cand.globalIndex()) {
-                        registry.fill(HIST("hDecayLengthId"), decayLength * 1e4);
-                        registry.fill(HIST("hDecayLengthScaledId"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                hCandidatesCascPi->Fill(SVFitting::BeforeFit);
+                try {
+                  if (df2.process(trackParCovCasc, trackParCovPion)) {
+                    const auto& secondaryVertex = df2.getPCACandidate();
+                    const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
+                    if (mother.has_mothers()) {
+                      const auto& cand = mother.template mothers_first_as<aod::McParticles>();
+                      if (std::abs(cand.pdgCode()) == constants::physics::Pdg::kOmegaC0 && mcpart.has_mothers()) {
+                        if (mcpart.mothersIds()[0] == cand.globalIndex()) {
+                          registry.fill(HIST("hDecayLengthId"), decayLength * 1e4);
+                          registry.fill(HIST("hDecayLengthScaledId"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
 
-                        std::array<double, 3> secondaryVertexGen = {mother.vx(), mother.vy(), mother.vz()};
-                        const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
-                        registry.fill(HIST("hDecayLengthGen"), decayLengthGen * 1e4);
-                        registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                          std::array<double, 3> secondaryVertexGen = {mother.vx(), mother.vy(), mother.vz()};
+                          const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
+                          registry.fill(HIST("hDecayLengthGen"), decayLengthGen * 1e4);
+                          registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
 
-                        registry.fill(HIST("hDeltaDecayLength"), (decayLength - decayLengthGen) * 1e4);
+                          registry.fill(HIST("hDeltaDecayLength"), (decayLength - decayLengthGen) * 1e4);
+                        }
                       }
                     }
+                    hCandidatesCascPi->Fill(SVFitting::FitOk);
                   }
+                } catch (const std::runtime_error& error) {
+                  LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Casc-Pi cannot work, skipping the candidate.";
+                  hCandidatesCascPi->Fill(SVFitting::Fail);
+                  continue;
                 }
 
                 // MC-based mass
-                momenta[0] = {mother.px(), mother.py(), mother.pz()};
-                momenta[1] = {mcpart.px(), mcpart.py(), mcpart.pz()};
+                momenta[0] = mother.pVector();
+                momenta[1] = mcpart.pVector();
                 registry.fill(HIST("hMassOmegacGen"), RecoDecay::m(momenta, masses));
               }
             }

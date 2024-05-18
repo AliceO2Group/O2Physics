@@ -109,7 +109,7 @@ struct CheckMcParticlesIndicesGrouped {
     hDebug->GetXaxis()->SetBinLabel(3, "#minus max integer");
   }
 
-  void process(aod::McCollision const& collision,
+  void process(aod::McCollision const&,
                aod::McParticles const& particlesMC)
   {
     for (auto& particle : particlesMC) {

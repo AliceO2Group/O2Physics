@@ -255,7 +255,7 @@ struct HfTaskDstarToD0Pi {
       if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
         auto ptGen = mcParticle.pt();
         // auto yGen = mcParticle.y(); // Can we use this definition?
-        auto yGen = RecoDecay::y(std::array{mcParticle.px(), mcParticle.py(), mcParticle.pz()}, o2::constants::physics::MassDStar);
+        auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
         if (yCandDstarGenMax >= 0. && std::abs(yGen) > yCandDstarGenMax) {
           continue;
         }

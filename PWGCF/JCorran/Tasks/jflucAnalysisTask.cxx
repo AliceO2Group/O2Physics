@@ -34,6 +34,7 @@
 #include "PWGCF/JCorran/DataModel/JCatalyst.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "JFFlucAnalysis.h"
+#include "JFFlucAnalysisO2Hist.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -88,7 +89,7 @@ struct jflucWeightsLoader {
   }
 
   Produces<aod::JWeights> output;
-  void init(InitContext const& ic)
+  void init(InitContext const&)
   {
     //
     if (!doprocessLoadWeights)
@@ -157,24 +158,24 @@ struct jflucAnalysisTask {
     delete pcf;
   }
 
-  O2_DEFINE_CONFIGURABLE(etamin, double, 0.4, "Minimal eta for tracks");
-  O2_DEFINE_CONFIGURABLE(etamax, double, 0.8, "Maximal eta for tracks");
-  O2_DEFINE_CONFIGURABLE(ptmin, double, 0.2, "Minimal pt for tracks");
-  O2_DEFINE_CONFIGURABLE(ptmax, double, 0.5, "Maximal pt for tracks");
+  O2_DEFINE_CONFIGURABLE(etamin, float, 0.4, "Minimal eta for tracks");
+  O2_DEFINE_CONFIGURABLE(etamax, float, 0.8, "Maximal eta for tracks");
+  O2_DEFINE_CONFIGURABLE(ptmin, float, 0.2, "Minimal pt for tracks");
+  O2_DEFINE_CONFIGURABLE(ptmax, float, 0.5, "Maximal pt for tracks");
 
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
 
-  Filter trackFilter = (aod::track::pt > ptmin) && (aod::track::pt < ptmax); // eta cuts done by jfluc
+  Filter jtrackFilter = (aod::jtrack::pt > ptmin) && (aod::jtrack::pt < ptmax);    // eta cuts done by jfluc
+  Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax); // eta cuts done by jfluc
 
-  OutputObj<TDirectory> output{"jflucO2"};
+  HistogramRegistry registry{"registry"};
+  // OutputObj<JFFlucAnalysis> output{JFFlucAnalysis("jflucO2")};
 
-  void init(InitContext const& ic)
+  void init(InitContext const&)
   {
-    pcf = new JFFlucAnalysis("jflucAnalysis");
-    pcf->SetNumBins(AxisSpec(axisMultiplicity).getNbins());
+    auto a = AxisSpec(axisMultiplicity);
+    pcf = new JFFlucAnalysisO2Hist(registry, a);
     pcf->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
-
-    output->cd();
     pcf->UserCreateOutputObjects();
   }
 
@@ -182,37 +183,33 @@ struct jflucAnalysisTask {
   void analyze(CollisionT const& collision, TrackT const& tracks)
   {
     pcf->Init();
-    pcf->FillQA(tracks);
-    pcf->CalculateQvectorsQC(tracks);
-    const auto& edges = AxisSpec(axisMultiplicity).binEdges;
-    for (UInt_t i = 0, n = AxisSpec(axisMultiplicity).getNbins(); i < n; ++i)
-      if (collision.multiplicity() < edges[i + 1]) {
-        pcf->SetEventCentralityAndBin(collision.multiplicity(), i);
-        break;
-      }
+    pcf->SetEventCentrality(collision.multiplicity());
     const double fVertex[3] = {0.0f, 0.0f, collision.posZ()}; // TODO: check if posX/Y is really needed
     pcf->SetEventVertex(fVertex);
     pcf->SetEtaRange(etamin, etamax);
+    pcf->FillQA(tracks);
+    qvecs.Calculate(tracks, etamin, etamax);
+    pcf->SetJQVectors(&qvecs);
     pcf->UserExec("");
   }
 
-  void process(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
+  void processJDerived(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(jflucAnalysisTask, process, "Process data", true);
+  PROCESS_SWITCH(jflucAnalysisTask, processJDerived, "Process derived data", false);
 
-  void processCorrected(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::JTracks, aod::JWeights>> const& tracks)
+  void processJDerivedCorrected(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::JTracks, aod::JWeights>> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(jflucAnalysisTask, processCorrected, "Process data with corrections", false);
+  PROCESS_SWITCH(jflucAnalysisTask, processJDerivedCorrected, "Process derived data with corrections", false);
 
   void processCFDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(jflucAnalysisTask, processCFDerived, "Process CF derived data", false);
+  PROCESS_SWITCH(jflucAnalysisTask, processCFDerived, "Process CF derived data", true);
 
   void processCFDerivedCorrected(aod::CFCollision const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
   {
@@ -220,7 +217,8 @@ struct jflucAnalysisTask {
   }
   PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedCorrected, "Process CF derived data with corrections", false);
 
-  JFFlucAnalysis* pcf;
+  JFFlucAnalysis::JQVectorsT qvecs;
+  JFFlucAnalysisO2Hist* pcf;
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

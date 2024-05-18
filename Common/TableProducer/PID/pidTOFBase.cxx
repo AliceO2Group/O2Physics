@@ -54,7 +54,7 @@ float trackDistanceForGoodMatchLowMult = 999.f;
 int multiplicityThreshold = 0;
 using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
 using Run3Cols = o2::soa::Join<aod::Collisions, aod::PVMults>;
-bool isTrackGoodMatchForTOFPID(const Run3Trks::iterator& tr, const Run3Cols& ev)
+bool isTrackGoodMatchForTOFPID(const Run3Trks::iterator& tr, const Run3Cols& /*ev*/)
 {
   if (!tr.hasTOF()) {
     return false;

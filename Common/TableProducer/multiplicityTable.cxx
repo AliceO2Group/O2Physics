@@ -40,6 +40,13 @@ static constexpr int kFDDMultZeqs = 11;
 static constexpr int kPVMultZeqs = 12;
 static constexpr int kMultsExtraMC = 13;
 static constexpr int nTables = 14;
+
+// Checking that the Zeq tables are after the normal ones
+static_assert(kFV0Mults < kFV0MultZeqs);
+static_assert(kFT0Mults < kFT0MultZeqs);
+static_assert(kFDDMults < kFDDMultZeqs);
+static_assert(kPVMults < kPVMultZeqs);
+
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "FT0Mults",       // 1
@@ -151,6 +158,7 @@ struct MultiplicityTable {
       mEnabledTables.push_back(kPVMults);
       LOG(info) << "Cannot have the " << tableNames[kPVMultZeqs] << " table enabled and not the one on " << tableNames[kPVMults] << ". Enabling it.";
     }
+    std::sort(mEnabledTables.begin(), mEnabledTables.end());
 
     mRunNumber = 0;
     lCalibLoaded = false;
@@ -173,7 +181,7 @@ struct MultiplicityTable {
                    aod::BCs const&,
                    aod::Zdcs const&,
                    aod::FV0As const&,
-                   aod::FV0Cs const& fv0cs,
+                   aod::FV0Cs const&,
                    aod::FT0s const&)
   {
     float multFV0A = 0.f;
@@ -553,7 +561,7 @@ struct MultiplicityTable {
   Filter mcParticleFilter = (aod::mcparticle::eta < 4.9f) && (aod::mcparticle::eta > -3.3f);
   using mcParticlesFiltered = soa::Filtered<aod::McParticles>;
 
-  void processMC(aod::McCollision const& mcCollision, mcParticlesFiltered const& mcParticles)
+  void processMC(aod::McCollision const&, mcParticlesFiltered const& mcParticles)
   {
     int multFT0A = 0;
     int multFT0C = 0;
@@ -590,7 +598,7 @@ struct MultiplicityTable {
     tableExtraMc(multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10);
   }
 
-  void processGlobalTrackingCounters(aod::Collision const& collisions,
+  void processGlobalTrackingCounters(aod::Collision const&,
                                      soa::Join<Run3Tracks, aod::TrackSelection,
                                                aod::TrackSelectionExtension> const& tracks)
   {

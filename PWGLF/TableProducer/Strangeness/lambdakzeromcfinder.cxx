@@ -68,7 +68,7 @@ using LabeledTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLab
 using FullMcParticles = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
 
 struct lambdakzeromcfinder {
-  Produces<aod::V0s> v0;
+  Produces<aod::FindableV0s> v0;
   Produces<aod::McFullV0Labels> fullv0labels;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -102,7 +102,7 @@ struct lambdakzeromcfinder {
   std::vector<float> searchedV0PositiveMass;
   std::vector<float> searchedV0NegativeMass;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // initialize histograms
     const AxisSpec axisNTimesRecoed{static_cast<int>(10), -0.5f, +9.5f, ""};
@@ -178,9 +178,8 @@ struct lambdakzeromcfinder {
   {
     int nPosReco = 0;
     int nNegReco = 0;
-    const int maxReco = 20;
-    int trackIndexPositive[maxReco];
-    int trackIndexNegative[maxReco];
+    int trackIndexPositive[20];
+    int trackIndexNegative[20];
 
     int positivePdg = 211;
     int negativePdg = -211;
@@ -258,7 +257,7 @@ struct lambdakzeromcfinder {
     return reconstructed;
   }
 
-  void processFromMcParticles(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, FullMcParticles const& allMcParticles)
+  void processFromMcParticles(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& /*tracks*/, FullMcParticles const& allMcParticles)
   {
     v0collisionId.clear();
     v0positiveIndex.clear();
@@ -313,7 +312,7 @@ struct lambdakzeromcfinder {
   Partition<LabeledTracks> posTracks = aod::track::signed1Pt > 0.0f;
   Partition<LabeledTracks> negTracks = aod::track::signed1Pt < 0.0f;
 
-  void processFromSingleProngs(aod::Collisions const& collisions, LabeledTracks const& tracks, soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, aod::McParticles const& allMcParticles)
+  void processFromSingleProngs(aod::Collisions const& /*collisions*/, LabeledTracks const& /*tracks*/, soa::Join<aod::McCollisions, aod::McCollsExtra> const& /*mcCollisions*/, aod::McParticles const& /*allMcParticles*/)
   {
     v0collisionId.clear();
     v0positiveIndex.clear();

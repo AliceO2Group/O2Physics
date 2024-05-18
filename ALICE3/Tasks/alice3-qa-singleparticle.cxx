@@ -134,6 +134,8 @@ struct Alice3SingleParticle {
     histos.add("particle/primariesEta", "Particle Eta (primary) " + tit, kTH1D, {axisEta});
     histos.add("particle/secondariesEta", "Particle Eta (secondary) " + tit, kTH1D, {axisEta});
     histos.add("particle/Y", "Particle Y " + tit, kTH1D, {axisY});
+    histos.add("particle/primariesY", "Particle Y (primary)" + tit, kTH1D, {axisY});
+    histos.add("particle/secondariesY", "Particle Y (secondary)" + tit, kTH1D, {axisY});
     histos.add("particle/EvsPz", "Particle E vs Pz " + tit, kTH2D, {axisE, axisPz});
     histos.add("particle/YvzPz", "Particle Y vs Pz " + tit, kTH2D, {axisY, axisPz});
     histos.add("particle/EtavzPz", "Particle Eta vs Pz " + tit, kTH2D, {axisEta, axisPz});
@@ -239,10 +241,12 @@ struct Alice3SingleParticle {
         histos.fill(HIST("particle/primariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/primariesP"), mcParticle.p());
         histos.fill(HIST("particle/primariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/primariesY"), mcParticle.y());
       } else {
         histos.fill(HIST("particle/secondariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/secondariesP"), mcParticle.p());
         histos.fill(HIST("particle/secondariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/secondariesY"), mcParticle.y());
       }
       histos.fill(HIST("particle/EvsPz"), mcParticle.e(), mcParticle.pz());
       histos.fill(HIST("particle/Y"), mcParticle.y());
@@ -411,10 +415,12 @@ struct Alice3SingleParticle {
         histos.fill(HIST("particle/primariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/primariesP"), mcParticle.p());
         histos.fill(HIST("particle/primariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/primariesY"), mcParticle.y());
       } else {
         histos.fill(HIST("particle/secondariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/secondariesP"), mcParticle.p());
         histos.fill(HIST("particle/secondariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/secondariesY"), mcParticle.y());
       }
       histos.fill(HIST("particle/EvsPz"), mcParticle.e(), mcParticle.pz());
       histos.fill(HIST("particle/Y"), mcParticle.y());
@@ -528,10 +534,12 @@ struct Alice3SingleParticle {
         histos.fill(HIST("particle/primariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/primariesP"), mcParticle.p());
         histos.fill(HIST("particle/primariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/primariesY"), mcParticle.y());
       } else {
         histos.fill(HIST("particle/secondariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/secondariesP"), mcParticle.p());
         histos.fill(HIST("particle/secondariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/secondariesY"), mcParticle.y());
       }
       histos.fill(HIST("particle/EvsPz"), mcParticle.e(), mcParticle.pz());
       histos.fill(HIST("particle/Y"), mcParticle.y());

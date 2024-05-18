@@ -30,6 +30,8 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/Core/PID/PIDTOF.h"
+#include "TableHelper.h"
 
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
@@ -68,6 +70,7 @@ struct decay3bodyBuilder {
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
       {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
+      {"hBachelorTOFNSigmaDe", "hBachelorTOFNSigmaDe", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
     },
   };
 
@@ -86,6 +89,14 @@ struct decay3bodyBuilder {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  // CCDB TOF PID paras
+  Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
+  Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
+  Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
+  Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
+  Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
+  Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
+  Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
 
   int mRunNumber;
   float d_bz;
@@ -93,8 +104,9 @@ struct decay3bodyBuilder {
   float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<3> fitter3body;
+  o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -188,12 +200,83 @@ struct decay3bodyBuilder {
       // (setMatLUT has implicit and problematic init field call if not)
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
+
+    // Initial TOF PID Paras, copied from PIDTOF.h
+    ccdb->setTimestamp(bc.timestamp());
+    // Not later than now objects
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    // TODO: implement the automatic pass name detection from metadata
+    if (passName.value == "") {
+      passName.value = "unanchored"; // temporary default
+      LOG(warning) << "Passed autodetect mode for pass, not implemented yet, waiting for metadata. Taking '" << passName.value << "'";
+    }
+    LOG(info) << "Using parameter collection, starting from pass '" << passName.value << "'";
+
+    const std::string fname = paramFileName.value;
+    if (!fname.empty()) { // Loading the parametrization from file
+      LOG(info) << "Loading exp. sigma parametrization from file " << fname << ", using param: " << parametrizationPath.value;
+      if (1) {
+        o2::tof::ParameterCollection paramCollection;
+        paramCollection.loadParamFromFile(fname, parametrizationPath.value);
+        LOG(info) << "+++ Loaded parameter collection from file +++";
+        if (!paramCollection.retrieveParameters(mRespParamsV2, passName.value)) {
+          if (fatalOnPassNotAvailable) {
+            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+          } else {
+            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+          }
+        } else {
+          mRespParamsV2.setShiftParameters(paramCollection.getPars(passName.value));
+          mRespParamsV2.printShiftParameters();
+        }
+      } else {
+        mRespParamsV2.loadParamFromFile(fname.data(), parametrizationPath.value);
+      }
+    } else if (loadResponseFromCCDB) { // Loading it from CCDB
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << bc.timestamp();
+      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, bc.timestamp());
+      paramCollection->print();
+      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) { // Attempt at loading the parameters with the pass defined
+        if (fatalOnPassNotAvailable) {
+          LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+        } else {
+          LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+        }
+      } else { // Pass is available, load non standard parameters
+        mRespParamsV2.setShiftParameters(paramCollection->getPars(passName.value));
+        mRespParamsV2.printShiftParameters();
+      }
+    }
+    mRespParamsV2.print();
+    if (timeShiftCCDBPath.value != "") {
+      if (timeShiftCCDBPath.value.find(".root") != std::string::npos) {
+        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
+        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
+      } else {
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), bc.timestamp()), true);
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), bc.timestamp()), false);
+      }
+    }
+  }
+
+  //------------------------------------------------------------------
+  // Recalculate TOF PID for bachelors (deuteron), copied from PIDTOF.h
+  template <typename TrackType>
+  static float GetExpectedSigma(const o2::pid::tof::TOFResoParamsV2& parameters, const TrackType& track, const float tofSignal, const float collisionTimeRes, double mMassZ)
+  {
+    const float& mom = track.p();
+    if (mom <= 0) {
+      return -999.f;
+    }
+    const float dpp = parameters[9] + parameters[10] * mom + parameters[11] * mMassZ / mom; // mean relative pt resolution;
+    const float sigma = dpp * tofSignal / (1. + mom * mom / (mMassZ * mMassZ));
+    return std::sqrt(sigma * sigma + parameters[12] * parameters[12] / mom / mom + parameters[4] * parameters[4] + collisionTimeRes * collisionTimeRes);
   }
 
   //------------------------------------------------------------------
   // 3body candidate builder
   template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
-  void buildVtx3BodyDataTable(TCollisionTable const& collision, TTrackTable const& tracks, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
+  void buildVtx3BodyDataTable(TCollisionTable const& collision, TTrackTable const& /*tracks*/, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   {
 
     for (auto& vtx3body : decay3bodys) {
@@ -262,12 +345,30 @@ struct decay3bodyBuilder {
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxCosPA);
 
+      // Recalculate the TOF PID
+      double tofNsigmaDe = -999;
+      static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; // c in cm/ps
+
+      if (t2.hasTOF()) {
+        double bachExpTime = t2.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (t2.tofExpMom() * t2.tofExpMom())) / (kCSPEED * t2.tofExpMom()); // L*E/(p*c) = L/v
+        double tofsignal = t2.trackTime() * 1000 + bachExpTime;
+        // double bachtime = t2.trackTime() * 1000 + bachExpTime - collision.collisionTime(); // in ps
+
+        double expSigma = GetExpectedSigma(mRespParamsV2, t2, tofsignal, collision.collisionTimeRes(), o2::constants::physics::MassDeuteron);
+        double corrTofMom = t2.tofExpMom() / (1.f + t2.sign() * mRespParamsV2.getShift(t2.eta()));
+        double corrSignal = t2.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (corrTofMom * corrTofMom)) / (kCSPEED * corrTofMom) + mRespParamsV2.getTimeShift(t2.eta(), t2.sign());
+        tofNsigmaDe = (tofsignal - collision.collisionTime() - corrSignal) / expSigma;
+      }
+
+      registry.fill(HIST("hBachelorTOFNSigmaDe"), t2.sign() * t2.p(), tofNsigmaDe);
+
       vtx3bodydata(
         t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), vtx3body.globalIndex(),
         pos[0], pos[1], pos[2],
         p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
         fitter3body.getChi2AtPCACandidate(),
-        Track0dcaXY, Track1dcaXY, Track2dcaXY);
+        Track0dcaXY, Track1dcaXY, Track2dcaXY,
+        tofNsigmaDe);
     }
   }
 
@@ -330,13 +431,13 @@ struct decay3bodyLabelBuilder {
 
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
 
-  void processDoNotBuildLabels(aod::Collisions::iterator const& collision)
+  void processDoNotBuildLabels(aod::Collisions::iterator const&)
   {
     // dummy process function - should not be required in the future
   }
   PROCESS_SWITCH(decay3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const&)
   {
     std::vector<int> lIndices;
     lIndices.reserve(vtx3bodydatas.size());

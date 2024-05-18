@@ -19,11 +19,10 @@
 #include "DCAFitter/HelixHelper.h"
 #include "DetectorsBase/Propagator.h"
 #include "Common/Core/trackUtilities.h"
-#include "Framework/AnalysisTask.h"
 #include "Common/Core/RecoDecay.h"
 
 //_______________________________________________________________________
-bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)
+inline bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)
 {
   float ellipse = pow(alpha / alpha_max, 2) + pow(qt / qt_max, 2);
   if (ellipse < 1.0) {
@@ -33,7 +32,7 @@ bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, co
   }
 }
 //_______________________________________________________________________
-float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+inline float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
 {
   float momTot = RecoDecay::p(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
   float lQlNeg = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg}) / momTot;
@@ -41,7 +40,7 @@ float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, 
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg); // longitudinal momentum asymmetry of v0
 }
 //_______________________________________________________________________
-float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+inline float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
 {
   float momTot = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
   float dp = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
@@ -49,7 +48,7 @@ float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, flo
 }
 //_______________________________________________________________________
 template <typename TrackPrecision = float, typename T1, typename T2>
-void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
+inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
 {
   float bz = prop->getNominalBz();
 
@@ -76,13 +75,13 @@ void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, f
 
   // I think this calculation gets the closest point on the track to the conversion point
   // This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
-  float alphaPos = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixPos.yC), -(xyz[0] - helixPos.xC));
-  float alphaNeg = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixNeg.yC), -(xyz[0] - helixNeg.xC));
+  float alphaPos = M_PI + std::atan2(-(xyz[1] - helixPos.yC), -(xyz[0] - helixPos.xC));
+  float alphaNeg = M_PI + std::atan2(-(xyz[1] - helixNeg.yC), -(xyz[0] - helixNeg.xC));
 
-  float vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
-  float vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);
-  float vertexXNeg = helixNeg.xC + helixNeg.rC * TMath::Cos(alphaNeg);
-  float vertexYNeg = helixNeg.yC + helixNeg.rC * TMath::Sin(alphaNeg);
+  float vertexXPos = helixPos.xC + helixPos.rC * std::cos(alphaPos);
+  float vertexYPos = helixPos.yC + helixPos.rC * std::sin(alphaPos);
+  float vertexXNeg = helixNeg.xC + helixNeg.rC * std::cos(alphaNeg);
+  float vertexYNeg = helixNeg.yC + helixNeg.rC * std::sin(alphaNeg);
 
   TVector2 vertexPos(vertexXPos, vertexYPos);
   TVector2 vertexNeg(vertexXNeg, vertexYNeg);
@@ -104,11 +103,10 @@ void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, f
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
                      matCorr);
 
-  // TODO: This is still off and needs to be checked...
   xyz[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
 }
 //_______________________________________________________________________
-float getPhivPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg, int cpos, int cneg, float bz)
+inline float getPhivPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg, int cpos, int cneg, float bz)
 {
   // cos(phiv) = w*a /|w||a|
   // with w = u x v
@@ -165,8 +163,8 @@ float getPhivPair(float pxpos, float pypos, float pzpos, float pxneg, float pyne
   float uy = (pypos + pyneg) / RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
   float uz = (pzpos + pzneg) / RecoDecay::sqrtSumOfSquares(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
 
-  float ax = uy / TMath::Sqrt(ux * ux + uy * uy);
-  float ay = -ux / TMath::Sqrt(ux * ux + uy * uy);
+  float ax = uy / std::sqrt(ux * ux + uy * uy);
+  float ay = -ux / std::sqrt(ux * ux + uy * uy);
 
   // The third axis defined by vector product (ux,uy,uz)X(vx,vy,vz)
   float wx = uy * vz - uz * vy;
@@ -175,19 +173,22 @@ float getPhivPair(float pxpos, float pypos, float pzpos, float pxneg, float pyne
   // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
   auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
 
-  // if(!std::isfinite(std::acos(wx * ax + wy * ay))){
+  // if (!std::isfinite(std::acos(wx * ax + wy * ay))) {
+  //   LOGF(info, "pxpos = %f, pypos = %f, pzpos = %f", pxpos, pypos, pzpos);
+  //   LOGF(info, "pxneg = %f, pyneg = %f, pzneg = %f", pxneg, pyneg, pzneg);
   //   LOGF(info, "pos_x_ele[0] = %f, pos_x_ele[1] = %f, pos_x_ele[2] = %f", pos_x_ele[0], pos_x_ele[1], pos_x_ele[2]);
   //   LOGF(info, "ux = %f, uy = %f, uz = %f", ux, uy, uz);
   //   LOGF(info, "ax = %f, ay = %f", ax, ay);
   //   LOGF(info, "wx = %f, wy = %f", wx, wy);
   //   LOGF(info, "wx * ax + wy * ay = %f", wx * ax + wy * ay);
-  //   LOGF(info, "std::acos(wx * ax + wy * ay) = %f", std::acos(clipToPM1(wx * ax + wy * ay)));
+  //   LOGF(info, "std::acos(wx * ax + wy * ay) = %f", std::acos(wx * ax + wy * ay));
+  //   LOGF(info, "std::acos(clipToPM1(wx * ax + wy * ay)) = %f", std::acos(clipToPM1(wx * ax + wy * ay)));
   // }
 
   return std::acos(clipToPM1(wx * ax + wy * ay)); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
 }
 //_______________________________________________________________________
-float getPsiPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+inline float getPsiPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
 {
   // float pxpos = t1.GetPx();
   // float pypos = t1.GetPy();
@@ -205,7 +206,7 @@ float getPsiPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg
   return std::asin(clipToPM1(argsin));
 }
 //_______________________________________________________________________
-float getOpeningAngle(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+inline float getOpeningAngle(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
 {
   auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
   float ptot2 = RecoDecay::p2(pxpos, pypos, pzpos) * RecoDecay::p2(pxneg, pyneg, pzneg);

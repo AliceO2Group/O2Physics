@@ -109,7 +109,7 @@ struct hyhefourbuilder {
   // Define o2 fitter, 3-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<3> fitter;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     const AxisSpec axisMassHyHe4{1000, 3.5f, 4.5f, "Hyperhelium4 Mass Distribution (GeV/c^{2})"};
     const AxisSpec axisNCandidates{100, 0.0f, 100.0f, "Number of 3-body candidates"};
@@ -400,7 +400,7 @@ struct hyHe4Preselector {
   // tpc quality pre-selection
   Configurable<int> dTPCNCrossedRows{"dTPCNCrossedRows", 50, "Minimum TPC crossed rows"};
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     const AxisSpec hEventCounter{1, 0.0f, 1.0f, "Number of events"};
     histos.add("hNEvents", "hNEvents", kTH1F, {hEventCounter});
@@ -470,7 +470,7 @@ struct hyHe4Preselector {
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// This process function ensures that all 3 body candidates are built. It will simply tag everything as true.
-  void processBuildAll(aod::Collisions const& collisions, aod::Decay3Bodys const& d3bodys, aod::TracksExtra const&)
+  void processBuildAll(aod::Collisions const&, aod::Decay3Bodys const& d3bodys, aod::TracksExtra const&)
   {
     // int64_t eventCounter = 0;
     for (const auto& d3body : d3bodys) {
@@ -483,7 +483,7 @@ struct hyHe4Preselector {
   PROCESS_SWITCH(hyHe4Preselector, processBuildAll, "Switch to build all V0s", false);
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processBuildMCAssociated(aod::Collisions const& collisions, aod::Decay3Bodys const& d3bodys, LabeledTracksExtra const&, aod::McParticles const& particlesMC)
+  void processBuildMCAssociated(aod::Collisions const&, aod::Decay3Bodys const& d3bodys, LabeledTracksExtra const&, aod::McParticles const&)
   {
     for (const auto& d3body : d3bodys) {
       bool lIsInteresting = false;

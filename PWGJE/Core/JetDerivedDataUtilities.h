@@ -28,10 +28,9 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 
 enum JCollisionSel {
   sel8 = 0,
-  sel8WithoutTimeFrameBorderCut = 1,
-  sel7 = 2,
-  sel7WithoutTimeFrameBorderCut = 3,
-  WithoutTimeFrameBorderCut = 4
+  sel8Full = 1,
+  sel8ForUnanchoredMC = 2,
+  sel7 = 3
 };
 
 template <typename T>
@@ -47,40 +46,34 @@ int initialiseEventSelection(std::string eventSelection)
 {
   if (eventSelection == "sel8") {
     return JCollisionSel::sel8;
-  } else if (eventSelection == "sel8WithoutTimeFrameBorderCut") {
-    return JCollisionSel::sel8WithoutTimeFrameBorderCut;
-  } else if (eventSelection == "sel7") {
+  }
+  if (eventSelection == "sel8Full") {
+    return JCollisionSel::sel8Full;
+  }
+  if (eventSelection == "sel8ForUnanchoredMC") {
+    return JCollisionSel::sel8ForUnanchoredMC;
+  }
+  if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
-  } else if (eventSelection == "sel7WithoutTimeFrameBorderCut") {
-    return JCollisionSel::sel7WithoutTimeFrameBorderCut;
-  } else if (eventSelection == "WithoutTimeFrameBorderCut") {
-    return JCollisionSel::WithoutTimeFrameBorderCut;
   }
   return -1;
 }
 
 template <typename T>
-uint16_t setEventSelectionBit(T const& collision)
+uint8_t setEventSelectionBit(T const& collision)
 {
-
-  uint16_t bit = 0;
-
-  if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-    SETBIT(bit, JCollisionSel::WithoutTimeFrameBorderCut);
-  }
+  uint8_t bit = 0;
   if (collision.sel8()) {
-    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      SETBIT(bit, JCollisionSel::sel8);
-    } else {
-      SETBIT(bit, JCollisionSel::sel8WithoutTimeFrameBorderCut);
+    SETBIT(bit, JCollisionSel::sel8);
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      SETBIT(bit, JCollisionSel::sel8Full);
     }
+  }
+  if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) { // we can look to add kNoSameBunchPileup and kIsGoodZvtxFT0vsPV if deemed suitable
+    SETBIT(bit, JCollisionSel::sel8ForUnanchoredMC);
   }
   if (collision.sel7()) {
-    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      SETBIT(bit, JCollisionSel::sel7);
-    } else {
-      SETBIT(bit, JCollisionSel::sel7WithoutTimeFrameBorderCut);
-    }
+    SETBIT(bit, JCollisionSel::sel7);
   }
   return bit;
 }
@@ -104,7 +97,8 @@ enum JTrigSelCh {
   noChargedTigger = 0,
   chargedLow = 1,
   chargedHigh = 2,
-  trackPt = 3
+  trackLowPt = 3,
+  trackHighPt = 4
 };
 
 template <typename T>
@@ -124,9 +118,13 @@ int initialiseChargedTriggerSelection(std::string triggerSelection)
   if (triggerSelection == "chargedHigh") {
     return JTrigSelCh::chargedHigh;
   }
-  if (triggerSelection == "trackPt") {
-    return JTrigSelCh::trackPt;
+  if (triggerSelection == "trackLowPt") {
+    return JTrigSelCh::trackLowPt;
   }
+  if (triggerSelection == "trackHighPt") {
+    return JTrigSelCh::trackHighPt;
+  }
+
   return -1;
 }
 
@@ -141,9 +139,13 @@ uint8_t setChargedTriggerSelectionBit(T const& collision)
   if (collision.hasJetChHighPt()) {
     SETBIT(bit, JTrigSelCh::chargedHigh);
   }
-  if (collision.hasTrackHighPt()) {
-    SETBIT(bit, JTrigSelCh::trackPt);
+  if (collision.hasTrackLowPt()) {
+    SETBIT(bit, JTrigSelCh::trackLowPt);
   }
+  if (collision.hasTrackHighPt()) {
+    SETBIT(bit, JTrigSelCh::trackHighPt);
+  }
+
   return bit;
 }
 
@@ -303,7 +305,8 @@ enum JTrackSel {
   trackSign = 0, // warning : this number is hardcoded in the sign coloumn in the JTracks table so should not be changed without changing it there too
   globalTrack = 1,
   qualityTrack = 2,
-  hybridTrack = 3
+  hybridTrack = 3,
+  uniformTrack = 4
 };
 
 template <typename T>
@@ -330,8 +333,10 @@ int initialiseTrackSelection(std::string trackSelection)
     return JTrackSel::globalTrack;
   } else if (trackSelection == "QualityTracks") {
     return JTrackSel::qualityTrack;
-  } else if (trackSelection == "hybridTracksJE") {
+  } else if (trackSelection == "hybridTracks") {
     return JTrackSel::hybridTrack;
+  } else if (trackSelection == "uniformTracks") {
+    return JTrackSel::uniformTrack;
   }
   return -1;
 }
@@ -354,6 +359,11 @@ uint8_t setTrackSelectionBit(T const& track)
   if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrack);
   }
+  if ((track.passedGoldenChi2() && track.passedDCAxy()) &&
+      (track.passedITSNCls() && track.passedITSChi2NDF() && track.passedITSHits()) &&
+      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
+    SETBIT(bit, JTrackSel::uniformTrack);
+  }
 
   return bit;
 }
@@ -371,6 +381,12 @@ template <typename T>
 float trackEnergy(T const& track, float mass = mPion)
 {
   return std::sqrt((track.p() * track.p()) + (mass * mass));
+}
+
+template <typename T>
+bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
+{
+  return abs(track.dcaZ()) < dcaZmax;
 }
 
 } // namespace jetderiveddatautilities

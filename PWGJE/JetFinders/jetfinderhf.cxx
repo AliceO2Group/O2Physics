@@ -50,6 +50,8 @@ struct JetFinderHFTask {
   Produces<JetEvtWiseSubTable> jetsEvtWiseSubTable;
   Produces<ConstituentEvtWiseSubTable> constituentsEvtWiseSubTable;
 
+  HistogramRegistry registry;
+
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
@@ -100,6 +102,8 @@ struct JetFinderHFTask {
   Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
+  Configurable<int> jetPtBinWidth{"jetPtBinWidth", 5, "used to define the width of the jetPt bins for the THnSparse"};
+  Configurable<bool> fillTHnSparse{"fillTHnSparse", false, "switch to fill the THnSparse"};
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   int trackSelection = -1;
@@ -128,6 +132,24 @@ struct JetFinderHFTask {
     jetFinder.recombScheme = static_cast<fastjet::RecombinationScheme>(static_cast<int>(jetRecombScheme));
     jetFinder.ghostArea = jetGhostArea;
     jetFinder.ghostRepeatN = ghostRepeat;
+
+    auto jetRadiiBins = (std::vector<double>)jetRadius;
+    if (jetRadiiBins.size() > 1) {
+      jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + (TMath::Abs(jetRadiiBins[jetRadiiBins.size() - 1] - jetRadiiBins[jetRadiiBins.size() - 2])));
+    } else {
+      jetRadiiBins.push_back(jetRadiiBins[jetRadiiBins.size() - 1] + 0.1);
+    }
+    std::vector<double> jetPtBins;
+    int jetPtMaxInt = static_cast<int>(jetPtMax);
+    int jetPtMinInt = static_cast<int>(jetPtMin);
+    jetPtMinInt = (jetPtMinInt / jetPtBinWidth) * jetPtBinWidth;
+    jetPtMaxInt = ((jetPtMaxInt + jetPtBinWidth - 1) / jetPtBinWidth) * jetPtBinWidth;
+    int jetPtBinNumber = (jetPtMaxInt - jetPtMinInt) / jetPtBinWidth;
+    double jetPtMinDouble = static_cast<double>(jetPtMinInt);
+    double jetPtMaxDouble = static_cast<double>(jetPtMaxInt);
+
+    registry.add("hJet", "sparse for data or mcd jets", {HistType::kTHnC, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
+    registry.add("hJetMCP", "sparse for mcp jets", {HistType::kTHnC, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
   }
 
   aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
@@ -144,7 +166,7 @@ struct JetFinderHFTask {
 
   // function that generalically processes Data and reco level events
   template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
-  void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O& originalTracks, float minJetPt, float maxJetPt)
+  void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O& /*originalTracks*/, float minJetPt, float maxJetPt)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -167,7 +189,7 @@ struct JetFinderHFTask {
     } else {
       jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
     }
-    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, true);
+    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJet")), fillTHnSparse, true);
   }
 
   // function that generalically processes gen level events
@@ -183,10 +205,10 @@ struct JetFinderHFTask {
       return;
     }
     jetfindingutilities::analyseParticles(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, std::optional{candidate});
-    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, true);
+    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, registry.get<THn>(HIST("hJetMCP")), fillTHnSparse, true);
   }
 
-  void processDummy(JetCollisions const& collisions)
+  void processDummy(JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetFinderHFTask, processDummy, "Dummy process function turned on by default", true);

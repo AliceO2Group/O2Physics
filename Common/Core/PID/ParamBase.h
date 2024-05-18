@@ -140,7 +140,7 @@ class PidParameters : public TNamed
   void SetParameters(const PidParameters<nPar>* params) { SetParameters(params->mPar); };
 
   /// Printer of the parameter values
-  void Print(Option_t* option = "") const override
+  void Print(Option_t* /*option = ""*/) const override
   {
     LOG(info) << "PidParameters '" << fName << "'";
     for (int i = 0; i < nPar; i++) {

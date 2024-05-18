@@ -31,7 +31,6 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
-#include "TF1.h"
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -69,25 +68,14 @@ struct phianalysisrun3_PbPb {
   Configurable<bool> isEtaAssym{"isEtaAssym", false, "isEtaAssym"};
   Configurable<bool> cfgMultFT0{"cfgMultFT0", true, "cfgMultFT0"};
   Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "iscustomDCAcut"};
-  Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
   Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
   Configurable<bool> isITSOnlycut{"isITSOnlycut", true, "isITSOnlycut"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
-  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
-  Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
-  Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
-
-  // Event selection cuts - Alex
-  TF1* fMultPVCutLow = nullptr;
-  TF1* fMultPVCutHigh = nullptr;
-  TF1* fMultCutLow = nullptr;
-  TF1* fMultCutHigh = nullptr;
-  TF1* fMultMultPVCut = nullptr;
   void init(o2::framework::InitContext&)
   {
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
@@ -98,7 +86,6 @@ struct phianalysisrun3_PbPb {
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
     histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
-    histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{90, 0.0f, 90.0f}, {600, -0.5f, 5999.5f}});
     if (!isMC) {
       histos.add("h3PhiInvMassUnlikeSign", "Invariant mass of Phi meson Unlike Sign", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
       histos.add("h3PhiInvMassLikeSignPP", "Invariant mass of Phi meson Like Sign positive", kTH3F, {{200, 0.0, 200.0}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
@@ -126,19 +113,6 @@ struct phianalysisrun3_PbPb {
       histos.add("h1Phimassrec", "Phi meson Rec", kTH1F, {{200, 0.9, 1.1}});
       histos.add("h1Phipt", "Phi meson Rec", kTH1F, {{200, 0.0f, 20.0f}});
     }
-    // Event selection cut additional - Alex
-    if (additionalEvsel) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
-      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
-      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
-      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
-    }
   }
 
   double massKa = o2::constants::physics::MassKPlus;
@@ -150,52 +124,28 @@ struct phianalysisrun3_PbPb {
   array<float, 3> pvec0;
   array<float, 3> pvec1;
   array<float, 3> pvec1rotation;
-  template <typename TCollision>
-  bool eventSelected(TCollision collision, const float& multiplicity)
-  {
-    if (collision.alias_bit(kTVXinTRD)) {
-      // TRD triggered
-      // return 0;
-    }
-    auto multNTracksPV = collision.multNTracksPV();
-    if (multNTracksPV < fMultPVCutLow->Eval(multiplicity))
-      return 0;
-    if (multNTracksPV > fMultPVCutHigh->Eval(multiplicity))
-      return 0;
-    // if (multTrk < fMultCutLow->Eval(centrality))
-    //  return 0;
-    // if (multTrk > fMultCutHigh->Eval(centrality))
-    //  return 0;
-    // if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
-    //  return 0;
-
-    return 1;
-  }
-
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (iscustomDCAcut && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    if (iscustomDCAcut && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
-    if (ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    if (ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
-    if (isITSOnlycut && !(candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    if (isITSOnlycut && !(candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     return true;
   }
+
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (!isNoTOF && candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (nsigmaCutCombined * nsigmaCutCombined)) {
+    if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (nsigmaCutCombined * nsigmaCutCombined)) {
       return true;
     }
-    if (!isNoTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
-      return true;
-    }
-    if (isNoTOF && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+    if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
       return true;
     }
     return false;
@@ -277,8 +227,8 @@ struct phianalysisrun3_PbPb {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
-  // using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
+
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                   aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
@@ -307,15 +257,11 @@ struct phianalysisrun3_PbPb {
     if (!collision.sel8()) {
       return;
     }
-    if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-      return;
-    }
-    auto multiplicity = collision.centFT0C();
-    auto multTPC = collision.multNTracksPV();
-    if (additionalEvsel && !eventSelected(collision, multiplicity)) {
-      return;
-    }
-    histos.fill(HIST("hFTOCvsTPC"), multiplicity, multTPC);
+    float multiplicity;
+    if (cfgMultFT0)
+      multiplicity = collision.centFT0C();
+    if (!cfgMultFT0)
+      multiplicity = collision.numContrib();
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
@@ -328,12 +274,12 @@ struct phianalysisrun3_PbPb {
       histos.fill(HIST("hDcaz"), track1.dcaZ());
       histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcNSigmaKa());
       histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
-      auto track1ID = track1.index();
+      auto track1ID = track1.globalIndex();
       for (auto track2 : tracks) {
         if (!selectionTrack(track2)) {
           continue;
         }
-        auto track2ID = track2.index();
+        auto track2ID = track2.globalIndex();
         if (track2ID <= track1ID) {
           continue;
         }
@@ -368,19 +314,12 @@ struct phianalysisrun3_PbPb {
       if (!c2.sel8()) {
         continue;
       }
-      if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
-        continue;
-      }
-      auto multiplicity = c1.centFT0C();
-      auto multiplicity2 = c2.centFT0C();
-      if (additionalEvsel && !eventSelected(c1, multiplicity)) {
-        // printf("Mix = %d\n", 4);
-        continue;
-      }
-      if (additionalEvsel && !eventSelected(c2, multiplicity2)) {
-        // printf("Mix = %d\n", 5);
-        continue;
-      }
+
+      float multiplicity;
+      if (cfgMultFT0)
+        multiplicity = c1.centFT0C();
+      if (!cfgMultFT0)
+        multiplicity = c1.numContrib();
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         bool unlike = false;

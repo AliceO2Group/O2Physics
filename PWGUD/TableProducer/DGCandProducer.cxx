@@ -27,7 +27,6 @@ struct DGCandProducer {
   DGCutparHolder diffCuts = DGCutparHolder();
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
-  Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", false, "reject collisions at a TF boundary"};
   Configurable<bool> fillFIThistos{"fillFIThistos", false, "fill the histograms with the FIT amplitudes"};
 
   // DG selector
@@ -190,10 +189,14 @@ struct DGCandProducer {
 
   void init(InitContext&)
   {
+    LOGF(debug, "<DGCandProducer> beginning of init reached");
+
     diffCuts = (DGCutparHolder)DGCuts;
 
+    const int nXbinsInStatH = 25;
+
     // add histograms for the different process functions
-    registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{15, -0.5, 14.5}}});
+    registry.add("reco/Stat", "Cut statistics;; Collisions", {HistType::kTH1F, {{nXbinsInStatH, -0.5, static_cast<float>(nXbinsInStatH - 0.5)}}});
     registry.add("reco/pt1Vspt2", "2 prong events, p_{T} versus p_{T}", {HistType::kTH2F, {{100, -3., 3.}, {100, -3., 3.0}}});
     registry.add("reco/TPCsignal1", "2 prong events, TPC signal versus p_{T} of particle 1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
     registry.add("reco/TPCsignal2", "2 prong events, TPC signal versus p_{T} of particle 2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
@@ -212,26 +215,31 @@ struct DGCandProducer {
     registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
     registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
     registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
+
+    std::string labels[nXbinsInStatH] = {"all", "hasBC", "FITveto", "MID trk", "global PV trk", "not global PB trk",
+                                         "ITS-only PV trk", "TOF PV trk fraction", "n PV trks", "PID", "pt", "eta", "net charge",
+                                         "inv mass", "evsel TF border", "evsel no pile-up", "evsel ITSROF", "evsel z-vtx", "evsel ITSTPC vtx", "evsel TRD vtx", "evsel TOF vtx", "", ""};
+
+    registry.get<TH1>(HIST("reco/Stat"))->SetNdivisions(nXbinsInStatH, "X");
+    for (int iXbin(1); iXbin < nXbinsInStatH + 1; iXbin++) {
+      registry.get<TH1>(HIST("reco/Stat"))->GetXaxis()->ChangeLabel(iXbin, 45, 0.03, 33, -1, -1, labels[iXbin - 1]);
+    }
+
+    LOGF(debug, "<DGCandProducer> end of init reached");
   }
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               aod::Zdcs& zdcs, aod::FV0As& fv0as, aod::FT0s& ft0s, aod::FDDs& fdds)
+               aod::Zdcs& /*zdcs*/, aod::FV0As& fv0as, aod::FT0s& ft0s, aod::FDDs& fdds)
   {
     LOGF(debug, "<DGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
-
-    // reject collisions at TF boundaries
-    if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      return;
-    }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
 
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(2., 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     auto bc = collision.foundBC_as<BCs>();
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
 
@@ -246,7 +254,7 @@ struct DGCandProducer {
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 3, 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 2, 1.);
     if (isDGEvent == 0) {
       LOGF(debug, "<DGCandProducer>  Data: good collision!");
 
@@ -507,7 +515,7 @@ struct McDGCandProducer {
   // save the MC truth of all events of interest and of the DG events
   void processMC(aod::McCollisions const& mccols, aod::McParticles const& mcparts,
                  UDCCs const& dgcands, UDTCs const& udtracks,
-                 CCs const& collisions, BCs const& bcs, TCs const& tracks)
+                 CCs const& /*collisions*/, BCs const& /*bcs*/, TCs const& /*tracks*/)
   {
     LOGF(info, "Number of McCollisions %d", mccols.size());
     LOGF(info, "Number of DG candidates %d", dgcands.size());
@@ -645,7 +653,7 @@ struct McDGCandProducer {
   }
   PROCESS_SWITCH(McDGCandProducer, processMC, "Produce MC tables", false);
 
-  void processDummy(aod::Collisions const& collisions)
+  void processDummy(aod::Collisions const& /*collisions*/)
   {
     // do nothing
     LOGF(info, "Running dummy process function!");
