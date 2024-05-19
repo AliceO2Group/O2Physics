@@ -138,7 +138,6 @@ struct correlateStrangeness {
 
     if (!listEfficiencies) {
       LOG(fatal) << "Problem getting TList object with efficiencies!";
-      
     }
 
     hEfficiencyK0Short = (TH2F*)listEfficiencies->FindObject("hEfficiencyK0Short");
@@ -148,7 +147,6 @@ struct correlateStrangeness {
     hEfficiencyXiPlus = (TH2F*)listEfficiencies->FindObject("hEfficiencyXiPlus");
     hEfficiencyOmegaMinus = (TH2F*)listEfficiencies->FindObject("hEfficiencyOmegaMinus");
     hEfficiencyOmegaPlus = (TH2F*)listEfficiencies->FindObject("hEfficiencyOmegaPlus");
-    
     LOG(info) << "Efficiencies now loaded for " << mRunNumber;
   }
 
@@ -193,7 +191,6 @@ struct correlateStrangeness {
         hEfficiencyV0[0] = hEfficiencyK0Short;
         hEfficiencyV0[1] = hEfficiencyLambda;
         hEfficiencyV0[2] = hEfficiencyAntiLambda;
-  
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
           float efficiency = hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyV0[index]->GetYaxis()->FindBin(assoc.eta()));
