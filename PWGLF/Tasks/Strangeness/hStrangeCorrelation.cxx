@@ -264,7 +264,7 @@ struct correlateStrangeness {
 
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
-          float efficiency =  hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyCascade[index]->GetYaxis()->FindBin(assoc.eta()));
+          float efficiency = hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyCascade[index]->GetYaxis()->FindBin(assoc.eta()));
           float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
           if (bitcheck(doCorrelation, index + 3) && (!applyEfficiencyCorrection || efficiency != 0)) {
             if (assocCandidate.compatible(index) && (!doMCassociation || assocCandidate.mcTrue(index)) && !mixing && assocCandidate.invMassRegionCheck(index, 1))
@@ -657,12 +657,12 @@ struct correlateStrangeness {
       histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
     // Do basic QA
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initEfficiencyFromCCDB(bc);
-      TH2F* hEfficiencyV0[3];
-      hEfficiencyV0[0] = hEfficiencyK0Short;
-      hEfficiencyV0[1] = hEfficiencyLambda;
-      hEfficiencyV0[2] = hEfficiencyAntiLambda;
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initEfficiencyFromCCDB(bc);
+    TH2F* hEfficiencyV0[3];
+    hEfficiencyV0[0] = hEfficiencyK0Short;
+    hEfficiencyV0[1] = hEfficiencyLambda;
+    hEfficiencyV0[2] = hEfficiencyAntiLambda;
 
     for (auto const& v0 : associatedV0s) {
       auto v0Data = v0.v0Core_as<V0DatasWithoutTrackX>();
@@ -714,13 +714,13 @@ struct correlateStrangeness {
     histos.fill(HIST("EventQA/hMult"), collision.centFT0M());
     histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     // Do basic QA
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initEfficiencyFromCCDB(bc);
-      TH2F* hEfficiencyCascade[4];
-      hEfficiencyCascade[0] = hEfficiencyXiMinus;
-      hEfficiencyCascade[1] = hEfficiencyXiPlus;
-      hEfficiencyCascade[2] = hEfficiencyOmegaMinus;
-      hEfficiencyCascade[3] = hEfficiencyOmegaPlus;;
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initEfficiencyFromCCDB(bc);
+    TH2F* hEfficiencyCascade[4];
+    hEfficiencyCascade[0] = hEfficiencyXiMinus;
+    hEfficiencyCascade[1] = hEfficiencyXiPlus;
+    hEfficiencyCascade[2] = hEfficiencyOmegaMinus;
+    hEfficiencyCascade[3] = hEfficiencyOmegaPlus;;
 
     for (auto const& casc : associatedCascades) {
       auto cascData = casc.cascData();
@@ -728,7 +728,7 @@ struct correlateStrangeness {
         constexpr int index = i.value;
         float efficiency = hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(cascData.pt()), hEfficiencyCascade[index]->GetYaxis()->FindBin(cascData.eta()));
         float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
-        if (casc.compatible(index) && (!doMCassociation || casc.mcTrue(index)) && bitcheck(doCorrelation, index + 3) && (!applyEfficiencyCorrection || efficiency!= 0)) {
+        if (casc.compatible(index) && (!doMCassociation || casc.mcTrue(index)) && bitcheck(doCorrelation, index + 3) && (!applyEfficiencyCorrection || efficiency != 0)) {
           histos.fill(HIST("h3d") + HIST(cascadenames[index]) + HIST("Spectrum"), cascData.pt(), collision.centFT0M(), casc.invMassRegion(index), weight);
           if (std::abs(cascData.rapidity(index)) < 0.5) {
             histos.fill(HIST("h3d") + HIST(cascadenames[index]) + HIST("SpectrumY"), cascData.pt(), collision.centFT0M(), casc.invMassRegion(index), weight);
@@ -792,8 +792,8 @@ struct correlateStrangeness {
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       // ________________________________________________
-        auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-        initEfficiencyFromCCDB(bc);
+      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+      initEfficiencyFromCCDB(bc);
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
         continue;
@@ -827,8 +827,8 @@ struct correlateStrangeness {
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       // ________________________________________________
-        auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-        initEfficiencyFromCCDB(bc);
+      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+      initEfficiencyFromCCDB(bc);
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
         continue;
