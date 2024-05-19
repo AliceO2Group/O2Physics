@@ -720,7 +720,7 @@ struct correlateStrangeness {
     hEfficiencyCascade[0] = hEfficiencyXiMinus;
     hEfficiencyCascade[1] = hEfficiencyXiPlus;
     hEfficiencyCascade[2] = hEfficiencyOmegaMinus;
-    hEfficiencyCascade[3] = hEfficiencyOmegaPlus;;
+    hEfficiencyCascade[3] = hEfficiencyOmegaPlus;
 
     for (auto const& casc : associatedCascades) {
       auto cascData = casc.cascData();
