@@ -9,12 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 // Your own header file
+// Your own header file
 #include "FlowZDCtask.h"
-
-// C system headers (none in this file)
-// #include <cmath>
-// #include <cstdio>
-// #include <cstdlib>
 
 // C++ system headers
 #include <iostream>
