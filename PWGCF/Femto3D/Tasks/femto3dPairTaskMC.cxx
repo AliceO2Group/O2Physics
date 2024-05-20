@@ -144,9 +144,9 @@ struct FemtoCorrelationsMC {
     for (unsigned int i = 0; i < _centBins.value.size() - 1; i++) {
 
       std::map<int, std::shared_ptr<TH3>> DCA_histos_1_perMult;
-      DCA_histos_1_perMult[0] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_primary", i), "dcaxyz_vs_pt_primary", kTH3F, {{100, 0., 5., "pt"}, {1000, -1., 1., "DCA_XY(pt) primary"}, {1000, -1., 1., "DCA_Z(pt) primary"}});
-      DCA_histos_1_perMult[1] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_weakdecay", i), "dcaxyz_vs_pt_weakdecay", kTH3F, {{100, 0., 5., "pt"}, {1000, -1., 1., "DCA_XY(pt) weakdecay"}, {1000, -1., 1., "DCA_Z(pt) weakdecay"}});
-      DCA_histos_1_perMult[2] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_material", i), "dcaxyz_vs_pt_material", kTH3F, {{100, 0., 5., "pt"}, {1000, -1., 1., "DCA_XY(pt) material"}, {1000, -1., 1., "DCA_Z(pt) material"}});
+      DCA_histos_1_perMult[0] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_primary", i), "dcaxyz_vs_pt_primary", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) primary"}, {500, -0.5, 0.5, "DCA_Z(pt) primary"}});
+      DCA_histos_1_perMult[1] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_weakdecay", i), "dcaxyz_vs_pt_weakdecay", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) weakdecay"}, {500, -0.5, 0.5, "DCA_Z(pt) weakdecay"}});
+      DCA_histos_1_perMult[2] = registry.add<TH3>(Form("Cent%i/FirstParticle/dcaxyz_vs_pt_material", i), "dcaxyz_vs_pt_material", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) material"}, {500, -0.5, 0.5, "DCA_Z(pt) material"}});
 
       std::map<int, std::shared_ptr<TH1>> Purity_histos_1_perMult;
       Purity_histos_1_perMult[11] = registry.add<TH1>(Form("Cent%i/FirstParticle/pSpectraEl", i), "pSpectraEl", kTH1F, {{100, 0., 5., "p"}});
@@ -162,9 +162,9 @@ struct FemtoCorrelationsMC {
 
       if (!IsIdentical) {
         std::map<int, std::shared_ptr<TH3>> DCA_histos_2_perMult;
-        DCA_histos_2_perMult[0] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_primary", i), "dcaxyz_vs_pt_primary", kTH3F, {{100, 0., 5., "pt"}, {1000, -1., 1., "DCA_XY(pt) primary"}, {1000, -1., 1., "DCA_Z(pt) primary"}});
-        DCA_histos_2_perMult[1] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_weakdecay", i), "dcaxyz_vs_pt_weakdecay", kTH3F, {{100, 0., 5., "pt"}, {1000, -1., 1., "DCA_XY(pt) weakdecay"}, {1000, -1., 1., "DCA_Z(pt) weakdecay"}});
-        DCA_histos_2_perMult[2] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_material", i), "dcaxyz_vs_pt_material", kTH3F, {{100, 0., 5., "pt"}, {1000, -1., 1., "DCA_XY(pt) material"}, {1000, -1., 1., "DCA_Z(pt) material"}});
+        DCA_histos_2_perMult[0] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_primary", i), "dcaxyz_vs_pt_primary", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) primary"}, {500, -0.5, -0.5, "DCA_Z(pt) primary"}});
+        DCA_histos_2_perMult[1] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_weakdecay", i), "dcaxyz_vs_pt_weakdecay", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) weakdecay"}, {500, -0.5, 0.5, "DCA_Z(pt) weakdecay"}});
+        DCA_histos_2_perMult[2] = registry.add<TH3>(Form("Cent%i/SecondParticle/dcaxyz_vs_pt_material", i), "dcaxyz_vs_pt_material", kTH3F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "DCA_XY(pt) material"}, {500, -0.5, 0.5, "DCA_Z(pt) material"}});
 
         std::map<int, std::shared_ptr<TH1>> Purity_histos_2_perMult;
         Purity_histos_2_perMult[11] = registry.add<TH1>(Form("Cent%i/SecondParticle/pSpectraEl", i), "pSpectraEl", kTH1F, {{100, 0., 5., "p"}});
