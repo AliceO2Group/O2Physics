@@ -257,7 +257,7 @@ struct MultiplicityCounter {
         } else if (addFT0 && addFDD) {
           binnedRegistry.add({Response.data(), " ; N_{rec}; N_{PV cont}; N_{gen}; N_{FT0A}; N_{FT0C}; N_{FDA}; N_{FDC}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0AAxis, FT0CAxis, FDAAxis, FDCAxis, ZAxis, CentAxis}}});
         } else {
-          binnedRegistry.add({Response.data(), " ; N_{rec}; N_{PV cont}; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, ZAxis, CentAxis}}});
+          binnedRegistry.add({Response.data(), " ; N_{rec}; N_{PV cont}; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, ZAxis, CentAxis}}});
         }
       }
 
