@@ -27,6 +27,7 @@
 #include "PWGLF/DataModel/cascqaanalysis.h"
 #include "TRandom2.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "PWGLF/Utils/inelGt.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -87,12 +88,6 @@ struct cascqaanalysis {
     int64_t index;
     uint8_t typeFlag;
   } CollisionIndexAndType;
-
-  // Struct for counting charged particles in |eta| region
-  typedef struct EtaCharge {
-    double eta;
-    int charge;
-  } EtaCharge;
 
   void init(InitContext const&)
   {
@@ -272,8 +267,8 @@ struct cascqaanalysis {
       registry.fill(HIST("hNEvents"), 1.5);
     }
 
-    // kNoTimeFrameBorder selection (DATA only)
-    if (!isMC && isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    // kNoTimeFrameBorder selection
+    if (isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
 
@@ -281,8 +276,8 @@ struct cascqaanalysis {
       registry.fill(HIST("hNEvents"), 2.5);
     }
 
-    // kNoITSROFrameBorder selection (DATA only)
-    if (!isMC && isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    // kNoITSROFrameBorder selection
+    if (isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
 
@@ -322,48 +317,6 @@ struct cascqaanalysis {
     }
 
     return true;
-  }
-
-  template <typename TMcParticles>
-  bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection)
-  {
-    // INEL > N (at least N+1 charged particles in |eta| < 1.0)
-    EtaCharge etaCharge;
-    std::vector<EtaCharge> ParticlesEtaAndCharge(particles.size());
-    unsigned int nParticles = 0;
-    for (const auto& particle : particles) {
-      if (particle.isPhysicalPrimary() == 0)
-        continue;           // consider only primaries
-      etaCharge = {999, 0}; // refresh init. for safety
-      TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
-      if (!p) {
-        switch (std::to_string(particle.pdgCode()).length()) {
-          case 10: // nuclei
-          {
-            etaCharge = {particle.eta(), static_cast<int>(particle.pdgCode() / 10000 % 1000)};
-            ParticlesEtaAndCharge[nParticles++] = etaCharge;
-            break;
-          }
-          default:
-            break;
-        }
-      } else {
-        etaCharge = {particle.eta(), static_cast<int>(p->Charge())};
-        ParticlesEtaAndCharge[nParticles++] = etaCharge;
-      }
-    }
-
-    ParticlesEtaAndCharge.resize(nParticles);
-
-    auto etaChargeConditionFunc = [](EtaCharge elem) {
-      return ((TMath::Abs(elem.eta) < 1.0) && (TMath::Abs(elem.charge) > 0.001));
-    };
-
-    if (std::count_if(ParticlesEtaAndCharge.begin(), ParticlesEtaAndCharge.end(), etaChargeConditionFunc) > nChToSatisfySelection) {
-      return true;
-    } else {
-      return false;
-    }
   }
 
   void processData(soa::Join<aod::Collisions, aod::EvSels,
@@ -469,8 +422,6 @@ struct cascqaanalysis {
       return;
     }
 
-    int evType = GetEventTypeFlag(collision);
-
     auto tracksGroupedPVcontr = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     int nTracksPVcontr = tracksGroupedPVcontr.size();
 
@@ -481,6 +432,19 @@ struct cascqaanalysis {
     auto mcPartSlice = mcParticles.sliceBy(perMcCollision, collision.mcCollision_as<aod::McCollisions>().globalIndex());
     uint16_t nchFT0 = GetGenNchInFT0Mregion(mcPartSlice);
     uint16_t nchFV0 = GetGenNchInFV0Aregion(mcPartSlice);
+
+    int evType = 0;
+    registry.fill(HIST("hNEvents"), 8.5); // INEL
+    // Rec. collision associated with INEL>0 gen. one
+    if (pwglf::isINELgtNmc(mcPartSlice, 0, pdgDB)) {
+      registry.fill(HIST("hNEvents"), 9.5); // INEL
+      evType++;
+    }
+    // Rec. collision associated with INEL>1 gen. one
+    if (pwglf::isINELgtNmc(mcPartSlice, 1, pdgDB)) {
+      registry.fill(HIST("hNEvents"), 10.5); // INEL
+      evType++;
+    }
 
     registry.fill(HIST("hNchFT0MPVContr"), nchFT0, nTracksPVcontr, evType);
     registry.fill(HIST("hNchFV0APVContr"), nchFV0, nTracksPVcontr, evType);
@@ -584,13 +548,13 @@ struct cascqaanalysis {
     flagsGen |= o2::aod::myMCcascades::EvFlags::EvINEL;
     registry.fill(HIST("hNEventsMC"), 2.5);
     // Generated collision is INEL>0
-    if (isINELgtNmc(mcParticles, 0)) {
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
       evType++;
       registry.fill(HIST("hNEventsMC"), 3.5);
     }
     // Generated collision is INEL>1
-    if (isINELgtNmc(mcParticles, 1)) {
+    if (pwglf::isINELgtNmc(mcParticles, 1, pdgDB)) {
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
       evType++;
       registry.fill(HIST("hNEventsMC"), 4.5);

@@ -107,14 +107,14 @@ class FemtoUniverseDetaDphiStar
     if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
       for (int i = 0; i < 2; i++) {
         std::string dirName = static_cast<std::string>(dirNames[3]);
-        histdetadpisame[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNamesSame[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{400, -0.30, 0.30}, {400, -0.30, 0.30}});
-        histdetadpisame[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNamesSame[1][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{400, -0.30, 0.30}, {400, -0.30, 0.30}});
-        histdetadpimixed[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNamesMixed[0][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{400, -0.30, 0.30}, {400, -0.30, 0.30}});
-        histdetadpimixed[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNamesMixed[1][i])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{400, -0.30, 0.30}, {400, -0.30, 0.30}});
+        histdetadpisame[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNamesSame[0][i])).c_str(), "; #Delta #eta; #Delta #varphi*", kTH2F, {{400, -0.30, 0.30}, {400, -0.30, 0.30}});
+        histdetadpisame[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNamesSame[1][i])).c_str(), "; #Delta #eta; #Delta #varphi*", kTH2F, {{400, -0.30, 0.30}, {400, -0.30, 0.30}});
+        histdetadpimixed[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNamesMixed[0][i])).c_str(), "; #Delta #eta; #Delta #varphi*", kTH2F, {{400, -0.30, 0.30}, {400, -0.30, 0.30}});
+        histdetadpimixed[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNamesMixed[1][i])).c_str(), "; #Delta #eta; #Delta #varphi*", kTH2F, {{400, -0.30, 0.30}, {400, -0.30, 0.30}});
 
         if (plotForEveryRadii) {
           for (int j = 0; j < 9; j++) {
-            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j])).c_str(), "; #Delta #eta; #Delta #varphi*", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
           }
         }
       }
@@ -258,7 +258,13 @@ class FemtoUniverseDetaDphiStar
 
       bool pass = false;
       for (int i = 0; i < 2; i++) {
-        auto indexOfDaughter = part2.index() - 2 + i;
+        auto indexOfDaughter = 0;
+        if (ChosenEventType == femtoUniverseContainer::EventType::mixed) {
+          indexOfDaughter = part2.globalIndex() - 2 + i;
+        } else if (ChosenEventType == femtoUniverseContainer::EventType::same) {
+          indexOfDaughter = part2.index() - 2 + i;
+        }
+
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
         auto dphiAvg = AveragePhiStar(part1, *daughter, i); // auto dphiAvg = CalculateDphiStar(part1, *daughter);
@@ -271,7 +277,7 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if ((fabs(dphiAvg) < CutDeltaPhiStarMax) && (fabs(deta) < CutDeltaEtaMax)) {
+        if ((dphiAvg > CutDeltaPhiStarMin) && (dphiAvg < CutDeltaPhiStarMax) && (deta > CutDeltaEtaMin) && (deta < CutDeltaEtaMax)) {
           pass = true; // pair is close
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {

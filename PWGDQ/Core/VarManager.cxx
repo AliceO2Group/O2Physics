@@ -30,6 +30,10 @@ std::vector<int> VarManager::fgRunList = {0};
 float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
 float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
 float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
+int VarManager::fgITSROFbias = 0;
+int VarManager::fgITSROFlength = 100;
+int VarManager::fgITSROFBorderMarginLow = 0;
+int VarManager::fgITSROFBorderMarginHigh = 0;
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
@@ -749,6 +753,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairMass] = "GeV/c2";
   fgVariableNames[kPairMassDau] = "mass dilepton";
   fgVariableUnits[kPairMassDau] = "GeV/c2";
+  fgVariableNames[kDeltaMass] = "mass - dilepton mass";
+  fgVariableUnits[kDeltaMass] = "GeV/c2";
   fgVariableNames[kMassDau] = "mass HF";
   fgVariableUnits[kMassDau] = "GeV/c2";
   fgVariableNames[kPairPt] = "p_{T}";

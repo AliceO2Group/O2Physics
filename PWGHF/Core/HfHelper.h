@@ -20,6 +20,7 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
 #include <TPDGCode.h>
+#include <vector>
 
 #include "CommonConstants/PhysicsConstants.h"
 
@@ -929,6 +930,57 @@ class HfHelper
     }
 
     return true;
+  }
+
+  /// Get the pt of the beauty hadron(non-prompt case), return negative value for prompt case
+  /// \param particlesMC  table with MC particles
+  /// \param particle  MC particle
+  /// \return a double corresponding to beauty mother pt
+  template <typename T>
+  double getBeautyMotherPt(const T& particlesMC,
+                           const typename T::iterator& particle)
+  {
+    int stage = 0; // mother tree level
+
+    // vector of vectors with mother indices; each line corresponds to a "stage"
+    std::vector<std::vector<int64_t>> arrayIds{};
+    std::vector<int64_t> initVec{particle.globalIndex()};
+    arrayIds.push_back(initVec); // the first vector contains the index of the original particle
+
+    while (arrayIds[-stage].size() > 0) {
+      // vector of mother indices for the current stage
+      std::vector<int64_t> arrayIdsStage{};
+      for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
+        auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
+        if (particleMother.has_mothers()) {
+          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
+              continue;
+            }
+            auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
+            // Check mother's PDG code.
+            auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+
+            if ((PDGParticleIMother > 500 && PDGParticleIMother < 600) || (PDGParticleIMother > 5000 && PDGParticleIMother < 6000)) {
+              return mother.pt();
+            }
+            if (PDGParticleIMother == 4) {
+              return -999.;
+            }
+            if (PDGParticleIMother == 5) {
+              return -1.;
+            }
+
+            // add mother index in the vector for the current stage
+            arrayIdsStage.push_back(iMother);
+          }
+        }
+      }
+      // add vector of mother indices for the current stage
+      arrayIds.push_back(arrayIdsStage);
+      stage--;
+    }
+    return -999.;
   }
 
  private:

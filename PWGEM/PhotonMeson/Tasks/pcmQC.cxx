@@ -187,8 +187,11 @@ struct PCMQC {
     fV0PhotonCut.SetChi2PerClusterTPC(0.0, cfg_max_chi2tpc);
     fV0PhotonCut.SetTPCNsigmaElRange(cfg_min_TPCNsigmaEl, cfg_max_TPCNsigmaEl);
     fV0PhotonCut.SetChi2PerClusterITS(-1e+10, cfg_max_chi2its);
-    fV0PhotonCut.SetNClustersITS(2, 4);
-    fV0PhotonCut.SetNClustersITS(0, 7);
+    if (cfg_reject_v0_on_itsib) {
+      fV0PhotonCut.SetNClustersITS(2, 4);
+    } else {
+      fV0PhotonCut.SetNClustersITS(0, 7);
+    }
     fV0PhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
     fV0PhotonCut.SetIsWithinBeamPipe(cfg_require_v0_with_correct_xz);
 

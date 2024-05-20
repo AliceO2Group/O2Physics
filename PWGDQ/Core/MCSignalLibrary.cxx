@@ -11,7 +11,11 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+#include <TPDGCode.h>
+#include "CommonConstants/PhysicsConstants.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
+
+using namespace o2::constants::physics;
 
 MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 {
@@ -317,6 +321,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "dielectron from a photon conversion", {prong, prong}, {1, 1});
     return signal;
   }
+  if (!nameStr.compare("dielectronFromAllPC")) {
+    MCProng prong(2, {11, 22}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "dielectron from a photon conversion", {prong, prong}, {-1, -1});
+    return signal;
+  }
   if (!nameStr.compare("dielectronPCPi0")) {
     MCProng prong(3, {11, 22, 111}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "dielectron from a photon conversion from a pi0", {prong, prong}, {1, 1});
@@ -373,6 +382,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
   if (!nameStr.compare("eFromJpsi")) {
     MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from jpsi decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromPromptJpsi")) {
+    MCProng prong(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "Electrons from jpsi decays", {prong}, {-1});
     return signal;
   }
@@ -704,35 +719,35 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // LMEE pair signals for HF
   // D0->e and D0->e
   if (!nameStr.compare("eeFromD0")) {
-    MCProng prong(2, {11, 421}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    MCProng prong(2, {kElectron, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from D0 decays", {prong, prong}, {-1, -1});
     return signal;
   }
   // D0->e and D0->e
   if (!nameStr.compare("eeFromPi0FromD0")) {
-    MCProng prong(2, {11, 111, 421}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
+    MCProng prong(2, {kElectron, kPi0, Pdg::kD0}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from D0 to Pi0 decays", {prong, prong}, {1, 1});
     return signal;
   }
   // D+/- -> e and D+/- -> e
   if (!nameStr.compare("eeFromChargedD")) {
-    MCProng prong(2, {11, 421}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    MCProng prong(2, {kElectron, Pdg::kDPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from D+/- decays", {prong, prong}, {-1, -1});
     return signal;
   }
   // D_s->e and D_s->e
   if (!nameStr.compare("eeFromDs")) {
-    MCProng prong(2, {11, 431}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    MCProng prong(2, {kElectron, Pdg::kDS}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from Ds +/- decays", {prong, prong}, {-1, -1});
     return signal;
   }
   // Lambda_c->e and Lambda_c->e
   if (!nameStr.compare("eeFromLambdaC")) {
-    MCProng prong(2, {11, 4122}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    MCProng prong(2, {kElectron, Pdg::kLambdaCPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from Lambda_c ", {prong, prong}, {-1, -1});
     return signal;

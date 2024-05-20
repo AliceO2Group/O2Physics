@@ -161,15 +161,19 @@ struct MultiplicityCounter {
     }
 
     if (doprocessCountingAmbiguousCentralityFT0C || doprocessCountingAmbiguousCentralityFT0M || doprocessCountingCentralityFT0C || doprocessCountingCentralityFT0M) {
-      binnedRegistry.add({EventSelection.data(), ";status;centrality;events", {HistType::kTH2F, {{3, 0.5, 3.5}, CentAxis}}});
+      binnedRegistry.add({EventSelection.data(), ";status;centrality;events", {HistType::kTH2F, {{static_cast<int>(EvSelBins::kRejected), 0.5, static_cast<float>(EvSelBins::kRejected) + 0.5}, CentAxis}}});
       auto hstat = binnedRegistry.get<TH2>(HIST(EventSelection));
       auto* x = hstat->GetXaxis();
-      x->SetBinLabel(1, EvSelBinLabels[static_cast<int>(EvSelBins::kAll)].data());
-      x->SetBinLabel(2, EvSelBinLabels[static_cast<int>(EvSelBins::kSelected)].data());
-      x->SetBinLabel(3, EvSelBinLabels[static_cast<int>(EvSelBins::kRejected)].data());
+      x->SetBinLabel(static_cast<int>(EvSelBins::kAll), EvSelBinLabels[static_cast<int>(EvSelBins::kAll)].data());
+      x->SetBinLabel(static_cast<int>(EvSelBins::kSelected), EvSelBinLabels[static_cast<int>(EvSelBins::kSelected)].data());
+      x->SetBinLabel(static_cast<int>(EvSelBins::kSelectedgt0), EvSelBinLabels[static_cast<int>(EvSelBins::kSelectedgt0)].data());
+      x->SetBinLabel(static_cast<int>(EvSelBins::kSelectedPVgt0), EvSelBinLabels[static_cast<int>(EvSelBins::kSelectedPVgt0)].data());
+      x->SetBinLabel(static_cast<int>(EvSelBins::kRejected), EvSelBinLabels[static_cast<int>(EvSelBins::kRejected)].data());
 
       binnedRegistry.add({NtrkZvtx.data(), "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtx.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({EtaZvtx_gt0.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({EtaZvtx_PVgt0.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({PhiEta.data(), "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
       binnedRegistry.add({PtEta.data(), " ; p_{T} (GeV/c); #eta; centrality", {HistType::kTHnSparseF, {PtAxis, EtaAxis, CentAxis}}});
       binnedRegistry.add({DCAXYPt.data(), " ; p_{T} (GeV/c) ; DCA_{XY} (cm); centrality", {HistType::kTHnSparseF, {PtAxis, DCAAxis, CentAxis}}});
@@ -257,7 +261,7 @@ struct MultiplicityCounter {
         } else if (addFT0 && addFDD) {
           binnedRegistry.add({Response.data(), " ; N_{rec}; N_{PV cont}; N_{gen}; N_{FT0A}; N_{FT0C}; N_{FDA}; N_{FDC}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0AAxis, FT0CAxis, FDAAxis, FDCAxis, ZAxis, CentAxis}}});
         } else {
-          binnedRegistry.add({Response.data(), " ; N_{rec}; N_{PV cont}; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, ZAxis, CentAxis}}});
+          binnedRegistry.add({Response.data(), " ; N_{rec}; N_{PV cont}; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, ZAxis, CentAxis}}});
         }
       }
 
@@ -466,14 +470,14 @@ struct MultiplicityCounter {
       } else if (C::template contains<aod::CentFT0Ms>()) {
         c = collision.centFT0M();
       }
-      binnedRegistry.fill(HIST(EventSelection), 1., c);
+      binnedRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kAll), c);
     } else {
       inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kAll));
     }
 
     if (!useEvSel || isCollisionSelected(collision)) {
       if constexpr (hasRecoCent<C>()) {
-        binnedRegistry.fill(HIST(EventSelection), 2., c);
+        binnedRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelected), c);
       } else {
         inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelected));
       }
@@ -485,6 +489,22 @@ struct MultiplicityCounter {
 
       auto Ntrks = countTracks<C>(tracks, z, c);
       if constexpr (hasRecoCent<C>()) {
+        if (Ntrks > 0 || INELgt0PV) {
+          if (INELgt0PV) {
+            binnedRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelectedPVgt0), c);
+          }
+          if (Ntrks > 0) {
+            binnedRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelectedgt0), c);
+          }
+          for (auto& track : tracks) {
+            if (Ntrks > 0) {
+              binnedRegistry.fill(HIST(EtaZvtx_gt0), track.eta(), z, c);
+            }
+            if (INELgt0PV) {
+              binnedRegistry.fill(HIST(EtaZvtx_PVgt0), track.eta(), z, c);
+            }
+          }
+        }
         binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
       } else {
         if (Ntrks > 0 || INELgt0PV) {
@@ -507,7 +527,7 @@ struct MultiplicityCounter {
       }
     } else {
       if constexpr (hasRecoCent<C>()) {
-        binnedRegistry.fill(HIST(EventSelection), 3., c);
+        binnedRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kRejected), c);
       } else {
         inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kRejected));
       }
@@ -627,14 +647,14 @@ struct MultiplicityCounter {
       } else if (C::template contains<aod::CentFT0Ms>()) {
         c = collision.centFT0M();
       }
-      binnedRegistry.fill(HIST(EventSelection), 1., c);
+      binnedRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kAll), c);
     } else {
       inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kAll));
     }
 
     if (!useEvSel || isCollisionSelected(collision)) {
       if constexpr (hasRecoCent<C>()) {
-        binnedRegistry.fill(HIST(EventSelection), 2., c);
+        binnedRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelected), c);
       } else {
         inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelected));
       }
@@ -646,6 +666,36 @@ struct MultiplicityCounter {
 
       auto Ntrks = countTracksAmbiguous<C>(tracks, atracks, z, c);
       if constexpr (hasRecoCent<C>()) {
+        if (Ntrks > 0 || INELgt0PV) {
+          if (INELgt0PV) {
+            binnedRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelectedPVgt0), c);
+          }
+          if (Ntrks > 0) {
+            binnedRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kSelectedgt0), c);
+          }
+          for (auto& track : atracks) {
+            if (Ntrks > 0) {
+              binnedRegistry.fill(HIST(EtaZvtx_gt0), track.track_as<FiTracks>().eta(), z, c);
+            }
+            if (INELgt0PV) {
+              binnedRegistry.fill(HIST(EtaZvtx_PVgt0), track.track_as<FiTracks>().eta(), z, c);
+            }
+          }
+          for (auto& track : tracks) {
+            if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
+              continue;
+            }
+            if (std::find(usedTracksIdsDF.begin(), usedTracksIdsDF.end(), track.globalIndex()) != usedTracksIdsDF.end()) {
+              continue;
+            }
+            if (Ntrks > 0) {
+              binnedRegistry.fill(HIST(EtaZvtx_gt0), track.eta(), z, c);
+            }
+            if (INELgt0PV) {
+              binnedRegistry.fill(HIST(EtaZvtx_PVgt0), track.eta(), z, c);
+            }
+          }
+        }
         binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
       } else {
         if (Ntrks > 0 || INELgt0PV) {
@@ -682,7 +732,7 @@ struct MultiplicityCounter {
       }
     } else {
       if constexpr (hasRecoCent<C>()) {
-        binnedRegistry.fill(HIST(EventSelection), 3., c);
+        binnedRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kRejected), c);
       } else {
         inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kRejected));
       }

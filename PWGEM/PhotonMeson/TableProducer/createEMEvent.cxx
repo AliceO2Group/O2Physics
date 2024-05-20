@@ -19,6 +19,12 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
+
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
+
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 using namespace o2;
@@ -26,7 +32,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyBCs = soa::Join<aod::BCs, aod::BcSels>;
+using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
@@ -48,12 +54,62 @@ struct CreateEMEvent {
     kEvent_Cent_Qvec = 2,
   };
 
+  // CCDB options
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
   {
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{7, 0.5f, 7.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
+  }
+
+  int mRunNumber;
+  float d_bz;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  template <typename TBC>
+  void initCCDB(TBC const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      mRunNumber = bc.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = bc.timestamp();
+    o2::parameters::GRPObject* grpo = 0x0;
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!skipGRPOquery)
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    if (grpo) {
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = bc.runNumber();
   }
 
   PresliceUnsorted<MyCollisions> preslice_collisions_per_bc = o2::aod::evsel::foundBCId;
@@ -76,7 +132,9 @@ struct CreateEMEvent {
           continue;
         }
       }
+
       auto bc = collision.template foundBC_as<TBCs>();
+      initCCDB(bc);
 
       // LOGF(info, "collision-loop | bc.globalIndex() = %d, ncolls_per_bc = %d", bc.globalIndex(), map_ncolls_per_bc[bc.globalIndex()]);
       registry.fill(HIST("hEventCounter"), 1);
@@ -88,7 +146,7 @@ struct CreateEMEvent {
       // uint64_t tag = collision.selection_raw();
       event(collision.globalIndex(), bc.globalBC(), bc.runNumber(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), map_ncolls_per_bc[bc.globalIndex()],
             collision.posX(), collision.posY(), collision.posZ(),
-            collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
+            collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(), d_bz);
 
       event_mult(collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.multFDDA(), collision.multFDDC(),
                  collision.multZNA(), collision.multZNC(),

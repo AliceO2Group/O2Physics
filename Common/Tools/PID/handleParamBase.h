@@ -16,8 +16,8 @@
 /// \brief  Header file with utilities for handling PID parametrization on CCDB
 ///
 
-#ifndef COMMON_TOOLS_HANDLEPARAMBASE_H_
-#define COMMON_TOOLS_HANDLEPARAMBASE_H_
+#ifndef COMMON_TOOLS_PID_HANDLEPARAMBASE_H_
+#define COMMON_TOOLS_PID_HANDLEPARAMBASE_H_
 
 #include <map>
 #include <string>
@@ -177,9 +177,9 @@ void setupTimestamps(int64_t& timestamp,
       }
     }
   }
-  if (validityStop == 0) { //Default value for validityStop
+  if (validityStop == 0) { // Default value for validityStop
     validityStop = 4108971600000;
   }
 }
 
-#endif // COMMON_TOOLS_HANDLEPARAMBASE_H_
+#endif // COMMON_TOOLS_PID_HANDLEPARAMBASE_H_

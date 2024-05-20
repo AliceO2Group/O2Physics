@@ -43,6 +43,7 @@ struct QAHistograms {
   Configurable<bool> _removeSameBunchPileup{"removeSameBunchPileup", false, ""};
   Configurable<bool> _requestGoodZvtxFT0vsPV{"requestGoodZvtxFT0vsPV", false, ""};
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
+  Configurable<std::pair<float, float>> _IRcut{"IRcut", std::pair<float, float>{0.f, 100.f}, "[min., max.] IR range to keep events within"};
 
   Configurable<int> _sign{"sign", 1, "sign of a track"};
   Configurable<float> _vertexZ{"VertexZ", 10.0, "abs vertexZ value limit"};
@@ -137,8 +138,11 @@ struct QAHistograms {
         break;
     }
 
+    const AxisSpec axisMult{5001, -0.5, 5000.5, "mult."};
+    const AxisSpec axisPerc{101, -0.5, 100.5, "percentile"};
     registry.add("posZ", "posZ", kTH1F, {{300, -16., 16., "posZ"}});
-    registry.add("mult", "mult", kTH1F, {{5001, -0.5, 5000.5, "mult."}});
+    registry.add("mult", "mult", kTH1F, {axisMult});
+    registry.add("MultVsCent", "MultVsCent", kTH2F, {axisMult, axisPerc});
   }
 
   template <bool FillExtra, typename ColsType, typename TracksType>
@@ -153,9 +157,12 @@ struct QAHistograms {
         continue;
       if (collision.multPerc() < _centCut.value.first || collision.multPerc() >= _centCut.value.second)
         continue;
+      if (collision.hadronicRate() < _IRcut.value.first || collision.hadronicRate() >= _IRcut.value.second)
+        continue;
 
       registry.fill(HIST("posZ"), collision.posZ());
       registry.fill(HIST("mult"), collision.mult());
+      registry.fill(HIST("MultVsCent"), collision.mult(), collision.multPerc());
     }
 
     for (auto& track : tracks) {
@@ -170,6 +177,8 @@ struct QAHistograms {
       if (abs(track.template singleCollSel_as<ColsType>().posZ()) > _vertexZ)
         continue;
       if (track.template singleCollSel_as<ColsType>().multPerc() < _centCut.value.first || track.template singleCollSel_as<ColsType>().multPerc() >= _centCut.value.second)
+        continue;
+      if (track.template singleCollSel_as<ColsType>().hadronicRate() < _IRcut.value.first || track.template singleCollSel_as<ColsType>().hadronicRate() >= _IRcut.value.second)
         continue;
       if ((track.tpcFractionSharedCls()) > _tpcFractionSharedCls || (track.itsNCls()) < _itsNCls)
         continue;
