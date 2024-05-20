@@ -1014,8 +1014,8 @@ struct TableMakerMC {
 
   // Produce barrel only tables, with centrality, multiplicity and cov matrix -------------------------------------------------------------------
   void processBarrelOnlyWithCovWithCentAndMults(MyEventsWithCentAndMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                                         soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel,
-                                         aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
+                                                soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel,
+                                                aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks)
   {
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks, nullptr, nullptr);
   }
