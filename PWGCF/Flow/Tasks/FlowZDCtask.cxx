@@ -8,12 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "FlowZDCtask.h" // Your own header file
+// Your own header file
+#include "FlowZDCtask.h"
 
-// C system headers
-#include <cmath>
-#include <cstdio>
-#include <cstdlib>
+// C system headers (none in this file)
+// #include <cmath>
+// #include <cstdio>
+// #include <cstdlib>
 
 // C++ system headers
 #include <iostream>
@@ -44,9 +45,6 @@
 #include <ZDCBase/Constants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/RunningWorkflowInfo.h>
-
-// Your own header file
-#include "FlowZDCtask.h"
 
 using namespace o2;
 using namespace o2::framework;
