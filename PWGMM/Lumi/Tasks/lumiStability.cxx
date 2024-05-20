@@ -822,6 +822,11 @@ struct LumiStabilityTask {
           histos.fill(HIST("FT0/hCounts"), 3);
           histos.fill(HIST("FT0/bcVertexTriggerBothSidesPP"), localBC);
         }
+        if (pastActivityFT0Vertex == true) {
+          histos.fill(HIST("FT0/hCounts"), 3);
+        } else {
+          histos.fill(HIST("FT0/bcVertexTriggerPP"), localBC);
+        }
       } // vertex true
 
       if (sCentral) {
