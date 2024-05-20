@@ -44,6 +44,8 @@
 #include <ZDCBase/Constants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/RunningWorkflowInfo.h>
+// Your own header file
+#include "FlowZDCtask.h"
 
 using namespace o2;
 using namespace o2::framework;
