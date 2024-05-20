@@ -75,11 +75,11 @@ double massPr = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
 
 struct IdentifiedMeanPtFluctuations {
 
-	
+ 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  //	Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
-	Configurable<float> piluprejection{"piluprejection", false, "Pileup rejection"};
+  // Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
+ Configurable<float> piluprejection{"piluprejection", false, "Pileup rejection"};
 
 
   void init(o2::framework::InitContext&)
@@ -350,17 +350,17 @@ struct IdentifiedMeanPtFluctuations {
 
 
   //=======================MC histograms Generated ================================================
-   	histos.add("ptHistogram_allcharge_gen", "ptHistogram_allcharge_gen", kTH1D, {ptAxis});
-   	histos.add("ptHistogramPion", "ptHistogramPion", kTH1D, {ptAxis});
-	histos.add("ptHistogramKaon", "ptHistogramKaon", kTH1D, {ptAxis});
-	histos.add("ptHistogramProton", "ptHistogramProton", kTH1D, {ptAxis});
-	
-    	histos.add("hMC_Pt", ";#it{p}_{T} (GeV/#it{c})", kTH1D, {ptAxis});
-    	histos.add("MC_hZvtx_after_sel", ";#it{p}_{T} (GeV/#it{c})", kTH1D, {vtxZAxis});
+    histos.add("ptHistogram_allcharge_gen", "ptHistogram_allcharge_gen", kTH1D, {ptAxis});
+    histos.add("ptHistogramPion", "ptHistogramPion", kTH1D, {ptAxis});
+ histos.add("ptHistogramKaon", "ptHistogramKaon", kTH1D, {ptAxis});
+ histos.add("ptHistogramProton", "ptHistogramProton", kTH1D, {ptAxis});
+ 
+     histos.add("hMC_Pt", ";#it{p}_{T} (GeV/#it{c})", kTH1D, {ptAxis});
+     histos.add("MC_hZvtx_after_sel", ";#it{p}_{T} (GeV/#it{c})", kTH1D, {vtxZAxis});
 
 
-	 histos.add("hTOFbeta_gen_pion", "hTOFbeta_gen_pion", kTH2D, {pAxis, betaAxis});
-    	histos.add("hdEdx_gen_pion", "hdEdx_gen_pion", kTH2D, {pAxis, dEdxAxis});
+  histos.add("hTOFbeta_gen_pion", "hTOFbeta_gen_pion", kTH2D, {pAxis, betaAxis});
+     histos.add("hdEdx_gen_pion", "hdEdx_gen_pion", kTH2D, {pAxis, dEdxAxis});
 
 
     histos.add("hVar1x_gen", "hVar1x_gen", kTH2D, {subAxis, nchAxis});
@@ -392,24 +392,24 @@ struct IdentifiedMeanPtFluctuations {
     histos.add("hZvtx_after_sel_rec", "hZvtx_after_sel_rec", kTH1D, {vtxZAxis});
     histos.add("hZvtx_after_sel8_rec", "hZvtx_after_sel8_rec", kTH1D, {vtxZAxis});
 
-   	histos.add("ptHistogram_allcharge_rec", "ptHistogram_allcharge_rec", kTH1D, {ptAxis});  
-   	histos.add("ptHistogramPionrec", "ptHistogramPionrec", kTH1D, {ptAxis});
-	histos.add("ptHistogramKaonrec", "ptHistogramKaonrec", kTH1D, {ptAxis});
-	histos.add("ptHistogramProtonrec", "ptHistogramProtonrec", kTH1D, {ptAxis});
+    histos.add("ptHistogram_allcharge_rec", "ptHistogram_allcharge_rec", kTH1D, {ptAxis});  
+    histos.add("ptHistogramPionrec", "ptHistogramPionrec", kTH1D, {ptAxis});
+ histos.add("ptHistogramKaonrec", "ptHistogramKaonrec", kTH1D, {ptAxis});
+ histos.add("ptHistogramProtonrec", "ptHistogramProtonrec", kTH1D, {ptAxis});
 
 
-	histos.add("ptHistogramPionrec_purity", "ptHistogramPionrec_purity", kTH1D, {ptAxis});
-	histos.add("ptHistogramKaonrec_purity", "ptHistogramKaonrec_purity", kTH1D, {ptAxis});
-	histos.add("ptHistogramProtonrec_purity", "ptHistogramProtonrec_purity", kTH1D, {ptAxis});
+ histos.add("ptHistogramPionrec_purity", "ptHistogramPionrec_purity", kTH1D, {ptAxis});
+ histos.add("ptHistogramKaonrec_purity", "ptHistogramKaonrec_purity", kTH1D, {ptAxis});
+ histos.add("ptHistogramProtonrec_purity", "ptHistogramProtonrec_purity", kTH1D, {ptAxis});
 
 
 
-	histos.add("ptHistogramPionrec_pdg", "ptHistogramPionrec_pdg", kTH1D, {ptAxis});
-	histos.add("ptHistogramKaonrec_pdg", "ptHistogramKaonrec_pdg", kTH1D, {ptAxis});
-	histos.add("ptHistogramProtonrec_pdg", "ptHistogramProtonrec_pdg", kTH1D, {ptAxis});
+ histos.add("ptHistogramPionrec_pdg", "ptHistogramPionrec_pdg", kTH1D, {ptAxis});
+ histos.add("ptHistogramKaonrec_pdg", "ptHistogramKaonrec_pdg", kTH1D, {ptAxis});
+ histos.add("ptHistogramProtonrec_pdg", "ptHistogramProtonrec_pdg", kTH1D, {ptAxis});
 
-	histos.add("Histogram_mass2_p_rec_beforesel", "Histogram_mass2_p_rec_beforesel", kTH1D, {ptAxis});
-	histos.add("Histogram_mass2_p_rec_aftersel", "Histogram_mass2_p_rec_aftersel", kTH1D, {ptAxis});
+ histos.add("Histogram_mass2_p_rec_beforesel", "Histogram_mass2_p_rec_beforesel", kTH1D, {ptAxis});
+ histos.add("Histogram_mass2_p_rec_aftersel", "Histogram_mass2_p_rec_aftersel", kTH1D, {ptAxis});
 
 
 
@@ -448,48 +448,48 @@ void processMCReco(aod::MCCollisions::iterator const& mccoll, aod::MCTracks cons
 
 
 if (!mccoll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)){ // no pileup according to SPD vertexer
-	return; 
+ return; 
    } 
  histos.fill(HIST("tracksel_rec"), 4);
 
 
 if (!mccoll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)){ // bunch crossing is far from ITS RO Frame border
-	return; 
+ return; 
    }
  histos.fill(HIST("tracksel_rec"), 5);
 
 
 if (!mccoll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)){ // bunch crossing is far from ITS RO Frame border
-	return; 
+ return; 
    }
  histos.fill(HIST("tracksel_rec"), 6);
 
 
 if (!mccoll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)){ // bunch crossing is far from ITS RO Frame border
-	return; 
+ return; 
    }
  histos.fill(HIST("tracksel_rec"), 7);
 
 
 
         int count_rec_pi =0, count_rec_k =0, count_rec_p =0;
-	int count_rec_pi_pdg =0, count_rec_k_pdg =0, count_rec_p_pdg =0;
-	double nCh_rec = 0.;
-	double nChpi_rec = 0.;
-	double nChk_rec = 0.;
-    	double nChp_rec = 0.;
+ int count_rec_pi_pdg =0, count_rec_k_pdg =0, count_rec_p_pdg =0;
+ double nCh_rec = 0.;
+ double nChpi_rec = 0.;
+ double nChk_rec = 0.;
+     double nChp_rec = 0.;
 
-    	double Q1_rec = 0, Q2_rec = 0;
-    	double Q1pi_rec = 0, Q2pi_rec = 0;
-    	double Q1k_rec = 0, Q2k_rec = 0;
-    	double Q1p_rec = 0, Q2p_rec = 0;
-    	double var1_rec= 0, var2_rec= 0;//, twopar_allcharge_rec;
-    	double var1pi_rec= 0, var2pi_rec= 0;
-    	double var1k_rec= 0, var2k_rec= 0;
-    	double var1p_rec= 0, var2p_rec= 0;
+     double Q1_rec = 0, Q2_rec = 0;
+     double Q1pi_rec = 0, Q2pi_rec = 0;
+     double Q1k_rec = 0, Q2k_rec = 0;
+     double Q1p_rec = 0, Q2p_rec = 0;
+     double var1_rec= 0, var2_rec= 0;//, twopar_allcharge_rec;
+     double var1pi_rec= 0, var2pi_rec= 0;
+     double var1k_rec= 0, var2k_rec= 0;
+     double var1p_rec= 0, var2p_rec= 0;
 
- 	int sample_rec = histos.get<TH1>(HIST("hZvtx_after_sel8_rec"))->GetEntries();
-    	sample_rec = sample_rec % 30;
+  int sample_rec = histos.get<TH1>(HIST("hZvtx_after_sel8_rec"))->GetEntries();
+     sample_rec = sample_rec % 30;
 
 
 
@@ -503,37 +503,37 @@ if (!mccoll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)){ // bunch crossing i
  if(!(track1.pt()  > 0.15) || !(track1.pt()  < 2.0)) continue;//pt = 0.15
  if(!(track1.eta() > -0.8) || !(track1.eta() < 0.8)) continue;//eta cut
 
- 	nCh_rec += 1.;
+  nCh_rec += 1.;
 
       Q1_rec += track1.pt();
       Q2_rec += (track1.pt() * track1.pt());
 
- 	histos.fill(HIST("ptHistogram_allcharge_rec"), track1.pt());
- 	
+  histos.fill(HIST("ptHistogram_allcharge_rec"), track1.pt());
+  
  if (track1.hasTPC())
-	histos.fill(HIST("hdEdx_rec_bf_anycut"), track1.p(), track1.tpcSignal());
+ histos.fill(HIST("hdEdx_rec_bf_anycut"), track1.p(), track1.tpcSignal());
 
 
 //========================================================================
 
 if(abs(track1.mcParticle().pdgCode())==211) 
 {count_rec_pi_pdg++; 
-	histos.fill(HIST("ptHistogramPionrec_pdg"), track1.pt());
+ histos.fill(HIST("ptHistogramPionrec_pdg"), track1.pt());
 }
 if(abs(track1.mcParticle().pdgCode())==321) 
 {count_rec_k_pdg++;
 
-	histos.fill(HIST("ptHistogramKaonrec_pdg"), track1.pt());
+ histos.fill(HIST("ptHistogramKaonrec_pdg"), track1.pt());
 }
 if(abs(track1.mcParticle().pdgCode())==2212)
 {count_rec_p_pdg++;
 
-	histos.fill(HIST("ptHistogramProtonrec_pdg"), track1.pt());  
+ histos.fill(HIST("ptHistogramProtonrec_pdg"), track1.pt());  
 }
 
-	//+++++++++ electron rejection ++++++++++++++++++++++++++++++++//
+ //+++++++++ electron rejection ++++++++++++++++++++++++++++++++//
 
-	if (abs(track1.tpcNSigmaEl()) < 3.0 &&  abs(track1.tpcNSigmaPi()) > 3. && abs(track1.tpcNSigmaKa()) > 3. && abs(track1.tpcNSigmaPr()) > 3.) continue; // electron rejection 
+ if (abs(track1.tpcNSigmaEl()) < 3.0 &&  abs(track1.tpcNSigmaPi()) > 3. && abs(track1.tpcNSigmaKa()) > 3. && abs(track1.tpcNSigmaPr()) > 3.) continue; // electron rejection 
 
 //=============================pion==============================================================
       // only TPC+TOF tracks: Pion, Kaon, Proton
@@ -541,19 +541,19 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
 
         if (track1.hasTPC())
-	histos.fill(HIST("hdEdx_afterselection_rec_beforepidcut"), track1.p(), track1.tpcSignal());
+ histos.fill(HIST("hdEdx_afterselection_rec_beforepidcut"), track1.p(), track1.tpcSignal());
         if (track1.hasTOF())
         histos.fill(HIST("hTOFbeta_afterselection_rec_beforepidcut"), track1.p(), track1.beta());
 
 
-	if (track1.hasTPC() && track1.hasTOF())
-	{
+ if (track1.hasTPC() && track1.hasTOF())
+ {
 
- 	histos.fill(HIST("NSigamaTPCpion_rec_bf_sel"), track1.p(), track1.tpcNSigmaPi());
+  histos.fill(HIST("NSigamaTPCpion_rec_bf_sel"), track1.p(), track1.tpcNSigmaPi());
         histos.fill(HIST("NSigamaTOFpion_rec_bf_sel"), track1.p(), track1.tofNSigmaPi());
-	histos.fill(HIST("NSigamaTPCTOFpion_rec_bf_sel"), track1.tpcNSigmaPi(), track1.tofNSigmaPi());
+ histos.fill(HIST("NSigamaTPCTOFpion_rec_bf_sel"), track1.tpcNSigmaPi(), track1.tofNSigmaPi());
 
-	}
+ }
 
 
       //pion-TPC-----------------------------------------------------------------------------------
@@ -563,8 +563,8 @@ if(abs(track1.mcParticle().pdgCode())==2212)
  {
 
 
-	 count_rec_pi++;
-	 histos.fill(HIST("ptHistogramPionrec"), track1.pt());
+  count_rec_pi++;
+  histos.fill(HIST("ptHistogramPionrec"), track1.pt());
 
  
           nChpi_rec += 1.;
@@ -572,13 +572,13 @@ if(abs(track1.mcParticle().pdgCode())==2212)
           Q2pi_rec += (track1.pt() * track1.pt());
 
 
-	 histos.fill(HIST("NSigamaTPCpion_rec"), track1.p(), track1.tpcNSigmaPi());
+  histos.fill(HIST("NSigamaTPCpion_rec"), track1.p(), track1.tpcNSigmaPi());
          histos.fill(HIST("NSigamaTOFpion_rec"), track1.p(), track1.tofNSigmaPi());
-	 histos.fill(HIST("NSigamaTPCTOFpion_rec"), track1.tpcNSigmaPi(), track1.tofNSigmaPi());
+  histos.fill(HIST("NSigamaTPCTOFpion_rec"), track1.tpcNSigmaPi(), track1.tofNSigmaPi());
 
 
        if(track1.beta()>1) continue;
-	  
+   
 
        histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
        histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
@@ -587,16 +587,16 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
        if(abs(track1.mcParticle().pdgCode())==211)
        {
-	 histos.fill(HIST("ptHistogramPionrec_purity"), track1.pt());
+  histos.fill(HIST("ptHistogramPionrec_purity"), track1.pt());
        }
 
-	if (abs(track1.rapidity(massPi)) < 0.5)
-	{
-	
-	histos.fill(HIST("hPyPion_rec"),track1.p(),track1.rapidity(massPi));
-	histos.fill(HIST("hPtyPion_rec"),track1.pt(),track1.rapidity(massPi));
-	
-	}
+ if (abs(track1.rapidity(massPi)) < 0.5)
+ {
+ 
+ histos.fill(HIST("hPyPion_rec"),track1.p(),track1.rapidity(massPi));
+ histos.fill(HIST("hPtyPion_rec"),track1.pt(),track1.rapidity(massPi));
+ 
+ }
 
              
         }
@@ -605,13 +605,13 @@ if(abs(track1.mcParticle().pdgCode())==2212)
  
     if (track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((track1.tofNSigmaPr()+2)/3.0, (track1.tpcNSigmaPr()-6)/4.0)  > 3. && TMath::Hypot((track1.tofNSigmaKa()+2)/3.0, (track1.tpcNSigmaKa()-6)/4.0) > 3. && TMath::Hypot((track1.tofNSigmaPi()+2)/3.0, (track1.tpcNSigmaPi()-6)/4.0) < 3.) //elipsoidal cut 
 
-		  
+    
 {
 
-	
-		count_rec_pi++;
+ 
+  count_rec_pi++;
 
-	 histos.fill(HIST("ptHistogramPionrec"), track1.pt());
+  histos.fill(HIST("ptHistogramPionrec"), track1.pt());
 
 
           nChpi_rec += 1.;
@@ -619,30 +619,30 @@ if(abs(track1.mcParticle().pdgCode())==2212)
           Q2pi_rec += (track1.pt() * track1.pt());
 
 
-	histos.fill(HIST("NSigamaTPCpion_rec"), track1.p(), track1.tpcNSigmaPi());
+ histos.fill(HIST("NSigamaTPCpion_rec"), track1.p(), track1.tpcNSigmaPi());
         histos.fill(HIST("NSigamaTOFpion_rec"), track1.p(), track1.tofNSigmaPi());
-	histos.fill(HIST("NSigamaTPCTOFpion_rec"), track1.tpcNSigmaPi(), track1.tofNSigmaPi());
+ histos.fill(HIST("NSigamaTPCTOFpion_rec"), track1.tpcNSigmaPi(), track1.tofNSigmaPi());
 
 
      if(track1.beta()>1) continue;
-	  
+   
 
-	   histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
+    histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
 
 
-	  if (abs(track1.mcParticle().pdgCode())==211)
+   if (abs(track1.mcParticle().pdgCode())==211)
        {
-	 histos.fill(HIST("ptHistogramPionrec_purity"), track1.pt());
+  histos.fill(HIST("ptHistogramPionrec_purity"), track1.pt());
        }
 
-	if (abs(track1.rapidity(massPi)) < 0.5)
-	{
-	
-	histos.fill(HIST("hPyPion_rec"),track1.p(),track1.rapidity(massPi));
-	histos.fill(HIST("hPtyPion_rec"),track1.pt(),track1.rapidity(massPi));
-	
-	}
+ if (abs(track1.rapidity(massPi)) < 0.5)
+ {
+ 
+ histos.fill(HIST("hPyPion_rec"),track1.p(),track1.rapidity(massPi));
+ histos.fill(HIST("hPtyPion_rec"),track1.pt(),track1.rapidity(massPi));
+ 
+ }
 
    
         }
@@ -652,18 +652,18 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
 
    if (track1.hasTPC())
-	histos.fill(HIST("hdEdx_afterselection_rec_beforepidcut"), track1.p(), track1.tpcSignal());
+ histos.fill(HIST("hdEdx_afterselection_rec_beforepidcut"), track1.p(), track1.tpcSignal());
       if (track1.hasTOF())
            histos.fill(HIST("hTOFbeta_afterselection_rec_beforepidcut"), track1.p(), track1.beta());
  
-	   	   if (track1.hasTPC() && track1.hasTOF())
-	{
+        if (track1.hasTPC() && track1.hasTOF())
+ {
 
- 	histos.fill(HIST("NSigamaTPCkaon_rec_bf_sel"), track1.p(), track1.tpcNSigmaKa());
+  histos.fill(HIST("NSigamaTPCkaon_rec_bf_sel"), track1.p(), track1.tpcNSigmaKa());
         histos.fill(HIST("NSigamaTOFkaon_rec_bf_sel"), track1.p(), track1.tofNSigmaKa());
-	histos.fill(HIST("NSigamaTPCTOFkaon_rec_bf_sel"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
+ histos.fill(HIST("NSigamaTPCTOFkaon_rec_bf_sel"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
 
-	}
+ }
 
 
 
@@ -672,11 +672,11 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
  if (( track1.hasTPC() && (track1.p() < 0.7)  && abs(track1.tpcNSigmaKa()) < 3.0 &&  (std::abs(track1.tpcNSigmaPi()) > 3.0 && std::abs(track1.tpcNSigmaPr()) > 3.0)))
 
-	
-	
-	 {		count_rec_k++;
+ 
+ 
+  {  count_rec_k++;
 
-	histos.fill(HIST("ptHistogramKaonrec"), track1.pt());
+ histos.fill(HIST("ptHistogramKaonrec"), track1.pt());
 
 
           nChk_rec += 1.;
@@ -684,30 +684,30 @@ if(abs(track1.mcParticle().pdgCode())==2212)
           Q2k_rec += (track1.pt() * track1.pt());
 
 
-	histos.fill(HIST("NSigamaTPCkaon_rec"), track1.p(), track1.tpcNSigmaKa());
-	histos.fill(HIST("NSigamaTOFkaon_rec"), track1.p(), track1.tofNSigmaKa());
-	histos.fill(HIST("NSigamaTPCTOFkaon_rec"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
+ histos.fill(HIST("NSigamaTPCkaon_rec"), track1.p(), track1.tpcNSigmaKa());
+ histos.fill(HIST("NSigamaTOFkaon_rec"), track1.p(), track1.tofNSigmaKa());
+ histos.fill(HIST("NSigamaTPCTOFkaon_rec"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
 
 
        if(track1.beta()>1) continue;
-	  
+   
 
-	   histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
+    histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
 
-	  if  (abs(track1.mcParticle().pdgCode())==321)
+   if  (abs(track1.mcParticle().pdgCode())==321)
        {
-	 histos.fill(HIST("ptHistogramKaonrec_purity"), track1.pt());
+  histos.fill(HIST("ptHistogramKaonrec_purity"), track1.pt());
        }
 
 
-	  if (abs(track1.rapidity(massKa)) < 0.5)
-	{
-	
-	histos.fill(HIST("hPyKaon_rec"),track1.p(),track1.rapidity(massKa));
-	histos.fill(HIST("hPtyKaon_rec"),track1.pt(),track1.rapidity(massKa));
-	
-	}
+   if (abs(track1.rapidity(massKa)) < 0.5)
+ {
+ 
+ histos.fill(HIST("hPyKaon_rec"),track1.p(),track1.rapidity(massKa));
+ histos.fill(HIST("hPtyKaon_rec"),track1.pt(),track1.rapidity(massKa));
+ 
+ }
 
      
         }
@@ -721,9 +721,9 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((track1.tofNSigmaPr()+2)/3.0, (track1.tpcNSigmaPr()-6)/4.0)  > 3. && TMath::Hypot((track1.tofNSigmaPi()+2)/3.0, (track1.tpcNSigmaPi()-6)/4.0) > 3. && TMath::Hypot((track1.tofNSigmaKa()+2)/3.0, (track1.tpcNSigmaKa()-6)/4.0) < 3.)// ellipsoidal cut 
 
 
-{		count_rec_k++;
+{  count_rec_k++;
 
-	histos.fill(HIST("ptHistogramKaonrec"), track1.pt());
+ histos.fill(HIST("ptHistogramKaonrec"), track1.pt());
 
 
 
@@ -733,31 +733,31 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((t
           Q2k_rec += (track1.pt() * track1.pt());
 
 
-	histos.fill(HIST("NSigamaTPCkaon_rec"), track1.p(), track1.tpcNSigmaKa());
-	histos.fill(HIST("NSigamaTOFkaon_rec"), track1.p(), track1.tofNSigmaKa());
-	histos.fill(HIST("NSigamaTPCTOFkaon_rec"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
+ histos.fill(HIST("NSigamaTPCkaon_rec"), track1.p(), track1.tpcNSigmaKa());
+ histos.fill(HIST("NSigamaTOFkaon_rec"), track1.p(), track1.tofNSigmaKa());
+ histos.fill(HIST("NSigamaTPCTOFkaon_rec"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
 
 
        if(track1.beta()>1) continue;
-	  
+   
 
-	   histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
+    histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
 
-	  if  (abs(track1.mcParticle().pdgCode())==321)
+   if  (abs(track1.mcParticle().pdgCode())==321)
        {
-	 histos.fill(HIST("ptHistogramKaonrec_purity"), track1.pt());
+  histos.fill(HIST("ptHistogramKaonrec_purity"), track1.pt());
        }
 
-	  if (abs(track1.rapidity(massKa)) < 0.5)
-	{
-	
-	histos.fill(HIST("hPyKaon_rec"),track1.p(),track1.rapidity(massKa));
-	histos.fill(HIST("hPtyKaon_rec"),track1.pt(),track1.rapidity(massKa));
-	
-	}
+   if (abs(track1.rapidity(massKa)) < 0.5)
+ {
+ 
+ histos.fill(HIST("hPyKaon_rec"),track1.p(),track1.rapidity(massKa));
+ histos.fill(HIST("hPtyKaon_rec"),track1.pt(),track1.rapidity(massKa));
+ 
+ }
 
-	
+ 
         }
       
 
@@ -765,29 +765,29 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((t
   
 
 
-	if (track1.hasTPC())
-	histos.fill(HIST("hdEdx_afterselection_rec_beforepidcut"), track1.p(), track1.tpcSignal());
-      	if (track1.hasTOF())
+ if (track1.hasTPC())
+ histos.fill(HIST("hdEdx_afterselection_rec_beforepidcut"), track1.p(), track1.tpcSignal());
+       if (track1.hasTOF())
         histos.fill(HIST("hTOFbeta_afterselection_rec_beforepidcut"), track1.p(), track1.beta());
 
-  	if (track1.hasTPC() && track1.hasTOF())
-	{
+   if (track1.hasTPC() && track1.hasTOF())
+ {
 
- 	histos.fill(HIST("NSigamaTPCproton_rec_bf_sel"), track1.p(), track1.tpcNSigmaPr());
+  histos.fill(HIST("NSigamaTPCproton_rec_bf_sel"), track1.p(), track1.tpcNSigmaPr());
         histos.fill(HIST("NSigamaTOFproton_rec_bf_sel"), track1.p(), track1.tofNSigmaPr());
-	histos.fill(HIST("NSigamaTPCTOFproton_rec_bf_sel"), track1.tpcNSigmaPr(), track1.tofNSigmaPr());
+ histos.fill(HIST("NSigamaTPCTOFproton_rec_bf_sel"), track1.tpcNSigmaPr(), track1.tofNSigmaPr());
 
-	}
+ }
 
 
 //PROTON _ TPC only
 
-	if (( track1.hasTPC() && (track1.p() < 1.1)  && abs(track1.tpcNSigmaPr()) < 3.0 &&  (std::abs(track1.tpcNSigmaPi()) > 3.0 && std::abs(track1.tpcNSigmaKa()) > 3.0)))
+ if (( track1.hasTPC() && (track1.p() < 1.1)  && abs(track1.tpcNSigmaPr()) < 3.0 &&  (std::abs(track1.tpcNSigmaPi()) > 3.0 && std::abs(track1.tpcNSigmaKa()) > 3.0)))
 
 
-{		count_rec_p++;
+{  count_rec_p++;
 
-	histos.fill(HIST("ptHistogramProtonrec"), track1.pt());  
+ histos.fill(HIST("ptHistogramProtonrec"), track1.pt());  
 
 
              nChp_rec += 1.;
@@ -795,31 +795,31 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((t
           Q2p_rec += (track1.pt() * track1.pt());
 
 
-	histos.fill(HIST("NSigamaTPCproton_rec"), track1.p(), track1.tpcNSigmaPr());
-	histos.fill(HIST("NSigamaTOFproton_rec"), track1.p(), track1.tofNSigmaPr());
-	histos.fill(HIST("NSigamaTPCTOFproton_rec"), track1.tpcNSigmaPr(), track1.tofNSigmaPr());
+ histos.fill(HIST("NSigamaTPCproton_rec"), track1.p(), track1.tpcNSigmaPr());
+ histos.fill(HIST("NSigamaTOFproton_rec"), track1.p(), track1.tofNSigmaPr());
+ histos.fill(HIST("NSigamaTPCTOFproton_rec"), track1.tpcNSigmaPr(), track1.tofNSigmaPr());
 
 
        if(track1.beta()>1) continue;
-	  
+   
 
-	 
-	   histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
+  
+    histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
 
 
-	   if (abs(track1.mcParticle().pdgCode())==2212)
+    if (abs(track1.mcParticle().pdgCode())==2212)
        {
-	 histos.fill(HIST("ptHistogramProtonrec_purity"), track1.pt());
+  histos.fill(HIST("ptHistogramProtonrec_purity"), track1.pt());
        }
 
-	  if (abs(track1.rapidity(massPr)) < 0.5)
-	{
-	
-	histos.fill(HIST("hPyProton_rec"),track1.p(),track1.rapidity(massPr));
-	histos.fill(HIST("hPtyProton_rec"),track1.pt(),track1.rapidity(massPr));
-	
-	}
+   if (abs(track1.rapidity(massPr)) < 0.5)
+ {
+ 
+ histos.fill(HIST("hPyProton_rec"),track1.p(),track1.rapidity(massPr));
+ histos.fill(HIST("hPtyProton_rec"),track1.pt(),track1.rapidity(massPr));
+ 
+ }
 
 
 
@@ -831,38 +831,38 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((t
 if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 1.1  && TMath::Hypot((track1.tofNSigmaPi()+2)/3.0, (track1.tpcNSigmaPi()-6)/4.0)  > 3. && TMath::Hypot((track1.tofNSigmaKa()+2)/3.0, (track1.tpcNSigmaKa()-6)/4.0) > 3. && TMath::Hypot((track1.tofNSigmaPr()+2)/3.0, (track1.tpcNSigmaPr()-6)/4.0) < 3.)//elliposidal cut
 
 {
-		count_rec_p++;
+  count_rec_p++;
 
-	histos.fill(HIST("ptHistogramProtonrec"), track1.pt());  
+ histos.fill(HIST("ptHistogramProtonrec"), track1.pt());  
 
 
           nChp_rec += 1.;
           Q1p_rec += track1.pt();
           Q2p_rec += (track1.pt() * track1.pt());
 
-	histos.fill(HIST("NSigamaTPCproton_rec"), track1.p(), track1.tpcNSigmaPr());
-	histos.fill(HIST("NSigamaTOFproton_rec"), track1.p(), track1.tofNSigmaPr());
-	histos.fill(HIST("NSigamaTPCTOFproton_rec"), track1.tpcNSigmaPr(), track1.tofNSigmaPr());
+ histos.fill(HIST("NSigamaTPCproton_rec"), track1.p(), track1.tpcNSigmaPr());
+ histos.fill(HIST("NSigamaTOFproton_rec"), track1.p(), track1.tofNSigmaPr());
+ histos.fill(HIST("NSigamaTPCTOFproton_rec"), track1.tpcNSigmaPr(), track1.tofNSigmaPr());
 
 
        if(track1.beta()>1) continue;
-	  
+   
 
-	   histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
+    histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
 
-	  if  (abs(track1.mcParticle().pdgCode())==2212)
+   if  (abs(track1.mcParticle().pdgCode())==2212)
        {
-	 histos.fill(HIST("ptHistogramProtonrec_purity"), track1.pt());
+  histos.fill(HIST("ptHistogramProtonrec_purity"), track1.pt());
        }
 
-	 if (abs(track1.rapidity(massPr)) < 0.5)
-	{
-	
-	histos.fill(HIST("hPyProton_rec"),track1.p(),track1.rapidity(massPr));
-	histos.fill(HIST("hPtyProton_rec"),track1.pt(),track1.rapidity(massPr));
-	
-	}
+  if (abs(track1.rapidity(massPr)) < 0.5)
+ {
+ 
+ histos.fill(HIST("hPyProton_rec"),track1.p(),track1.rapidity(massPr));
+ histos.fill(HIST("hPtyProton_rec"),track1.pt(),track1.rapidity(massPr));
+ 
+ }
 
 
         }
@@ -938,7 +938,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCReco, "process reconstruct
 
 //++++++++++++++++++++++++++++Monte Carlo Generated ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)//, const soa::SmallGroups<MCCollisions>& collisions)
-	
+ 
   {
 
  if (fabs(mcCollision.posZ()) > 10.f) {
@@ -971,57 +971,57 @@ void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParti
 
 
   for (auto& mcgentrack : mcParticles) 
-	 
+  
     { auto pdgcode = std::abs(mcgentrack.pdgCode());
  if(!(mcgentrack.has_mcCollision())) continue;//????
     
-	if(!(mcgentrack.isPhysicalPrimary())) continue;
-	if (!(mcgentrack.pt() > 0.15) || !(mcgentrack.pt() < 2.)) continue;//pt cut // or and check
+ if(!(mcgentrack.isPhysicalPrimary())) continue;
+ if (!(mcgentrack.pt() > 0.15) || !(mcgentrack.pt() < 2.)) continue;//pt cut // or and check
         if (!(mcgentrack.eta() > -0.8) || !(mcgentrack.eta() < 0.8)) continue;//eta cut // or and check
 
-	
-	nCh_gen += 1.;
+ 
+ nCh_gen += 1.;
 
       Q1_gen += mcgentrack.pt();
       Q2_gen += (mcgentrack.pt() * mcgentrack.pt());
 
 
- 	histos.fill(HIST("ptHistogram_allcharge_gen"), mcgentrack.pt());
+  histos.fill(HIST("ptHistogram_allcharge_gen"), mcgentrack.pt());
         
 
         if(pdgcode == 211){ 
-		count_gen_pi++;
-		histos.fill(HIST("ptHistogramPion"), mcgentrack.pt());
+  count_gen_pi++;
+  histos.fill(HIST("ptHistogramPion"), mcgentrack.pt());
 
-		nChpi_gen += 1.;
-          	Q1pi_gen += mcgentrack.pt();
-          	Q2pi_gen += (mcgentrack.pt() * mcgentrack.pt());
+  nChpi_gen += 1.;
+           Q1pi_gen += mcgentrack.pt();
+           Q2pi_gen += (mcgentrack.pt() * mcgentrack.pt());
 
-			}
-
-
-	if(pdgcode == 321){
-		count_gen_k++;
-	histos.fill(HIST("ptHistogramKaon"), mcgentrack.pt());
+   }
 
 
-		nChk_gen += 1.;
-          	Q1k_gen += mcgentrack.pt();
-          	Q2k_gen += (mcgentrack.pt() * mcgentrack.pt());
+ if(pdgcode == 321){
+  count_gen_k++;
+ histos.fill(HIST("ptHistogramKaon"), mcgentrack.pt());
 
-				}
-	
-	
 
-	if(pdgcode == 2212){
-	count_gen_p++;
-	histos.fill(HIST("ptHistogramProton"), mcgentrack.pt());   
+  nChk_gen += 1.;
+           Q1k_gen += mcgentrack.pt();
+           Q2k_gen += (mcgentrack.pt() * mcgentrack.pt());
 
-		nChp_gen += 1.;
-          	Q1p_gen += mcgentrack.pt();
-          	Q2p_gen += (mcgentrack.pt() * mcgentrack.pt());
+    }
+ 
+ 
 
-				}
+ if(pdgcode == 2212){
+ count_gen_p++;
+ histos.fill(HIST("ptHistogramProton"), mcgentrack.pt());   
+
+  nChp_gen += 1.;
+           Q1p_gen += mcgentrack.pt();
+           Q2p_gen += (mcgentrack.pt() * mcgentrack.pt());
+
+    }
 
 //================================= Pion Generated Calculation ====================================
 
@@ -1092,14 +1092,14 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
   void process(aod::MyCollision const& coll, aod::MyTracks const& inputTracks)
 
   {
-	  histos.fill(HIST("hEventCounter"), 1.);
+   histos.fill(HIST("hEventCounter"), 1.);
 
     histos.fill(HIST("hZvtx_before_sel"), coll.posZ());
     if (fabs(coll.posZ()) > 10.f) {
       return;
     }
 
-    	histos.fill(HIST("hEventCounter"), 2.);
+     histos.fill(HIST("hEventCounter"), 2.);
 
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
 
@@ -1138,11 +1138,11 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
     for (auto track : inputTracks) {
       // Loop over tracks
 
-	// inital tracks	    
+ // inital tracks     
       histos.fill(HIST("tracksel"), 1);
 
         histos.fill(HIST("hTPCchi2perCluster_before"), track.tpcChi2NCl());
-	histos.fill(HIST("hITSchi2perCluster_before"), track.itsChi2NCl());
+ histos.fill(HIST("hITSchi2perCluster_before"), track.itsChi2NCl());
        histos.fill(HIST("hTPCCrossedrows_before"), track.tpcNClsCrossedRows());
 
 
@@ -1151,7 +1151,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
        histos.fill(HIST("tracksel"), 2);
 
      
-	//tracks passed after DCAxy
+ //tracks passed after DCAxy
   //       if (!(fabs(track.dcaXY()) < 0.12)) continue;//global cut already includes
          histos.fill(HIST("tracksel"), 3);
 
@@ -1221,7 +1221,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
       if (track.hasTOF() && abs(track.tofNSigmaPr()) < 2.)
         histos.fill(HIST("NSigamaTOFproton"), track.pt(), track.tofNSigmaPr());
 
-      if (track.hasTPC())	histos.fill(HIST("hdEdx"), track.p(), track.tpcSignal());
+      if (track.hasTPC()) histos.fill(HIST("hdEdx"), track.p(), track.tpcSignal());
       if (track.hasTOF())       histos.fill(HIST("hTOFbeta"), track.p(), track.beta());
         
             
@@ -1234,7 +1234,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
       if ((track.hasTPC() && abs(track.tpcNSigmaPi()) < 2.) && (track.hasTOF() && abs(track.tofNSigmaPi()) < 2.))
       { histos.fill(HIST("NSigamaTPCTOFpion"), track.tpcNSigmaPi(), track.tofNSigmaPi());
 
-            	histos.fill(HIST("hdEdx_afterselection"), track.p(), track.tpcSignal());
+             histos.fill(HIST("hdEdx_afterselection"), track.p(), track.tpcSignal());
                 histos.fill(HIST("hTOFbeta_afterselection"), track.p(), track.beta());
       }
 
@@ -1246,14 +1246,14 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
           histos.fill(HIST("hPtPion"), track.pt());
           histos.fill(HIST("hEtaPion"), track.eta());
           histos.fill(HIST("hyPion"), track.rapidity(massPi));
-	  histos.fill(HIST("hPtyPion"),track.pt(),track.rapidity(massPi));
+   histos.fill(HIST("hPtyPion"),track.pt(),track.rapidity(massPi));
 
           nChpi += 1.;
           Q1pi += track.pt();
           Q2pi += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-	  
+   
 
        histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
        histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
@@ -1267,7 +1267,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
           histos.fill(HIST("hPtPion"), track.pt());
           histos.fill(HIST("hEtaPion"), track.eta());
           histos.fill(HIST("hyPion"), track.rapidity(massPi));
-	  histos.fill(HIST("hPtyPion"),track.pt(),track.rapidity(massPi));
+   histos.fill(HIST("hPtyPion"),track.pt(),track.rapidity(massPi));
 
 
           nChpi += 1.;
@@ -1275,9 +1275,9 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
           Q2pi += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-	  
+   
 
-	   histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
+    histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
 
@@ -1289,28 +1289,28 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
 
       if ((track.hasTPC() && abs(track.tpcNSigmaKa()) < 2.) && (track.hasTOF() && abs(track.tofNSigmaKa()) < 2.))
       { histos.fill(HIST("NSigamaTPCTOFkaon"), track.tpcNSigmaKa(), track.tofNSigmaKa());
-		histos.fill(HIST("hdEdx_afterselection"), track.p(), track.tpcSignal());
+  histos.fill(HIST("hdEdx_afterselection"), track.p(), track.tpcSignal());
                 histos.fill(HIST("hTOFbeta_afterselection"), track.p(), track.beta());
 
 
       }
 
         
- 	if (track.hasTPC() && abs(track.tpcNSigmaKa()) < 2. && (track.pt() >= 0.15 && track.pt() < 0.65)  && (abs(track.rapidity(massKa)) < 0.5) &&  (std::abs(track.tpcNSigmaEl()) > 1.0 && std::abs(track.tpcNSigmaPi()) > 2.0 && std::abs(track.tpcNSigmaPr()) > 2.0)) {
+  if (track.hasTPC() && abs(track.tpcNSigmaKa()) < 2. && (track.pt() >= 0.15 && track.pt() < 0.65)  && (abs(track.rapidity(massKa)) < 0.5) &&  (std::abs(track.tpcNSigmaEl()) > 1.0 && std::abs(track.tpcNSigmaPi()) > 2.0 && std::abs(track.tpcNSigmaPr()) > 2.0)) {
 
-	  histos.fill(HIST("hPtKaon"), track.pt());
+   histos.fill(HIST("hPtKaon"), track.pt());
           histos.fill(HIST("hEtaKaon"), track.eta());
-	  histos.fill(HIST("hyKaon"), track.rapidity(massKa));
-	  histos.fill(HIST("hPtyKaon"),track.pt(),track.rapidity(massKa));
+   histos.fill(HIST("hyKaon"), track.rapidity(massKa));
+   histos.fill(HIST("hPtyKaon"),track.pt(),track.rapidity(massKa));
 
           nChk += 1.;
           Q1k += track.pt();
           Q2k += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-	  
+   
 
-	   histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
+    histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
      
@@ -1318,13 +1318,13 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
 
 
 
-	if ((track.pt() >= 0.65 && track.pt() < 2.0)  && (abs(track.rapidity(massKa)) < 0.5) && track.hasTPC() && track.hasTOF() && (std::abs(track.tofNSigmaPi()) > 2.0 && std::abs(track.tofNSigmaPr()) > 2.0 ) && (abs(sqrt(track.tpcNSigmaKa()) * (track.tpcNSigmaKa()) + (track.tofNSigmaKa()) * (track.tofNSigmaKa())) < 2.) ) {
+ if ((track.pt() >= 0.65 && track.pt() < 2.0)  && (abs(track.rapidity(massKa)) < 0.5) && track.hasTPC() && track.hasTOF() && (std::abs(track.tofNSigmaPi()) > 2.0 && std::abs(track.tofNSigmaPr()) > 2.0 ) && (abs(sqrt(track.tpcNSigmaKa()) * (track.tpcNSigmaKa()) + (track.tofNSigmaKa()) * (track.tofNSigmaKa())) < 2.) ) {
 
 
-	  histos.fill(HIST("hPtKaon"), track.pt());
+   histos.fill(HIST("hPtKaon"), track.pt());
           histos.fill(HIST("hEtaKaon"), track.eta());
-	  histos.fill(HIST("hyKaon"), track.rapidity(massKa));
-	  histos.fill(HIST("hPtyKaon"),track.pt(),track.rapidity(massKa));
+   histos.fill(HIST("hyKaon"), track.rapidity(massKa));
+   histos.fill(HIST("hPtyKaon"),track.pt(),track.rapidity(massKa));
 
 
           nChk += 1.;
@@ -1332,12 +1332,12 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
           Q2k += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-	  
+   
 
-	   histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
+    histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
-	
+ 
         }
       
 
@@ -1346,27 +1346,27 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
       if ((track.hasTPC() && abs(track.tpcNSigmaPr()) < 2.) && (track.hasTOF() && abs(track.tofNSigmaPr()) < 2.))
       { histos.fill(HIST("NSigamaTPCTOFproton"), track.tpcNSigmaPr(), track.tofNSigmaPr());
 
-	histos.fill(HIST("hdEdx_afterselection"), track.p(), track.tpcSignal());
+ histos.fill(HIST("hdEdx_afterselection"), track.p(), track.tpcSignal());
         histos.fill(HIST("hTOFbeta_afterselection"), track.p(), track.beta());
       }
 
   
-	if (track.hasTPC() && abs(track.tpcNSigmaPr()) < 2. && (track.pt() >= 0.4 && track.pt() < 0.85) && (abs(track.rapidity(massPr)) < 0.5) && (std::abs(track.tpcNSigmaEl()) > 1.0 && std::abs(track.tpcNSigmaKa()) > 2.0 && std::abs(track.tpcNSigmaPi()) > 2.0)) {
+ if (track.hasTPC() && abs(track.tpcNSigmaPr()) < 2. && (track.pt() >= 0.4 && track.pt() < 0.85) && (abs(track.rapidity(massPr)) < 0.5) && (std::abs(track.tpcNSigmaEl()) > 1.0 && std::abs(track.tpcNSigmaKa()) > 2.0 && std::abs(track.tpcNSigmaPi()) > 2.0)) {
 
           histos.fill(HIST("hPtProton"), track.pt());
           histos.fill(HIST("hEtaProton"), track.eta());
-	  histos.fill(HIST("hyProton"), track.rapidity(massPr));
-	  histos.fill(HIST("hPtyProton"),track.pt(),track.rapidity(massPr));
+   histos.fill(HIST("hyProton"), track.rapidity(massPr));
+   histos.fill(HIST("hPtyProton"),track.pt(),track.rapidity(massPr));
 
           nChp += 1.;
           Q1p += track.pt();
           Q2p += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-	  
+   
 
-	 
-	   histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
+  
+    histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
         }
@@ -1377,17 +1377,17 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
 
           histos.fill(HIST("hPtProton"), track.pt());
           histos.fill(HIST("hEtaProton"), track.eta());
-	  histos.fill(HIST("hyProton"), track.rapidity(massPr));
-	  histos.fill(HIST("hPtyProton"),track.pt(),track.rapidity(massPr));
+   histos.fill(HIST("hyProton"), track.rapidity(massPr));
+   histos.fill(HIST("hPtyProton"),track.pt(),track.rapidity(massPr));
 
           nChp += 1.;
           Q1p += track.pt();
           Q2p += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-	  
+   
 
-	   histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
+    histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
         }
