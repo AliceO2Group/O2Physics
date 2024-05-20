@@ -34,8 +34,8 @@ JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec
   pht[HIST_THN_PHIETAZ] = std::get<std::shared_ptr<THn>>(registry.add("h_phietaz", "multiplicity/centrality, phi, eta, z", {HistType::kTHnF, {axisMultiplicity, phiAxis, etaAxis, zvtAxis}})).get();
   pht[HIST_THN_PTETA] = std::get<std::shared_ptr<THn>>(registry.add("h_pteta", "(corrected) multiplicity/centrality, pT, eta", {HistType::kTHnF, {axisMultiplicity, ptAxis, etaAxis}})).get();
   pht[HIST_THN_PHIETA] = std::get<std::shared_ptr<THn>>(registry.add("h_phieta", "(corrected) multiplicity/centrality, phi, eta", {HistType::kTHnF, {axisMultiplicity, phiAxis, etaAxis}})).get();
-  AxisSpec hAxis = {kNH, -0.5, static_cast<double>(kNH) + 0.5, "#it{n}"};
-  AxisSpec kAxis = {nKL, -0.5, static_cast<double>(nKL) + 0.5, "#it{k}"};
+  AxisSpec hAxis = {kNH, -0.5, static_cast<double>(kNH - 1) + 0.5, "#it{n}"};
+  AxisSpec kAxis = {nKL, -0.5, static_cast<double>(nKL - 1) + 0.5, "#it{k}"};
   AxisSpec vnAxis = {1024, -1.0, 1.0, "#it{V}_#it{n}"};
   pht[HIST_THN_SC_with_QC_4corr] = std::get<std::shared_ptr<THn>>(registry.add("h_SC_with_QC_4corr", "SC_with_QC_4corr", {HistType::kTHnF, {axisMultiplicity, hAxis, hAxis, {1024, -1.5, 1.5, "correlation"}}})).get();
   pht[HIST_THN_SC_with_QC_2corr] = std::get<std::shared_ptr<THn>>(registry.add("h_SC_with_QC_2corr", "SC_with_QC_2corr", {HistType::kTHnF, {axisMultiplicity, hAxis, {1024, -1.5, 1.5, "correlation"}}})).get();
