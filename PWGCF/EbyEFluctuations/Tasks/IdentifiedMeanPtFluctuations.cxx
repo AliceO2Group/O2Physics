@@ -75,7 +75,7 @@ double massPr = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
 
 struct IdentifiedMeanPtFluctuations {
 
- 
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
@@ -86,7 +86,7 @@ struct IdentifiedMeanPtFluctuations {
   {
     AxisSpec vtxZAxis = {100, -20, 20, "Z (cm)"};
     AxisSpec dcaAxis = {1002, -5.01, 5.01, "DCA_{xy} (cm)"};
-    AxisSpec dcazAxis = {1002, -5.01, 5.01, "DCA_{z} (cm)"};  
+    AxisSpec dcazAxis = {1002, -5.01, 5.01, "DCA_{z} (cm)"};
     AxisSpec ptAxis = {400, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec pAxis = {400, 0.0, 4.0, "#it{p} (GeV/#it{c})"};
     AxisSpec betaAxis = {200, 0.0, 2.0, "TOF_{#beta} (GeV/#it{c})"};
@@ -132,7 +132,7 @@ struct IdentifiedMeanPtFluctuations {
     h_rec->GetXaxis()->SetBinLabel(5, "kNoITSROFrameBorder passed");
     h_rec->GetXaxis()->SetBinLabel(6, "klsGoodZvtxFT0vsPV passed");
     h_rec->GetXaxis()->SetBinLabel(7, "klsVertexITSTPC passed");
-   
+
 
 
     histos.add("hZvtx_before_sel", "hZvtx_before_sel", kTH1D, {vtxZAxis});
@@ -199,7 +199,7 @@ struct IdentifiedMeanPtFluctuations {
     histos.add("hEtaProton", ";hEta", kTH1D, {etaAxis});
 //=====================rapidity=====================================
     histos.add("hyPion", ";hyPion", kTH1D, {etaAxis});
-    histos.add("hyKaon", ";hyKaon", kTH1D, {etaAxis}); 
+    histos.add("hyKaon", ";hyKaon", kTH1D, {etaAxis});
     histos.add("hyProton", ";hyProton", kTH1D, {etaAxis});
 
 
@@ -220,52 +220,52 @@ struct IdentifiedMeanPtFluctuations {
 
     histos.add("hVar1", "hVar1", kTH2D, {subAxis, centAxis});
     histos.add("hVar2", "hVar2", kTH2D, {subAxis, centAxis});
-    histos.add("hVar2meanpt", "hVar2meanpt", kTH2D, {centAxis, varAxis2});   
+    histos.add("hVar2meanpt", "hVar2meanpt", kTH2D, {centAxis, varAxis2});
     histos.add("hVar", "hVar", kTH2D, {subAxis, centAxis});
     histos.add("hVarc", "hVarc", kTH2D, {subAxis, centAxis});
 
     histos.add("hVar1pi", "hVar1pi", kTH2D, {subAxis, centAxis});
     histos.add("hVar2pi", "hVar2pi", kTH2D, {subAxis, centAxis});
     histos.add("hVarpi", "hVarpi", kTH2D, {subAxis, centAxis});
-    histos.add("hVar2meanptpi", "hVar2meanptpi", kTH2D, {centAxis, varAxis2});  
-    
+    histos.add("hVar2meanptpi", "hVar2meanptpi", kTH2D, {centAxis, varAxis2});
+
 
     histos.add("hVar1k", "hVar1k", kTH2D, {subAxis, centAxis});
     histos.add("hVar2k", "hVar2k", kTH2D, {subAxis, centAxis});
     histos.add("hVark", "hVark", kTH2D, {subAxis, centAxis});
-    histos.add("hVar2meanptk", "hVar2meanptk", kTH2D, {centAxis, varAxis2});    
-    
+    histos.add("hVar2meanptk", "hVar2meanptk", kTH2D, {centAxis, varAxis2});
+
 
     histos.add("hVar1p", "hVar1p", kTH2D, {subAxis, centAxis});
     histos.add("hVar2p", "hVar2p", kTH2D, {subAxis, centAxis});
     histos.add("hVarp", "hVarp", kTH2D, {subAxis, centAxis});
     histos.add("hVar2meanptp", "hVar2meanptp", kTH2D, {centAxis, varAxis2});
-    
+
 
     //--------------------------------nch----------------------------------
     histos.add("hVar1x", "hVar1x", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2x", "hVar2x", kTH2D, {subAxis, nchAxis});
     histos.add("hVarx", "hVarx", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptx", "hVar2meanptx", kTH2D, {nchAxis, varAxis2});    
-    
+    histos.add("hVar2meanptx", "hVar2meanptx", kTH2D, {nchAxis, varAxis2});
+
 
     histos.add("hVar1pix", "hVar1pix", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2pix", "hVar2pix", kTH2D, {subAxis, nchAxis});
     histos.add("hVarpix", "hVarpix", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptpix", "hVar2meanptpix", kTH2D, {nchAxis, varAxis2});    
-    
+    histos.add("hVar2meanptpix", "hVar2meanptpix", kTH2D, {nchAxis, varAxis2});
+
 
     histos.add("hVar1kx", "hVar1kx", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2kx", "hVar2kx", kTH2D, {subAxis, nchAxis});
     histos.add("hVarkx", "hVarkx", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptkx", "hVar2meanptkx", kTH2D, {nchAxis, varAxis2});    
-    
+    histos.add("hVar2meanptkx", "hVar2meanptkx", kTH2D, {nchAxis, varAxis2});
+
 
     histos.add("hVar1px", "hVar1px", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2px", "hVar2px", kTH2D, {subAxis, nchAxis});
     histos.add("hVarpx", "hVarpx", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptpx", "hVar2meanptpx", kTH2D, {nchAxis, varAxis2});    
-    
+    histos.add("hVar2meanptpx", "hVar2meanptpx", kTH2D, {nchAxis, varAxis2});
+
 
     histos.add("ht", "ht", kTH1D, {centAxis});
 
@@ -307,7 +307,7 @@ struct IdentifiedMeanPtFluctuations {
     histos.add("hdEdx_afterselection_rec_beforepidcut", "hdEdx_afterselection_rec_beforepidcut", kTH2D, {pAxis, dEdxAxis});
 
     histos.add("hdEdx_rec_bf_anycut", "hdEdx_rec_bf_anycut", kTH2D, {pAxis, dEdxAxis});//?
-    
+
 
     histos.add("hTPCchi2perCluster_before", "TPC #Chi^{2}/Cluster", kTH1D, {Chi2Axis});
     histos.add("hITSchi2perCluster_before", "ITS #Chi^{2}/Cluster", kTH1D, {Chi2Axis});
@@ -324,25 +324,25 @@ struct IdentifiedMeanPtFluctuations {
     histos.add("hVar1x_rec", "hVar1x_rec", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2x_rec", "hVar2x_rec", kTH2D, {subAxis, nchAxis});
     histos.add("hVarx_rec", "hVarx_rec", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptx_rec", "hVar2meanptx_rec", kTH2D, {nchAxis, varAxis2});    
-    
+    histos.add("hVar2meanptx_rec", "hVar2meanptx_rec", kTH2D, {nchAxis, varAxis2});
+
 
     histos.add("hVar1pix_rec", "hVar1pix_rec", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2pix_rec", "hVar2pix_rec", kTH2D, {subAxis, nchAxis});
     histos.add("hVarpix_rec", "hVarpix_rec", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptpix_rec", "hVar2meanptpix_rec", kTH2D, {nchAxis, varAxis2});    
-    
+    histos.add("hVar2meanptpix_rec", "hVar2meanptpix_rec", kTH2D, {nchAxis, varAxis2});
+
 
     histos.add("hVar1kx_rec", "hVar1kx_rec", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2kx_rec", "hVar2kx_rec", kTH2D, {subAxis, nchAxis});
     histos.add("hVarkx_rec", "hVarkx_rec", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptkx_rec", "hVar2meanptkx_rec", kTH2D, {nchAxis, varAxis2});    
-    
+    histos.add("hVar2meanptkx_rec", "hVar2meanptkx_rec", kTH2D, {nchAxis, varAxis2});
+
 
     histos.add("hVar1px_rec", "hVar1px_rec", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2px_rec", "hVar2px_rec", kTH2D, {subAxis, nchAxis});
     histos.add("hVarpx_rec", "hVarpx_rec", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptpx_rec", "hVar2meanptpx_rec", kTH2D, {nchAxis, varAxis2});    
+    histos.add("hVar2meanptpx_rec", "hVar2meanptpx_rec", kTH2D, {nchAxis, varAxis2});
 
 
 
@@ -354,7 +354,7 @@ struct IdentifiedMeanPtFluctuations {
     histos.add("ptHistogramPion", "ptHistogramPion", kTH1D, {ptAxis});
  histos.add("ptHistogramKaon", "ptHistogramKaon", kTH1D, {ptAxis});
  histos.add("ptHistogramProton", "ptHistogramProton", kTH1D, {ptAxis});
- 
+
      histos.add("hMC_Pt", ";#it{p}_{T} (GeV/#it{c})", kTH1D, {ptAxis});
      histos.add("MC_hZvtx_after_sel", ";#it{p}_{T} (GeV/#it{c})", kTH1D, {vtxZAxis});
 
@@ -366,25 +366,25 @@ struct IdentifiedMeanPtFluctuations {
     histos.add("hVar1x_gen", "hVar1x_gen", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2x_gen", "hVar2x_gen", kTH2D, {subAxis, nchAxis});
     histos.add("hVarx_gen", "hVarx_gen", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptx_gen", "hVar2meanptx_gen", kTH2D, {nchAxis, varAxis2});    
-    
+    histos.add("hVar2meanptx_gen", "hVar2meanptx_gen", kTH2D, {nchAxis, varAxis2});
+
 
     histos.add("hVar1pix_gen", "hVar1pix_gen", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2pix_gen", "hVar2pix_gen", kTH2D, {subAxis, nchAxis});
     histos.add("hVarpix_gen", "hVarpix_gen", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptpix_gen", "hVar2meanptpix_gen", kTH2D, {nchAxis, varAxis2});    
-    
+    histos.add("hVar2meanptpix_gen", "hVar2meanptpix_gen", kTH2D, {nchAxis, varAxis2});
+
 
     histos.add("hVar1kx_gen", "hVar1kx_gen", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2kx_gen", "hVar2kx_gen", kTH2D, {subAxis, nchAxis});
     histos.add("hVarkx_gen", "hVarkx_gen", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptkx_gen", "hVar2meanptkx_gen", kTH2D, {nchAxis, varAxis2});    
-    
+    histos.add("hVar2meanptkx_gen", "hVar2meanptkx_gen", kTH2D, {nchAxis, varAxis2});
+
 
     histos.add("hVar1px_gen", "hVar1px_gen", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2px_gen", "hVar2px_gen", kTH2D, {subAxis, nchAxis});
     histos.add("hVarpx_gen", "hVarpx_gen", kTH2D, {subAxis, nchAxis});
-    histos.add("hVar2meanptpx_gen", "hVar2meanptpx_gen", kTH2D, {nchAxis, varAxis2});    
+    histos.add("hVar2meanptpx_gen", "hVar2meanptpx_gen", kTH2D, {nchAxis, varAxis2});
 
 
 //========================MC Histograms Reconstructed=================================================
@@ -392,7 +392,7 @@ struct IdentifiedMeanPtFluctuations {
     histos.add("hZvtx_after_sel_rec", "hZvtx_after_sel_rec", kTH1D, {vtxZAxis});
     histos.add("hZvtx_after_sel8_rec", "hZvtx_after_sel8_rec", kTH1D, {vtxZAxis});
 
-    histos.add("ptHistogram_allcharge_rec", "ptHistogram_allcharge_rec", kTH1D, {ptAxis});  
+    histos.add("ptHistogram_allcharge_rec", "ptHistogram_allcharge_rec", kTH1D, {ptAxis});
     histos.add("ptHistogramPionrec", "ptHistogramPionrec", kTH1D, {ptAxis});
  histos.add("ptHistogramKaonrec", "ptHistogramKaonrec", kTH1D, {ptAxis});
  histos.add("ptHistogramProtonrec", "ptHistogramProtonrec", kTH1D, {ptAxis});
@@ -429,14 +429,14 @@ void processMCReco(aod::MCCollisions::iterator const& mccoll, aod::MCTracks cons
    }
      histos.fill(HIST("tracksel_rec"), 1);
 
-  
+
    if (fabs(mccoll.posZ()) > 10.f) {
       return;
     }
     histos.fill(HIST("hZvtx_after_sel_rec"), mccoll.posZ());
 
  histos.fill(HIST("tracksel_rec"), 2);
-    
+
 
     if (!mccoll.sel8()) { // min bias
       return;
@@ -448,25 +448,25 @@ void processMCReco(aod::MCCollisions::iterator const& mccoll, aod::MCTracks cons
 
 
 if (!mccoll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)){ // no pileup according to SPD vertexer
- return; 
-   } 
+ return;
+   }
  histos.fill(HIST("tracksel_rec"), 4);
 
 
 if (!mccoll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)){ // bunch crossing is far from ITS RO Frame border
- return; 
+ return;
    }
  histos.fill(HIST("tracksel_rec"), 5);
 
 
 if (!mccoll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)){ // bunch crossing is far from ITS RO Frame border
- return; 
+ return;
    }
  histos.fill(HIST("tracksel_rec"), 6);
 
 
 if (!mccoll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)){ // bunch crossing is far from ITS RO Frame border
- return; 
+ return;
    }
  histos.fill(HIST("tracksel_rec"), 7);
 
@@ -509,18 +509,18 @@ if (!mccoll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)){ // bunch crossing i
       Q2_rec += (track1.pt() * track1.pt());
 
   histos.fill(HIST("ptHistogram_allcharge_rec"), track1.pt());
-  
+
  if (track1.hasTPC())
  histos.fill(HIST("hdEdx_rec_bf_anycut"), track1.p(), track1.tpcSignal());
 
 
 //========================================================================
 
-if(abs(track1.mcParticle().pdgCode())==211) 
-{count_rec_pi_pdg++; 
+if(abs(track1.mcParticle().pdgCode())==211)
+{count_rec_pi_pdg++;
  histos.fill(HIST("ptHistogramPionrec_pdg"), track1.pt());
 }
-if(abs(track1.mcParticle().pdgCode())==321) 
+if(abs(track1.mcParticle().pdgCode())==321)
 {count_rec_k_pdg++;
 
  histos.fill(HIST("ptHistogramKaonrec_pdg"), track1.pt());
@@ -528,16 +528,16 @@ if(abs(track1.mcParticle().pdgCode())==321)
 if(abs(track1.mcParticle().pdgCode())==2212)
 {count_rec_p_pdg++;
 
- histos.fill(HIST("ptHistogramProtonrec_pdg"), track1.pt());  
+ histos.fill(HIST("ptHistogramProtonrec_pdg"), track1.pt());
 }
 
  //+++++++++ electron rejection ++++++++++++++++++++++++++++++++//
 
- if (abs(track1.tpcNSigmaEl()) < 3.0 &&  abs(track1.tpcNSigmaPi()) > 3. && abs(track1.tpcNSigmaKa()) > 3. && abs(track1.tpcNSigmaPr()) > 3.) continue; // electron rejection 
+ if (abs(track1.tpcNSigmaEl()) < 3.0 &&  abs(track1.tpcNSigmaPi()) > 3. && abs(track1.tpcNSigmaKa()) > 3. && abs(track1.tpcNSigmaPr()) > 3.) continue; // electron rejection
 
 //=============================pion==============================================================
       // only TPC+TOF tracks: Pion, Kaon, Proton
- 
+
 
 
         if (track1.hasTPC())
@@ -557,8 +557,8 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
 
       //pion-TPC-----------------------------------------------------------------------------------
-       
-    if (( track1.hasTPC() && (track1.p() < 0.7)  && abs(track1.tpcNSigmaPi()) < 3.&&  (std::abs(track1.tpcNSigmaKa()) > 3.0 && std::abs(track1.tpcNSigmaPr()) > 3.0))) 
+
+    if (( track1.hasTPC() && (track1.p() < 0.7)  && abs(track1.tpcNSigmaPi()) < 3.&&  (std::abs(track1.tpcNSigmaKa()) > 3.0 && std::abs(track1.tpcNSigmaPr()) > 3.0)))
 
  {
 
@@ -566,7 +566,7 @@ if(abs(track1.mcParticle().pdgCode())==2212)
   count_rec_pi++;
   histos.fill(HIST("ptHistogramPionrec"), track1.pt());
 
- 
+
           nChpi_rec += 1.;
           Q1pi_rec += track1.pt();
           Q2pi_rec += (track1.pt() * track1.pt());
@@ -578,12 +578,12 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
 
        if(track1.beta()>1) continue;
-   
+
 
        histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
        histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
 
-      
+
 
        if(abs(track1.mcParticle().pdgCode())==211)
        {
@@ -592,23 +592,23 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
  if (abs(track1.rapidity(massPi)) < 0.5)
  {
- 
+
  histos.fill(HIST("hPyPion_rec"),track1.p(),track1.rapidity(massPi));
  histos.fill(HIST("hPtyPion_rec"),track1.pt(),track1.rapidity(massPi));
- 
+
  }
 
-             
+
         }
 
       //pion->(TPC+TOF)------------------------------------------------------------------------------------
- 
-    if (track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((track1.tofNSigmaPr()+2)/3.0, (track1.tpcNSigmaPr()-6)/4.0)  > 3. && TMath::Hypot((track1.tofNSigmaKa()+2)/3.0, (track1.tpcNSigmaKa()-6)/4.0) > 3. && TMath::Hypot((track1.tofNSigmaPi()+2)/3.0, (track1.tpcNSigmaPi()-6)/4.0) < 3.) //elipsoidal cut 
 
-    
+    if (track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((track1.tofNSigmaPr()+2)/3.0, (track1.tpcNSigmaPr()-6)/4.0)  > 3. && TMath::Hypot((track1.tofNSigmaKa()+2)/3.0, (track1.tpcNSigmaKa()-6)/4.0) > 3. && TMath::Hypot((track1.tofNSigmaPi()+2)/3.0, (track1.tpcNSigmaPi()-6)/4.0) < 3.) //elipsoidal cut
+
+
 {
 
- 
+
   count_rec_pi++;
 
   histos.fill(HIST("ptHistogramPionrec"), track1.pt());
@@ -625,7 +625,7 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
 
      if(track1.beta()>1) continue;
-   
+
 
     histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
@@ -638,13 +638,13 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
  if (abs(track1.rapidity(massPi)) < 0.5)
  {
- 
+
  histos.fill(HIST("hPyPion_rec"),track1.p(),track1.rapidity(massPi));
  histos.fill(HIST("hPtyPion_rec"),track1.pt(),track1.rapidity(massPi));
- 
+
  }
 
-   
+
         }
 //============================KAON Reconstructed ====================================================
 
@@ -655,7 +655,7 @@ if(abs(track1.mcParticle().pdgCode())==2212)
  histos.fill(HIST("hdEdx_afterselection_rec_beforepidcut"), track1.p(), track1.tpcSignal());
       if (track1.hasTOF())
            histos.fill(HIST("hTOFbeta_afterselection_rec_beforepidcut"), track1.p(), track1.beta());
- 
+
         if (track1.hasTPC() && track1.hasTOF())
  {
 
@@ -672,8 +672,8 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
  if (( track1.hasTPC() && (track1.p() < 0.7)  && abs(track1.tpcNSigmaKa()) < 3.0 &&  (std::abs(track1.tpcNSigmaPi()) > 3.0 && std::abs(track1.tpcNSigmaPr()) > 3.0)))
 
- 
- 
+
+
   {  count_rec_k++;
 
  histos.fill(HIST("ptHistogramKaonrec"), track1.pt());
@@ -690,7 +690,7 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
 
        if(track1.beta()>1) continue;
-   
+
 
     histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
@@ -703,13 +703,13 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
    if (abs(track1.rapidity(massKa)) < 0.5)
  {
- 
+
  histos.fill(HIST("hPyKaon_rec"),track1.p(),track1.rapidity(massKa));
  histos.fill(HIST("hPtyKaon_rec"),track1.pt(),track1.rapidity(massKa));
- 
+
  }
 
-     
+
         }
 
 //KAON_TPC+TOF (both)
@@ -718,7 +718,7 @@ if(abs(track1.mcParticle().pdgCode())==2212)
 
 
 
-if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((track1.tofNSigmaPr()+2)/3.0, (track1.tpcNSigmaPr()-6)/4.0)  > 3. && TMath::Hypot((track1.tofNSigmaPi()+2)/3.0, (track1.tpcNSigmaPi()-6)/4.0) > 3. && TMath::Hypot((track1.tofNSigmaKa()+2)/3.0, (track1.tpcNSigmaKa()-6)/4.0) < 3.)// ellipsoidal cut 
+if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((track1.tofNSigmaPr()+2)/3.0, (track1.tpcNSigmaPr()-6)/4.0)  > 3. && TMath::Hypot((track1.tofNSigmaPi()+2)/3.0, (track1.tpcNSigmaPi()-6)/4.0) > 3. && TMath::Hypot((track1.tofNSigmaKa()+2)/3.0, (track1.tpcNSigmaKa()-6)/4.0) < 3.)// ellipsoidal cut
 
 
 {  count_rec_k++;
@@ -739,7 +739,7 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((t
 
 
        if(track1.beta()>1) continue;
-   
+
 
     histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
@@ -751,18 +751,18 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((t
 
    if (abs(track1.rapidity(massKa)) < 0.5)
  {
- 
+
  histos.fill(HIST("hPyKaon_rec"),track1.p(),track1.rapidity(massKa));
  histos.fill(HIST("hPtyKaon_rec"),track1.pt(),track1.rapidity(massKa));
- 
+
  }
 
- 
+
         }
-      
+
 
 //============================proton===========================================================
-  
+
 
 
  if (track1.hasTPC())
@@ -787,7 +787,7 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((t
 
 {  count_rec_p++;
 
- histos.fill(HIST("ptHistogramProtonrec"), track1.pt());  
+ histos.fill(HIST("ptHistogramProtonrec"), track1.pt());
 
 
              nChp_rec += 1.;
@@ -801,9 +801,9 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((t
 
 
        if(track1.beta()>1) continue;
-   
 
-  
+
+
     histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
 
@@ -815,10 +815,10 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 0.7  && TMath::Hypot((t
 
    if (abs(track1.rapidity(massPr)) < 0.5)
  {
- 
+
  histos.fill(HIST("hPyProton_rec"),track1.p(),track1.rapidity(massPr));
  histos.fill(HIST("hPtyProton_rec"),track1.pt(),track1.rapidity(massPr));
- 
+
  }
 
 
@@ -833,7 +833,7 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 1.1  && TMath::Hypot((t
 {
   count_rec_p++;
 
- histos.fill(HIST("ptHistogramProtonrec"), track1.pt());  
+ histos.fill(HIST("ptHistogramProtonrec"), track1.pt());
 
 
           nChp_rec += 1.;
@@ -846,7 +846,7 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 1.1  && TMath::Hypot((t
 
 
        if(track1.beta()>1) continue;
-   
+
 
     histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
@@ -858,10 +858,10 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 1.1  && TMath::Hypot((t
 
   if (abs(track1.rapidity(massPr)) < 0.5)
  {
- 
+
  histos.fill(HIST("hPyProton_rec"),track1.p(),track1.rapidity(massPr));
  histos.fill(HIST("hPtyProton_rec"),track1.pt(),track1.rapidity(massPr));
- 
+
  }
 
 
@@ -874,7 +874,7 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 1.1  && TMath::Hypot((t
 }// track loop ends
 
 
- if (nCh_rec < 2) 
+ if (nCh_rec < 2)
       return;
 
     //------------------ all charges-------------------------------------
@@ -886,20 +886,20 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 1.1  && TMath::Hypot((t
     if(nChpi_rec > 2){
     var1pi_rec = (Q1pi_rec * Q1pi_rec - Q2pi_rec) / (nChpi_rec * (nChpi_rec - 1));
     var2pi_rec = (Q1pi_rec / nChpi_rec);
-   
+
        }
 
     //----------------------- kaons ---------------------------------------
  if(nChk_rec > 2){
     var1k_rec = (Q1k_rec * Q1k_rec - Q2k_rec) / (nChk_rec * (nChk_rec - 1));
-    var2k_rec = (Q1k_rec / nChk_rec);   
+    var2k_rec = (Q1k_rec / nChk_rec);
    }
 
     //---------------------------- protons ----------------------------------
  if(nChp_rec > 2){
     var1p_rec = (Q1p_rec * Q1p_rec - Q2p_rec) / (nChp_rec * (nChp_rec - 1));
     var2p_rec = (Q1p_rec / nChp_rec);
-   } 
+   }
 
 
 
@@ -907,38 +907,38 @@ if ( track1.hasTPC() && track1.hasTOF() && track1.p() >= 1.1  && TMath::Hypot((t
     histos.fill(HIST("hVar1x_rec"),sample_rec ,nCh_rec, var1_rec);
     histos.fill(HIST("hVar2x_rec"),sample_rec ,nCh_rec, var2_rec);
     histos.fill(HIST("hVarx_rec"), sample_rec, nCh_rec);
-    histos.fill(HIST("hVar2meanptx_rec"), nCh_rec, var2_rec);    
-    
+    histos.fill(HIST("hVar2meanptx_rec"), nCh_rec, var2_rec);
+
 
     histos.fill(HIST("hVar1pix_rec"),sample_rec ,nCh_rec, var1pi_rec);
     histos.fill(HIST("hVar2pix_rec"),sample_rec ,nCh_rec, var2pi_rec);
     histos.fill(HIST("hVarpix_rec"), sample_rec, nChpi_rec);
-    histos.fill(HIST("hVar2meanptpix_rec"), nCh_rec, var2pi_rec);    
-    
+    histos.fill(HIST("hVar2meanptpix_rec"), nCh_rec, var2pi_rec);
+
 
     histos.fill(HIST("hVar1kx_rec"),sample_rec ,nCh_rec, var1k_rec);
     histos.fill(HIST("hVar2kx_rec"),sample_rec ,nCh_rec, var2k_rec);
     histos.fill(HIST("hVarkx_rec"), sample_rec, nChk_rec);
-    histos.fill(HIST("hVar2meanptkx_rec"), nCh_rec, var2k_rec);    
-    
+    histos.fill(HIST("hVar2meanptkx_rec"), nCh_rec, var2k_rec);
+
 
     histos.fill(HIST("hVar1px_rec"),sample_rec ,nCh_rec, var1p_rec);
     histos.fill(HIST("hVar2px_rec"),sample_rec ,nCh_rec, var2p_rec);
     histos.fill(HIST("hVarpx_rec"), sample_rec, nChp_rec);
-    histos.fill(HIST("hVar2meanptpx_rec"), nCh_rec, var2p_rec);    
+    histos.fill(HIST("hVar2meanptpx_rec"), nCh_rec, var2p_rec);
 
 
 
 
- 
+
  }// ends
- 
+
 PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCReco, "process reconstructed information", true);
 
 
 //++++++++++++++++++++++++++++Monte Carlo Generated ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)//, const soa::SmallGroups<MCCollisions>& collisions)
- 
+
   {
 
  if (fabs(mcCollision.posZ()) > 10.f) {
@@ -946,7 +946,7 @@ void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParti
     }
     histos.fill(HIST("MC_hZvtx_after_sel"), mcCollision.posZ());
 
-    
+
        // INITALIZE VARIABLE FOR ADDING IDENTIFIED PT //
 
     int count_gen_pi =0, count_gen_k =0, count_gen_p =0;
@@ -954,7 +954,7 @@ void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParti
     double nChpi_gen = 0.;
     double nChk_gen = 0.;
     double nChp_gen = 0.;
-    
+
     double Q1_gen = 0, Q2_gen = 0;
     double Q1pi_gen = 0, Q2pi_gen = 0;
     double Q1k_gen = 0, Q2k_gen = 0;
@@ -970,16 +970,16 @@ void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParti
     sample_gen = sample_gen % 30;
 
 
-  for (auto& mcgentrack : mcParticles) 
-  
+  for (auto& mcgentrack : mcParticles)
+
     { auto pdgcode = std::abs(mcgentrack.pdgCode());
  if(!(mcgentrack.has_mcCollision())) continue;//????
-    
+
  if(!(mcgentrack.isPhysicalPrimary())) continue;
  if (!(mcgentrack.pt() > 0.15) || !(mcgentrack.pt() < 2.)) continue;//pt cut // or and check
         if (!(mcgentrack.eta() > -0.8) || !(mcgentrack.eta() < 0.8)) continue;//eta cut // or and check
 
- 
+
  nCh_gen += 1.;
 
       Q1_gen += mcgentrack.pt();
@@ -987,9 +987,9 @@ void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParti
 
 
   histos.fill(HIST("ptHistogram_allcharge_gen"), mcgentrack.pt());
-        
 
-        if(pdgcode == 211){ 
+
+        if(pdgcode == 211){
   count_gen_pi++;
   histos.fill(HIST("ptHistogramPion"), mcgentrack.pt());
 
@@ -1010,12 +1010,12 @@ void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParti
            Q2k_gen += (mcgentrack.pt() * mcgentrack.pt());
 
     }
- 
- 
+
+
 
  if(pdgcode == 2212){
  count_gen_p++;
- histos.fill(HIST("ptHistogramProton"), mcgentrack.pt());   
+ histos.fill(HIST("ptHistogramProton"), mcgentrack.pt());
 
   nChp_gen += 1.;
            Q1p_gen += mcgentrack.pt();
@@ -1027,8 +1027,8 @@ void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParti
 
     }//track loop ends!
 
-  
- if (nCh_gen < 2) 
+
+ if (nCh_gen < 2)
       return;
 
     //------------------ all charges-------------------------------------
@@ -1040,20 +1040,20 @@ void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParti
     if(nChpi_gen > 2){
     var1pi_gen = (Q1pi_gen * Q1pi_gen - Q2pi_gen) / (nChpi_gen * (nChpi_gen - 1));
     var2pi_gen = (Q1pi_gen / nChpi_gen);
-   
+
        }
 
     //----------------------- kaons ---------------------------------------
  if(nChk_gen > 2){
     var1k_gen = (Q1k_gen * Q1k_gen - Q2k_gen) / (nChk_gen * (nChk_gen - 1));
-    var2k_gen = (Q1k_gen / nChk_gen);   
+    var2k_gen = (Q1k_gen / nChk_gen);
    }
 
     //---------------------------- protons ----------------------------------
  if(nChp_gen > 2){
     var1p_gen = (Q1p_gen * Q1p_gen - Q2p_gen) / (nChp_gen * (nChp_gen - 1));
     var2p_gen = (Q1p_gen / nChp_gen);
-   } 
+   }
 
 
 
@@ -1061,25 +1061,25 @@ void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParti
     histos.fill(HIST("hVar1x_gen"),sample_gen ,nCh_gen, var1_gen);
     histos.fill(HIST("hVar2x_gen"),sample_gen ,nCh_gen, var2_gen);
     histos.fill(HIST("hVarx_gen"), sample_gen, nCh_gen);
-    histos.fill(HIST("hVar2meanptx_gen"), nCh_gen, var2_gen);    
-    
+    histos.fill(HIST("hVar2meanptx_gen"), nCh_gen, var2_gen);
+
 
     histos.fill(HIST("hVar1pix_gen"),sample_gen ,nCh_gen, var1pi_gen);
     histos.fill(HIST("hVar2pix_gen"),sample_gen ,nCh_gen, var2pi_gen);
     histos.fill(HIST("hVarpix_gen"), sample_gen, nChpi_gen);
-    histos.fill(HIST("hVar2meanptpix_gen"), nCh_gen, var2pi_gen);    
-    
+    histos.fill(HIST("hVar2meanptpix_gen"), nCh_gen, var2pi_gen);
+
 
     histos.fill(HIST("hVar1kx_gen"),sample_gen ,nCh_gen, var1k_gen);
     histos.fill(HIST("hVar2kx_gen"),sample_gen ,nCh_gen, var2k_gen);
     histos.fill(HIST("hVarkx_gen"), sample_gen, nChk_gen);
-    histos.fill(HIST("hVar2meanptkx_gen"), nCh_gen, var2k_gen);    
-    
+    histos.fill(HIST("hVar2meanptkx_gen"), nCh_gen, var2k_gen);
+
 
     histos.fill(HIST("hVar1px_gen"),sample_gen ,nCh_gen, var1p_gen);
     histos.fill(HIST("hVar2px_gen"),sample_gen ,nCh_gen, var2p_gen);
     histos.fill(HIST("hVarpx_gen"), sample_gen, nChp_gen);
-    histos.fill(HIST("hVar2meanptpx_gen"), nCh_gen, var2p_gen);    
+    histos.fill(HIST("hVar2meanptpx_gen"), nCh_gen, var2p_gen);
 
 
   }
@@ -1118,7 +1118,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
     double nChpi = 0.;
     double nChk = 0.;
     double nChp = 0.;
-   
+
     double Q1 = 0., Q2 = 0.;
     double Q1pi = 0., Q2pi = 0.;
     double Q1k = 0., Q2k = 0.;
@@ -1132,13 +1132,13 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
     // sampling
     int sample = histos.get<TH1>(HIST("hZvtx_after_sel8"))->GetEntries();
     sample = sample % 30;
-    
+
 
     // Perfroming the track  selection==========================================
     for (auto track : inputTracks) {
       // Loop over tracks
 
- // inital tracks     
+ // inital tracks
       histos.fill(HIST("tracksel"), 1);
 
         histos.fill(HIST("hTPCchi2perCluster_before"), track.tpcChi2NCl());
@@ -1150,7 +1150,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
        if (!track.isGlobalTrack()) continue;
        histos.fill(HIST("tracksel"), 2);
 
-     
+
  //tracks passed after DCAxy
   //       if (!(fabs(track.dcaXY()) < 0.12)) continue;//global cut already includes
          histos.fill(HIST("tracksel"), 3);
@@ -1171,12 +1171,12 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
        if (!(track.pt() > 0.15 && track.pt() < 2.)) continue;//pt = 0.15
       histos.fill(HIST("tracksel"), 6);
 
- 
+
  //    if (track.tpcNClsCrossedRows() < 70.0) continue;
       histos.fill(HIST("hTPCCrossedrows_after"), track.tpcNClsCrossedRows());
       histos.fill(HIST("tracksel"), 7);
 
-      
+
 //      if (track.tpcChi2NCl() > 4.0) continue;
       histos.fill(HIST("hTPCchi2perCluster_after"), track.tpcChi2NCl());
       histos.fill(HIST("tracksel"), 8);
@@ -1187,7 +1187,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
       histos.fill(HIST("tracksel"), 9);
 
 
-      
+
       nCh += 1.;
 
       Q1 += track.pt();
@@ -1223,10 +1223,10 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
 
       if (track.hasTPC()) histos.fill(HIST("hdEdx"), track.p(), track.tpcSignal());
       if (track.hasTOF())       histos.fill(HIST("hTOFbeta"), track.p(), track.beta());
-        
-            
 
-      
+
+
+
 
 
 //=============================pion==============================================================
@@ -1239,7 +1239,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
       }
 
       //pion-TPC-----------------------------------------------------------------------------------
-       
+
                if ((track.hasTPC() && abs(track.tpcNSigmaPi()) < 2. && (track.pt() >= 0.15 && track.pt() < 0.65) && (abs(track.rapidity(massPi)) < 0.5) && (std::abs(track.tpcNSigmaEl()) > 1.0 && std::abs(track.tpcNSigmaKa()) > 2.0 && std::abs(track.tpcNSigmaPr()) > 2.0)))
  {
 
@@ -1253,12 +1253,12 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
           Q2pi += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-   
+
 
        histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
        histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
-             
+
         }
 
       //pion->(TPC+TOF)------------------------------------------------------------------------------------
@@ -1275,17 +1275,17 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
           Q2pi += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-   
+
 
     histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
 
-             
-        }
-      
 
-//===========================kaon===============================================================      
+        }
+
+
+//===========================kaon===============================================================
 
       if ((track.hasTPC() && abs(track.tpcNSigmaKa()) < 2.) && (track.hasTOF() && abs(track.tofNSigmaKa()) < 2.))
       { histos.fill(HIST("NSigamaTPCTOFkaon"), track.tpcNSigmaKa(), track.tofNSigmaKa());
@@ -1295,7 +1295,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
 
       }
 
-        
+
   if (track.hasTPC() && abs(track.tpcNSigmaKa()) < 2. && (track.pt() >= 0.15 && track.pt() < 0.65)  && (abs(track.rapidity(massKa)) < 0.5) &&  (std::abs(track.tpcNSigmaEl()) > 1.0 && std::abs(track.tpcNSigmaPi()) > 2.0 && std::abs(track.tpcNSigmaPr()) > 2.0)) {
 
    histos.fill(HIST("hPtKaon"), track.pt());
@@ -1308,12 +1308,12 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
           Q2k += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-   
+
 
     histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
-     
+
         }
 
 
@@ -1332,17 +1332,17 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
           Q2k += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-   
+
 
     histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
- 
+
         }
-      
+
 
 //============================proton===========================================================
-      
+
       if ((track.hasTPC() && abs(track.tpcNSigmaPr()) < 2.) && (track.hasTOF() && abs(track.tofNSigmaPr()) < 2.))
       { histos.fill(HIST("NSigamaTPCTOFproton"), track.tpcNSigmaPr(), track.tofNSigmaPr());
 
@@ -1350,7 +1350,7 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
         histos.fill(HIST("hTOFbeta_afterselection"), track.p(), track.beta());
       }
 
-  
+
  if (track.hasTPC() && abs(track.tpcNSigmaPr()) < 2. && (track.pt() >= 0.4 && track.pt() < 0.85) && (abs(track.rapidity(massPr)) < 0.5) && (std::abs(track.tpcNSigmaEl()) > 1.0 && std::abs(track.tpcNSigmaKa()) > 2.0 && std::abs(track.tpcNSigmaPi()) > 2.0)) {
 
           histos.fill(HIST("hPtProton"), track.pt());
@@ -1363,9 +1363,9 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
           Q2p += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-   
 
-  
+
+
     histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
@@ -1385,22 +1385,22 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
           Q2p += (track.pt() * track.pt());
 
        if(track.beta()>1) continue;
-   
+
 
     histos.fill(HIST("hdEdx_afterselection1"), track.p(), track.tpcSignal());
            histos.fill(HIST("hTOFbeta_afterselection1"), track.p(), track.beta());
 
         }
-      
 
-//====================================================================================================     
 
-      
+//====================================================================================================
+
+
     }
     // Track loop ends!
 
 
-    if (nCh < 2) 
+    if (nCh < 2)
       return;
 
     //------------------ all charges-------------------------------------
@@ -1408,9 +1408,9 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
     histos.fill(HIST("hVar1"),sample ,cent, var1);
     var2 = (Q1 / nCh);
     histos.fill(HIST("hVar2"),sample ,cent, var2);
-    histos.fill(HIST("hVarc"), sample, cent);   
+    histos.fill(HIST("hVarc"), sample, cent);
     histos.fill(HIST("hVar2meanpt"), cent, var2);
-    
+
 
     twopar_allcharge = (var1 - var2);
     histos.fill(HIST("hVar"), nCh, twopar_allcharge);
@@ -1420,20 +1420,20 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
     if(nChpi > 2){
     var1pi = (Q1pi * Q1pi - Q2pi) / (nChpi * (nChpi - 1));
     var2pi = (Q1pi / nChpi);
-   
+
        }
 
     //----------------------- kaons ---------------------------------------
  if(nChk > 2){
     var1k = (Q1k * Q1k - Q2k) / (nChk * (nChk - 1));
-    var2k = (Q1k / nChk);   
+    var2k = (Q1k / nChk);
    }
 
     //---------------------------- protons ----------------------------------
  if(nChp > 2){
     var1p = (Q1p * Q1p - Q2p) / (nChp * (nChp - 1));
     var2p = (Q1p / nChp);
-   } 
+   }
 
 //========================centrality==========================================
 
@@ -1457,26 +1457,26 @@ PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated in
     histos.fill(HIST("hVar1x"),sample ,nCh, var1);
     histos.fill(HIST("hVar2x"),sample ,nCh, var2);
     histos.fill(HIST("hVarx"), sample, nCh);
-    histos.fill(HIST("hVar2meanptx"), nCh, var2);    
-    
+    histos.fill(HIST("hVar2meanptx"), nCh, var2);
+
 
     histos.fill(HIST("hVar1pix"),sample ,nCh, var1pi);
     histos.fill(HIST("hVar2pix"),sample ,nCh, var2pi);
     histos.fill(HIST("hVarpix"), sample, nChpi);
-    histos.fill(HIST("hVar2meanptpix"), nCh, var2pi);    
-    
+    histos.fill(HIST("hVar2meanptpix"), nCh, var2pi);
+
 
     histos.fill(HIST("hVar1kx"),sample ,nCh, var1k);
     histos.fill(HIST("hVar2kx"),sample ,nCh, var2k);
     histos.fill(HIST("hVarkx"), sample, nChk);
-    histos.fill(HIST("hVar2meanptkx"), nCh, var2k);    
-    
+    histos.fill(HIST("hVar2meanptkx"), nCh, var2k);
+
 
     histos.fill(HIST("hVar1px"),sample ,nCh, var1p);
     histos.fill(HIST("hVar2px"),sample ,nCh, var2p);
     histos.fill(HIST("hVarpx"), sample, nChp);
-    histos.fill(HIST("hVar2meanptpx"), nCh, var2p);    
-    
+    histos.fill(HIST("hVar2meanptpx"), nCh, var2p);
+
 
   } // event loop ends!
 
