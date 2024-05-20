@@ -195,6 +195,10 @@ struct CFFilter {
     "ConfEvtOfflineCheck",
     false,
     "Evt sel: check for offline selection"};
+  Configurable<bool> ConfEvtTimeFrameBorderCheck{
+    "ConfEvtTimeFrameBorderCheck",
+    true,
+    "Evt sel: check for offline selection"};
   Configurable<bool> ConfAutocorRejection{
     "ConfAutocorRejection",
     true,
@@ -824,6 +828,11 @@ struct CFFilter {
     if (ConfEvtOfflineCheck && !col.sel8()) {
       return false;
     }
+    // if event is close to the timeframe border, return false
+    if (ConfEvtTimeFrameBorderCheck && !col.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+
     return true;
   }
 
@@ -1101,7 +1110,7 @@ struct CFFilter {
   }
 
   template <typename C, typename V, typename T>
-  bool isSelectedMinimalV0(C const& col, V const& v0, T const& posTrack,
+  bool isSelectedMinimalV0(C const& /*col*/, V const& v0, T const& posTrack,
                            T const& negTrack, float charge, double nSigmaTPCPos[2], double nSigmaTPCNeg[2])
   {
     const auto signPos = posTrack.sign();
@@ -1278,6 +1287,7 @@ struct CFFilter {
     if (!ConfIsRun3) {
       LOG(fatal) << "Run 2 processing is not implemented!";
     }
+
     if (ConfUseManualPIDproton || ConfUseManualPIDdeuteron || ConfUseAvgFromCCDB) {
       currentRunNumber = col.bc_as<aod::BCsWithTimestamps>().runNumber();
       if (currentRunNumber != lastRunNumber) {
@@ -2002,6 +2012,7 @@ struct CFFilter {
       registry.fill(HIST("ld/fMultiplicity"), col.multNTracksPV());
       registry.fill(HIST("ld/fZvtx"), col.posZ());
     }
+
     tags(keepEvent3N[CFTrigger::kPPP],
          keepEvent3N[CFTrigger::kPPL],
          keepEvent3N[CFTrigger::kPLL],

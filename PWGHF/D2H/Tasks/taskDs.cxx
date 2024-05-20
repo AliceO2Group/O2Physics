@@ -15,6 +15,7 @@
 ///
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Universita and INFN Torino
 /// \author Stefano Politanò <stefano.politano@cern.ch>, Politecnico & INFN Torino
+/// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Universita and INFN Torino
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -30,31 +31,48 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-enum finalState { KKPi = 0,
+enum FinalState { KKPi = 0,
                   PiKK };
 
-enum centEstimator { FT0A = 0,
-                     FT0C,
-                     FT0M,
-                     FV0A,
-                     FDDM,
-                     NTracksPV,
-                     kNMaxCentEstimators };
+enum DataType { Data = 0,
+                McDsPrompt,
+                McDsNonPrompt,
+                McDplusPrompt,
+                McDplusNonPrompt,
+                McDplusBkg,
+                McBkg,
+                kDataTypes };
+
+enum SpeciesAndDecay { DsToKKPi = 0,
+                       DplusToKKPi,
+                       DplusToPiKPi,
+                       kSpeciesAndDecay };
 
 /// Ds± analysis task
 struct HfTaskDs {
+
   Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds/Dplus->PhiPi->KKpi, 2 for Ds/Dplus->K0*K->KKPi"};
   Configurable<bool> fillDplusMc{"fillDplusMc", true, "Switch to fill Dplus MC information"};
-  Configurable<int> centDetector{"centDetector", 2, "Detector for multiplicity estimation (FT0A: 0, FT0C: 1, FT0M: 2, FV0A: 3, FDDM:4, NTracksPV: 5)"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2, 3}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f}, "axis for pT"};
+  ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
+  ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
+  ConfigurableAxis axisMlScore2{"axisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
 
   HfHelper hfHelper;
 
-  using CollisionsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentFDDMs, aod::CentNTPVs>;
+  using CentralityEstimator = o2::aod::hf_collision_centrality::CentralityEstimator;
+  using TH1_ptr = std::shared_ptr<TH1>;
+  using TH2_ptr = std::shared_ptr<TH2>;
+  using THnSparse_ptr = std::shared_ptr<THnSparse>;
+  using histTypes = std::variant<TH1_ptr, TH2_ptr, THnSparse_ptr>;
+
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+  using CollisionsWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDsDataWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
@@ -80,32 +98,33 @@ struct HfTaskDs {
   // Matched MC, no ML
   Partition<CandDsMcReco> reconstructedCandDsSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
   Partition<CandDsMcReco> reconstructedCandDplusSig = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel);
+  Partition<CandDsMcReco> reconstructedCandDplusBkg = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
   Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
   // Matched MC, with ML
   Partition<CandDsMcRecoWithMl> reconstructedCandDsSigWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
   Partition<CandDsMcRecoWithMl> reconstructedCandDplusSigWithMl = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel);
+  Partition<CandDsMcRecoWithMl> reconstructedCandDplusBkgWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
   Partition<CandDsMcRecoWithMl> reconstructedCandBkgWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
-  HistogramRegistry registry{
-    "registry",
-    {{"hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"hPtProng2", "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"hCPARecSigDs", "3-prong Ds candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"hCPARecSigDplus", "3-prong Dplus candidates (matched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"hCPARecBkg", "3-prong candidates (unmatched);cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}}},
-     {"hEtaRecSigDs", "3-prong Ds candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"hEtaRecSigDplus", "3-prong Dplus candidates (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"hEtaRecBkg", "3-prong candidates (unmatched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"hEtaGenDs", "MC Ds particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}},
-     {"hEtaGenDplus", "MC Dplus particles (matched);#it{#eta};entries", {HistType::kTH1F, {{100, -2., 2.}}}}}};
+  HistogramRegistry registry{"registry", {}};
+
+  std::array<std::string, DataType::kDataTypes> folders = {"Data/", "MC/Ds/Prompt/", "MC/Ds/NonPrompt/", "MC/Dplus/Prompt/", "MC/Dplus/NonPrompt/", "MC/Dplus/Bkg/", "MC/Bkg/"};
+
+  std::unordered_map<std::string, histTypes> dataHistograms = {};
+  std::unordered_map<std::string, histTypes> mcDsPromptHistograms = {};
+  std::unordered_map<std::string, histTypes> mcDsNonPromptHistograms = {};
+  std::unordered_map<std::string, histTypes> mcDplusPromptHistograms = {};
+  std::unordered_map<std::string, histTypes> mcDplusNonPromptHistograms = {};
+  std::unordered_map<std::string, histTypes> mcDplusBkgHistograms = {};
+  std::unordered_map<std::string, histTypes> mcBkgHistograms = {};
+
+  std::array<std::unordered_map<std::string, histTypes>, DataType::kDataTypes> histosPtr = {dataHistograms, mcDsPromptHistograms, mcDsNonPromptHistograms, mcDplusPromptHistograms, mcDplusNonPromptHistograms, mcDplusBkgHistograms, mcBkgHistograms};
 
   void init(InitContext&)
   {
-    std::array<int, 8> processes = {doprocessDataWithCent, doprocessData, doprocessDataWithMlAndCent, doprocessDataWithMl,
-                                    doprocessMcWithCent, doprocessMc, doprocessMcWithMlAndCent, doprocessMcWithMl};
+    std::array<int, 16> processes = {doprocessDataWithCentFT0C, doprocessDataWithCentFT0M, doprocessDataWithCentNTracksPV, doprocessData, doprocessDataWithMlAndCentFT0C, doprocessDataWithMlAndCentFT0M, doprocessDataWithMlAndCentNTracksPV, doprocessDataWithMl, doprocessMcWithCentFT0C, doprocessMcWithCentFT0M, doprocessMcWithCentNTracksPV, doprocessMc, doprocessMcWithMlAndCentFT0C, doprocessMcWithMlAndCentFT0M, doprocessMcWithMlAndCentNTracksPV, doprocessMcWithMl};
+
     const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
@@ -113,145 +132,123 @@ struct HfTaskDs {
       LOGP(fatal, "No process function enabled");
     }
 
-    if (centDetector < 0 || centDetector >= centEstimator::kNMaxCentEstimators)
-      LOG(warning) << "Centrality estimator not valid. Please choose between FT0A, FT0C, FT0M, FV0A, FDDM, NTracksPV. Fallback to FT0M";
-
-    auto vbins = (std::vector<double>)binsPt;
-    AxisSpec ptbins = {vbins, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptbins{axisPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
     AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
-    AxisSpec MLbins = {100, 0., 1., "ML output"};
     AxisSpec centralitybins = {100, 0., 100., "Centrality"};
 
-    if (doprocessDataWithCent || doprocessMcWithCent) {
-      registry.add("hSparseMass", "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins});
-    } else if (doprocessDataWithMlAndCent || doprocessMcWithMlAndCent) {
-      registry.add("hSparseMass", "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, MLbins, MLbins, MLbins});
-    } else if (doprocessData || doprocessMc) {
-      registry.add("hSparseMass", "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins});
-    } else if (doprocessDataWithMl || doprocessMcWithMl) {
-      registry.add("hSparseMass", "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, MLbins, MLbins, MLbins});
+    for (auto i = 0; i < DataType::kDataTypes; ++i) {
+      if (doprocessDataWithCentFT0C || doprocessDataWithCentFT0M || doprocessDataWithCentNTracksPV ||
+          doprocessMcWithCentFT0C || doprocessMcWithCentFT0M || doprocessMcWithCentNTracksPV) {
+        histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins});
+      } else if (doprocessDataWithMlAndCentFT0C || doprocessDataWithMlAndCentFT0M || doprocessDataWithMlAndCentNTracksPV ||
+                 doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV) {
+        histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, axisMlScore0, axisMlScore1, axisMlScore2});
+      } else if (doprocessData || doprocessMc) {
+        histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins});
+      } else if (doprocessDataWithMl || doprocessMcWithMl) {
+        histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, axisMlScore0, axisMlScore1, axisMlScore2});
+      }
+      histosPtr[i]["hPt"] = registry.add<TH1>((folders[i] + "hPt").c_str(), "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+      histosPtr[i]["hPtProng0"] = registry.add<TH1>((folders[i] + "hPtProng0").c_str(), "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+      histosPtr[i]["hPtProng1"] = registry.add<TH1>((folders[i] + "hPtProng1").c_str(), "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+      histosPtr[i]["hPtProng2"] = registry.add<TH1>((folders[i] + "hPtProng2").c_str(), "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
+      histosPtr[i]["hEta"] = registry.add<TH2>((folders[i] + "hEta").c_str(), "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, ptbins}});
+      histosPtr[i]["hCt"] = registry.add<TH2>((folders[i] + "hCt").c_str(), "3-prong candidates;proper lifetime (D_{s}^{#pm}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 100}, ptbins}});
+      histosPtr[i]["hDecayLength"] = registry.add<TH2>((folders[i] + "hDecayLength").c_str(), "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, ptbins}});
+      histosPtr[i]["hDecayLengthXY"] = registry.add<TH2>((folders[i] + "hDecayLengthXY").c_str(), "3-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, ptbins}});
+      histosPtr[i]["hNormalisedDecayLengthXY"] = registry.add<TH2>((folders[i] + "hNormalisedDecayLengthXY").c_str(), "3-prong candidates;norm. decay length xy;entries", {HistType::kTH2F, {{80, 0., 80.}, ptbins}});
+      histosPtr[i]["hCPA"] = registry.add<TH2>((folders[i] + "hCPA").c_str(), "3-prong candidates;cos. pointing angle;entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
+      histosPtr[i]["hCPAxy"] = registry.add<TH2>((folders[i] + "hCPAxy").c_str(), "3-prong candidates;cos. pointing angle xy;entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
+      histosPtr[i]["hImpactParameterXY"] = registry.add<TH2>((folders[i] + "hImpactParameterXY").c_str(), "3-prong candidates;impact parameter xy (cm);entries", {HistType::kTH2F, {{200, -1., 1.}, ptbins}});
+      histosPtr[i]["hMaxNormalisedDeltaIP"] = registry.add<TH2>((folders[i] + "hMaxNormalisedDeltaIP").c_str(), "3-prong candidates;norm. IP;entries", {HistType::kTH2F, {{200, -20., 20.}, ptbins}});
+      histosPtr[i]["hCos3PiK"] = registry.add<TH2>((folders[i] + "hCos3PiK").c_str(), "3-prong candidates;cos^{3} #theta'(K);entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
+      histosPtr[i]["hAbsCos3PiK"] = registry.add<TH2>((folders[i] + "hAbsCos3PiK").c_str(), "3-prong candidates;|cos^{3} #theta'(K)|;entries", {HistType::kTH2F, {{100, 0., 1.}, ptbins}});
+      histosPtr[i]["hDeltaMassPhi"] = registry.add<TH2>((folders[i] + "hDeltaMassPhi").c_str(), "3-prong candidates;|M(KK) - M(#phi)| (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 0., 0.1}, ptbins}});
+      histosPtr[i]["hMassKK"] = registry.add<TH2>((folders[i] + "hMassKK").c_str(), "3-prong candidates;M(KK) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, o2::constants::physics::MassPhi - 0.05, o2::constants::physics::MassPhi + 0.05}, ptbins}});
+      histosPtr[i]["hImpactParameterProngSqSum"] = registry.add<TH2>((folders[i] + "hImpactParameterProngSqSum").c_str(), "3-prong candidates;squared sum of prong imp. par. (cm^{2});entries", {HistType::kTH2F, {{100, 0., 1.}, ptbins}});
+      histosPtr[i]["hDecayLengthError"] = registry.add<TH2>((folders[i] + "hDecayLengthError").c_str(), "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, ptbins}});
+      histosPtr[i]["hDecayLengthXYError"] = registry.add<TH2>((folders[i] + "hDecayLengthXYError").c_str(), "3-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, ptbins}});
+      histosPtr[i]["hImpactParameterError"] = registry.add<TH2>((folders[i] + "hImpactParameterError").c_str(), "3-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, ptbins}});
+      histosPtr[i]["hd0Prong0"] = registry.add<TH2>((folders[i] + "hd0Prong0").c_str(), "3-prong candidates;prong 0 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
+      histosPtr[i]["hd0Prong1"] = registry.add<TH2>((folders[i] + "hd0Prong1").c_str(), "3-prong candidates;prong 1 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
+      histosPtr[i]["hd0Prong2"] = registry.add<TH2>((folders[i] + "hd0Prong2").c_str(), "3-prong candidates;prong 2 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
     }
-    registry.add("hEta", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCt", "3-prong candidates;proper lifetime (D_{s}^{#pm}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 100}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecayLength", "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecayLengthXY", "3-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hNormalisedDecayLengthXY", "3-prong candidates;norm. decay length xy;entries", {HistType::kTH2F, {{80, 0., 80.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPA", "3-prong candidates;cos. pointing angle;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPAxy", "3-prong candidates;cos. pointing angle xy;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hImpactParameterXY", "3-prong candidates;impact parameter xy (cm);entries", {HistType::kTH2F, {{200, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMaxNormalisedDeltaIP", "3-prong candidates;norm. IP;entries", {HistType::kTH2F, {{200, -20., 20.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCos3PiK", "3-prong candidates;cos^{3} #theta'(K);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hAbsCos3PiK", "3-prong candidates;|cos^{3} #theta'(K)|;entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDeltaMassPhi", "3-prong candidates;|M(KK) - M(#phi)| (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassKK", "3-prong candidates;M(KK) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, o2::constants::physics::MassPhi - 0.05, o2::constants::physics::MassPhi + 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hImpactParameterProngSqSum", "3-prong candidates;squared sum of prong imp. par. (cm^{2});entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecayLengthError", "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecayLengthXYError", "3-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hImpactParameterError", "3-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong0", "3-prong candidates;prong 0 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong1", "3-prong candidates;prong 1 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong2", "3-prong candidates;prong 2 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtRecSigDs", "3-prong candidates (Ds matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtRecSigDsPrompt", "3-prong candidates (Ds matched, prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtRecSigDsNonPrompt", "3-prong candidates (Ds matched, non-prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtRecSigDplus", "3-prong candidates (Dplus matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtRecSigDplusPrompt", "3-prong candidates (Dplus matched, prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtRecSigDplusNonPrompt", "3-prong candidates (Dplus matched, non-prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtRecBkg", "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtGenDs", "MC Ds particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtGenDplus", "MC Dplus particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtGenSigDs", "MC Ds particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtGenSigDplus", "MC Dplus particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtGenDsPrompt", "MC Ds particles (matched, prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtGenDsNonPrompt", "MC Ds particles (matched, non-prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtGenDplusPrompt", "MC Dplus particles (matched, prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtGenDplusNonPrompt", "MC Dplus particles (matched, non-prompt);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtVsYRecSigDsRecoPID", "3-prong candidates (RecoPID - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDsPromptRecoPID", "3-prong candidates (RecoPID - Ds matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDsNonPromptRecoPID", "3-prong candidates (RecoPID - Ds matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDsRecoTopol", "3-prong candidates (RecoTopol - Ds matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDsPromptRecoTopol", "3-prong candidates (RecoTopol - Ds matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDsNonPromptRecoTopol", "3-prong candidates (RecoTopol - Ds matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDsRecoSkim", "3-prong candidates (RecoSkim - Ds matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDsPromptRecoSkim", "3-prong candidates (RecoSkim - Ds matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDsNonPromptRecoSkim", "3-prong candidates (RecoSkim - Ds matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDplusRecoPID", "3-prong candidates (RecoPID - Dplus matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDplusPromptRecoPID", "3-prong candidates (RecoPID - Dplus matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDplusNonPromptRecoPID", "3-prong candidates (RecoPID - Dplus matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDplusRecoTopol", "3-prong candidates (RecoTopol - Dplus matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDplusPromptRecoTopol", "3-prong candidates (RecoTopol - Dplus matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDplusNonPromptRecoTopol", "3-prong candidates (RecoTopol - Dplus matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDplusRecoSkim", "3-prong candidates (RecoSkim - Dplus matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDplusPromptRecoSkim", "3-prong candidates (RecoSkim - Dplus matched, prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYRecSigDplusNonPromptRecoSkim", "3-prong candidates (RecoSkim - Dplus matched, non-prompt);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYGenDs", "MC Ds particles (matched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYGenDsPrompt", "MC Ds particles (matched, prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYGenDsNonPrompt", "MC Ds particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYGenDplus", "MC Dplus particles (matched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYGenDplusPrompt", "MC Dplus particles (matched, prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-    registry.add("hPtVsYGenDplusNonPrompt", "MC Dplus particles (matched, non-prompt);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
+
+    if (doprocessMcWithCentFT0C || doprocessMcWithCentFT0M || doprocessMcWithCentNTracksPV ||
+        doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV ||
+        doprocessMc || doprocessMcWithMl) { // processing MC
+
+      for (auto i = 0; i < DataType::kDataTypes; ++i) {
+        if (i == DataType::McDsPrompt || i == DataType::McDsNonPrompt || i == DataType::McDplusPrompt || i == DataType::McDplusNonPrompt || i == DataType::McDplusBkg) {
+
+          histosPtr[i]["hEtaGen"] = registry.add<TH1>((folders[i] + "hEtaGen").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
+          histosPtr[i]["hEtaRecSig"] = registry.add<TH1>((folders[i] + "hEtaRecSig").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
+          histosPtr[i]["hCPARecSig"] = registry.add<TH1>((folders[i] + "hCPARecSig").c_str(), "3-prong candidates (matched);cos. pointing angle;entries", {HistType::kTH1F, {{100, -1., 1.}}});
+          histosPtr[i]["hPtRecSig"] = registry.add<TH1>((folders[i] + "hPtRecSig").c_str(), "3-prong candidates (matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
+          histosPtr[i]["hPtGenSig"] = registry.add<TH1>((folders[i] + "hPtGenSig").c_str(), "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
+          histosPtr[i]["hPtGen"] = registry.add<TH1>((folders[i] + "hPtGen").c_str(), "MC particles (unmatched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
+          histosPtr[i]["hPtVsYRecSigRecoPID"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoPID").c_str(), "3-prong candidates (RecoPID - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
+          histosPtr[i]["hPtVsYRecSigRecoTopol"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoTopol").c_str(), "3-prong candidates (RecoTopol - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
+          histosPtr[i]["hPtVsYRecSigRecoSkim"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoSkim").c_str(), "3-prong candidates (RecoSkim - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
+          histosPtr[i]["hPtVsYGen"] = registry.add<TH2>((folders[i] + "hPtVsYGen").c_str(), "MC particles (unmatched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
+        }
+      }
+    }
   }
 
   /// Evaluate multiplicity
   /// \param candidate is candidate
   /// \return multiplicity of the collision associated to the candidate
-  template <typename T1>
+  template <CentralityEstimator centDetector, typename T1>
   int evaluateCentrality(const T1& candidate)
   {
-    switch (centDetector) {
-      case centEstimator::FT0A:
-        return candidate.template collision_as<CollisionsWithCent>().centFT0A();
-      case centEstimator::FT0C:
-        return candidate.template collision_as<CollisionsWithCent>().centFT0C();
-      case centEstimator::FT0M:
-        return candidate.template collision_as<CollisionsWithCent>().centFT0M();
-      case centEstimator::FV0A:
-        return candidate.template collision_as<CollisionsWithCent>().centFV0A();
-      case centEstimator::FDDM:
-        return candidate.template collision_as<CollisionsWithCent>().centFDDM();
-      case centEstimator::NTracksPV:
-        return candidate.template collision_as<CollisionsWithCent>().centNTPV();
-      default: // In case of invalid configuration use FT0M
-        return candidate.template collision_as<CollisionsWithCent>().centFT0M();
-    }
+    if constexpr (centDetector == CentralityEstimator::FT0C)
+      return candidate.template collision_as<CollisionsWithFT0C>().centFT0C();
+    else if constexpr (centDetector == CentralityEstimator::FT0M)
+      return candidate.template collision_as<CollisionsWithFT0M>().centFT0M();
+    else if constexpr (centDetector == CentralityEstimator::NTracksPV)
+      return candidate.template collision_as<CollisionsWithNTracksPV>().centNTPV();
   }
 
   /// Fill histograms of quantities independent from the daugther-mass hypothesis
   /// \param candidate is candidate
+  /// \param dataType is data class, as defined in DataType enum
   template <typename T1>
-  void fillHisto(const T1& candidate)
+  void fillHisto(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
-    registry.fill(HIST("hPt"), pt);
-    registry.fill(HIST("hEta"), candidate.eta(), pt);
-    registry.fill(HIST("hCt"), hfHelper.ctDs(candidate), pt);
-    registry.fill(HIST("hDecayLength"), candidate.decayLength(), pt);
-    registry.fill(HIST("hDecayLengthXY"), candidate.decayLengthXY(), pt);
-    registry.fill(HIST("hNormalisedDecayLengthXY"), candidate.decayLengthXYNormalised(), pt);
-    registry.fill(HIST("hCPA"), candidate.cpa(), pt);
-    registry.fill(HIST("hCPAxy"), candidate.cpaXY(), pt);
-    registry.fill(HIST("hImpactParameterXY"), candidate.impactParameterXY(), pt);
-    registry.fill(HIST("hMaxNormalisedDeltaIP"), candidate.maxNormalisedDeltaIP(), pt);
-    registry.fill(HIST("hImpactParameterProngSqSum"), candidate.impactParameterProngSqSum(), pt);
-    registry.fill(HIST("hDecayLengthError"), candidate.errorDecayLength(), pt);
-    registry.fill(HIST("hDecayLengthXYError"), candidate.errorDecayLengthXY(), pt);
-    registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter0(), pt);
-    registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter1(), pt);
-    registry.fill(HIST("hImpactParameterError"), candidate.errorImpactParameter2(), pt);
-    registry.fill(HIST("hPtProng0"), candidate.ptProng0());
-    registry.fill(HIST("hPtProng1"), candidate.ptProng1());
-    registry.fill(HIST("hPtProng2"), candidate.ptProng2());
-    registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), pt);
-    registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), pt);
-    registry.fill(HIST("hd0Prong2"), candidate.impactParameter2(), pt);
+    std::get<TH1_ptr>(histosPtr[dataType]["hPt"])->Fill(pt);
+    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng0"])->Fill(candidate.ptProng0());
+    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng1"])->Fill(candidate.ptProng1());
+    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng2"])->Fill(candidate.ptProng2());
+    std::get<TH2_ptr>(histosPtr[dataType]["hEta"])->Fill(candidate.eta(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hCt"])->Fill(hfHelper.ctDs(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLength"])->Fill(candidate.decayLength(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthXY"])->Fill(candidate.decayLengthXY(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hNormalisedDecayLengthXY"])->Fill(candidate.decayLengthXYNormalised(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hCPA"])->Fill(candidate.cpa(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hCPAxy"])->Fill(candidate.cpaXY(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterXY"])->Fill(candidate.impactParameterXY(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hMaxNormalisedDeltaIP"])->Fill(candidate.maxNormalisedDeltaIP(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterProngSqSum"])->Fill(candidate.impactParameterProngSqSum(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthError"])->Fill(candidate.errorDecayLength(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthXYError"])->Fill(candidate.errorDecayLengthXY(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter0(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter1(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter2(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong0"])->Fill(candidate.impactParameter0(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong1"])->Fill(candidate.impactParameter1(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong2"])->Fill(candidate.impactParameter2(), pt);
+
     return;
   }
 
   /// Fill histograms of quantities for the KKPi daugther-mass hypothesis
   /// \param candidate is candidate
-  template <bool useMl, bool fillCent, typename T1>
-  void fillHistoKKPi(const T1& candidate)
+  /// \param dataType is data class, as defined in DataType enum
+  template <CentralityEstimator centDetector, bool useMl, typename T1>
+  void fillHistoKKPi(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
     if constexpr (useMl) {
@@ -259,29 +256,32 @@ struct HfTaskDs {
       for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
         outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
       }
-      if constexpr (fillCent) {
-        registry.fill(HIST("hSparseMass"), hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentrality(candidate), outputMl[0], outputMl[1], outputMl[2]);
+      if constexpr (centDetector != CentralityEstimator::None) {
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentrality<centDetector>(candidate), outputMl[0], outputMl[1], outputMl[2]);
       } else {
-        registry.fill(HIST("hSparseMass"), hfHelper.invMassDsToKKPi(candidate), pt, outputMl[0], outputMl[1], outputMl[2]);
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, outputMl[0], outputMl[1], outputMl[2]);
       }
     } else {
-      if constexpr (fillCent) {
-        registry.fill(HIST("hSparseMass"), hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentrality(candidate));
+      if constexpr (centDetector != CentralityEstimator::None) {
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentrality<centDetector>(candidate));
       } else {
-        registry.fill(HIST("hSparseMass"), hfHelper.invMassDsToKKPi(candidate), pt);
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt);
       }
     }
-    registry.fill(HIST("hCos3PiK"), hfHelper.cos3PiKDsToKKPi(candidate), pt);
-    registry.fill(HIST("hAbsCos3PiK"), std::abs(hfHelper.cos3PiKDsToKKPi(candidate)), pt);
-    registry.fill(HIST("hDeltaMassPhi"), hfHelper.deltaMassPhiDsToKKPi(candidate), pt);
-    registry.fill(HIST("hMassKK"), hfHelper.massKKPairDsToKKPi(candidate), pt);
+
+    std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToKKPi(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToKKPi(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(hfHelper.deltaMassPhiDsToKKPi(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hMassKK"])->Fill(hfHelper.massKKPairDsToKKPi(candidate), pt);
+
     return;
   }
 
   /// Fill histograms of quantities for the PiKK daugther-mass hypothesis
   /// \param candidate is candidate
-  template <bool useMl, bool fillCent, typename T1>
-  void fillHistoPiKK(const T1& candidate)
+  /// \param dataType is data class, as defined in DataType enum
+  template <CentralityEstimator centDetector, bool useMl, typename T1>
+  void fillHistoPiKK(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
     if constexpr (useMl) {
@@ -289,168 +289,194 @@ struct HfTaskDs {
       for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
         outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
       }
-      if constexpr (fillCent) {
-        registry.fill(HIST("hSparseMass"), hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentrality(candidate), outputMl[0], outputMl[1], outputMl[2]);
+      if constexpr (centDetector != CentralityEstimator::None) {
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentrality<centDetector>(candidate), outputMl[0], outputMl[1], outputMl[2]);
       } else {
-        registry.fill(HIST("hSparseMass"), hfHelper.invMassDsToPiKK(candidate), pt, outputMl[0], outputMl[1], outputMl[2]);
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, outputMl[0], outputMl[1], outputMl[2]);
       }
     } else {
-      if constexpr (fillCent) {
-        registry.fill(HIST("hSparseMass"), hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentrality(candidate));
+      if constexpr (centDetector != CentralityEstimator::None) {
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentrality<centDetector>(candidate));
       } else {
-        registry.fill(HIST("hSparseMass"), hfHelper.invMassDsToPiKK(candidate), pt);
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt);
       }
     }
-    registry.fill(HIST("hCos3PiK"), hfHelper.cos3PiKDsToPiKK(candidate), pt);
-    registry.fill(HIST("hAbsCos3PiK"), std::abs(hfHelper.cos3PiKDsToPiKK(candidate)), pt);
-    registry.fill(HIST("hDeltaMassPhi"), hfHelper.deltaMassPhiDsToPiKK(candidate), pt);
-    registry.fill(HIST("hMassKK"), hfHelper.massKKPairDsToPiKK(candidate), pt);
+
+    std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToPiKK(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToPiKK(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(hfHelper.deltaMassPhiDsToPiKK(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hMassKK"])->Fill(hfHelper.massKKPairDsToPiKK(candidate), pt);
+
     return;
   }
 
   /// Fill MC histograms at reconstruction level
   /// \param candidate is candidate
-  /// \param flag is the selection flag, obtained from either isSelDsToKKPi() or isSelDsToPiKK()
-  template <typename T1>
-  void fillHistoMCRec(const T1& candidate, int flag, bool isDplus)
-  {
-    auto pt = candidate.pt(); // rec. level pT
-    // Dplus
-    if (isDplus) {
-      auto y = hfHelper.yDplus(candidate);
-
-      registry.fill(HIST("hPtRecSigDplus"), pt);
-      registry.fill(HIST("hCPARecSigDplus"), candidate.cpa());
-      registry.fill(HIST("hEtaRecSigDplus"), candidate.eta());
-      registry.fill(HIST("hPtVsYRecSigDplusRecoSkim"), pt, y);
-      if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-        registry.fill(HIST("hPtVsYRecSigDplusRecoTopol"), pt, y);
-      }
-      if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-        registry.fill(HIST("hPtVsYRecSigDplusRecoPID"), pt, y);
-      }
-
-      // prompt
-      if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-        registry.fill(HIST("hPtRecSigDplusPrompt"), pt);
-        registry.fill(HIST("hPtVsYRecSigDplusPromptRecoSkim"), pt, y);
-        if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-          registry.fill(HIST("hPtVsYRecSigDplusPromptRecoTopol"), pt, y);
-        }
-        if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-          registry.fill(HIST("hPtVsYRecSigDplusPromptRecoPID"), pt, y);
-        }
-      }
-
-      // non-prompt
-      if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-        registry.fill(HIST("hPtRecSigDplusNonPrompt"), pt);
-        registry.fill(HIST("hPtVsYRecSigDplusNonPromptRecoSkim"), pt, y);
-        if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-          registry.fill(HIST("hPtVsYRecSigDplusNonPromptRecoTopol"), pt, y);
-        }
-        if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-          registry.fill(HIST("hPtVsYRecSigDplusNonPromptRecoPID"), pt, y);
-        }
-      }
-
-      return;
-    }
-
-    // Ds
-    auto y = hfHelper.yDs(candidate);
-
-    registry.fill(HIST("hPtRecSigDs"), pt);
-    registry.fill(HIST("hCPARecSigDs"), candidate.cpa());
-    registry.fill(HIST("hEtaRecSigDs"), candidate.eta());
-    registry.fill(HIST("hPtVsYRecSigDsRecoSkim"), pt, y);
-    if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-      registry.fill(HIST("hPtVsYRecSigDsRecoTopol"), pt, y);
-    }
-    if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-      registry.fill(HIST("hPtVsYRecSigDsRecoPID"), pt, y);
-    }
-
-    // prompt
-    if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-      registry.fill(HIST("hPtRecSigDsPrompt"), pt);
-      registry.fill(HIST("hPtVsYRecSigDsPromptRecoSkim"), pt, y);
-      if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-        registry.fill(HIST("hPtVsYRecSigDsPromptRecoTopol"), pt, y);
-      }
-      if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-        registry.fill(HIST("hPtVsYRecSigDsPromptRecoPID"), pt, y);
-      }
-    }
-
-    // non-prompt
-    if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-      registry.fill(HIST("hPtRecSigDsNonPrompt"), pt);
-      registry.fill(HIST("hPtVsYRecSigDsNonPromptRecoSkim"), pt, y);
-      if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-        registry.fill(HIST("hPtVsYRecSigDsNonPromptRecoTopol"), pt, y);
-      }
-      if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-        registry.fill(HIST("hPtVsYRecSigDsNonPromptRecoPID"), pt, y);
-      }
-    }
-
-    return;
-  }
-
-  /// Fill MC histograms
-  /// \param candidate is candidate
   /// \param mcParticles are particles with MC information
-  /// \param isDplus true to fill Dplus->KKPi candidates
-  template <typename T1>
-  void fillHistogramsForMcCandidate(const T1& candidate, const CandDsMcGen& mcParticles, bool isDplus)
+  /// \param whichSpeciesDecay defines which histogram to fill
+  template <CentralityEstimator centDetector, bool useMl, typename T1>
+  void fillHistoMCRec(const T1& candidate, const CandDsMcGen& mcParticles, SpeciesAndDecay whichSpeciesDecay)
   {
-
     auto indexMother = RecoDecay::getMother(mcParticles,
                                             candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>(),
-                                            isDplus ? o2::constants::physics::Pdg::kDPlus : o2::constants::physics::Pdg::kDS, true);
+                                            whichSpeciesDecay == SpeciesAndDecay::DsToKKPi ? o2::constants::physics::Pdg::kDS : o2::constants::physics::Pdg::kDPlus, true);
 
     if (indexMother != -1) {
-      if (yCandRecoMax >= 0. && std::abs(isDplus ? hfHelper.yDplus(candidate) : hfHelper.yDs(candidate)) > yCandRecoMax) {
+      if (yCandRecoMax >= 0. && std::abs(whichSpeciesDecay == SpeciesAndDecay::DsToKKPi ? hfHelper.yDs(candidate) : hfHelper.yDplus(candidate)) > yCandRecoMax) {
         return;
       }
 
       auto particleMother = mcParticles.iteratorAt(indexMother);
-      if (isDplus) {
-        registry.fill(HIST("hPtGenSigDplus"), particleMother.pt()); // gen. level pT
-      } else {
-        registry.fill(HIST("hPtGenSigDs"), particleMother.pt()); // gen. level pT
-      }
-      // KKPi
-      if (candidate.isCandidateSwapped() == 0) { // 0 corresponds to KKPi
-        fillHistoMCRec(candidate, candidate.isSelDsToKKPi(), isDplus);
-      }
 
-      // PiKK
-      if (candidate.isCandidateSwapped() == 1) { // 1 corresponds to PiKK
-        fillHistoMCRec(candidate, candidate.isSelDsToPiKK(), isDplus);
-      }
+      int flag = candidate.isCandidateSwapped() ? candidate.isSelDsToPiKK() : candidate.isSelDsToKKPi(); // 0 corresponds to KKPi, 1 to PiKK
+
+      auto pt = candidate.pt(); // rec. level pT
+
+      // Ds
+      if (whichSpeciesDecay == SpeciesAndDecay::DsToKKPi) {
+
+        double y = hfHelper.yDs(candidate);
+
+        // prompt
+        if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+          fillHisto(candidate, DataType::McDsPrompt);
+          if (candidate.isSelDsToKKPi() >= selectionFlagDs) // KKPi
+            fillHistoKKPi<centDetector, useMl>(candidate, DataType::McDsPrompt);
+          if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
+            fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDsPrompt);
+
+          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtRecSig"])->Fill(pt);
+          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
+          std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYRecSigRecoSkim"])->Fill(pt, y);
+          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hCPARecSig"])->Fill(candidate.cpa());
+          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hEtaRecSig"])->Fill(candidate.eta());
+          if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
+            std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYRecSigRecoTopol"])->Fill(pt, y);
+          }
+          if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
+            std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYRecSigRecoPID"])->Fill(pt, y);
+          }
+        }
+
+        // non-prompt
+        if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+          fillHisto(candidate, DataType::McDsNonPrompt);
+          if (candidate.isSelDsToKKPi() >= selectionFlagDs) // KKPi
+            fillHistoKKPi<centDetector, useMl>(candidate, DataType::McDsNonPrompt);
+          if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
+            fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDsNonPrompt);
+
+          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtRecSig"])->Fill(pt);
+          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
+          std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYRecSigRecoSkim"])->Fill(pt, y);
+          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hCPARecSig"])->Fill(candidate.cpa());
+          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaRecSig"])->Fill(candidate.eta());
+          if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
+            std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYRecSigRecoTopol"])->Fill(pt, y);
+          }
+          if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
+            std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYRecSigRecoPID"])->Fill(pt, y);
+          }
+        }
+        return;
+      } // end Ds
+
+      // D+→ K± K∓ π±
+      if (whichSpeciesDecay == SpeciesAndDecay::DplusToKKPi) {
+        double y = hfHelper.yDplus(candidate);
+
+        // prompt
+        if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+          fillHisto(candidate, DataType::McDplusPrompt);
+          if (candidate.isSelDsToKKPi() >= selectionFlagDs) // KKPi
+            fillHistoKKPi<centDetector, useMl>(candidate, DataType::McDplusPrompt);
+          if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
+            fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDplusPrompt);
+
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtRecSig"])->Fill(pt);
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
+          std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYRecSigRecoSkim"])->Fill(pt, y);
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hCPARecSig"])->Fill(candidate.cpa());
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hEtaRecSig"])->Fill(candidate.eta());
+          if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
+            std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYRecSigRecoTopol"])->Fill(pt, y);
+          }
+          if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
+            std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYRecSigRecoPID"])->Fill(pt, y);
+          }
+        }
+
+        // non-prompt
+        if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+          fillHisto(candidate, DataType::McDplusNonPrompt);
+          if (candidate.isSelDsToKKPi() >= selectionFlagDs) // KKPi
+            fillHistoKKPi<centDetector, useMl>(candidate, DataType::McDplusNonPrompt);
+          if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
+            fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDplusNonPrompt);
+
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtRecSig"])->Fill(pt);
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
+          std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYRecSigRecoSkim"])->Fill(pt, y);
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hCPARecSig"])->Fill(candidate.cpa());
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hEtaRecSig"])->Fill(candidate.eta());
+          if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
+            std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYRecSigRecoTopol"])->Fill(pt, y);
+          }
+          if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
+            std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYRecSigRecoPID"])->Fill(pt, y);
+          }
+        }
+
+        return;
+      } // end D+→ K± K∓ π±
+
+      // D+→ π± K∓ π±
+      if (whichSpeciesDecay == SpeciesAndDecay::DplusToPiKPi) {
+        double y = hfHelper.yDplus(candidate);
+
+        // Fill whether it is prompt or non-prompt
+        fillHisto(candidate, DataType::McDplusBkg);
+
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs) // KKPi
+          fillHistoKKPi<centDetector, useMl>(candidate, DataType::McDplusBkg);
+        if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
+          fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDplusBkg);
+
+        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hPtRecSig"])->Fill(pt);
+        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
+        std::get<TH2_ptr>(histosPtr[DataType::McDplusBkg]["hPtVsYRecSigRecoSkim"])->Fill(pt, y);
+        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hCPARecSig"])->Fill(candidate.cpa());
+        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hEtaRecSig"])->Fill(candidate.eta());
+        if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
+          std::get<TH2_ptr>(histosPtr[DataType::McDplusBkg]["hPtVsYRecSigRecoTopol"])->Fill(pt, y);
+        }
+        if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
+          std::get<TH2_ptr>(histosPtr[DataType::McDplusBkg]["hPtVsYRecSigRecoPID"])->Fill(pt, y);
+        }
+
+        return;
+      } // end D+→ π± K∓ π±
     }
   }
 
-  template <int decayChannel, bool useMl, bool fillCent, typename CandsDs>
+  template <FinalState decayChannel, CentralityEstimator centDetector, bool useMl, typename CandsDs>
   void runDataAnalysis(CandsDs const& candidates)
   {
     for (const auto& candidate : candidates) {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillHisto(candidate);
-      if constexpr (decayChannel == finalState::KKPi) { // KKPi
-        fillHistoKKPi<useMl, fillCent>(candidate);
-      } else if constexpr (decayChannel == finalState::PiKK) { // PiKK
-        fillHistoPiKK<useMl, fillCent>(candidate);
+      fillHisto(candidate, DataType::Data);
+      if constexpr (decayChannel == FinalState::KKPi) { // KKPi
+        fillHistoKKPi<centDetector, useMl>(candidate, DataType::Data);
+      } else if constexpr (decayChannel == FinalState::PiKK) { // PiKK
+        fillHistoPiKK<centDetector, useMl>(candidate, DataType::Data);
       }
     }
   }
 
-  template <bool useMl, typename CandsDs>
-  void runMcAnalysis(CandsDs const& candidates,
+  template <CentralityEstimator centDetector, bool useMl, typename CandsDs>
+  void runMcAnalysis(CandsDs const& /*candidates*/,
                      CandDsMcGen const& mcParticles)
   {
     // MC rec.
@@ -458,28 +484,40 @@ struct HfTaskDs {
     if constexpr (useMl) {
       // Ds
       for (const auto& candidate : reconstructedCandDsSigWithMl)
-        fillHistogramsForMcCandidate(candidate, mcParticles, false);
-      // Dplus
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs)
+          fillHistoMCRec<centDetector, useMl>(candidate, mcParticles, SpeciesAndDecay::DsToKKPi);
+      // D+→ K± K∓ π±
       for (const auto& candidate : reconstructedCandDplusSigWithMl)
-        fillHistogramsForMcCandidate(candidate, mcParticles, true);
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs)
+          fillHistoMCRec<centDetector, useMl>(candidate, mcParticles, SpeciesAndDecay::DplusToKKPi);
+      // D+→ π± K∓ π±
+      for (const auto& candidate : reconstructedCandDplusBkgWithMl)
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs)
+          fillHistoMCRec<centDetector, useMl>(candidate, mcParticles, SpeciesAndDecay::DplusToPiKPi);
       // Bkg
       for (const auto& candidate : reconstructedCandBkgWithMl) {
         if (yCandRecoMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandRecoMax) {
           continue;
         }
 
-        registry.fill(HIST("hPtRecBkg"), candidate.pt());
-        registry.fill(HIST("hCPARecBkg"), candidate.cpa());
-        registry.fill(HIST("hEtaRecBkg"), candidate.eta());
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs)
+          fillHisto(candidate, DataType::McBkg);
       }
     } else {
       // Ds
       for (const auto& candidate : reconstructedCandDsSig)
-        fillHistogramsForMcCandidate(candidate, mcParticles, false);
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs)
+          fillHistoMCRec<centDetector, useMl>(candidate, mcParticles, SpeciesAndDecay::DsToKKPi);
 
-      // Dplus
+      // D+→ K± K∓ π±
       for (const auto& candidate : reconstructedCandDplusSig)
-        fillHistogramsForMcCandidate(candidate, mcParticles, true);
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs)
+          fillHistoMCRec<centDetector, useMl>(candidate, mcParticles, SpeciesAndDecay::DplusToKKPi);
+
+      // D+→ π± K∓ π±
+      for (const auto& candidate : reconstructedCandDplusBkg)
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs)
+          fillHistoMCRec<centDetector, useMl>(candidate, mcParticles, SpeciesAndDecay::DplusToPiKPi);
 
       // Bkg
       for (const auto& candidate : reconstructedCandBkg) {
@@ -487,9 +525,13 @@ struct HfTaskDs {
           continue;
         }
 
-        registry.fill(HIST("hPtRecBkg"), candidate.pt());
-        registry.fill(HIST("hCPARecBkg"), candidate.cpa());
-        registry.fill(HIST("hEtaRecBkg"), candidate.eta());
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs) {
+          fillHisto(candidate, DataType::McBkg);
+          if (candidate.isSelDsToKKPi() >= selectionFlagDs) // KKPi
+            fillHistoKKPi<centDetector, useMl>(candidate, DataType::McDsPrompt);
+          if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
+            fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDsPrompt);
+        }
       }
     }
 
@@ -500,121 +542,193 @@ struct HfTaskDs {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
         if (particle.flagMcDecayChanGen() == decayChannel || (fillDplusMc && particle.flagMcDecayChanGen() == (decayChannel + offsetDplusDecayChannel))) {
           auto pt = particle.pt();
-          auto y = 0;
+          double y{0.f};
 
           if (particle.flagMcDecayChanGen() == decayChannel) {
-            y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
+            y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS);
             if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
               continue;
             }
-            registry.fill(HIST("hPtGenDs"), pt);
-            registry.fill(HIST("hPtVsYGenDs"), pt, y);
-            registry.fill(HIST("hEtaGenDs"), particle.eta());
             if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-              registry.fill(HIST("hPtGenDsPrompt"), pt);
-              registry.fill(HIST("hPtVsYGenDsPrompt"), pt, y);
+              std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtGen"])->Fill(pt);              // gen. level pT
+              std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYGen"])->Fill(pt, y);        // gen. level pT
+              std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hEtaGen"])->Fill(particle.eta()); // gen. level pT
             }
             if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-              registry.fill(HIST("hPtGenDsNonPrompt"), pt);
-              registry.fill(HIST("hPtVsYGenDsNonPrompt"), pt, y);
+              std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGen"])->Fill(pt);              // gen. level pT
+              std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYGen"])->Fill(pt, y);        // gen. level pT
+              std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta()); // gen. level pT
             }
           } else if (fillDplusMc) {
-            y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
+            y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
             if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
               continue;
             }
-            registry.fill(HIST("hPtGenDplus"), pt);
-            registry.fill(HIST("hPtVsYGenDplus"), pt, y);
-            registry.fill(HIST("hEtaGenDplus"), particle.eta());
             if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-              registry.fill(HIST("hPtGenDplusPrompt"), pt);
-              registry.fill(HIST("hPtVsYGenDplusPrompt"), pt, y);
+              std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtGen"])->Fill(pt);       // gen. level pT
+              std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYGen"])->Fill(pt, y); // gen. level pT
+              std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hEtaGen"])->Fill(particle.eta());
             }
             if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-              registry.fill(HIST("hPtGenDplusNonPrompt"), pt);
-              registry.fill(HIST("hPtVsYGenDplusNonPrompt"), pt, y);
+              std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtGen"])->Fill(pt); // gen. level pT
+              std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYGen"])->Fill(pt, y);
+              std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hEtaGen"])->Fill(particle.eta());
             }
           }
-        } else {
-          continue;
         }
       }
     }
   }
 
-  void processDataWithCent(CollisionsWithCent const&,
-                           CandDsData const& candidates)
+  void processDataWithCentFT0C(CollisionsWithFT0C const&,
+                               CandDsData const&)
   {
-    runDataAnalysis<finalState::KKPi, false, true>(selectedDsToKKPiCandData);
-    runDataAnalysis<finalState::PiKK, false, true>(selectedDsToPiKKCandData);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, false>(selectedDsToKKPiCandData);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, false>(selectedDsToPiKKCandData);
   }
-  PROCESS_SWITCH(HfTaskDs, processDataWithCent, "Process data w/o ML information on Ds, with information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processDataWithCentFT0C, "Process data w/o ML information on Ds, with information on centrality from FT0C", false);
+
+  void processDataWithCentFT0M(CollisionsWithFT0M const&,
+                               CandDsData const&)
+  {
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0M, false>(selectedDsToKKPiCandData);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0M, false>(selectedDsToPiKKCandData);
+  }
+  PROCESS_SWITCH(HfTaskDs, processDataWithCentFT0M, "Process data w/o ML information on Ds, with information on centrality from FT0M", false);
+
+  void processDataWithCentNTracksPV(CollisionsWithNTracksPV const&,
+                                    CandDsData const&)
+  {
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::NTracksPV, false>(selectedDsToKKPiCandData);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::NTracksPV, false>(selectedDsToPiKKCandData);
+  }
+  PROCESS_SWITCH(HfTaskDs, processDataWithCentNTracksPV, "Process data w/o ML information on Ds, with information on centrality from NTracksPV", false);
 
   void processData(aod::Collisions const&,
-                   CandDsData const& candidates)
+                   CandDsData const&)
   {
-    runDataAnalysis<finalState::KKPi, false, false>(selectedDsToKKPiCandData);
-    runDataAnalysis<finalState::PiKK, false, false>(selectedDsToPiKKCandData);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::None, false>(selectedDsToKKPiCandData);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::None, false>(selectedDsToPiKKCandData);
   }
   PROCESS_SWITCH(HfTaskDs, processData, "Process data w/o ML information on Ds, w/o information on centrality", true);
 
-  void processDataWithMlAndCent(CollisionsWithCent const&,
-                                CandDsDataWithMl const& candidates)
+  void processDataWithMlAndCentFT0C(CollisionsWithFT0C const&,
+                                    CandDsDataWithMl const&)
   {
-    runDataAnalysis<finalState::KKPi, true, true>(selectedDsToKKPiCandWithMlData);
-    runDataAnalysis<finalState::PiKK, true, true>(selectedDsToPiKKCandWithMlData);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, true>(selectedDsToKKPiCandWithMlData);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, true>(selectedDsToPiKKCandWithMlData);
   }
-  PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCent, "Process data with ML information on Ds, with information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentFT0C, "Process data with ML information on Ds, with information on centrality from FT0C", false);
+
+  void processDataWithMlAndCentFT0M(CollisionsWithFT0M const&,
+                                    CandDsDataWithMl const&)
+  {
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0M, true>(selectedDsToKKPiCandWithMlData);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0M, true>(selectedDsToPiKKCandWithMlData);
+  }
+  PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentFT0M, "Process data with ML information on Ds, with information on centrality from FT0M", false);
+
+  void processDataWithMlAndCentNTracksPV(CollisionsWithNTracksPV const&,
+                                         CandDsDataWithMl const&)
+  {
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::NTracksPV, true>(selectedDsToKKPiCandWithMlData);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::NTracksPV, true>(selectedDsToPiKKCandWithMlData);
+  }
+  PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCentNTracksPV, "Process data with ML information on Ds, with information on centrality", false);
 
   void processDataWithMl(aod::Collisions const&,
-                         CandDsDataWithMl const& candidates)
+                         CandDsDataWithMl const&)
   {
-    runDataAnalysis<finalState::KKPi, true, false>(selectedDsToKKPiCandWithMlData);
-    runDataAnalysis<finalState::PiKK, true, false>(selectedDsToPiKKCandWithMlData);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::None, true>(selectedDsToKKPiCandWithMlData);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::None, true>(selectedDsToPiKKCandWithMlData);
   }
   PROCESS_SWITCH(HfTaskDs, processDataWithMl, "Process data with ML information on Ds, w/o information on centrality", false);
 
-  void processMcWithCent(CollisionsWithCent const&,
-                         CandDsMcReco const& candidates,
-                         CandDsMcGen const& mcParticles,
-                         aod::TracksWMc const&)
+  void processMcWithCentFT0C(CollisionsWithFT0C const&,
+                             CandDsMcReco const& candidates,
+                             CandDsMcGen const& mcParticles,
+                             aod::TracksWMc const&)
   {
-    runMcAnalysis<false>(candidates, mcParticles);
-    runDataAnalysis<finalState::KKPi, false, true>(selectedDsToKKPiCandMc);
-    runDataAnalysis<finalState::PiKK, false, true>(selectedDsToPiKKCandMc);
+    runMcAnalysis<CentralityEstimator::FT0C, false>(candidates, mcParticles);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, false>(selectedDsToKKPiCandMc);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, false>(selectedDsToPiKKCandMc);
   }
-  PROCESS_SWITCH(HfTaskDs, processMcWithCent, "Process MC w/o ML information on Ds, with information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processMcWithCentFT0C, "Process MC w/o ML information on Ds, with information on centrality from FT0C", false);
+
+  void processMcWithCentFT0M(CollisionsWithFT0M const&,
+                             CandDsMcReco const& candidates,
+                             CandDsMcGen const& mcParticles,
+                             aod::TracksWMc const&)
+  {
+    runMcAnalysis<CentralityEstimator::FT0M, false>(candidates, mcParticles);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0M, false>(selectedDsToKKPiCandMc);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0M, false>(selectedDsToPiKKCandMc);
+  }
+  PROCESS_SWITCH(HfTaskDs, processMcWithCentFT0M, "Process MC w/o ML information on Ds, with information on centrality from FT0M", false);
+
+  void processMcWithCentNTracksPV(CollisionsWithNTracksPV const&,
+                                  CandDsMcReco const& candidates,
+                                  CandDsMcGen const& mcParticles,
+                                  aod::TracksWMc const&)
+  {
+    runMcAnalysis<CentralityEstimator::NTracksPV, false>(candidates, mcParticles);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::NTracksPV, false>(selectedDsToKKPiCandMc);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::NTracksPV, false>(selectedDsToPiKKCandMc);
+  }
+  PROCESS_SWITCH(HfTaskDs, processMcWithCentNTracksPV, "Process MC w/o ML information on Ds, with information on centrality from NTracksPV", false);
 
   void processMc(aod::Collisions const&,
                  CandDsMcReco const& candidates,
                  CandDsMcGen const& mcParticles,
                  aod::TracksWMc const&)
   {
-    runMcAnalysis<false>(candidates, mcParticles);
-    runDataAnalysis<finalState::KKPi, false, false>(selectedDsToKKPiCandMc);
-    runDataAnalysis<finalState::PiKK, false, false>(selectedDsToPiKKCandMc);
+    runMcAnalysis<CentralityEstimator::None, false>(candidates, mcParticles);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::None, false>(selectedDsToKKPiCandMc);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::None, false>(selectedDsToPiKKCandMc);
   }
   PROCESS_SWITCH(HfTaskDs, processMc, "Process MC w/o ML information on Ds, w/o information on centrality", false);
 
-  void processMcWithMlAndCent(CollisionsWithCent const&,
-                              CandDsMcRecoWithMl const& candidates,
-                              CandDsMcGen const& mcParticles,
-                              aod::TracksWMc const&)
+  void processMcWithMlAndCentFT0C(CollisionsWithFT0C const&,
+                                  CandDsMcRecoWithMl const& candidates,
+                                  CandDsMcGen const& mcParticles,
+                                  aod::TracksWMc const&)
   {
-    runMcAnalysis<true>(candidates, mcParticles);
-    runDataAnalysis<finalState::KKPi, true, true>(selectedDsToKKPiCandWithMlMc);
-    runDataAnalysis<finalState::PiKK, true, true>(selectedDsToPiKKCandWithMlMc);
+    runMcAnalysis<CentralityEstimator::FT0C, true>(candidates, mcParticles);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, true>(selectedDsToKKPiCandWithMlMc);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, true>(selectedDsToPiKKCandWithMlMc);
   }
-  PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCent, "Process MC with ML information on Ds, with information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCentFT0C, "Process MC with ML information on Ds, with information on centrality from FT0C", false);
+
+  void processMcWithMlAndCentFT0M(CollisionsWithFT0M const&,
+                                  CandDsMcRecoWithMl const& candidates,
+                                  CandDsMcGen const& mcParticles,
+                                  aod::TracksWMc const&)
+  {
+    runMcAnalysis<CentralityEstimator::FT0M, true>(candidates, mcParticles);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0M, true>(selectedDsToKKPiCandWithMlMc);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0M, true>(selectedDsToPiKKCandWithMlMc);
+  }
+  PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCentFT0M, "Process MC with ML information on Ds, with information on centrality from FT0M", false);
+
+  void processMcWithMlAndCentNTracksPV(CollisionsWithNTracksPV const&,
+                                       CandDsMcRecoWithMl const& candidates,
+                                       CandDsMcGen const& mcParticles,
+                                       aod::TracksWMc const&)
+  {
+    runMcAnalysis<CentralityEstimator::NTracksPV, true>(candidates, mcParticles);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::NTracksPV, true>(selectedDsToKKPiCandWithMlMc);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::NTracksPV, true>(selectedDsToPiKKCandWithMlMc);
+  }
+  PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCentNTracksPV, "Process MC with ML information on Ds, with information on centrality from NTracksPV", false);
 
   void processMcWithMl(aod::Collisions const&,
                        CandDsMcRecoWithMl const& candidates,
                        CandDsMcGen const& mcParticles,
                        aod::TracksWMc const&)
   {
-    runMcAnalysis<true>(candidates, mcParticles);
-    runDataAnalysis<finalState::KKPi, true, false>(selectedDsToKKPiCandWithMlMc);
-    runDataAnalysis<finalState::PiKK, true, false>(selectedDsToPiKKCandWithMlMc);
+    runMcAnalysis<CentralityEstimator::None, true>(candidates, mcParticles);
+    runDataAnalysis<FinalState::KKPi, CentralityEstimator::None, true>(selectedDsToKKPiCandWithMlMc);
+    runDataAnalysis<FinalState::PiKK, CentralityEstimator::None, true>(selectedDsToPiKKCandWithMlMc);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithMl, "Process MC with ML information on Ds, w/o information on centrality", false);
 };

@@ -29,7 +29,7 @@ namespace o2::aod
 namespace qvec
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);
-DECLARE_SOA_COLUMN(CentBin, centBin, int);
+DECLARE_SOA_COLUMN(IsCalibrated, isCalibrated, bool);
 
 DECLARE_SOA_COLUMN(QvecRe, qvecRe, std::vector<float>);
 DECLARE_SOA_COLUMN(QvecIm, qvecIm, std::vector<float>);
@@ -59,15 +59,15 @@ DECLARE_SOA_COLUMN(LabelsBNeg, labelsBNeg, std::vector<int>);
 } // namespace qvec
 
 DECLARE_SOA_TABLE(Qvectors, "AOD", "QVECTORDEVS", //! Table with all Qvectors.
-                  qvec::Cent, qvec::CentBin, qvec::QvecRe, qvec::QvecIm, qvec::QvecAmp);
+                  qvec::Cent, qvec::IsCalibrated, qvec::QvecRe, qvec::QvecIm, qvec::QvecAmp);
 using Qvector = Qvectors::iterator;
 
-DECLARE_SOA_TABLE(QvectorFT0Cs, "AOD", "QVECTORSFT0C", qvec::CentBin, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C);
-DECLARE_SOA_TABLE(QvectorFT0As, "AOD", "QVECTORSFT0A", qvec::CentBin, qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
-DECLARE_SOA_TABLE(QvectorFT0Ms, "AOD", "QVECTORSFT0M", qvec::CentBin, qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::SumAmplFT0M);
-DECLARE_SOA_TABLE(QvectorFV0As, "AOD", "QVECTORSFV0A", qvec::CentBin, qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::SumAmplFV0A);
-DECLARE_SOA_TABLE(QvectorBPoss, "AOD", "QVECTORSBPOS", qvec::CentBin, qvec::QvecBPosRe, qvec::QvecBPosIm, qvec::NTrkBPos, qvec::LabelsBPos);
-DECLARE_SOA_TABLE(QvectorBNegs, "AOD", "QVECTORSBNEG", qvec::CentBin, qvec::QvecBNegRe, qvec::QvecBNegIm, qvec::NTrkBNeg, qvec::LabelsBNeg);
+DECLARE_SOA_TABLE(QvectorFT0Cs, "AOD", "QVECTORSFT0C", qvec::IsCalibrated, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C);
+DECLARE_SOA_TABLE(QvectorFT0As, "AOD", "QVECTORSFT0A", qvec::IsCalibrated, qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
+DECLARE_SOA_TABLE(QvectorFT0Ms, "AOD", "QVECTORSFT0M", qvec::IsCalibrated, qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::SumAmplFT0M);
+DECLARE_SOA_TABLE(QvectorFV0As, "AOD", "QVECTORSFV0A", qvec::IsCalibrated, qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::SumAmplFV0A);
+DECLARE_SOA_TABLE(QvectorBPoss, "AOD", "QVECTORSBPOS", qvec::IsCalibrated, qvec::QvecBPosRe, qvec::QvecBPosIm, qvec::NTrkBPos, qvec::LabelsBPos);
+DECLARE_SOA_TABLE(QvectorBNegs, "AOD", "QVECTORSBNEG", qvec::IsCalibrated, qvec::QvecBNegRe, qvec::QvecBNegIm, qvec::NTrkBNeg, qvec::LabelsBNeg);
 
 using QvectorFT0C = QvectorFT0Cs::iterator;
 using QvectorFT0A = QvectorFT0As::iterator;

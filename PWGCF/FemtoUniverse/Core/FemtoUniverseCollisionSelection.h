@@ -12,7 +12,7 @@
 /// \file FemtoUniverseCollisionSelection.h
 /// \brief FemtoUniverseCollisionSelection - event selection within the o2femtouniverse framework
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
@@ -72,6 +72,7 @@ class FemtoUniverseCollisionSelection
     mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", kTH1F, {{120, 0, 120}});
     mHistogramRegistry->add("Event/MultNTracklets", "; vMultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
     mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1I, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/Sphericity", "; Sphericity; Entries", kTH1I, {{200, 0, 3}});
   }
 
   /// Print some debug information
@@ -96,11 +97,17 @@ class FemtoUniverseCollisionSelection
     if (std::abs(col.posZ()) > mZvtxMax) {
       return false;
     }
-    if (mCheckTrigger && !col.alias_bit(mTrigger)) {
-      return false;
-    }
-    if (mCheckOffline && !col.sel7()) {
-      return false;
+    if (mCheckIsRun3) {
+      if (mCheckOffline && !col.sel8()) {
+        return false;
+      }
+    } else {
+      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
+        return false;
+      }
+      if (mCheckOffline && !col.sel7()) {
+        return false;
+      }
     }
     return true;
   }
@@ -144,19 +151,57 @@ class FemtoUniverseCollisionSelection
     }
   }
 
-  /// \todo to be implemented!
   /// Compute the sphericity of an event
-  /// Important here is that the filter on tracks does not interfere here!
-  /// In Run 2 we used here global tracks within |eta| < 0.8
   /// \tparam T1 type of the collision
   /// \tparam T2 type of the tracks
   /// \param col Collision
   /// \param tracks All tracks
   /// \return value of the sphericity of the event
   template <typename T1, typename T2>
-  float computeSphericity(T1 const& col, T2 const& tracks)
+  float computeSphericity(T1 const& /*col*/, T2 const& tracks)
   {
-    return 2.f;
+    double S00 = 0;
+    double S11 = 0;
+    double S10 = 0;
+    double sumPt = 0;
+    int partNumber = 0;
+    double spher = 0;
+
+    for (auto& p : tracks) {
+      double phi = p.phi();
+      double pT = p.pt();
+      double px = pT * TMath::Cos(phi);
+      double py = pT * TMath::Sin(phi);
+
+      S00 = S00 + px * px / pT;
+      S11 = S11 + py * py / pT;
+      S10 = S10 + px * py / pT;
+      sumPt = sumPt + pT;
+      partNumber++;
+    }
+
+    if (sumPt != 0) {
+      S00 = S00 / sumPt;
+      S11 = S11 / sumPt;
+      S10 = S10 / sumPt;
+
+      double lambda1 = (S00 + S11 + TMath::Sqrt((S00 + S11) * (S00 + S11) - 4.0 * (S00 * S11 - S10 * S10))) / 2.0;
+      double lambda2 = (S00 + S11 - TMath::Sqrt((S00 + S11) * (S00 + S11) - 4.0 * (S00 * S11 - S10 * S10))) / 2.0;
+
+      if ((lambda1 + lambda2) != 0 && partNumber > 2) {
+        spher = 2 * lambda2 / (lambda1 + lambda2);
+      } else {
+        spher = 2;
+      }
+    } else {
+      spher = 2;
+    }
+
+    if (mHistogramRegistry) {
+      mHistogramRegistry->fill(HIST("Event/Sphericity"), spher);
+    }
+
+    return spher;
   }
 
  private:

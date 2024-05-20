@@ -48,7 +48,7 @@ struct tofPidCollisionTimeQa {
   OutputObj<THashList> listEfficiency{"Efficiency"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
     const AxisSpec evTimeAxis{evTimeBins, "Event time (ps)"};
     const AxisSpec evTimeDeltaAxis{evTimeDeltaBins, "Delta event time (ps)"};

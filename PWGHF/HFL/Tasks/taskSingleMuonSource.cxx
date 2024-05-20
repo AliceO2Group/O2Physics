@@ -55,8 +55,9 @@ namespace muon_source
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(Source, source, uint8_t);
+DECLARE_SOA_COLUMN(DeltaPt, deltaPt, float);
 } // namespace muon_source
-DECLARE_SOA_TABLE(HfMuonSource, "AOD", "MUONSOURCE", muon_source::Pt, muon_source::DcaXY, muon_source::Source);
+DECLARE_SOA_TABLE(HfMuonSource, "AOD", "MUONSOURCE", muon_source::Pt, muon_source::DcaXY, muon_source::Source, muon_source::DeltaPt);
 } // namespace o2::aod
 
 struct HfTaskSingleMuonSource {
@@ -64,12 +65,11 @@ struct HfTaskSingleMuonSource {
 
   Configurable<int> mcMaskSelection{"mcMaskSelection", 0, "McMask for correct match, valid values are 0 and 128"};
   Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
+  Configurable<int> charge{"charge", -1, "Muon track charge, validated values are 0, 1 and -1, 0 represents both 1 and -1"};
 
-  double pDcaMin = 324.0; // p*DCA maximum value for small Rabs
   double pDcaMax = 594.0; // p*DCA maximum value for large Rabs
-  double rAbsMin = 17.6;  // R at absorber end minimum value
+  double rAbsMin = 26.5;  // R at absorber end minimum value
   double rAbsMax = 89.5;  // R at absorber end maximum value
-  double rAbsMid = 26.5;  // R at absorber end split point for different p*DCA selections
   double etaLow = -3.6;   // low edge of eta acceptance
   double etaUp = -2.5;    // up edge of eta acceptance
   double edgeZ = 10.0;    // edge of event position Z
@@ -92,20 +92,24 @@ struct HfTaskSingleMuonSource {
       "Hadron",
       "Unidentified"};
 
-    AxisSpec axisColNumber{1, 0., 1., "Selected collisions"};
+    AxisSpec axisColNumber{1, 0.5, 1.5, "Selected collisions"};
     AxisSpec axisDCA{5000, 0., 5., "DCA (cm)"};
     AxisSpec axisChi2{500, 0., 100., "#chi^{2} of MCH-MFT matching"};
     AxisSpec axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
-    AxisSpec axisEta{250, -5., 0., "#it{#eta}"};
+    AxisSpec axisDeltaPt{1000, -50., 50., "#Delta #it{p}_{T} (GeV/#it{c})"};
 
+    HistogramConfigSpec h1ColNumber{HistType::kTH1F, {axisColNumber}};
+    HistogramConfigSpec h1Pt{HistType::kTH1F, {axisPt}};
     HistogramConfigSpec h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
     HistogramConfigSpec h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
-    HistogramConfigSpec h2PtEta{HistType::kTH2F, {axisPt, axisEta}};
+    HistogramConfigSpec h2PtDeltaPt{HistType::kTH2F, {axisPt, axisDeltaPt}};
 
+    registry.add("h1ColNumber", "", h1ColNumber);
     for (const auto& src : muonSources) {
+      registry.add(Form("h1%sPt", src.Data()), "", h1Pt);
       registry.add(Form("h2%sPtDCA", src.Data()), "", h2PtDCA);
       registry.add(Form("h2%sPtChi2", src.Data()), "", h2PtChi2);
-      registry.add(Form("h2%sPtEta", src.Data()), "", h2PtEta);
+      registry.add(Form("h2%sPtDeltaPt", src.Data()), "", h2PtDeltaPt);
     }
   }
 
@@ -237,39 +241,63 @@ struct HfTaskSingleMuonSource {
   void fillHistograms(const McMuons::iterator& muon)
   {
     const auto mask(getMask(muon));
-    const auto pt(muon.pt()), chi2(muon.chi2MatchMCHMFT()), eta(muon.eta());
+    const auto pt(muon.pt()), chi2(muon.chi2MatchMCHMFT());
     const auto dca(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
 
-    singleMuonSource(pt, dca, mask);
+    if (trackType == 0 || trackType == 2) {
+      if (!muon.has_matchMCHTrack()) {
+        return;
+      }
+      const auto muonType3 = muon.matchMCHTrack_as<McMuons>();
+      const auto deltaPt = muonType3.pt() - pt;
 
-    if (isBeautyDecayMu(mask)) {
-      registry.fill(HIST("h2BeautyDecayMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2BeautyDecayMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h2BeautyDecayMuPtEta"), pt, eta);
-    } else if (isNonpromptCharmMu(mask)) {
-      registry.fill(HIST("h2NonpromptCharmMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2NonpromptCharmMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h2NonpromptCharmMuPtEta"), pt, eta);
-    } else if (isPromptCharmMu(mask)) {
-      registry.fill(HIST("h2PromptCharmMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2PromptCharmMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h2PromptCharmMuPtEta"), pt, eta);
-    } else if (isLightDecayMu(mask)) {
-      registry.fill(HIST("h2LightDecayMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2LightDecayMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h2LightDecayMuPtEta"), pt, eta);
-    } else if (isSecondaryMu(mask)) {
-      registry.fill(HIST("h2SecondaryMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2SecondaryMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h2SecondaryMuPtEta"), pt, eta);
-    } else if (isHadron(mask)) {
-      registry.fill(HIST("h2HadronPtDCA"), pt, dca);
-      registry.fill(HIST("h2HadronPtChi2"), pt, chi2);
-      registry.fill(HIST("h2HadronPtEta"), pt, eta);
-    } else if (isUnidentified(mask)) {
-      registry.fill(HIST("h2UnidentifiedPtDCA"), pt, dca);
-      registry.fill(HIST("h2UnidentifiedPtChi2"), pt, chi2);
-      registry.fill(HIST("h2UnidentifiedPtEta"), pt, eta);
+      singleMuonSource(pt, dca, mask, deltaPt);
+
+      if (isBeautyDecayMu(mask)) {
+        registry.fill(HIST("h2BeautyDecayMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2BeautyDecayMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h2BeautyDecayMuPtDeltaPt"), pt, deltaPt);
+      } else if (isNonpromptCharmMu(mask)) {
+        registry.fill(HIST("h2NonpromptCharmMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2NonpromptCharmMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h2NonpromptCharmMuPtDeltaPt"), pt, deltaPt);
+      } else if (isPromptCharmMu(mask)) {
+        registry.fill(HIST("h2PromptCharmMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2PromptCharmMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h2PromptCharmMuPtDeltaPt"), pt, deltaPt);
+      } else if (isLightDecayMu(mask)) {
+        registry.fill(HIST("h2LightDecayMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2LightDecayMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h2LightDecayMuPtDeltaPt"), pt, deltaPt);
+      } else if (isSecondaryMu(mask)) {
+        registry.fill(HIST("h2SecondaryMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2SecondaryMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h2SecondaryMuPtDeltaPt"), pt, deltaPt);
+      } else if (isHadron(mask)) {
+        registry.fill(HIST("h2HadronPtDCA"), pt, dca);
+        registry.fill(HIST("h2HadronPtChi2"), pt, chi2);
+        registry.fill(HIST("h2HadronPtDeltaPt"), pt, deltaPt);
+      } else if (isUnidentified(mask)) {
+        registry.fill(HIST("h2UnidentifiedPtDCA"), pt, dca);
+        registry.fill(HIST("h2UnidentifiedPtChi2"), pt, chi2);
+        registry.fill(HIST("h2UnidentifiedPtDeltaPt"), pt, deltaPt);
+      }
+    } else {
+      if (isBeautyDecayMu(mask)) {
+        registry.fill(HIST("h1BeautyDecayMuPt"), pt);
+      } else if (isNonpromptCharmMu(mask)) {
+        registry.fill(HIST("h1NonpromptCharmMuPt"), pt);
+      } else if (isPromptCharmMu(mask)) {
+        registry.fill(HIST("h1PromptCharmMuPt"), pt);
+      } else if (isLightDecayMu(mask)) {
+        registry.fill(HIST("h1LightDecayMuPt"), pt);
+      } else if (isSecondaryMu(mask)) {
+        registry.fill(HIST("h1SecondaryMuPt"), pt);
+      } else if (isHadron(mask)) {
+        registry.fill(HIST("h1HadronPt"), pt);
+      } else if (isUnidentified(mask)) {
+        registry.fill(HIST("h1UnidentifiedPt"), pt);
+      }
     }
   }
 
@@ -278,19 +306,17 @@ struct HfTaskSingleMuonSource {
                aod::McParticles const&)
   {
     // event selections
-    if (!collision.sel8()) {
-      return;
-    }
     if (std::abs(collision.posZ()) > edgeZ) {
       return;
     }
+    registry.fill(HIST("h1ColNumber"), 1.);
 
     for (const auto& muon : muons) {
       // muon selections
       if (muon.trackType() != trackType) {
         continue;
       }
-      if (muon.mcMask() != mcMaskSelection) {
+      if (trackType == 0 && muon.mcMask() != mcMaskSelection) {
         continue;
       }
       const auto eta(muon.eta()), pDca(muon.pDca()), rAbs(muon.rAtAbsorberEnd());
@@ -300,13 +326,13 @@ struct HfTaskSingleMuonSource {
       if ((rAbs >= rAbsMax) || (rAbs < rAbsMin)) {
         continue;
       }
-      if ((rAbs < rAbsMid) && (pDca >= pDcaMin)) {
-        continue;
-      }
-      if ((rAbs >= rAbsMid) && (pDca >= pDcaMax)) {
+      if (pDca >= pDcaMax) {
         continue;
       }
       if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
+        continue;
+      }
+      if (charge != 0 && muon.sign() != charge) {
         continue;
       }
       fillHistograms(muon);

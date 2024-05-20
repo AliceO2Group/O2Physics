@@ -604,6 +604,15 @@ DECLARE_SOA_TABLE(pidTOFHe, "AOD", "pidTOFHe", //! Table of the TOF response wit
 DECLARE_SOA_TABLE(pidTOFAl, "AOD", "pidTOFAl", //! Table of the TOF response with binned Nsigma for alpha
                   pidtof_tiny::TOFNSigmaStoreAl, pidtof_tiny::TOFNSigmaAl<pidtof_tiny::TOFNSigmaStoreAl>);
 
+namespace mcpidtpc
+{
+// Tuned MC on data
+DECLARE_SOA_COLUMN(DeDxTunedMc, mcTunedTPCSignal, float); //! TPC signal after TuneOnData application for MC
+} // namespace mcpidtpc
+
+DECLARE_SOA_TABLE(mcTPCTuneOnData, "AOD", "MCTPCTUNEONDATA", mcpidtpc::DeDxTunedMc);
+DECLARE_SOA_TABLE(mcTPCTuneOnDataTiny, "AOD", "MCTPCTODATATINY", mcpidtpc::DeDxTunedMc, o2::soa::Marker<1>);
+
 namespace pidtpc
 {
 // Expected signals

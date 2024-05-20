@@ -97,7 +97,7 @@ struct JetTriggerQA {
   std::vector<fastjet::PseudoJet> jetReclustered;
   JetFinder jetReclusterer;
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
@@ -544,7 +544,7 @@ struct JetTriggerQA {
   }
 
   template <typename JetCollection>
-  std::pair<std::vector<typename JetCollection::iterator>, std::vector<typename JetCollection::iterator>> fillJetQA(const JetCollection& jets, JetTracks const& tracks, selectedClusters const& clusters, std::bitset<EMCALHardwareTrigger::TRG_NTriggers> hwtrg, const std::bitset<TriggerType_t::kNTriggers>& triggerstatus)
+  std::pair<std::vector<typename JetCollection::iterator>, std::vector<typename JetCollection::iterator>> fillJetQA(const JetCollection& jets, JetTracks const& /*tracks*/, selectedClusters const& /*clusters*/, std::bitset<EMCALHardwareTrigger::TRG_NTriggers> /*hwtrg*/, const std::bitset<TriggerType_t::kNTriggers>& triggerstatus)
   {
     auto isTrigger = [&triggerstatus](TriggerType_t triggertype) -> bool {
       return triggerstatus.test(triggertype);

@@ -41,7 +41,7 @@ struct TrackSelectionTask {
   Configurable<int> produceTable{"produceTable", -1, "option to produce the standard table table with the track selection. -1 autosetup, 0 dislabled, 1 enabled"};
   Configurable<int> produceFBextendedTable{"produceFBextendedTable", -1, "option to produce table with FB selection information. -1 autosetup, 0 dislabled, 1 enabled"};
   Configurable<bool> compatibilityIU{"compatibilityIU", false, "compatibility option to allow the processing of tracks before the introduction of IU tracks"};
-  Configurable<int> itsMatching{"itsMatching", 0, "condition for ITS matching (0: Run2 SPD kAny, 1: Run3ITSibAny, 2: Run3ITSallAny, 3: Run3ITSall7Layers)"};
+  Configurable<int> itsMatching{"itsMatching", 0, "condition for ITS matching (0: Run2 SPD kAny, 1: Run3ITSibAny, 2: Run3ITSallAny, 3: Run3ITSall7Layers, 4: Run3ITSibFirst)"};
   Configurable<int> dcaSetup{"dcaSetup", 0, "dca setup: (0: default, 1: ppPass3)"};
   Configurable<float> ptMin{"ptMin", 0.1f, "Lower cut on pt for the track selected"};
   Configurable<float> ptMax{"ptMax", 1e10f, "Upper cut on pt for the track selected"};
@@ -93,6 +93,13 @@ struct TrackSelectionTask {
         if (isRun3) {
           LOG(info) << "setting up getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, " << dcaSetup.value << ");";
           globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, dcaSetup.value);
+          break;
+        }
+      case 4:
+        // Run 3 kFirst, i.e. 1 hit in first layer of ITS
+        if (isRun3) {
+          LOG(info) << "setting up getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibFirst, " << dcaSetup.value << ");";
+          globalTracks = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibFirst, dcaSetup.value);
           break;
         }
       default:

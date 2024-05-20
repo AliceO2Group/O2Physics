@@ -137,7 +137,7 @@ struct DQEventSelectionTask {
   }
 
   template <uint32_t TEventFillMap, typename TEvent>
-  void runEventSelection(TEvent const& collision, aod::BCs const& bcs)
+  void runEventSelection(TEvent const& collision, aod::BCs const&)
   {
     // Reset the Values array
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -491,7 +491,7 @@ struct DQFilterPPTask {
   }
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons>
-  void runFilterPP(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& muons)
+  void runFilterPP(TEvent const& collision, aod::BCs const&, TTracks const& tracksBarrel, TMuons const& muons)
   {
     fStats->Fill(-2.0);
     // if the event is not selected produce tables and return

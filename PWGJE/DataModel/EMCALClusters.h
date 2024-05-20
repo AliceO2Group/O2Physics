@@ -17,6 +17,7 @@
 #define PWGJE_DATAMODEL_EMCALCLUSTERS_H_
 
 #include <string>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "EMCALClusterDefinition.h"
 
@@ -90,6 +91,17 @@ DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLUS", //!
 
 using EMCALCluster = EMCALClusters::iterator;
 using EMCALAmbiguousCluster = EMCALAmbiguousClusters::iterator;
+
+namespace emcalclustermc
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(McParticle, mcParticle);         //! Array of MC particles that deposited energy in this calo cell
+DECLARE_SOA_COLUMN(AmplitudeA, amplitudeA, std::vector<float>); //! Energy fraction deposited by a particle inside this calo cell.
+} // namespace emcalclustermc
+// table of cluster MC info that could be matched to a collision
+DECLARE_SOA_TABLE(EMCALMCClusters, "AOD", "EMCALMCCLUSTERS", //!
+                  emcalclustermc::McParticleIds, emcalclustermc::AmplitudeA);
+
+using EMCALMCCluster = EMCALMCClusters::iterator;
 
 namespace emcalclustercell
 {

@@ -15,8 +15,6 @@
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h> // needed for HFFilterHelpers, to be fixed
-
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -45,52 +43,34 @@ using namespace o2::framework::expressions;
 
 struct HfFilterCharmHadronSignals { // Main struct for HF triggers
 
-  Configurable<bool> applyEventSelection{"applyEventSelection", false, "flag to enable event selection (sel8 + Zvt)"};
+  Configurable<bool> applyEventSelection{"applyEventSelection", true, "flag to enable event selection (sel8 + Zvt)"};
+  Configurable<bool> applyTimeFrameBorderCut{"applyTimeFrameBorderCut", true, "flag to enable time-frame border cut"};
 
-  // parameters for ML application with ONNX
-  Configurable<bool> applyML{"applyML", false, "Flag to enable or disable ML application"};
+  // parameters for ML application
   Configurable<std::vector<double>> pTBinsBDT{"pTBinsBDT", std::vector<double>{hf_cuts_bdt_multiclass::vecBinsPt}, "track pT bin limits for BDT cut"};
 
-  Configurable<std::string> onnxFileD0ToKPiConf{"onnxFileD0ToKPiConf", "XGBoostModel.onnx", "ONNX file for ML model for D0 candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreD0ToKPi{"thresholdBDTScoreD0ToKPi", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of D0 candidates"};
-  Configurable<std::string> onnxFileDPlusToPiKPiConf{"onnxFileDPlusToPiKPiConf", "", "ONNX file for ML model for D+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreDPlusToPiKPi{"thresholdBDTScoreDPlusToPiKPi", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of D+ candidates"};
-  Configurable<std::string> onnxFileDSToPiKKConf{"onnxFileDSToPiKKConf", "", "ONNX file for ML model for Ds+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreDSToPiKK{"thresholdBDTScoreDSToPiKK", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Ds+ candidates"};
-  Configurable<std::string> onnxFileLcToPiKPConf{"onnxFileLcToPiKPConf", "", "ONNX file for ML model for Lc+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreLcToPiKP{"thresholdBDTScoreLcToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
-  Configurable<std::string> onnxFileXicToPiKPConf{"onnxFileXicToPiKPConf", "", "ONNX file for ML model for Xic+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreXicToPiKP{"thresholdBDTScoreXicToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Xic+ candidates"};
+  Configurable<std::string> paramCharmMassShape{"paramCharmMassShape", "2023_pass3", "Parametrisation of charm-hadron mass shape (options: 2023_pass3)"};
+  Configurable<float> numSigmaDeltaMassCharmHad{"numSigmaDeltaMassCharmHad", 2.5, "Number of sigma for charm-hadron delta mass cut in B and D resonance triggers"};
 
   // additional selections for D*
   Configurable<float> minPtSoftPion{"minPtSoftPion", static_cast<float>(cutsPt[0][1]), "minimum pT for soft pion tracks in D*+ -> D0pi decay"};
   Configurable<float> maxPtSoftPion{"maxPtSoftPion", static_cast<float>(cutsPt[1][1]), "maximum pT for soft pion tracks in D*+ -> D0pi decay"};
-  Configurable<float> maxDeltaMassDstar{"maxDeltaMassDstar", static_cast<float>(cutsMassCharmReso[0][0]), "maximum invariant-mass delta for D*+ in GeV/c2"};
-  Configurable<float> maxDeltaMassDzeroFromDstar{"maxDeltaMassDzeroFromDstar", static_cast<float>(cutsDeltaMassB[0][kNBeautyParticles]), "maximum invariant-mass delta for D0 in D*+ -> D0pi decay"};
+  Configurable<float> minDeltaMassDstar{"minDeltaMassDstar", static_cast<float>(cutsCharmReso[0][0]), "minimum invariant-mass delta for D*+ in GeV/c2"};
+  Configurable<float> maxDeltaMassDstar{"maxDeltaMassDstar", static_cast<float>(cutsCharmReso[1][0]), "maximum invariant-mass delta for D*+ in GeV/c2"};
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCAXY pT-dependent cut (D* from beauty)"};
   Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
 
   // CCDB configuration
-  o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "Analysis/PWGHF/ML/HFTrigger/", "Path on CCDB"};
-  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB. Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
-  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-  int currentRun{0}; // needed to get proper magnetic field
+  int currentRun{0}; // needed to detect if the run changed and trigger update of calibrations etc.
 
-  // ONNX
-  std::array<std::shared_ptr<Ort::Experimental::Session>, kNCharmParticles> sessionML = {nullptr, nullptr, nullptr, nullptr, nullptr};
-  std::array<std::vector<std::vector<int64_t>>, kNCharmParticles> inputShapesML{};
-  std::array<Ort::Env, kNCharmParticles> envML = {
-    Ort::Env{ORT_LOGGING_LEVEL_ERROR, "ml-model-d0-triggers"},
-    Ort::Env{ORT_LOGGING_LEVEL_ERROR, "ml-model-dplus-triggers"},
-    Ort::Env{ORT_LOGGING_LEVEL_ERROR, "ml-model-ds-triggers"},
-    Ort::Env{ORT_LOGGING_LEVEL_ERROR, "ml-model-lc-triggers"},
-    Ort::Env{ORT_LOGGING_LEVEL_ERROR, "ml-model-xic-triggers"}};
-  std::array<Ort::SessionOptions, kNCharmParticles> sessionOptions{Ort::SessionOptions(), Ort::SessionOptions(), Ort::SessionOptions(), Ort::SessionOptions(), Ort::SessionOptions()};
-  std::array<int, kNCharmParticles> dataTypeML{};
-  std::array<std::string, kNCharmParticles> onnxFiles;
+  // array of BDT thresholds
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
 
   ConfigurableAxis pvContributorsAxis{"pvContributorsAxis", {250, 0.f, 250.f}, "PV contributors"};
@@ -118,53 +98,36 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
     helper.setPtLimitsDstarSoftPion(minPtSoftPion, maxPtSoftPion);
     helper.setPtBinsSingleTracks(pTBinsTrack);
     helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty3Prong);
-    helper.setDeltaMassCharmHadForBeauty(maxDeltaMassDzeroFromDstar);
+    helper.setMassResolParametrisation(paramCharmMassShape);
+    helper.setNumSigmaForDeltaMassCharmHadCut(numSigmaDeltaMassCharmHad);
 
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
-    thresholdBDTScores = {
-      thresholdBDTScoreD0ToKPi,
-      thresholdBDTScoreDPlusToPiKPi,
-      thresholdBDTScoreDSToPiKK,
-      thresholdBDTScoreLcToPiKP,
-      thresholdBDTScoreXicToPiKP};
-
-    onnxFiles = {
-      onnxFileD0ToKPiConf,
-      onnxFileDPlusToPiKPiConf,
-      onnxFileDSToPiKKConf,
-      onnxFileLcToPiKPConf,
-      onnxFileXicToPiKPConf};
-
-    // init ONNX runtime session
-    if (applyML && (!loadModelsFromCCDB || timestampCCDB != 0)) {
-      for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
-        if (onnxFiles[iCharmPart] != "") {
-          sessionML[iCharmPart].reset(helper.initONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], envML[iCharmPart], sessionOptions[iCharmPart], inputShapesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, timestampCCDB));
-        }
-      }
-    }
+    thresholdBDTScores = {thresholdBDTScoreD0ToKPi, thresholdBDTScoreDPlusToPiKPi, thresholdBDTScoreDSToPiKK, thresholdBDTScoreLcToPiKP, thresholdBDTScoreXicToPiKP};
   }
 
   using CollsWithEvSelAndMult = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using BigTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
+  using Hf2ProngsWithMl = soa::Join<aod::Hf2Prongs, aod::Hf2ProngMlProbs>;
+  using Hf3ProngsWithMl = soa::Join<aod::Hf3Prongs, aod::Hf3ProngMlProbs>;
+
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<aod::Hf2Prongs> hf2ProngPerCollision = aod::track_association::collisionId;
-  Preslice<aod::Hf3Prongs> hf3ProngPerCollision = aod::track_association::collisionId;
+  Preslice<Hf2ProngsWithMl> hf2ProngPerCollision = aod::track_association::collisionId;
+  Preslice<Hf3ProngsWithMl> hf3ProngPerCollision = aod::track_association::collisionId;
 
   void process(CollsWithEvSelAndMult const& collisions,
                aod::BCsWithTimestamps const&,
-               aod::Hf2Prongs const& cand2Prongs,
-               aod::Hf3Prongs const& cand3Prongs,
+               Hf2ProngsWithMl const& cand2Prongs,
+               Hf3ProngsWithMl const& cand3Prongs,
                aod::TrackAssoc const& trackIndices,
-               BigTracksPID const& tracks)
+               BigTracksPID const& /*tracks*/)
   {
     for (const auto& collision : collisions) {
-      if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f)) { // safety margin for Zvtx
+      if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f || (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && applyTimeFrameBorderCut))) { // safety margin for Zvtx
         continue;
       }
 
@@ -172,15 +135,6 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
 
       auto thisCollId = collision.globalIndex();
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-
-      if (applyML && (loadModelsFromCCDB && timestampCCDB == 0) && !sessionML[kD0]) {
-        for (auto iCharmPart{0}; iCharmPart < kNCharmParticles; ++iCharmPart) {
-          if (onnxFiles[iCharmPart] != "") {
-            sessionML[iCharmPart].reset(helper.initONNXSession(onnxFiles[iCharmPart], charmParticleNames[iCharmPart], envML[iCharmPart], sessionOptions[iCharmPart], inputShapesML[iCharmPart], dataTypeML[iCharmPart], loadModelsFromCCDB, ccdbApi, mlModelPathCCDB.value, bc.timestamp()));
-          }
-        }
-      }
-
       // needed for track propagation
       if (currentRun != bc.runNumber()) {
         o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
@@ -207,8 +161,8 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
         auto trackParNeg = getTrackPar(trackNeg);
         o2::gpu::gpustd::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
-        std::array<float, 3> pVecPos{trackPos.px(), trackPos.py(), trackPos.pz()};
-        std::array<float, 3> pVecNeg{trackNeg.px(), trackNeg.py(), trackNeg.pz()};
+        std::array<float, 3> pVecPos{trackPos.pVector()};
+        std::array<float, 3> pVecNeg{trackNeg.pVector()};
         if (trackPos.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParPos, 2.f, noMatCorr, &dcaPos);
           getPxPyPz(trackParPos, pVecPos);
@@ -219,31 +173,17 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
         }
 
         // apply ML models
-        int tagBDT = 0;
-        float scoresToFill[3] = {-1., -1., -1.};
-        if (applyML && onnxFiles[kD0] != "") {
-          std::vector<float> inputFeaturesD0{trackParPos.getPt(), dcaPos[0], dcaPos[1], trackParNeg.getPt(), dcaNeg[0], dcaNeg[1]};
-          std::vector<double> inputFeaturesDoD0{trackParPos.getPt(), dcaPos[0], dcaPos[1], trackParNeg.getPt(), dcaNeg[0], dcaNeg[1]};
-
-          if (dataTypeML[kD0] == 1) {
-            auto scores = helper.predictONNX(inputFeaturesD0, sessionML[kD0], inputShapesML[kD0]);
-            tagBDT = helper.isBDTSelected(scores, thresholdBDTScores[kD0]);
-            for (int iScore{0}; iScore < 3; ++iScore) {
-              scoresToFill[iScore] = scores[iScore];
-            }
-          } else if (dataTypeML[kD0] == 11) {
-            auto scores = helper.predictONNX(inputFeaturesDoD0, sessionML[kD0], inputShapesML[kD0]);
-            tagBDT = helper.isBDTSelected(scores, thresholdBDTScores[kD0]);
-            for (int iScore{0}; iScore < 3; ++iScore) {
-              scoresToFill[iScore] = scores[iScore];
-            }
-          } else {
-            LOG(fatal) << "Error running model inference for D0: Unexpected input data type.";
-          }
-
-          if (!TESTBIT(tagBDT, RecoDecay::OriginType::None)) { // if not signal, we skip
-            continue;
-          }
+        std::vector<float> scores{};
+        scores.insert(scores.end(), cand2Prong.mlProbSkimD0ToKPi().begin(), cand2Prong.mlProbSkimD0ToKPi().end());
+        if (scores.size() != 3) {
+          scores.resize(3);
+          scores[0] = 2.;
+          scores[1] = -1.;
+          scores[2] = -1.;
+        }
+        auto tagBDT = helper.isBDTSelected(scores, thresholdBDTScores[kD0]);
+        if (!TESTBIT(tagBDT, RecoDecay::OriginType::None)) {
+          continue;
         }
 
         auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
@@ -254,10 +194,10 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
         auto invMassD0bar = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massKa, massPi});
         // fill THnSparse
         if (TESTBIT(preselD0, 0)) { // D0
-          registry.fill(HIST("hDzeroToKPi"), invMassD0, pt2Prong, yD0, phi2Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[1], scoresToFill[2]);
+          registry.fill(HIST("hDzeroToKPi"), invMassD0, pt2Prong, yD0, phi2Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scores[1], scores[2]);
         }
         if (TESTBIT(preselD0, 1)) { // D0bar
-          registry.fill(HIST("hDzeroToKPi"), invMassD0bar, pt2Prong, yD0, phi2Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[1], scoresToFill[2]);
+          registry.fill(HIST("hDzeroToKPi"), invMassD0bar, pt2Prong, yD0, phi2Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scores[1], scores[2]);
         }
 
         // we build D* here, as done in the HFFilter.cxx
@@ -276,7 +216,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
 
           auto trackParThird = getTrackPar(track);
           o2::gpu::gpustd::array<float, 2> dcaThird{track.dcaXY(), track.dcaZ()};
-          std::array<float, 3> pVecThird = {track.px(), track.py(), track.pz()};
+          std::array<float, 3> pVecThird = track.pVector();
           if (track.collisionId() != thisCollId) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParThird, 2.f, noMatCorr, &dcaThird);
             getPxPyPz(trackParThird, pVecThird);
@@ -296,10 +236,10 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
             auto ptDstar = RecoDecay::pt(pVecDstar);
             auto phiDstar = RecoDecay::phi(pVecDstar[0], pVecDstar[1]);
             auto yDstar = RecoDecay::y(pVecDstar, massDStar);
-            if (std::fabs(massDiffDstar - (massDStar - massD0)) <= maxDeltaMassDstar) {
-              registry.fill(HIST("hDstarToDzeroPi"), massDiffDstar, ptDstar, yDstar, phiDstar, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[1], scoresToFill[2]); // for D* we store the BDT output scores of the D0
+            if (minDeltaMassDstar <= massDiffDstar && massDiffDstar <= maxDeltaMassDstar) {
+              registry.fill(HIST("hDstarToDzeroPi"), massDiffDstar, ptDstar, yDstar, phiDstar, collision.posZ(), collision.numContrib(), collision.multFT0M(), scores[1], scores[2]); // for D* we store the BDT output scores of the D0
               if (TESTBIT(isTrackSelected, kSoftPionForBeauty)) {
-                registry.fill(HIST("hDstarToDzeroPiForBeauty"), massDiffDstar, ptDstar, yDstar, phiDstar, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[1], scoresToFill[2]); // for D* we store the BDT output scores of the D0
+                registry.fill(HIST("hDstarToDzeroPiForBeauty"), massDiffDstar, ptDstar, yDstar, phiDstar, collision.posZ(), collision.numContrib(), collision.multFT0M(), scores[1], scores[2]); // for D* we store the BDT output scores of the D0
               }
             }
           }
@@ -328,9 +268,9 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
         o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
         o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
-        std::array<float, 3> pVecFirst = {trackFirst.px(), trackFirst.py(), trackFirst.pz()};
-        std::array<float, 3> pVecSecond = {trackSecond.px(), trackSecond.py(), trackSecond.pz()};
-        std::array<float, 3> pVecThird = {trackThird.px(), trackThird.py(), trackThird.pz()};
+        std::array<float, 3> pVecFirst = trackFirst.pVector();
+        std::array<float, 3> pVecSecond = trackSecond.pVector();
+        std::array<float, 3> pVecThird = trackThird.pVector();
         if (trackFirst.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFirst, 2.f, noMatCorr, &dcaFirst);
           getPxPyPz(trackParFirst, pVecFirst);
@@ -361,45 +301,27 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
         }
 
         std::array<int8_t, kNCharmParticles - 1> isSignalTagged = is3Prong;
-        std::array<int8_t, kNCharmParticles - 1> isCharmTagged = is3Prong;
-        std::array<int8_t, kNCharmParticles - 1> isBeautyTagged = is3Prong;
-        float scoresToFill[kNCharmParticles - 1][3];
-        for (int i = 0; i < kNCharmParticles - 1; i++) {
-          std::fill_n(scoresToFill[i], 3, -1);
-        } // initialize BDT scores array outside ML loop
-        if (applyML) {
-          isSignalTagged = std::array<int8_t, kNCharmParticles - 1>{0};
-          isCharmTagged = std::array<int8_t, kNCharmParticles - 1>{0};
-          isBeautyTagged = std::array<int8_t, kNCharmParticles - 1>{0};
 
-          std::vector<float> inputFeatures{trackParFirst.getPt(), dcaFirst[0], dcaFirst[1], trackParSecond.getPt(), dcaSecond[0], dcaSecond[1], trackParThird.getPt(), dcaThird[0], dcaThird[1]};
-          std::vector<double> inputFeaturesD{trackParFirst.getPt(), dcaFirst[0], dcaFirst[1], trackParSecond.getPt(), dcaSecond[0], dcaSecond[1], trackParThird.getPt(), dcaThird[0], dcaThird[1]};
-          for (auto iCharmPart{0}; iCharmPart < kNCharmParticles - 1; ++iCharmPart) {
-            if (!is3Prong[iCharmPart] || onnxFiles[iCharmPart + 1] == "") {
-              continue;
-            }
+        std::array<std::vector<float>, kNCharmParticles - 1> scores{};
+        scores[0].insert(scores[0].end(), cand3Prong.mlProbSkimDplusToPiKPi().begin(), cand3Prong.mlProbSkimDplusToPiKPi().end());
+        scores[1].insert(scores[1].end(), cand3Prong.mlProbSkimDsToKKPi().begin(), cand3Prong.mlProbSkimDsToKKPi().end());
+        scores[2].insert(scores[2].end(), cand3Prong.mlProbSkimLcToPKPi().begin(), cand3Prong.mlProbSkimLcToPKPi().end());
+        scores[3].insert(scores[3].end(), cand3Prong.mlProbSkimXicToPKPi().begin(), cand3Prong.mlProbSkimXicToPKPi().end());
 
-            int tagBDT = 0;
-            if (dataTypeML[iCharmPart + 1] == 1) {
-              auto scores = helper.predictONNX(inputFeatures, sessionML[iCharmPart + 1], inputShapesML[iCharmPart + 1]);
-              tagBDT = helper.isBDTSelected(scores, thresholdBDTScores[iCharmPart + 1]);
-              for (int iScore{0}; iScore < 3; ++iScore) {
-                scoresToFill[iCharmPart][iScore] = scores[iScore];
-              }
-            } else if (dataTypeML[iCharmPart + 1] == 11) {
-              auto scores = helper.predictONNX(inputFeaturesD, sessionML[iCharmPart + 1], inputShapesML[iCharmPart + 1]);
-              tagBDT = helper.isBDTSelected(scores, thresholdBDTScores[iCharmPart + 1]);
-              for (int iScore{0}; iScore < 3; ++iScore) {
-                scoresToFill[iCharmPart][iScore] = scores[iScore];
-              }
-            } else {
-              LOG(error) << "Error running model inference for " << charmParticleNames[iCharmPart + 1].data() << ": Unexpected input data type.";
-            }
-
-            isSignalTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::None);
-            isCharmTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
-            isBeautyTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
+        for (auto iCharmPart{0}; iCharmPart < kNCharmParticles - 1; ++iCharmPart) {
+          if (!is3Prong[iCharmPart]) { // we immediately skip if it was not selected for a given 3-prong species
+            continue;
           }
+
+          if (scores[iCharmPart].size() != 3) {
+            scores[iCharmPart].resize(3);
+            scores[iCharmPart][0] = 2.;
+            scores[iCharmPart][1] = -1.;
+            scores[iCharmPart][2] = -1.;
+          }
+          auto tagBDT = helper.isBDTSelected(scores[iCharmPart], thresholdBDTScores[iCharmPart + 1]);
+
+          isSignalTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::None);
         }
 
         if (!std::accumulate(isSignalTagged.begin(), isSignalTagged.end(), 0)) {
@@ -412,28 +334,28 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
         if (is3Prong[0]) { // D+
           auto yDplus = RecoDecay::y(pVec3Prong, massDPlus);
           auto invMassDplus = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massPi});
-          registry.fill(HIST("hDplusToKPiPi"), invMassDplus, pt3Prong, yDplus, phi3Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[0][1], scoresToFill[0][2]);
+          registry.fill(HIST("hDplusToKPiPi"), invMassDplus, pt3Prong, yDplus, phi3Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scores[0][1], scores[0][2]);
         }
         if (is3Prong[1]) { // Ds+
           auto yDs = RecoDecay::y(pVec3Prong, massDs);
           if (TESTBIT(is3Prong[1], 0)) {
             auto invMassDsToKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massKa, massKa, massPi});
-            registry.fill(HIST("hDsToKKPi"), invMassDsToKKPi, pt3Prong, yDs, phi3Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[1][1], scoresToFill[1][2]);
+            registry.fill(HIST("hDsToKKPi"), invMassDsToKKPi, pt3Prong, yDs, phi3Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scores[1][1], scores[1][2]);
           }
           if (TESTBIT(is3Prong[1], 1)) {
             auto invMassDsToPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massKa});
-            registry.fill(HIST("hDsToKKPi"), invMassDsToPiKK, pt3Prong, yDs, phi3Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[1][1], scoresToFill[1][2]);
+            registry.fill(HIST("hDsToKKPi"), invMassDsToPiKK, pt3Prong, yDs, phi3Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scores[1][1], scores[1][2]);
           }
         }
         if (is3Prong[2]) { // Lc+
           auto yLc = RecoDecay::y(pVec3Prong, massLc);
           if (TESTBIT(is3Prong[2], 0)) {
             auto invMassLcToPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massProton, massKa, massPi});
-            registry.fill(HIST("hLcToPKPi"), invMassLcToPKPi, pt3Prong, yLc, phi3Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[2][1], scoresToFill[2][2]);
+            registry.fill(HIST("hLcToPKPi"), invMassLcToPKPi, pt3Prong, yLc, phi3Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scores[2][1], scores[2][2]);
           }
           if (TESTBIT(is3Prong[2], 1)) {
             auto invMassLcToPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massProton});
-            registry.fill(HIST("hLcToPKPi"), invMassLcToPiKP, pt3Prong, yLc, phi3Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[2][1], scoresToFill[2][2]);
+            registry.fill(HIST("hLcToPKPi"), invMassLcToPiKP, pt3Prong, yLc, phi3Prong, collision.posZ(), collision.numContrib(), collision.multFT0M(), scores[2][1], scores[2][2]);
           }
         }
       } // end 3-prong loop

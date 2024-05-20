@@ -12,7 +12,7 @@
 /// \file femtoUniverseProducerMCTruthTask.cxx
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"
@@ -135,7 +135,7 @@ struct femtoUniverseProducerMCTruthTask {
   }
 
   template <typename CollisionType, typename TrackType>
-  void fillCollisions(CollisionType const& col, TrackType const& tracks)
+  void fillCollisions(CollisionType const& col, TrackType const& /*tracks*/)
   {
     for (auto& c : col) {
       const auto vtxZ = c.posZ();
@@ -206,7 +206,7 @@ struct femtoUniverseProducerMCTruthTask {
   }
 
   void
-    processTrackMC(aod::McCollision const& mcCol,
+    processTrackMC(aod::McCollision const&,
                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
                    aod::McParticles const& mcParticles,
                    aod::BCsWithTimestamps const&)

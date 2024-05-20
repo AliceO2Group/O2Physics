@@ -132,7 +132,8 @@ struct tofPidQa {
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
   Configurable<bool> enableEvTimeSplitting{"enableEvTimeSplitting", false, "Flag to enable histograms splitting depending on the Event Time used"};
   Configurable<bool> produceDeltaTEtaPhiMap{"produceDeltaTEtaPhiMap", false, "Produces the map of the delta time as a function of eta and phi"};
-  Configurable<float> ptDeltaTEtaPhiMap{"ptDeltaTEtaPhiMap", 3.f, "Threshold in pT to build the map of the delta time as a function of eta and phi"};
+  Configurable<float> ptDeltaTEtaPhiMapMin{"ptDeltaTEtaPhiMapMin", 1.45f, "Threshold in pT to build the map of the delta time as a function of eta and phi"};
+  Configurable<float> ptDeltaTEtaPhiMapMax{"ptDeltaTEtaPhiMapMax", 1.55f, "Threshold in pT to build the map of the delta time as a function of eta and phi"};
   Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
   Configurable<bool> enableVsMomentumHistograms{"enableVsMomentumHistograms", false, "Enables plots vs momentum instead of just pT (reduces memory footprint if off)"};
   Configurable<bool> requireGoodMatchTracks{"requireGoodMatchTracks", false, "Require good match tracks"};
@@ -224,7 +225,7 @@ struct tofPidQa {
       histos.add(hdelta_pt[id].data(), axisTitle, kTH2F, {ptAxis, deltaAxis});
     }
     if (produceDeltaTEtaPhiMap) {
-      histos.add(hdelta_etaphi[id].data(), Form("%s, #it{p}_{T} > %.2f", axisTitle, ptDeltaTEtaPhiMap.value), kTH3F, {etaAxis, phiAxis, deltaAxis});
+      histos.add(hdelta_etaphi[id].data(), Form("%s, %.2f < #it{p}_{T} < %.2f", axisTitle, ptDeltaTEtaPhiMapMin.value, ptDeltaTEtaPhiMapMax.value), kTH3F, {etaAxis, phiAxis, deltaAxis});
     }
 
     // Exp Sigma
@@ -414,7 +415,7 @@ struct tofPidQa {
   }
 
   template <bool fillHistograms, typename CollisionType, typename TrackType>
-  bool isTrackSelected(const CollisionType& collision, const TrackType& track)
+  bool isTrackSelected(const CollisionType&, const TrackType& track)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("event/trackselection"), 1.f);
@@ -562,7 +563,7 @@ struct tofPidQa {
         }
 
         if (produceDeltaTEtaPhiMap) {
-          if (t.pt() > ptDeltaTEtaPhiMap) {
+          if (t.pt() > ptDeltaTEtaPhiMapMin && t.pt() < ptDeltaTEtaPhiMapMax) {
             histos.fill(HIST(hdelta_etaphi[id]), t.eta(), t.phi(), diff);
           }
         }

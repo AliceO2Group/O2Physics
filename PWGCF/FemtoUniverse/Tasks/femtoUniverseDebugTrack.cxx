@@ -12,7 +12,7 @@
 /// \file femtoUniverseDebugTrack.cxx
 /// \brief Tasks that reads the particle tables and fills QA histograms for tracks
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
@@ -245,7 +245,7 @@ struct femtoUniverseDebugTrack {
   /// process function when runnning over data/ Monte Carlo reconstructed only
   /// \param col subscribe to FemtoUniverseCollision table
   /// \param parts subscribe to FemtoUniverseParticles table
-  void processData(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  void processData(o2::aod::FDCollision& col, FemtoFullParticles&)
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     FillDebugHistos<false>(col, groupPartsOne);
@@ -257,7 +257,7 @@ struct femtoUniverseDebugTrack {
   /// \param col subscribe to FemtoUniverseCollision table
   /// \param parts subscribe to the joined table of FemtoUniverseParticles and FemtoUniverseMCLabels table
   /// \param FemtoDramMCParticles subscribe to the table containing the Monte Carlo Truth information
-  void processMC(o2::aod::FDCollision& col, FemtoFullParticlesMC& parts, o2::aod::FDMCParticles&)
+  void processMC(o2::aod::FDCollision& col, FemtoFullParticlesMC&, o2::aod::FDMCParticles&)
   {
     auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     FillDebugHistos<true>(col, groupPartsOne);

@@ -16,6 +16,7 @@
 #pragma link off all classes;
 #pragma link off all functions;
 
+#pragma link C++ class EMEventCut + ;
 #pragma link C++ class V0PhotonCut + ;
 #pragma link C++ class DalitzEECut + ;
 #pragma link C++ class PHOSPhotonCut + ;

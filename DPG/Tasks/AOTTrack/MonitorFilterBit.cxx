@@ -151,6 +151,8 @@ struct CheckFilterBit {
     histos.add("Tracks/RecoMCPhysPrimCollMatch/histptMCTPConlyWithClusters", "TPConlyWithClusters;#it{p}_{T}^{gen} (GeV/#it{c});#it{#eta};#it{#varphi};NclustTPC", HistType::kTHnF, {axisPt, axisEta, axisPhi, axisNclustTPC});
     histos.add("Tracks/RecoMCPhysPrimCollMatch/histptTPConlyWithClusters", "TPConlyWithClusters;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi};NclustTPC", HistType::kTHnF, {axisPt, axisEta, axisPhi, axisNclustTPC});
 
+    histos.add("Tracks/RecoMCPhysPrimCollMatch/histptMCFB0resolCurv", "FB0;#it{p}_{T}^{gen} (GeV/#it{c});#it{#eta};#it{p}_{T}^{gen}/#it{p}_{T}^{reco}-1", kTH3D, {{200, 0, 20}, {10, -1, 1}, {200, -0.2, 0.2}});
+
     histos.add("Tracks/RecoMCRad1to15cmCollMatch/histptFB0", "FB0;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCRad1to15cmCollMatch/histptFB1", "FB1;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/RecoMCRad1to15cmCollMatch/histptFB2", "FB2;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
@@ -226,7 +228,7 @@ struct CheckFilterBit {
   }
   PROCESS_SWITCH(CheckFilterBit, processData, "process data", true);
 
-  void processDataCombineTracks(o2::aod::Collision const& collision, Tracksextension const& tracks)
+  void processDataCombineTracks(o2::aod::Collision const& collision, Tracksextension const&)
   {
     auto positiveITSonlyTracksThisColl = positiveITSonlyTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negativeITSonlyTracksThisColl = negativeITSonlyTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -237,7 +239,7 @@ struct CheckFilterBit {
   }
   PROCESS_SWITCH(CheckFilterBit, processDataCombineTracks, "process data combined tracks", false);
 
-  void processMCCombineTracks(soa::Join<aod::Collisions, o2::aod::McCollisionLabels>::iterator const& collision, TracksextensionMC const& tracks, aod::McParticles const& mcParticles)
+  void processMCCombineTracks(soa::Join<aod::Collisions, o2::aod::McCollisionLabels>::iterator const& collision, TracksextensionMC const&, aod::McParticles const&)
   {
 
     if (std::abs(collision.posZ()) > 10.) {
@@ -400,7 +402,7 @@ struct CheckFilterBit {
     return strangeness;
   }
 
-  void processRecoMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, TracksextensionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processRecoMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, TracksextensionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const&)
   { // this will loop over data (PV) collisions
 
     histos.fill(HIST("EventProp/histDatacollZ"), collision.posZ());
@@ -440,6 +442,7 @@ struct CheckFilterBit {
               if (track.isGlobalTrack()) {
                 histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptFB0"), track.pt(), track.eta(), track.phi());
                 histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptMCFB0"), mcparticle.pt(), track.eta(), track.phi());
+                histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptMCFB0resolCurv"), mcparticle.pt(), track.eta(), (mcparticle.pt() / track.pt() - 1.)); // did not use signed1Pt just to avoid getting the charge for MCpart; last variable is relative difference on curvature (1/pt_reco - 1/pt_gen)/(1/pt_gen)
               }
               if (track.itsChi2NCl() > 0. && track.tpcChi2NCl() < 0.) {
                 histos.fill(HIST("Tracks/RecoMCPhysPrimCollMatch/histptITSonly"), track.pt(), track.eta(), track.phi());

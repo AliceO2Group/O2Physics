@@ -31,12 +31,6 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 
-/// Struct to extend TracksPid tables
-struct HfCandidateSelectorD0Expressions {
-  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
-  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
-};
-
 /// Struct for applying D0 selection cuts
 struct HfCandidateSelectorD0 {
   Produces<aod::HfSelD0> hfSelD0Candidate;
@@ -44,11 +38,13 @@ struct HfCandidateSelectorD0 {
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<bool> usePid{"usePid", true, "Use PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
   Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
+  Configurable<bool> usePidTpcOnly{"usePidTpcOnly", false, "Only use TPC PID"};
   // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
   Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
@@ -85,7 +81,7 @@ struct HfCandidateSelectorD0 {
   TrackSelectorKa selectorKaon;
   HfHelper hfHelper;
 
-  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPiExt, aod::TracksPidKaExt>;
+  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   // Define histograms
   AxisSpec axisMassDmeson{200, 1.7f, 2.1f};
@@ -93,7 +89,7 @@ struct HfCandidateSelectorD0 {
   AxisSpec axisSelStatus{2, -0.5f, 1.5f};
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     std::array<bool, 2> doprocess{doprocessWithDCAFitterN, doprocessWithKFParticle};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
@@ -313,60 +309,74 @@ struct HfCandidateSelectorD0 {
       }
       statusCand = 1;
 
-      // track-level PID selection
-      int pidTrackPosKaon = -1;
-      int pidTrackPosPion = -1;
-      int pidTrackNegKaon = -1;
-      int pidTrackNegPion = -1;
+      if (usePid) {
+        // track-level PID selection
+        int pidTrackPosKaon = -1;
+        int pidTrackPosPion = -1;
+        int pidTrackNegKaon = -1;
+        int pidTrackNegPion = -1;
 
-      if (usePidTpcAndTof) {
-        pidTrackPosKaon = selectorKaon.statusTpcAndTof(trackPos);
-        pidTrackPosPion = selectorPion.statusTpcAndTof(trackPos);
-        pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
-        pidTrackNegPion = selectorPion.statusTpcAndTof(trackNeg);
-      } else {
-        pidTrackPosKaon = selectorKaon.statusTpcOrTof(trackPos);
-        pidTrackPosPion = selectorPion.statusTpcOrTof(trackPos);
-        pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
-        pidTrackNegPion = selectorPion.statusTpcOrTof(trackNeg);
-      }
-
-      // int pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos);
-
-      int pidD0 = -1;
-      int pidD0bar = -1;
-
-      if (pidTrackPosPion == TrackSelectorPID::Accepted &&
-          pidTrackNegKaon == TrackSelectorPID::Accepted) {
-        pidD0 = 1; // accept D0
-      } else if (pidTrackPosPion == TrackSelectorPID::Rejected ||
-                 pidTrackNegKaon == TrackSelectorPID::Rejected) {
-        pidD0 = 0; // exclude D0
-      }
-
-      if (pidTrackNegPion == TrackSelectorPID::Accepted &&
-          pidTrackPosKaon == TrackSelectorPID::Accepted) {
-        pidD0bar = 1; // accept D0bar
-      } else if (pidTrackNegPion == TrackSelectorPID::Rejected ||
-                 pidTrackPosKaon == TrackSelectorPID::Rejected) {
-        pidD0bar = 0; // exclude D0bar
-      }
-
-      if (pidD0 == 0 && pidD0bar == 0) {
-        hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
-        if (applyMl) {
-          hfMlD0Candidate(outputMlD0, outputMlD0bar);
+        if (usePidTpcOnly) {
+          pidTrackPosKaon = selectorKaon.statusTpc(trackPos);
+          pidTrackPosPion = selectorPion.statusTpc(trackPos);
+          pidTrackNegKaon = selectorKaon.statusTpc(trackNeg);
+          pidTrackNegPion = selectorPion.statusTpc(trackNeg);
+        } else if (usePidTpcAndTof) {
+          pidTrackPosKaon = selectorKaon.statusTpcAndTof(trackPos);
+          pidTrackPosPion = selectorPion.statusTpcAndTof(trackPos);
+          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+          pidTrackNegPion = selectorPion.statusTpcAndTof(trackNeg);
+        } else {
+          pidTrackPosKaon = selectorKaon.statusTpcOrTof(trackPos);
+          pidTrackPosPion = selectorPion.statusTpcOrTof(trackPos);
+          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+          pidTrackNegPion = selectorPion.statusTpcOrTof(trackNeg);
         }
-        continue;
-      }
 
-      if ((pidD0 == -1 || pidD0 == 1) && topolD0) {
-        statusD0 = 1; // identified as D0
+        // int pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos);
+
+        int pidD0 = -1;
+        int pidD0bar = -1;
+
+        if (pidTrackPosPion == TrackSelectorPID::Accepted &&
+            pidTrackNegKaon == TrackSelectorPID::Accepted) {
+          pidD0 = 1; // accept D0
+        } else if (pidTrackPosPion == TrackSelectorPID::Rejected ||
+                   pidTrackNegKaon == TrackSelectorPID::Rejected) {
+          pidD0 = 0; // exclude D0
+        }
+
+        if (pidTrackNegPion == TrackSelectorPID::Accepted &&
+            pidTrackPosKaon == TrackSelectorPID::Accepted) {
+          pidD0bar = 1; // accept D0bar
+        } else if (pidTrackNegPion == TrackSelectorPID::Rejected ||
+                   pidTrackPosKaon == TrackSelectorPID::Rejected) {
+          pidD0bar = 0; // exclude D0bar
+        }
+
+        if (pidD0 == 0 && pidD0bar == 0) {
+          hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
+          if (applyMl) {
+            hfMlD0Candidate(outputMlD0, outputMlD0bar);
+          }
+          continue;
+        }
+
+        if ((pidD0 == -1 || pidD0 == 1) && topolD0) {
+          statusD0 = 1; // identified as D0
+        }
+        if ((pidD0bar == -1 || pidD0bar == 1) && topolD0bar) {
+          statusD0bar = 1; // identified as D0bar
+        }
+        statusPID = 1;
+      } else {
+        if (topolD0) {
+          statusD0 = 1; // identified as D0
+        }
+        if (topolD0bar) {
+          statusD0bar = 1; // identified as D0bar
+        }
       }
-      if ((pidD0bar == -1 || pidD0bar == 1) && topolD0bar) {
-        statusD0bar = 1; // identified as D0bar
-      }
-      statusPID = 1;
 
       if (applyMl) {
         // ML selections
@@ -425,7 +435,5 @@ struct HfCandidateSelectorD0 {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorD0Expressions>(cfgc),
-    adaptAnalysisTask<HfCandidateSelectorD0>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorD0>(cfgc)};
 }

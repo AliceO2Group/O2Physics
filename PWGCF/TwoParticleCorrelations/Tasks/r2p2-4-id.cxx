@@ -81,9 +81,9 @@ struct FillFlagsTable {
     histos.add("dcazka", "DCA_{Z} Kaon", kTH2F, {ptaxis, dcazaxis});
     histos.add("dcaxypr", "DCA_{XY} Proton", kTH2F, {ptaxis, dcaxyaxis});
     histos.add("dcazpr", "DCA_{Z} Proton", kTH2F, {ptaxis, dcazaxis});
-    histos.add("ptpi", "p_T distribution Pion", kTH1I, {ptaxis});
-    histos.add("ptka", "p_T distribution Kaon", kTH1I, {ptaxis});
-    histos.add("ptpr", "p_T distribution Proton", kTH1I, {ptaxis});
+    histos.add("ptpi", "p_T distribution Pion", kTH1D, {ptaxis});
+    histos.add("ptka", "p_T distribution Kaon", kTH1D, {ptaxis});
+    histos.add("ptpr", "p_T distribution Proton", kTH1D, {ptaxis});
 
     histos.add("recodcaxypi", "DCA_{XY} Pion", kTH2F, {ptaxis, dcaxyaxis});
     histos.add("recodcazpi", "DCA_{Z} Pion", kTH2F, {ptaxis, dcazaxis});
@@ -92,15 +92,15 @@ struct FillFlagsTable {
     histos.add("recodcaxypr", "DCA_{XY} Proton", kTH2F, {ptaxis, dcaxyaxis});
     histos.add("recodcazpr", "DCA_{Z} Proton", kTH2F, {ptaxis, dcazaxis});
 
-    histos.add("genptpi", "Generated p_T distribution Pion", kTH1I, {ptaxis});
-    histos.add("genptka", "Generated p_T distribution Kaon", kTH1I, {ptaxis});
-    histos.add("genptpr", "Generated p_T distribution Proton", kTH1I, {ptaxis});
-    histos.add("recoptpi", "Reconstructed p_T distribution Pion", kTH1I, {ptaxis});
-    histos.add("recoptka", "Reconstructed p_T distribution Kaon", kTH1I, {ptaxis});
-    histos.add("recoptpr", "Reconstructed p_T distribution Proton", kTH1I, {ptaxis});
-    histos.add("pureidptpi", "Identifed w/o impurity p_T distribution Pion", kTH1I, {ptaxis});
-    histos.add("pureidptka", "Identifed w/o impurity p_T distribution Kaon", kTH1I, {ptaxis});
-    histos.add("pureidptpr", "Identifed w/o impurity p_T distribution Proton", kTH1I, {ptaxis});
+    histos.add("genptpi", "Generated p_T distribution Pion", kTH1D, {ptaxis});
+    histos.add("genptka", "Generated p_T distribution Kaon", kTH1D, {ptaxis});
+    histos.add("genptpr", "Generated p_T distribution Proton", kTH1D, {ptaxis});
+    histos.add("recoptpi", "Reconstructed p_T distribution Pion", kTH1D, {ptaxis});
+    histos.add("recoptka", "Reconstructed p_T distribution Kaon", kTH1D, {ptaxis});
+    histos.add("recoptpr", "Reconstructed p_T distribution Proton", kTH1D, {ptaxis});
+    histos.add("pureidptpi", "Identifed w/o impurity p_T distribution Pion", kTH1D, {ptaxis});
+    histos.add("pureidptka", "Identifed w/o impurity p_T distribution Kaon", kTH1D, {ptaxis});
+    histos.add("pureidptpr", "Identifed w/o impurity p_T distribution Proton", kTH1D, {ptaxis});
   }
   Produces<aod::Flags> ftable;
   void processData(soa::Join<aod::Tracks, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCEl, aod::TracksExtra, aod::TracksDCA> const& tracks)

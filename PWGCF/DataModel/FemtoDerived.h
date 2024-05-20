@@ -66,6 +66,22 @@ DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
 DECLARE_SOA_TABLE(FDDownSample, "AOD", "FDDOWNSAMPLE",
                   femtodreamcollision::Downsample);
 
+namespace femtodreamMCcollision
+{
+DECLARE_SOA_COLUMN(MultMCgenPartEta08, multMCgenPartEta08, int); //! Multiplicity of the event as given by the generator in |eta|<0.8
+}
+
+DECLARE_SOA_TABLE(FDMCCollisions, "AOD", "FDMCCOLLISION",
+                  o2::soa::Index<>,
+                  femtodreamMCcollision::MultMCgenPartEta08);
+using FDMCCollision = FDMCCollisions::iterator;
+
+namespace mcfdcolllabel
+{
+DECLARE_SOA_INDEX_COLUMN(FDMCCollision, fdMCCollision); //! MC collision for femtodreamcollision
+}
+DECLARE_SOA_TABLE(FDMCCollLabels, "AOD", "FDMCCollLabel", mcfdcolllabel::FDMCCollisionId);
+
 /// FemtoDreamTrack
 namespace femtodreamparticle
 {
@@ -272,6 +288,12 @@ DECLARE_SOA_INDEX_COLUMN(FDMCParticle, fdMCParticle); //! MC particle for femtod
 } // namespace mcfdlabel
 DECLARE_SOA_TABLE(FDMCLabels, "AOD", "FDMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
                   mcfdlabel::FDMCParticleId);
+namespace mcfdextlabel
+{
+DECLARE_SOA_INDEX_COLUMN(FDExtMCParticle, fdExtMCParticle); //! MC particle for femtodreamparticle
+} // namespace mcfdextlabel
+DECLARE_SOA_TABLE(FDExtMCLabels, "AOD", "FDExtMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
+                  mcfdextlabel::FDExtMCParticleId);
 
 /// Hash
 namespace hash

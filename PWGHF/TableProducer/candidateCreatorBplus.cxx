@@ -32,9 +32,11 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::hf_trkcandsel;
 using namespace o2::aod;
 using namespace o2::constants::physics;
 using namespace o2::framework;
@@ -102,8 +104,18 @@ struct HfCandidateCreatorBplus {
   OutputObj<TH1F> hEtaPi{TH1F("hEtaPi", "Pion track;#it{#eta};entries", 400, -2., 2.)};
   OutputObj<TH1F> hMassBplusToD0Pi{TH1F("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #bar{D^{0}}#pi^{+}) (GeV/#it{c}^{2});entries", 500, 3., 8.)};
 
+  std::shared_ptr<TH1> hCandidatesD, hCandidatesB;
+  HistogramRegistry registry{"registry"};
+
   void init(InitContext const&)
   {
+    // invariant-mass window cut
+    massPi = MassPiPlus;
+    massD0 = MassD0;
+    massBplus = MassBPlus;
+    invMass2D0PiMin = (massBplus - invMassWindowBplus) * (massBplus - invMassWindowBplus);
+    invMass2D0PiMax = (massBplus + invMassWindowBplus) * (massBplus + invMassWindowBplus);
+
     // Initialise fitter for B vertex
     dfB.setPropagateToPCA(propagateToPCA);
     dfB.setMaxR(maxR);
@@ -127,12 +139,11 @@ struct HfCandidateCreatorBplus {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
 
-    // invariant-mass window cut
-    massPi = MassPiPlus;
-    massD0 = MassD0;
-    massBplus = MassBPlus;
-    invMass2D0PiMin = (massBplus - invMassWindowBplus) * (massBplus - invMassWindowBplus);
-    invMass2D0PiMax = (massBplus + invMassWindowBplus) * (massBplus + invMassWindowBplus);
+    /// candidate monitoring
+    hCandidatesD = registry.add<TH1>("hCandidatesD", "D candidate counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesB = registry.add<TH1>("hCandidatesB", "B candidate counter", {HistType::kTH1D, {axisCands}});
+    setLabelHistoCands(hCandidatesD);
+    setLabelHistoCands(hCandidatesB);
   }
 
   /// Single-track cuts for pions on dcaXY
@@ -219,9 +230,17 @@ struct HfCandidateCreatorBplus {
         }
 
         // reconstruct D0 secondary vertex
-        if (df.process(trackParCovProng0, trackParCovProng1) == 0) {
+        hCandidatesD->Fill(SVFitting::BeforeFit);
+        try {
+          if (df.process(trackParCovProng0, trackParCovProng1) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for D cannot work, skipping the candidate.";
+          hCandidatesD->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidatesD->Fill(SVFitting::FitOk);
 
         const auto& vertexD0 = df.getPCACandidatePos();
         trackParCovProng0.propagateTo(vertexD0[0], bz);
@@ -278,9 +297,17 @@ struct HfCandidateCreatorBplus {
           std::array<float, 3> pVecBCand = {0., 0., 0.};
 
           // find the DCA between the D0 and the bachelor track, for B+
-          if (dfB.process(trackD0, trackParCovPi) == 0) {
+          hCandidatesB->Fill(SVFitting::BeforeFit);
+          try {
+            if (dfB.process(trackD0, trackParCovPi) == 0) {
+              continue;
+            }
+          } catch (const std::runtime_error& error) {
+            LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for B cannot work, skipping the candidate.";
+            hCandidatesB->Fill(SVFitting::Fail);
             continue;
           }
+          hCandidatesB->Fill(SVFitting::FitOk);
 
           dfB.propagateTracksToVertex();        // propagate the bachelor and D0 to the B+ vertex
           trackD0.getPxPyPzGlo(pVecD0);         // momentum of D0 at the B+ vertex
@@ -308,8 +335,6 @@ struct HfCandidateCreatorBplus {
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-          int hfFlag = BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
-
           // compute invariant mass square and apply selection
           auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecBach}, std::array{massD0, massPi});
           if ((invMass2D0Pi < invMass2D0PiMin) || (invMass2D0Pi > invMass2D0PiMax)) {
@@ -326,15 +351,14 @@ struct HfCandidateCreatorBplus {
                            pVecD0[0], pVecD0[1], pVecD0[2],
                            pVecBach[0], pVecBach[1], pVecBach[2],
                            impactParameter0.getY(), impactParameter1.getY(),
-                           std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
-                           hfFlag);
+                           std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()));
 
           rowCandidateProngs(candD0.globalIndex(), trackPion.globalIndex()); // index D0 and bachelor
-        } // track loop
-      }   // D0 cand loop
-    }     // collision
-  }       // process
-};        // struct
+        }                                                                    // track loop
+      }                                                                      // D0 cand loop
+    }                                                                        // collision
+  }                                                                          // process
+};                                                                           // struct
 
 /// Extends the base table with expression columns and performs MC matching
 struct HfCandidateCreatorBplusExpressions {
@@ -344,8 +368,8 @@ struct HfCandidateCreatorBplusExpressions {
 
   void init(InitContext const&) {}
 
-  void processMc(aod::HfCand2Prong const& dzero,
-                 aod::TracksWMc const& tracks,
+  void processMc(aod::HfCand2Prong const&,
+                 aod::TracksWMc const&,
                  aod::McParticles const& mcParticles,
                  aod::HfCandBplusProngs const& candsBplus)
   {

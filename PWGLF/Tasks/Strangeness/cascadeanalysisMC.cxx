@@ -90,7 +90,7 @@ struct cascadeGenerated {
     registry.add("hPtOmegaPlus", "hPtOmegaPlus", {HistType::kTH1F, {ptAxis}});
   }
 
-  void process(aod::McCollision const& collision, aod::McParticles const& mcparts)
+  void process(aod::McCollision const& /*collision*/, aod::McParticles const& mcparts)
   {
     // Count monte carlo events
     // WARNING: MC collision <-> real collision association has to be understood
@@ -442,7 +442,7 @@ struct cascadeAnalysisMC {
   }
   PROCESS_SWITCH(cascadeAnalysisMC, processRun2VsMultiplicity, "Process Run 2 data vs multiplicity", false);
 
-  void processRun3WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::McParticles const&)
+  void processRun3WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, FullTracksExtIUWithPID const&, aod::McParticles const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 3 event selection criteria
@@ -451,13 +451,13 @@ struct cascadeAnalysisMC {
     }
     // fill cascade information with tracksIU typecast (Run 3)
     for (auto& casc : Cascades) {
-      int lPIDvalue = checkCascadeTPCPID<FullTracksExtWithPID>(casc);
+      int lPIDvalue = checkCascadeTPCPID<FullTracksExtIUWithPID>(casc);
       processCascadeCandidate<FullTracksExtIUWithPID>(casc, collision.posX(), collision.posY(), collision.posZ(), -999, lPIDvalue);
     }
   }
   PROCESS_SWITCH(cascadeAnalysisMC, processRun3WithPID, "Process Run 3 data  with PID", false);
 
-  void processRun2WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, aod::McParticles const&)
+  void processRun2WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, FullTracksExtWithPID const&, aod::McParticles const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 2 event selection criteria

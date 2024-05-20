@@ -102,7 +102,7 @@ struct EmcalMatchedTracksTask {
   Filter trackSelection = (o2::aod::track::pt >= minTrackPt);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(myCollision const& theCollision, myBCs const& bcs, selectedClusters const& clusters, o2::aod::EMCALMatchedTracks const& matchedtracks, myTracksPID const& alltracks)
+  void processCollisions(myCollision const& theCollision, myBCs const&, selectedClusters const& clusters, o2::aod::EMCALMatchedTracks const& matchedtracks, myTracksPID const&)
   {
     mHistManager.fill(HIST("eventsAll"), 1);
 

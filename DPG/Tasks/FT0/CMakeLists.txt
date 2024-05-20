@@ -13,3 +13,9 @@ o2physics_add_dpl_workflow(ft0-task
                     SOURCES ft0AnalysisTask.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::DataModel O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(ft0-qa-trg-based
+                    SOURCES qaFT0TrgBased.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::DataModel O2::Framework
+                    COMPONENT_NAME Analysis)
+

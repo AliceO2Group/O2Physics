@@ -213,7 +213,7 @@ struct lfpidqa {
 
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
-  void processAll(soa::Filtered<CollisionCandidate> const& collisions,
+  void processAll(soa::Filtered<CollisionCandidate> const&,
                   soa::Filtered<soa::Join<TrackCandidates,
                                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                           aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
@@ -237,7 +237,7 @@ struct lfpidqa {
   }
   PROCESS_SWITCH(lfpidqa, processAll, "Process All particles", false);
 
-  void processPiKaPr(soa::Filtered<CollisionCandidate> const& collisions,
+  void processPiKaPr(soa::Filtered<CollisionCandidate> const&,
                      soa::Filtered<soa::Join<TrackCandidates, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>> const& tracks,
                      soa::Filtered<soa::Join<TrackCandidates, aod::pidTPCLfFullPi, aod::pidTPCLfFullKa, aod::pidTPCLfFullPr>> const& lftracks)
   {

@@ -38,8 +38,10 @@ using namespace o2::aod::hf_cand_2prong;
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
-using MyDileptonCandidatesSelected = soa::Join<aod::Dimuons, aod::DileptonsInfo>;
-using MyDileptonCandidatesSelectedWithDca = soa::Join<aod::Dimuons, aod::DimuonsExtra, aod::DileptonsInfo>;
+using MyDimuonCandidatesSelected = soa::Join<aod::Dimuons, aod::DileptonsInfo>;
+using MyDimuonCandidatesSelectedWithDca = soa::Join<aod::Dimuons, aod::DimuonsExtra, aod::DileptonsInfo>;
+using MyDielectronCandidatesSelected = soa::Join<aod::Dielectrons, aod::DileptonsInfo>;
+using MyDielectronCandidatesSelectedWithDca = soa::Join<aod::Dielectrons, aod::DielectronsExtra, aod::DileptonsInfo>;
 using MyD0CandidatesSelected = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
 using MyD0CandidatesSelectedWithBdt = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
 
@@ -70,20 +72,23 @@ struct tableMakerJpsiHf {
   Configurable<bool> storeTableForNorm{"storeTableForNorm", true, "If true, store a table with number of processed collisions for normalisation"};
 
   SliceCache cache;
-  Partition<MyDileptonCandidatesSelected> selectedDileptonCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
-  Partition<MyDileptonCandidatesSelectedWithDca> selectedDileptonCandidatesWithDca = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
+  Partition<MyDimuonCandidatesSelected> selectedDimuonCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
+  Partition<MyDimuonCandidatesSelectedWithDca> selectedDimuonCandidatesWithDca = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
+  Partition<MyDielectronCandidatesSelected> selectedDielectronCandidates = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
+  Partition<MyDielectronCandidatesSelectedWithDca> selectedDielectronCandidatesWithDca = aod::reducedpair::mass > 1.0f && aod::reducedpair::mass < 5.0f && aod::reducedpair::sign == 0;
   Partition<MyD0CandidatesSelected> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
   Partition<MyD0CandidatesSelectedWithBdt> selectedD0CandidatesWithBdt = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
 
   Preslice<MyD0CandidatesSelected> perCollisionDmeson = aod::hf_cand::collisionId;
-  Preslice<MyDileptonCandidatesSelected> perCollisionDilepton = aod::reducedpair::collisionId;
+  Preslice<MyDimuonCandidatesSelected> perCollisionDimuon = aod::reducedpair::collisionId;
+  Preslice<MyDielectronCandidatesSelected> perCollisionDielectron = aod::reducedpair::collisionId;
 
   // Define histograms manager
   float* fValuesDileptonCharmHadron{};
   HistogramManager* fHistMan{};
   OutputObj<THashList> fOutputList{"output"};
 
-  void init(o2::framework::InitContext& context)
+  void init(o2::framework::InitContext&)
   {
     fValuesDileptonCharmHadron = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
@@ -232,33 +237,62 @@ struct tableMakerJpsiHf {
     }
   }
 
-  // process J/psi - D0
-  void processJspiD0(MyEvents const& collisions, MyDileptonCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
+  // process J/psi(->mumu) - D0
+  void processJspiToMuMuD0(MyEvents const& collisions, MyDimuonCandidatesSelected const&, MyD0CandidatesSelected const&)
   {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
     for (auto& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-      auto groupedDileptonCandidates = selectedDileptonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
+      auto groupedDileptonCandidates = selectedDimuonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
       runDileptonDmeson<false, false>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
     }
   }
-  PROCESS_SWITCH(tableMakerJpsiHf, processJspiD0, "Process J/psi - D0", true);
 
-  // process J/psi - D0 adding the BDT output scores to the D0 table
-  void processJspiD0WithBdt(MyEvents const& collisions, MyDileptonCandidatesSelected const& dileptons, MyD0CandidatesSelectedWithBdt const& dmesons)
+  // process J/psi(->ee) - D0
+  void processJspiToEED0(MyEvents const& collisions, MyDielectronCandidatesSelected const&, MyD0CandidatesSelected const&)
+  {
+    if (storeTableForNorm) {
+      redCollCounter(collisions.size());
+    }
+    for (auto& collision : collisions) {
+      auto groupedDmesonCandidates = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+      auto groupedDileptonCandidates = selectedDielectronCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
+      runDileptonDmeson<false, false>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
+    }
+  }
+
+  // process J/psi(->mumu) - D0 adding the BDT output scores to the D0 table
+  void processJspiToMuMuD0WithBdt(MyEvents const& collisions, MyDimuonCandidatesSelected const&, MyD0CandidatesSelectedWithBdt const&)
   {
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
     for (auto& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0CandidatesWithBdt->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-      auto groupedDileptonCandidates = selectedDileptonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
+      auto groupedDileptonCandidates = selectedDimuonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
       runDileptonDmeson<false, true>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
     }
   }
-  PROCESS_SWITCH(tableMakerJpsiHf, processJspiD0WithBdt, "Process J/psi - D0", true);
+
+  // process J/psi(->ee) - D0 adding the BDT output scores to the D0 table
+  void processJspiToEED0WithBdt(MyEvents const& collisions, MyDielectronCandidatesSelected const&, MyD0CandidatesSelectedWithBdt const&)
+  {
+    if (storeTableForNorm) {
+      redCollCounter(collisions.size());
+    }
+    for (auto& collision : collisions) {
+      auto groupedDmesonCandidates = selectedD0CandidatesWithBdt->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+      auto groupedDileptonCandidates = selectedDielectronCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
+      runDileptonDmeson<false, true>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
+    }
+  }
+
+  PROCESS_SWITCH(tableMakerJpsiHf, processJspiToMuMuD0, "Process J/psi(->mumu) - D0", false);
+  PROCESS_SWITCH(tableMakerJpsiHf, processJspiToEED0, "Process J/psi(->ee) - D0", false);
+  PROCESS_SWITCH(tableMakerJpsiHf, processJspiToMuMuD0WithBdt, "Process J/psi(->mumu) - D0 with BDT", false);
+  PROCESS_SWITCH(tableMakerJpsiHf, processJspiToEED0WithBdt, "Process J/psi(->ee) - D0 with BDT", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

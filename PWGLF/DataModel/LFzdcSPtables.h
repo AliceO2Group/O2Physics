@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGLF_DATAMODEL_ZDCSPTABLES_H_
-#define PWGLF_DATAMODEL_ZDCSPTABLES_H_
+#ifndef PWGLF_DATAMODEL_LFZDCSPTABLES_H_
+#define PWGLF_DATAMODEL_LFZDCSPTABLES_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -20,6 +20,8 @@ namespace o2::aod
 {
 namespace ZdcSPTableNS
 {
+DECLARE_SOA_COLUMN(TimeSinceSOR, timeSinceSOR, uint64_t);
+DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 DECLARE_SOA_COLUMN(EnergyZNA0, energyZNA0, float);
 DECLARE_SOA_COLUMN(EnergyZNA1, energyZNA1, float);
 DECLARE_SOA_COLUMN(EnergyZNA2, energyZNA2, float);
@@ -30,10 +32,22 @@ DECLARE_SOA_COLUMN(EnergyZNC1, energyZNC1, float);
 DECLARE_SOA_COLUMN(EnergyZNC2, energyZNC2, float);
 DECLARE_SOA_COLUMN(EnergyZNC3, energyZNC3, float);
 DECLARE_SOA_COLUMN(EnergyZNC4, energyZNC4, float);
+DECLARE_SOA_COLUMN(AmpZNA0, ampZNA0, float);
+DECLARE_SOA_COLUMN(AmpZNA1, ampZNA1, float);
+DECLARE_SOA_COLUMN(AmpZNA2, ampZNA2, float);
+DECLARE_SOA_COLUMN(AmpZNA3, ampZNA3, float);
+DECLARE_SOA_COLUMN(AmpZNA4, ampZNA4, float);
+DECLARE_SOA_COLUMN(AmpZNC0, ampZNC0, float);
+DECLARE_SOA_COLUMN(AmpZNC1, ampZNC1, float);
+DECLARE_SOA_COLUMN(AmpZNC2, ampZNC2, float);
+DECLARE_SOA_COLUMN(AmpZNC3, ampZNC3, float);
+DECLARE_SOA_COLUMN(AmpZNC4, ampZNC4, float);
 
 } // namespace ZdcSPTableNS
 DECLARE_SOA_TABLE(ZdcSPTable, "AOD", "ZDCSPTABLE",
-                  bc::GlobalBC,
+                  ZdcSPTableNS::TimeSinceSOR,
+                  bc::RunNumber,
+                  ZdcSPTableNS::HadronicRate,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -50,4 +64,4 @@ DECLARE_SOA_TABLE(ZdcSPTable, "AOD", "ZDCSPTABLE",
                   ZdcSPTableNS::EnergyZNC4);
 } // namespace o2::aod
 
-#endif // PWGLF_DATAMODEL_ZDCSPTABLES_H_
+#endif // PWGLF_DATAMODEL_LFZDCSPTABLES_H_

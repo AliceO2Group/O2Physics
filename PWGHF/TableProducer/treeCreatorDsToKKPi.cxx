@@ -80,6 +80,7 @@ DECLARE_SOA_COLUMN(AbsCos3PiK, absCos3PiK, float);                           //!
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                //! Sign
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
@@ -127,7 +128,8 @@ DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
                   hf_cand::Chi2PCA,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
-                  hf_cand_3prong::FlagMcDecayChanRec)
+                  hf_cand_3prong::FlagMcDecayChanRec,
+                  full::Sign);
 
 DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   collision::BCId,
@@ -197,7 +199,8 @@ DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   hf_cand::Chi2PCA,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
-                  hf_cand_3prong::FlagMcDecayChanRec);
+                  hf_cand_3prong::FlagMcDecayChanRec,
+                  full::Sign);
 
 DECLARE_SOA_TABLE(HfCandDsFullEvs, "AOD", "HFCANDDSFULLEV",
                   collision::BCId,
@@ -240,7 +243,7 @@ struct HfTreeCreatorDsToKKPi {
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using CandDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPiExt, aod::TracksPidKaExt>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   int offsetDplusDecayChannel = aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi - aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi; // Offset between Dplus and Ds to use the same decay channel. See aod::hf_cand_3prong::DecayChannelDToKKPi
 
@@ -304,11 +307,11 @@ struct HfTreeCreatorDsToKKPi {
     if constexpr (massHypo == 0) {
       invMassDs = hfHelper.invMassDsToKKPi(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToKKPi(candidate);
-      absCos3PiKDs = std::abs(hfHelper.cos3PiKDsToKKPi(candidate));
+      absCos3PiKDs = hfHelper.absCos3PiKDsToKKPi(candidate);
     } else if constexpr (massHypo == 1) {
       invMassDs = hfHelper.invMassDsToPiKK(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToPiKK(candidate);
-      absCos3PiKDs = std::abs(hfHelper.cos3PiKDsToPiKK(candidate));
+      absCos3PiKDs = hfHelper.absCos3PiKDsToPiKK(candidate);
     }
 
     auto prong0 = candidate.template prong0_as<TracksWPid>();
@@ -361,7 +364,8 @@ struct HfTreeCreatorDsToKKPi {
         candidate.chi2PCA(),
         flagMc,
         originMc,
-        channelMc);
+        channelMc,
+        prong0.sign() + prong1.sign() + prong2.sign());
     } else {
       rowCandidateFull(
         candidate.collision().bcId(),
@@ -431,12 +435,13 @@ struct HfTreeCreatorDsToKKPi {
         candidate.chi2PCA(),
         flagMc,
         originMc,
-        channelMc);
+        channelMc,
+        prong0.sign() + prong1.sign() + prong2.sign());
     }
   }
 
   void processData(aod::Collisions const& collisions,
-                   CandDsData const& candidates,
+                   CandDsData const&,
                    TracksWPid const&)
   {
     // Filling event properties
@@ -477,7 +482,7 @@ struct HfTreeCreatorDsToKKPi {
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
-                 CandDsMcReco const& candidates,
+                 CandDsMcReco const&,
                  CandDsMcGen const& mcParticles,
                  TracksWPid const&)
   {
@@ -560,7 +565,7 @@ struct HfTreeCreatorDsToKKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS),
+        RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }

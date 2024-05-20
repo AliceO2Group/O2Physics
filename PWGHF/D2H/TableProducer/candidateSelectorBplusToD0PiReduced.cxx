@@ -20,6 +20,7 @@
 #include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMlResponseBplusToD0Pi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -32,11 +33,12 @@ using namespace o2::analysis;
 
 struct HfCandidateSelectorBplusToD0PiReduced {
   Produces<aod::HfSelBplusToD0Pi> hfSelBplusToD0PiCandidate; // table defined in CandidateSelectionTables.h
+  Produces<aod::HfMlBplusToD0Pi> hfMlBplusToD0PiCandidate;   // table defined in CandidateSelectionTables.h
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
-  Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
+  Configurable<int> pionPidMethod{"pionPidMethod", 1, "PID selection method for the bachelor pion (0: none, 1: TPC or TOF, 2: TPC and TOF)"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
@@ -51,13 +53,32 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bplus_to_d0_pi::cuts[0], hf_cuts_bplus_to_d0_pi::nBinsPt, hf_cuts_bplus_to_d0_pi::nCutVars, hf_cuts_bplus_to_d0_pi::labelsPt, hf_cuts_bplus_to_d0_pi::labelsCutVar}, "B+ candidate selection per pT bin"};
+  // D0-meson ML cuts
+  Configurable<std::vector<double>> binsPtDmesMl{"binsPtDmesMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "D0-meson pT bin limits for ML cuts"};
+  Configurable<LabeledArray<double>> cutsDmesMl{"cutsDmesMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsDmesCutScore}, "D0-meson ML cuts per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
-
-  bool selectionFlagDAndUsePidInSync = true;
+  // B+ ML inference
+  Configurable<bool> applyBplusMl{"applyBplusMl", false, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> binsPtBpMl{"binsPtBpMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirBpMl{"cutDirBpMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsBpMl{"cutsBpMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int8_t> nClassesBpMl{"nClassesBpMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"path_ccdb/BDT_BPLUS/"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_BPLUSToD0Pi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   // variable that will store the value of selectionFlagD (defined in dataCreatorD0PiReduced.cxx)
   int mySelectionFlagD0 = -1;
   int mySelectionFlagD0bar = -1;
+
+  o2::analysis::HfMlResponseBplusToD0Pi<float> hfMlResponse;
+  float outputMlNotPreselected = -1.;
+  std::vector<float> outputMl = {};
+  o2::ccdb::CcdbApi ccdbApi;
 
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;
@@ -66,9 +87,18 @@ struct HfCandidateSelectorBplusToD0PiReduced {
 
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
 
-  void init(InitContext const& initContext)
+  void init(InitContext const&)
   {
-    if (usePid) {
+    std::array<bool, 2> doprocess{doprocessSelection, doprocessSelectionWithDmesMl};
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
+      LOGP(fatal, "Only one process function for data should be enabled at a time.");
+    }
+
+    if (pionPidMethod < 0 || pionPidMethod > 2) {
+      LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
+    }
+
+    if (pionPidMethod) {
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -90,40 +120,40 @@ struct HfCandidateSelectorBplusToD0PiReduced {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
     }
+
+    if (applyBplusMl) {
+      hfMlResponse.configure(binsPtBpMl, cutsBpMl, cutDirBpMl, nClassesBpMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponse.init();
+    }
   }
 
-  void process(HfRedCandBplus const& hfCandBs,
-               TracksPion const&,
-               HfCandBpConfigs const& configs)
+  /// Main function to perform B+ candidate creation
+  /// \param withDmesMl is the flag to use the table with ML scores for the D- daughter (only possible if present in the derived data)
+  /// \param hfCandsBp B+ candidates
+  /// \param pionTracks pion tracks
+  /// \param configs config inherited from the D0pi data creator
+  template <bool withDmesMl, typename Cands>
+  void runSelection(Cands const& hfCandsBp,
+                    TracksPion const& pionTracks,
+                    HfCandBpConfigs const& configs)
   {
-    // get DplusPi creator configurable
+    // get D0Pi creator configurable
     for (const auto& config : configs) {
       mySelectionFlagD0 = config.mySelectionFlagD0();
       mySelectionFlagD0bar = config.mySelectionFlagD0bar();
-
-      if ((usePid && !mySelectionFlagD0) || (usePid && !mySelectionFlagD0bar)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "PID selections required on B+ daughters (usePid=true) but no PID selections on D candidates were required a priori.";
-      }
-      if ((!usePid && mySelectionFlagD0) || (!usePid && mySelectionFlagD0bar)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "No PID selections required on Bp daughters (usePid=false) but PID selections on D candidates were required a priori.";
-      }
     }
 
-    for (const auto& hfCandBp : hfCandBs) {
+    for (const auto& hfCandBp : hfCandsBp) {
       int statusBplus = 0;
       auto ptCandBplus = hfCandBp.pt();
 
-      // check if flagged as B+ → D π
-      if (!TESTBIT(hfCandBp.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
-        hfSelBplusToD0PiCandidate(statusBplus);
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 1, ptCandBplus);
-        }
-        // LOGF(info, "B+ candidate selection failed at hfflag check");
-        continue;
-      }
       SETBIT(statusBplus, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusBplus = 1
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandBplus);
@@ -132,26 +162,44 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       // topological cuts
       if (!hfHelper.selectionBplusToD0PiTopol(hfCandBp, cuts, binsPt)) {
         hfSelBplusToD0PiCandidate(statusBplus);
+        if (applyBplusMl) {
+          hfMlBplusToD0PiCandidate(outputMlNotPreselected);
+        }
         // LOGF(info, "B+ candidate selection failed at topology selection");
         continue;
       }
+
+      if constexpr (withDmesMl) { // we include it in the topological selections
+        if (!hfHelper.selectionDmesMlScoresForB(hfCandBp, cutsDmesMl, binsPtDmesMl)) {
+          hfSelBplusToD0PiCandidate(statusBplus);
+          if (applyBplusMl) {
+            hfMlBplusToD0PiCandidate(outputMlNotPreselected);
+          }
+          // LOGF(info, "B+ candidate selection failed at D0-meson ML selection");
+          continue;
+        }
+      }
+
       SETBIT(statusBplus, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusBplus = 3
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoTopol, ptCandBplus);
       }
 
-      // checking if selectionFlagD and usePid are in sync
-      if (!selectionFlagDAndUsePidInSync) {
-        hfSelBplusToD0PiCandidate(statusBplus);
-        continue;
-      }
       // track-level PID selection
-      if (usePid) {
-        auto trackPi = hfCandBp.prong1_as<TracksPion>();
-        int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
+      auto trackPi = hfCandBp.template prong1_as<TracksPion>();
+      if (pionPidMethod) {
+        int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
+        if (pionPidMethod == 1) {
+          pidTrackPi = selectorPion.statusTpcOrTof(trackPi);
+        } else {
+          pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
+        }
         if (!hfHelper.selectionBplusToD0PiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B+ candidate selection failed at PID selection");
           hfSelBplusToD0PiCandidate(statusBplus);
+          if (applyBplusMl) {
+            hfMlBplusToD0PiCandidate(outputMlNotPreselected);
+          }
           continue;
         }
         SETBIT(statusBplus, SelectionStep::RecoPID); // RecoPID = 2 --> statusBplus = 7
@@ -159,10 +207,44 @@ struct HfCandidateSelectorBplusToD0PiReduced {
           registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoPID, ptCandBplus);
         }
       }
+      if (applyBplusMl) {
+        // B+ ML selections
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandBp, trackPi);
+        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBplus, outputMl);
+        hfMlBplusToD0PiCandidate(outputMl[1]); // storing ML score for signal class
+
+        if (!isSelectedMl) {
+          hfSelBplusToD0PiCandidate(statusBplus);
+          continue;
+        }
+        SETBIT(statusBplus, SelectionStep::RecoMl); // RecoML = 3 --> statusBplus = 15 if pionPidMethod, 11 otherwise
+        if (activateQA) {
+          registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoMl, ptCandBplus);
+        }
+      }
+
       hfSelBplusToD0PiCandidate(statusBplus);
       // LOGF(info, "B+ candidate selection passed all selections");
     }
   }
+
+  void processSelection(HfRedCandBplus const& hfCandsBp,
+                        TracksPion const& pionTracks,
+                        HfCandBpConfigs const& configs)
+  {
+    runSelection<false>(hfCandsBp, pionTracks, configs);
+  } // processSelection
+
+  PROCESS_SWITCH(HfCandidateSelectorBplusToD0PiReduced, processSelection, "Process selection without ML scores of D mesons", true);
+
+  void processSelectionWithDmesMl(soa::Join<HfRedCandBplus, HfRedBplusD0Mls> const& hfCandsBp,
+                                  TracksPion const& pionTracks,
+                                  HfCandBpConfigs const& configs)
+  {
+    runSelection<true>(hfCandsBp, pionTracks, configs);
+  } // processSelectionWithDmesMl
+
+  PROCESS_SWITCH(HfCandidateSelectorBplusToD0PiReduced, processSelectionWithDmesMl, "Process selection with ML scores of D mesons", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

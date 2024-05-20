@@ -68,7 +68,7 @@ PairCuts fPairCuts;              // pair suppression engine
 bool fUseConversionCuts = false; // suppress resonances and conversions
 bool fUseTwoTrackCut = false;    // suppress too close tracks
 
-std::vector<std::string> tname = {"O", "T"}; ///< the track names
+std::vector<std::string> tname = {"e+", "e-", "pi+", "pi-", "K+", "K-", "p+", "p-"}; ///< the track names
 } // namespace correlationstask
 
 // Task for building <dpt,dpt> correlations
@@ -77,7 +77,7 @@ struct IdentifiedBfCorrelationsTask {
   /* the data collecting engine */
   template <bool smallsingles>
   struct DataCollectingEngine {
-    int nspecies = 1; /* for the time being just hadrons */
+    int nspecies = static_cast<int>(analysis::identifiedbffilter::kIdBfNoOfSpecies); /* Doing All Species */
     size_t nch = nspecies * 2;
 
     //============================================================================================
@@ -111,7 +111,15 @@ struct IdentifiedBfCorrelationsTask {
     std::vector<std::vector<TProfile*>> fhSum2PtPtnw_vsC{nch, {nch, nullptr}};   //!<! un-weighted accumulated \f${p_T}_1 {p_T}_2\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
     std::vector<std::vector<TProfile*>> fhSum2DptDptnw_vsC{nch, {nch, nullptr}}; //!<! un-weighted accumulated \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
 
-    std::vector<std::vector<std::string>> trackPairsNames = {{"OO", "OT"}, {"TO", "TT"}};
+    std::vector<std::vector<std::string>> chargePairsNames = {{"OO", "OT"}, {"TO", "TT"}};
+    std::vector<std::vector<std::string>> speciesPairNames = {{"e+e+", "e+e-", "e+pi+", "e+pi-", "e+K+", "e+K-", "e+p+", "e+p-"},
+                                                              {"e-e+", "e-e-", "e-pi+", "e-pi-", "e-K+", "e-K-", "e-p+", "e-p-"},
+                                                              {"pi+e+", "pi+e-", "pi+pi+", "pi+pi-", "pi+K+", "pi+K-", "pi+p+", "pi+p-"},
+                                                              {"pi-e+", "pi-e-", "pi-pi+", "pi-pi-", "pi-K+", "pi-K-", "pi-p+", "pi-p-"},
+                                                              {"K+e+", "K+e-", "K+pi+", "K+pi-", "K+K+", "K+K-", "K+p+", "K+p-"},
+                                                              {"K-e+", "K-e-", "K-pi+", "K-pi-", "K-K+", "K-K-", "K-p+", "K-p-"},
+                                                              {"p+e+", "p+e-", "p+pi+", "p+pi-", "p+K+", "p+K-", "p+p+", "p+p-"},
+                                                              {"p-e+", "p-e-", "p-pi+", "p-pi-", "p-K+", "p-K-", "p-p+", "p-p-"}};
     bool ccdbstored = false;
 
     float isCCDBstored()
@@ -584,14 +592,14 @@ struct IdentifiedBfCorrelationsTask {
           fOutputList->Add(fhN1nw_vsC[i]);
           fOutputList->Add(fhSum1Ptnw_vsC[i]);
         }
-
         for (uint i = 0; i < nch; ++i) {
           for (uint j = 0; j < nch; ++j) {
             /* histograms for each track pair combination */
             /* we don't want the Sumw2 structure being created here */
             bool defSumw2 = TH1::GetDefaultSumw2();
             TH1::SetDefaultSumw2(false);
-            const char* pname = trackPairsNames[i][j].c_str();
+            // const char* pname = chargePairsNames[i][j].c_str();
+            const char* pname = speciesPairNames[i][j].c_str();
             fhN2_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
                                              deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhN2cont_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12cont_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
@@ -893,7 +901,6 @@ struct IdentifiedBfCorrelationsTask {
   void processSame(FilterdCollision const& collision, FilteredTracks const& tracks, uint64_t timestamp = 0)
   {
     using namespace correlationstask;
-
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
         ccdblst = getCCDBInput(cfginputfile.cfgCCDBPathName->c_str(), cfginputfile.cfgCCDBDate->c_str());
@@ -1318,6 +1325,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<IdentifiedBfCorrelationsTask>(cfgc, TaskName{"IdentifiedBfCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),
-    adaptAnalysisTask<IdentifiedBfCorrelationsTask>(cfgc, TaskName{"IdentifiedBfCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}, {"processGenLevelMixed", false}, {"processCleaner", false}}})};
+    adaptAnalysisTask<IdentifiedBfCorrelationsTask>(cfgc, TaskName{"IdentifiedBfCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})};
   return workflow;
 }

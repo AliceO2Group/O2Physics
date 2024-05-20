@@ -14,6 +14,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/CaloClusters.h"
@@ -21,6 +22,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
@@ -31,9 +33,11 @@
 #include "Framework/HistogramRegistry.h"
 
 #include "PHOSBase/Geometry.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "CommonDataFormat/InteractionRecord.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DetectorsBase/Propagator.h"
 
 /// \struct PHOS pi0 analysis
 /// \brief Monitoring task for PHOS related quantities
@@ -49,32 +53,39 @@ using namespace o2::framework::expressions;
 struct phosAlign {
 
   static constexpr int16_t kCpvX = 7; // grid 13 steps along z and 7 along phi as largest match ellips 20x10 cm
-  static constexpr int16_t kCpvZ = 13;
+  static constexpr int16_t kCpvZ = 6;
   static constexpr int16_t kCpvCells = 4 * kCpvX * kCpvZ; // 4 modules
   static constexpr float cpvMaxX = 73;                    // max CPV coordinate phi
   static constexpr float cpvMaxZ = 63;                    // max CPV coordinate z
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl>;
+  using mcClusters = soa::Join<aod::CaloClusters, aod::PHOSCluLabels>;
+  using mcTracks = soa::Join<tracks, aod::McTrackLabels>;
 
   Configurable<float> mMinE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"};
   Configurable<float> mMinCluTime{"minCluTime", -25.e-9, "Min. cluster time"};
   Configurable<float> mMaxCluTime{"mMaxCluTime", 25.e-9, "Max. cluster time"};
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   std::unique_ptr<o2::phos::Geometry> geomPHOS;
+  double bz{0.}; // magnetic field
+  int runNumber{0};
 
   class trackMatch
   {
    public:
     trackMatch() = default;
-    trackMatch(double x, double z, double p, bool el, bool charge) : pX(x), pZ(z), mom(p), isEl(el), isPos(charge) {}
+    trackMatch(double x, double z, double p, int32_t l, bool el, bool charge) : pX(x), pZ(z), mom(p), label(l), isEl(el), isPos(charge) {}
     ~trackMatch() = default;
 
    public:
-    double pX = 9999.;  // X (phi) track coordinate in PHOS plane
-    double pZ = 9999.;  // Z (theta) track coordinate in PHOS plane
-    double mom = 0.;    // track momentum
+    double pX = 9999.; // X (phi) track coordinate in PHOS plane
+    double pZ = 9999.; // Z (theta) track coordinate in PHOS plane
+    double mom = 0.;   // track momentum
+    int32_t label = 0;
     bool isEl = false;  // is electron from TPC dEdx
     bool isPos = false; // is positive charge
   };
@@ -85,6 +96,9 @@ struct phosAlign {
   void init(InitContext const&)
   {
     LOG(info) << "Initializing PHOS alignment task ...";
+    ccdb->setURL(o2::base::NameConf::getCCDBServer());
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
 
     const AxisSpec
       axisPi0Pt{100, 0., 20., "p_{T}^{#pi} (GeV/c)", "p_{T}^{#pi} (GeV/c)"},
@@ -118,12 +132,13 @@ struct phosAlign {
     mHistManager.add("hdXvsX", "dx(x), all tracks", HistType::kTH3F, {axisdX, axisX, axisModes});
     mHistManager.add("hdZvsZ_plus", "dz(z), pos tracks", HistType::kTH3F, {axisdZ, axisZ, axisModes});
     mHistManager.add("hdXvsX_plus", "dx(x), pos tracks", HistType::kTH3F, {axisdX, axisX, axisModes});
-    mHistManager.add("hdZvsZ_minus", "dz(z), neg tracks", HistType::kTH3F, {axisdZ, axisdZ, axisModes});
+    mHistManager.add("hdZvsZ_minus", "dz(z), neg tracks", HistType::kTH3F, {axisdZ, axisZ, axisModes});
     mHistManager.add("hdXvsX_minus", "dx(x), neg tracks", HistType::kTH3F, {axisdX, axisX, axisModes});
     mHistManager.add("hdZvsZEl", "dz(z), el tracks", HistType::kTH3F, {axisdZ, axisZ, axisModes});
     mHistManager.add("hdXvsXEl", "dx(x), el tracks", HistType::kTH3F, {axisdX, axisX, axisModes});
     mHistManager.add("hdXdZE", "dx,dz,E_{clu}", HistType::kTH3F, {axisdX, axisdX, axisEpEclu});
     mHistManager.add("hdXdZp", "dx,dz,p_{tr}", HistType::kTH3F, {axisdX, axisdX, axisP});
+    mHistManager.add("hXYZ", "xyz", HistType::kTH3F, {{200, -300., 300.}, {100, -500, -250.}, {200, -150., 150.}});
 
     // mHistManager.add("hdXvsXvsEElM1", "dz(z), el tracks", HistType::kTH3F, {axisdX, axisX, axisEpEclu});
     // mHistManager.add("hdXvsXvsEElM2", "dz(z), el tracks", HistType::kTH3F, {axisdX, axisX, axisEpEclu});
@@ -135,9 +150,27 @@ struct phosAlign {
 
   /// \brief match tracks and clusters in different PHOS modules
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-               aod::CaloClusters& clusters,
-               tracks& tracks)
+               mcClusters& clusters,
+               mcTracks& tracks,
+               aod::BCsWithTimestamps const&)
   {
+
+    // Set the magnetic field from ccdb.
+    // The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
+    // but this is not true when running on Run2 data/MC already converted into AO2Ds.
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    if (runNumber != bc.runNumber()) {
+      LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
+      if (grpo == nullptr) {
+        LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+      }
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      bz = o2::base::Propagator::Instance()->getNominalBz();
+      LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+      runNumber = bc.runNumber();
+    }
+
     // Nothing to process
     if (clusters.size() == 0) {
       return;
@@ -158,8 +191,10 @@ struct phosAlign {
       }
 
       int16_t module;
-      float trackX, trackZ;
-      if (!impactOnPHOS(track.trackEtaEmcal(), track.trackPhiEmcal(), track.collision_as<SelCollisions>().posZ(), module, trackX, trackZ)) {
+      float trackX = 999., trackZ = 999.;
+
+      auto trackPar = getTrackPar(track);
+      if (!impactOnPHOS(trackPar, track.trackEtaEmcal(), track.trackPhiEmcal(), track.collision_as<SelCollisions>().posZ(), module, trackX, trackZ)) {
         continue;
       }
       int regionIndex = matchIndex(module, trackX, trackZ);
@@ -206,7 +241,7 @@ struct phosAlign {
           electron = false;
         }
       }
-      trackMatchPoints[regionIndex].emplace_back(trackX, trackZ, track.p(), electron, static_cast<bool>(track.sign() > 0));
+      trackMatchPoints[regionIndex].emplace_back(trackX, trackZ, track.p(), track.mcParticleId(), electron, static_cast<bool>(track.sign() > 0));
     }
 
     for (const auto& clu : clusters) {
@@ -216,6 +251,12 @@ struct phosAlign {
       if (clu.time() < mMinCluTime || clu.time() > mMaxCluTime) {
         continue;
       }
+
+      // int label = -1;             // if no MC
+      // auto mcList = clu.labels(); // const std::vector<int>
+      // if (mcList.size() > 0) {
+      //   label = mcList[0];
+      // }
 
       // CPV and track match
       const float cellSizeX = 2 * cpvMaxX / kCpvX;
@@ -315,8 +356,10 @@ struct phosAlign {
     return (module - 1) * kCpvX * kCpvZ + ix * kCpvZ + iz; // modules: 1,2,3,4
   }
 
-  bool impactOnPHOS(float trackEta, float trackPhi, float zvtx, int16_t& module, float& trackX, float& trackZ)
+  bool impactOnPHOS(o2::track::TrackParametrization<float>& trackPar, float trackEta, float trackPhi, float /*zvtx*/, int16_t& module, float& trackX, float& trackZ)
   {
+    // eta,phi was calculated at EMCAL radius.
+    // Extrapolate to PHOS assuming zeroB and current vertex
     // Check if direction in PHOS acceptance+20cm and return phos module number and coordinates in PHOS module plane
     const float phiMin = 240. * 0.017453293; // degToRad
     const float phiMax = 323. * 0.017453293; // PHOS+20 cm * degToRad
@@ -340,19 +383,42 @@ struct phosAlign {
       module = 4;
     }
 
-    // eta,phi was calculated at EMCAL radius.
-    // Extrapolate to PHOS assuming zeroB and current vertex
     // get PHOS radius
-    constexpr float shiftY = -1.26; // Depth-optimized
-    double posL[3] = {470. * sin(trackPhi - phiMin - dphi * (module - 0.5)),
-                      470. * sinh(trackEta) + zvtx,
-                      shiftY}; // local position at the center of module
+    constexpr float shiftY = -1.26;    // Depth-optimized
+    double posL[3] = {0., 0., shiftY}; // local position at the center of module
     double posG[3] = {0};
     geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
     double rPHOS = sqrt(posG[0] * posG[0] + posG[1] * posG[1]);
-    posG[0] = rPHOS * cos(trackPhi);
-    posG[1] = rPHOS * sin(trackPhi);
-    posG[2] = rPHOS * sinh(trackEta) + zvtx;
+    double alpha = (230. + 20. * module) * 0.017453293;
+
+    // During main reconstruction track was propagated to radius 460 cm with accounting material
+    // now material is not available. Therefore, start from main rec. position and extrapoate to actual radius without material
+    // Get track parameters at point where main reconstruction stop
+    float xPHOS = 460.f, xtrg = 0.f;
+    if (!trackPar.getXatLabR(xPHOS, xtrg, bz, o2::track::DirType::DirOutward)) {
+      return false;
+    }
+    auto prop = o2::base::Propagator::Instance();
+    if (!trackPar.rotate(alpha) ||
+        !prop->PropagateToXBxByBz(trackPar, xtrg, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrNONE)) {
+      return false;
+    }
+    // calculate xyz from old (Phi, eta) and new r
+    float r = std::sqrt(trackPar.getX() * trackPar.getX() + trackPar.getY() * trackPar.getY());
+    trackPar.setX(r * std::cos(trackPhi - alpha));
+    trackPar.setY(r * std::sin(trackPhi - alpha));
+    trackPar.setZ(r / std::tan(2. * std::atan(std::exp(-trackEta))));
+
+    if (!prop->PropagateToXBxByBz(trackPar, rPHOS, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrNONE)) {
+      return false;
+    }
+    alpha = trackPar.getAlpha();
+    double ca = cos(alpha), sa = sin(alpha);
+    posG[0] = trackPar.getX() * ca - trackPar.getY() * sa;
+    posG[1] = trackPar.getY() * ca + trackPar.getX() * sa;
+    posG[2] = trackPar.getZ();
+
+    mHistManager.fill(HIST("hXYZ"), posG[0], posG[1], posG[2]);
     geomPHOS->getAlignmentMatrix(module)->MasterToLocal(posG, posL);
     trackX = posL[0];
     trackZ = posL[1];
