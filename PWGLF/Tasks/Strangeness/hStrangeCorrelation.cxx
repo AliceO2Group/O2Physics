@@ -140,13 +140,13 @@ struct correlateStrangeness {
       LOG(fatal) << "Problem getting TList object with efficiencies!";
     }
 
-    hEfficiencyK0Short = (TH2F*)listEfficiencies->FindObject("hEfficiencyK0Short");
-    hEfficiencyLambda = (TH2F*)listEfficiencies->FindObject("hEfficiencyLambda");
-    hEfficiencyAntiLambda = (TH2F*)listEfficiencies->FindObject("hEfficiencyAntiLambda");
-    hEfficiencyXiMinus = (TH2F*)listEfficiencies->FindObject("hEfficiencyXiMinus");
-    hEfficiencyXiPlus = (TH2F*)listEfficiencies->FindObject("hEfficiencyXiPlus");
-    hEfficiencyOmegaMinus = (TH2F*)listEfficiencies->FindObject("hEfficiencyOmegaMinus");
-    hEfficiencyOmegaPlus = (TH2F*)listEfficiencies->FindObject("hEfficiencyOmegaPlus");
+    hEfficiencyK0Short = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyK0Short"));
+    hEfficiencyLambda = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyLambda"));
+    hEfficiencyAntiLambda = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyAntiLambda"));
+    hEfficiencyXiMinus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyXiMinus"));
+    hEfficiencyXiPlus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyXiPlus"));
+    hEfficiencyOmegaMinus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaMinus"));
+    hEfficiencyOmegaPlus = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyOmegaPlus"));
     LOG(info) << "Efficiencies now loaded for " << mRunNumber;
   }
 
