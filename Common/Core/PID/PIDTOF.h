@@ -223,7 +223,7 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
     }
     LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (positive ? "positive" : "negative");
   }
-  float getTimeShift(float eta, short sign) const
+  float getTimeShift(float eta, int16_t sign) const
   {
     if (sign > 0) {
       if (!gPosEtaTimeCorr) {
