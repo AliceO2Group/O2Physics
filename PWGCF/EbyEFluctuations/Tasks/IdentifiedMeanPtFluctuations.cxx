@@ -32,7 +32,7 @@
 #include "TDatabasePDG.h"
 #include <TPDGCode.h>
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/CCDB/EventSelectionParams.h"
+
 
 using namespace o2;
 using namespace o2::framework;
@@ -491,7 +491,6 @@ struct IdentifiedMeanPtFluctuations {
       // pion-TPC-----------------------------------------------------------------------------------
 
       if ((track1.hasTPC() && (track1.p() < 0.7) && abs(track1.tpcNSigmaPi()) < 3. && (std::abs(track1.tpcNSigmaKa()) > 3.0 && std::abs(track1.tpcNSigmaPr()) > 3.0)))
-
       {
 
         count_rec_pi++;
@@ -505,8 +504,7 @@ struct IdentifiedMeanPtFluctuations {
         histos.fill(HIST("NSigamaTOFpion_rec"), track1.p(), track1.tofNSigmaPi());
         histos.fill(HIST("NSigamaTPCTOFpion_rec"), track1.tpcNSigmaPi(), track1.tofNSigmaPi());
 
-        if (track1.beta() > 1)
-          continue;
+        if (track1.beta() > 1)    continue;
 
         histos.fill(HIST("hdEdx_afterselection_rec_afterpidcut"), track1.p(), track1.tpcSignal());
         histos.fill(HIST("hTOFbeta_afterselection_rec_afterpidcut"), track1.p(), track1.beta());
