@@ -677,8 +677,8 @@ struct sgExclusivePhi {
           }
         }
       } // Kaon Band
-    } // double gap
-  } // end of process
+    }   // double gap
+  }     // end of process
 
 }; // end of struct
 

@@ -647,7 +647,7 @@ struct ExclusivePhi {
         }
       }
     } // Kaon Band
-  } // end of process
+  }   // end of process
 
 }; // end of struct
 
