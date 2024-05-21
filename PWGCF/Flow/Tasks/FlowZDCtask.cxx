@@ -31,6 +31,12 @@
 
 // Other headers
 #include <DataFormatsParameters/GRPObject.h>
+#include <Framework/runDataProcessing.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Common/DataModel/EventSelection.h>
 #include <Common/CCDB/TriggerAliases.h>
 #include <Common/DataModel/Centrality.h>
