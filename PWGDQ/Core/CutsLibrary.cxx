@@ -570,6 +570,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("kaonPosPID4DCAz")) {
+    cut->AddCut(GetAnalysisCut("kaonPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
+    return cut;
+  }
+
   if (!nameStr.compare("kaonPosPID5")) {
     cut->AddCut(GetAnalysisCut("kaonPIDnsigma"));
     cut->AddCut(GetAnalysisCut("posTrack"));
@@ -633,6 +640,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("pionNegPID")) {
     cut->AddCut(GetAnalysisCut("pionPID_TPCnTOF"));
     cut->AddCut(GetAnalysisCut("negTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionNegPIDDCAz")) {
+    cut->AddCut(GetAnalysisCut("pionPID_TPCnTOF"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
     return cut;
   }
 
