@@ -111,9 +111,12 @@ struct NucleiEfficiencyTask {
     MC_truth_reg.fill(HIST("histCentrality"), mcCollision.impactParameter());
 
     for (const auto& MCparticle : mcParticles) {
-      if (!MCparticle.isPhysicalPrimary()) continue;
-      if ((MCparticle.y() > yMax_gen || MCparticle.y() < yMin_gen) && y_cut_MC_gen) continue;
-      if ((TMath::Abs(MCparticle.eta()) > cfgCutEta) && eta_cut_MC_gen) continue;
+      if (!MCparticle.isPhysicalPrimary())
+        continue;
+      if ((MCparticle.y() > yMax_gen || MCparticle.y() < yMin_gen) && y_cut_MC_gen)
+        continue;
+      if ((TMath::Abs(MCparticle.eta()) > cfgCutEta) && eta_cut_MC_gen)
+        continue;
 
       const auto pdg = Form("%i", MCparticle.pdgCode());
       histPDG_mctruth->Fill(pdg, 1);
@@ -134,7 +137,8 @@ struct NucleiEfficiencyTask {
   template <typename CollisionType, typename TracksType, typename mcParticlesType>
   void process_MC_reco(const CollisionType& collision, const TracksType& tracks, const mcParticlesType& mcParticles)
   {
-    if (event_selection_MC_sel8 && !collision.sel8()) return;
+    if (event_selection_MC_sel8 && !collision.sel8())
+      return;
     MC_recon_reg.fill(HIST("histRecVtxMC"), collision.posZ());
     MC_recon_reg.fill(HIST("histCentrality"), collision.centFT0C());
 
@@ -142,7 +146,8 @@ struct NucleiEfficiencyTask {
       const auto particle = track.mcParticle();
       const auto pdg = Form("%i", particle.pdgCode());
 
-      if (!particle.isPhysicalPrimary()) continue;
+      if (!particle.isPhysicalPrimary())
+        continue;
 
       histPDG->Fill(pdg, 1);
       const float pdgbin = histPDG->GetXaxis()->GetBinCenter(histPDG->GetXaxis()->FindBin(pdg));
@@ -169,7 +174,8 @@ struct NucleiEfficiencyTask {
           lorentzVector_deuteron.Rapidity() < yMin_reco || lorentzVector_deuteron.Rapidity() > yMax_reco ||
           lorentzVector_triton.Rapidity() < yMin_reco || lorentzVector_triton.Rapidity() > yMax_reco ||
           lorentzVector_He3.Rapidity() < yMin_reco || lorentzVector_He3.Rapidity() > yMax_reco ||
-          lorentzVector_He4.Rapidity() < yMin_reco || lorentzVector_He4.Rapidity() > yMax_reco) continue;
+          lorentzVector_He4.Rapidity() < yMin_reco || lorentzVector_He4.Rapidity() > yMax_reco)
+        continue;
 
       float TPCnumberClsFound = track.tpcNClsFound();
       float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
@@ -177,7 +183,8 @@ struct NucleiEfficiencyTask {
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
 
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) continue;
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z)
+        continue;
 
       MC_recon_reg.fill(HIST("histPhi"), track.phi(), pdgbin);
       MC_recon_reg.fill(HIST("histEta"), track.eta(), pdgbin);
@@ -225,11 +232,11 @@ struct NucleiEfficiencyTask {
             }
           }
         }
-      }      
+      }
     }
   }
 
-//****************************************************************************************************
+  //****************************************************************************************************
 
   void processMCgen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -240,7 +247,7 @@ struct NucleiEfficiencyTask {
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta && requireGlobalTrackWoDCAInFilter());
 
-  void processMCreco(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, 
+  void processMCreco(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collision,
                      soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension>> const& tracks,
                      aod::McParticles const& mcParticles)
   {
