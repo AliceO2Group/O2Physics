@@ -4968,7 +4968,6 @@ struct LFNucleiBATask {
           if (mcParticle.y() > yHighCut || mcParticle.y() < yLowCut) {
             continue;
           }
-
           spectraGen.fill(HIST("LfEv/pT_MCsel8"), mcParticle.pt());
           if (mcParticle.pdgCode() == PDGHelium) {
             spectraGen.fill(HIST("LfEv/helium/pT_MCsel8_He"), mcParticle.pt());
@@ -4985,13 +4984,10 @@ struct LFNucleiBATask {
           }
 
           spectraGen.fill(HIST("LfEv/pT_sel8"), mcParticle.pt());
-          if (mcParticle.pdgCode() == PDGHelium) {
             spectraGen.fill(HIST("LfEv/helium/pT_sel8_He"), mcParticle.pt());
           }
           if (mcParticle.pdgCode() == -PDGHelium) {
             spectraGen.fill(HIST("LfEv/helium/pT_sel8_antiHe"), mcParticle.pt());
-          }
-        }
       }
     }
   }
