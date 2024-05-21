@@ -51,7 +51,7 @@ static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3",
 static const std::vector<std::string> particleNames{"3H"};
 
 Configurable<int> h3DauPdg{"h3DauPdg", 1000010030, "PDG Triton"}; // PDG Triton
-Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"}; // PDG Lnn
+Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"};        // PDG Lnn
 
 std::shared_ptr<TH1> hEvents;
 std::shared_ptr<TH1> hZvtx;
@@ -200,7 +200,7 @@ struct lnnRecoTask {
     hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hdEdxTot = qaRegistry.add<TH2>("hdEdxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
-   
+
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
     if (doprocessMC) {
@@ -303,7 +303,7 @@ struct lnnRecoTask {
       bool isAnti3H = negTrack.hasTPC() && nSigmaTPCneg > -1 * nSigmaMax3H;
 
       if (!is3H && !isAnti3H)
-          continue;
+        continue;
 
       // Describing lnn as matter candidate
       lnnCandidate lnnCand;
@@ -430,10 +430,10 @@ struct lnnRecoTask {
               if (posMother.globalIndex() != negMother.globalIndex()) {
                 continue;
               }
-              if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg))){
+              if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg))) {
                 continue;
               }
-              if (std::abs(posMother.pdgCode()) != lnnPdg){
+              if (std::abs(posMother.pdgCode()) != lnnPdg) {
                 continue;
               }
 
@@ -511,7 +511,7 @@ struct lnnRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      
+
       if (std::abs(collision.posZ()) > 10) {
         continue;
       }
