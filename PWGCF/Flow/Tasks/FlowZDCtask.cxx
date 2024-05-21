@@ -71,7 +71,7 @@ struct FlowZDCtask {
   Configurable<int> nBinsADC{"nBinsADC", 1000, "nbinsADC"};
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
   Configurable<float> MaxZN{"MaxZN", 4099.5, "Max ZN signal"};
-    
+
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
