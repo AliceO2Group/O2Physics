@@ -8,10 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// Your own header file
-// Your own header file
 
-// Framework headers (most central to project functionality)
+
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
@@ -40,10 +38,14 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::mult;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+using aodZDCs = soa::Join<aod::ZDCMults, aod::Zdcs>;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct myTask {
+struct FlowZDCtask {
   SliceCache cache;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
@@ -56,30 +58,37 @@ struct myTask {
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
 
-  // def TPC variables
-
-  // auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
+  Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
+  Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
+  Configurable<float> MaxZP{"MaxZP", 3099.5, "Max ZP signal"};
+  Configurable<float> vtxCut{"vtxCut", 10.0, "Z vertex cut"};
+  Configurable<float> etaCut{"etaCut", 0.8, "Eta cut"};
+  Configurable<float> etaGap{"etaGap", 0.5, "Eta gap"};
+  Configurable<float> minPt{"minPt", 0.2, "Minimum pt"};
+  Configurable<float> maxPt{"maxPt", 20.0, "Maximum pt"};
+  Configurable<float> MaxZEM{"MaxZEM", 3099.5, "Max ZEM signal"};
+      // for ZDC info and analysis
+  Configurable<int> nBinsADC{"nBinsADC", 1000, "nbinsADC"};
+  Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
+  Configurable<float> MaxZN{"MaxZN", 4099.5, "Max ZN signal"};
+    
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
 
-  TComplex qTPC;       // init q TPC
-  TComplex qZNA{0, 0}; // init qZNA
-  TComplex qZNC{0, 0}; // init qZNC
+
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
-  using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
-  using aodZDCs = soa::Join<aod::ZDCMults, aod::Zdcs>;
+
 
   Partition<aodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
-  Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
+  TComplex qTPC;       // init q TPC
+  TComplex qZNA{0, 0}; // init qZNA
+  TComplex qZNC{0, 0}; // init qZNC
 
   // Begin Histogram Registry
 
@@ -97,16 +106,6 @@ struct myTask {
   OutputObj<TProfile> ZDC_ZEM_Energy{TProfile("ZDC_ZEM_Energy", "ZDC vs ZEM Energy", 10, 0, 1000)};
   OutputObj<TProfile> pCosPsiDifferences{TProfile("pCosPsiDifferences", "Differences in cos(psi) vs Centrality;Centrality;Mean cos(psi) Difference", 200, 0, 100, -1, 1)};
   OutputObj<TProfile> pSinPsiDifferences{TProfile("pSinPsiDifferences", "Differences in sin(psi) vs Centrality;Centrality;Mean sin(psi) Difference", 200, 0, 100, -1, 1)};
-
-  Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
-  Configurable<float> MaxZP{"MaxZP", 3099.5, "Max ZP signal"};
-
-  Configurable<float> vtxCut{"vtxCut", 10.0, "Z vertex cut"};
-  Configurable<float> etaCut{"etaCut", 0.8, "Eta cut"};
-  Configurable<float> etaGap{"etaGap", 0.5, "Eta gap"};
-  Configurable<float> minPt{"minPt", 0.2, "Minimum pt"};
-  Configurable<float> maxPt{"maxPt", 20.0, "Maximum pt"};
-  Configurable<float> MaxZEM{"MaxZEM", 3099.5, "Max ZEM signal"};
 
   double sumCosPsiDiff = 0.0; // Sum of cos(psiZNC) - cos(psiZNA)
   int countEvents = 0;        // Count of processed events
@@ -135,10 +134,7 @@ struct myTask {
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
 
-    // for ZDC info and analysis
-    Configurable<int> nBinsADC{"nBinsADC", 1000, "nbinsADC"};
-    Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
-    Configurable<float> MaxZN{"MaxZN", 4099.5, "Max ZN signal"};
+
 
     // create histograms
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
@@ -164,9 +160,8 @@ struct myTask {
     histos.add("EnergyZNC", "ZNC Sector Energy", kTH1F, {axisEnergy});
     // for q vector recentering
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ});
-    histos.add("revsimag_recentered", "revsimag_recentered", kTH2F, {axisREQ, axisIMQ});
 
-    if (doprocessZdcCollAss) { // Check if the process function for ZDCCollAss is enabled
+    if (doprocessZdcCollAssoc) { // Check if the process function for ZDCCollAssoc is enabled
       histos.add("ZNAcoll", "ZNAcoll; ZNA amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
       histos.add("ZNCcoll", "ZNCcoll; ZNC amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZN}}});
       histos.add("ZEM1coll", "ZEM1coll; ZEM1 amplitude; Entries", {HistType::kTH1F, {{nBinsAmp, -0.5, MaxZEM}}});
@@ -192,11 +187,9 @@ struct myTask {
       histos.add("ZDC_energy_vs_ZEM", "ZDCvsZEM; ZEM; ZNA+ZNC+ZPA+ZPC", {HistType::kTH2F, {{{nBinsAmp, -0.5, MaxZEM}, {nBinsAmp, -0.5, 2. * MaxZN}}}});
     }
   }
+
   void processQVector(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks, BCsRun3 const& bcs, aod::Zdcs const& zdcsData, aod::ZDCMults const& zdcMults)
-
   {
-
-    //  const auto& bc = collision.globalBC();
     histos.fill(HIST("eventCounter"), 0.5);
     histos.fill(HIST("centHistogram"), collision.centFT0C());
     const auto& tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -238,7 +231,7 @@ struct myTask {
 
     histos.fill(HIST("revsimag"), qTPC_real, qTPC_im);
   }
-  void processZdcCollAss(
+  void processZdcCollAssoc(
     ColEvSels const& cols,
     BCsRun3 const& bcs,
     aod::Zdcs const& zdcs)
@@ -326,54 +319,13 @@ struct myTask {
       }
     }
   }
-  PROCESS_SWITCH(myTask, processZdcCollAss, "Processing ZDC w. collision association", true);
-  PROCESS_SWITCH(myTask, processQVector, "Process before recentering", true);
-
-  void processQVector_after(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks, BCsRun3 const& bcs, aod::Zdcs const& zdcsData, aod::ZDCMults const& zdcMults)
-
-  {
-
-    const auto cent = collision.centFT0C();
-    // int Ntot = tracks.size();
-    const int number_of_centralities = 8;
-    const std::array<double, number_of_centralities + 1> centralities{0.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0}; // *** same as centrality but local
-    int centrality_index = 0;
-
-    const std::array<double, 10> average_real_partQ2{-1.8, -3.2, -2.1, -3.85, -3.8, -2.6, -4, -4.2};
-    const std::array<double, 8> average_im_partQ2{0.48, 0.31, 0.65, 1.15, 1.75, 2.6, 2.2, 0.65};
-    for (int i = 0; i < number_of_centralities; ++i) {
-      if (cent >= centralities.at(i) && cent < centralities.at(i + 1)) {
-        centrality_index = i;
-        break;
-      }
-    }
-    double real_mean_Q2 = average_real_partQ2.at(centrality_index);
-    double im_mean_Q2 = average_im_partQ2.at(centrality_index);
-    double Q2_re = 0.0; // Starting with a q-vector of zero
-    double Q2_im = 0.0;
-    TComplex Q2(0, 0);
-    for (auto& track : tracks) {
-
-      double phi = track.phi();
-      histos.fill(HIST("phiHistogram2"), track.phi());
-      Q2 += TComplex(TMath::Cos(2.0 * phi), TMath::Sin(2.0 * phi));
-      // Ntot+1;
-    }
-
-    Q2_re = Q2.Re() - real_mean_Q2;
-    Q2_im = Q2.Im() - im_mean_Q2;
-    Q2 = TComplex(Q2_re, Q2_im);
-
-    // std::cout << "Q2_re (after recentering): " << Q2_re << std::endl;
-    // std::cout << "Q2_im (after recentering): " << Q2_im << std::endl;
-    histos.fill(HIST("revsimag_recentered"), Q2_re, Q2_im);
-  }
-  PROCESS_SWITCH(myTask, processQVector_after, "Process after recentering", false);
+  PROCESS_SWITCH(FlowZDCtask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
+  PROCESS_SWITCH(FlowZDCtask, processQVector, "Process before recentering", true);
 
 }; // end of struct function
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<myTask>(cfgc)};
+    adaptAnalysisTask<FlowZDCtask>(cfgc)};
 }
