@@ -12,42 +12,26 @@
 // Your own header file
 
 // Framework headers (most central to project functionality)
-#include <Framework/runDataProcessing.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/ASoAHelpers.h>
-#include <Framework/RunningWorkflowInfo.h>
-
-// C system headers
-#include <cmath>
-#include <cstdio>
-#include <cstdlib>
-
-// C++ system headers
-#include <iostream>
-#include <memory>
-#include <vector>
-
-// Other headers
-#include <DataFormatsParameters/GRPObject.h>
-#include <Framework/runDataProcessing.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/ASoAHelpers.h>
-#include <Framework/RunningWorkflowInfo.h>
-#include <Common/DataModel/EventSelection.h>
-#include <Common/CCDB/TriggerAliases.h>
-#include <Common/DataModel/Centrality.h>
-#include <Common/DataModel/Multiplicity.h>
-#include <Common/DataModel/TrackSelectionTables.h>
-#include <Common/DataModel/PIDResponse.h>
 #include <CCDB/BasicCCDBManager.h>
-#include <TF1.h>
-#include <TH3.h>
-#include <TList.h>
+#include <cmath>
+#include <vector>
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/HistogramRegistry.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include <Common/CCDB/TriggerAliases.h>
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+
+#include "TList.h"
 #include <TProfile.h>
+#include <TRandom3.h>
+#include <TF1.h>
 #include <TProfile2D.h>
 #include <TRandom3.h>
 #include <TMath.h>
