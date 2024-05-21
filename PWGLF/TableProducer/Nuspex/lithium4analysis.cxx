@@ -260,7 +260,7 @@ struct lithium4analysis {
 
     bool heliumPID = candidateHe3.pidForTracking() == o2::track::PID::Helium3 || candidateHe3.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? candidateHe3.tpcInnerParam() / candidateHe3.sign() : candidateHe3.tpcInnerParam();
-    
+
     l4Cand.tpcSignalHe3 = candidateHe3.tpcSignal();
     l4Cand.momHe3TPC = correctedTPCinnerParamHe3;
     l4Cand.tpcSignalPr = candidatePr.tpcSignal();
@@ -466,8 +466,8 @@ struct lithium4analysis {
           float beta = responseBeta.GetBeta(he3Cand);
           beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
           bool heliumPID = t1.pidForTracking() == o2::track::PID::Helium3 || t1.pidForTracking() == o2::track::PID::Alpha;
-            float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? t1.tpcInnerParam() / t1.sign() : t1.tpcInnerParam();
-            cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+          float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? t1.tpcInnerParam() / t1.sign() : t1.tpcInnerParam();
+          cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
         }
         if (protonCand.hasTOF()) {
           float beta = responseBeta.GetBeta(protonCand);
