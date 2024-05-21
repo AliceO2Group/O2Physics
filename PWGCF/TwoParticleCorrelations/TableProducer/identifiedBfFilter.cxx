@@ -317,7 +317,6 @@ struct IdentifiedBfFilter {
   void processWithoutCentFullPIDDetectorLevel(aod::CollisionEvSel const& collision, IdBfFullTracksFullPIDDetLevel const& ftracks, aod::McParticles const&);
   PROCESS_SWITCH(IdentifiedBfFilter, processWithoutCentFullPIDDetectorLevel, "Process Full PID MC detector level without centrality", false);
 
-
   template <typename CollisionObject, typename ParticlesList>
   void processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult);
 
