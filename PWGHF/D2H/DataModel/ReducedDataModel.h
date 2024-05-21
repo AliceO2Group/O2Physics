@@ -238,10 +238,19 @@ namespace hf_cand_bplus_reduced
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed2Prongs, "_0");    //! Prong0 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! Nonprompt ML score of the D daughter
 } // namespace hf_cand_bplus_reduced
 
 DECLARE_SOA_TABLE(HfRedBplusProngs, "AOD", "HFREDBPPRONG",
                   hf_cand_bplus_reduced::Prong0Id, hf_cand_bplus_reduced::Prong1Id);
+
+DECLARE_SOA_TABLE(HfRedBplusD0Mls, "AOD", "HFREDBPLUSD0ML", //! Table with ML scores for the D+ daughter
+                  hf_cand_bplus_reduced::Prong0MlScoreBkg,
+                  hf_cand_bplus_reduced::Prong0MlScorePrompt,
+                  hf_cand_bplus_reduced::Prong0MlScoreNonprompt,
+                  o2::soa::Marker<1>);
 
 using HfRedCandBplus = soa::Join<HfCandBplusExt, HfRedBplusProngs>;
 
@@ -340,6 +349,11 @@ DECLARE_SOA_COLUMN(EtaProng0, etaProng0, float); //! Pseudorapidity of the track
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);   //! Transverse momentum of the track's prong1 in GeV/c
 DECLARE_SOA_COLUMN(YProng1, yProng1, float);     //! Rapidity of the track's prong1
 DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track's prong1
+
+DECLARE_SOA_COLUMN(PdgCodeBeautyMother, pdgCodeBeautyMother, int); //! Pdg code of beauty mother
+DECLARE_SOA_COLUMN(PdgCodeProng0, pdgCodeProng0, int);             //! Pdg code of prong0
+DECLARE_SOA_COLUMN(PdgCodeProng1, pdgCodeProng1, int);             //! Pdg code of prong1
+DECLARE_SOA_COLUMN(PdgCodeProng2, pdgCodeProng2, int);             //! Pdg code of prong2
 } // namespace hf_bplus_mc
 
 // table with results of reconstruction level MC matching
@@ -350,11 +364,26 @@ DECLARE_SOA_TABLE(HfMcRecRedD0Pis, "AOD", "HFMCRECREDD0PI", //! Table with recon
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
 
+// DECLARE_SOA_EXTENDED_TABLE_USER(ExTable, Tracks, "EXTABLE",
+DECLARE_SOA_TABLE(HfMcCheckD0Pis, "AOD", "HFMCCHECKD0PI", //! Table with reconstructed MC information on D0Pi(<-B0) pairs for MC checks in reduced workflow
+                  hf_bplus_mc::PdgCodeBeautyMother,
+                  hf_bplus_mc::PdgCodeProng0,
+                  hf_bplus_mc::PdgCodeProng1,
+                  hf_bplus_mc::PdgCodeProng2,
+                  o2::soa::Marker<1>);
+
 // Table with same size as HFCANDBPLUS
 DECLARE_SOA_TABLE(HfMcRecRedBps, "AOD", "HFMCRECREDBP", //! Reconstruction-level MC information on B+ candidates for reduced workflow
                   hf_cand_bplus::FlagMcMatchRec,
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
+
+DECLARE_SOA_TABLE(HfMcCheckBps, "AOD", "HFMCCHECKBP", //! Table with reconstructed MC information on B+ candidates for MC checks in reduced workflow
+                  hf_bplus_mc::PdgCodeBeautyMother,
+                  hf_bplus_mc::PdgCodeProng0,
+                  hf_bplus_mc::PdgCodeProng1,
+                  hf_bplus_mc::PdgCodeProng2,
+                  o2::soa::Marker<2>);
 
 DECLARE_SOA_TABLE(HfMcGenRedBps, "AOD", "HFMCGENREDBP", //! Generation-level MC information on B+ candidates for reduced workflow
                   hf_cand_bplus::FlagMcMatchGen,

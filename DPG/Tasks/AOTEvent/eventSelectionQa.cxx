@@ -40,12 +40,18 @@ struct EventSelectionQaTask {
   Configurable<int> nOrbitsConf{"nOrbits", 10000, "number of orbits"};
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
 
+  // configurables for study of occupancy in time windows
   Configurable<bool> confFlagDoOccupancyStudy{"FlagDoOccupancyStudy", false, "0 - no, 1 - yes"};
   Configurable<float> confTimeIntervalForOccupancyCalculation{"TimeIntervalForOccupancyCalculation", 100, "Time interval for TPC occupancy calculation, us"};
   Configurable<float> confExclusionIntervalForOccupancyCalculation{"ExclusionIntervalForOccupancyCalculation", 0, "Exclusion time interval for TPC occupancy calculation, us"};
   Configurable<float> confOccupancyHistCoeffNtracks{"OccupancyHistCoeffNtracks", 1., "Coefficient for max nTracks in occupancy histos"};
   Configurable<float> confOccupancyHistCoeffNbins2D{"OccupancyHistCoeffNbins2D", 1., "Coefficient for nBins in occupancy 2D histos"};
   Configurable<float> confOccupancyHistCoeffNbins3D{"OccupancyHistCoeffNbins3D", 1., "Coefficient for nBins in occupancy 3D histos"};
+  Configurable<float> confCoeffMaxNtracksThisEvent{"OccupancyCoeffMaxNtracksThisEvent", 1., "Coefficient for max nTracks or FT0 ampl in histos in a given event"};
+  Configurable<float> confOccupancyStudyPtMinThisEvent{"OccupancyStudyPtMinThisEvent", 0., "pt cut for particles in a current event"};
+  Configurable<float> confOccupancyStudyPtMaxThisEvent{"OccupancyStudyPtMaxThisEvent", 100., "pt cut for particles in a current event"};
+  Configurable<bool> confFlagApplyROFborderCut{"OccupancyStudyUseROFborderCut", true, "Use ROF border cut for a current event"};
+  Configurable<int> confFlagWhichTimeRange{"OccupancyStudyFlagWhichTimeRange", 0, "Whicn time range for occupancy calculation: 0 - symmetric, 1 - only past, 2 - only future"};
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -323,15 +329,19 @@ struct EventSelectionQaTask {
 
     // histograms for occupancy-in-time-window study
     if (confFlagDoOccupancyStudy) {
-      histos.add("occupancyInTimeWindow/hNumITS567tracksPerCollision", ";n tracks;n events", kTH1D, {{10001, -0.5, 10000.5}});
-      histos.add("occupancyInTimeWindow/hNumITS567tracksPerCollisionSel", ";n tracks;n events", kTH1D, {{10001, -0.5, 10000.5}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksPerCollision", ";n tracks;n events", kTH1D, {{10001, -0.5, 10000.5}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksPerCollisionSel", ";n tracks;n events", kTH1D, {{10001, -0.5, 10000.5}});
+      double kMaxOccup = confOccupancyHistCoeffNtracks;
+      double kMaxThisEv = confCoeffMaxNtracksThisEvent;
 
-      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow", ";n tracks;n events", kTH1D, {{25000, -0.5, 25000.5}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow", ";n tracks;n events", kTH1D, {{25000, -0.5, 25000.5}});
-      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindowSel", ";n tracks;n events", kTH1D, {{25000, -0.5, 25000.5}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindowSel", ";n tracks;n events", kTH1D, {{25000, -0.5, 25000.5}});
+      int nMax1D = kMaxThisEv * 8000;
+      histos.add("occupancyInTimeWindow/hNumITS567tracksPerCollision", ";n tracks;n events", kTH1D, {{nMax1D, -0.5, nMax1D - 0.5}});
+      histos.add("occupancyInTimeWindow/hNumITS567tracksPerCollisionSel", ";n tracks;n events", kTH1D, {{nMax1D, -0.5, nMax1D - 0.5}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksPerCollision", ";n tracks;n events", kTH1D, {{nMax1D, -0.5, nMax1D - 0.5}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksPerCollisionSel", ";n tracks;n events", kTH1D, {{nMax1D, -0.5, nMax1D - 0.5}});
+
+      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow", ";n tracks;n events", kTH1D, {{2500, -0.5, 25000.5}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow", ";n tracks;n events", kTH1D, {{2500, -0.5, 25000.5}});
+      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindowSel", ";n tracks;n events", kTH1D, {{2500, -0.5, 25000.5}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindowSel", ";n tracks;n events", kTH1D, {{2500, -0.5, 25000.5}});
 
       histos.add("occupancyInTimeWindow/hNumCollInTimeWindow", ";n collisions;n events", kTH1D, {{201, -0.5, 200.5}});
       histos.add("occupancyInTimeWindow/hNumCollInTimeWindowSel", ";n collisions;n events", kTH1D, {{201, -0.5, 200.5}});
@@ -340,26 +350,27 @@ struct EventSelectionQaTask {
 
       histos.add("occupancyInTimeWindow/hNumUniqueBCInTimeWindow", ";n collisions;n events", kTH1D, {{201, -0.5, 200.5}});
 
-      double kMax = confOccupancyHistCoeffNtracks;
+      // 2D
       int nBins2D = 200 * confOccupancyHistCoeffNbins2D;
       int nBins3D = 80 * confOccupancyHistCoeffNbins3D;
+
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_TracksPerColl", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, kMaxThisEv * 8000}, {nBins2D, 0, kMaxOccup * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_TracksPerColl_withoutThisCol", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, kMaxThisEv * 8000}, {nBins2D, 0, kMaxOccup * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_TracksPerColl", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, kMaxThisEv * 8000}, {nBins2D, 0, kMaxOccup * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_TracksPerColl_withoutThisCol", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, kMaxThisEv * 8000}, {nBins2D, 0, kMaxOccup * 25000}});
+
+      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_FT0Campl", ";FT0C ampl. sum in time window;n ITS tracks with 5,6,7 hits in time window", kTH2D, {{nBins2D, 0, kMaxOccup * 250000}, {nBins2D, 0, kMaxOccup * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_FT0Campl", ";FT0C ampl. sum in time window;n ITS-TPC tracks in time window", kTH2D, {{nBins2D, 0, kMaxOccup * 250000}, {nBins2D, 0, kMaxOccup * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_ITS567tracks", ";n ITS tracks with 5,6,7 hits in time window;n ITS-TPC tracks in time window", kTH2D, {{nBins2D, 0, kMaxOccup * 25000}, {nBins2D, 0, kMaxOccup * 25000}});
+
+      histos.add("occupancyInTimeWindow/hNumITS567tracks_vs_FT0Campl_ThisEvent", ";FT0C ampl.;n ITS tracks with 5,6,7 hits", kTH2D, {{nBins2D, 0, kMaxThisEv * 100000}, {nBins2D, 0, kMaxThisEv * 8000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracks_vs_FT0Campl_ThisEvent", ";FT0C ampl.;n ITS-TPC tracks", kTH2D, {{nBins2D, 0, kMaxThisEv * 100000}, {nBins2D, 0, kMaxThisEv * 8000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPCtracks_vs_ITS567tracks_ThisEvent", ";n ITS tracks with 5,6,7 hits;n ITS-TPC tracks", kTH2D, {{nBins2D, 0, kMaxThisEv * 8000}, {nBins2D, 0, kMaxThisEv * 8000}});
+
+      // 3D
       int nBins3DoccupancyAxis = 100 * confOccupancyHistCoeffNbins3D;
-
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_TracksPerColl", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, 8000}, {nBins2D, 0, kMax * 25000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_TracksPerColl_withoutThisCol", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, 8000}, {nBins2D, 0, kMax * 25000}});
-      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_TracksPerColl", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, 8000}, {nBins2D, 0, kMax * 25000}});
-      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_TracksPerColl_withoutThisCol", ";n tracks this collision;n tracks in time window", kTH2D, {{nBins2D, 0, 8000}, {nBins2D, 0, kMax * 25000}});
-
-      histos.add("occupancyInTimeWindow/hNumITS567tracksInTimeWindow_vs_FT0Campl", ";FT0C ampl. sum in time window;n ITS tracks with 5,6,7 hits in time window", kTH2D, {{nBins2D, 0, kMax * 250000}, {nBins2D, 0, kMax * 25000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_FT0Campl", ";FT0C ampl. sum in time window;n ITS-TPC tracks in time window", kTH2D, {{nBins2D, 0, kMax * 250000}, {nBins2D, 0, kMax * 25000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_ITS567tracks", ";n ITS tracks with 5,6,7 hits in time window;n ITS-TPC tracks in time window", kTH2D, {{nBins2D, 0, kMax * 25000}, {nBins2D, 0, kMax * 25000}});
-
-      histos.add("occupancyInTimeWindow/hNumITS567tracks_vs_FT0Campl_ThisEvent", ";FT0C ampl.;n ITS tracks with 5,6,7 hits", kTH2D, {{nBins2D, 0, 100000}, {nBins2D, 0, 8000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracks_vs_FT0Campl_ThisEvent", ";FT0C ampl.;n ITS-TPC tracks", kTH2D, {{nBins2D, 0, 100000}, {nBins2D, 0, 8000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPCtracks_vs_ITS567tracks_ThisEvent", ";n ITS tracks with 5,6,7 hits;n ITS-TPC tracks", kTH2D, {{nBins2D, 0, 8000}, {nBins2D, 0, 8000}});
-
-      histos.add("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_FT0CamplInTimeWindow", ";n ITS tracks with 5,6,7 hits in time window;n ITS-TPC tracks in time window;;FT0C ampl. sum in time window", kTH3D, {{nBins3D, 0, 8000}, {nBins3D, 0, 8000}, {nBins3DoccupancyAxis, 0, kMax * 250000}});
-      histos.add("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_ITS567tracksInTimeWindow", ";n ITS tracks with 5,6,7 hits in time window;n ITS-TPC tracks in time window;;ITS tracks in time window", kTH3D, {{nBins3D, 0, 8000}, {nBins3D, 0, 8000}, {nBins3DoccupancyAxis, 0, kMax * 25000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_FT0CamplInTimeWindow", ";n ITS tracks with 5,6,7 cls, this collision;n ITS-TPC tracks, this collision;FT0C ampl. sum in time window", kTH3D, {{nBins3D, 0, kMaxThisEv * 8000}, {nBins3D, 0, kMaxThisEv * 8000}, {nBins3DoccupancyAxis, 0, kMaxOccup * 250000}});
+      histos.add("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_ITS567tracksInTimeWindow", ";n ITS tracks with 5,6,7 cls, this collision;n ITS-TPC tracks, this collision;ITS tracks with 5,6,7 cls in time window", kTH3D, {{nBins3D, 0, kMaxThisEv * 8000}, {nBins3D, 0, kMaxThisEv * 8000}, {nBins3DoccupancyAxis, 0, kMaxOccup * 25000}});
     }
   }
 
@@ -909,11 +920,13 @@ struct EventSelectionQaTask {
     // ##### do occupancy study
     if (confFlagDoOccupancyStudy) {
       // preparation for the occupancy-within-time-window study
-      std::vector<int> vFoundBCindex(cols.size(), -1);       // indices of found bcs
-      std::vector<int64_t> vFoundGlobalBC(cols.size(), 0);   // global BCs for collisions
-      std::vector<bool> vIsVertexTOFmatched(cols.size(), 0); // at least one of vertex contributors is matched to TOF
-      std::vector<int> vTracksITS567perColl(cols.size(), 0); // counter of tracks per found bc for occupancy studies
-      std::vector<int> vTracksITSTPCperColl(cols.size(), 0); // counter of tracks per found bc for occupancy studies
+      std::vector<int> vFoundBCindex(cols.size(), -1);             // indices of found bcs
+      std::vector<int64_t> vFoundGlobalBC(cols.size(), 0);         // global BCs for collisions
+      std::vector<bool> vIsVertexTOFmatched(cols.size(), 0);       // at least one of vertex contributors is matched to TOF
+      std::vector<int> vTracksITS567perColl(cols.size(), 0);       // counter of tracks per found bc for occupancy studies
+      std::vector<int> vTracksITS567perCollPtCuts(cols.size(), 0); // counter of tracks per found bc for occupancy studies
+      std::vector<int> vTracksITSTPCperColl(cols.size(), 0);       // counter of tracks per found bc for occupancy studies
+      std::vector<int> vTracksITSTPCperCollPtCuts(cols.size(), 0); // counter of tracks per found bc for occupancy studies
       std::vector<int> vTFids(cols.size(), 0);
       std::vector<bool> vIsFullInfoForOccupancy(cols.size(), 0);
 
@@ -922,11 +935,14 @@ struct EventSelectionQaTask {
       const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
 
       for (auto& col : cols) {
-        auto bc = col.bc_as<BCsRun3>();
+        // auto bc = col.bc_as<BCsRun3>();
+        const auto& bc = col.foundBC_as<BCsRun3>();
 
         // count tracks of different types
         int nITS567cls = 0;
+        int nITS567clsPtCuts = 0;
         int nITSTPCtracks = 0;
+        int nITSTPCtracksPtCuts = 0;
         int nTOFtracks = 0;
         auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
         for (auto& track : tracksGrouped) {
@@ -937,6 +953,13 @@ struct EventSelectionQaTask {
             nITS567cls++;
           nITSTPCtracks += track.hasITS() && track.hasTPC();
           nTOFtracks += track.hasTOF();
+
+          if (track.pt() < confOccupancyStudyPtMinThisEvent || track.pt() > confOccupancyStudyPtMaxThisEvent)
+            continue;
+
+          if (track.itsNCls() >= 5)
+            nITS567clsPtCuts++;
+          nITSTPCtracksPtCuts += track.hasITS() && track.hasTPC();
         }
 
         int32_t foundBC = bc.globalIndex();
@@ -948,7 +971,10 @@ struct EventSelectionQaTask {
         vIsVertexTOFmatched[colIndex] = nTOFtracks > 0;
 
         vTracksITS567perColl[colIndex] += nITS567cls;
+        vTracksITS567perCollPtCuts[colIndex] += nITS567clsPtCuts;
+
         vTracksITSTPCperColl[colIndex] += nITSTPCtracks;
+        vTracksITSTPCperCollPtCuts[colIndex] += nITSTPCtracksPtCuts;
 
         // TF ids within a given cols table
         int TFid = (bc.globalBC() - bcSOR) / nBCsPerTF;
@@ -974,8 +1000,9 @@ struct EventSelectionQaTask {
         }
 
         int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
-        auto bc = col.bc_as<BCsRun3>();
-        int64_t TFid = (bc.globalBC() - bcSOR) / nBCsPerTF;
+        // auto bc = col.bc_as<BCsRun3>();
+        // int64_t TFid = (bc.globalBC() - bcSOR) / nBCsPerTF;
+        int64_t TFid = (foundGlobalBC - bcSOR) / nBCsPerTF;
 
         // find all collisions in time window before the current one (start with the current collision)
         int32_t minColIndex = colIndex;
@@ -985,6 +1012,9 @@ struct EventSelectionQaTask {
           // check if this is still the same TF
           int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
           if (thisTFid != TFid)
+            break;
+
+          if (confFlagWhichTimeRange == 2 && (thisBC - foundGlobalBC) < 0)
             break;
 
           // check if we are within the excluded time range wrt collision under study
@@ -1002,7 +1032,7 @@ struct EventSelectionQaTask {
 
         // find all collisions in time window after the current one
         int32_t maxColIndex = colIndex + 1;
-        while (maxColIndex < cols.size()) {
+        while (maxColIndex < cols.size() && confFlagWhichTimeRange != 1) {
           int64_t thisBC = vFoundGlobalBC[maxColIndex];
           int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
           if (thisTFid != TFid)
@@ -1027,6 +1057,10 @@ struct EventSelectionQaTask {
 
         // protection against the TF borders
         if (!vIsFullInfoForOccupancy[colIndex])
+          continue;
+
+        // skip if collision is close to ROF border
+        if (confFlagApplyROFborderCut && !col.selection_bit(kNoITSROFrameBorder))
           continue;
 
         std::vector<int> vAssocToThisCol = vCollsInTimeWin[colIndex];
@@ -1109,7 +1143,7 @@ struct EventSelectionQaTask {
           histos.get<TH1>(HIST("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindowSel"))->Fill(nITSTPCtracksInTimeWindowSel);
 
           histos.get<TH1>(HIST("occupancyInTimeWindow/hNumITS567tracksPerCollisionSel"))->Fill(vTracksITS567perColl[colIndex]);
-          histos.get<TH1>(HIST("occupancyInTimeWindow/hNumITSTPCtracksPerCollisionSel"))->Fill(vTracksITSTPCperColl[colIndex]);
+          histos.get<TH1>(HIST("occupancyInTimeWindow/hNumITSTPCtracksPerCollisionSel"))->Fill(vTracksITSTPCperCollPtCuts[colIndex]);
 
           histos.get<TH1>(HIST("occupancyInTimeWindow/hNumCollInTimeWindowSel"))->Fill(nCollInTimeWindowSel);
           histos.get<TH1>(HIST("occupancyInTimeWindow/hNumCollInTimeWindowSelITSTPC"))->Fill(nCollInTimeWindowSelITSTPC);
@@ -1121,13 +1155,13 @@ struct EventSelectionQaTask {
         histos.get<TH2>(HIST("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_FT0Campl"))->Fill(multFT0CInTimeWindow, nITSTPCtracksInTimeWindow);
         histos.get<TH2>(HIST("occupancyInTimeWindow/hNumITSTPCtracksInTimeWindow_vs_ITS567tracks"))->Fill(nITS567tracksInTimeWindow, nITSTPCtracksInTimeWindow);
 
-        histos.get<TH2>(HIST("occupancyInTimeWindow/hNumITS567tracks_vs_FT0Campl_ThisEvent"))->Fill(multFT0CmainCollision, vTracksITS567perColl[colIndex]);
-        histos.get<TH2>(HIST("occupancyInTimeWindow/hNumITSTPCtracks_vs_FT0Campl_ThisEvent"))->Fill(multFT0CmainCollision, vTracksITSTPCperColl[colIndex]);
-        histos.get<TH2>(HIST("occupancyInTimeWindow/hNumITSTPCtracks_vs_ITS567tracks_ThisEvent"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+        histos.get<TH2>(HIST("occupancyInTimeWindow/hNumITS567tracks_vs_FT0Campl_ThisEvent"))->Fill(multFT0CmainCollision, vTracksITS567perCollPtCuts[colIndex]);
+        histos.get<TH2>(HIST("occupancyInTimeWindow/hNumITSTPCtracks_vs_FT0Campl_ThisEvent"))->Fill(multFT0CmainCollision, vTracksITSTPCperCollPtCuts[colIndex]);
+        histos.get<TH2>(HIST("occupancyInTimeWindow/hNumITSTPCtracks_vs_ITS567tracks_ThisEvent"))->Fill(vTracksITS567perCollPtCuts[colIndex], vTracksITSTPCperCollPtCuts[colIndex]);
 
         // 3D histograms: ITS vs ITSTPC in this event vs occupancy from other events
-        histos.get<TH3>(HIST("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_FT0CamplInTimeWindow"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex], multFT0CInTimeWindow - multFT0CmainCollision);
-        histos.get<TH3>(HIST("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_ITS567tracksInTimeWindow"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex], nITS567tracksInTimeWindow - vTracksITS567perColl[colIndex]);
+        histos.get<TH3>(HIST("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_FT0CamplInTimeWindow"))->Fill(vTracksITS567perCollPtCuts[colIndex], vTracksITSTPCperCollPtCuts[colIndex], multFT0CInTimeWindow - multFT0CmainCollision);
+        histos.get<TH3>(HIST("occupancyInTimeWindow/hNumITSTPC_vs_ITS567tracksThisCol_vs_ITS567tracksInTimeWindow"))->Fill(vTracksITS567perCollPtCuts[colIndex], vTracksITSTPCperCollPtCuts[colIndex], nITS567tracksInTimeWindow - vTracksITS567perColl[colIndex]);
 
       } // end of occupancy calculation
     }   // end of the occupancy in time window study

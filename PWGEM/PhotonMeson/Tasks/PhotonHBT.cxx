@@ -299,7 +299,24 @@ struct PhotonHBT {
         for (auto& cut : cuts1) {
           for (auto& paircut : paircuts) {
             for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
-              if (!IsSelectedPair<pairtype>(g1, g2, cut, cut)) {
+
+              if constexpr (pairtype == PairType::kDalitzEEDalitzEE) {
+                auto pos1 = g1.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele1 = g1.template negTrack_as<TEMPrimaryElectrons>();
+                auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair1 = std::make_tuple(pos1, ele1, collision.bz());
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, collision.bz());
+                if (!IsSelectedPair<pairtype>(pair1, pair2, cut, cut)) {
+                  continue;
+                }
+              } else {
+                if (!IsSelectedPair<pairtype>(g1, g2, cut, cut)) {
+                  continue;
+                }
+              }
+
+              if (!paircut.IsSelected(g1, g2)) {
                 continue;
               }
 
@@ -389,12 +406,24 @@ struct PhotonHBT {
           for (auto& cut2 : cuts2) {
             for (auto& paircut : paircuts) {
               for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_coll, photons2_coll))) {
-                if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
-                  continue;
+
+                if constexpr (pairtype == PairType::kPCMDalitzEE) {
+                  auto pos_pv = g2.template posTrack_as<TEMPrimaryElectrons>();
+                  auto ele_pv = g2.template negTrack_as<TEMPrimaryElectrons>();
+                  std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos_pv, ele_pv, collision.bz());
+                  if (!IsSelectedPair<pairtype>(g1, pair2, cut1, cut2)) {
+                    continue;
+                  }
+                } else {
+                  if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+                    continue;
+                  }
                 }
+
                 if (!paircut.IsSelected(g1, g2)) {
                   continue;
                 }
+
                 if constexpr (pairtype == PairType::kPCMPHOS) {
                   auto pos = g1.template posTrack_as<aod::V0Legs>();
                   auto ele = g1.template negTrack_as<aod::V0Legs>();
@@ -513,12 +542,33 @@ struct PhotonHBT {
               if ((pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC || pairtype == PairType::kDalitzEEDalitzEE) && (TString(cut1.GetName()) != TString(cut2.GetName()))) {
                 continue;
               }
-              if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
-                continue;
+
+              if constexpr (pairtype == PairType::kPCMDalitzEE) {
+                auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, collision1.bz());
+                if (!IsSelectedPair<pairtype>(g1, pair2, cut1, cut2)) {
+                  continue;
+                }
+              } else if constexpr (pairtype == PairType::kDalitzEEDalitzEE) {
+                auto pos1 = g1.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele1 = g1.template negTrack_as<TEMPrimaryElectrons>();
+                auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair1 = std::make_tuple(pos1, ele1, collision1.bz());
+                std::tuple<MyPrimaryElectron, MyPrimaryElectron, float> pair2 = std::make_tuple(pos2, ele2, collision1.bz());
+                if (!IsSelectedPair<pairtype>(pair1, pair2, cut1, cut2)) {
+                  continue;
+                }
+              } else {
+                if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
+                  continue;
+                }
               }
-              if (!paircut.IsSelected(g1, g2)) {
-                continue;
-              }
+
+              // if (!paircut.IsSelected(g1, g2)) {
+              //   continue;
+              // }
 
               // center-of-mass system (CMS)
               values_1d[0] = 0.0, values_1d[1] = 0.0, values_1d[2] = 0.0, values_1d[3] = 0.0;

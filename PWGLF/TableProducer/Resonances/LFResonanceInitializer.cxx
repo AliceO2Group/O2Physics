@@ -92,8 +92,9 @@ struct reso2initializer {
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", false, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", 8, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", true, "Evt sel: check for offline selection"};
+  Configurable<bool> ConfEvtTriggerTVXSel{"ConfEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
   Configurable<bool> ConfEvtTFBorderCut{"ConfEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
-  Configurable<bool> ConfEvtITSTPCmatching{"ConfEvtITSTPCmatching", false, "Evt sel: apply ITS-TPC matching"};
+  Configurable<bool> ConfEvtUseITSTPCvertex{"ConfEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
   Configurable<bool> ConfEvtZvertexTimedifference{"ConfEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
   Configurable<bool> ConfEvtPileupRejection{"ConfEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
   Configurable<bool> ConfEvtNoITSROBorderCut{"ConfEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
@@ -845,9 +846,10 @@ struct reso2initializer {
       centrality = mccol.centRun2V0M();
     bool inVtx10 = (abs(mccol.mcCollision().posZ()) > 10.) ? false : true;
     bool isTrueINELgt0 = IsTrueINEL0(mccol, mcparts);
+    bool isTriggerTVX = mccol.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = mccol.sel8();
     bool isSelected = colCuts.isSelected(mccol);
-    resoMCCollisions(inVtx10, isTrueINELgt0, isSel8, isSelected);
+    resoMCCollisions(inVtx10, isTrueINELgt0, isTriggerTVX, isSel8, isSelected);
 
     // QA for Trigger efficiency
     qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINEL);
@@ -857,22 +859,36 @@ struct reso2initializer {
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg0);
     if (inVtx10 && isTrueINELgt0)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg010);
-    if (isSel8)
+
+    // TVX MB trigger
+    if (isTriggerTVX)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kTrig);
-    if (isSel8 && inVtx10)
+    if (isTriggerTVX && inVtx10)
       qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kTrig10);
+    if (isTriggerTVX && isTrueINELgt0)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kTrigINELg0);
+    if (isTriggerTVX && isTrueINELgt0 && inVtx10)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kTrigINELg010);
+
+    // Sel8 event selection
+    if (isSel8)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kSel8);
+    if (isSel8 && inVtx10)
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kSel810);
     if (isSel8 && isTrueINELgt0)
-      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg0Trig);
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kSel8INELg0);
     if (isSel8 && isTrueINELgt0 && inVtx10)
-      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg010Trig);
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kSel8INELg010);
+
+    // CollisionCuts selection
     if (isSelected)
-      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kSel);
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kAllCuts);
     if (isSelected && inVtx10)
-      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kSel10);
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kAllCuts10);
     if (isSelected && isTrueINELgt0)
-      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg0Sel);
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kAllCutsINELg0);
     if (isSelected && isTrueINELgt0 && inVtx10)
-      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kINELg010Sel);
+      qaRegistry.fill(HIST("Event/hMCEventIndices"), centrality, aod::resocollision::kAllCutsINELg010);
   }
 
   void init(InitContext&)
@@ -910,8 +926,9 @@ struct reso2initializer {
       colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, true);
     }
     colCuts.init(&qaRegistry);
+    colCuts.setTriggerTVX(ConfEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(ConfEvtTFBorderCut);
-    colCuts.setApplyITSTPCmatching(ConfEvtITSTPCmatching);
+    colCuts.setApplyITSTPCvertex(ConfEvtUseITSTPCvertex);
     colCuts.setApplyZvertexTimedifference(ConfEvtZvertexTimedifference);
     colCuts.setApplyPileupRejection(ConfEvtPileupRejection);
     colCuts.setApplyNoITSROBorderCut(ConfEvtNoITSROBorderCut);
@@ -927,7 +944,7 @@ struct reso2initializer {
     // QA histograms
     if (doprocessTrackMCRun2 || doprocessTrackV0MCRun2 || doprocessTrackV0CascMCRun2 || doprocessTrackMC || doprocessTrackV0MC || doprocessTrackV0CascMC) {
       AxisSpec centAxis = {binsCent, "Centrality (%)"};
-      AxisSpec idxMCAxis = {16, -0.5, 15.5, "Index"};
+      AxisSpec idxMCAxis = {26, -0.5, 25.5, "Index"};
       qaRegistry.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {centAxis, idxMCAxis});
     }
     AxisSpec idxAxis = {8, 0, 8, "Index"};

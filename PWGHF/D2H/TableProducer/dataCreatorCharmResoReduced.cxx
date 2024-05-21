@@ -112,7 +112,7 @@ struct HfDataCreatorCharmResoReduced {
   using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDstarFiltered = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
   using CandDstarFilteredWithMl = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>>;
-  using BigTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
+  using TracksWithPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
   Filter filterSelectDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus);
   Filter filterSelectedCandDstar = (aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi);
@@ -121,7 +121,6 @@ struct HfDataCreatorCharmResoReduced {
   Preslice<CandsDplusFilteredWithMl> candsDplusPerCollisionWithMl = aod::track_association::collisionId;
   Preslice<CandDstarFiltered> candsDstarPerCollision = aod::track_association::collisionId;
   Preslice<CandDstarFilteredWithMl> candsDstarPerCollisionWithMl = aod::track_association::collisionId;
-  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> candsV0PerCollision = aod::track_association::collisionId;
 
   HistogramRegistry registry{"registry"};
@@ -217,7 +216,7 @@ struct HfDataCreatorCharmResoReduced {
   void runDataCreation(aod::Collision const& collision,
                        CCands const& candsD,
                        aod::V0Datas const& V0s,
-                       BigTracksPID const&,
+                       TracksWithPID const&,
                        aod::BCsWithTimestamps const&)
   {
     // helpers for ReducedTables filling
@@ -243,7 +242,7 @@ struct HfDataCreatorCharmResoReduced {
       std::array<float, 3> bdtScores;
       if constexpr (DecayChannel == DecayChannel::DstarV0) {
         if (candD.signSoftPi() > 0)
-          invMassD = candD.invMassDstar();
+          invMassD = candD.invMassDstar() - candD.invMassD0();
         else
           invMassD = candD.invMassAntiDstar() - candD.invMassD0Bar();
         massD = MassDStar;
@@ -259,7 +258,7 @@ struct HfDataCreatorCharmResoReduced {
           std::copy(candD.mlProbDstarToD0Pi().begin(), candD.mlProbDstarToD0Pi().end(), bdtScores.begin());
         }
       } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
-        auto prong0 = candD.template prong0_as<BigTracksPID>();
+        auto prong0 = candD.template prong0_as<TracksWithPID>();
         invMassD = hfHelper.invMassDplusToPiKPi(candD);
         massD = MassDPlus;
         pVecD = candD.pVector();
@@ -277,8 +276,8 @@ struct HfDataCreatorCharmResoReduced {
 
       // Loop on V0 candidates
       for (const auto& v0 : V0s) {
-        auto posTrack = v0.posTrack_as<BigTracksPID>();
-        auto negTrack = v0.negTrack_as<BigTracksPID>();
+        auto posTrack = v0.posTrack_as<TracksWithPID>();
+        auto negTrack = v0.negTrack_as<TracksWithPID>();
         // Apply selsection
         v0type = getSelectionMapV0(v0, collision, std::array{posTrack, negTrack}, prongIdsD);
         if (v0type == 0) {
@@ -387,7 +386,7 @@ struct HfDataCreatorCharmResoReduced {
                       CandsDplusFiltered const& candsDplus,
                       aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
-                      BigTracksPID const& tracks,
+                      TracksWithPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
   {
     // handle normalization by the right number of collisions
@@ -404,9 +403,8 @@ struct HfDataCreatorCharmResoReduced {
 
   void processDplusV0WithMl(aod::Collisions const& collisions,
                             CandsDplusFilteredWithMl const& candsDplus,
-                            aod::TrackAssoc const& trackIndices,
                             aod::V0Datas const& V0s,
-                            BigTracksPID const& tracks,
+                            TracksWithPID const& tracks,
                             aod::BCsWithTimestamps const& bcs)
   {
     // handle normalization by the right number of collisions
@@ -425,7 +423,7 @@ struct HfDataCreatorCharmResoReduced {
                       CandDstarFiltered const& candsDstar,
                       aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
-                      BigTracksPID const& tracks,
+                      TracksWithPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
   {
     // handle normalization by the right number of collisions
@@ -442,9 +440,8 @@ struct HfDataCreatorCharmResoReduced {
 
   void processDstarV0WithMl(aod::Collisions const& collisions,
                             CandDstarFilteredWithMl const& candsDstar,
-                            aod::TrackAssoc const& trackIndices,
                             aod::V0Datas const& V0s,
-                            BigTracksPID const& tracks,
+                            TracksWithPID const& tracks,
                             aod::BCsWithTimestamps const& bcs)
   {
     // handle normalization by the right number of collisions
