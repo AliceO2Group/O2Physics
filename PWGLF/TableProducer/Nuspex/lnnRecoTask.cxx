@@ -581,7 +581,7 @@ struct lnnRecoTask {
       }
       if (!is3HFound) {
         hDecayChannel->Fill(1.);
-          continue;
+        continue;
       }
       hDecayChannel->Fill(0.);
       if (mcPart.pdgCode() > 0) {
@@ -590,7 +590,7 @@ struct lnnRecoTask {
         hIsMatterGenTwoBody->Fill(1.);
       }
       if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
-          continue;
+        continue;
       }
       lnnCandidate lnnCand;
       lnnCand.pdgCode = mcPart.pdgCode();
