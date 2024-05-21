@@ -237,7 +237,14 @@ struct MultiplicityCounter {
     }
 
     if (doprocessGenAmbiguousFT0C || doprocessGenAmbiguousFT0M || doprocessGenAmbiguousFT0Chi || doprocessGenAmbiguousFT0Mhi ||
-        doprocessGenFT0C || doprocessGenFT0M || doprocessGenFT0Chi || doprocessGenFT0Mhi) {
+        doprocessGenFT0C || doprocessGenFT0M || doprocessGenFT0Chi || doprocessGenFT0Mhi || doprocessGenAmbiguousExFT0C || doprocessGenAmbiguousExFT0M ||
+        doprocessGenExFT0C || doprocessGenExFT0M) {
+      std::string effLabels{" ; N_{gen}; Z_{vtx} (cm); centrality"};
+      std::vector<AxisSpec> effAxes{MultAxis, ZAxis, CentAxis};
+      if ((doprocessGenAmbiguousExFT0C || doprocessGenAmbiguousExFT0M || doprocessGenExFT0C || doprocessGenExFT0M) && useProcId) {
+        effLabels += " ; process ID";
+        effAxes.push_back(ProcAxis);
+      }
       binnedRegistry.add({NtrkZvtxGen.data(), "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({NtrkZvtxGen_t.data(), "; N_{part}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtxGen.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
@@ -252,7 +259,7 @@ struct MultiplicityCounter {
       binnedRegistry.add({NotFoundZvtx.data(), " ; Z_{vtx} (cm); centrality; events", {HistType::kTH2F, {ZAxis, CentAxis}}});
 
       if (fillResponse) {
-        binnedRegistry.add({EfficiencyMult.data(), " ; N_{gen}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+        binnedRegistry.add({EfficiencyMult.data(), effLabels.c_str(), {HistType::kTHnSparseF, effAxes}});
         binnedRegistry.add({SplitMult.data(), " ; N_{gen} ; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
         if (addFT0 && !addFDD) {
           binnedRegistry.add({Response.data(), " ; N_{rec}; N_{PV cont}; N_{gen}; N_{FT0A}; N_{FT0C}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, MultAxis, MultAxis, FT0AAxis, FT0CAxis, ZAxis, CentAxis}}});
@@ -1576,7 +1583,19 @@ struct MultiplicityCounter {
     if (fillResponse) {
       for (auto i = 0U; i < NrecPerCol.size(); ++i) {
         if constexpr (hasRecoCent<C>()) {
-          binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          if constexpr (soa::is_soa_join_v<MC>) {
+            if constexpr (MC::template contains<aod::HepMCXSections>()) {
+              if (useProcId) {
+                binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i], mcCollision.processId());
+              } else {
+                binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+              }
+            } else {
+              binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+            }
+          } else {
+            binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          }
           if (addFT0 && !addFDD) {
             binnedRegistry.fill(HIST(Response), NrecPerCol[i], NPVPerCol[i], nCharged, NFT0APerCol[i], NFT0CPerCol[i], mcCollision.posZ(), c_recPerCol[i]);
           } else if (addFDD && !addFT0) {
@@ -1753,7 +1772,19 @@ struct MultiplicityCounter {
     if (fillResponse) {
       for (auto i = 0U; i < NrecPerCol.size(); ++i) {
         if constexpr (hasRecoCent<C>()) {
-          binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          if constexpr (soa::is_soa_join_v<MC>) {
+            if constexpr (MC::template contains<aod::HepMCXSections>()) {
+              if (useProcId) {
+                binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i], mcCollision.processId());
+              } else {
+                binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+              }
+            } else {
+              binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+            }
+          } else {
+            binnedRegistry.fill(HIST(EfficiencyMult), nCharged, mcCollision.posZ(), c_recPerCol[i]);
+          }
           if (addFT0 && !addFDD) {
             binnedRegistry.fill(HIST(Response), NrecPerCol[i], NPVPerCol[i], nCharged, NFT0APerCol[i], NFT0CPerCol[i], mcCollision.posZ(), c_recPerCol[i]);
           } else if (addFDD && !addFT0) {
@@ -1870,6 +1901,26 @@ struct MultiplicityCounter {
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0C, "Process generator-level info (FT0C centrality) w/o ambiguous", false);
 
+  void processGenAmbiguousExFT0C(
+    MCex::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneralAmbiguous<MCex, ExColsCentFT0C>(mcCollision, collisions, particles, tracks, atracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousExFT0C, "Process generator-level info (FT0C centrality)", false);
+
+  void processGenExFT0C(
+    MCex::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0C, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneral<MCex, ExColsCentFT0C>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenExFT0C, "Process generator-level info (FT0C centrality) w/o ambiguous", false);
+
   void processGenAmbiguousFT0M(
     MC::iterator const& mcCollision,
     o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
@@ -1889,6 +1940,26 @@ struct MultiplicityCounter {
   }
 
   PROCESS_SWITCH(MultiplicityCounter, processGenFT0M, "Process generator-level info (FT0M centrality) w/o ambiguous", false);
+
+  void processGenAmbiguousExFT0M(
+    MCex::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, FiReTracks const& atracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneralAmbiguous<MCex, ExColsCentFT0M>(mcCollision, collisions, particles, tracks, atracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenAmbiguousExFT0M, "Process generator-level info (FT0M centrality)", false);
+
+  void processGenExFT0M(
+    MCex::iterator const& mcCollision,
+    o2::soa::SmallGroups<soa::Join<ExColsCentFT0M, aod::McCollisionLabels>> const& collisions,
+    Particles const& particles, FiTracks const& tracks, aod::FT0s const&, aod::FDDs const&)
+  {
+    processGenGeneral<MCex, ExColsCentFT0M>(mcCollision, collisions, particles, tracks);
+  }
+
+  PROCESS_SWITCH(MultiplicityCounter, processGenExFT0M, "Process generator-level info (FT0M centrality) w/o ambiguous", false);
 
   using MChi = soa::Join<aod::McCollisions, aod::HepMCHeavyIons>;
 
