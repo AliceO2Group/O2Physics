@@ -3536,10 +3536,10 @@ void VarManager::FillZDC(T const& zdc, float* values)
     values = fgValues;
   }
 
-  values[kEnergyCommonZNA] = zdc.energyCommonZNA();
-  values[kEnergyCommonZNC] = zdc.energyCommonZNC();
-  values[kEnergyCommonZPA] = zdc.energyCommonZPA();
-  values[kEnergyCommonZPC] = zdc.energyCommonZPC();
+  values[kEnergyCommonZNA] = (zdc.energyCommonZNA() > 0) ? zdc.energyCommonZNA() : -1.;
+  values[kEnergyCommonZNC] = (zdc.energyCommonZNC() > 0) ? zdc.energyCommonZNC() : -1.;
+  values[kEnergyCommonZPA] = (zdc.energyCommonZPA() > 0) ? zdc.energyCommonZPA() : -1.;
+  values[kEnergyCommonZPC] = (zdc.energyCommonZPC() > 0) ? zdc.energyCommonZPC() : -1.;
   values[kTimeZNA] = zdc.timeZNA();
   values[kTimeZNC] = zdc.timeZNC();
   values[kTimeZPA] = zdc.timeZPA();
