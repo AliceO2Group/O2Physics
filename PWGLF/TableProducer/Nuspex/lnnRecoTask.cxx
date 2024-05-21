@@ -506,7 +506,7 @@ struct lnnRecoTask {
     isGoodCollision.resize(mcCollisions.size(), false);
 
     for (const auto& collision : collisions) {
-      //lnnCandidates.clear();
+      lnnCandidates.clear();
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
