@@ -11,13 +11,7 @@
 // Your own header file
 // Your own header file
 
-#include <DataFormatsParameters/GRPObject.h>
-// C++ system headers
-#include <iostream>
-#include <memory>
-#include <cmath>
-#include <vector>
-
+// Framework headers (most central to project functionality)
 #include <Framework/runDataProcessing.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
@@ -25,6 +19,18 @@
 #include <Framework/ASoAHelpers.h>
 #include <Framework/RunningWorkflowInfo.h>
 
+// C system headers
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+
+// C++ system headers
+#include <iostream>
+#include <memory>
+#include <vector>
+
+// Other headers
+#include <DataFormatsParameters/GRPObject.h>
 #include <Common/DataModel/EventSelection.h>
 #include <Common/CCDB/TriggerAliases.h>
 #include <Common/DataModel/Centrality.h>
@@ -32,8 +38,6 @@
 #include <Common/DataModel/TrackSelectionTables.h>
 #include <Common/DataModel/PIDResponse.h>
 #include <CCDB/BasicCCDBManager.h>
-
-// Other headers
 #include <TF1.h>
 #include <TH3.h>
 #include <TList.h>
@@ -42,8 +46,8 @@
 #include <TRandom3.h>
 #include <TMath.h>
 #include <TComplex.h>
-
 #include <ZDCBase/Constants.h>
+
 
 using namespace o2;
 using namespace o2::framework;
