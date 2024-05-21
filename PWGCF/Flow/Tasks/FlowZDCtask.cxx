@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
@@ -67,7 +66,7 @@ struct FlowZDCtask {
   Configurable<float> minPt{"minPt", 0.2, "Minimum pt"};
   Configurable<float> maxPt{"maxPt", 20.0, "Maximum pt"};
   Configurable<float> MaxZEM{"MaxZEM", 3099.5, "Max ZEM signal"};
-      // for ZDC info and analysis
+  // for ZDC info and analysis
   Configurable<int> nBinsADC{"nBinsADC", 1000, "nbinsADC"};
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
   Configurable<float> MaxZN{"MaxZN", 4099.5, "Max ZN signal"};
@@ -78,11 +77,8 @@ struct FlowZDCtask {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
 
-
-
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
-
 
   Partition<aodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
@@ -133,8 +129,6 @@ struct FlowZDCtask {
     AxisSpec axisMultTPC{1000, -0.5f, 1999.5f, "TPCmultiplicity"};
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
     AxisSpec axisPtBins{{0., 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 8.0, 10., 13., 16., 20.}, "p_{T} (GeV/c)"};
-
-
 
     // create histograms
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
