@@ -277,7 +277,7 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if ((fabs(dphiAvg) < CutDeltaPhiStarMax) && (fabs(deta) < CutDeltaEtaMax)) {
+        if ((dphiAvg > CutDeltaPhiStarMin) && (dphiAvg < CutDeltaPhiStarMax) && (deta > CutDeltaEtaMin) && (deta < CutDeltaEtaMax)) {
           pass = true; // pair is close
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {

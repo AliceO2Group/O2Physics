@@ -94,16 +94,16 @@ struct hadronnucleicorrelation {
 
   ConfigurableAxis AxisNSigma{"AxisNSigma", {50, -10.f, 10.f}, "n#sigma"};
 
-  using FilteredCollisions = aod::SingleCollSels;
-  using FilteredTracks = aod::SingleTrackSels;
-  using FilteredTracksMC = soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs>;
+  using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
+  using FilteredTracks = soa::Filtered<aod::SingleTrackSels>;
+  using FilteredTracksMC = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs>>;
 
   HistogramRegistry registry{"registry"};
   HistogramRegistry QA{"QA"};
 
-  typedef std::shared_ptr<soa::Filtered<FilteredTracks>::iterator> trkType;
-  typedef std::shared_ptr<soa::Filtered<FilteredTracksMC>::iterator> trkTypeMC;
-  typedef std::shared_ptr<soa::Filtered<FilteredCollisions>::iterator> colType;
+  typedef std::shared_ptr<FilteredTracks::iterator> trkType;
+  typedef std::shared_ptr<FilteredTracksMC::iterator> trkTypeMC;
+  typedef std::shared_ptr<FilteredCollisions::iterator> colType;
 
   // key: int64_t - value: vector of trkType objects
   std::map<int64_t, std::vector<trkType>> selectedtracks_p;
@@ -394,8 +394,8 @@ struct hadronnucleicorrelation {
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedTpcChi2NCl) <= max_chi2_TPC &&
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::rowsOverFindable>(o2::aod::singletrackselector::storedTpcCrossedRowsOverFindableCls) >= min_TPC_nCrossedRowsOverFindableCls &&
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedItsChi2NCl) <= max_chi2_ITS &&
-                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) <= max_dcaxy &&
-                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaZ)) <= max_dcaz &&
+                       //  nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY_v1)) <= max_dcaxy && // For now no filtering on the DCAxy or DCAz (casting not supported)
+                       //  nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY_v1)) <= max_dcaz && // For now no filtering on the DCAxy or DCAz (casting not supported)
                        nabs(o2::aod::singletrackselector::eta) <= etacut;
 
   template <int ME, bool MCqa, typename Type>
@@ -614,12 +614,14 @@ struct hadronnucleicorrelation {
     LOGP(info, "Opened histogram {}", Form("%s_antideuteron", histname.Data()));
   }
 
-  void processData(soa::Filtered<FilteredCollisions> const& collisions, soa::Filtered<FilteredTracks> const& tracks)
+  void processData(FilteredCollisions const& collisions, FilteredTracks const& tracks)
   {
     for (auto track : tracks) {
-      if (abs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > cutzvertex)
+      if (abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
         continue;
-
+      if (abs(track.dcaXY()) > max_dcaxy || abs(track.dcaZ()) > max_dcaz) { // For now no filtering on the DCAxy or DCAz (casting not supported)
+        continue;
+      }
       if (doQA) {
         QA.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
         QA.fill(HIST("QA/hTPCchi2"), track.tpcChi2NCl());
@@ -627,7 +629,7 @@ struct hadronnucleicorrelation {
         QA.fill(HIST("QA/hITSchi2"), track.itsChi2NCl());
         QA.fill(HIST("QA/hDCAxy"), track.dcaXY());
         QA.fill(HIST("QA/hDCAz"), track.dcaZ());
-        QA.fill(HIST("QA/hVtxZ_trk"), track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ());
+        QA.fill(HIST("QA/hVtxZ_trk"), track.template singleCollSel_as<FilteredCollisions>().posZ());
         QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr"), track.pt() * track.sign(), track.tpcNSigmaPr());
         QA.fill(HIST("QA/hnSigmaTPCVsPt_De"), track.pt() * track.sign(), track.tpcNSigmaDe());
         QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr"), track.pt() * track.sign(), track.tofNSigmaPr());
@@ -870,12 +872,16 @@ struct hadronnucleicorrelation {
   }
   PROCESS_SWITCH(hadronnucleicorrelation, processData, "processData", true);
 
-  void processMC(soa::Filtered<FilteredCollisions> const& collisions, soa::Filtered<FilteredTracksMC> const& tracks)
+  void processMC(FilteredCollisions const& collisions, FilteredTracksMC const& tracks)
   {
 
     for (auto track : tracks) {
-      if (abs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > cutzvertex)
+      if (abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
         continue;
+
+      if (abs(track.dcaXY()) > max_dcaxy || abs(track.dcaZ()) > max_dcaz) { // For now no filtering on the DCAxy or DCAz (casting not supported)
+        continue;
+      }
 
       if (doQA) {
         QA.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
@@ -884,7 +890,7 @@ struct hadronnucleicorrelation {
         QA.fill(HIST("QA/hITSchi2"), track.itsChi2NCl());
         QA.fill(HIST("QA/hDCAxy"), track.dcaXY());
         QA.fill(HIST("QA/hDCAz"), track.dcaZ());
-        QA.fill(HIST("QA/hVtxZ_trk"), track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ());
+        QA.fill(HIST("QA/hVtxZ_trk"), track.template singleCollSel_as<FilteredCollisions>().posZ());
         QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr"), track.pt() * track.sign(), track.tpcNSigmaPr());
         QA.fill(HIST("QA/hnSigmaTPCVsPt_De"), track.pt() * track.sign(), track.tpcNSigmaDe());
         QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr"), track.pt() * track.sign(), track.tofNSigmaPr());

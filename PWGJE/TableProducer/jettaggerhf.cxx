@@ -59,6 +59,7 @@ struct JetTaggerHFTask {
 
   std::unique_ptr<TF1> fSignImpXYSig = nullptr;
   std::vector<float> vecParams;
+  std::vector<float> jetProb;
   int maxOrder = -1;
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(InitContext const&)
@@ -86,10 +87,11 @@ struct JetTaggerHFTask {
   void processData(JetCollision const& collision, JetTableData const& jets, JetTagTracksData const& jtracks, OriTracksData const& tracks)
   {
     for (auto& jet : jets) {
-      std::vector<float> jetProb;
       int algorithm2 = 0;
       int algorithm3 = 0;
       if (useJetProb) {
+        jetProb.clear();
+        jetProb.reserve(maxOrder);
         for (int order = 0; order < maxOrder; order++) {
           jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSig, collision, jet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
         }
@@ -109,10 +111,11 @@ struct JetTaggerHFTask {
         origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR);
       else
         origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack);
-      std::vector<float> jetProb;
       int algorithm2 = 0;
       int algorithm3 = 0;
       if (useJetProb) {
+        jetProb.clear();
+        jetProb.reserve(maxOrder);
         for (int order = 0; order < maxOrder; order++) {
           jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSig, collision, mcdjet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
         }

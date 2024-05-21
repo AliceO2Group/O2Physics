@@ -34,49 +34,56 @@ struct : ConfigurableGroup {
 // *) QA:
 struct : ConfigurableGroup {
   Configurable<bool> cfCheckUnderflowAndOverflow{"cfCheckUnderflowAndOverflow", false, "check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins"};
+  Configurable<bool> cfFillQAEventHistograms2D{"cfFillQAEventHistograms2D", true, "if false, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled"};
+  Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"MultTPC_vs_NContributors-1", "Vertex_z_vs_MultTPC-1", "Vertex_z_vs_NContributors-1", "CentFT0M_vs_CentNTPV-1", "CentRun2V0M_vs_CentRun2SPDTracklets-1", "CentRun2V0M_vs_NContributors-1"}, "Book (1) or do not book (0) this 2D QA event histogram"};
 } cf_qa;
 
 // *) Event histograms:
 struct : ConfigurableGroup {
   Configurable<bool> cfFillEventHistograms{"cfFillEventHistograms", true, "if false, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled"};
-  Configurable<vector<int>> cfBookEventHistograms{"cfBookEventHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) event histogram, ordering is the same as in enum eEventHistograms"};
-  Configurable<bool> cfFillEventHistograms2D{"cfFillEventHistograms2D", true, "if false, all 2D event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms2D[...] is kTRUE, are filled"};
-  Configurable<vector<int>> cfBookEventHistograms2D{"cfBookEventHistograms2D", {1, 1}, "Book (1) or do not book (0) this 2D event histogram, ordering is the same as in enum eEventHistograms2D"};
+  Configurable<vector<string>> cfBookEventHistograms{"cfBookEventHistograms", {"NumberOfEvents-1", "TotalMultiplicity-1", "SelectedTracks-1", "MultFV0M-1", "MultFT0M-1", "MultTPC-1", "MultNTracksPV-1", "MultTracklets-1", "Centrality-1", "Vertex_x-1", "Vertex_y-1", "Vertex_z-1", "NContributors-1", "ImpactParameter-1"}, "Book (1) or do not book (0) event histogram"};
 } cf_eh;
 
 // *) Event cuts:
 struct : ConfigurableGroup {
-  Configurable<vector<int>> cfUseEventCuts{"cfUseEventCuts", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0}, "Use (1) or do not use (0) event cuts, ordering is the same as in enums eEventHistograms + eEventCuts"};
+  Configurable<vector<string>> cfUseEventCuts{"cfUseEventCuts", {"NumberOfEvents-1", "TotalMultiplicity-1", "SelectedTracks-1", "MultFV0M-1", "MultFT0M-1", "MultTPC-1", "MultNTracksPV-1", "MultTracklets-1", "Centrality-1", "Vertex_x-1", "Vertex_y-1", "Vertex_z-1", "NContributors-1", "ImpactParameter-1", "Trigger-1", "Sel7-1", "Sel8-1", "CentralityEstimator-1", "SelectedEvents-1"}, "Use (1) or do not use (0) event cuts"};
+
   Configurable<bool> cfUseEventCutCounterAbsolute{"cfUseEventCutCounterAbsolute", false, "profile and save how many times each event cut counter triggered (absolute). Use with care, as this is computationally heavy"};
   Configurable<bool> cfUseEventCutCounterSequential{"cfUseEventCutCounterSequential", false, "profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy"};
-  Configurable<string> cfTrigger{"cfTrigger", "some supported trigger", "set here some supported trigger (kINT7, ...) "};
-  Configurable<bool> cfUseSel7{"cfUseSel7", false, "use for Run 2 data and MC (see official doc)"};
-  Configurable<bool> cfUseSel8{"cfUseSel8", false, "use for Run 3 data and MC (see official doc)"};
-  Configurable<string> cfCentralityEstimator{"cfCentralityEstimator", "some supported centrality estimator", "set here some supported centrality estimator (CentFT0M, CentFV0A, CentNTPV, ... for Run 3, CentRun2V0M, CentRun2SPDTracklets, ..., for Run 2) "};
+  Configurable<bool> cfPrintCutCounterContent{"cfPrintCutCounterContent", false, "if true, prints on the screen content of fEventCutCounterHist[][] (all which were booked)"};
+  // Remark: Preserve below the same ordering as in enum's eEventHistograms + eEventCuts. In hyperloop, in any case this ordering is lost, because there it's alphabetical
   Configurable<vector<int>> cfNumberOfEvents{"cfNumberOfEvents", {-1, 1000000000}, "Total number of events to process (whether or not they survive event cuts): {min, max}, with convention: min <= N < max"};
-  Configurable<vector<int>> cfSelectedEvents{"cfSelectedEvents", {-1, 1000000000}, "Selected number of events to process (i.e. only events which survive event cuts): {min, max}, with convention: min <= N < max"};
   Configurable<vector<int>> cfTotalMultiplicity{"cfTotalMultiplicity", {-1, 1000000000}, "Total multiplicity range: {min, max}, with convention: min <= M < max"};
   Configurable<vector<int>> cfSelectedTracks{"cfSelectedTracks", {-1, 1000000000}, "Selected tracks range: {min, max}, with convention: min <= M < max"};
+  Configurable<vector<int>> cfMultFV0M{"cfMultFV0M", {-1, 1000000000}, "MultFV0M range {min, max}, with convention: min <= M < max"};
+  Configurable<vector<int>> cfMultFT0M{"cfMultFT0M", {-1, 1000000000}, "MultFT0M range {min, max}, with convention: min <= M < max"};
+  Configurable<vector<int>> cfMultTPC{"cfMultTPC", {-1, 1000000000}, "MultTPC range {min, max}, with convention: min <= M < max"};
+  Configurable<vector<int>> cfMultNTracksPV{"cfMultNTracksPV", {-1, 1000000000}, "MultNTracksPV range {min, max}, with convention: min <= M < max"};
+  Configurable<vector<int>> cfMultTracklets{"cfMultTracklets", {-1, 1000000000}, "MultTracklets range {min, max}, with convention: min <= M < max"};
   Configurable<vector<float>> cfCentrality{"cfCentrality", {-10., 110.}, "Centrality range: {min, max}, with convention: min <= cent < max"};
   Configurable<vector<float>> cfVertex_x{"cfVertex_x", {-10., 10.}, "Vertex x position range: {min, max}[cm], with convention: min <= Vx < max"};
   Configurable<vector<float>> cfVertex_y{"cfVertex_y", {-10., 10.}, "Vertex y position range: {min, max}[cm], with convention: min <= Vy < max"};
   Configurable<vector<float>> cfVertex_z{"cfVertex_z", {-10., 10.}, "Vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
   Configurable<vector<int>> cfNContributors{"cfNContributors", {2, 1000000000}, "Number of vertex contributors: {min, max}, with convention: min <= IP < max"};
   Configurable<vector<float>> cfImpactParameter{"cfImpactParameter", {-1, 1000000000}, "Impact parameter range (can be used osnly for sim): {min, max}, with convention: min <= IP < max"};
-  // TBI 20240426 do I need to add separate support for booleans to use each specific cut?
+  Configurable<string> cfTrigger{"cfTrigger", "some supported trigger", "set here some supported trigger (kINT7, ...) "};
+  Configurable<bool> cfUseSel7{"cfUseSel7", false, "use for Run 2 data and MC (see official doc)"};
+  Configurable<bool> cfUseSel8{"cfUseSel8", false, "use for Run 3 data and MC (see official doc)"};
+  Configurable<vector<int>> cfSelectedEvents{"cfSelectedEvents", {-1, 1000000000}, "Selected number of events to process (i.e. only events which survive event cuts): {min, max}, with convention: min <= N < max"};
+  Configurable<string> cfCentralityEstimator{"cfCentralityEstimator", "some supported centrality estimator", "set here some supported centrality estimator (CentFT0M, CentFV0A, CentNTPV, ... for Run 3, and CentRun2V0M, CentRun2SPDTracklets, ..., for Run 2 and 1) "};
 } cf_ec;
 
 // *) Particle histograms:
 struct : ConfigurableGroup {
   Configurable<bool> cfFillParticleHistograms{"cfFillParticleHistograms", true, "if false, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled"};
-  Configurable<vector<int>> cfBookParticleHistograms{"cfBookParticleHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms"};
+  Configurable<vector<string>> cfBookParticleHistograms{"cfBookParticleHistograms", {"Phi-1", "Pt-1", "Eta-1", "Charge-1", "tpcNClsFindable-1", "tpcNClsShared-1", "tpcNClsFound-1", "tpcNClsCrossedRows-1", "itsNCls-1", "itsNClsInnerBarrel-1", "tpcCrossedRowsOverFindableCls-1", "tpcFoundOverFindableCls-1", "tpcFractionSharedCls-1", "dcaXY-1", "dcaZ-1", "PDG-1"}, "Book (1) or do not book (0) particle histogram"};
   Configurable<bool> cfFillParticleHistograms2D{"cfFillParticleHistograms2D", true, "if false, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled"};
-  Configurable<vector<int>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {1, 1}, "Book (1) or do not book (0) this 2D particle histogram, ordering is the same as in enum eParticleHistograms2D"};
+  Configurable<vector<string>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {"Phi_vs_Pt-1", "Phi_vs_Eta-1"}, "Book (1) or do not book (0) this 2D particle histogram"};
 } cf_ph;
 
 // *) Particle cuts:
 struct : ConfigurableGroup {
-  Configurable<vector<int>> cfUseParticleCuts{"cfUseParticleCuts", {0, 1, 1, 1, 1, 1, 1, 1}, "Use (1) or do not use (0) event cuts, ordering is the same as in enums eEventHistograms + eEventCuts"};
+  Configurable<vector<string>> cfUseParticleCuts{"cfUseParticleCuts", {"Phi-1", "Pt-1", "Eta-1", "Charge-1", "tpcNClsFindable-1", "tpcNClsShared-1", "tpcNClsFound-1", "tpcNClsCrossedRows-1", "itsNCls-1", "itsNClsInnerBarrel-1", "tpcCrossedRowsOverFindableCls-1", "tpcFoundOverFindableCls-1", "tpcFractionSharedCls-1", "dcaXY-1", "dcaZ-1", "PDG-1", "trackCutFlagFb1-0", "trackCutFlagFb2-0", "isQualityTrack-0", "isPrimaryTrack-0", "isInAcceptanceTrack-0", "isGlobalTrack-0"}, "Use (1) or do not use (0) particle cuts"};
   Configurable<bool> cfUseParticleCutCounterAbsolute{"cfUseParticleCutCounterAbsolute", false, "profile and save how many times each particle cut counter triggered (absolute). Use with care, as this is computationally heavy"};
   Configurable<bool> cfUseParticleCutCounterSequential{"cfUseParticleCutCounterSequential", false, "profile and save how many times each particle cut counter triggered (sequential). Use with care, as this is computationally heavy"};
   Configurable<vector<float>> cfPhi{"cfPhi", {0.0, TMath::TwoPi()}, "phi range: {min, max}[rad], with convention: min <= phi < max"};

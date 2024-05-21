@@ -82,10 +82,11 @@ struct ExclusivePhiLeptons {
     registry.add("PP/hUnlikePt", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hUnlikePt2", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hCoherentMass", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hAngle", "Angular distrib helicity frame;#theta;", kTH1F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}});
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
@@ -138,6 +139,13 @@ struct ExclusivePhiLeptons {
         continue;
       }
       if (trk.pt() < 0.300) {
+        continue;
+      }
+      if (!(std::abs(trk.dcaZ()) < 2.)) {
+        continue;
+      }
+      double dcaLimit = 0.0105 + 0.035 / pow(trk.pt(), 1.1);
+      if (!(std::abs(trk.dcaXY()) < dcaLimit)) {
         continue;
       }
       registry.fill(HIST("hSelectionCounter"), 3);
@@ -194,6 +202,7 @@ struct ExclusivePhiLeptons {
 
       int signSum = -999.;
       double sigmaTotal = -999.;
+      TVector3 momentum[2];
       if (onlyElectronTracksTOF.size() == 1) {
 
         if (!(fabs(onlyElectronTracks[0].Eta()) < 0.8 && fabs(onlyElectronTracksTOF[0].Eta()) < 0.8)) {
@@ -202,15 +211,8 @@ struct ExclusivePhiLeptons {
         if (!(onlyElectronTracks[0].P() < 0.8 && onlyElectronTracks[0].P() > 0.3 && onlyElectronTracksTOF[0].P() < 0.8 && onlyElectronTracksTOF[0].P() > 0.3)) {
           return;
         }
-        // if (!(  (onlyElectronTracks[0].P() < 0.550 && onlyElectronTracks[0].P() > 0.450) || (onlyElectronTracksTOF[0].P() < 0.550 && onlyElectronTracksTOF[0].P() > 0.450) )) {
-        //   return;
-        // }
-        if (!(fabs(fabs(onlyElectronTracks[0].Eta()) - fabs(onlyElectronTracksTOF[0].Eta())) < 0.1)) {
-          return;
-        }
-        if (!(fabs(fabs(onlyElectronTracks[0].Phi()) - fabs(onlyElectronTracksTOF[0].Phi() + TMath::Pi())) < 0.1)) {
-          return;
-        }
+        momentum[0] = onlyElectronTracks[0].Vect();
+        momentum[1] = onlyElectronTracksTOF[0].Vect();
         registry.fill(HIST("hEta1"), onlyElectronTracks[0].Eta());
         registry.fill(HIST("hEta1"), onlyElectronTracksTOF[0].Eta());
         resonance += onlyElectronTracks[0];
@@ -232,15 +234,8 @@ struct ExclusivePhiLeptons {
         if (!(onlyElectronTracksTOF[0].P() < 0.8 && onlyElectronTracksTOF[0].P() > 0.3 && onlyElectronTracksTOF[1].P() < 0.8 && onlyElectronTracksTOF[1].P() > 0.3)) {
           return;
         }
-        // if (!(  (onlyElectronTracksTOF[0].P() < 0.550 && onlyElectronTracksTOF[0].P() > 0.450) || (onlyElectronTracksTOF[1].P() < 0.550 && onlyElectronTracksTOF[1].P() > 0.450) )) {
-        //   return;
-        // }
-        if (!(fabs(fabs(onlyElectronTracksTOF[0].Eta()) - fabs(onlyElectronTracksTOF[1].Eta())) < 0.1)) {
-          return;
-        }
-        if (!(fabs(fabs(onlyElectronTracksTOF[0].Phi()) - fabs(onlyElectronTracksTOF[1].Phi() + TMath::Pi())) < 0.1)) {
-          return;
-        }
+        momentum[0] = onlyElectronTracksTOF[0].Vect();
+        momentum[1] = onlyElectronTracksTOF[1].Vect();
         registry.fill(HIST("hEta1"), onlyElectronTracksTOF[0].Eta());
         registry.fill(HIST("hEta1"), onlyElectronTracksTOF[1].Eta());
         resonance += onlyElectronTracksTOF[0];
@@ -264,6 +259,15 @@ struct ExclusivePhiLeptons {
         registry.fill(HIST("hNsigEvsKa2"), onlyElectronSigmaTOF[0], onlyElectronSigmaTOF[1]);
       }
 
+      auto angleBetweenMomenta = momentum[0].Angle(momentum[1]);
+      if (signSum == 0) {
+        registry.fill(HIST("PP/hAngle"), angleBetweenMomenta);
+      }
+
+      if (fabs(angleBetweenMomenta - TMath::Pi()) > TMath::Pi() / 18.) {
+        return;
+      }
+
       if (signSum != 0) {
         registry.fill(HIST("hMassPtLikeSignElectron"), resonance.M(), resonance.Pt());
         registry.fill(HIST("hSelectionCounter"), 7);
@@ -279,7 +283,7 @@ struct ExclusivePhiLeptons {
         if (resonance.Pt() > 0.075) {
           registry.fill(HIST("PP/hCoherentMass"), resonance.M());
         }
-        if (resonance.M() > 1.1 && resonance.M() < 1.3) {
+        if (resonance.M() > 1. && resonance.M() < 1.05) {
           registry.fill(HIST("PP/hUnlikePt2"), resonance.Pt());
         }
       }
