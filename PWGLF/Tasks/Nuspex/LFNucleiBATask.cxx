@@ -188,26 +188,26 @@ struct LFNucleiBATask {
     if (doprocessData == true && doprocessMCReco == true) {
       LOG(fatal) << "Can't enable processData and processMCReco in the same time, pick one!";
     }
-    spectraGen.add<TH1>("LfEv/pT_nocut", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/pT_TVXtrigger", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/pT_TFrameBorder", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/pT_ITSROFBorder", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/pT_sel8", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/pT_MCsel8", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/pT_nocut", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/pT_TVXtrigger", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/pT_TFrameBorder", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/pT_ITSROFBorder", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/pT_sel8", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/pT_MCsel8", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
 
-    spectraGen.add<TH1>("LfEv/helium/pT_nocut_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/helium/pT_TVXtrigger_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/helium/pT_TFrameBorder_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/helium/pT_ITSROFBorder_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/helium/pT_sel8_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/helium/pT_MCsel8_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/helium/pT_nocut_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/helium/pT_TVXtrigger_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/helium/pT_TFrameBorder_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/helium/pT_ITSROFBorder_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/helium/pT_sel8_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/helium/pT_MCsel8_He", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
 
-    spectraGen.add<TH1>("LfEv/helium/pT_nocut_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/helium/pT_TVXtrigger_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/helium/pT_TFrameBorder_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/helium/pT_ITSROFBorder_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/helium/pT_sel8_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
-    spectraGen.add<TH1>("LfEv/helium/pT_MCsel8_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{600, 0., 6.}});
+    spectraGen.add<TH1>("LfEv/helium/pT_nocut_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/helium/pT_TVXtrigger_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/helium/pT_TFrameBorder_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/helium/pT_ITSROFBorder_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/helium/pT_sel8_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
+    spectraGen.add<TH1>("LfEv/helium/pT_MCsel8_antiHe", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{ptHeAxis}});
 
     if (enableDebug) {
       debugHistos.add<TH1>("qa/h1VtxZ_nocut", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
@@ -4905,7 +4905,11 @@ struct LFNucleiBATask {
         continue;
       }
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
+
       for (const auto& mcParticle : particlesInCollision) {
+        if (mcParticle.y() > yHighCut || mcParticle.y() < yLowCut) {
+          continue;
+        }
         spectraGen.fill(HIST("LfEv/pT_nocut"), mcParticle.pt());
         if (mcParticle.pdgCode() == PDGHelium) {
           spectraGen.fill(HIST("LfEv/helium/pT_nocut_He"), mcParticle.pt());
@@ -4916,6 +4920,10 @@ struct LFNucleiBATask {
       }
       if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
         for (const auto& mcParticle : particlesInCollision) {
+          if (mcParticle.y() > yHighCut || mcParticle.y() < yLowCut) {
+            continue;
+          }
+
           spectraGen.fill(HIST("LfEv/pT_TVXtrigger"), mcParticle.pt());
           if (mcParticle.pdgCode() == PDGHelium) {
             spectraGen.fill(HIST("LfEv/helium/pT_TVXtrigger_He"), mcParticle.pt());
@@ -4927,6 +4935,10 @@ struct LFNucleiBATask {
       }
       if (collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         for (const auto& mcParticle : particlesInCollision) {
+          if (mcParticle.y() > yHighCut || mcParticle.y() < yLowCut) {
+            continue;
+          }
+
           spectraGen.fill(HIST("LfEv/pT_TFrameBorder"), mcParticle.pt());
           if (mcParticle.pdgCode() == PDGHelium) {
             spectraGen.fill(HIST("LfEv/helium/pT_TFrameBorder_He"), mcParticle.pt());
@@ -4938,6 +4950,10 @@ struct LFNucleiBATask {
       }
       if (collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
         for (const auto& mcParticle : particlesInCollision) {
+          if (mcParticle.y() > yHighCut || mcParticle.y() < yLowCut) {
+            continue;
+          }
+
           spectraGen.fill(HIST("LfEv/pT_ITSROFBorder"), mcParticle.pt());
           if (mcParticle.pdgCode() == PDGHelium) {
             spectraGen.fill(HIST("LfEv/helium/pT_ITSROFBorder_He"), mcParticle.pt());
@@ -4949,6 +4965,10 @@ struct LFNucleiBATask {
       }
       if ((collision.selection_bit(aod::evsel::kIsTriggerTVX)) && (collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         for (const auto& mcParticle : particlesInCollision) {
+          if (mcParticle.y() > yHighCut || mcParticle.y() < yLowCut) {
+            continue;
+          }
+
           spectraGen.fill(HIST("LfEv/pT_MCsel8"), mcParticle.pt());
           if (mcParticle.pdgCode() == PDGHelium) {
             spectraGen.fill(HIST("LfEv/helium/pT_MCsel8_He"), mcParticle.pt());
@@ -4960,6 +4980,10 @@ struct LFNucleiBATask {
       }
       if (collision.sel8()) {
         for (const auto& mcParticle : particlesInCollision) {
+          if (mcParticle.y() > yHighCut || mcParticle.y() < yLowCut) {
+            continue;
+          }
+
           spectraGen.fill(HIST("LfEv/pT_sel8"), mcParticle.pt());
           if (mcParticle.pdgCode() == PDGHelium) {
             spectraGen.fill(HIST("LfEv/helium/pT_sel8_He"), mcParticle.pt());
