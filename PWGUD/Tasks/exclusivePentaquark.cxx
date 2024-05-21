@@ -87,7 +87,7 @@ struct ExclusivePentaquark {
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
@@ -141,6 +141,13 @@ struct ExclusivePentaquark {
         continue;
       }
       if (trk.pt() < 0.3) {
+        continue;
+      }
+      if (!(std::abs(trk.dcaZ()) < 2.)) {
+        continue;
+      }
+      double dcaLimit = 0.0105 + 0.035 / pow(trk.pt(), 1.1);
+      if (!(std::abs(trk.dcaXY()) < dcaLimit)) {
         continue;
       }
       registry.fill(HIST("hSelectionCounter"), 3);
