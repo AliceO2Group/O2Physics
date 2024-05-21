@@ -36,11 +36,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_trkcandsel;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, false, {"Perform MC matching."}};
-  workflowOptions.push_back(optionDoMC);
-}
 
 #include "Framework/runDataProcessing.h"
 
@@ -262,7 +257,10 @@ struct HfCandidateCreatorLbMc {
   Produces<aod::HfCandLbMcRec> rowMcMatchRec;
   Produces<aod::HfCandLbMcGen> rowMcMatchGen;
 
-  void process(aod::HfCandLb const& candidates,
+  /// @brief dummy process function, to be run on data
+  void process(aod::Tracks const&) {}
+
+  void processMC(aod::HfCandLb const& candidates,
                aod::HfCand3Prong const&,
                aod::TracksWMc const&,
                aod::McParticles const& mcParticles)
@@ -316,16 +314,14 @@ struct HfCandidateCreatorLbMc {
       rowMcMatchGen(flag, origin);
     }
   }
+  PROCESS_SWITCH(HfCandidateCreatorLbMc, processMC, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<HfCandidateCreatorLb>(cfgc),
-    adaptAnalysisTask<HfCandidateCreatorLbExpressions>(cfgc)};
-  const bool doMC = cfgc.options().get<bool>("doMC");
-  if (doMC) {
-    workflow.push_back(adaptAnalysisTask<HfCandidateCreatorLbMc>(cfgc));
-  }
+    adaptAnalysisTask<HfCandidateCreatorLbExpressions>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorLbMc>(cfgc)};
   return workflow;
 }
