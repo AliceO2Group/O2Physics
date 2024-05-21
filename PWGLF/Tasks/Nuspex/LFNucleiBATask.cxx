@@ -4984,275 +4984,275 @@ struct LFNucleiBATask {
           }
 
           spectraGen.fill(HIST("LfEv/pT_sel8"), mcParticle.pt());
-            spectraGen.fill(HIST("LfEv/helium/pT_sel8_He"), mcParticle.pt());
-          }
-          if (mcParticle.pdgCode() == -PDGHelium) {
-            spectraGen.fill(HIST("LfEv/helium/pT_sel8_antiHe"), mcParticle.pt());
+          spectraGen.fill(HIST("LfEv/helium/pT_sel8_He"), mcParticle.pt());
+        }
+        if (mcParticle.pdgCode() == -PDGHelium) {
+          spectraGen.fill(HIST("LfEv/helium/pT_sel8_antiHe"), mcParticle.pt());
+        }
       }
     }
+
+    // CLOSING PROCESS MC RECO
+    PROCESS_SWITCH(LFNucleiBATask, processMCRecoLfPidEv, "process mc reco with LfPid w/ Event", false);
+
+    // Process function that runs on the filtered AO2D (for the MC)
+    void processMCRecoFiltered(o2::aod::LfNuclEvents::iterator const& event,
+                               soa::Join<o2::aod::LfCandNucleusFull, o2::aod::LfCandNucleusMC> const& tracks)
+    {
+      fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
+    } // CLOSING PROCESS MC RECO ON FILTERED DATA
+    PROCESS_SWITCH(LFNucleiBATask, processMCRecoFiltered, "process mc reco on the filtered data", false);
+
+    void processMCRecoFilteredLight(o2::aod::LfNuclEvents::iterator const& event,
+                                    soa::Join<o2::aod::LfCandNucleusDummy, o2::aod::LfCandNucleusMC> const& tracks)
+    {
+      fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
+    } // CLOSING PROCESS MC RECO ON FILTERED DATA
+    PROCESS_SWITCH(LFNucleiBATask, processMCRecoFilteredLight, "process mc reco on the derived trees", false);
+
+    ////////////
+    // MC Gen //
+    ////////////
+
+    // LOOP OVER GENERATED MC PARTICLES
+    void processMCGen(aod::McCollision const& mcCollision,
+                      aod::McParticles& mcParticles)
+    {
+      spectraGen.fill(HIST("histGenVetxZ"), mcCollision.posZ());
+      for (auto& mcParticleGen : mcParticles) {
+        if (mcParticleGen.y() > yHighCut || mcParticleGen.y() < yLowCut) {
+          continue;
+        }
+
+        bool isPhysPrim = mcParticleGen.isPhysicalPrimary();
+        bool isProdByGen = mcParticleGen.producedByGenerator();
+        bool isWeakDecay = mcParticleGen.getProcess() == 4;
+
+        if (mcParticleGen.pdgCode() == PDGPion) {
+          spectraGen.fill(HIST("pion/histGenPtPion"), mcParticleGen.pt());
+          if (isPhysPrim)
+            spectraGen.fill(HIST("pion/histGenPtPionPrim"), mcParticleGen.pt());
+          if (!isPhysPrim && isProdByGen) {
+            //
+          }
+          if (!isPhysPrim && !isProdByGen) {
+            spectraGen.fill(HIST("pion/histSecTransportPtPion"), mcParticleGen.pt());
+            if (isWeakDecay) {
+              spectraGen.fill(HIST("pion/histGenPtPionSec"), mcParticleGen.pt());
+            }
+          }
+        }
+        if (mcParticleGen.pdgCode() == -PDGPion) {
+          spectraGen.fill(HIST("pion/histGenPtantiPion"), mcParticleGen.pt());
+          if (isPhysPrim)
+            spectraGen.fill(HIST("pion/histGenPtantiPionPrim"), mcParticleGen.pt());
+          if (!isPhysPrim && isProdByGen) {
+            //
+          }
+          if (!isPhysPrim && !isProdByGen) {
+            spectraGen.fill(HIST("pion/histSecTransportPtantiPion"), mcParticleGen.pt());
+            if (isWeakDecay) {
+              spectraGen.fill(HIST("pion/histGenPtantiPionSec"), mcParticleGen.pt());
+            }
+          }
+        }
+        if (mcParticleGen.pdgCode() == PDGKaon) {
+          spectraGen.fill(HIST("kaon/histGenPtKaon"), mcParticleGen.pt());
+          if (isPhysPrim)
+            spectraGen.fill(HIST("kaon/histGenPtKaonPrim"), mcParticleGen.pt());
+          if (!isPhysPrim && isProdByGen) {
+            //
+          }
+          if (!isPhysPrim && !isProdByGen) {
+            spectraGen.fill(HIST("kaon/histSecTransportPtKaon"), mcParticleGen.pt());
+            if (isWeakDecay) {
+              spectraGen.fill(HIST("kaon/histGenPtKaonSec"), mcParticleGen.pt());
+            }
+          }
+        }
+        if (mcParticleGen.pdgCode() == -PDGKaon) {
+          spectraGen.fill(HIST("kaon/histGenPtantiKaon"), mcParticleGen.pt());
+          if (isPhysPrim)
+            spectraGen.fill(HIST("kaon/histGenPtantiKaonPrim"), mcParticleGen.pt());
+          if (!isPhysPrim && isProdByGen) {
+            //
+          }
+          if (!isPhysPrim && !isProdByGen) {
+            spectraGen.fill(HIST("kaon/histSecTransportPtantiKaon"), mcParticleGen.pt());
+            if (isWeakDecay) {
+              spectraGen.fill(HIST("kaon/histGenPtantiKaonSec"), mcParticleGen.pt());
+            }
+          }
+        }
+        if (enablePr) {
+          if (mcParticleGen.pdgCode() == PDGProton) {
+            spectraGen.fill(HIST("proton/histGenPtProton"), mcParticleGen.pt());
+            if (isPhysPrim) {
+              spectraGen.fill(HIST("proton/histGenPtProtonPrim"), mcParticleGen.pt());
+              spectraGen.fill(HIST("proton/histGenPtProtonPrim_Y"), mcParticleGen.y(), mcParticleGen.pt());
+            }
+            if (!isPhysPrim && isProdByGen) {
+              //
+            }
+            if (!isPhysPrim && !isProdByGen) {
+              spectraGen.fill(HIST("proton/histSecTransportPtProton"), mcParticleGen.pt());
+              if (isWeakDecay) {
+                spectraGen.fill(HIST("proton/histGenPtProtonSec"), mcParticleGen.pt());
+              }
+            }
+          }
+          if (mcParticleGen.pdgCode() == -PDGProton) {
+            spectraGen.fill(HIST("proton/histGenPtantiProton"), mcParticleGen.pt());
+            if (isPhysPrim) {
+              spectraGen.fill(HIST("proton/histGenPtantiProtonPrim"), mcParticleGen.pt());
+              spectraGen.fill(HIST("proton/histGenPtantiProtonPrim_Y"), mcParticleGen.y(), mcParticleGen.pt());
+            }
+            if (!isPhysPrim && isProdByGen) {
+              //
+            }
+            if (!isPhysPrim && !isProdByGen) {
+              spectraGen.fill(HIST("proton/histSecTransportPtantiProton"), mcParticleGen.pt());
+              if (isWeakDecay) {
+                spectraGen.fill(HIST("proton/histGenPtantiProtonSec"), mcParticleGen.pt());
+              }
+            }
+          }
+        }
+        if (enableDe) {
+          if (mcParticleGen.pdgCode() == PDGDeuteron) {
+            spectraGen.fill(HIST("deuteron/histGenPtD"), mcParticleGen.pt());
+            if (isPhysPrim)
+              spectraGen.fill(HIST("deuteron/histGenPtDPrim"), mcParticleGen.pt());
+            if (!isPhysPrim && isProdByGen) {
+              //
+            }
+            if (!isPhysPrim && !isProdByGen) {
+              spectraGen.fill(HIST("deuteron/histSecTransportPtD"), mcParticleGen.pt());
+              if (isWeakDecay) {
+                spectraGen.fill(HIST("deuteron/histGenPtDSec"), mcParticleGen.pt());
+              }
+            }
+          }
+          if (mcParticleGen.pdgCode() == -PDGDeuteron) {
+            spectraGen.fill(HIST("deuteron/histGenPtantiD"), mcParticleGen.pt());
+            if (isPhysPrim)
+              spectraGen.fill(HIST("deuteron/histGenPtantiDPrim"), mcParticleGen.pt());
+            if (!isPhysPrim && isProdByGen) {
+              //
+            }
+            if (!isPhysPrim && !isProdByGen) {
+              spectraGen.fill(HIST("deuteron/histSecTransportPtantiD"), mcParticleGen.pt());
+              if (isWeakDecay) {
+                spectraGen.fill(HIST("deuteron/histGenPtantiDSec"), mcParticleGen.pt());
+              }
+            }
+          }
+        }
+        if (enableTr) {
+          if (mcParticleGen.pdgCode() == PDGTriton) {
+            spectraGen.fill(HIST("triton/histGenPtT"), mcParticleGen.pt());
+            if (isPhysPrim)
+              spectraGen.fill(HIST("triton/histGenPtTPrim"), mcParticleGen.pt());
+            if (!isPhysPrim && isProdByGen) {
+              //
+            }
+            if (!isPhysPrim && !isProdByGen) {
+              spectraGen.fill(HIST("triton/histSecTransportPtT"), mcParticleGen.pt());
+              if (isWeakDecay) {
+                spectraGen.fill(HIST("triton/histGenPtTSec"), mcParticleGen.pt());
+              }
+            }
+          }
+          if (mcParticleGen.pdgCode() == -PDGTriton) {
+            spectraGen.fill(HIST("triton/histGenPtantiT"), mcParticleGen.pt());
+            if (isPhysPrim)
+              spectraGen.fill(HIST("triton/histGenPtantiTPrim"), mcParticleGen.pt());
+            if (!isPhysPrim && isProdByGen) {
+              //
+            }
+            if (!isPhysPrim && !isProdByGen) {
+              spectraGen.fill(HIST("triton/histSecTransportPtantiT"), mcParticleGen.pt());
+              if (isWeakDecay) {
+                spectraGen.fill(HIST("triton/histGenPtantiTSec"), mcParticleGen.pt());
+              }
+            }
+          }
+        }
+        if (enableHe) {
+          if (mcParticleGen.pdgCode() == PDGHelium) {
+            spectraGen.fill(HIST("helium/histGenPtHe"), mcParticleGen.pt());
+            if (isPhysPrim) {
+              // LOG(info) << "I AM POSITIVE HELIUM and PRIMARY, get process output is: " << mcParticleGen.getProcess();
+              spectraGen.fill(HIST("helium/histGenPtHePrim"), mcParticleGen.pt());
+            }
+            if (!isPhysPrim && isProdByGen) {
+              {
+                //
+              }
+            }
+            if (!isPhysPrim && !isProdByGen) {
+              spectraGen.fill(HIST("helium/histSecTransportPtHe"), mcParticleGen.pt());
+              // LOG(info) << "I AM POSITIVE HELIUM and SECONDARY, get process output is: " << mcParticleGen.getProcess();
+              if (isWeakDecay) {
+                spectraGen.fill(HIST("helium/histGenPtHeSec"), mcParticleGen.pt());
+                // LOG(info) << "I AM POSITIVE HELIUM and SECONDARY FROM MATERIAL, get process output is: " << mcParticleGen.getProcess();
+              }
+            }
+          }
+          if (mcParticleGen.pdgCode() == -PDGHelium) {
+            spectraGen.fill(HIST("helium/histGenPtantiHe"), mcParticleGen.pt());
+            if (isPhysPrim) {
+              spectraGen.fill(HIST("helium/histGenPtantiHePrim"), mcParticleGen.pt());
+            }
+            if (!isPhysPrim && isProdByGen) {
+              {
+                //
+              }
+            }
+            if (!isPhysPrim && !isProdByGen) {
+              spectraGen.fill(HIST("helium/histSecTransportPtantiHe"), mcParticleGen.pt());
+              if (isWeakDecay) {
+                spectraGen.fill(HIST("helium/histGenPtantiHeSec"), mcParticleGen.pt());
+              }
+            }
+          }
+        }
+        if (enableAl) {
+          if (mcParticleGen.pdgCode() == PDGAlpha) {
+            spectraGen.fill(HIST("alpha/histGenPtAl"), mcParticleGen.pt());
+            if (isPhysPrim)
+              spectraGen.fill(HIST("alpha/histGenPtAlPrim"), mcParticleGen.pt());
+            if (!isPhysPrim && isProdByGen) {
+              //
+            }
+            if (!isPhysPrim && !isProdByGen) {
+              spectraGen.fill(HIST("alpha/histSecTransportPtAl"), mcParticleGen.pt());
+              if (isWeakDecay) {
+                spectraGen.fill(HIST("alpha/histGenPtAlSec"), mcParticleGen.pt());
+              }
+            }
+          }
+          if (mcParticleGen.pdgCode() == -PDGAlpha) {
+            spectraGen.fill(HIST("alpha/histGenPtantiAl"), mcParticleGen.pt());
+            if (isPhysPrim)
+              spectraGen.fill(HIST("alpha/histGenPtantiAlPrim"), mcParticleGen.pt());
+            if (!isPhysPrim && isProdByGen) {
+              //
+            }
+            if (!isPhysPrim && !isProdByGen) {
+              spectraGen.fill(HIST("alpha/histSecTransportPtantiAl"), mcParticleGen.pt());
+              if (isWeakDecay) {
+                spectraGen.fill(HIST("alpha/histGenPtantiAlSec"), mcParticleGen.pt());
+              }
+            }
+          }
+        }
+      }
+    } // Close processMCGen
+    PROCESS_SWITCH(LFNucleiBATask, processMCGen, "process MC Generated", true);
+  };
+
+  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+  {
+    return WorkflowSpec{adaptAnalysisTask<LFNucleiBATask>(cfgc)};
   }
-
-  // CLOSING PROCESS MC RECO
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoLfPidEv, "process mc reco with LfPid w/ Event", false);
-
-  // Process function that runs on the filtered AO2D (for the MC)
-  void processMCRecoFiltered(o2::aod::LfNuclEvents::iterator const& event,
-                             soa::Join<o2::aod::LfCandNucleusFull, o2::aod::LfCandNucleusMC> const& tracks)
-  {
-    fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
-  } // CLOSING PROCESS MC RECO ON FILTERED DATA
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoFiltered, "process mc reco on the filtered data", false);
-
-  void processMCRecoFilteredLight(o2::aod::LfNuclEvents::iterator const& event,
-                                  soa::Join<o2::aod::LfCandNucleusDummy, o2::aod::LfCandNucleusMC> const& tracks)
-  {
-    fillHistograms<true /*MC*/, true /*Filtered*/>(event, tracks, true /*dummy*/);
-  } // CLOSING PROCESS MC RECO ON FILTERED DATA
-  PROCESS_SWITCH(LFNucleiBATask, processMCRecoFilteredLight, "process mc reco on the derived trees", false);
-
-  ////////////
-  // MC Gen //
-  ////////////
-
-  // LOOP OVER GENERATED MC PARTICLES
-  void processMCGen(aod::McCollision const& mcCollision,
-                    aod::McParticles& mcParticles)
-  {
-    spectraGen.fill(HIST("histGenVetxZ"), mcCollision.posZ());
-    for (auto& mcParticleGen : mcParticles) {
-      if (mcParticleGen.y() > yHighCut || mcParticleGen.y() < yLowCut) {
-        continue;
-      }
-
-      bool isPhysPrim = mcParticleGen.isPhysicalPrimary();
-      bool isProdByGen = mcParticleGen.producedByGenerator();
-      bool isWeakDecay = mcParticleGen.getProcess() == 4;
-
-      if (mcParticleGen.pdgCode() == PDGPion) {
-        spectraGen.fill(HIST("pion/histGenPtPion"), mcParticleGen.pt());
-        if (isPhysPrim)
-          spectraGen.fill(HIST("pion/histGenPtPionPrim"), mcParticleGen.pt());
-        if (!isPhysPrim && isProdByGen) {
-          //
-        }
-        if (!isPhysPrim && !isProdByGen) {
-          spectraGen.fill(HIST("pion/histSecTransportPtPion"), mcParticleGen.pt());
-          if (isWeakDecay) {
-            spectraGen.fill(HIST("pion/histGenPtPionSec"), mcParticleGen.pt());
-          }
-        }
-      }
-      if (mcParticleGen.pdgCode() == -PDGPion) {
-        spectraGen.fill(HIST("pion/histGenPtantiPion"), mcParticleGen.pt());
-        if (isPhysPrim)
-          spectraGen.fill(HIST("pion/histGenPtantiPionPrim"), mcParticleGen.pt());
-        if (!isPhysPrim && isProdByGen) {
-          //
-        }
-        if (!isPhysPrim && !isProdByGen) {
-          spectraGen.fill(HIST("pion/histSecTransportPtantiPion"), mcParticleGen.pt());
-          if (isWeakDecay) {
-            spectraGen.fill(HIST("pion/histGenPtantiPionSec"), mcParticleGen.pt());
-          }
-        }
-      }
-      if (mcParticleGen.pdgCode() == PDGKaon) {
-        spectraGen.fill(HIST("kaon/histGenPtKaon"), mcParticleGen.pt());
-        if (isPhysPrim)
-          spectraGen.fill(HIST("kaon/histGenPtKaonPrim"), mcParticleGen.pt());
-        if (!isPhysPrim && isProdByGen) {
-          //
-        }
-        if (!isPhysPrim && !isProdByGen) {
-          spectraGen.fill(HIST("kaon/histSecTransportPtKaon"), mcParticleGen.pt());
-          if (isWeakDecay) {
-            spectraGen.fill(HIST("kaon/histGenPtKaonSec"), mcParticleGen.pt());
-          }
-        }
-      }
-      if (mcParticleGen.pdgCode() == -PDGKaon) {
-        spectraGen.fill(HIST("kaon/histGenPtantiKaon"), mcParticleGen.pt());
-        if (isPhysPrim)
-          spectraGen.fill(HIST("kaon/histGenPtantiKaonPrim"), mcParticleGen.pt());
-        if (!isPhysPrim && isProdByGen) {
-          //
-        }
-        if (!isPhysPrim && !isProdByGen) {
-          spectraGen.fill(HIST("kaon/histSecTransportPtantiKaon"), mcParticleGen.pt());
-          if (isWeakDecay) {
-            spectraGen.fill(HIST("kaon/histGenPtantiKaonSec"), mcParticleGen.pt());
-          }
-        }
-      }
-      if (enablePr) {
-        if (mcParticleGen.pdgCode() == PDGProton) {
-          spectraGen.fill(HIST("proton/histGenPtProton"), mcParticleGen.pt());
-          if (isPhysPrim) {
-            spectraGen.fill(HIST("proton/histGenPtProtonPrim"), mcParticleGen.pt());
-            spectraGen.fill(HIST("proton/histGenPtProtonPrim_Y"), mcParticleGen.y(), mcParticleGen.pt());
-          }
-          if (!isPhysPrim && isProdByGen) {
-            //
-          }
-          if (!isPhysPrim && !isProdByGen) {
-            spectraGen.fill(HIST("proton/histSecTransportPtProton"), mcParticleGen.pt());
-            if (isWeakDecay) {
-              spectraGen.fill(HIST("proton/histGenPtProtonSec"), mcParticleGen.pt());
-            }
-          }
-        }
-        if (mcParticleGen.pdgCode() == -PDGProton) {
-          spectraGen.fill(HIST("proton/histGenPtantiProton"), mcParticleGen.pt());
-          if (isPhysPrim) {
-            spectraGen.fill(HIST("proton/histGenPtantiProtonPrim"), mcParticleGen.pt());
-            spectraGen.fill(HIST("proton/histGenPtantiProtonPrim_Y"), mcParticleGen.y(), mcParticleGen.pt());
-          }
-          if (!isPhysPrim && isProdByGen) {
-            //
-          }
-          if (!isPhysPrim && !isProdByGen) {
-            spectraGen.fill(HIST("proton/histSecTransportPtantiProton"), mcParticleGen.pt());
-            if (isWeakDecay) {
-              spectraGen.fill(HIST("proton/histGenPtantiProtonSec"), mcParticleGen.pt());
-            }
-          }
-        }
-      }
-      if (enableDe) {
-        if (mcParticleGen.pdgCode() == PDGDeuteron) {
-          spectraGen.fill(HIST("deuteron/histGenPtD"), mcParticleGen.pt());
-          if (isPhysPrim)
-            spectraGen.fill(HIST("deuteron/histGenPtDPrim"), mcParticleGen.pt());
-          if (!isPhysPrim && isProdByGen) {
-            //
-          }
-          if (!isPhysPrim && !isProdByGen) {
-            spectraGen.fill(HIST("deuteron/histSecTransportPtD"), mcParticleGen.pt());
-            if (isWeakDecay) {
-              spectraGen.fill(HIST("deuteron/histGenPtDSec"), mcParticleGen.pt());
-            }
-          }
-        }
-        if (mcParticleGen.pdgCode() == -PDGDeuteron) {
-          spectraGen.fill(HIST("deuteron/histGenPtantiD"), mcParticleGen.pt());
-          if (isPhysPrim)
-            spectraGen.fill(HIST("deuteron/histGenPtantiDPrim"), mcParticleGen.pt());
-          if (!isPhysPrim && isProdByGen) {
-            //
-          }
-          if (!isPhysPrim && !isProdByGen) {
-            spectraGen.fill(HIST("deuteron/histSecTransportPtantiD"), mcParticleGen.pt());
-            if (isWeakDecay) {
-              spectraGen.fill(HIST("deuteron/histGenPtantiDSec"), mcParticleGen.pt());
-            }
-          }
-        }
-      }
-      if (enableTr) {
-        if (mcParticleGen.pdgCode() == PDGTriton) {
-          spectraGen.fill(HIST("triton/histGenPtT"), mcParticleGen.pt());
-          if (isPhysPrim)
-            spectraGen.fill(HIST("triton/histGenPtTPrim"), mcParticleGen.pt());
-          if (!isPhysPrim && isProdByGen) {
-            //
-          }
-          if (!isPhysPrim && !isProdByGen) {
-            spectraGen.fill(HIST("triton/histSecTransportPtT"), mcParticleGen.pt());
-            if (isWeakDecay) {
-              spectraGen.fill(HIST("triton/histGenPtTSec"), mcParticleGen.pt());
-            }
-          }
-        }
-        if (mcParticleGen.pdgCode() == -PDGTriton) {
-          spectraGen.fill(HIST("triton/histGenPtantiT"), mcParticleGen.pt());
-          if (isPhysPrim)
-            spectraGen.fill(HIST("triton/histGenPtantiTPrim"), mcParticleGen.pt());
-          if (!isPhysPrim && isProdByGen) {
-            //
-          }
-          if (!isPhysPrim && !isProdByGen) {
-            spectraGen.fill(HIST("triton/histSecTransportPtantiT"), mcParticleGen.pt());
-            if (isWeakDecay) {
-              spectraGen.fill(HIST("triton/histGenPtantiTSec"), mcParticleGen.pt());
-            }
-          }
-        }
-      }
-      if (enableHe) {
-        if (mcParticleGen.pdgCode() == PDGHelium) {
-          spectraGen.fill(HIST("helium/histGenPtHe"), mcParticleGen.pt());
-          if (isPhysPrim) {
-            // LOG(info) << "I AM POSITIVE HELIUM and PRIMARY, get process output is: " << mcParticleGen.getProcess();
-            spectraGen.fill(HIST("helium/histGenPtHePrim"), mcParticleGen.pt());
-          }
-          if (!isPhysPrim && isProdByGen) {
-            {
-              //
-            }
-          }
-          if (!isPhysPrim && !isProdByGen) {
-            spectraGen.fill(HIST("helium/histSecTransportPtHe"), mcParticleGen.pt());
-            // LOG(info) << "I AM POSITIVE HELIUM and SECONDARY, get process output is: " << mcParticleGen.getProcess();
-            if (isWeakDecay) {
-              spectraGen.fill(HIST("helium/histGenPtHeSec"), mcParticleGen.pt());
-              // LOG(info) << "I AM POSITIVE HELIUM and SECONDARY FROM MATERIAL, get process output is: " << mcParticleGen.getProcess();
-            }
-          }
-        }
-        if (mcParticleGen.pdgCode() == -PDGHelium) {
-          spectraGen.fill(HIST("helium/histGenPtantiHe"), mcParticleGen.pt());
-          if (isPhysPrim) {
-            spectraGen.fill(HIST("helium/histGenPtantiHePrim"), mcParticleGen.pt());
-          }
-          if (!isPhysPrim && isProdByGen) {
-            {
-              //
-            }
-          }
-          if (!isPhysPrim && !isProdByGen) {
-            spectraGen.fill(HIST("helium/histSecTransportPtantiHe"), mcParticleGen.pt());
-            if (isWeakDecay) {
-              spectraGen.fill(HIST("helium/histGenPtantiHeSec"), mcParticleGen.pt());
-            }
-          }
-        }
-      }
-      if (enableAl) {
-        if (mcParticleGen.pdgCode() == PDGAlpha) {
-          spectraGen.fill(HIST("alpha/histGenPtAl"), mcParticleGen.pt());
-          if (isPhysPrim)
-            spectraGen.fill(HIST("alpha/histGenPtAlPrim"), mcParticleGen.pt());
-          if (!isPhysPrim && isProdByGen) {
-            //
-          }
-          if (!isPhysPrim && !isProdByGen) {
-            spectraGen.fill(HIST("alpha/histSecTransportPtAl"), mcParticleGen.pt());
-            if (isWeakDecay) {
-              spectraGen.fill(HIST("alpha/histGenPtAlSec"), mcParticleGen.pt());
-            }
-          }
-        }
-        if (mcParticleGen.pdgCode() == -PDGAlpha) {
-          spectraGen.fill(HIST("alpha/histGenPtantiAl"), mcParticleGen.pt());
-          if (isPhysPrim)
-            spectraGen.fill(HIST("alpha/histGenPtantiAlPrim"), mcParticleGen.pt());
-          if (!isPhysPrim && isProdByGen) {
-            //
-          }
-          if (!isPhysPrim && !isProdByGen) {
-            spectraGen.fill(HIST("alpha/histSecTransportPtantiAl"), mcParticleGen.pt());
-            if (isWeakDecay) {
-              spectraGen.fill(HIST("alpha/histGenPtantiAlSec"), mcParticleGen.pt());
-            }
-          }
-        }
-      }
-    }
-  } // Close processMCGen
-  PROCESS_SWITCH(LFNucleiBATask, processMCGen, "process MC Generated", true);
-};
-
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<LFNucleiBATask>(cfgc)};
-}
