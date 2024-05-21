@@ -100,7 +100,7 @@ struct FlowGFWPbPb
   TAxis* fPtAxis;
   std::vector<std::vector<std::shared_ptr<TProfile>>> BootstrapArray; //TProfile is a shared pointer
 
-  enum ExtraProfile 
+  enum ExtraProfile
   {
 
   // here are TProfiles for vn-pt correlations that are not implemented in GFW
@@ -189,7 +189,7 @@ struct FlowGFWPbPb
     BootstrapArray[i].resize(kCount_ExtraProfile);
     }
 
-    for (int i = 0; i < cfgNbootstrap; i++) 
+    for (int i = 0; i < cfgNbootstrap; i++)
     {
       BootstrapArray[i][kc22] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22", i), ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile, {axisCentrality}});
       BootstrapArray[i][kc24] = registry.add<TProfile>(Form("BootstrapContainer_%d/c24", i), ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisCentrality}});
@@ -203,7 +203,7 @@ struct FlowGFWPbPb
     double* PtBins = &(axis.binEdges)[0];
     fPtAxis = new TAxis(nPtBins, PtBins);
 
-    if (cfgOutputNUAWeights) 
+    if (cfgOutputNUAWeights)
     {
       fWeights->SetPtBins(nPtBins, PtBins);
       fWeights->Init(true, false);
@@ -227,7 +227,7 @@ struct FlowGFWPbPb
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE));
     fGFW->CreateRegions();  // finalize the initialization
 
-    if (cfgUseAdditionalEventCut) 
+    if (cfgUseAdditionalEventCut)
     {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
@@ -245,7 +245,7 @@ struct FlowGFWPbPb
       fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
-    if (cfgUseAdditionalTrackCut) 
+    if (cfgUseAdditionalTrackCut)
     {
       fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
       fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
@@ -456,23 +456,23 @@ struct FlowGFWPbPb
     registry.fill(HIST("hEventCount"), 1.5);
 
     Int_t multITSnoTPC = 0, multITSonly = 0, multITSTPC = 0;
-      
-    for (auto& track : tracks) 
+
+    for (auto& track : tracks)
     {
-          
+
       if (track.hasITS() && !track.hasTPC())
         multITSnoTPC++;
-          
+
       if (track.hasITS())
         multITSonly++;
-          
+
       if (track.hasITS() && track.hasTPC())
         multITSTPC++;
-   
+
     }
 
     registry.fill(HIST("multITSnoTPC_vs_MultITSTPC_Bef"), multITSTPC, multITSnoTPC);
-    registry.fill(HIST("multITSonly_vs_MultITSTPC_Bef"), multITSTPC, multITSonly);  
+    registry.fill(HIST("multITSonly_vs_MultITSTPC_Bef"), multITSTPC, multITSonly);
     registry.fill(HIST("multNTracksITSonly_vs_MultNTracksITSTPC_Bef"), collision.multNTracksITSTPC(), collision.multNTracksITSOnly());
     registry.fill(HIST("multNTracksTPConly_vs_MultNtracksITSTPC_Bef"), collision.multNTracksITSTPC(), collision.multNTracksTPCOnly());
 
