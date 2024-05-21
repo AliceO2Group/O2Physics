@@ -630,7 +630,7 @@ struct sgExclusivePhi {
               }
             }
           }
-         } // end of two tracks only loop
+        } // end of two tracks only loop
       }   // vertex cut
 
       if (allTracksAreKaonsBandPID.size() == 2) {
