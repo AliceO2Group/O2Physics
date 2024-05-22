@@ -168,9 +168,6 @@ struct femtoWorldEficiencyTask {
     registryPri.add("plus/TOFmatchingPr", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryPri.add("minus/TOFmatchingPr", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
-    registryPri.add("plus/GenPriAll", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
-    registryPri.add("minus/GenPriAll", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
-
     registryPri.add("plus/GenPriPi", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryPri.add("minus/GenPriPi", ";#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
