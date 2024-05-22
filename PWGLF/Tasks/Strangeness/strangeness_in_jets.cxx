@@ -472,7 +472,6 @@ struct strangeness_in_jets {
     if ((abs(jet_axis.Eta()) + Rmax) > etaMax)
       return;
     registryQC.fill(HIST("number_of_events_data"), 4.5);
-      
     // Perpendicular Cones for UE
     TVector3 ue_axis1(0.0, 0.0, 0.0);
     TVector3 ue_axis2(0.0, 0.0, 0.0);
