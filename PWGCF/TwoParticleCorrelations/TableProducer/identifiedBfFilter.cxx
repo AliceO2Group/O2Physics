@@ -1210,7 +1210,8 @@ MatchRecoGenSpecies IdentifiedBfFilterTracks::trackIdentification(TrackObject co
   if (recoIdMethod == 0) {
     sp = kIdBfCharged;
   } else if (recoIdMethod == 1) {
-    if constexpr (framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
+
+    if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns> || framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
       sp = IdentifyTrack(track);
     } else {
       LOGF(fatal, "Track identification required but PID information not present");
