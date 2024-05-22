@@ -5039,7 +5039,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairLxyProjected3sigmaLambdacCand")) {
     TF1* f1minLxyProjected = new TF1("f1minLxyProjected", "[0]+[1]*x", 0., 20.);
-    f1minLxyProjected->SetParameters(0.0065, -0.0023);
+    f1minLxyProjected->SetParameters(0.0065, -0.00023);
     cut->AddCut(VarManager::kVertexingLxyProjected, f1minLxyProjected, 1., false, VarManager::kPt, 0., 20.);
     return cut;
   }
