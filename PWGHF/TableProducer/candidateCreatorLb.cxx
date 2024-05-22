@@ -261,9 +261,9 @@ struct HfCandidateCreatorLbMc {
   void process(aod::Tracks const&) {}
 
   void processMC(aod::HfCandLb const& candidates,
-               aod::HfCand3Prong const&,
-               aod::TracksWMc const&,
-               aod::McParticles const& mcParticles)
+                 aod::HfCand3Prong const&,
+                 aod::TracksWMc const&,
+                 aod::McParticles const& mcParticles)
   {
     int indexRec = -1;
     int8_t sign = 0;
