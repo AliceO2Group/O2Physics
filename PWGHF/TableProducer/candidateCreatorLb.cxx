@@ -16,12 +16,12 @@
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 
 #include "CommonConstants/PhysicsConstants.h"
+#include "Common/Core/trackUtilities.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
-
-#include "Common/Core/trackUtilities.h"
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -35,9 +35,6 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_trkcandsel;
-
-
-#include "Framework/runDataProcessing.h"
 
 /// Reconstruction of Λb candidates
 struct HfCandidateCreatorLb {
