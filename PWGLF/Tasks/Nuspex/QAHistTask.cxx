@@ -554,7 +554,8 @@ struct QAHistTask {
                  aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
-    if (event_selection_MC_sel8 && !collisions.sel8()) return;
+    if (event_selection_MC_sel8 && !collisions.sel8())
+      return;
     MC_recon_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
     MC_recon_reg.fill(HIST("histCentrality"), collisions.centFT0C());
 
