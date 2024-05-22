@@ -9,9 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \author Alberto Caliva (alberto.caliva@cern.ch)
-/// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
-/// \since May 22, 2024
+// Authors: Alberto Caliva, Francesca Ercolessi
+// Date: 22.05.2024
 
 #include <TDatabasePDG.h>
 #include <TLorentzVector.h>
