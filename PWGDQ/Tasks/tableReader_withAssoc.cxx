@@ -1145,6 +1145,7 @@ struct AnalysisSameEventPairing {
     }*/
 
     uint32_t twoTrackFilter = 0;
+    uint32_t dileptonMcDecision = 0; // placeholder, copy of the dqEfficiency.cxx one
     int sign1 = 0;
     int sign2 = 0;
     dielectronList.reserve(1);
