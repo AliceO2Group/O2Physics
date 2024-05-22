@@ -244,13 +244,15 @@ struct lambdapolarization {
         continue;
 
       if (LambdaTag) {
-        LambdaVec = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massLambda);
         ProtonVec = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPr);
+        PionVec = ROOT::Math::PxPyPzMVector(negtrack.px(), negtrack.py(), negtrack.pz(), massPi);
       }
       if (aLambdaTag) {
-        LambdaVec = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massLambda);
         ProtonVec = ROOT::Math::PxPyPzMVector(negtrack.px(), negtrack.py(), negtrack.pz(), massPr);
+        PionVec = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPi);
       }
+      LambdaVec = ProtonVec + PionVec;
+
       ROOT::Math::Boost boost{LambdaVec.BoostToCM()};
       ProtonBoostedVec = boost(ProtonVec);
 
