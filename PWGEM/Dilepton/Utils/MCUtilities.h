@@ -233,21 +233,22 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
 }
 
 template <typename T, typename U>
-int searchMothers(T& p, U& mcParticles, int pdg, bool equal){ // find the first ancestor that is equal/not-equal pdg
-  if (!p.has_mothers()){
+int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
+{ // find the first ancestor that is equal/not-equal pdg
+  if (!p.has_mothers()) {
     return -1;
   }
   auto mothersids = p.mothersIds();
   std::vector<int> allmothersids;
 
-  if (mothersids.size()==2){
-    if (mothersids[0]==mothersids[1]){
+  if (mothersids.size() == 2) {
+    if (mothersids[0] == mothersids[1]) {
       allmothersids.push_back(mothersids[0]);
-    } else if (mothersids[1]<mothersids[0]) {
+    } else if (mothersids[1] < mothersids[0]) {
       allmothersids.push_back(mothersids[0]);
       allmothersids.push_back(mothersids[1]);
-    } else if (( 80<abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && abs(o2::mcgenstatus::getGenStatusCode(p.statusCode()))<90  ) || (100<abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && abs(o2::mcgenstatus::getGenStatusCode(p.statusCode()))<110) ) { //NOTE: THIS IS GENERATOR DEPENDENT AND WORKS ONLY FOR PYTHIA!
-      for (int i=mothersids[0]; i<=mothersids[1]; i++){
+    } else if ((80 < abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 90) || (100 < abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 110)) { // NOTE: THIS IS GENERATOR DEPENDENT AND WORKS ONLY FOR PYTHIA!
+      for (int i = mothersids[0]; i <= mothersids[1]; i++) {
         allmothersids.push_back(i);
       }
     } else {
@@ -258,32 +259,32 @@ int searchMothers(T& p, U& mcParticles, int pdg, bool equal){ // find the first 
     allmothersids.push_back(mothersids[0]);
   }
 
-  if (equal){ // we are searching for the quark
-    for (int i : allmothersids){ // first check if we find it in the direct mothers
+  if (equal) {                    // we are searching for the quark
+    for (int i : allmothersids) { // first check if we find it in the direct mothers
       auto mother = mcParticles.iteratorAt(i);
       int mpdg = abs(mother.pdgCode());
       if (mpdg == pdg) {
         return i; // found it
       }
     }
-    for (int i : allmothersids){
+    for (int i : allmothersids) {
       auto mother = mcParticles.iteratorAt(i);
-      int id = searchMothers(mother, mcParticles, pdg, equal); //search recursivly through entire history
-      if (id>-1){ // we found a hf quark somewhere up in the history
+      int id = searchMothers(mother, mcParticles, pdg, equal); // search recursivly through entire history
+      if (id > -1) {                                           // we found a hf quark somewhere up in the history
         return id;
       }
     }
   } else { // searching for first ancestor that is not quark anymore
     bool found = false;
-    for (int i : allmothersids){
+    for (int i : allmothersids) {
       auto mother = mcParticles.iteratorAt(i);
       int mpdg = abs(mother.pdgCode());
-      if (mpdg==pdg){ // found the quark, so we go deeper
+      if (mpdg == pdg) { // found the quark, so we go deeper
         found = true;
-        return searchMothers(mother, mcParticles, pdg, equal); //search recursivly through entire history
+        return searchMothers(mother, mcParticles, pdg, equal); // search recursivly through entire history
       }
     }
-    if (!found){ // no HF quark as mother, so this is the ancestor
+    if (!found) { // no HF quark as mother, so this is the ancestor
       return allmothersids[0];
     }
   }
@@ -291,9 +292,10 @@ int searchMothers(T& p, U& mcParticles, int pdg, bool equal){ // find the first 
 }
 
 template <typename T, typename U>
-int findHFOrigin(T& p, U& mcParticles, int pdg){
+int findHFOrigin(T& p, U& mcParticles, int pdg)
+{
   int quark_id = searchMothers(p, mcParticles, pdg, true); // try to find the hf quark
-  if (quark_id == -1){
+  if (quark_id == -1) {
     return -1;
   }
   auto quark = mcParticles.iteratorAt(quark_id);
@@ -302,10 +304,11 @@ int findHFOrigin(T& p, U& mcParticles, int pdg){
 }
 
 template <typename T, typename U>
-bool checkFromSameQuarkPair(T& p1, T& p2, U& mcParticles, int pdg){ // check if two particles come from the same hf q-qbar pair
+bool checkFromSameQuarkPair(T& p1, T& p2, U& mcParticles, int pdg)
+{ // check if two particles come from the same hf q-qbar pair
   int id1 = findHFOrigin(p1, mcParticles, pdg);
   int id2 = findHFOrigin(p2, mcParticles, pdg);
-  return id1==id2 && id1>-1 && id2>-1;
+  return id1 == id2 && id1 > -1 && id2 > -1;
 }
 //_______________________________________________________________________
 //_______________________________________________________________________

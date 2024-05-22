@@ -49,7 +49,7 @@ DECLARE_SOA_COLUMN(BQuarkId, bQuarkId, int);
 DECLARE_SOA_COLUMN(CQuarkId, cQuarkId, int);
 DECLARE_SOA_COLUMN(BQuarkOriginId, bQuarkOriginId, int);
 DECLARE_SOA_COLUMN(CQuarkOriginId, cQuarkOriginId, int);
-}
+} // namespace hftable
 DECLARE_SOA_TABLE(HfTable, "AOD", "HFTABLE",
                   hftable::IsHF,
                   hftable::BHadronId,
@@ -126,7 +126,7 @@ struct lmeehfcocktailprefilter {
     for (auto const& p : mcParticles) {
 
       if (abs(p.pdgCode()) != 11 || o2::mcgenstatus::getHepMCStatusCode(p.statusCode()) != 1) {
-        hfTable(EFromHFType::kNoE, -1, -1, -1, -1, -1,-1);
+        hfTable(EFromHFType::kNoE, -1, -1, -1, -1, -1, -1);
         continue;
       }
 
@@ -143,17 +143,17 @@ struct lmeehfcocktailprefilter {
       if (bHadronId > -1) {
         auto bHadron = mcParticles.iteratorAt(bHadronId);
         bQuarkId = searchMothers(bHadron, mcParticles, 5, true);
-        if (bQuarkId > -1){
+        if (bQuarkId > -1) {
           auto bQuark = mcParticles.iteratorAt(bQuarkId);
           bQuarkOriginId = searchMothers(bQuark, mcParticles, 5, false);
         }
         isHF = isHF + 2;
         bQuarkOriginId = findHFOrigin(p, mcParticles, 5);
       }
-      if (isHF == EFromHFType::kCE){
+      if (isHF == EFromHFType::kCE) {
         auto cHadron = mcParticles.iteratorAt(cHadronId);
         cQuarkId = searchMothers(cHadron, mcParticles, 4, true);
-        if (cQuarkId > -1){
+        if (cQuarkId > -1) {
           auto cQuark = mcParticles.iteratorAt(cQuarkId);
           cQuarkOriginId = searchMothers(cQuark, mcParticles, 4, false);
         }
@@ -234,13 +234,13 @@ struct lmeehfcocktailbeauty {
   void processBeauty(aod::McCollisions const& collisions, MyFilteredMcParticlesSmeared const& mcParticles, aod::McParticles const& mcParticlesAll)
   {
     for (auto const& p : mcParticles) {
-        if (myConfigs.fConfigCheckPartonic && p.bQuarkOriginId()<0){
-          continue;
-        }
-        int from_quark = p.isHF() - 2;
-        doSingle(p, hEta[from_quark], hPt[from_quark], hPtEta[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+      if (myConfigs.fConfigCheckPartonic && p.bQuarkOriginId() < 0) {
+        continue;
       }
-      
+      int from_quark = p.isHF() - 2;
+      doSingle(p, hEta[from_quark], hPt[from_quark], hPtEta[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+    }
+
     for (auto const& collision : collisions) {
 
       registry.fill(HIST("NEvents"), 0.5);
@@ -249,7 +249,7 @@ struct lmeehfcocktailbeauty {
       auto const positronsGrouped = Positrons->sliceBy(perCollision, collision.globalIndex());
       // ULS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsFullIndexPolicy(electronsGrouped, positronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic){
+        if (myConfigs.fConfigCheckPartonic) {
           if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
             continue;
         }
@@ -259,7 +259,7 @@ struct lmeehfcocktailbeauty {
         if ((type < static_cast<int>(EM_HFeeType::kBe_Be)) || (type > static_cast<int>(EM_HFeeType::kBCe_Be_SameB))) {
           LOG(error) << "Something is wrong here. There should only be pairs of type kBe_Be = 1, kBCe_BCe = 2 and kBCe_Be_SameB = 3 left at this point.";
         }
-        if (myConfigs.fConfigCheckPartonic){
+        if (myConfigs.fConfigCheckPartonic) {
           if (!checkFromSameQuarkPair(particle1, particle2, mcParticlesAll, 5))
             continue;
         }
@@ -268,7 +268,7 @@ struct lmeehfcocktailbeauty {
       }
       // LS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic){
+        if (myConfigs.fConfigCheckPartonic) {
           if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
             continue;
         }
@@ -278,14 +278,14 @@ struct lmeehfcocktailbeauty {
         if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
           LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
         }
-        if (myConfigs.fConfigCheckPartonic){
+        if (myConfigs.fConfigCheckPartonic) {
           if (!checkFromSameQuarkPair(particle1, particle2, mcParticlesAll, 5))
             continue;
         }
         doPair(particle1, particle2, hLSmm_Mee, hLSmm_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic){
+        if (myConfigs.fConfigCheckPartonic) {
           if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
             continue;
         }
@@ -295,7 +295,7 @@ struct lmeehfcocktailbeauty {
         if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
           LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
         }
-        if (myConfigs.fConfigCheckPartonic){
+        if (myConfigs.fConfigCheckPartonic) {
           if (!checkFromSameQuarkPair(particle1, particle2, mcParticlesAll, 5))
             continue;
         }
@@ -361,11 +361,11 @@ struct lmeehfcocktailcharm {
   void processCharm(aod::McCollisions const& collisions, MyFilteredMcParticlesSmeared const& mcParticles, aod::McParticles const& mcParticlesAll)
   {
     for (auto const& p : mcParticles) {
-        if (myConfigs.fConfigCheckPartonic && p.cQuarkOriginId()<0){
-          continue;
-        }
-        doSingle(p, hEta, hPt, hPtEta, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+      if (myConfigs.fConfigCheckPartonic && p.cQuarkOriginId() < 0) {
+        continue;
       }
+      doSingle(p, hEta, hPt, hPtEta, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+    }
 
     for (auto const& collision : collisions) {
 
@@ -375,7 +375,7 @@ struct lmeehfcocktailcharm {
       auto const positronsGrouped = Positrons->sliceBy(perCollision, collision.globalIndex());
       // ULS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsFullIndexPolicy(electronsGrouped, positronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic){
+        if (myConfigs.fConfigCheckPartonic) {
           if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
             continue;
         }
