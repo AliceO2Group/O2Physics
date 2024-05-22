@@ -101,7 +101,7 @@ struct strangeness_in_jets {
   Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f,
                                         "Maximum DCA Daughters"};
 
-  void init(InitContext const &)
+  void init(InitContext const&)
   {
     // Global Properties and QC
     registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{15, 0, 15, "Event Cuts"}});
@@ -118,7 +118,7 @@ struct strangeness_in_jets {
   }
 
   template <typename T1>
-  bool passedTrackSelectionForJets(const T1 &track)
+  bool passedTrackSelectionForJets(const T1& track)
   {
     if (!track.hasITS())
       return false;
@@ -147,7 +147,7 @@ struct strangeness_in_jets {
 
   // Lambda Selections
   template <typename V, typename T1, typename T2, typename C>
-  bool passedLambdaSelection(const V &v0, const T1 &ptrack, const T2 &ntrack, const C &collision)
+  bool passedLambdaSelection(const V& v0, const T1& ptrack, const T2& ntrack, const C& collision)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -204,7 +204,7 @@ struct strangeness_in_jets {
 
   // AntiLambda Selections
   template <typename V, typename T1, typename T2, typename C>
-  bool passedAntiLambdaSelection(const V &v0, const T1 &ptrack, const T2 &ntrack, const C &collision)
+  bool passedAntiLambdaSelection(const V& v0, const T1& ptrack, const T2& ntrack, const C& collision)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -261,7 +261,7 @@ struct strangeness_in_jets {
 
   // Single-Track Selection
   template <typename T1>
-  bool passedSingleTrackSelection(const T1 &track)
+  bool passedSingleTrackSelection(const T1& track)
   {
     if (requireITS && (!track.hasITS()))
       return false;
@@ -309,7 +309,7 @@ struct strangeness_in_jets {
     return delta_phi;
   }
 
-  void get_perpendicular_cone(TVector3 p, TVector3 &u, float sign)
+  void get_perpendicular_cone(TVector3 p, TVector3& u, float sign)
   {
     // Initialization
     float ux(0), uy(0), uz(0);
@@ -358,7 +358,7 @@ struct strangeness_in_jets {
     return;
   }
 
-  void processData(SelectedCollisions::iterator const &collision, aod::V0Datas const &fullV0s, FullTracks const &tracks)
+  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, FullTracks const& tracks)
   {
     registryQC.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
@@ -397,7 +397,7 @@ struct strangeness_in_jets {
       return;
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
-    auto const &leading_track = tracks.iteratorAt(leading_ID);
+    auto const& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
 
     // Jet Finder
@@ -523,10 +523,10 @@ struct strangeness_in_jets {
 
     mult_jet = mult_jet - 2.0 * mult_ue;
 
-    for (auto &v0 : fullV0s) {
+    for (auto& v0 : fullV0s) {
 
-      const auto &pos = v0.posTrack_as<FullTracks>();
-      const auto &neg = v0.negTrack_as<FullTracks>();
+      const auto& pos = v0.posTrack_as<FullTracks>();
+      const auto& neg = v0.negTrack_as<FullTracks>();
       if (!pos.passedTPCRefit())
         continue;
       if (!neg.passedTPCRefit())
@@ -572,7 +572,7 @@ struct strangeness_in_jets {
   PROCESS_SWITCH(strangeness_in_jets, processData, "Process data", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<strangeness_in_jets>(cfgc)};
 }
