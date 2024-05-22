@@ -140,6 +140,7 @@ struct MultiplicityCounter {
       x->SetBinLabel(static_cast<int>(EvSelBins::kRejected), EvSelBinLabels[static_cast<int>(EvSelBins::kRejected)].data());
 
       inclusiveRegistry.add({NtrkZvtx.data(), "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+      inclusiveRegistry.add({NpvcZvtx.data(), "; N_{PVc}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtx.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtx_gt0.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtx_PVgt0.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
@@ -171,6 +172,7 @@ struct MultiplicityCounter {
       x->SetBinLabel(static_cast<int>(EvSelBins::kRejected), EvSelBinLabels[static_cast<int>(EvSelBins::kRejected)].data());
 
       binnedRegistry.add({NtrkZvtx.data(), "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({NpvcZvtx.data(), "; N_{PVc}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtx.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtx_gt0.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtx_PVgt0.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
@@ -200,6 +202,7 @@ struct MultiplicityCounter {
       }
       inclusiveRegistry.add({NtrkZvtxGen.data(), "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       inclusiveRegistry.add({NtrkZvtxGen_t.data(), effLabels.c_str(), {HistType::kTHnSparseF, effAxes}});
+      inclusiveRegistry.add({NpvcZvxtGen.data(), "; N_{PVc}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtxGen.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtxGen_t.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
       inclusiveRegistry.add({EtaZvtxGen_gt0.data(), "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}});
@@ -247,6 +250,7 @@ struct MultiplicityCounter {
       }
       binnedRegistry.add({NtrkZvtxGen.data(), "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({NtrkZvtxGen_t.data(), "; N_{part}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
+      binnedRegistry.add({NpvcZvxtGen.data(), "; N_{PVc}; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {MultAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtxGen.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtxGen_t.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
       binnedRegistry.add({EtaZvtxGen_gt0.data(), "; #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {EtaAxis, ZAxis, CentAxis}}});
@@ -513,6 +517,7 @@ struct MultiplicityCounter {
           }
         }
         binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
+        binnedRegistry.fill(HIST(NpvcZvtx), groupPVContrib.size(), z, c);
       } else {
         if (Ntrks > 0 || INELgt0PV) {
           if (INELgt0PV) {
@@ -531,6 +536,7 @@ struct MultiplicityCounter {
           }
         }
         inclusiveRegistry.fill(HIST(NtrkZvtx), Ntrks, z);
+        inclusiveRegistry.fill(HIST(NpvcZvtx), groupPVContrib.size(), z);
       }
     } else {
       if constexpr (hasRecoCent<C>()) {
@@ -704,6 +710,7 @@ struct MultiplicityCounter {
           }
         }
         binnedRegistry.fill(HIST(NtrkZvtx), Ntrks, z, c);
+        binnedRegistry.fill(HIST(NpvcZvtx), groupPVContrib.size(), z, c);
       } else {
         if (Ntrks > 0 || INELgt0PV) {
           if (INELgt0PV) {
@@ -736,6 +743,7 @@ struct MultiplicityCounter {
           }
         }
         inclusiveRegistry.fill(HIST(NtrkZvtx), Ntrks, z);
+        inclusiveRegistry.fill(HIST(NpvcZvtx), groupPVContrib.size(), z);
       }
     } else {
       if constexpr (hasRecoCent<C>()) {
@@ -1525,7 +1533,7 @@ struct MultiplicityCounter {
         auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
         auto Nrec = countTracksAmbiguous<C, false>(perCollisionSample, perCollisionASample, z, c_rec);
         NrecPerCol.emplace_back(Nrec);
-        NPVPerCol.emplace_back(collision.numContrib());
+        NPVPerCol.emplace_back(groupPVcontrib.size());
         fillFIT(collision, NFT0APerCol, NFT0CPerCol, NFDDAPerCol, NFDDCPerCol);
 
         if constexpr (hasRecoCent<C>()) {
@@ -1545,8 +1553,10 @@ struct MultiplicityCounter {
 
         if constexpr (hasRecoCent<C>()) {
           binnedRegistry.fill(HIST(NtrkZvtxGen), Nrec, collision.posZ(), c_rec);
+          binnedRegistry.fill(HIST(NpvcZvxtGen), groupPVcontrib.size(), collision.posZ(), c_rec);
         } else {
           inclusiveRegistry.fill(HIST(NtrkZvtxGen), Nrec, collision.posZ());
+          inclusiveRegistry.fill(HIST(NpvcZvxtGen), groupPVcontrib.size(), collision.posZ());
         }
       }
     }
@@ -1714,7 +1724,7 @@ struct MultiplicityCounter {
         auto perCollisionSample = tracks.sliceBy(perCol, collision.globalIndex());
         auto Nrec = countTracks<C, false>(perCollisionSample, z, c_rec);
         NrecPerCol.emplace_back(Nrec);
-        NPVPerCol.emplace_back(collision.numContrib());
+        NPVPerCol.emplace_back(groupPVcontrib.size());
         fillFIT(collision, NFT0APerCol, NFT0CPerCol, NFDDAPerCol, NFDDCPerCol);
 
         if constexpr (hasRecoCent<C>()) {
@@ -1734,8 +1744,10 @@ struct MultiplicityCounter {
 
         if constexpr (hasRecoCent<C>()) {
           binnedRegistry.fill(HIST(NtrkZvtxGen), Nrec, collision.posZ(), c_rec);
+          binnedRegistry.fill(HIST(NpvcZvxtGen), groupPVcontrib.size(), collision.posZ(), c_rec);
         } else {
           inclusiveRegistry.fill(HIST(NtrkZvtxGen), Nrec, collision.posZ());
+          inclusiveRegistry.fill(HIST(NpvcZvxtGen), groupPVcontrib.size(), collision.posZ());
         }
       }
     }
