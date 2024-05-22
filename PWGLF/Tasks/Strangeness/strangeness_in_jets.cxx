@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi
-/// (francesca.ercolessi@cern.ch) \since May 22, 2024
+/// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch)
+/// \since May 22, 2024
 
 #include <TDatabasePDG.h>
 #include <TLorentzVector.h>
