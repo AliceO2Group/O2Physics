@@ -428,14 +428,14 @@ struct femtoWorldEficiencyTask {
             registryPri.fill(HIST("plus/AllPriPt"), mcParticle.pt());
             // generated primary, no cuts, no nsigma
             if (mcParticle.pdgCode() == 211) {
-                registryPri.fill(HIST("plus/GenPriPi"), mcParticle.pt());
-              }
-              if (mcParticle.pdgCode() == 321) {
-                registryPri.fill(HIST("plus/GenPriKa"), mcParticle.pt());
-              }
-              if (mcParticle.pdgCode() == 2212) {
-                registryPri.fill(HIST("plus/GenPriPr"), mcParticle.pt());
-              }
+              registryPri.fill(HIST("plus/GenPriPi"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == 321) {
+              registryPri.fill(HIST("plus/GenPriKa"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == 2212) {
+              registryPri.fill(HIST("plus/GenPriPr"), mcParticle.pt());
+            }
             // histogram pt TOF matching
             if (track.hasTOF()) {
               registryPri.fill(HIST("plus/TOFmatchingAll"), mcParticle.pt());
@@ -479,14 +479,14 @@ struct femtoWorldEficiencyTask {
             registryPri.fill(HIST("minus/AllPriPt"), mcParticle.pt());
             // generated primary, no cuts, no nsigma
             if (mcParticle.pdgCode() == -211) {
-                registryPri.fill(HIST("minus/GenPriPi"), mcParticle.pt());
-              }
-              if (mcParticle.pdgCode() == -321) {
-                registryPri.fill(HIST("minus/GenPriKa"), mcParticle.pt());
-              }
-              if (mcParticle.pdgCode() == -2212) {
-                registryPri.fill(HIST("minus/GenPriPr"), mcParticle.pt());
-              }
+              registryPri.fill(HIST("minus/GenPriPi"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == -321) {
+              registryPri.fill(HIST("minus/GenPriKa"), mcParticle.pt());
+            }
+            if (mcParticle.pdgCode() == -2212) {
+              registryPri.fill(HIST("minus/GenPriPr"), mcParticle.pt());
+            }
             // histogram pt TOF matching
             if (track.hasTOF()) {
               registryPri.fill(HIST("minus/TOFmatchingAll"), mcParticle.pt());
