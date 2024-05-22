@@ -41,7 +41,7 @@ struct SGPIDSpectra {
   Configurable<float> FT0C_cut{"FT0C", 50., "FT0C threshold"};
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
-  //Track Selections
+  // Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 0.0, "dcaXY cut (0 for Pt-function)"};
@@ -63,72 +63,72 @@ struct SGPIDSpectra {
     // Collision histograms
     registry.add("collisions/GapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("collisions/TrueGapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{4, -1.5, 2.5}}});
-    registry.add("ttracks/pPion_Pt_TPC_El", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_Ka", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_Pr", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_El", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_Pi", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_Pr", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_El", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_Ka", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_Pi", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_El", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_Ka", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_Pr", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_El", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_Pi", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_Pr", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_El", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_Ka", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_Pi", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pPion_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nPion_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pKaon_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nKaon_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/pProton_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
-    registry.add("ttracks/nProton_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt,axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_El", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_Ka", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_Pr", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_El", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_Pi", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_Pr", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_El", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_Ka", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_Pi", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_El", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_Ka", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_Pr", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_El", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_Pi", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_Pr", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_El", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_Ka", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_Pi", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pPion_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nPion_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pKaon_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nKaon_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_p_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_n_0", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_p_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_n_1", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_p_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_n_2", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_p_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/pProton_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
+    registry.add("ttracks/nProton_Pt_TPC_n_3", "", {HistType::kTH2F, {axispt, axistpc}});
   }
 
   // define data types
@@ -149,151 +149,205 @@ struct SGPIDSpectra {
     // check rho0 signals
     for (auto t : tracks) {
       if (trackselector(t, parameters) && t.hasTPC()) {
-          if (truegapSide == 0){
-	   if(t.sign()>0){
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/pPion_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/pPion_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/pPion_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/pKaon_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/pProton_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/pProton_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/pProton_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   } else { 
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/nPion_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/nPion_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/nPion_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/nKaon_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/nProton_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/nProton_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/nProton_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_p_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_n_0"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   }  
-	} else if (truegapSide == 1){
-	   if(t.sign()>0){
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/pPion_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/pPion_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/pPion_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/pKaon_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/pProton_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/pProton_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/pProton_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   } else { 
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/nPion_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/nPion_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/nPion_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/nKaon_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/nProton_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/nProton_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/nProton_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_p_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_n_1"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   }  
-	} else if (truegapSide == 2){
-	   if(t.sign()>0){
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/pPion_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/pPion_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/pPion_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/pKaon_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/pProton_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/pProton_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/pProton_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   } else { 
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/nPion_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/nPion_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/nPion_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/nKaon_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaPr()) < 1.)registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pr"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               if (std::abs(t.tpcNSigmaEl()) < 1.)registry.fill(HIST("ttracks/nProton_Pt_TPC_El"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaKa()) < 1.)registry.fill(HIST("ttracks/nProton_Pt_TPC_Ka"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-               if (std::abs(t.tpcNSigmaPi()) < 1.)registry.fill(HIST("ttracks/nProton_Pt_TPC_Pi"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_p_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_n_2"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   }  
-	} else {
-	   if(t.sign()>0){
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/pPion_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/pProton_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   } else { 
-             if (t.pz()>0){
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_p_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     } else {
-               registry.fill(HIST("ttracks/nPion_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPi());
-               registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaKa());
-               registry.fill(HIST("ttracks/nProton_Pt_TPC_n_3"), TMath::Abs(t.px()*t.px()+t.py()*t.py()), t.tpcNSigmaPr());
-	     }
-	   }  
-	} 
+        if (truegapSide == 0) {
+          if (t.sign() > 0) {
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          } else {
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_p_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_n_0"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          }
+        } else if (truegapSide == 1) {
+          if (t.sign() > 0) {
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          } else {
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_p_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_n_1"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          }
+        } else if (truegapSide == 2) {
+          if (t.sign() > 0) {
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          } else {
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaPr()) < 1.)
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_Pr"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+            if (std::abs(t.tpcNSigmaEl()) < 1.)
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_El"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaKa()) < 1.)
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_Ka"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (std::abs(t.tpcNSigmaPi()) < 1.)
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_Pi"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_p_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_n_2"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          }
+        } else {
+          if (t.sign() > 0) {
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/pPion_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/pKaon_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/pProton_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          } else {
+            if (t.pz() > 0) {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_p_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            } else {
+              registry.fill(HIST("ttracks/nPion_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPi());
+              registry.fill(HIST("ttracks/nKaon_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaKa());
+              registry.fill(HIST("ttracks/nProton_Pt_TPC_n_3"), TMath::Abs(t.px() * t.px() + t.py() * t.py()), t.tpcNSigmaPr());
+            }
+          }
+        }
     }
-   }
+    }
   }
 };
 
