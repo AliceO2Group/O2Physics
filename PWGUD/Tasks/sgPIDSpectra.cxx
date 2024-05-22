@@ -346,7 +346,7 @@ struct SGPIDSpectra {
             }
           }
         }
-    }
+      }
     }
   }
 };
