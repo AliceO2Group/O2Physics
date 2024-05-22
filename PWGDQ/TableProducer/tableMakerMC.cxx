@@ -1254,9 +1254,9 @@ struct TableMakerMC {
           // recalculte pDca for global muon tracks
           if (static_cast<int>(muon.trackType()) < 2) {
             auto const& matchMCH = tracksMuon.rawIteratorAt(static_cast<int>(muon.matchMCHTrackId()));
-            VarManager::FillMuonPDca<TMuonFillMap>(matchMCH, collision);
+            VarManager::FillTrackCollision<TMuonFillMap>(matchMCH, collision);
           } else if (static_cast<int>(muon.trackType()) > 2) {
-            VarManager::FillMuonPDca<TMuonFillMap>(muon, collision);
+            VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
           }
           if (fPropMuon) {
             VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
@@ -1595,28 +1595,28 @@ struct TableMakerMC {
                                  soa::Filtered<MyMuonsColl> const& tracksMuon,
                                  aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
-    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
+    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMap>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
   }
 
   void processAssociatedMuonOnlyWithCov(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
-                                        soa::Filtered<MyMuonsColl> const& tracksMuon,
+                                        soa::Filtered<MyMuonsCollWithCov> const& tracksMuon,
                                         aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
-    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
+    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
   }
 
-  void processAssociatedMuonOnlyWithCovAndCent(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
-                                               soa::Filtered<MyMuonsColl> const& tracksMuon,
+  void processAssociatedMuonOnlyWithCovAndCent(MyEventsWithCent const& collisions, aod::BCsWithTimestamps const& bcs,
+                                               soa::Filtered<MyMuonsCollWithCov> const& tracksMuon,
                                                aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
-    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
+    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
   }
 
-  void processAssociatedMuonOnlyWithCovAndMults(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
-                                                soa::Filtered<MyMuonsColl> const& tracksMuon,
+  void processAssociatedMuonOnlyWithCovAndMults(MyEventsWithCentAndMults const& collisions, aod::BCsWithTimestamps const& bcs,
+                                                soa::Filtered<MyMuonsCollWithCov> const& tracksMuon,
                                                 aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
-    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
+    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
   }
   // Produce muon tables only for ambiguous tracks studies --------------------------------------------------------------------------------------
   void processAmbiguousMuonOnly(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
