@@ -238,16 +238,54 @@ int searchMothers(T& p, U& mcParticles, int pdg, bool equal){ // find the first 
     return -1;
   }
   auto mothersids = p.mothersIds();
-  for (auto const& motherid : mothersids){ // first check direct mothers
-    auto mother = mcParticles.iteratorAt(motherid);
-    int mpdg = abs(mother.pdgCode());
-    if ((equal && mpdg == pdg) || ((!equal) && mpdg!=pdg)){
-      return motherid; // found it
+  std::vector<int> allmothersids;
+
+  if (mothersids.size()==2){
+    if (mothersids[0]==mothersids[1]){
+      allmothersids.push_back(mothersids[0]);
+    } else if (mothersids[1]<mothersids[0]) {
+      allmothersids.push_back(mothersids[0]);
+      allmothersids.push_back(mothersids[1]);
+    } else if (( 80<abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && abs(o2::mcgenstatus::getGenStatusCode(p.statusCode()))<90  ) || (100<abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && abs(o2::mcgenstatus::getGenStatusCode(p.statusCode()))<110) ) { //NOTE: THIS IS GENERATOR DEPENDENT AND WORKS ONLY FOR PYTHIA!
+      for (int i=mothersids[0]; i<=mothersids[1]; i++){
+        allmothersids.push_back(i);
+      }
+    } else {
+      allmothersids.push_back(mothersids[0]);
+      allmothersids.push_back(mothersids[1]);
     }
+  } else {
+    allmothersids.push_back(mothersids[0]);
   }
-  for (auto const& motherid : mothersids){ // in case we did not find anything for direct mothers, go deeper
-    auto mother = mcParticles.iteratorAt(motherid);
-    return searchMothers(mother, mcParticles, pdg, equal); //search recursivly through entire history
+
+  if (equal){ // we are searching for the quark
+    for (int i : allmothersids){ // first check if we find it in the direct mothers
+      auto mother = mcParticles.iteratorAt(i);
+      int mpdg = abs(mother.pdgCode());
+      if (mpdg == pdg) {
+        return i; // found it
+      }
+    }
+    for (int i : allmothersids){
+      auto mother = mcParticles.iteratorAt(i);
+      int id = searchMothers(mother, mcParticles, pdg, equal); //search recursivly through entire history
+      if (id>-1){ // we found a hf quark somewhere up in the history
+        return id;
+      }
+    }
+  } else { // searching for first ancestor that is not quark anymore
+    bool found = false;
+    for (int i : allmothersids){
+      auto mother = mcParticles.iteratorAt(i);
+      int mpdg = abs(mother.pdgCode());
+      if (mpdg==pdg){ // found the quark, so we go deeper
+        found = true;
+        return searchMothers(mother, mcParticles, pdg, equal); //search recursivly through entire history
+      }
+    }
+    if (!found){ // no HF quark as mother, so this is the ancestor
+      return allmothersids[0];
+    }
   }
   return -1;
 }
@@ -258,10 +296,8 @@ int findHFOrigin(T& p, U& mcParticles, int pdg){
   if (quark_id == -1){
     return -1;
   }
-
   auto quark = mcParticles.iteratorAt(quark_id);
   int id = searchMothers(quark, mcParticles, pdg, false); // try to find the first ancestor that is not the hf quark anymore
-
   return id;
 }
 
