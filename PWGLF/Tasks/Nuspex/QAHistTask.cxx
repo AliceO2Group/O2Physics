@@ -46,9 +46,7 @@ struct QAHistTask {
   HistogramRegistry QA_species{"data_species", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry QA_species_pos{"data_positive", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry QA_species_neg{"data_negative", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry MC_truth_reg{"MC_particles", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry MC_recon_reg{"MC_particles_reconstructed", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry MC_recon_diff_reg{"MC_reconstructed_diff", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry MC_recon_reg{"MC_particles_reco", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   OutputObj<TH1F> histPDG{TH1F("PDG", "PDG;PDG code", 100, 0.0, 100.0)};
 
   void init(o2::framework::InitContext&)
@@ -88,8 +86,7 @@ struct QAHistTask {
     AxisSpec centralityAxis = {100, 0.0, 100.0, "VT0C (%)"};
     AxisSpec centralityAxis_extended = {105, 0.0, 105.0, "VT0C (%)"};
     AxisSpec etaAxis = {etaBinning, "#eta"};
-    AxisSpec PDGBINNING = {20, 0.0, 20.0, "PDG code"};
-    AxisSpec ptAxis_diff = {ptBinning_diff, "#it{p}_{T,diff} (GeV/#it{c})"};
+    AxisSpec PDGBINNING = {50, 0.0, 50.0, "PDG code"};
 
     // +++++++++++++++++++++ Data ++++++++++++++++++++++++
 
@@ -188,14 +185,9 @@ struct QAHistTask {
 
     // +++++++++++++++++++++ MC ++++++++++++++++++++++++++
 
-    // MC truth
-    MC_truth_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
-    MC_truth_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
-    MC_truth_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_truth_reg.add("histRecVtxMC", "MC collision z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
-    MC_truth_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
-
     // MC reconstructed
+    MC_recon_reg.add("histRecVtxMC", "MC reconstructed vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
+    MC_recon_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
     MC_recon_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_recon_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_recon_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
@@ -227,15 +219,6 @@ struct QAHistTask {
     MC_recon_reg.add("histTPCFractionSharedCls", "Fraction of shared TPC clusters", HistType::kTH2F, {{100, -2.0, 2.0, "Shared Cls"}, PDGBINNING});
     MC_recon_reg.add("histpTCorralation", "TPC-glo p vs glo p", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
     MC_recon_reg.add("histpTCorralation_PDG", "TPC-glo p vs glo p", HistType::kTH3F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}, PDGBINNING});
-
-    MC_recon_reg.add("histpTCorralation_pion", "TPC-glo p vs glo p", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
-    MC_recon_reg.add("histpTCorralation_apion", "TPC-glo p vs glo p", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
-    MC_recon_reg.add("histpTCorralation_2", "TPC p vs global p", HistType::kTH3F, {{110, -0.5, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {110, -0.5, 5.0, "#it{p}^{TPC} (GeV/#it{c})"}, PDGBINNING});
-
-    // MC diff (truth - reconstructed)
-    MC_recon_diff_reg.add("histPhiDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
-    MC_recon_diff_reg.add("histEtaDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
-    MC_recon_diff_reg.add("histPtDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
   }
 
   // Configurables
@@ -248,6 +231,7 @@ struct QAHistTask {
   Configurable<bool> process_He4{"process_He4", false, "0: disabled, 1: enabled"};
 
   Configurable<bool> event_selection_sel8{"event_selection_sel8", true, "0: disabled, 1: enabled"};
+  Configurable<bool> event_selection_MC_sel8{"event_selection_MC_sel8", true, "Enable sel8 event selection in MC processing"};
   Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
   Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
   Configurable<float> pTmin{"pTmin", 0.1f, "min pT"};
@@ -566,11 +550,13 @@ struct QAHistTask {
   }
   PROCESS_SWITCH(QAHistTask, processDataCent, "process data containing centralities", false);
 
-  void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
+  void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
                  aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
-    MC_truth_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
+    if (event_selection_MC_sel8 && !collisions.sel8()) return;
+    MC_recon_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
+    MC_recon_reg.fill(HIST("histCentrality"), collisions.centFT0C());
 
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
@@ -582,76 +568,69 @@ struct QAHistTask {
       histPDG->Fill(pdg, 1);
       const float pdgbin = histPDG->GetXaxis()->GetBinCenter(histPDG->GetXaxis()->FindBin(pdg));
 
-      MC_truth_reg.fill(HIST("histPhi"), particle.phi(), pdgbin);
-      MC_truth_reg.fill(HIST("histEta"), particle.eta(), pdgbin);
-      MC_truth_reg.fill(HIST("histPt"), particle.pt(), pdgbin);
-
       MC_recon_reg.fill(HIST("histPhi"), track.phi(), pdgbin);
       MC_recon_reg.fill(HIST("histEta"), track.eta(), pdgbin);
-      MC_recon_reg.fill(HIST("histPt"), track.pt(), pdgbin);
-      MC_recon_reg.fill(HIST("histDCA"), track.pt(), track.dcaXY(), pdgbin);
-      MC_recon_reg.fill(HIST("histDCAz"), track.pt(), track.dcaZ(), pdgbin);
-      MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal(), pdgbin);
-      MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * track.sign(), track.tpcSignal());
-      MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows(), pdgbin);
-      MC_recon_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls(), pdgbin);
-      MC_recon_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCnClsFindable"), track.pt(), track.tpcNClsFindable(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCnClsFindableMinusFound"), track.pt(), track.tpcNClsFindableMinusFound(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), track.pt(), track.tpcNClsFindableMinusCrossedRows(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCnClsShared"), track.pt(), track.tpcNClsShared(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls(), pdgbin);
-      MC_recon_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl(), pdgbin);
-      MC_recon_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl(), pdgbin);
       MC_recon_reg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
       MC_recon_reg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
       MC_recon_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
       MC_recon_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-      MC_recon_reg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2(), pdgbin);
       MC_recon_reg.fill(HIST("histTrackLength"), track.length(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls(), pdgbin);
       MC_recon_reg.fill(HIST("histpTCorralation"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
       MC_recon_reg.fill(HIST("histpTCorralation_PDG"), track.sign() * track.p(), track.tpcInnerParam() - track.p(), pdgbin);
-
       MC_recon_reg.fill(HIST("histGlobalpDist"), track.p(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCpDist"), track.tpcInnerParam(), pdgbin);
-      MC_recon_reg.fill(HIST("histpTCorralation_2"), track.p(), track.tpcInnerParam(), pdgbin);
 
-      if (particle.pdgCode() == 211)
-        MC_recon_reg.fill(HIST("histpTCorralation_pion"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
-      if (particle.pdgCode() == -211)
-        MC_recon_reg.fill(HIST("histpTCorralation_apion"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
-
+      if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+        MC_recon_reg.fill(HIST("histPt"), track.pt() * 2.0, pdgbin);
+        MC_recon_reg.fill(HIST("histDCA"), track.pt() * 2.0, track.dcaXY(), pdgbin);
+        MC_recon_reg.fill(HIST("histDCAz"), track.pt() * 2.0, track.dcaZ(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * 2.0 * track.sign(), track.tpcSignal(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * 2.0 * track.sign(), track.tpcSignal());
+        MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsCrossedRows(), pdgbin);
+        MC_recon_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls(), pdgbin);
+        MC_recon_reg.fill(HIST("histNClusterITSib"), track.pt() * 2.0, track.itsNClsInnerBarrel(), pdgbin);
+        MC_recon_reg.fill(HIST("histTPCnClsFindable"), track.pt() * 2.0, track.tpcNClsFindable(), pdgbin);
+        MC_recon_reg.fill(HIST("histTPCnClsFindableMinusFound"), track.pt() * 2.0, track.tpcNClsFindableMinusFound(), pdgbin);
+        MC_recon_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), track.pt() * 2.0, track.tpcNClsFindableMinusCrossedRows(), pdgbin);
+        MC_recon_reg.fill(HIST("histTPCnClsShared"), track.pt() * 2.0, track.tpcNClsShared(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2TPC"), track.pt() * 2.0, track.tpcChi2NCl(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2ITS"), track.pt() * 2.0, track.itsChi2NCl(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2TOF"), track.pt() * 2.0, track.tofChi2(), pdgbin);
+      } else {
+        MC_recon_reg.fill(HIST("histPt"), track.pt(), pdgbin);
+        MC_recon_reg.fill(HIST("histDCA"), track.pt(), track.dcaXY(), pdgbin);
+        MC_recon_reg.fill(HIST("histDCAz"), track.pt(), track.dcaZ(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * track.sign(), track.tpcSignal());
+        MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows(), pdgbin);
+        MC_recon_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls(), pdgbin);
+        MC_recon_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel(), pdgbin);
+        MC_recon_reg.fill(HIST("histTPCnClsFindable"), track.pt(), track.tpcNClsFindable(), pdgbin);
+        MC_recon_reg.fill(HIST("histTPCnClsFindableMinusFound"), track.pt(), track.tpcNClsFindableMinusFound(), pdgbin);
+        MC_recon_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), track.pt(), track.tpcNClsFindableMinusCrossedRows(), pdgbin);
+        MC_recon_reg.fill(HIST("histTPCnClsShared"), track.pt(), track.tpcNClsShared(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2(), pdgbin);
+      }
       if (track.hasTOF()) {
         Float_t TOFmass2 = ((track.mass()) * (track.mass()));
-
-        MC_recon_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2, pdgbin);
-        MC_recon_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta(), pdgbin);
-        MC_recon_reg.fill(HIST("histTofSignalData_all_species"), track.pt() * track.sign(), track.beta());
+        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+          MC_recon_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2, pdgbin);
+          MC_recon_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0 * track.sign(), track.beta(), pdgbin);
+          MC_recon_reg.fill(HIST("histTofSignalData_all_species"), track.pt() * 2.0 * track.sign(), track.beta());
+        } else {
+          MC_recon_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2, pdgbin);
+          MC_recon_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta(), pdgbin);
+          MC_recon_reg.fill(HIST("histTofSignalData_all_species"), track.pt() * track.sign(), track.beta());
+        }
       }
-
-      MC_recon_diff_reg.fill(HIST("histEtaDiff"), particle.eta() - track.eta(), pdgbin);
-      auto delta = particle.phi() - track.phi();
-      if (delta > TMath::Pi()) {
-        delta -= 2 * TMath::Pi();
-      }
-      if (delta < -TMath::Pi()) {
-        delta += 2 * TMath::Pi();
-      }
-
-      MC_recon_diff_reg.fill(HIST("histPhiDiff"), delta, pdgbin);
-      MC_recon_diff_reg.fill(HIST("histPtDiff"), particle.pt() - track.pt(), pdgbin);
     }
   }
   PROCESS_SWITCH(QAHistTask, processMC, "process MC", false);
-
-  void processMCCent(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>::iterator const& collisions)
-  {
-
-    MC_truth_reg.fill(HIST("histCentrality"), collisions.centFT0C());
-  }
-  PROCESS_SWITCH(QAHistTask, processMCCent, "process MC with centrality", false);
 };
 
 //****************************************************************************************************
