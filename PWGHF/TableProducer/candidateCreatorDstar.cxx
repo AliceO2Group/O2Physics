@@ -551,7 +551,6 @@ struct HfCandidateCreatorDstarExpressions {
     int8_t signDstar = 0, signD0 = 0;
     int8_t flagDstar = 0, flagD0 = 0;
     int8_t originDstar = 0, originD0 = 0;
-    std::vector<int> idxBhadMothers{};
 
     // Match reconstructed candidates.
     for (const auto& rowCandidateDstar : *rowsCandidateDstar) {
@@ -559,6 +558,7 @@ struct HfCandidateCreatorDstarExpressions {
       flagD0 = 0;
       originDstar = 0;
       originD0 = 0;
+      std::vector<int> idxBhadMothers{};
 
       auto indexDstar = rowCandidateDstar.globalIndex();
       auto candD0 = rowsCandidateD0->iteratorAt(indexDstar);
@@ -603,7 +603,7 @@ struct HfCandidateCreatorDstarExpressions {
       flagD0 = 0;
       originDstar = 0;
       originD0 = 0;
-      idxBhadMothers.clear();
+      std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
       float zPv = mcCollision.posZ();
