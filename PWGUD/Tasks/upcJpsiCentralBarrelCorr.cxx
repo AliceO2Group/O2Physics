@@ -640,6 +640,12 @@ struct UpcJpsiCentralBarrel {
         TGelCand.get<TH1>(HIST("TGelCand/hPairPt"))->Fill(RecoDecay::pt(mother));
         TGelCand.get<TH1>(HIST("TGelCand/hPairIVM"))->Fill(massJpsi);
 
+        if (RecoDecay::pt(mother) < 0.2f) {
+          JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hIVM"))->Fill(massJpsi);
+        } else {
+          JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hIVM"))->Fill(massJpsi);
+        }
+
         if (massJpsi < maxJpsiMass && massJpsi > minJpsiMass) {
           TGelCand.get<TH1>(HIST("TGelCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
           TGelCand.get<TH1>(HIST("TGelCand/hJpsiRap"))->Fill(rapJpsi);
@@ -681,7 +687,6 @@ struct UpcJpsiCentralBarrel {
             JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hEta"))->Fill(RecoDecay::eta(mother));
             JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hPhi"))->Fill(RecoDecay::phi(mother));
             JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hRap"))->Fill(rapJpsi);
-            JPsiToEl.get<TH1>(HIST("JPsiToEl/Coherent/hIVM"))->Fill(massJpsi);
 
             float* q = correlation(&daughter[0], &daughter[1], &mom);
             Correlation.get<TH1>(HIST("Correlation/Electron/Coherent/Phi1"))->Fill(RecoDecay::phi(daughter1), 1.);
@@ -734,7 +739,6 @@ struct UpcJpsiCentralBarrel {
             JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hEta"))->Fill(RecoDecay::eta(mother));
             JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPhi"))->Fill(RecoDecay::phi(mother));
             JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hRap"))->Fill(rapJpsi);
-            JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hIVM"))->Fill(massJpsi);
 
             float* q = correlation(&daughter[0], &daughter[1], &mom);
             Correlation.get<TH1>(HIST("Correlation/Electron/Incoherent/Phi1"))->Fill(RecoDecay::phi(daughter1), 1.);
@@ -808,6 +812,12 @@ struct UpcJpsiCentralBarrel {
         TGmuCand.get<TH1>(HIST("TGmuCand/hPairPt"))->Fill(RecoDecay::pt(mother));
         TGmuCand.get<TH1>(HIST("TGmuCand/hPairIVM"))->Fill(massJpsi);
 
+        if (RecoDecay::pt(mother) < 0.2f) {
+          JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hIVM"))->Fill(massJpsi);
+        } else {
+          JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hIVM"))->Fill(massJpsi);
+        }
+
         if (massJpsi < maxJpsiMass && massJpsi > minJpsiMass) {
           TGmuCand.get<TH1>(HIST("TGmuCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
           TGmuCand.get<TH1>(HIST("TGmuCand/hJpsiRap"))->Fill(rapJpsi);
@@ -849,7 +859,6 @@ struct UpcJpsiCentralBarrel {
             JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hEta"))->Fill(RecoDecay::eta(mother));
             JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hPhi"))->Fill(RecoDecay::phi(mother));
             JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hRap"))->Fill(rapJpsi);
-            JPsiToMu.get<TH1>(HIST("JPsiToMu/Coherent/hIVM"))->Fill(massJpsi);
 
             float* q = correlation(&daughter[0], &daughter[1], &mom);
             Correlation.get<TH1>(HIST("Correlation/Muon/Coherent/Phi1"))->Fill(RecoDecay::phi(daughter1), 1.);
@@ -902,7 +911,6 @@ struct UpcJpsiCentralBarrel {
             JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hEta"))->Fill(RecoDecay::eta(mother));
             JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hPhi"))->Fill(RecoDecay::phi(mother));
             JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hRap"))->Fill(rapJpsi);
-            JPsiToMu.get<TH1>(HIST("JPsiToMu/Incoherent/hIVM"))->Fill(massJpsi);
 
             float* q = correlation(&daughter[0], &daughter[1], &mom);
             Correlation.get<TH1>(HIST("Correlation/Muon/Incoherent/Phi1"))->Fill(RecoDecay::phi(daughter1), 1.);
@@ -973,6 +981,12 @@ struct UpcJpsiCentralBarrel {
         TGpCand.get<TH1>(HIST("TGpCand/hPairPt"))->Fill(RecoDecay::pt(mother));
         TGpCand.get<TH1>(HIST("TGpCand/hPairIVM"))->Fill(massJpsi);
 
+        if (RecoDecay::pt(mother) < 0.2f) {
+          JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hIVM"))->Fill(massJpsi);
+        } else {
+          JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hIVM"))->Fill(massJpsi);
+        }
+
         if (massJpsi < maxJpsiMass && massJpsi > minJpsiMass) {
           TGpCand.get<TH1>(HIST("TGpCand/hJpsiPt"))->Fill(RecoDecay::pt(mother));
           TGpCand.get<TH1>(HIST("TGpCand/hJpsiRap"))->Fill(rapJpsi);
@@ -1013,7 +1027,6 @@ struct UpcJpsiCentralBarrel {
             JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hEta"))->Fill(RecoDecay::eta(mother));
             JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPhi"))->Fill(RecoDecay::phi(mother));
             JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hRap"))->Fill(rapJpsi);
-            JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hIVM"))->Fill(massJpsi);
           }
           if (RecoDecay::pt(mother) > 0.2f) {
             // fill track histos
@@ -1052,7 +1065,6 @@ struct UpcJpsiCentralBarrel {
             JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hEta"))->Fill(RecoDecay::eta(mother));
             JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPhi"))->Fill(RecoDecay::phi(mother));
             JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hRap"))->Fill(rapJpsi);
-            JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hIVM"))->Fill(massJpsi);
           }
         }
       } // end protons
