@@ -148,7 +148,6 @@ struct strangeness_in_jets {
   // Lambda Selections
   template <typename V, typename T1, typename T2, typename C>
   bool passedLambdaSelection(const V &v0, const T1 &ptrack, const T2 &ntrack, const C &collision) {
-    
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
       return false;
@@ -206,7 +205,6 @@ struct strangeness_in_jets {
   // AntiLambda Selections
   template <typename V, typename T1, typename T2, typename C>
   bool passedAntiLambdaSelection(const V &v0, const T1 &ptrack, const T2 &ntrack, const C &collision) {
-    
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
       return false;
