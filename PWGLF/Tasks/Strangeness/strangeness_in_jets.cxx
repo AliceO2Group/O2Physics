@@ -47,7 +47,7 @@ using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
 struct strangeness_in_jets {
-    
+
   // QC Histograms
   HistogramRegistry registryQC{
     "registryQC",
@@ -474,7 +474,7 @@ struct strangeness_in_jets {
     if ((abs(jet_axis.Eta()) + Rmax) > etaMax)
       return;
     registryQC.fill(HIST("number_of_events_data"), 4.5);
-    
+
     // Perpendicular Cones for UE
     TVector3 ue_axis1(0.0, 0.0, 0.0);
     TVector3 ue_axis2(0.0, 0.0, 0.0);
