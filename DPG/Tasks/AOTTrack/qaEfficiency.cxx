@@ -427,7 +427,9 @@ struct QaEfficiency {
   Configurable<bool> doTr{"do-tr", false, "Flag to run with the PDG code of tritons"};
   Configurable<bool> doHe{"do-he", false, "Flag to run with the PDG code of helium 3"};
   Configurable<bool> doAl{"do-al", false, "Flag to run with the PDG code of helium 4"};
-  Configurable<std::vector<int>> mothersPDGs{"mothersPDGs", std::vector<int>{}, "PDGs of origin of the particle under study"};
+  // Selection on mothers
+  Configurable<bool> checkForMothers{"checkForMothers", false, "Flag to use the array of mothers to check if the particle of interest come from any of those particles"};
+  Configurable<std::vector<int>> mothersPDGs{"mothersPDGs", std::vector<int>{3312, -3312}, "PDGs of origin of the particle under study"};
   // Track only selection, options to select only specific tracks
   Configurable<bool> trackSelection{"trackSelection", true, "Local track selection"};
   Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks, 6 -> custom track cuts via Configurable"};
@@ -1257,7 +1259,7 @@ struct QaEfficiency {
     } else if (mcParticle.getProcess() == 4) { // Particle decay
       // Checking mothers
       bool motherIsAccepted = true;
-      if (mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
+      if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
         motherIsAccepted = false;
         auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
         for (const auto& mother : mothers) {
@@ -1338,7 +1340,7 @@ struct QaEfficiency {
       if (mcParticle.getProcess() == 4) { // Particle decay
         // Checking mothers
         bool motherIsAccepted = true;
-        if (mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
+        if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
           motherIsAccepted = false;
           auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
           for (const auto& mother : mothers) {
