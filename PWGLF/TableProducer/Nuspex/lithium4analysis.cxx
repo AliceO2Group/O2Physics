@@ -264,7 +264,6 @@ struct lithium4analysis {
 
     l4Cand.tpcSignalHe3 = candidateHe3.tpcSignal();
     l4Cand.momHe3TPC = correctedTPCinnerParamHe3;
-    
     l4Cand.tpcSignalPr = candidatePr.tpcSignal();
     l4Cand.momPrTPC = candidatePr.tpcInnerParam();
     l4Cand.invMass = invMass;
