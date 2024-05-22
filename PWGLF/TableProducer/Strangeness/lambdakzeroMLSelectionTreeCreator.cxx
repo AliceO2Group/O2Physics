@@ -254,7 +254,7 @@ struct lambdakzeroMLSelectionTreeCreator {
     histos.fill(HIST("hCandSelection"), Candidate.SelHypothesis);
 
     if (Candidate.SelHypothesis == RejectHypothesis)
-     return;
+      return;
 
     // MC flags
     Candidate.isLambda = false;
@@ -273,14 +273,12 @@ struct lambdakzeroMLSelectionTreeCreator {
       Candidate.isKZeroShort = (cand.pdgCode() == 310);
     }
 
-    
     if constexpr (requires { cand.pdgCodeMother(); }) {
-      if (SelMCCandMother && (cand.pdgCodeMother()!=SelPDGCodeMother))
+      if (SelMCCandMother && (cand.pdgCodeMother() != SelPDGCodeMother))
         return;
 
       Candidate.PDGCodeMother = cand.pdgCodeMother();
     }
-    
 
     // Filling TTree for ML analysis
     v0MLCandidates(Candidate.posITSCls, Candidate.negITSCls, Candidate.posITSClSize, Candidate.negITSClSize, Candidate.posTPCRows, Candidate.negTPCRows,
