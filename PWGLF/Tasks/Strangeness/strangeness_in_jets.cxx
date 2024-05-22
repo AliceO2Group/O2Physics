@@ -44,25 +44,21 @@ using std::array;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
-using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+using FullTracks =
+    soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+              aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi,
+              aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi,
+              aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
 struct strangeness_in_jets {
 
   // QC Histograms
   HistogramRegistry registryQC{
-    "registryQC",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
+      "registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Analysis Histograms: Data
   HistogramRegistry registryData{
-    "registryData",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
+      "registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Global Parameters
   Configurable<float> ptLeadingMin{"ptLeadingMin", 5.0f, "pt leading min"};
@@ -71,37 +67,51 @@ struct strangeness_in_jets {
   Configurable<float> zVtx{"zVtx", 10.0f, "z vertex cut"};
 
   // Track Parameters
-  Configurable<float> minITSnCls{"minITSnCls", 4.0f, "min number of ITS clusters"};
-  Configurable<float> minTPCnClsFound{"minTPCnClsFound", 80.0f, "min number of found TPC clusters"};
-  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
-  Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
+  Configurable<float> minITSnCls{"minITSnCls", 4.0f,
+                                 "min number of ITS clusters"};
+  Configurable<float> minTPCnClsFound{"minTPCnClsFound", 80.0f,
+                                      "min number of found TPC clusters"};
+  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f,
+                                         "min number of TPC crossed rows"};
+  Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f,
+                                 "max chi2 per cluster TPC"};
   Configurable<float> etaMin{"etaMin", -0.8f, "eta min"};
   Configurable<float> etaMax{"etaMax", +0.8f, "eta max"};
-  Configurable<float> ptMin_V0_proton{"ptMin_V0_proton", 0.3f, "pt min of proton from V0"};
-  Configurable<float> ptMax_V0_proton{"ptMax_V0_proton", 10.0f, "pt max of proton from V0"};
-  Configurable<float> ptMin_V0_pion{"ptMin_V0_pion", 0.1f, "pt min of pion from V0"};
-  Configurable<float> ptMax_V0_pion{"ptMax_V0_pion", 1.5f, "pt max of pion from V0"};
+  Configurable<float> ptMin_V0_proton{"ptMin_V0_proton", 0.3f,
+                                      "pt min of proton from V0"};
+  Configurable<float> ptMax_V0_proton{"ptMax_V0_proton", 10.0f,
+                                      "pt max of proton from V0"};
+  Configurable<float> ptMin_V0_pion{"ptMin_V0_pion", 0.1f,
+                                    "pt min of pion from V0"};
+  Configurable<float> ptMax_V0_pion{"ptMax_V0_pion", 1.5f,
+                                    "pt max of pion from V0"};
   Configurable<float> nsigmaTPCmin{"nsigmaTPCmin", -3.0f, "Minimum nsigma TPC"};
   Configurable<float> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
   Configurable<float> nsigmaTOFmin{"nsigmaTOFmin", -3.0f, "Minimum nsigma TOF"};
   Configurable<float> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
-  Configurable<float> dcanegtoPVmin{"dcanegtoPVmin", 0.1f, "Minimum DCA Neg To PV"};
-  Configurable<float> dcapostoPVmin{"dcapostoPVmin", 0.1f, "Minimum DCA Pos To PV"};
+  Configurable<float> dcanegtoPVmin{"dcanegtoPVmin", 0.1f,
+                                    "Minimum DCA Neg To PV"};
+  Configurable<float> dcapostoPVmin{"dcapostoPVmin", 0.1f,
+                                    "Minimum DCA Pos To PV"};
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
   Configurable<bool> requireITS{"requireITS", false, "require ITS hit"};
 
   // V0 Parameters
   Configurable<float> yMin{"yMin", -0.5f, "minimum y"};
   Configurable<float> yMax{"yMax", +0.5f, "maximum y"};
-  Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5f, "Minimum V0 Radius"};
-  Configurable<float> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius"};
+  Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5f,
+                                      "Minimum V0 Radius"};
+  Configurable<float> maximumV0Radius{"maximumV0Radius", 40.0f,
+                                      "Maximum V0 Radius"};
   Configurable<float> v0cospaMin{"v0cospaMin", 0.99f, "Minimum V0 CosPA"};
-  Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f, "Maximum DCA Daughters"};
+  Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f,
+                                        "Maximum DCA Daughters"};
 
   void init(InitContext const &) {
 
     // Global Properties and QC
-    registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{15, 0, 15, "Event Cuts"}});
+    registryQC.add("number_of_events_data", "number of events in data",
+                   HistType::kTH1F, {{15, 0, 15, "Event Cuts"}});
 
     // Multiplicity Binning
     std::vector<double> multBinning = {0, 5, 15, 50};
@@ -126,8 +136,7 @@ struct strangeness_in_jets {
                       {200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"}});
   }
 
-  template <typename T>
-  bool passedTrackSelectionForJets(const T &track) {
+  template <typename T> bool passedTrackSelectionForJets(const T &track) {
 
     if (!track.hasITS())
       return false;
@@ -279,8 +288,7 @@ struct strangeness_in_jets {
   }
 
   // Single-Track Selection
-  template <typename T>
-  bool passedSingleTrackSelection(const T &track) {
+  template <typename T> bool passedSingleTrackSelection(const T &track) {
     if (requireITS && (!track.hasITS()))
       return false;
     if (requireITS && track.itsNCls() < minITSnCls)
