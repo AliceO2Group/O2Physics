@@ -32,7 +32,7 @@ using namespace o2::framework::expressions;
 struct SGPIDSpectra {
   SGSelector sgSelector;
   ConfigurableAxis ptAxis{"ptAxis", {1000, 0.0, 20.0}, "p_{T}"};
-  ConfigurableAxis sigmaAxis{"sigmaAxis", {1000, -20.0, 80.0}, "#sigma"};
+  ConfigurableAxis sigmaAxis{"sigmaAxis", {2000, -20.0, 180.0}, "#sigma"};
 
   // configurables
   Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
