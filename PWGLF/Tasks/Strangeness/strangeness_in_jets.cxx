@@ -116,7 +116,7 @@ struct strangeness_in_jets {
                       {200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"}});
   }
 
-  template <typename T> 
+  template <typename T>
   bool passedTrackSelectionForJets(const T &track) {
 
     if (!track.hasITS())
@@ -262,7 +262,8 @@ struct strangeness_in_jets {
   }
 
   // Single-Track Selection
-  template <typename T> bool passedSingleTrackSelection(const T &track) {
+  template <typename T>
+  bool passedSingleTrackSelection(const T &track) {
     if (requireITS && (!track.hasITS()))
       return false;
     if (requireITS && track.itsNCls() < minITSnCls)
