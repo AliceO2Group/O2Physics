@@ -12,6 +12,8 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 #include "PWGDQ/Core/CutsLibrary.h"
+#include <TF1.h>
+#include "VarManager.h"
 
 AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 {
@@ -2816,6 +2818,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairLxyProjected3sigmaLambdacCand")) {
+    cut->AddCut(GetAnalysisCut("pairLxyProjected3sigmaLambdacCand"));
+    return cut;
+  }
+
   // -------------------------------------------------------------------------------------------------
   //
   // Below are a list of single electron single muon and in order or optimize the trigger
@@ -5027,6 +5034,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairTauxyzProjected1sigma")) {
     cut->AddCut(VarManager::kVertexingTauxyzProjected, 0.003, 10.);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairLxyProjected3sigmaLambdacCand")) {
+    TF1* f1minLxyProjected = new TF1("f1minLxyProjected", "[0]+[1]*x", 0., 20.);
+    f1minLxyProjected->SetParameters(0.0065, -0.0023);
+    cut->AddCut(VarManager::kVertexingLxyProjected, f1minLxyProjected, 1., false, VarManager::kPt, 0., 20.);
     return cut;
   }
 
