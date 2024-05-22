@@ -95,7 +95,7 @@ struct phosQC {
     LOGF(info, "Number of PHOS cuts = %d", fPHOSCuts.size());
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     DefineCuts();
     addhistograms(); // please call this after DefinCuts();
@@ -151,7 +151,7 @@ struct phosQC {
     }   // end of collision loop
   }     // end of process
 
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
 
   PROCESS_SWITCH(phosQC, processQC, "run PHOS QC", false);
   PROCESS_SWITCH(phosQC, processDummy, "Dummy function", true);

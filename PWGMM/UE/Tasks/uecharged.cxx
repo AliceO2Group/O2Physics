@@ -8,9 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \author Antonio Ortiz (antonio.ortiz.velasquez@cern.ch)
+/// \author Antonio Ortiz (antonio.ortiz@nucleares.unam.mx)
 /// \since November 2021
-/// \last update: October 2022
+/// \last update: May 2024
 
 #include <cmath>
 #include <vector>
@@ -28,6 +28,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 
 #include "TDatabasePDG.h"
 #include <TH1F.h>
@@ -35,7 +36,7 @@
 #include <TF1.h>
 #include <TRandom.h>
 
-// TODO: implement 50% stat for MC closure vs 50% for testing
+// TODO: implement 50% stat for MC closure vs 50% for testing, add flag for weak decays
 
 using namespace o2;
 using namespace o2::framework;
@@ -43,14 +44,55 @@ using namespace o2::framework::expressions;
 
 struct ueCharged {
 
-  TrackSelection myTrackSelection();
+  TrackSelection myTrackSelectionPrim()
+  {
+    TrackSelection selectedTracks;
+    selectedTracks.SetPtRange(0.1f, 1e10f);
+    selectedTracks.SetEtaRange(-0.8f, 0.8f);
+    selectedTracks.SetRequireITSRefit(true);
+    selectedTracks.SetRequireTPCRefit(true);
+    // selectedTracks.SetRequireGoldenChi2(true);
+    selectedTracks.SetMinNCrossedRowsTPC(70);
+    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.4f);
+    selectedTracks.SetMaxChi2PerClusterTPC(4.f);
+    selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
+    selectedTracks.SetMaxChi2PerClusterITS(36.f);
+    selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
+    selectedTracks.SetMaxDcaZ(2.f);
+    return selectedTracks;
+  }
+  TrackSelection myTrackSelectionOpenDCA()
+  {
+    TrackSelection selectedTracks;
+    selectedTracks.SetPtRange(0.1f, 1e10f);
+    selectedTracks.SetEtaRange(-0.8f, 0.8f);
+    selectedTracks.SetRequireITSRefit(true);
+    selectedTracks.SetRequireTPCRefit(true);
+    // selectedTracks.SetRequireGoldenChi2(true);
+    selectedTracks.SetMinNCrossedRowsTPC(70);
+    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.4f);
+    selectedTracks.SetMaxChi2PerClusterTPC(4.f);
+    selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
+    selectedTracks.SetMaxChi2PerClusterITS(36.f);
+    // selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
+    selectedTracks.SetMaxDcaZ(2.f);
+    return selectedTracks;
+  }
+
+  TrackSelection mySelectionPrim;
+  TrackSelection mySelectionOpenDCA;
 
   Service<o2::framework::O2DatabasePDG> pdg;
   float DeltaPhi(float phia, float phib, float rangeMin, float rangeMax);
+  // Configurable for event selection
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
+  Configurable<bool> timeEvsel{"timeEvsel", true, "TPC Time frame boundary cut"};
+  Configurable<bool> piluprejection{"piluprejection", true, "Pileup rejection"};
+  Configurable<bool> goodzvertex{"goodzvertex", true, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
+
   // acceptance cuts
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
-  Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.5f, "Minimum constituent pT"};
+  Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
 
   HistogramRegistry ue;
   static constexpr std::string_view pNumDenMeasuredPS[3] = {"pNumDenMeasuredPS_NS", "pNumDenMeasuredPS_AS", "pNumDenMeasuredPS_TS"};
@@ -81,6 +123,7 @@ struct ueCharged {
 
   OutputObj<TF1> f_Eff{"fpara"};
   void init(InitContext const&);
+
   template <bool IS_MC, typename C, typename T, typename P>
   void processMeasMC(const C& collision, const T& tracks, const P& particles);
 
@@ -88,7 +131,7 @@ struct ueCharged {
   void processMeas(const C& collision, const T& tracks);
 
   template <typename C, typename P>
-  void processTrue(const C& collision, const P& particles);
+  void processTrue(const C& mcCollision, const P& particles);
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut) && (aod::track::pt > cfgTrkLowPtCut);
 
@@ -147,16 +190,16 @@ float ueCharged::DeltaPhi(float phia, float phib,
 void ueCharged::init(InitContext const&)
 {
 
+  mySelectionPrim = myTrackSelectionPrim();
+  mySelectionOpenDCA = myTrackSelectionOpenDCA();
+
   ConfigurableAxis ptBinningt{"ptBinningt", {0, 0.15, 0.50, 1.00, 1.50, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0}, "pTtrig bin limits"};
   AxisSpec ptAxist = {ptBinningt, "#it{p}_{T}^{trig} (GeV/#it{c})"};
 
   ConfigurableAxis ptBinning{"ptBinning", {0, 0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 25.0, 30.0, 40.0, 50.0}, "pTassoc bin limits"};
   AxisSpec ptAxis = {ptBinning, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
 
-  f_Eff.setObject(new TF1("fpara",
-                          "(x<0.9)*((-6.67648e-02)+x*(1.78170e+00)+x*x*(-1.12962e+00))+"
-                          "(x>=0.9&&x<4.5)*((5.48165e-01)+(1.35818e-01)*x+(-4.87156e-02)*x*x+(5.97039e-03)*x*x*x)+(x>=4.5)*(6.90314e-01)",
-                          0.15, 50.0));
+  f_Eff.setObject(new TF1("fpara", "(x<0.3)*((0.221456)+x*(3.4271)+x*x*(-6.7668))+(x>=0.3&&x<2.1)*((0.610649)+(0.148627)*x+(-0.0772185)*x*x+(0.0157586)*x*x*x)+(x>=2.1)*(0.726557)", 0., 1e5));
 
   if (doprocessMC) {
     ue.add("hPtOut", "pT all rec; pT; Nch", HistType::kTH1D, {ptAxis});
@@ -194,7 +237,7 @@ void ueCharged::init(InitContext const&)
   ue.add("phiEta", ";#eta;#varphi", HistType::kTH2F, {{50, -2.5, 2.5}, {200, 0., 2 * M_PI, " "}});
   ue.add("hvtxZ", "vtxZ", HistType::kTH1F, {{40, -20.0, 20.0, " "}});
 
-  ue.add("hCounter", "Counter; sel; Nev", HistType::kTH1D, {{3, 0, 3, " "}});
+  ue.add("hCounter", "Counter; sel; Nev", HistType::kTH1D, {{7, 0, 7, " "}});
   ue.add("hPtLeadingRecPS", "rec pTleading after physics selection", HistType::kTH1D, {ptAxist});
   ue.add("hPtLeadingMeasured", "measured pTleading after physics selection", HistType::kTH1D, {ptAxist});
 
@@ -233,10 +276,9 @@ void ueCharged::processMC(CollisionTableMCTrue::iterator const& mcCollision, Col
     }
   }
   processTrue(mcCollision, particles);
-  // processTrue(collisions, particles);
 }
 
-void ueCharged::processDataMC(CollisionTableMCData::iterator const& collision, TrackTableMCData const& tracks, ParticleTableMC const& particles, aod::McCollisions const& mcCollisions)
+void ueCharged::processDataMC(CollisionTableMCData::iterator const& collision, TrackTableMCData const& tracks, ParticleTableMC const& particles, aod::McCollisions const& /*mcCollisions*/)
 {
   processMeasMC<false>(collision, tracks, particles);
 }
@@ -246,7 +288,7 @@ void ueCharged::processData(CollisionTableData::iterator const& collision, Track
 }
 
 template <typename C, typename P>
-void ueCharged::processTrue(const C& collision, const P& particles)
+void ueCharged::processTrue(const C& mcCollision, const P& particles)
 {
   int multTrue = 0;
   int multTrueINEL = 0;
@@ -271,10 +313,11 @@ void ueCharged::processTrue(const C& collision, const P& particles)
     ue.fill(HIST("hPtInPrimGen"), particle.pt());
   }
   ue.fill(HIST("hmultTrueGen"), multTrue);
-  ue.fill(HIST("hvtxZmc"), collision.posZ());
-  if (std::abs(collision.posZ()) > 10.f && multTrueINEL <= 0) {
+  if (std::abs(mcCollision.posZ()) > 10.f && multTrueINEL <= 0) {
     return;
   }
+
+  ue.fill(HIST("hvtxZmc"), mcCollision.posZ());
 
   double flPtTrue = 0; // leading pT
   double flPhiTrue = 0;
@@ -372,15 +415,6 @@ void ueCharged::processTrue(const C& collision, const P& particles)
   ue.fill(HIST(pNumDenTrueAll[2]), flPtTrue, ue_true[2]);
   ue.fill(HIST(pSumPtTrueAll[2]), flPtTrue, ue_true[5]);
 
-  ue.fill(HIST(pNumDenTrue[0]), flPtTrue, ue_true[0]);
-  ue.fill(HIST(pSumPtTrue[0]), flPtTrue, ue_true[3]);
-
-  ue.fill(HIST(pNumDenTrue[1]), flPtTrue, ue_true[1]);
-  ue.fill(HIST(pSumPtTrue[1]), flPtTrue, ue_true[4]);
-
-  ue.fill(HIST(pNumDenTrue[2]), flPtTrue, ue_true[2]);
-  ue.fill(HIST(pSumPtTrue[2]), flPtTrue, ue_true[5]);
-
   ptArrayTrue.clear();
   phiArrayTrue.clear();
   indexArrayTrue.clear();
@@ -391,37 +425,36 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
 
   ue.fill(HIST("hCounter"), 0);
 
-  bool isAcceptedEvent = false;
-  if (isRun3 ? collision.sel8() : collision.sel7()) {
-    if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
-      isAcceptedEvent = true;
-    }
-  }
-  // only PS
-  if (!isAcceptedEvent) {
+  if (!collision.sel8()) {
     return;
   }
 
   ue.fill(HIST("hCounter"), 1);
 
-  ue.fill(HIST("hStat"), collision.size());
-  auto vtxZ = collision.posZ();
-
-  isAcceptedEvent = false;
-  if (std::abs(collision.posZ()) < 10.f) {
-    if (isRun3 ? collision.sel8() : collision.sel7()) {
-      if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
-        isAcceptedEvent = true;
-      }
-    }
-  }
-
-  // + vtx
-  if (!isAcceptedEvent) {
+  if (timeEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
     return;
   }
 
   ue.fill(HIST("hCounter"), 2);
+  if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    return;
+  }
+
+  ue.fill(HIST("hCounter"), 3);
+  if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    return;
+  }
+
+  ue.fill(HIST("hCounter"), 4);
+
+  ue.fill(HIST("hStat"), collision.size());
+  auto vtxZ = collision.posZ();
+  // + vtx
+  if ((std::abs(collision.posZ()) >= 10.f)) {
+    return;
+  }
+
+  ue.fill(HIST("hCounter"), 5);
 
   ue.fill(HIST("hvtxZ"), vtxZ);
 
@@ -432,7 +465,7 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
   int flIndex = 0;
   int multRec = 0;
   for (auto& track : tracks) {
-    if (!track.isGlobalTrack()) {
+    if (!mySelectionPrim.IsSelected(track)) {
       continue;
     }
 
@@ -467,11 +500,11 @@ void ueCharged::processMeas(const C& collision, const T& tracks)
 
   for (auto& track : tracks) {
 
-    if (myTrackSelection().IsSelected(track)) { // TODO: set cuts w/o DCA cut
+    if (mySelectionOpenDCA.IsSelected(track)) {
       ue.fill(HIST("hPTVsDCAData"), track.pt(), track.dcaXY());
     }
 
-    if (track.isGlobalTrack()) {
+    if (mySelectionPrim.IsSelected(track)) {
       // applying the efficiency twice for the misrec of leading particle
       if (f_Eff->Eval(track.pt()) > gRandom->Uniform(0, 1)) {
         ptArray.push_back(track.pt());
@@ -596,19 +629,6 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
 
   ue.fill(HIST("hCounter"), 0);
 
-  bool isAcceptedEvent = false;
-  if (isRun3 ? collision.sel8() : collision.sel7()) {
-    if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
-      isAcceptedEvent = true;
-    }
-  }
-  // only PS
-  if (!isAcceptedEvent) {
-    return;
-  }
-
-  ue.fill(HIST("hCounter"), 1);
-
   ue.fill(HIST("hStat"), collision.size());
   auto vtxZ = collision.posZ();
 
@@ -632,7 +652,6 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
     if (particle.pt() < cfgTrkLowPtCut) {
       continue;
     }
-    // ue.fill(HIST("hPtInPrim"), particle.pt());
 
     if (flPtTrue < particle.pt()) {
       flPtTrue = particle.pt();
@@ -694,7 +713,43 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
     ue_true.push_back(sumptm_toptrue[i_reg]);
   }
 
-  // add flags for Vtx, PS, ev sel
+  ue.fill(HIST(pNumDenTrue[0]), flPtTrue, ue_true[0]);
+  ue.fill(HIST(pSumPtTrue[0]), flPtTrue, ue_true[3]);
+
+  ue.fill(HIST(pNumDenTrue[1]), flPtTrue, ue_true[1]);
+  ue.fill(HIST(pSumPtTrue[1]), flPtTrue, ue_true[4]);
+
+  ue.fill(HIST(pNumDenTrue[2]), flPtTrue, ue_true[2]);
+  ue.fill(HIST(pSumPtTrue[2]), flPtTrue, ue_true[5]);
+
+  ptArrayTrue.clear();
+  phiArrayTrue.clear();
+  indexArrayTrue.clear();
+
+  if (!collision.sel8()) {
+    return;
+  }
+  ue.fill(HIST("hCounter"), 1);
+  if (timeEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    return;
+  }
+
+  ue.fill(HIST("hCounter"), 2);
+  if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    return;
+  }
+
+  ue.fill(HIST("hCounter"), 3);
+  if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    return;
+  }
+  ue.fill(HIST("hCounter"), 4);
+
+  // only PS
+  if ((std::abs(collision.posZ()) >= 10.f)) {
+    return;
+  }
+  ue.fill(HIST("hCounter"), 5);
 
   ue.fill(HIST(pNumDenTruePS[0]), flPtTrue, ue_true[0]);
   ue.fill(HIST(pSumPtTruePS[0]), flPtTrue, ue_true[3]);
@@ -705,25 +760,7 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
   ue.fill(HIST(pNumDenTruePS[2]), flPtTrue, ue_true[2]);
   ue.fill(HIST(pSumPtTruePS[2]), flPtTrue, ue_true[5]);
 
-  ptArrayTrue.clear();
-  phiArrayTrue.clear();
-  indexArrayTrue.clear();
-
-  isAcceptedEvent = false;
-  if (std::abs(collision.posZ()) < 10.f) {
-    if (isRun3 ? collision.sel8() : collision.sel7()) {
-      if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
-        isAcceptedEvent = true;
-      }
-    }
-  }
-
-  // + vtx
-  if (!isAcceptedEvent) {
-    return;
-  }
-
-  ue.fill(HIST("hCounter"), 2);
+  // ue.fill(HIST("hCounter"), 2);
 
   ue.fill(HIST("hvtxZ"), vtxZ);
   // loop over MC true particles
@@ -753,7 +790,7 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
   int flIndex = 0;
   int multRec = 0;
   for (auto& track : tracks) {
-    if (!track.isGlobalTrack()) {
+    if (!mySelectionPrim.IsSelected(track)) {
       continue;
     }
 
@@ -785,36 +822,36 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
 
   for (auto& track : tracks) {
 
-    if (myTrackSelection().IsSelected(track)) { // TODO: set cuts w/o DCA cut
+    if (mySelectionOpenDCA.IsSelected(track)) { // TODO: set cuts w/o DCA cut
       ue.fill(HIST("hPTVsDCAData"), track.pt(), track.dcaXY());
     }
     if constexpr (IS_MC) {
       if (track.has_mcParticle()) {
-        if (track.isGlobalTrack()) {
+        if (mySelectionPrim.IsSelected(track)) {
           ue.fill(HIST("hPtOut"), track.pt());
         }
-        if (myTrackSelection().IsSelected(track)) {
+        if (mySelectionOpenDCA.IsSelected(track)) {
           ue.fill(HIST("hPtDCAall"), track.pt(), track.dcaXY());
         }
         const auto& particle = track.template mcParticle_as<aod::McParticles>();
         if (particle.isPhysicalPrimary()) {
 
-          if (track.isGlobalTrack()) {
+          if (mySelectionPrim.IsSelected(track)) {
             // ue.fill(HIST("hPtOutPrim"), track.pt());
             ue.fill(HIST("hPtOutPrim"), particle.pt());
           }
-          if (myTrackSelection().IsSelected(track)) {
+          if (mySelectionOpenDCA.IsSelected(track)) {
             ue.fill(HIST("hPtDCAPrimary"), track.pt(), track.dcaXY());
           }
           // LOGP(info, "this track has MC particle {}", 1);
         } else {
-          if (track.isGlobalTrack()) {
+          if (mySelectionPrim.IsSelected(track)) {
             ue.fill(HIST("hPtOutSec"), track.pt());
           }
-          if (myTrackSelection().IsSelected(track)) {
-            if (particle.getGenStatusCode() >= 0) { // i guess these are decays
+          if (mySelectionOpenDCA.IsSelected(track)) {
+            if (particle.producedByGenerator()) { // i guess these are from decays
               ue.fill(HIST("hPtDCAWeak"), track.pt(), track.dcaXY());
-            } else { // i guess these are from material
+            } else { //// i guess these are from material
               ue.fill(HIST("hPtDCAMat"), track.pt(), track.dcaXY());
             }
           }
@@ -822,7 +859,7 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
       }
     }
 
-    if (track.isGlobalTrack()) {
+    if (mySelectionPrim.IsSelected(track)) {
       // applying the efficiency twice for the misrec of leading particle
       if (f_Eff->Eval(track.pt()) > gRandom->Uniform(0, 1)) {
         ptArray.push_back(track.pt());
@@ -939,21 +976,4 @@ void ueCharged::processMeasMC(const C& collision, const T& tracks, const P& part
   ptArray.clear();
   phiArray.clear();
   indexArray.clear();
-}
-TrackSelection ueCharged::myTrackSelection()
-{
-  TrackSelection selectedTracks;
-  selectedTracks.SetPtRange(0.1f, 1e10f);
-  selectedTracks.SetEtaRange(-0.8f, 0.8f);
-  selectedTracks.SetRequireITSRefit(true);
-  selectedTracks.SetRequireTPCRefit(true);
-  selectedTracks.SetRequireGoldenChi2(false);
-  selectedTracks.SetMinNCrossedRowsTPC(70);
-  selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-  selectedTracks.SetMaxChi2PerClusterTPC(4.f);
-  selectedTracks.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
-  selectedTracks.SetMaxChi2PerClusterITS(36.f);
-  selectedTracks.SetMaxDcaXY(10.f);
-  selectedTracks.SetMaxDcaZ(10.f);
-  return selectedTracks;
 }

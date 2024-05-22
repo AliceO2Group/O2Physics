@@ -35,10 +35,12 @@ using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 struct perfK0sResolution {
   // Configurable bins
   ConfigurableAxis mBins{"mBins", {200, 0.4f, 0.6f}, "Mass binning"};
-  ConfigurableAxis pTBins{"pTBins", {200, 0.f, 10.f}, "pT binning"};
+  ConfigurableAxis pTBins{"pTBins", {240, 0.f, 12.f}, "pT binning"};
+  ConfigurableAxis invpTBins{"invpTBins", {240, 0.f, 12.f}, "inverse pT binning"};
   ConfigurableAxis pTResBins{"pTResBins", {200, -1.2f, 1.2f}, "pT resolution binning"};
   ConfigurableAxis pTResRelBins{"pTResRelBins", {200, -0.2f, 0.2f}, "pT relative resolution binning"};
   ConfigurableAxis invpTResBins{"invpTResBins", {200, -1.2f, 1.2f}, "inv pT resolution binning"};
+  ConfigurableAxis invpTResNormBins{"invpTResNormBins", {200, -4.f, 4.f}, "inv pT normalised resolution binning"};
   ConfigurableAxis etaBins{"etaBins", {2, -1.f, 1.f}, "eta binning"};
   ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {100, -1.f, 1.f}, "eta binning for daughters"};
   ConfigurableAxis phiBins{"phiBins", {100, 0.f, 6.28f}, "phi binning"};
@@ -55,7 +57,9 @@ struct perfK0sResolution {
   Configurable<float> nV0lifetime{"nV0lifetime", 3., "n ctau"};
   Configurable<float> nMaxTPCNsigma{"nMaxTPCNsigma", 10., "Maximum TPC nsigma for pions"};
   Configurable<int> itsIbSelectionPos{"itsIbSelectionPos", 0, "Flag for the ITS IB selection on positive daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
-  Configurable<int> itsIbSelectionNeg{"itsIbSelectionNeg", 0, "Flag for the ITS IB IB selection on negative daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
+  Configurable<int> itsIbSelectionNeg{"itsIbSelectionNeg", 0, "Flag for the ITS IB selection on negative daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
+  Configurable<int> itsAfterburnerPos{"itsAfterburnerPos", 0, "Flag for the ITS afterburner tracks on positive daughters: -1 no AB, 0 no selection, 1 AB"};
+  Configurable<int> itsAfterburnerNeg{"itsAfterburnerNeg", 0, "Flag for the ITS afterburner tracks on negative daughters: -1 no AB, 0 no selection, 1 AB"};
   Configurable<int> trdSelectionPos{"trdSelectionPos", 0, "Flag for the TRD selection on positive daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
@@ -99,9 +103,11 @@ struct perfK0sResolution {
     const AxisSpec statAxis{5, 0, 5, ""};
     const AxisSpec mAxis{mBins, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec pTAxis{pTBins, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec invpTAxis{invpTBins, "1/#it{p}_{T}^{MC} (GeV/#it{c})^{-1}"};
     const AxisSpec pTResAxis{pTResBins, "#Delta#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec pTResRelAxis{pTResRelBins, "(#it{p}_{T}^{rec} - #it{p}_{T}^{MC})/#it{p}_{T}^{MC}"};
     const AxisSpec invpTResAxis{invpTResBins, "1/#it{p}_{T}-1/#it{p}_{T}^{MC} (GeV/#it{c})^{-1}"};
+    const AxisSpec invpTResNormAxis{invpTResNormBins, "(1/#it{p}_{T}-1/#it{p}_{T}^{MC})/#sigma_{1/#it{p}_{T}}"};
     const AxisSpec relpTResAxis{relpTResBins, "#sigma(#it{p}_{T})/#it{p}_{T}"};
     const AxisSpec etaAxis{etaBins, "#eta"};
     const AxisSpec etaAxisPosD{etaBinsDauthers, "#eta pos."};
@@ -119,15 +125,28 @@ struct perfK0sResolution {
       rK0sDauResolution.add("h2_massPosPtRes", "h2_massPosPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
       rK0sDauResolution.add("h2_massNegPtRes", "h2_massNegPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
 
-      rK0sDauResolution.add("h2_genPtPosPtRes", "h2_genPtPosPtRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
-      rK0sDauResolution.add("h2_genPxPosPxRes", "h2_genPxPosPxRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
-      rK0sDauResolution.add("h2_genPyPosPyRes", "h2_genPyPosPyRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
-      rK0sDauResolution.add("h2_genPzPosPzRes", "h2_genPzPosPzRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPtPosPtResNorm", "h2_genPtPosPtResNorm", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPxPosPxResNorm", "h2_genPxPosPxResNorm", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPyPosPyResNorm", "h2_genPyPosPyResNorm", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPzPosPzResNorm", "h2_genPzPosPzResNorm", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
 
-      rK0sDauResolution.add("h2_genPtNegPtRes", "h2_genPtNegPtRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
-      rK0sDauResolution.add("h2_genPxNegPxRes", "h2_genPxNegPxRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
-      rK0sDauResolution.add("h2_genPyNegPyRes", "h2_genPyNegPyRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
-      rK0sDauResolution.add("h2_genPzNegPzRes", "h2_genPzNegPzRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPtNegPtResNorm", "h2_genPtNegPtResNorm", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPxNegPxResNorm", "h2_genPxNegPxResNorm", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPyNegPyResNorm", "h2_genPyNegPyResNorm", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPzNegPzResNorm", "h2_genPzNegPzResNorm", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
+
+      rK0sDauResolution.add("h2_genPtPosPtRes", "h2_genPtPosPtRes", {HistType::kTH2F, {pTResAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPxPosPxRes", "h2_genPxPosPxRes", {HistType::kTH2F, {pTResAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPyPosPyRes", "h2_genPyPosPyRes", {HistType::kTH2F, {pTResAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPzPosPzRes", "h2_genPzPosPzRes", {HistType::kTH2F, {pTResAxis, pTAxis}});
+
+      rK0sDauResolution.add("h2_genPtNegPtRes", "h2_genPtNegPtRes", {HistType::kTH2F, {pTResAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPxNegPxRes", "h2_genPxNegPxRes", {HistType::kTH2F, {pTResAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPyNegPyRes", "h2_genPyNegPyRes", {HistType::kTH2F, {pTResAxis, pTAxis}});
+      rK0sDauResolution.add("h2_genPzNegPzRes", "h2_genPzNegPzRes", {HistType::kTH2F, {pTResAxis, pTAxis}});
+
+      rK0sDauResolution.add("h2_genPtPosPulls", "h2_GenPtPosPulls", {HistType::kTH2F, {invpTResNormAxis, invpTAxis}});
+      rK0sDauResolution.add("h2_genPtNegPulls", "h2_GenPtNegPulls", {HistType::kTH2F, {invpTResNormAxis, invpTAxis}});
 
       rK0sDauResolution.add("h2_PosRelPtRes", "h2_PosRelPtRes", {HistType::kTH2F, {pTAxis, relpTResAxis}});
       rK0sDauResolution.add("h2_NegRelPtRes", "h2_NegRelPtRes", {HistType::kTH2F, {pTAxis, relpTResAxis}});
@@ -229,6 +248,40 @@ struct perfK0sResolution {
         break;
       default:
         LOG(fatal) << "Invalid ITS selection for negative daughter";
+        break;
+    }
+    switch (itsAfterburnerPos) {
+      case -1:
+        if (ptrack.itsChi2NCl() >= 0) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (ptrack.itsChi2NCl() < 0) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid AB selection for positive daughter";
+        break;
+    }
+    switch (itsAfterburnerNeg) {
+      case -1:
+        if (ntrack.itsChi2NCl() >= 0) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (ntrack.itsChi2NCl() < 0) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid AB selection for negative daughter";
         break;
     }
 
@@ -434,9 +487,6 @@ struct perfK0sResolution {
     o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovNeg, 2.f, matCorr, &mDcaInfoCovNeg);
   }
 
-  bool daughtersHaveMCParticles = false;
-  bool daughtersCorrRec = false;
-
   void processMC(soa::Filtered<SelectedCollisions>::iterator const& collision,
                  soa::Filtered<soa::Join<aod::V0Datas, aod::V0Covs, aod::V0DauCovs, aod::McV0Labels>> const& fullV0s,
                  PIDTracksIUMC const&,
@@ -445,6 +495,8 @@ struct perfK0sResolution {
   {
     rK0sResolution.fill(HIST("h1_stats"), 0.5);
     for (auto& v0 : fullV0s) {
+      bool daughtersHaveMCParticles = false;
+      bool daughtersCorrRec = false;
       rK0sResolution.fill(HIST("h1_stats"), 1.5);
       const auto& posTrack = v0.posTrack_as<PIDTracksIUMC>();
       const auto& negTrack = v0.negTrack_as<PIDTracksIUMC>();
@@ -489,18 +541,32 @@ struct perfK0sResolution {
 
       // QA of correctly reconstructed V0 daughters
       if (daughtersCorrRec) {
-        rK0sDauResolution.fill(HIST("h2_genPtPosPtRes"), (v0.positivept() - posTrack.mcParticle().pt()) / posTrack.mcParticle().pt(), posTrack.mcParticle().pt());
-        rK0sDauResolution.fill(HIST("h2_genPxPosPxRes"), (v0.pxpos() - posTrack.mcParticle().px()) / posTrack.mcParticle().px(), posTrack.mcParticle().px());
-        rK0sDauResolution.fill(HIST("h2_genPyPosPyRes"), (v0.pypos() - posTrack.mcParticle().py()) / posTrack.mcParticle().py(), posTrack.mcParticle().py());
-        rK0sDauResolution.fill(HIST("h2_genPzPosPzRes"), (v0.pzpos() - posTrack.mcParticle().pz()) / posTrack.mcParticle().pz(), posTrack.mcParticle().pz());
+        rK0sDauResolution.fill(HIST("h2_genPtPosPtResNorm"), (v0.positivept() - posTrack.mcParticle().pt()) / posTrack.mcParticle().pt(), posTrack.mcParticle().pt());
+        rK0sDauResolution.fill(HIST("h2_genPxPosPxResNorm"), (v0.pxpos() - posTrack.mcParticle().px()) / posTrack.mcParticle().px(), posTrack.mcParticle().px());
+        rK0sDauResolution.fill(HIST("h2_genPyPosPyResNorm"), (v0.pypos() - posTrack.mcParticle().py()) / posTrack.mcParticle().py(), posTrack.mcParticle().py());
+        rK0sDauResolution.fill(HIST("h2_genPzPosPzResNorm"), (v0.pzpos() - posTrack.mcParticle().pz()) / posTrack.mcParticle().pz(), posTrack.mcParticle().pz());
 
-        rK0sDauResolution.fill(HIST("h2_genPtNegPtRes"), (v0.negativept() - negTrack.mcParticle().pt()) / negTrack.mcParticle().pt(), negTrack.mcParticle().pt());
-        rK0sDauResolution.fill(HIST("h2_genPxNegPxRes"), (v0.pxneg() - negTrack.mcParticle().px()) / negTrack.mcParticle().px(), negTrack.mcParticle().px());
-        rK0sDauResolution.fill(HIST("h2_genPyNegPyRes"), (v0.pyneg() - negTrack.mcParticle().py()) / negTrack.mcParticle().py(), negTrack.mcParticle().py());
-        rK0sDauResolution.fill(HIST("h2_genPzNegPzRes"), (v0.pzneg() - negTrack.mcParticle().pz()) / negTrack.mcParticle().pz(), negTrack.mcParticle().pz());
+        rK0sDauResolution.fill(HIST("h2_genPtNegPtResNorm"), (v0.negativept() - negTrack.mcParticle().pt()) / negTrack.mcParticle().pt(), negTrack.mcParticle().pt());
+        rK0sDauResolution.fill(HIST("h2_genPxNegPxResNorm"), (v0.pxneg() - negTrack.mcParticle().px()) / negTrack.mcParticle().px(), negTrack.mcParticle().px());
+        rK0sDauResolution.fill(HIST("h2_genPyNegPyResNorm"), (v0.pyneg() - negTrack.mcParticle().py()) / negTrack.mcParticle().py(), negTrack.mcParticle().py());
+        rK0sDauResolution.fill(HIST("h2_genPzNegPzResNorm"), (v0.pzneg() - negTrack.mcParticle().pz()) / negTrack.mcParticle().pz(), negTrack.mcParticle().pz());
+
+        rK0sDauResolution.fill(HIST("h2_genPtPosPtRes"), (v0.positivept() - posTrack.mcParticle().pt()), posTrack.mcParticle().pt());
+        rK0sDauResolution.fill(HIST("h2_genPxPosPxRes"), (v0.pxpos() - posTrack.mcParticle().px()), posTrack.mcParticle().px());
+        rK0sDauResolution.fill(HIST("h2_genPyPosPyRes"), (v0.pypos() - posTrack.mcParticle().py()), posTrack.mcParticle().py());
+        rK0sDauResolution.fill(HIST("h2_genPzPosPzRes"), (v0.pzpos() - posTrack.mcParticle().pz()), posTrack.mcParticle().pz());
+
+        rK0sDauResolution.fill(HIST("h2_genPtNegPtRes"), (v0.negativept() - negTrack.mcParticle().pt()), negTrack.mcParticle().pt());
+        rK0sDauResolution.fill(HIST("h2_genPxNegPxRes"), (v0.pxneg() - negTrack.mcParticle().px()), negTrack.mcParticle().px());
+        rK0sDauResolution.fill(HIST("h2_genPyNegPyRes"), (v0.pyneg() - negTrack.mcParticle().py()), negTrack.mcParticle().py());
+        rK0sDauResolution.fill(HIST("h2_genPzNegPzRes"), (v0.pzneg() - negTrack.mcParticle().pz()), negTrack.mcParticle().pz());
 
         rK0sDauResolution.fill(HIST("h2_massPosPtRes"), mass, v0.positivept() - posTrack.mcParticle().pt());
         rK0sDauResolution.fill(HIST("h2_massNegPtRes"), mass, v0.negativept() - negTrack.mcParticle().pt());
+
+        rK0sDauResolution.fill(HIST("h2_genPtPosPulls"), (1. / v0.positivept() - 1. / posTrack.mcParticle().pt()) / (RecoDecay::sqrtSumOfSquares(v0.covMatPosDau()[9], v0.covMatPosDau()[14]) / RecoDecay::sq(v0.positivept())), 1. / posTrack.mcParticle().pt());
+        rK0sDauResolution.fill(HIST("h2_genPtNegPulls"), (1. / v0.negativept() - 1. / negTrack.mcParticle().pt()) / (RecoDecay::sqrtSumOfSquares(v0.covMatNegDau()[9], v0.covMatNegDau()[14]) / RecoDecay::sq(v0.negativept())), 1. / negTrack.mcParticle().pt());
+
         if (useMultidimHisto) {
           rK0sResolution.fill(HIST("thn_mass"), mass, v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta(),
                               1. / v0.positivept() - 1. / posTrack.mcParticle().pt(),
@@ -510,8 +576,8 @@ struct perfK0sResolution {
       }
 
       // QA of seleted V0s
-      rK0sDauResolution.fill(HIST("h2_PosRelPtRes"), v0.positivept(), RecoDecay::sqrtSumOfSquares(v0.covMatPosDau()[9], v0.covMatPosDau()[14]), v0.positivept());
-      rK0sDauResolution.fill(HIST("h2_NegRelPtRes"), v0.negativept(), RecoDecay::sqrtSumOfSquares(v0.covMatNegDau()[9], v0.covMatNegDau()[14]), v0.positivept());
+      rK0sDauResolution.fill(HIST("h2_PosRelPtRes"), v0.positivept(), RecoDecay::sqrtSumOfSquares(v0.covMatPosDau()[9], v0.covMatPosDau()[14]) / v0.positivept());
+      rK0sDauResolution.fill(HIST("h2_NegRelPtRes"), v0.negativept(), RecoDecay::sqrtSumOfSquares(v0.covMatNegDau()[9], v0.covMatNegDau()[14]) / v0.negativept());
       rK0sResolution.fill(HIST("h2_masspT"), mass, v0.pt());
       rK0sResolution.fill(HIST("h2_masseta"), mass, v0.eta());
       rK0sResolution.fill(HIST("h2_massphi"), mass, v0.phi());

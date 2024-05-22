@@ -82,7 +82,7 @@ struct CFTutorialTask3 {
   }
 
   // Equivalent of the AliRoot task UserExec
-  void process(MyFilteredCollision const& coll, o2::aod::MyTracks const& tracks)
+  void process(MyFilteredCollision const& coll, o2::aod::MyTracks const&)
   {
     auto groupPositive = positive->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);
     auto groupNegative = negative->sliceByCached(aod::track::collisionId, coll.globalIndex(), cache);

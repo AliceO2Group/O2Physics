@@ -398,7 +398,7 @@ void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& co
 }
 
 template <typename CollisionObject, typename ParticlesList>
-void DptDptFilter::processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult)
+void DptDptFilter::processGenerated(CollisionObject const& mccollision, ParticlesList const&, float centormult)
 {
   using namespace dptdptfilter;
 
@@ -514,11 +514,12 @@ struct DptDptFilterTracks {
   std::string cfgCCDBDate{"20220307"};
   std::string cfgCCDBPeriod{"LHC22o"};
 
+  Configurable<bool> cfgOutDebugInfo{"outdebuginfo", false, "Out detailed debug information per track into a text file. Default false"};
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
   Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy;50-53 w tighter pT DCAz. Default 4"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
-  Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries. Default 0"};
+  Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries, 4 mcparticle only sec, 5 mcparicle only sec from decays, 6 mcparticle only sec from material. Default 0"};
   Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"tunetracksel", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,2.4,false,3.2,false}"};
   Configurable<o2::analysis::TrackSelectionPIDCfg> cfgPionPIDSelection{"pipidsel",
                                                                        {},
@@ -811,6 +812,12 @@ struct DptDptFilterTracks {
     ccdb->setURL(cfgCCDBUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    /* the debug info output file if required */
+    if (cfgOutDebugInfo) {
+      debugstream.open("tracings.csv");
+      debugstream << "p,piw,pt,hastof,dEdx,beta,tpcnEl,tpcnMu,tpcnPi,tpcnKa,tpcnPr,tofnEl,tofnMu,tofnPi,tofnKa,tofnPr,tpcnElSft,tpcnMuSft,tpcnPiSft,tpcnKaSft,tpcnPrSft,tofnElSft,tofnMuSft,tofnPiSft,tofnKaSft,tofnPrSft,idcode,pid,pid2,truepid,phprim,process\n";
+      debugstream.close();
+    }
   }
 
   void getCCDBInformation()
@@ -828,16 +835,22 @@ struct DptDptFilterTracks {
     }
   }
 
-  template <typename TrackObject>
+  template <StrongDebugging outdebug, typename TrackObject>
   int8_t trackIdentification(TrackObject const& track);
-  template <typename TrackObject>
+  template <StrongDebugging outdebug, typename TrackObject>
   int8_t selectTrack(TrackObject const& track);
-  template <typename CollisionObjects, typename TrackObject>
+  template <StrongDebugging outdebug, typename CollisionObjects, typename TrackObject>
   int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
   template <typename ParticleObject>
   int8_t identifyParticle(ParticleObject const& particle);
   template <typename ParticleObject>
   int8_t identifyPrimaryParticle(ParticleObject const& particle);
+  template <typename ParticleObject>
+  int8_t identifySecondaryParticle(ParticleObject const& particle);
+  template <typename ParticleObject>
+  int8_t identifySecFromDecayParticle(ParticleObject const& particle);
+  template <typename ParticleObject>
+  int8_t identifySecFromMaterialParticle(ParticleObject const& particle);
   template <typename ParticleObject, typename MCCollisionObject>
   int8_t selectParticle(ParticleObject const& particle, MCCollisionObject const& mccollision);
   template <typename TrackObject>
@@ -856,7 +869,7 @@ struct DptDptFilterTracks {
 
   /* TODO: as it is now when the derived data is stored (fullDerivedData = true) */
   /* the collision index stored with the track is wrong. This has to be fixed    */
-  template <typename passedtracks>
+  template <StrongDebugging outdebug, typename passedtracks>
   void filterTracks(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions,
                     passedtracks const& tracks)
   {
@@ -876,7 +889,7 @@ struct DptDptFilterTracks {
     for (auto track : tracks) {
       int8_t pid = -1;
       if (track.has_collision() && (track.template collision_as<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>()).collisionaccepted()) {
-        pid = selectTrackAmbiguousCheck(collisions, track);
+        pid = selectTrackAmbiguousCheck<outdebug>(collisions, track);
         if (!(pid < 0)) {
           naccepted++;
           if (fullDerivedData) {
@@ -955,75 +968,87 @@ struct DptDptFilterTracks {
          particles.size());
   }
 
+  template <typename passedtracks>
+  void doFilterTracks(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, passedtracks const& tracks)
+  {
+    if (cfgOutDebugInfo) {
+      debugstream.open("tracings.csv", std::ios::app);
+      filterTracks<kDEBUG>(collisions, tracks);
+      debugstream.close();
+    } else {
+      filterTracks<kNODEBUG>(collisions, tracks);
+    }
+  }
+
   void filterRecoWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPID const& tracks)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithPID, "Not stored derived data track filtering", false)
 
   void filterRecoWithFullPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksFullPID const& tracks)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithFullPID, "Not stored derived data track filtering", false)
 
   void filterRecoWithPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDAmbiguous const& tracks)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithPIDAmbiguous, "Not stored derived data track filtering with ambiguous tracks check", false)
 
   void filterRecoWithFullPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksFullPIDAmbiguous const& tracks)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithFullPIDAmbiguous, "Not stored derived data track filtering with ambiguous tracks check", false)
 
   void filterDetectorLevelWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks, aod::McParticles const&)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithPID, "Not stored derived data detector level track filtering", false)
 
   void filterDetectorLevelWithFullPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksFullPIDDetLevel const& tracks, aod::McParticles const&)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithFullPID, "Not stored derived data detector level track filtering", false)
 
   void filterDetectorLevelWithPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevelAmbiguous const& tracks, aod::McParticles const&)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithPIDAmbiguous, "Not stored derived data detector level track filtering with ambiguous tracks check", false)
 
   void filterDetectorLevelWithFullPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksFullPIDDetLevelAmbiguous const& tracks, aod::McParticles const&)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithFullPIDAmbiguous, "Not stored derived data detector level track filtering with ambiguous tracks check", false)
 
   void filterRecoWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracks const& tracks)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithoutPID, "Track filtering without PID information", true)
 
   void filterRecoWithoutPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksAmbiguous const& tracks)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithoutPIDAmbiguous, "Track filtering without PID information with ambiguous tracks check", false)
 
   void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevel const& tracks, aod::McParticles const&)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithoutPID, "Detector level track filtering without PID information", false)
 
   void filterDetectorLevelWithoutPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevelAmbiguous const& tracks, aod::McParticles const&)
   {
-    filterTracks(collisions, tracks);
+    doFilterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithoutPIDAmbiguous, "Detector level track filtering without PID information with ambiguous tracks check", false)
 
@@ -1034,7 +1059,7 @@ struct DptDptFilterTracks {
   PROCESS_SWITCH(DptDptFilterTracks, filterGenerated, "Generated particles filtering", true)
 };
 
-template <typename TrackObject>
+template <StrongDebugging outdebug, typename TrackObject>
 int8_t DptDptFilterTracks::trackIdentification(TrackObject const& track)
 {
   using namespace dptdptfilter;
@@ -1044,16 +1069,30 @@ int8_t DptDptFilterTracks::trackIdentification(TrackObject const& track)
     sp = 0;
   } else if (recoIdMethod == 1) {
     if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns> || framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
-      sp = pidselector.whichSpecies(track);
+      sp = pidselector.whichSpecies<outdebug>(track);
     } else {
       LOGF(fatal, "Track identification required but PID information not present");
     }
-  } else if (recoIdMethod == 2 || recoIdMethod == 3) {
+  } else {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-      if (recoIdMethod == 2) {
-        sp = identifyParticle(track.template mcParticle_as<aod::McParticles>());
-      } else {
-        sp = identifyPrimaryParticle(track.template mcParticle_as<aod::McParticles>());
+      switch (recoIdMethod) {
+        case 2:
+          sp = identifyParticle(track.template mcParticle_as<aod::McParticles>());
+          break;
+        case 3:
+          sp = identifyPrimaryParticle(track.template mcParticle_as<aod::McParticles>());
+          break;
+        case 4:
+          sp = identifySecondaryParticle(track.template mcParticle_as<aod::McParticles>());
+          break;
+        case 5:
+          sp = identifySecFromDecayParticle(track.template mcParticle_as<aod::McParticles>());
+          break;
+        case 6:
+          sp = identifySecFromMaterialParticle(track.template mcParticle_as<aod::McParticles>());
+          break;
+        default:
+          LOGF(fatal, "Track identification method %d not recognized. Fix it!", recoIdMethod);
       }
     } else {
       LOGF(fatal, "Track identification required from MC particle but MC information not present");
@@ -1062,7 +1101,7 @@ int8_t DptDptFilterTracks::trackIdentification(TrackObject const& track)
   return sp;
 }
 
-template <typename TrackObject>
+template <StrongDebugging outdebug, typename TrackObject>
 int8_t DptDptFilterTracks::selectTrack(TrackObject const& track)
 {
   using namespace dptdptfilter;
@@ -1075,7 +1114,7 @@ int8_t DptDptFilterTracks::selectTrack(TrackObject const& track)
   if (AcceptTrack(track)) {
     /* the track has been accepted */
     /* let's identify it */
-    sp = trackIdentification(track);
+    sp = trackIdentification<outdebug>(track);
     if (!(sp < 0)) {
       /* fill the species histograms */
       fillTrackHistosAfterSelection(track, sp);
@@ -1094,7 +1133,7 @@ int8_t DptDptFilterTracks::selectTrack(TrackObject const& track)
   return sp;
 }
 
-template <typename CollisionObjects, typename TrackObject>
+template <StrongDebugging outdebug, typename CollisionObjects, typename TrackObject>
 int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track)
 {
   bool ambiguoustrack = false;
@@ -1144,7 +1183,7 @@ int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& col
       /* feedback of no ambiguous tracks only if checks required */
       fhAmbiguousTrackType->Fill(ambtracktype, multiplicityclass);
     }
-    return selectTrack(track);
+    return selectTrack<outdebug>(track);
   }
 }
 
@@ -1200,6 +1239,27 @@ inline int8_t DptDptFilterTracks::identifyPrimaryParticle(ParticleObject const& 
   return pidselector.whichTruthPrimarySpecies(particle);
 }
 
+template <typename ParticleObject>
+inline int8_t DptDptFilterTracks::identifySecondaryParticle(ParticleObject const& particle)
+{
+  using namespace dptdptfilter;
+  return pidselector.whichTruthSecondarySpecies(particle);
+}
+
+template <typename ParticleObject>
+inline int8_t DptDptFilterTracks::identifySecFromDecayParticle(ParticleObject const& particle)
+{
+  using namespace dptdptfilter;
+  return pidselector.whichTruthSecFromDecaySpecies(particle);
+}
+
+template <typename ParticleObject>
+inline int8_t DptDptFilterTracks::identifySecFromMaterialParticle(ParticleObject const& particle)
+{
+  using namespace dptdptfilter;
+  return pidselector.whichTruthSecFromMaterialSpecies(particle);
+}
+
 template <typename ParticleObject, typename MCCollisionObject>
 inline int8_t DptDptFilterTracks::selectParticle(ParticleObject const& particle, MCCollisionObject const& mccollision)
 {
@@ -1212,6 +1272,7 @@ inline int8_t DptDptFilterTracks::selectParticle(ParticleObject const& particle,
     /* track selection */
     if (AcceptParticle(particle, mccollision)) {
       /* the particle has been accepted */
+      /* the particle is only accepted if it is a primary particle */
       /* let's identify the particle */
       sp = identifyParticle(particle);
       if (!(sp < 0)) {

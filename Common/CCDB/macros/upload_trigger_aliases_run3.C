@@ -11,6 +11,7 @@
 
 #include "DataFormatsCTP/Configuration.h"
 #include "CCDB/CcdbApi.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "TObjArray.h"
 #include "TriggerAliases.h"
 #include "TTree.h"
@@ -27,16 +28,26 @@ void createDefaultAliases(map<int, TString>& mAliases)
   mAliases[kEMC7] = "CTVXEMC-B-NOPF-EMC";
   mAliases[kDMC7] = "CTVXDMC-B-NOPF-EMC";
   mAliases[kTVXinTRD] = "CMTVX-B-NOPF-TRD,minbias_TVX";
-  mAliases[kTVXinEMC] = "C0TVX-B-NOPF-EMC,minbias_TVX_L0";
-  mAliases[kTVXinPHOS] = "C0TVX-B-NOPF-PHSCPV,minbias_TVX_L0";
-  mAliases[kTVXinHMP] = "C0TVX-B-NOPF-HMP,minbias_TVX_L0";
-  mAliases[kPHOS] = "CTVXPH0-B-NOPF-PHSCPV,mb_PH0_TVX";
+  mAliases[kTVXinEMC] = "C0TVX-B-NOPF-EMC,minbias_TVX_L0,CMTVXTSC-B-NOPF-EMC,CMTVXTCE-B-NOPF-EMC";
+  mAliases[kTVXinPHOS] = "C0TVX-B-NOPF-PHSCPV,minbias_TVX_L0,CMTVXTSC-B-NOPF-PHSCPV,CMTVXTSC-B-NOPF-PHSCPV";
+  mAliases[kTVXinHMP] = "C0TVX-B-NOPF-HMP,minbias_TVX_L0,CMTVXTSC-B-NOPF-HMP";
+  mAliases[kPHOS] = "CTVXPH0-B-NOPF-PHSCPV,mb_PH0_TVX,CPH0SC-B-NOPF-PHSCPV,CPH0CE-B-NOPF-PHSCPV";
+}
+
+void createPbPbAliases(map<int, TString>& mAliases)
+{
+  mAliases[kTVXinTRD] = "CMTVXTSC-B-NOPF-TRD,CMTVXTCE-B-NOPF-TRD";
+  mAliases[kTVXinEMC] = "CMTVXTSC-B-NOPF-EMC,CMTVXTCE-B-NOPF-EMC,C0TVXTSC-B-NOPF-EMC,C0TVXTCE-B-NOPF-EMC";
+  mAliases[kTVXinPHOS] = "CMTVXTSC-B-NOPF-PHSCPV,CMTVXTCE-B-NOPF-PHSCPV,C0TVXTSC-B-NOPF-PHSCPV,C0TVXTCE-B-NOPF-PHSCPV";
+  mAliases[kTVXinHMP] = "CMTVXTSC-B-NOPF-HMP,CMTVXTCE-B-NOPF-HMP";
+  mAliases[kPHOS] = "CPH0SC-B-NOPF-PHSCPV,CPH0CE-B-NOPF-PHSCPV";
 }
 
 void upload_trigger_aliases_run3()
 {
   map<int, TString> mAliases;
-  createDefaultAliases(mAliases);
+  // createDefaultAliases(mAliases);
+  createPbPbAliases(mAliases);
 
   TObjArray* classNames[kNaliases];
   for (auto& al : mAliases) {
@@ -48,10 +59,10 @@ void upload_trigger_aliases_run3()
   // ccdb.init("http://ccdb-test.cern.ch:8080");
   // ccdb.truncate("EventSelection/TriggerAliases");
 
-  map<string, string> metadata, metadataRCT, header;
+  map<string, string> metadata;
 
   // read list of runs from text file
-  std::ifstream f("runs_run3.txt");
+  std::ifstream f("run3_pbpb2023.txt");
   std::vector<int> runs;
   int r = 0;
   while (f >> r) {
@@ -68,6 +79,11 @@ void upload_trigger_aliases_run3()
 
   for (auto& run : runs) {
     LOGP(info, "run = {}", run);
+
+    //    if (run != 535983)
+    //      continue; // already filled
+    //    if (run <= 539580)
+    //      continue; // already filled
     if (run < 519903)
       continue; // no CTP info
     if (run == 527349)
@@ -78,11 +94,13 @@ void upload_trigger_aliases_run3()
       continue; // no CTP info
     if (run == 528543)
       continue; // no CTP info
-    // read SOR and EOR timestamps from RCT CCDB
-    header = ccdb.retrieveHeaders(Form("RCT/Info/RunInformation/%i", run), metadataRCT, -1);
-    ULong64_t sor = atol(header["SOR"].c_str());
-    ULong64_t eor = atol(header["EOR"].c_str());
-    ULong64_t ts = sor;
+
+    // read SOR and EOR timestamps from RCT CCDB via utility function
+    auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb, run);
+    auto eor = soreor.second;
+    auto sor = soreor.first;
+    auto ts = sor;
+
     // read CTP config
     metadata["runNumber"] = Form("%d", run);
     auto ctpcfg = ccdb.retrieveFromTFileAny<o2::ctp::CTPConfiguration>("CTP/Config/Config", metadata, ts);

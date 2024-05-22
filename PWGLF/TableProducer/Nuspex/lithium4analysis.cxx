@@ -253,6 +253,7 @@ struct lithium4analysis {
 
     l4Cand.isBkgUS = candidateHe3.sign() * candidatePr.sign() < 0;
     l4Cand.isBkgEM = mix;
+
     l4Cand.DCAxyHe3 = candidateHe3.dcaXY();
     l4Cand.DCAzHe3 = candidateHe3.dcaZ();
     l4Cand.DCAxyPr = candidatePr.dcaXY();
@@ -263,6 +264,7 @@ struct lithium4analysis {
 
     l4Cand.tpcSignalHe3 = candidateHe3.tpcSignal();
     l4Cand.momHe3TPC = correctedTPCinnerParamHe3;
+    
     l4Cand.tpcSignalPr = candidatePr.tpcSignal();
     l4Cand.momPrTPC = candidatePr.tpcInnerParam();
     l4Cand.invMass = invMass;

@@ -59,7 +59,7 @@ struct tracksWGTInBCs {
   // This process functions fills the TracksWGTInBCs table.
   // It loops over all tracks. For the tracks with a 'good' timing it finds the associated BC.
   // If a track is ambiguous, then the associated BC is calculated with help of the trackTime.
-  void processBarrel(BCs const& bcs, CCs const& collisions, TCs const& tracks, ATs const& ambTracks)
+  void processBarrel(BCs const& bcs, CCs const& /*collisions*/, TCs const& tracks, ATs const& ambTracks)
   {
     // run number
     if (bcs.size() <= 0) {
@@ -148,7 +148,7 @@ struct tracksWGTInBCs {
   // This process functions fills the FwdTracksWGTInBCs table.
   // It loops over all forward tracks. For the tracks with a 'good' timing it finds the associated BC.
   // If a track is ambiguous, then the associated BC is calculated with help of the trackTime.
-  void processForward(BCs& bcs, CCs& collisions, aod::FwdTracks& fwdTracks, aod::AmbiguousFwdTracks& ambFwdTracks)
+  void processForward(BCs& bcs, CCs& /*collisions*/, aod::FwdTracks& fwdTracks, aod::AmbiguousFwdTracks& ambFwdTracks)
   {
     // run number
     if (bcs.size() <= 0) {
@@ -375,7 +375,7 @@ struct DGBCCandProducer {
   // If the BC is not associated with a collision, then fill the UDtables with information availabl for the BC.
   void processTinBCs(TIBC const& tibc, BCs const& bcs, CCs const& collisions,
                      TCs const& tracks, aod::FwdTracks const& fwdtracks, FTIBCs const& ftibcs,
-                     aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+                     aod::Zdcs const& /*zdcs*/, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     // fill FITInfo
     auto bcnum = tibc.bcnum();
@@ -517,7 +517,7 @@ struct DGBCCandProducer {
   //                is not in BCs table and hence does not have assoc. Collision: [-3., 3., -3.]
   void processFull(BCs const& bcs, CCs const& collisions,
                    TCs const& tracks, FTCs const& fwdtracks, TIBCs const& tibcs, FTIBCs const& ftibcs,
-                   aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+                   aod::Zdcs const& /*zdcs*/, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     int isDG1, isDG2;
     int ntr1, ntr2;
@@ -737,8 +737,8 @@ struct DGBCCandProducer {
   PROCESS_SWITCH(DGBCCandProducer, processFull, "Produce UDTables", true);
 
   void processDummy(BCs const& bcs, CCs const& collisions,
-                    TCs const& tracks, FTCs const& fwdtracks, TIBCs const& tibcs, FTIBCs const& ftibcs,
-                    aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+                    TCs const& tracks, FTCs const& fwdtracks, TIBCs const& /*tibcs*/, FTIBCs const& /*ftibcs*/,
+                    aod::Zdcs const& /*zdcs*/, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/)
   {
     LOGF(info, "size of");
     LOGF(info, "bcs %d", bcs.size());

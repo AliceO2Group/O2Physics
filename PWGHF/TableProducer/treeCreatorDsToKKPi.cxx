@@ -441,7 +441,7 @@ struct HfTreeCreatorDsToKKPi {
   }
 
   void processData(aod::Collisions const& collisions,
-                   CandDsData const& candidates,
+                   CandDsData const&,
                    TracksWPid const&)
   {
     // Filling event properties
@@ -482,7 +482,7 @@ struct HfTreeCreatorDsToKKPi {
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
-                 CandDsMcReco const& candidates,
+                 CandDsMcReco const&,
                  CandDsMcGen const& mcParticles,
                  TracksWPid const&)
   {
@@ -565,7 +565,7 @@ struct HfTreeCreatorDsToKKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS),
+        RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }

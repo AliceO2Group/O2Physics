@@ -150,6 +150,24 @@ struct deltaAnalysis {
 
       histos.add("hDeltaZeroInvMassGen", "Invariant mass distribution for #Delta^{0} - generated", kTH2F, {ptAxis, deltaZeroAxis});
       histos.add("hAntiDeltaZeroInvMassGen", "Invariant mass distribution for #bar{#Delta^{0}} - generated", kTH2F, {ptAxis, antiDeltaZeroAxis});
+
+      histos.add("hRecProtonAntiDeltaPlusPlus", "Proton from #bar{#Delta^{++}}", kTH1F, {ptAxis});
+      histos.add("hRecProtonDeltaPlusPlus", "Proton from #Delta^{++}", kTH1F, {ptAxis});
+      histos.add("hRecProtonAntiDeltaZero", "Proton from #bar{#Delta^{0}}", kTH1F, {ptAxis});
+      histos.add("hRecProtonDeltaZero", "Proton from #Delta^{0}", kTH1F, {ptAxis});
+      histos.add("hRecPionAntiDeltaPlusPlus", "Pion from #bar{#Delta^{++}}", kTH1F, {ptAxis});
+      histos.add("hRecPionDeltaPlusPlus", "Pion from #Delta^{++}", kTH1F, {ptAxis});
+      histos.add("hRecPionAntiDeltaZero", "Pion from #bar{#Delta^{0}}", kTH1F, {ptAxis});
+      histos.add("hRecPionDeltaZero", "Pion from #Delta^{0}", kTH1F, {ptAxis});
+
+      histos.add("hGenProtonAntiDeltaPlusPlus", "Proton from #bar{#Delta^{++}}", kTH1F, {ptAxis});
+      histos.add("hGenProtonDeltaPlusPlus", "Proton from #Delta^{++}", kTH1F, {ptAxis});
+      histos.add("hGenProtonAntiDeltaZero", "Proton from #bar{#Delta^{0}}", kTH1F, {ptAxis});
+      histos.add("hGenProtonDeltaZero", "Proton from #Delta^{0}", kTH1F, {ptAxis});
+      histos.add("hGenPionAntiDeltaPlusPlus", "Pion from #bar{#Delta^{++}}", kTH1F, {ptAxis});
+      histos.add("hGenPionDeltaPlusPlus", "Pion from #Delta^{++}", kTH1F, {ptAxis});
+      histos.add("hGenPionAntiDeltaZero", "Pion from #bar{#Delta^{0}}", kTH1F, {ptAxis});
+      histos.add("hGenPionDeltaZero", "Pion from #Delta^{0}", kTH1F, {ptAxis});
     }
   }
 
@@ -336,7 +354,7 @@ struct deltaAnalysis {
   }
   PROCESS_SWITCH(deltaAnalysis, processSameEvent, "Process same event", false);
 
-  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(EventCandidates const& /*collisions*/, TrackCandidates const& /*tracks*/)
   {
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (!c1.sel8()) {
@@ -404,6 +422,56 @@ struct deltaAnalysis {
       const uint64_t collIdx = collision.globalIndex();
       auto perColTracks = tracks.sliceBy(perColMC, collIdx);
       perColTracks.bindExternalIndices(&tracks);
+
+      for (auto& t0 : perColTracks) {
+
+        if (!selectionTrack(t0)) {
+          continue;
+        }
+        if (!t0.has_mcParticle()) {
+          continue;
+        }
+
+        const auto mcTrack = t0.mcParticle();
+
+        if (std::abs(mcTrack.pdgCode()) == protonPDG) {
+          if (selectionPIDProton(t0)) {
+            for (auto& motherTrackProton : mcTrack.mothers_as<aod::McParticles>()) {
+              if (std::abs(motherTrackProton.pdgCode()) == deltaPlusPlusPDG) {
+                if (t0.sign() < 0) {
+                  histos.fill(HIST("hRecProtonAntiDeltaPlusPlus"), t0.pt());
+                } else {
+                  histos.fill(HIST("hRecProtonDeltaPlusPlus"), t0.pt());
+                }
+              } else if (std::abs(motherTrackProton.pdgCode()) == deltaZeroPDG) {
+                if (t0.sign() < 0) {
+                  histos.fill(HIST("hRecProtonAntiDeltaZero"), t0.pt());
+                } else {
+                  histos.fill(HIST("hRecProtonDeltaZero"), t0.pt());
+                }
+              }
+            }
+          }
+        } else if (std::abs(mcTrack.pdgCode()) == pionPDG) {
+          if (selectionPIDPion(t0)) {
+            for (auto& motherTrackPion : mcTrack.mothers_as<aod::McParticles>()) {
+              if (std::abs(motherTrackPion.pdgCode()) == deltaPlusPlusPDG) {
+                if (t0.sign() < 0) {
+                  histos.fill(HIST("hRecPionAntiDeltaPlusPlus"), t0.pt());
+                } else {
+                  histos.fill(HIST("hRecPionDeltaPlusPlus"), t0.pt());
+                }
+              } else if (std::abs(motherTrackPion.pdgCode()) == deltaZeroPDG) {
+                if (t0.sign() < 0) {
+                  histos.fill(HIST("hRecPionDeltaZero"), t0.pt());
+                } else {
+                  histos.fill(HIST("hRecPionAntiDeltaZero"), t0.pt());
+                }
+              }
+            }
+          }
+        }
+      }
 
       for (auto& [t0, t1] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(perColTracks, perColTracks))) {
 
@@ -505,13 +573,17 @@ struct deltaAnalysis {
       auto daughters = mcParticle.daughters_as<aod::McParticles>();
       bool daughtPr = false;
       bool daughtPi = false;
+      float ptPr = -999.;
+      float ptPi = -999.;
       double eDelta = 0.;
       for (auto daught : daughters) {
         if (std::abs(daught.pdgCode()) == protonPDG) {
           daughtPr = true;
+          ptPr = daught.pt();
           eDelta += daught.e();
         } else if (std::abs(daught.pdgCode()) == pionPDG) {
           daughtPi = true;
+          ptPi = daught.pt();
           eDelta += daught.e();
         }
       }
@@ -525,14 +597,22 @@ struct deltaAnalysis {
       if (pdg > 0) {
         if (std::abs(pdg) == deltaPlusPlusPDG) {
           histos.fill(HIST("hDeltaPlusPlusInvMassGen"), mcParticle.pt(), gen_mass);
+          histos.fill(HIST("hGenProtonDeltaPlusPlus"), ptPr);
+          histos.fill(HIST("hGenPionDeltaPlusPlus"), ptPi);
         } else if (std::abs(pdg) == deltaZeroPDG) {
           histos.fill(HIST("hDeltaZeroInvMassGen"), mcParticle.pt(), gen_mass);
+          histos.fill(HIST("hGenProtonDeltaZero"), ptPr);
+          histos.fill(HIST("hGenPionDeltaZero"), ptPi);
         }
       } else {
         if (std::abs(pdg) == deltaPlusPlusPDG) {
           histos.fill(HIST("hAntiDeltaPlusPlusInvMassGen"), mcParticle.pt(), gen_mass);
+          histos.fill(HIST("hGenProtonAntiDeltaPlusPlus"), ptPr);
+          histos.fill(HIST("hGenPionAntiDeltaPlusPlus"), ptPi);
         } else if (std::abs(pdg) == deltaZeroPDG) {
           histos.fill(HIST("hAntiDeltaZeroInvMassGen"), mcParticle.pt(), gen_mass);
+          histos.fill(HIST("hGenProtonAntiDeltaZero"), ptPr);
+          histos.fill(HIST("hGenPionAntiDeltaZero"), ptPi);
         }
       }
     }

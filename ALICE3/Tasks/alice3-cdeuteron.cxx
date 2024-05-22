@@ -175,7 +175,7 @@ struct Alice3CDeuteron {
   Preslice<aod::McParticles_000> perMcCollision = aod::mcparticle::mcCollisionId;
 
   void process(const soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& coll,
-               const o2::aod::McCollisions& Mccoll,
+               const o2::aod::McCollisions&,
                const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra, o2::aod::TracksCov,
                                aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullDe>& tracks,
                const aod::McParticles_000& mcParticles)

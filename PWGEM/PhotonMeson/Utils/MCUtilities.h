@@ -34,7 +34,7 @@ bool IsPhysicalPrimary(TTrack const& mctrack)
 }
 //_______________________________________________________________________
 template <typename TCollision, typename T, typename TMCs>
-bool IsFromWD(TCollision const& mccollision, T const& mctrack, TMCs const& mcTracks)
+bool IsFromWD(TCollision const&, T const& mctrack, TMCs const& mcTracks)
 {
   // is this particle from weak decay?
   if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
@@ -227,23 +227,30 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
     return false; // mother rapidity is out of acceptance
   }
   auto daughtersIds = mcparticle.daughtersIds(); // always size = 2. first and last index. one should run loop from the first index to the last index.
-  if (daughtersIds[0] < 0 || daughtersIds[1] < 0) {
-    return false;
-  }
 
-  if (daughtersIds[1] - daughtersIds[0] + 1 != static_cast<int>(target_pdgs.size())) {
+  // if (daughtersIds.size() != static_cast<int>(target_pdgs.size())) {
+  if (daughtersIds.size() != target_pdgs.size()) {
     return false;
   }
   std::vector<int> pdgs;
   pdgs.reserve(target_pdgs.size());
-  for (int idau = daughtersIds[0]; idau <= daughtersIds[1]; idau++) {
-    auto daughter = mcparticles.iteratorAt(idau);
+  for (auto& daughterId : daughtersIds) {
+    if (daughterId < 0) {
+      pdgs.clear();
+      pdgs.shrink_to_fit();
+      return false;
+    }
+    auto daughter = mcparticles.iteratorAt(daughterId);
     pdgs.emplace_back(daughter.pdgCode());
 
     if (daughter.eta() < ymin || ymax < daughter.eta()) {
+      pdgs.clear();
+      pdgs.shrink_to_fit();
       return false;
     }
     if (daughter.phi() < phimin || phimax < daughter.phi()) {
+      pdgs.clear();
+      pdgs.shrink_to_fit();
       return false;
     }
   } // end of daughter loop
@@ -265,18 +272,26 @@ bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_
     return false;
   }
 
-  auto daughtersIds = mcphoton.daughtersIds(); // always size = 2. first and last index. one should run loop from the first index to the last index.
-  if (daughtersIds[0] < 0 || daughtersIds[1] < 0) {
+  auto daughtersIds = mcphoton.daughtersIds();
+  if (daughtersIds.size() != 2) {
     return false;
   }
 
-  for (int idau = daughtersIds[0]; idau <= daughtersIds[1]; idau++) {
-    auto daughter = mcparticles.iteratorAt(idau);
+  for (auto& daughterId : daughtersIds) {
+    if (daughterId < 0) {
+      return false;
+    }
+    auto daughter = mcparticles.iteratorAt(daughterId);
     if (abs(daughter.pdgCode()) != 11) {
       return false;
     }
 
+    if (daughter.producedByGenerator()) {
+      return false;
+    }
+
     float rxy_gen_e = sqrt(pow(daughter.vx(), 2) + pow(daughter.vy(), 2));
+    // LOGF(info, "daughterId = %d , pdg = %d , vx = %f , vy = %f , vz = %f, rxy = %f", daughterId, daughter.pdgCode(), daughter.vx(), daughter.vy(), daughter.vz(), rxy_gen_e);
     if (rxy_gen_e > max_r_gen || rxy_gen_e < abs(daughter.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen))) - margin_z_mc) {
       return false;
     }

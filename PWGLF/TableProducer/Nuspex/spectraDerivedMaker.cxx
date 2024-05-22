@@ -89,7 +89,7 @@ struct spectraDerivedMaker {
     customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
     customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
     customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
-    customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 10.f; }); // No DCAxy cut will be used, this is done via the member function of the task
+    customTrackCuts.SetMaxDcaXYPtDep([](float /*pt*/) { return 10.f; }); // No DCAxy cut will be used, this is done via the member function of the task
     customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
     customTrackCuts.print();
     // Histograms
@@ -153,7 +153,7 @@ struct spectraDerivedMaker {
   }
 
   template <bool fillHistograms = false, bool fillMultiplicity = false, typename CollisionType, typename TrackType>
-  bool isEventSelected(CollisionType const& collision, TrackType const& tracks)
+  bool isEventSelected(CollisionType const& collision, TrackType const& /*tracks*/)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 1.f);
@@ -321,7 +321,7 @@ struct spectraDerivedMaker {
   void processMC(soa::Join<aod::Tracks, aod::TracksExtra,
                            aod::TracksDCA, aod::McTrackLabels,
                            aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
-                           aod::TrackSelection> const& tracks,
+                           aod::TrackSelection> const& /*tracks*/,
                  aod::McParticles const& mcParticles,
                  aod::McCollisions const& mcCollisions,
                  CollisionCandidateMC const& collisions)

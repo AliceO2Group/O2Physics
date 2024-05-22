@@ -34,6 +34,7 @@
 #include "PWGCF/JCorran/DataModel/JCatalyst.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "JFFlucAnalysis.h"
+#include "JFFlucAnalysisO2Hist.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,91 +65,86 @@ DECLARE_SOA_TABLE(JWeights, "AOD", "JWEIGHT", jweight::WeightNUA, jweight::Weigh
 struct jflucWeightsLoader {
   O2_DEFINE_CONFIGURABLE(pathPhiWeights, std::string, "", "Local (local://) or CCDB path for the phi acceptance correction histogram");
 
-  UInt_t ncent;
-  float* pcentEdges = 0;
-
   struct Map {
-    Map(int _runNumber, UInt_t _centBin, TH1* _ph) : runNumber(_runNumber), centBin(_centBin), ph(_ph) {}
+    Map(THnF* _ph, int _runNumber) : ph(_ph), runNumber(_runNumber) {}
     ~Map() { delete ph; }
+    THnF* ph;
     int runNumber;
-    UInt_t centBin;
-    TH1* ph;
   };
   std::deque<Map> nuaCache;
   TFile* pf = 0;
 
   ~jflucWeightsLoader()
   {
-    if (pcentEdges)
-      delete[] pcentEdges;
     if (pf) {
+      nuaCache.clear();
       pf->Close();
       delete pf;
     }
   }
 
   Produces<aod::JWeights> output;
-  void init(InitContext const& ic)
+  void init(InitContext const&)
   {
-    //
-    if (!doprocessLoadWeights)
+    if (!doprocessLoadWeights && !doprocessLoadWeightsCF)
       return;
+    if (doprocessLoadWeights && doprocessLoadWeightsCF)
+      LOGF(fatal, "Only one weights loader process switch can be enabled at a time.");
     if (pathPhiWeights.value.substr(0, 8) == "local://") {
       pf = new TFile(pathPhiWeights.value.substr(8).c_str(), "read");
+      if (!pf->IsOpen()) {
+        delete pf;
+        LOGF(fatal, "NUA correction weights file not found: %s", pathPhiWeights.value.substr(8).c_str());
+      }
+    }
+  }
 
-      // TODO: who knows someday, replace the old collection of TH3Ds with a 4D axis that includes the centrality info.
-      // At the same time, the centBin indexing needs to go, use actual bin edges instead.
-      TTree* pt = static_cast<TTree*>(pf->Get("axes"));
-      if (pt)
-        LOGF(fatal, "The NUA correction root file does not have the axis information.");
-      pt->SetBranchAddress("Ncentrality", &ncent);
-      pt->GetEntry(0);
+  template <class CollisionT, class TrackT>
+  void loadWeights(CollisionT const& collision, TrackT const& tracks)
+  {
+    if (!pf)
+      LOGF(fatal, "NUA correction weights file has not been opened.");
+    for (auto& track : tracks) {
+      float phiWeight, effWeight;
+      auto m = std::find_if(nuaCache.begin(), nuaCache.end(), [&](auto& t) -> bool {
+        return t.runNumber == collision.runNumber();
+      });
+      if (m == nuaCache.end()) {
+        THnF* ph = static_cast<THnF*>(pf->Get(Form("NUAWeights_%u", collision.runNumber())));
+        if (ph) {
+          nuaCache.emplace_back(ph, collision.runNumber());
+          if (nuaCache.size() > 3)
+            nuaCache.pop_front(); // keep at most maps for 3 runs
+          const Double_t coords[] = {collision.multiplicity(), track.phi(), track.eta(), collision.posZ()};
+          auto bin = ph->GetBin(coords);
+          phiWeight = ph->GetBinContent(bin);
+        } else {
+          phiWeight = 1.0f;
+          // LOGF(error, "NUAWeights_%u not found", collision.runNumber());
+        }
+      } else {
+        const Double_t coords[] = {collision.multiplicity(), track.phi(), track.eta(), collision.posZ()};
+        auto bin = m->ph->GetBin(coords);
+        phiWeight = m->ph->GetBinContent(bin);
+      }
 
-      pcentEdges = new float[ncent];
-      pt->SetBranchAddress("centrality", pcentEdges);
-      pt->GetEntry(0);
+      effWeight = 1.0f; //<--- todo
+
+      output(phiWeight, effWeight);
     }
   }
 
   void processLoadWeights(aod::JCollision const& collision, aod::JTracks const& tracks)
   {
-    UInt_t centBin = 0;
-    for (UInt_t i = 0, n = ncent - 1; i < n; ++i)
-      if (collision.multiplicity() < pcentEdges[i + 1]) {
-        centBin = i;
-        break;
-      }
-
-    for (auto& track : tracks) {
-      if (pf) {
-        float phiWeight, effWeight;
-        auto m = std::find_if(nuaCache.begin(), nuaCache.end(), [&](auto& t) -> bool {
-          return t.runNumber == collision.runNumber() && t.centBin == centBin;
-        });
-        if (m == nuaCache.end()) {
-          TH1* ph = static_cast<TH1*>(pf->Get(Form("PhiWeights_%u_%02u", collision.runNumber(), centBin)));
-          if (ph) {
-            ph->SetDirectory(0); // we delete when we please
-            nuaCache.emplace_back(collision.runNumber(), centBin, ph);
-            if (nuaCache.size() > ncent * 3)
-              nuaCache.pop_front(); // keep at most maps for 3 runs
-            Int_t bin = ph->FindBin(track.phi(), track.eta(), collision.posZ());
-            phiWeight = ph->GetBinContent(bin);
-          } else {
-            phiWeight = 1.0f;
-          }
-        } else {
-          Int_t bin = m->ph->FindBin(track.phi(), track.eta(), collision.posZ());
-          phiWeight = m->ph->GetBinContent(bin);
-        }
-
-        effWeight = 1.0f; //<--- todo
-
-        output(phiWeight, effWeight);
-      }
-    }
+    loadWeights(collision, tracks);
   }
-  PROCESS_SWITCH(jflucWeightsLoader, processLoadWeights, "Load weights histograms", false);
+  PROCESS_SWITCH(jflucWeightsLoader, processLoadWeights, "Load weights histograms for derived data table", false);
+
+  void processLoadWeightsCF(aod::CFCollision const& collision, aod::CFTracks const& tracks)
+  {
+    loadWeights(collision, tracks);
+  }
+  PROCESS_SWITCH(jflucWeightsLoader, processLoadWeightsCF, "Load weights histograms for CF derived data table", true);
 };
 
 struct jflucAnalysisTask {
@@ -157,24 +153,24 @@ struct jflucAnalysisTask {
     delete pcf;
   }
 
-  O2_DEFINE_CONFIGURABLE(etamin, double, 0.4, "Minimal eta for tracks");
-  O2_DEFINE_CONFIGURABLE(etamax, double, 0.8, "Maximal eta for tracks");
-  O2_DEFINE_CONFIGURABLE(ptmin, double, 0.2, "Minimal pt for tracks");
-  O2_DEFINE_CONFIGURABLE(ptmax, double, 0.5, "Maximal pt for tracks");
+  O2_DEFINE_CONFIGURABLE(etamin, float, 0.4, "Minimal eta for tracks");
+  O2_DEFINE_CONFIGURABLE(etamax, float, 0.8, "Maximal eta for tracks");
+  O2_DEFINE_CONFIGURABLE(ptmin, float, 0.2, "Minimal pt for tracks");
+  O2_DEFINE_CONFIGURABLE(ptmax, float, 0.5, "Maximal pt for tracks");
 
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
 
-  Filter trackFilter = (aod::track::pt > ptmin) && (aod::track::pt < ptmax); // eta cuts done by jfluc
+  Filter jtrackFilter = (aod::jtrack::pt > ptmin) && (aod::jtrack::pt < ptmax);    // eta cuts done by jfluc
+  Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax); // eta cuts done by jfluc
 
-  OutputObj<TDirectory> output{"jflucO2"};
+  HistogramRegistry registry{"registry"};
+  // OutputObj<JFFlucAnalysis> output{JFFlucAnalysis("jflucO2")};
 
-  void init(InitContext const& ic)
+  void init(InitContext const&)
   {
-    pcf = new JFFlucAnalysis("jflucAnalysis");
-    pcf->SetNumBins(AxisSpec(axisMultiplicity).getNbins());
+    auto a = AxisSpec(axisMultiplicity);
+    pcf = new JFFlucAnalysisO2Hist(registry, a);
     pcf->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
-
-    output->cd();
     pcf->UserCreateOutputObjects();
   }
 
@@ -182,37 +178,33 @@ struct jflucAnalysisTask {
   void analyze(CollisionT const& collision, TrackT const& tracks)
   {
     pcf->Init();
-    pcf->FillQA(tracks);
-    pcf->CalculateQvectorsQC(tracks);
-    const auto& edges = AxisSpec(axisMultiplicity).binEdges;
-    for (UInt_t i = 0, n = AxisSpec(axisMultiplicity).getNbins(); i < n; ++i)
-      if (collision.multiplicity() < edges[i + 1]) {
-        pcf->SetEventCentralityAndBin(collision.multiplicity(), i);
-        break;
-      }
+    pcf->SetEventCentrality(collision.multiplicity());
     const double fVertex[3] = {0.0f, 0.0f, collision.posZ()}; // TODO: check if posX/Y is really needed
     pcf->SetEventVertex(fVertex);
     pcf->SetEtaRange(etamin, etamax);
+    pcf->FillQA(tracks);
+    qvecs.Calculate(tracks, etamin, etamax);
+    pcf->SetJQVectors(&qvecs);
     pcf->UserExec("");
   }
 
-  void process(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
+  void processJDerived(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(jflucAnalysisTask, process, "Process data", true);
+  PROCESS_SWITCH(jflucAnalysisTask, processJDerived, "Process derived data", false);
 
-  void processCorrected(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::JTracks, aod::JWeights>> const& tracks)
+  void processJDerivedCorrected(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::JTracks, aod::JWeights>> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(jflucAnalysisTask, processCorrected, "Process data with corrections", false);
+  PROCESS_SWITCH(jflucAnalysisTask, processJDerivedCorrected, "Process derived data with corrections", false);
 
   void processCFDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
     analyze(collision, tracks);
   }
-  PROCESS_SWITCH(jflucAnalysisTask, processCFDerived, "Process CF derived data", false);
+  PROCESS_SWITCH(jflucAnalysisTask, processCFDerived, "Process CF derived data", true);
 
   void processCFDerivedCorrected(aod::CFCollision const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
   {
@@ -220,7 +212,8 @@ struct jflucAnalysisTask {
   }
   PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedCorrected, "Process CF derived data with corrections", false);
 
-  JFFlucAnalysis* pcf;
+  JFFlucAnalysis::JQVectorsT qvecs;
+  JFFlucAnalysisO2Hist* pcf;
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

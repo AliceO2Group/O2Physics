@@ -28,10 +28,13 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
+#include "PWGJE/DataModel/JetReducedDataV0.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 namespace o2::aod
 {
@@ -157,6 +160,21 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! absolute p
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevelEventWiseSubtracted, _shortname_ "DJET2DEWS")                     \
   DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevelEventWiseSubtracted, _jet_type_##MCDetectorLevel, _shortname_ "JETDEWS2D")                     \
   DECLARE_JET_TABLES(JMcCollision, _jet_type_##MCParticleLevelEventWiseSubtracted, _subtracted_track_type_, _hfparticle_type_, _shortname_ "PJETEWS")
+
+#define STRINGIFY(x) #x
+
+// add duplicate tables for each predefined jet table so that the same jets can be run with multiple settings
+#define DECLARE_JET_DUPLICATE_TABLES_LEVELS(_jet_type_, _subtracted_track_type_, _hfcand_type_, _hfparticle_type_, _shortname_, _duplicatenumber_)                   \
+  DECLARE_JET_TABLES_LEVELS(_jet_type_##_duplicatenumber_, _subtracted_track_type_, _hfcand_type_, _hfparticle_type_, _shortname_ STRINGIFY(_duplicatenumber_))      \
+  DECLARE_JETMATCHING_TABLE(_jet_type_, _jet_type_##_duplicatenumber_, _shortname_ "JET2" STRINGIFY(_duplicatenumber_))                                              \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##_duplicatenumber_, _jet_type_, _shortname_ "JET" STRINGIFY(_duplicatenumber_) "2")                                           \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##_duplicatenumber_##MCDetectorLevel, _shortname_ "JETD2" STRINGIFY(_duplicatenumber_))           \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##_duplicatenumber_##MCDetectorLevel, _jet_type_##MCDetectorLevel, _shortname_ "JET" STRINGIFY(_duplicatenumber_) "2D")        \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCParticleLevel, _jet_type_##_duplicatenumber_##MCParticleLevel, _shortname_ "JETP2" STRINGIFY(_duplicatenumber_))           \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##_duplicatenumber_##MCParticleLevel, _jet_type_##MCParticleLevel, _shortname_ "JET" STRINGIFY(_duplicatenumber_) "2P")        \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##EventWiseSubtracted, _jet_type_##_duplicatenumber_##EventWiseSubtracted, _shortname_ "JETEWS2" STRINGIFY(_duplicatenumber_)) \
+  DECLARE_JETMATCHING_TABLE(_jet_type__duplicatenumber_##EventWiseSubtracted, _jet_type_##EventWiseSubtracted, _shortname_ "JET" STRINGIFY(_duplicatenumber_) "2EWS")
+
 namespace o2::aod
 {
 DECLARE_JET_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "C");
@@ -165,6 +183,10 @@ DECLARE_JET_TABLES_LEVELS(Neutral, JTrackSub, HfD0Bases, HfD0PBases, "N");
 DECLARE_JET_TABLES_LEVELS(D0Charged, JTrackD0Sub, HfD0Bases, HfD0PBases, "D0");
 DECLARE_JET_TABLES_LEVELS(LcCharged, JTrackLcSub, Hf3PBases, Hf3PPBases, "Lc");
 DECLARE_JET_TABLES_LEVELS(BplusCharged, JTrackBplusSub, HfCandBplus, HfD0PBases, "BPl");
+DECLARE_JET_TABLES_LEVELS(V0Charged, JTrackSub, V0Cores, JV0McParticles, "V0");
+
+// duplicate jet tables (added as needed for analyses)
+DECLARE_JET_DUPLICATE_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "C", 1);
 
 } // namespace o2::aod
 
@@ -195,5 +217,10 @@ using JetTracksSubBplus = o2::aod::JTrackBplusSubs;
 using CandidatesLcData = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMls, o2::aod::JLcIds>;
 using CandidatesLcMCD = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMls, o2::aod::Hf3PMcs, o2::aod::JLcIds>;
 using JetTracksSubLc = o2::aod::JTrackLcSubs;
+
+using CandidatesV0Data = o2::soa::Join<o2::aod::V0Cores, o2::aod::JV0Ids>;
+using CandidatesV0MCD = o2::soa::Join<o2::aod::V0Cores, o2::aod::V0MCCores, o2::aod::JV0Ids>;
+// using V0Daughters = o2::aod::DauTrackExtras;                                                                                      // we need to add the V0Extras table to CandiatesV0Data if we want to use this. Will wait for an analysis use case
+using CandidatesV0MCP = o2::aod::JV0McParticles;
 
 #endif // PWGJE_DATAMODEL_JET_H_

@@ -24,6 +24,11 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <Math/Vector4D.h>
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -40,7 +45,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
@@ -49,12 +53,8 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TProfile.h>
-#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -62,11 +62,12 @@ using namespace o2::framework::expressions;
 using std::array;
 using namespace ROOT::Math;
 
+// WARNING: the cascade findable uses findable V0s as well
 using LabeledTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
-using LabeledFullV0s = soa::Join<aod::V0s, aod::McFullV0Labels>;
+using LabeledFullV0s = soa::Join<aod::FindableV0s, aod::McFullV0Labels>;
 
 struct cascademcfinder {
-  Produces<aod::Cascades> cascades;
+  Produces<aod::FindableCascades> cascades;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -86,11 +87,11 @@ struct cascademcfinder {
   std::vector<int> cascv0Index;
   std::vector<int> cascbachelorIndex;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // initialize histograms
-    const AxisSpec axisNTimesCollRecoed{(int)10, -0.5f, +9.5f, ""};
-    const AxisSpec axisPt{(int)100, +0.0f, +10.0f, "p_{T} (GeV/c)"};
+    const AxisSpec axisNTimesCollRecoed{static_cast<int>(10), -0.5f, +9.5f, ""};
+    const AxisSpec axisPt{static_cast<int>(100), +0.0f, +10.0f, "p_{T} (GeV/c)"};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesCollRecoed});
 

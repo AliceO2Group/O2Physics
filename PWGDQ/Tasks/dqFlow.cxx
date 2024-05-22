@@ -50,6 +50,7 @@
 using std::complex;
 using std::cout;
 using std::endl;
+using std::pow;
 using std::string;
 
 using namespace o2;
@@ -94,6 +95,7 @@ struct DQEventQvector {
     2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
 
   Produces<ReducedEventsQvector> eventQvector;
+  Produces<ReducedEventsQvectorExtra> eventQvectorExtra;
   Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
   Produces<ReducedEventsRefFlow> eventRefFlow;
 
@@ -169,7 +171,7 @@ struct DQEventQvector {
       fHistMan->SetUseDefaultVariableNames(kTRUE);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
-      DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;Event_BeforeCuts_centralFW;Event_AfterCuts_centralFW"); // define all histograms
+      DefineHistograms(fHistMan, "Event_BeforeCuts_GFW;Event_AfterCuts_GFW;Event_BeforeCuts_centralFW;Event_AfterCuts_centralFW"); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
@@ -203,6 +205,7 @@ struct DQEventQvector {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {2 2} refN {-2 -2}", "ChGap24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {3 -3}", "ChFull32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
 
     fGFW->CreateRegions();
@@ -232,7 +235,7 @@ struct DQEventQvector {
   }
 
   // Fill the FlowContainer
-  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag)
+  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool /*fillflag*/)
   {
     // Calculate the correlations from the GFW
     double dnx, dny, valx;
@@ -358,22 +361,34 @@ struct DQEventQvector {
       }
     }
 
-    // Define quantities needed for the different eta regions
-    int nentriesN = 0;
-    int nentriesP = 0;
-    int nentriesFull = 0;
-    complex<double> Q1vecN;
-    complex<double> Q1vecP;
-    complex<double> Q1vecFull;
-    complex<double> Q2vecN;
-    complex<double> Q2vecP;
-    complex<double> Q2vecFull;
-    complex<double> Q3vecN;
-    complex<double> Q3vecP;
-    complex<double> Q3vecFull;
-    complex<double> Q4vecN;
-    complex<double> Q4vecP;
-    complex<double> Q4vecFull;
+    // Define quantities needed for the different eta regions using weighed Q-vectors
+    double S10N = 0.;
+    double S10P = 0.;
+    double S10Full = 0.;
+    double S11N = 0.;
+    double S11P = 0.;
+    double S11Full = 0.;
+    double S12Full = 0.;
+    double S13Full = 0.;
+    double S21Full = 0.;
+    double S22Full = 0.;
+    double S14Full = 0.;
+    double S31Full = 0.;
+    double S41Full = 0.;
+    complex<double> Q11N(0., 0.);
+    complex<double> Q11P(0., 0.);
+    complex<double> Q11Full(0., 0.);
+    complex<double> Q21N(0., 0.);
+    complex<double> Q21P(0., 0.);
+    complex<double> Q21Full(0., 0.);
+    complex<double> Q23Full(0., 0.);
+    complex<double> Q31N(0., 0.);
+    complex<double> Q31P(0., 0.);
+    complex<double> Q31Full(0., 0.);
+    complex<double> Q41N(0., 0.);
+    complex<double> Q41P(0., 0.);
+    complex<double> Q41Full(0., 0.);
+    complex<double> Q42Full(0., 0.);
 
     if (fGFW && (tracks1.size() > 0)) {
       // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
@@ -381,63 +396,79 @@ struct DQEventQvector {
       GFWCumulant gfwCumP = fGFW->GetCumulant(1);
       GFWCumulant gfwCumFull = fGFW->GetCumulant(2);
 
-      // and the multiplicity of the event in each region
-      nentriesN = gfwCumN.GetN();
-      nentriesP = gfwCumP.GetN();
-      nentriesFull = gfwCumFull.GetN();
+      // S(1,0) for event multiplicity
+      S10N = gfwCumN.Vec(0, 0).real();
+      S10P = gfwCumP.Vec(0, 0).real();
+      S10Full = gfwCumFull.Vec(0, 0).real();
+
+      // S(1,1) for weighted sum
+      S11N = gfwCumN.Vec(0, 1).real();
+      S11P = gfwCumP.Vec(0, 1).real();
+      S11Full = gfwCumFull.Vec(0, 1).real();
+
+      // Extra S(n,p) for cumulants
+      S12Full = gfwCumFull.Vec(0, 2).real();
+      S13Full = gfwCumFull.Vec(0, 3).real();
+      S14Full = gfwCumFull.Vec(0, 4).real();
+      S21Full = pow(gfwCumFull.Vec(0, 1).real(), 2);
+      S22Full = pow(gfwCumFull.Vec(0, 2).real(), 2);
+      S31Full = pow(gfwCumFull.Vec(0, 1).real(), 3);
+      S41Full = pow(gfwCumFull.Vec(0, 1).real(), 4);
 
       // Get the Q vector for selected harmonic, power (for minPt=0)
-      Q1vecN = gfwCumN.Vec(1, fConfigNPow);
-      Q1vecP = gfwCumP.Vec(1, fConfigNPow);
-      Q1vecFull = gfwCumFull.Vec(1, fConfigNPow);
-      Q2vecN = gfwCumN.Vec(2, fConfigNPow);
-      Q2vecP = gfwCumP.Vec(2, fConfigNPow);
-      Q2vecFull = gfwCumFull.Vec(2, fConfigNPow);
-      Q3vecN = gfwCumN.Vec(3, fConfigNPow);
-      Q3vecP = gfwCumP.Vec(3, fConfigNPow);
-      Q3vecFull = gfwCumFull.Vec(3, fConfigNPow);
-      Q4vecN = gfwCumN.Vec(4, fConfigNPow);
-      Q4vecP = gfwCumP.Vec(4, fConfigNPow);
-      Q4vecFull = gfwCumFull.Vec(4, fConfigNPow);
+      Q11N = gfwCumN.Vec(1, 1);
+      Q11P = gfwCumP.Vec(1, 1);
+      Q11Full = gfwCumFull.Vec(1, 1);
+
+      Q21N = gfwCumN.Vec(2, 1);
+      Q21P = gfwCumP.Vec(2, 1);
+      Q21Full = gfwCumFull.Vec(2, 1);
+
+      Q31N = gfwCumN.Vec(3, 1);
+      Q31P = gfwCumP.Vec(3, 1);
+      Q31Full = gfwCumFull.Vec(3, 1);
+
+      Q41N = gfwCumN.Vec(4, 1);
+      Q41P = gfwCumP.Vec(4, 1);
+      Q41Full = gfwCumFull.Vec(4, 1);
+
+      // Extra Q-vectors for cumulants
+      Q23Full = gfwCumFull.Vec(2, 3);
+      Q42Full = gfwCumFull.Vec(4, 2);
     }
 
     // Fill the VarManager::fgValues with the Q vector quantities
-    VarManager::FillQVectorFromGFW(collision, Q1vecFull, Q1vecN, Q1vecP, Q2vecFull, Q2vecN, Q2vecP, Q3vecFull, Q3vecN, Q3vecP, Q4vecFull, Q4vecN, Q4vecP, nentriesFull, nentriesN, nentriesP);
+    VarManager::FillQVectorFromGFW(collision, Q11Full, Q11N, Q11P, Q21Full, Q21N, Q21P, Q31Full, Q31N, Q31P, Q41Full, Q41N, Q41P, Q23Full, Q42Full, S10Full, S10N, S10P, S11Full, S11N, S11P, S12Full, S13Full, S14Full, S21Full, S22Full, S31Full, S41Full);
 
     if (fConfigQA) {
-      if ((tracks1.size() > 0) && (nentriesFull * nentriesN * nentriesP != 0.0)) {
-        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+      if ((tracks1.size() > 0) && (S10N * S10P * S10Full != 0.0)) {
+        fHistMan->FillHistClass("Event_BeforeCuts_GFW", VarManager::fgValues);
         if (fEventCut->IsSelected(VarManager::fgValues)) {
-          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+          fHistMan->FillHistClass("Event_AfterCuts_GFW", VarManager::fgValues);
         }
       }
     }
 
     // Fill the tree for the reduced event table with Q vector quantities
     if (fEventCut->IsSelected(VarManager::fgValues)) {
-      eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
-    }
-
-    // Fill the tree for the reduced event table with RefFlow quantities
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
-      eventRefFlow(VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
+      eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultB], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
+      eventQvectorExtra(VarManager::fgValues[VarManager::kQ42XA], VarManager::fgValues[VarManager::kQ42YA], VarManager::fgValues[VarManager::kQ23XA], VarManager::fgValues[VarManager::kQ23YA], VarManager::fgValues[VarManager::kS11A], VarManager::fgValues[VarManager::kS12A], VarManager::fgValues[VarManager::kS13A], VarManager::fgValues[VarManager::kS31A]);
+      eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
     }
 
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0) {
       VarManager::FillQVectorFromCentralFW(collision);
-
-      if (fConfigQA) {
-        fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
-        if (fEventCut->IsSelected(VarManager::fgValues)) {
-          fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
-          eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
-                            collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
-
-          // Fill the tree for the reduced event table with RefFlow quantities
+      if ((tracks1.size() > 0) && (VarManager::fgValues[VarManager::kMultA] * VarManager::fgValues[VarManager::kMultB] * VarManager::fgValues[VarManager::kMultC] != 0.0)) {
+        if (fConfigQA) {
+          fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
           if (fEventCut->IsSelected(VarManager::fgValues)) {
-            eventRefFlow(VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
+            fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
           }
         }
+      }
+      if (fEventCut->IsSelected(VarManager::fgValues)) {
+        eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
+                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
       }
     }
   }
@@ -503,7 +534,11 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     histMan->AddHistClass(classStr.Data());
 
     if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector,trigger,cent,res");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "qvector,cross,trigger,cent,res");
+    }
+
+    if (classStr.Contains("Track")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "cent,kine,time,map,its,clssize,tpc");
     }
   }
 }

@@ -21,10 +21,12 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/Core/TrackSelection.h"
-
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "TPDGCode.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace std;
@@ -53,8 +55,9 @@ struct QCspectraTPC {
   Configurable<float> cfgCutDCAZ{"cfgCutDCAZ", 2.0f, "DCAZ range for tracks"};
   Configurable<int> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
   Configurable<int> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
-  Configurable<int> minTPCNClsFound{"minTPCNClsFound", 100, "Additional cut on the minimum value of the number of found clusters in the TPC"};
+  Configurable<int> minTPCNClsFound{"minTPCNClsFound", 70, "Additional cut on the minimum value of the number of found clusters in the TPC"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  Configurable<int> multiplicityEstimator{"multiplicityEstimator", 8, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M, 10 CentralityFV0A"};
   Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 100, "Additional cut on the minimum number of crossed rows in the TPC"};
   Configurable<int> ITSNCls{"ITSNCls", 7, "Additional cut on the minimum number of ITS clusters"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
@@ -65,6 +68,7 @@ struct QCspectraTPC {
   ConfigurableAxis binsPTPC{"binsPTPC", {300, -3, 3}, "Binning of the TPC p axis"};
   ConfigurableAxis binsDeltaP{"binsDeltaP", {600, -3, 3}, "Binning of the #delta P axis"};
   ConfigurableAxis binsnsigmaTPC{"binsnsigmaTPC", {200, -10, 10}, "Binning of the n_{#sigma, TPC} axis"};
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Binning for multiplicity"};
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext&)
@@ -81,7 +85,7 @@ struct QCspectraTPC {
     const AxisSpec dcaXyAxis{binsDca, "DCA_{xy} (cm)"};
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{binsDca, "DCA_{z} (cm)"};
-
+    const AxisSpec multAxis{binsMultiplicity, "multiplicity estimator"};
     histos.add("event/vertexz", "collision z position", HistType::kTH1F, {{100, -10., +10., "z position (cm)"}});
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
     histos.add("rapidityHistogram", "rapidityHistogram", kTH1F, {axisY});
@@ -131,12 +135,71 @@ struct QCspectraTPC {
       histos.add("spectraGen/proton/pos/histGenPtProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
       histos.add("spectraRec/proton/pos/histRecPtProton", "recosntructed particles", HistType::kTH1F, {ptAxis});
       histos.add("spectraRec/proton/pos/histRecPtProtonPrim", "recosntructed particles", HistType::kTH1F, {ptAxis});
+      histos.add("MC/pi/pos/prm/pt/num", "recosntructed MC #pi^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/pos/prm/pt/num", "recosntructed MC k^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/pos/prm/pt/num", "recosntructed MC p", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/neg/prm/pt/num", "recosntructed MC #pi^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/neg/prm/pt/num", "recosntructed MC k^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/neg/prm/pt/num", "recosntructed MC #bar{p}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/pos/str/pt/num", "recosntructed MC #pi^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/neg/str/pt/num", "recosntructed MC #pi^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/pos/str/pt/num", "recosntructed MC k^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/neg/str/pt/num", "recosntructed MC k^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/pos/str/pt/num", "recosntructed MC p", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/neg/str/pt/num", "recosntructed MC #bar{p}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/pos/mat/pt/num", "recosntructed MC #pi^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/neg/mat/pt/num", "recosntructed MC #pi^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/pos/mat/pt/num", "recosntructed MC k^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/neg/mat/pt/num", "recosntructed MC k^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/pos/mat/pt/num", "recosntructed MC p", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/neg/mat/pt/num", "recosntructed MC #bar{p}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/pos/prm/pt/numtof", "recosntructed MC TOF #pi^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/pos/prm/pt/numtof", "recosntructed MC TOF k^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/pos/prm/pt/numtof", "recosntructed MC TOF p", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/neg/prm/pt/numtof", "recosntructed MC TOF #pi^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/neg/prm/pt/numtof", "recosntructed MC TOF k^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/neg/prm/pt/numtof", "recosntructed MC TOF #bar{p}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/pos/str/pt/numtof", "recosntructed MC TOF #pi^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/neg/str/pt/numtof", "recosntructed MC TOF #pi^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/pos/str/pt/numtof", "recosntructed MC TOF k^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/neg/str/pt/numtof", "recosntructed MC TOF k^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/pos/str/pt/numtof", "recosntructed MC TOF p", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/neg/str/pt/numtof", "recosntructed MC TOF #bar{p}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/pos/mat/pt/numtof", "recosntructed MC TOF #pi^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/neg/mat/pt/numtof", "recosntructed MC TOF #pi^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/pos/mat/pt/numtof", "recosntructed MC TOF k^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/neg/mat/pt/numtof", "recosntructed MC TOF k^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/pos/mat/pt/numtof", "recosntructed MC TOF p", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/neg/mat/pt/numtof", "recosntructed MC TOF #bar{p}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/pos/prm/pt/den", "generated MC #pi^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/neg/prm/pt/den", "generated MC #pi^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/pos/prm/pt/den", "generated MC K^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/neg/prm/pt/den", "generated MC K^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/pos/prm/pt/den", "generated MC p", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/neg/prm/pt/den", "generated MC #bar{p}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/pos/str/pt/den", "generated MC #pi^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/neg/str/pt/den", "generated MC #pi^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/pos/str/pt/den", "generated MC K^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/neg/str/pt/den", "generated MC K^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/pos/str/pt/den", "generated MC p", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/neg/str/pt/den", "generated MC #bar{p}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/pos/mat/pt/den", "generated MC #pi^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pi/neg/mat/pt/den", "generated MC #pi^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/pos/mat/pt/den", "generated MC K^{+}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/ka/neg/mat/pt/den", "generated MC K^{-}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/pos/mat/pt/den", "generated MC p", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/pr/neg/mat/pt/den", "generated MC #bar{p}", HistType::kTHnSparseD, {ptAxis, multAxis, dcaXyAxis});
+      histos.add("MC/test/pi/pos/prm/pt/den", "generated MC #pi^{+}", HistType::kTHnSparseD, {ptAxis});
+      histos.add("MC/test/pi/neg/prm/pt/den", "generated MC #pi^{-}", HistType::kTHnSparseD, {ptAxis});
+      histos.add("MC/test/ka/pos/prm/pt/den", "generated MC K^{+}", HistType::kTHnSparseD, {ptAxis});
+      histos.add("MC/test/ka/neg/prm/pt/den", "generated MC K^{-}", HistType::kTHnSparseD, {ptAxis});
+      histos.add("MC/test/pr/pos/prm/pt/den", "generated MC p", HistType::kTHnSparseD, {ptAxis});
+      histos.add("MC/test/pr/neg/prm/pt/den", "generated MC #bar{p}", HistType::kTHnSparseD, {ptAxis});
     }
   } // init loop end
 
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr>;
-
   void process(CollisionCandidate::iterator const& collision, TrackCandidates const& tracks)
   {
     if (!collision.sel8()) {
@@ -168,7 +231,7 @@ struct QCspectraTPC {
         continue;
       if (track.tpcNClsCrossedRows() < 100)
         continue;
-      if (track.tpcChi2NCl() > 4)
+      if (track.tpcChi2NCl() > maxChi2PerClusterTPC)
         continue;
       if (track.itsChi2NCl() > 36)
         continue;
@@ -294,9 +357,9 @@ struct QCspectraTPC {
   void processMCRec(soa::Join<aod::Tracks, aod::TracksExtra,
                               aod::TracksDCA, aod::McTrackLabels,
                               aod::TrackSelection> const& tracks,
-                    aod::McParticles const& mcParticles,
-                    aod::McCollisions const& mcCollisions,
-                    CollisionCandidateMC const& collisions)
+                    aod::McParticles const& /*mcParticles*/,
+                    aod::McCollisions const& /*mcCollisions*/,
+                    CollisionCandidateMC const& /*collisions*/)
   {
 
     for (auto& track : tracks) {
@@ -352,8 +415,351 @@ struct QCspectraTPC {
       }
     }
   } // process_mc loop end
+  using CollisionCandidateMCRec = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
+  void processTrackHistograms_MC(CollisionCandidateMCRec::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection> const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  {
+    const float multiplicity = collision.centFT0C();
+    for (auto& track : tracks) {
 
-  PROCESS_SWITCH(QCspectraTPC, processMCRec, "process MC Reconstructed", true);
+      const auto& mcParticle = track.mcParticle();
+      if (abs(track.eta()) > cfgCutEta) {
+        return;
+      }
+      if (track.tpcNClsCrossedRows() < minTPCNClsFound)
+        continue;
+      if (track.tpcCrossedRowsOverFindableCls() < minNCrossedRowsOverFindableClustersTPC)
+        continue;
+      if (track.tpcChi2NCl() > maxChi2PerClusterTPC)
+        continue;
+      if (track.itsChi2NCl() > maxChi2PerClusterITS)
+        continue;
+      if (abs(track.dcaXY()) > cfgCutDCAXY)
+        continue;
+      if (abs(track.dcaZ()) > cfgCutDCAZ)
+        continue;
+      if (mcParticle.isPhysicalPrimary()) {
+        // pions
+        if (mcParticle.pdgCode() == 211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pi/pos/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/pi/pos/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          }
+        }
+        if (mcParticle.pdgCode() == -211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pi/neg/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/pi/neg/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          }
+        }
+        // kaons
+        if (mcParticle.pdgCode() == 321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/ka/pos/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/ka/pos/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          }
+        }
+        if (mcParticle.pdgCode() == -321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/ka/neg/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/ka/neg/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          }
+        }
+        // Protons
+        if (mcParticle.pdgCode() == 2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pr/pos/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/pr/pos/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          }
+        }
+        // Anti-Protons
+        if (mcParticle.pdgCode() == -2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pr/neg/prm/pt/num"), track.pt(), multiplicity, track.dcaXY());
+          if (track.hasTOF()) {
+            histos.fill(HIST("MC/pr/neg/prm/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+          }
+        }
+      }                                      // primaries
+      if (!mcParticle.isPhysicalPrimary()) { // secondaries loop start
+        if (mcParticle.pdgCode() == 211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/pi/pos/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pi/pos/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/pi/pos/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pi/pos/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+        if (mcParticle.pdgCode() == -211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/pi/neg/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pi/neg/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/pi/neg/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pi/neg/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+        if (mcParticle.pdgCode() == 321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/ka/pos/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/ka/pos/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/ka/pos/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/ka/pos/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+        if (mcParticle.pdgCode() == -321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/ka/neg/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/ka/neg/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/ka/neg/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/ka/neg/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+        if (mcParticle.pdgCode() == 2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/pr/pos/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pr/pos/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/pr/pos/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pr/pos/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+        if (mcParticle.pdgCode() == -2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          if (mcParticle.getProcess() == 4) {
+            histos.fill(HIST("MC/pr/neg/str/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pr/neg/str/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          } else {
+            histos.fill(HIST("MC/pr/neg/mat/pt/num"), track.pt(), multiplicity, track.dcaXY());
+            if (track.hasTOF()) {
+              histos.fill(HIST("MC/pr/neg/mat/pt/numtof"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        }
+      } // secondaries loop end
+    }
+  }
+  PROCESS_SWITCH(QCspectraTPC, processTrackHistograms_MC, "process MC Reconstructed tracks", true);
+
+  void processParticleHistograms_MC(CollisionCandidateMCRec::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection> const& tracks,
+                                    aod::McParticles const& mcParticles,
+                                    aod::McCollisions const& mcCollision)
+  {
+
+    const float multiplicity = collision.centFT0C();
+    for (auto& track : tracks) {
+      const auto& mcParticle = track.mcParticle();
+      if (mcParticle.isPhysicalPrimary()) {
+        // pions
+        if (mcParticle.pdgCode() == 211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pi/pos/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+        if (mcParticle.pdgCode() == -211) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pi/neg/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+        if (mcParticle.pdgCode() == 321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/ka/pos/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+        if (mcParticle.pdgCode() == -321) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/ka/neg/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+
+        if (mcParticle.pdgCode() == 2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pr/pos/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+        if (mcParticle.pdgCode() == -2212) {
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            return;
+          }
+          histos.fill(HIST("MC/pr/neg/prm/pt/den"), mcParticle.pt(), multiplicity, track.dcaXY());
+        }
+        if (!mcParticle.isPhysicalPrimary()) { // secondaries loop start
+          if (mcParticle.pdgCode() == 211) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/pi/pos/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/pi/pos/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+          if (mcParticle.pdgCode() == -211) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/pi/neg/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/pi/neg/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+          if (mcParticle.pdgCode() == 321) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/ka/pos/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/ka/pos/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+          if (mcParticle.pdgCode() == -321) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/ka/neg/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/ka/neg/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+          if (mcParticle.pdgCode() == 2212) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/pr/pos/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/pr/pos/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+          if (mcParticle.pdgCode() == -2212) {
+            if (std::abs(mcParticle.y()) > cfgCutY) {
+              return;
+            }
+            if (mcParticle.getProcess() == 4) {
+              histos.fill(HIST("MC/pr/neg/str/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            } else {
+              histos.fill(HIST("MC/pr/neg/mat/pt/den"), track.pt(), multiplicity, track.dcaXY());
+            }
+          }
+        } // secondaries loop end
+      }
+    }
+  } // process_mc loop end
+  PROCESS_SWITCH(QCspectraTPC, processParticleHistograms_MC, "process MC Generated tracks", true);
+  void processParticleGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
+  {
+
+    for (auto& mcParticleGen : mcParticles) {
+      bool isPhysPrim = mcParticleGen.isPhysicalPrimary();
+      if (doProcessMC) {
+        if (isPhysPrim) {
+          if (mcParticleGen.pdgCode() == 2212) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/pr/pos/prm/pt/den"), mcParticleGen.pt());
+          }
+          if (mcParticleGen.pdgCode() == -2212) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/pr/neg/prm/pt/den"), mcParticleGen.pt());
+          }
+          if (mcParticleGen.pdgCode() == 211) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/pi/pos/prm/pt/den"), mcParticleGen.pt());
+          }
+          if (mcParticleGen.pdgCode() == -211) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/pi/neg/prm/pt/den"), mcParticleGen.pt());
+          }
+          if (mcParticleGen.pdgCode() == 321) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/ka/pos/prm/pt/den"), mcParticleGen.pt());
+          }
+          if (mcParticleGen.pdgCode() == -321) {
+            if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
+              continue;
+            }
+            histos.fill(HIST("MC/test/ka/neg/prm/pt/den"), mcParticleGen.pt());
+          }
+        }
+      }
+    }
+  } // process_mc loop end
+  PROCESS_SWITCH(QCspectraTPC, processParticleGen, "process MC Generated tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

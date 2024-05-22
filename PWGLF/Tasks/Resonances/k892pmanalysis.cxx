@@ -53,6 +53,8 @@ struct k892pmanalysis {
   Configurable<int> cDCABins{"cDCABins", 150, "DCA binning"};
   /// Pre-selection cuts
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minimum pt cut"};
+  Configurable<double> cMaxEtacut{"cMaxEtacut", 0.8, "Track maximum eta cut"};
+  Configurable<double> cMaxV0Etacut{"cMaxV0Etacut", 0.8, "V0 maximum eta cut"};
   /// DCA Selections
   // DCAr to PV
   Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
@@ -61,7 +63,10 @@ struct k892pmanalysis {
   /// PID Selections
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};                // TPC
   Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                // TOF
+  Configurable<double> cMaxTPCnSigmaV0Pion{"cMaxTPCnSigmaV0Pion", 5.0, "TPC nSigma cut for V0 Pion"};         // TPC, secondary pions
+  Configurable<double> cMaxTOFnSigmaV0Pion{"cMaxTOFnSigmaV0Pion", 5.0, "TOF nSigma cut for V0 Pion"};         // TOF, secondary pions
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};  // Combined
+  Configurable<double> nsigmaCutCombinedV0Pion{"nsigmaCutCombinedV0Pion", -999, "Combined nSigma cut for V0 Pion"}; // Combined, secondary pions
   Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"}; // Use only TOF track for Pion PID selection
   Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
   // Track selections
@@ -71,6 +76,8 @@ struct k892pmanalysis {
   // V0 selections
   Configurable<double> cV0MinCosPA{"cV0MinCosPA", 0.97, "V0 minimum pointing angle cosine"};
   Configurable<double> cV0MaxDaughDCA{"cV0MaxDaughDCA", 1.0, "V0 daughter DCA Maximum"};
+  // Competing V0 rejection
+  Configurable<double> cV0MassWindow{"cV0MassWindow", 0.004, "Mass window for competing Lambda0 rejection"};
   // Resonance selection
   // Configurable<double> cMaxResRapidity{"cMaxResRapidity", 0.5, "Maximum pseudo-rapidity value of reconstructed K*(892)pm resonance"};
   // Event mixing
@@ -135,12 +142,15 @@ struct k892pmanalysis {
 
   double massK0 = MassK0Short;
   double massPi = MassPionCharged;
+  double massLambda0 = MassLambda;
 
   template <typename TrackType>
   bool trackCut(const TrackType track)
   {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
+      return false;
+    if (std::abs(track.eta()) > cMaxEtacut)
       return false;
     if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
       return false;
@@ -160,7 +170,7 @@ struct k892pmanalysis {
   bool V0Cut(const V0Type v0)
   {
     // V0 track cuts
-    if (std::abs(v0.eta()) > 0.8)
+    if (std::abs(v0.eta()) > cMaxV0Etacut)
       return false;
     if (v0.v0CosPA() < cV0MinCosPA)
       return false;
@@ -183,6 +193,30 @@ struct k892pmanalysis {
         tofPIDPassed = true;
       }
       if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
+        tofPIDPassed = true;
+      }
+    } else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
+      return true;
+    }
+    return false;
+  }
+
+  // Secondary PID selection tools
+  template <typename T>
+  bool selectionPIDSecondaryPion(const T& candidate)
+  {
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaV0Pion) {
+      tpcPIDPassed = true;
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaV0Pion) {
+        tofPIDPassed = true;
+      }
+      if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedV0Pion * nsigmaCutCombinedV0Pion)) {
         tofPIDPassed = true;
       }
     } else {
@@ -265,6 +299,12 @@ struct k892pmanalysis {
           continue;
 
         histos.fill(HIST("QAafter/hGoodTracksV0s"), 1.5);
+
+        // apply the competing V0 rejection cut (excluding Lambda0 candidates, massLambdaPDG = 1115.683 MeV/c2)
+        if (abs(v0.mLambda() - massLambda0) < cV0MassWindow)
+          continue;
+        if (abs(v0.mAntiLambda() - massLambda0) < cV0MassWindow)
+          continue;
 
         if (!IsMix && !IsV0QAFilled) {
           // pt QA (after cuts)

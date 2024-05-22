@@ -32,7 +32,7 @@ void Parameters::SetParameters(const std::vector<pidvar_t> params)
   mPar.assign(params.begin(), params.end());
 }
 
-void Parameters::Print(Option_t* options) const
+void Parameters::Print(Option_t* /*options*/) const
 {
   LOG(info) << "Parameters '" << fName << "'";
   for (unsigned int i = 0; i < size(); i++) {
@@ -54,7 +54,7 @@ void Parameters::LoadParamFromFile(const TString FileName, const TString ParamNa
   Print();
 }
 
-pidvar_t Parametrization::operator()(const pidvar_t* x) const
+pidvar_t Parametrization::operator()(const pidvar_t* /*x*/) const
 {
   LOG(fatal) << "Parametrization " << fName << " is not implemented!";
   return -999.999f;
