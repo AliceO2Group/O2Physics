@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 /// \author Simone Ragoni, Creighton
 /// \date 29/4/2024
 
-struct ExclusiveTwoProtons {
+struct ExclusiveTwoProtonsSG {
   SGSelector sgSelector;
   Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
   Configurable<float> FT0A_cut{"FT0A", 200., "FT0A threshold"};
@@ -465,5 +465,5 @@ struct ExclusiveTwoProtons {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ExclusiveTwoProtons>(cfgc)};
+    adaptAnalysisTask<ExclusiveTwoProtonsSG>(cfgc)};
 }
