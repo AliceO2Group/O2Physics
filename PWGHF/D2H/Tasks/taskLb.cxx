@@ -45,7 +45,7 @@ struct HfTaskLb {
   Configurable<double> minLikelihoodRatioLc{"minLikelihoodRatioLc", 10., "min. likelihood ratio for Lc cross check"};
   Configurable<double> massRangeKStar{"massRangeKStar", 0.0473, "Accepted range around KStar mass peak"};
   Configurable<double> massRangeDelta{"massRangeDelta", 0.117, "Accepted range around Delta mass peak"};
-  Configurable<double> massRangeLambda{"massRangeLambda", 0.016 * 2., "Accepted range around Lambda 1520 mass peak"};
+  Configurable<double> mDiffLambda1520Max{"mDiffLambda1520Max", 0.016 * 2., "Accepted range around Lambda 1520 mass peak"};
   Configurable<double> resonanceMassCheckRange{"resonanceMassCheckRange", 0.1, "LambdaC mass range for filling two body mass histograms"};
   Configurable<double> maximumImpactParameterForLambdaCCrossChecks{"maximumImpactParameterForLambdaCCrossChecks", 0.2, "maximum d0 for LambdaC checks"};
   Configurable<double> resoCorrectionFactor{"resoCorrectionFactor", 1.1, "Resolution correction compared to reconstruction estimate"};
