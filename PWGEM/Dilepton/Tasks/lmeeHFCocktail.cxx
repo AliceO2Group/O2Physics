@@ -259,10 +259,6 @@ struct lmeehfcocktailbeauty {
         if ((type < static_cast<int>(EM_HFeeType::kBe_Be)) || (type > static_cast<int>(EM_HFeeType::kBCe_Be_SameB))) {
           LOG(error) << "Something is wrong here. There should only be pairs of type kBe_Be = 1, kBCe_BCe = 2 and kBCe_Be_SameB = 3 left at this point.";
         }
-        if (myConfigs.fConfigCheckPartonic) {
-          if (!checkFromSameQuarkPair(particle1, particle2, mcParticlesAll, 5))
-            continue;
-        }
         doPair(particle1, particle2, hULS_Mee[type - 1], hULS_MeePtee[type - 1], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
         doPair(particle1, particle2, hULS_Mee[3], hULS_MeePtee[3], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax); // fill the 'allB' histograms that holds the sum of the others
       }
@@ -275,12 +271,10 @@ struct lmeehfcocktailbeauty {
         int type = IsHF(particle1, particle2, mcParticlesAll);
         if (type == static_cast<int>(EM_HFeeType::kUndef))
           continue;
-        if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
-          LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
-        }
         if (myConfigs.fConfigCheckPartonic) {
-          if (!checkFromSameQuarkPair(particle1, particle2, mcParticlesAll, 5))
-            continue;
+          if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
+            LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
+          }
         }
         doPair(particle1, particle2, hLSmm_Mee, hLSmm_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
@@ -292,12 +286,10 @@ struct lmeehfcocktailbeauty {
         int type = IsHF(particle1, particle2, mcParticlesAll);
         if (type == static_cast<int>(EM_HFeeType::kUndef))
           continue;
-        if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
-          LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
-        }
         if (myConfigs.fConfigCheckPartonic) {
-          if (!checkFromSameQuarkPair(particle1, particle2, mcParticlesAll, 5))
-            continue;
+          if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
+            LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
+          }
         }
         doPair(particle1, particle2, hLSpp_Mee, hLSpp_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
