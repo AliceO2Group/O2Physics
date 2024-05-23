@@ -13,7 +13,6 @@
 
 #include <TFile.h>
 #include <THn.h>
-#include <deque>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -43,19 +42,15 @@ using namespace o2::framework::expressions;
 struct jflucWeightsLoader {
   O2_DEFINE_CONFIGURABLE(pathPhiWeights, std::string, "", "Local (local://) or CCDB path for the phi acceptance correction histogram");
 
-  struct Map {
-    Map(THnF* _ph, int _runNumber) : ph(_ph), runNumber(_runNumber) {}
-    ~Map() { delete ph; }
-    THnF* ph;
-    int runNumber;
-  };
-  std::deque<Map> nuaCache;
+  THnF* ph = 0;
   TFile* pf = 0;
+  int runNumber = 0;
 
   ~jflucWeightsLoader()
   {
+    if (ph)
+      delete ph;
     if (pf) {
-      nuaCache.clear();
       pf->Close();
       delete pf;
     }
@@ -83,27 +78,22 @@ struct jflucWeightsLoader {
   {
     if (!pf)
       LOGF(fatal, "NUA correction weights file has not been opened.");
+    if (collision.runNumber() != runNumber) {
+      if (ph)
+        delete ph;
+      if (!(ph = static_cast<THnF*>(pf->Get(Form("NUAWeights_%d", collision.runNumber())))))
+        LOGF(warning, "NUA correction histogram not found for run %d.", collision.runNumber());
+      else
+        LOGF(info, "Loaded NUA correction histogram for run %d.", collision.runNumber());
+      runNumber = collision.runNumber();
+    }
     for (auto& track : tracks) {
       float phiWeight, effWeight;
-      auto m = std::find_if(nuaCache.begin(), nuaCache.end(), [&](auto& t) -> bool {
-        return t.runNumber == collision.runNumber();
-      });
-      if (m == nuaCache.end()) {
-        THnF* ph = static_cast<THnF*>(pf->Get(Form("NUAWeights_%u", collision.runNumber())));
-        if (ph) {
-          nuaCache.emplace_back(ph, collision.runNumber());
-          if (nuaCache.size() > 3)
-            nuaCache.pop_front(); // keep at most maps for 3 runs
-          const Double_t coords[] = {collision.multiplicity(), track.phi(), track.eta(), collision.posZ()};
-          auto bin = ph->GetBin(coords);
-          phiWeight = ph->GetBinContent(bin);
-        } else {
-          phiWeight = 1.0f;
-        }
-      } else {
+      if (ph) {
         const Double_t coords[] = {collision.multiplicity(), track.phi(), track.eta(), collision.posZ()};
-        auto bin = m->ph->GetBin(coords);
-        phiWeight = m->ph->GetBinContent(bin);
+        phiWeight = ph->GetBinContent(ph->GetBin(coords));
+      } else {
+        phiWeight = 1.0f;
       }
 
       effWeight = 1.0f; //<--- todo
