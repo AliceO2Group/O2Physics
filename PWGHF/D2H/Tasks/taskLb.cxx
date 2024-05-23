@@ -43,7 +43,7 @@ struct HfTaskLb {
   Configurable<double> DCALengthParameter{"DCALengthParameter", 0.02, "decay length for DCA"};
   Configurable<double> minLikelihoodRatio{"minLikelihoodRatio", 10., "min. likelihood ratio for combined DCAs"};
   Configurable<double> minLikelihoodRatioLc{"minLikelihoodRatioLc", 10., "min. likelihood ratio for Lc cross check"};
-  Configurable<double> massRangeKStar{"massRangeKStar", 0.0473, "Accepted range around KStar mass peak"};
+  Configurable<double> mDiffKStar892Max{"mDiffKStar892Max", 0.0473, "Accepted range around KStar mass peak"};
   Configurable<double> massRangeDelta{"massRangeDelta", 0.117, "Accepted range around Delta mass peak"};
   Configurable<double> mDiffLambda1520Max{"mDiffLambda1520Max", 0.016 * 2., "Accepted range around Lambda 1520 mass peak"};
   Configurable<double> resonanceMassCheckRange{"resonanceMassCheckRange", 0.1, "LambdaC mass range for filling two body mass histograms"};
