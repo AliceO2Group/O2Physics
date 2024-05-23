@@ -584,8 +584,8 @@ struct strangeness_in_jets {
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("K0s_in_jet"), multiplicity, v0.pt(), v0.mK0Short());
         }
-      if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-        registryData.fill(HIST("K0s_in_ue"), multiplicity, v0.pt(), v0.mK0Short());
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+          registryData.fill(HIST("K0s_in_ue"), multiplicity, v0.pt(), v0.mK0Short());
         }
       }
 
