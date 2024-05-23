@@ -43,7 +43,7 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using std::array;
 
-using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
