@@ -311,7 +311,7 @@ struct HfCandidateCreatorLbMc {
       rowMcMatchGen(flag, origin);
     }
   }
-  PROCESS_SWITCH(HfCandidateCreatorLbMc, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreatorLbMc, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
