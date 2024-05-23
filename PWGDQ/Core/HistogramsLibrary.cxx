@@ -18,8 +18,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 {
   //
   // Add a predefined group of histograms to the HistogramManager hm and histogram class histClass
-  // NOTE: The groupName and subGroupName arguments may contain several keywords, but the user should take care of
-  //       ambiguities. TODO: fix it!
+  // NOTE: The subGroupName argument may contain several keywords, but the user should take care of ambiguities. TODO: fix it!
   // NOTE: All of the histograms which match any of the group or subgroup names will be added to the same histogram class !!
   //            So one has to make sure not to mix e.g. event-wise with track-wise histograms
   // NOTE: The subgroup name can be empty. In this case just a minimal set of histograms corresponding to the group name will be defined
