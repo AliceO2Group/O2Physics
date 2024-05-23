@@ -46,7 +46,7 @@ struct HfTaskLb {
   Configurable<double> mDiffKStar892Max{"mDiffKStar892Max", 0.0473, "Accepted range around KStar mass peak"};
   Configurable<double> massRangeDelta{"massRangeDelta", 0.117, "Accepted range around Delta mass peak"};
   Configurable<double> mDiffLambda1520Max{"mDiffLambda1520Max", 0.016 * 2., "Accepted range around Lambda 1520 mass peak"};
-  Configurable<double> resonanceMassCheckRange{"resonanceMassCheckRange", 0.1, "LambdaC mass range for filling two body mass histograms"};
+  Configurable<double> mDiffLcMax{"mDiffLcMax", 0.1, "Accepted range around LambdaC mass peak for filling two body mass histograms"};
   Configurable<double> maximumImpactParameterForLambdaCCrossChecks{"maximumImpactParameterForLambdaCCrossChecks", 0.2, "maximum d0 for LambdaC checks"};
   Configurable<double> resoCorrectionFactor{"resoCorrectionFactor", 1.1, "Resolution correction compared to reconstruction estimate"};
   Configurable<double> largeLifetimeBG{"largeLifetimeBG", 0.01, "fraction of strange contribution within 2mm"};
