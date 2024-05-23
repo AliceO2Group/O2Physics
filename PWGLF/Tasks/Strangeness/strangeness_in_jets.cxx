@@ -399,6 +399,7 @@ struct strangeness_in_jets {
 
     auto const& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
+    int nParticles = static_cast<int>(particle_ID.size());
 
     // Jet Finder
     int exit(0);
