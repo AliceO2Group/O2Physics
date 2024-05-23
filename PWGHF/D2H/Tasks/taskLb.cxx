@@ -62,10 +62,7 @@ struct HfTaskLb {
   bool passesImpactParameterResolution(double pT, double d0Resolution)
   {
     double expectedResolution(0.001 + 0.0052 * exp(-0.655 * pT));
-    if (d0Resolution > expectedResolution * 1.5)
-      return false;
-    else
-      return true;
+    return (d0Resolution <= expectedResolution * 1.5);
   } // Compares to pT dependent cut on impact parameter resolution
 
   double logLikelihoodRatioSingleTrackDCA(double DCA, double reso, double lengthParameter)
