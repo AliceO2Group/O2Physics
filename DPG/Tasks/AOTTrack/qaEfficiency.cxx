@@ -28,6 +28,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "Common/Core/RecoDecay.h"
 
 // ROOT includes
 #include "TPDGCode.h"
@@ -430,6 +431,7 @@ struct QaEfficiency {
   // Selection on mothers
   Configurable<bool> checkForMothers{"checkForMothers", false, "Flag to use the array of mothers to check if the particle of interest come from any of those particles"};
   Configurable<std::vector<int>> mothersPDGs{"mothersPDGs", std::vector<int>{3312, -3312}, "PDGs of origin of the particle under study"};
+  Configurable<bool> keepOnlyHfParticles{"keepOnlyHfParticles", false, "Flag to decide wheter to consider only HF particles"};
   // Track only selection, options to select only specific tracks
   Configurable<bool> trackSelection{"trackSelection", true, "Local track selection"};
   Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks, 6 -> custom track cuts via Configurable"};
@@ -1753,126 +1755,141 @@ struct QaEfficiency {
   SliceCache cache;
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
   Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
-  void processMC(o2::aod::McCollision const&,
-                 o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
+  PresliceUnsorted<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
+  void processMC(o2::aod::McCollisions const& mcCollisions,
+                 //o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
+                 o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels> const& collisions,
                  o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
                  o2::aod::McParticles const& mcParticles)
   {
-    histos.fill(HIST("MC/generatedCollisions"), 1);
 
-    if (collisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
-      return;
-    }
-    histos.fill(HIST("MC/generatedCollisions"), 2);
-    if (skipEventsWithoutTPCTracks) {
-      int nTPCTracks = 0;
-      for (const auto& collision : collisions) {
-        const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-        for (const auto& track : groupedTracks) {
-          if (track.hasTPC()) {
-            nTPCTracks++;
-            break;
+    /// loop over generated collisions
+    for(const auto& mcCollision : mcCollisions) {
+      histos.fill(HIST("MC/generatedCollisions"), 1);
+
+      const auto groupedCollisions = collisions.sliceBy(collPerCollMc, mcCollision.globalIndex());
+      const auto groupedMcParticles = mcParticles.sliceBy(perCollisionMc, mcCollision.globalIndex());
+
+      LOG(info) << "groupedCollisions.size() " << groupedCollisions.size();
+
+      if (groupedCollisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
+        continue;
+      }
+      histos.fill(HIST("MC/generatedCollisions"), 2);
+      if (skipEventsWithoutTPCTracks) {
+        int nTPCTracks = 0;
+        for (const auto& collision : groupedCollisions) {
+          const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+          for (const auto& track : groupedTracks) {
+            if (track.hasTPC()) {
+              nTPCTracks++;
+              break;
+            }
           }
         }
-      }
-      if (nTPCTracks == 0) {
-        LOG(info) << "Skipping event with no TPC tracks";
-        return;
-      }
-    }
-    histos.fill(HIST("MC/generatedCollisions"), 3);
-
-    for (const auto& collision : collisions) {
-      histos.fill(HIST("MC/generatedCollisions"), 4);
-      if (!isCollisionSelected<false>(collision)) {
-        continue;
-      }
-      histos.fill(HIST("MC/generatedCollisions"), 5);
-
-      const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
-
-      // Track loop
-      for (const auto& track : groupedTracks) {
-        if (!isTrackSelected(track, HIST("MC/trackSelection"))) {
+        if (nTPCTracks == 0) {
+          LOG(info) << "Skipping event with no TPC tracks";
           continue;
         }
-        // Filling variable histograms
-        histos.fill(HIST("MC/trackLength"), track.length());
-        static_for<0, 1>([&](auto pdgSign) {
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Electron>(track, doEl);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Muon>(track, doMu);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Pion>(track, doPi);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Kaon>(track, doKa);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Proton>(track, doPr);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Deuteron>(track, doDe);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Triton>(track, doTr);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Helium3>(track, doHe);
-          fillMCTrackHistograms<pdgSign, o2::track::PID::Alpha>(track, doAl);
-        });
       }
+      histos.fill(HIST("MC/generatedCollisions"), 3);
 
-      // Skipping collisions without the generated collisions
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
+      /// loop over reconstructed collisions
+      for (const auto& collision : groupedCollisions) {
+        histos.fill(HIST("MC/generatedCollisions"), 4);
+        if (!isCollisionSelected<false>(collision)) {
+          continue;
+        }
+        histos.fill(HIST("MC/generatedCollisions"), 5);
 
-      for (const auto& particle : mcParticles) { // Particle loop
+        const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
 
-        /// require generated particle in acceptance
-        if (!isInAcceptance<true, false>(particle, nullptr)) {
+        // Track loop
+        for (const auto& track : groupedTracks) {
+          if (!isTrackSelected(track, HIST("MC/trackSelection"))) {
+            continue;
+          }
+          // Filling variable histograms
+          histos.fill(HIST("MC/trackLength"), track.length());
+          static_for<0, 1>([&](auto pdgSign) {
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Electron>(track, doEl);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Muon>(track, doMu);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Pion>(track, doPi);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Kaon>(track, doKa);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Proton>(track, doPr);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Deuteron>(track, doDe);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Triton>(track, doTr);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Helium3>(track, doHe);
+            fillMCTrackHistograms<pdgSign, o2::track::PID::Alpha>(track, doAl);
+          });
+        }
+
+        // Skipping collisions without the generated collisions
+        if (!collision.has_mcCollision()) {
           continue;
         }
 
+        /// only to fill denominator of ITS-TPC matched primary tracks only in MC events with at least 1 reco. vtx 
+        for (const auto& particle : groupedMcParticles) { // Particle loop
+
+          /// require generated particle in acceptance
+          if (!isInAcceptance<true, false>(particle, nullptr)) {
+            continue;
+          }
+
+          static_for<0, 1>([&](auto pdgSign) {
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Electron, true>(particle, doEl);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Muon, true>(particle, doMu);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Pion, true>(particle, doPi);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Kaon, true>(particle, doKa);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Proton, true>(particle, doPr);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Deuteron, true>(particle, doDe);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Triton, true>(particle, doTr);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Helium3, true>(particle, doHe);
+            fillMCParticleHistograms<pdgSign, o2::track::PID::Alpha, true>(particle, doAl);
+          });
+        }
+      } /// end loop over reconstructed collisions
+
+      // Loop on particles to fill the denominator
+      float dNdEta = 0; // Multiplicity
+      for (const auto& mcParticle : groupedMcParticles) {
+        if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughters()) {
+          dNdEta += 1.f;
+        }
+        if (!isInAcceptance(mcParticle, HIST("MC/particleSelection"))) {
+          continue;
+        }
+
         static_for<0, 1>([&](auto pdgSign) {
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Electron, true>(particle, doEl);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Muon, true>(particle, doMu);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Pion, true>(particle, doPi);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Kaon, true>(particle, doKa);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Proton, true>(particle, doPr);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Deuteron, true>(particle, doDe);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Triton, true>(particle, doTr);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Helium3, true>(particle, doHe);
-          fillMCParticleHistograms<pdgSign, o2::track::PID::Alpha, true>(particle, doAl);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Electron>(mcParticle, doEl);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Muon>(mcParticle, doMu);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Pion>(mcParticle, doPi);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Kaon>(mcParticle, doKa);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Proton>(mcParticle, doPr);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Deuteron>(mcParticle, doDe);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Triton>(mcParticle, doTr);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Helium3>(mcParticle, doHe);
+          fillMCParticleHistograms<pdgSign, o2::track::PID::Alpha>(mcParticle, doAl);
         });
       }
-    }
+      histos.fill(HIST("MC/eventMultiplicity"), dNdEta * 0.5f / 2.f);
 
-    // Loop on particles to fill the denominator
-    float dNdEta = 0; // Multiplicity
-    for (const auto& mcParticle : mcParticles) {
-      if (TMath::Abs(mcParticle.eta()) <= 2.f && !mcParticle.has_daughters()) {
-        dNdEta += 1.f;
-      }
-      if (!isInAcceptance(mcParticle, HIST("MC/particleSelection"))) {
-        continue;
-      }
-
+      // Fill TEfficiencies
       static_for<0, 1>([&](auto pdgSign) {
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Electron>(mcParticle, doEl);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Muon>(mcParticle, doMu);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Pion>(mcParticle, doPi);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Kaon>(mcParticle, doKa);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Proton>(mcParticle, doPr);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Deuteron>(mcParticle, doDe);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Triton>(mcParticle, doTr);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Helium3>(mcParticle, doHe);
-        fillMCParticleHistograms<pdgSign, o2::track::PID::Alpha>(mcParticle, doAl);
+        fillMCEfficiency<pdgSign, o2::track::PID::Electron>(doEl);
+        fillMCEfficiency<pdgSign, o2::track::PID::Muon>(doMu);
+        fillMCEfficiency<pdgSign, o2::track::PID::Pion>(doPi);
+        fillMCEfficiency<pdgSign, o2::track::PID::Kaon>(doKa);
+        fillMCEfficiency<pdgSign, o2::track::PID::Proton>(doPr);
+        fillMCEfficiency<pdgSign, o2::track::PID::Deuteron>(doDe);
+        fillMCEfficiency<pdgSign, o2::track::PID::Triton>(doTr);
+        fillMCEfficiency<pdgSign, o2::track::PID::Helium3>(doHe);
+        fillMCEfficiency<pdgSign, o2::track::PID::Alpha>(doAl);
       });
-    }
-    histos.fill(HIST("MC/eventMultiplicity"), dNdEta * 0.5f / 2.f);
+    } /// end loop over generated collisions
 
-    // Fill TEfficiencies
-    static_for<0, 1>([&](auto pdgSign) {
-      fillMCEfficiency<pdgSign, o2::track::PID::Electron>(doEl);
-      fillMCEfficiency<pdgSign, o2::track::PID::Muon>(doMu);
-      fillMCEfficiency<pdgSign, o2::track::PID::Pion>(doPi);
-      fillMCEfficiency<pdgSign, o2::track::PID::Kaon>(doKa);
-      fillMCEfficiency<pdgSign, o2::track::PID::Proton>(doPr);
-      fillMCEfficiency<pdgSign, o2::track::PID::Deuteron>(doDe);
-      fillMCEfficiency<pdgSign, o2::track::PID::Triton>(doTr);
-      fillMCEfficiency<pdgSign, o2::track::PID::Helium3>(doHe);
-      fillMCEfficiency<pdgSign, o2::track::PID::Alpha>(doAl);
-    });
+    
   }
   PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
 
