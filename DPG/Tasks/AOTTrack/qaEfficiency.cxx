@@ -437,8 +437,9 @@ struct QaEfficiency {
   Configurable<int> globalTrackSelection{"globalTrackSelection", 0, "Global track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks, 6 -> custom track cuts via Configurable"};
   // Event selection
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the primary vertex"};
-  Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the generated vertez in Z (cm)"};
-  Configurable<float> vertexZMax{"vertex-z-max", 10.f, "Maximum position of the generated vertez in Z (cm)"};
+  Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the primary vertez in Z (cm)"};
+  Configurable<float> vertexZMax{"vertex-z-max", 10.f, "Maximum position of the primary vertez in Z (cm)"};
+  Configurable<bool> applyPvZCutGenColl{"applyPvZCutGenColl", false, "Flag to enable the cut on the generated vertex z coordinate"};
   // Histogram configuration
   ConfigurableAxis ptBins{"ptBins", {200, 0.f, 5.f}, "Pt binning"};
   Configurable<int> logPt{"log-pt", 0, "Flag to use a logarithmic pT axis"};
@@ -1833,8 +1834,18 @@ struct QaEfficiency {
         }
 
         // Skipping collisions without the generated collisions
+        // Actually this should never happen, since we group per MC collision
         if (!collision.has_mcCollision()) {
           continue;
+        } else {
+          // skip generated collisions outside the allowed vtx-z range
+          // putting this condition here avoids the particle loop a few lines below
+          if(applyPvZCutGenColl) {
+            const float genPvZ = mcCollision.posZ();
+            if(genPvZ < vertexZMin || genPvZ > vertexZMax) {
+              continue;
+            }
+          }
         }
 
         /// only to fill denominator of ITS-TPC matched primary tracks only in MC events with at least 1 reco. vtx 
@@ -1864,6 +1875,15 @@ struct QaEfficiency {
           });
         }
       } /// end loop over reconstructed collisions
+
+      // skip generated collisions outside the allowed vtx-z range
+      // putting this condition here avoids the particle loop a few lines below
+      if(applyPvZCutGenColl) {
+        const float genPvZ = mcCollision.posZ();
+        if(genPvZ < vertexZMin || genPvZ > vertexZMax) {
+          continue;
+        }
+      }
 
       // Loop on particles to fill the denominator
       float dNdEta = 0; // Multiplicity
