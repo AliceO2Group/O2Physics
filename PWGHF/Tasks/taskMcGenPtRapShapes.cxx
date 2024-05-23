@@ -29,13 +29,14 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-namespace {
-  const int nCharmHadrons = 10;
-  static constexpr std::array<int, nCharmHadrons> pdgCodesCharm = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kSigmaC0, Pdg::kSigmaCPlusPlus, Pdg::kXiC0, Pdg::kXiCPlus, Pdg::kOmegaC0};
+namespace
+{
+const int nCharmHadrons = 10;
+static constexpr std::array<int, nCharmHadrons> pdgCodesCharm = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kSigmaC0, Pdg::kSigmaCPlusPlus, Pdg::kXiC0, Pdg::kXiCPlus, Pdg::kOmegaC0};
 
-  const int nBeautyHadrons = 4;
-  static constexpr std::array<int, nCharmHadrons> pdgCodesBeauty = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
-}
+const int nBeautyHadrons = 4;
+static constexpr std::array<int, nCharmHadrons> pdgCodesBeauty = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
+} // namespace
 
 struct HfTaskMcGenPtRapShapes {
 
@@ -54,13 +55,13 @@ struct HfTaskMcGenPtRapShapes {
   void init(InitContext&)
   {
 
-    for (auto iCharmHad{0}; iCharmHad<nCharmHadrons; ++iCharmHad) {
+    for (auto iCharmHad{0}; iCharmHad < nCharmHadrons; ++iCharmHad) {
       histRapVsPtCharmPrompt[iCharmHad] = registry.add<TH2>(Form("CharmHadrons/hRapVsPtPrompt%d", pdgCodesCharm[iCharmHad]), Form("Prompt %d;#it{p}_{T} (GeV/#it{c});#it{y}", pdgCodesCharm[iCharmHad]), {HistType::kTH2F, {axisPtCharm, axisRapCharm}});
       histRapVsPtCharmNonPrompt[iCharmHad] = registry.add<TH2>(Form("CharmHadrons/hRapVsPtNonPrompt%d", pdgCodesCharm[iCharmHad]), Form("Non-prompt %d;#it{p}_{T} (GeV/#it{c});#it{y}", pdgCodesCharm[iCharmHad]), {HistType::kTH2F, {axisPtCharm, axisRapCharm}});
       histPtCharmVsPtBeautyNonPrompt[iCharmHad] = registry.add<TH2>(Form("CharmHadrons/hPtCharmVsPtBeautyNonPrompt%d", pdgCodesCharm[iCharmHad]), Form("Non-prompt %d;#it{p}_{T}(b-had) (GeV/#it{c});#it{p}_{T}(c-had) (GeV/#it{c})", pdgCodesCharm[iCharmHad]), {HistType::kTH2F, {axisPtBeauty, axisPtCharm}});
     }
 
-    for (auto iBeautyHad{0}; iBeautyHad<nBeautyHadrons; ++iBeautyHad) {
+    for (auto iBeautyHad{0}; iBeautyHad < nBeautyHadrons; ++iBeautyHad) {
       histRapVsPtBeauty[iBeautyHad] = registry.add<TH2>(Form("BeautyHadrons/hRapVsPt%d", pdgCodesBeauty[iBeautyHad]), Form("%d;#it{p}_{T} (GeV/#it{c});#it{y}", pdgCodesBeauty[iBeautyHad]), {HistType::kTH2F, {axisPtBeauty, axisRapBeauty}});
     }
   }
