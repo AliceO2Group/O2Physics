@@ -1770,7 +1770,7 @@ struct QaEfficiency {
       const auto groupedCollisions = collisions.sliceBy(collPerCollMc, mcCollision.globalIndex());
       const auto groupedMcParticles = mcParticles.sliceBy(perCollisionMc, mcCollision.globalIndex());
 
-      LOG(info) << "groupedCollisions.size() " << groupedCollisions.size();
+      //LOG(info) << "groupedCollisions.size() " << groupedCollisions.size();
 
       if (groupedCollisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
         continue;
@@ -1809,6 +1809,14 @@ struct QaEfficiency {
           if (!isTrackSelected(track, HIST("MC/trackSelection"))) {
             continue;
           }
+
+          // search for particles from HF decays
+          // no need to check if track.has_mcParticle() == true, this is done already in isTrackSelected
+          const auto& particle = track.mcParticle();
+          if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
+            continue;
+          }
+
           // Filling variable histograms
           histos.fill(HIST("MC/trackLength"), track.length());
           static_for<0, 1>([&](auto pdgSign) {
@@ -1837,6 +1845,12 @@ struct QaEfficiency {
             continue;
           }
 
+          // search for particles from HF decays
+          // no need to check if track.has_mcParticle() == true, this is done already in isTrackSelected
+          if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
+            continue;
+          }
+
           static_for<0, 1>([&](auto pdgSign) {
             fillMCParticleHistograms<pdgSign, o2::track::PID::Electron, true>(particle, doEl);
             fillMCParticleHistograms<pdgSign, o2::track::PID::Muon, true>(particle, doMu);
@@ -1858,6 +1872,12 @@ struct QaEfficiency {
           dNdEta += 1.f;
         }
         if (!isInAcceptance(mcParticle, HIST("MC/particleSelection"))) {
+          continue;
+        }
+
+        // search for particles from HF decays
+        // no need to check if track.has_mcParticle() == true, this is done already in isTrackSelected
+        if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, /*searchUpToQuark*/ true)) {
           continue;
         }
 
