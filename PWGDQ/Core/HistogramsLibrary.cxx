@@ -758,6 +758,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "TauzProj", "", false, 1000, -0.03, 0.03, VarManager::kVertexingTauzProjected);
         hm->AddHistogram(histClass, "TauxyProj", "", false, 1000, -0.03, 0.03, VarManager::kVertexingTauxyProjected);
         hm->AddHistogram(histClass, "TauxyzProj", "", false, 1000, -0.03, 0.03, VarManager::kVertexingTauxyzProjected);
+        hm->AddHistogram(histClass, "LxyProj_Pt", "", false, 10, 0.0, 20.0, VarManager::kPt, 1000, -1.0, 1.0, VarManager::kVertexingLxyProjected);
         hm->AddHistogram(histClass, "LxyProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -1.0, 1.0, VarManager::kVertexingLxyProjected);
         hm->AddHistogram(histClass, "LzProj_Mass_Pt", "", false, 50, 2.0, 4.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt, 1000, -1.0, 1.0, VarManager::kVertexingLzProjected);
       }
@@ -842,7 +843,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
     } else if (subGroupStr.Contains("dimuon")) {
       hm->AddHistogram(histClass, "Mass_Pt", "", false, 750, 0.0, 15.0, VarManager::kMass, 120, 0.0, 30.0, VarManager::kPt);
-      hm->AddHistogram(histClass, "Mass_Rapidity", "", false, 750, 0.0, 15.0, VarManager::kMass, 200, 2.5, 4.0, VarManager::kRap);
+      hm->AddHistogram(histClass, "Mass_Rapidity", "", false, 750, 0.0, 15.0, VarManager::kMass, 150, 2.5, 4.0, VarManager::kRap);
+      if (subGroupStr.Contains("dimuon-multi-diff")) {
+        int varsKine[3] = {VarManager::kMass, VarManager::kPt, VarManager::kRap};
+        int binsKine[3] = {250, 120, 60};
+        double xminKine[3] = {0.0, 0.0, 2.5};
+        double xmaxKine[3] = {5.0, 30.0, 4.0};
+        hm->AddHistogram(histClass, "Mass_Pt_Rapidity", "", 3, varsKine, binsKine, xminKine, xmaxKine, 0, -1, kFALSE);
+      }
       if (subGroupStr.Contains("dimuon-centr")) {
         hm->AddHistogram(histClass, "Mass_CentFT0C", "", false, 750, 0.0, 15.0, VarManager::kMass, 100, 0., 100., VarManager::kCentFT0C);
       }
@@ -1011,7 +1019,6 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 5.0, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 0, 0, 0, -1, "", "", "", -1, -1, true);
       }
       if (subGroupStr.Contains("lmee")) {
-        hm->AddHistogram(histClass, "Mass_Pt_PhiV", "", false, 20, 0.0, 0.2, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 100, 0.0, TMath::Pi(), VarManager::kPairPhiv);
         hm->AddHistogram(histClass, "Mass_QuadDCAsigXY", "", false, 50, 0.0, 5.0, VarManager::kMass, 50, 0.0, 20.0, VarManager::kQuadDCAsigXY);
         hm->AddHistogram(histClass, "Mass_QuadDCAsigZ", "", false, 50, 0.0, 5.0, VarManager::kMass, 50, 0.0, 20.0, VarManager::kQuadDCAsigZ);
         hm->AddHistogram(histClass, "Mass_Pt_QuadDCAsigXYZ", "", false, 500, 0.0, 5.0, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 50, 0.0, 20.0, VarManager::kQuadDCAsigXYZ);
@@ -1057,30 +1064,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
           dca_bins[60 + i] = 10 + 1 * i;
         int nbins_dca = sizeof(dca_bins) / sizeof(*dca_bins) - 1;
 
-        // binning for signed dca at large scales:
-        // every 2.0 sigma from -40 to -10 sigma
-        // every 1.0 sigma from -10 to  -5 sigma
-        // every 0.2 sigma from  -5 to   5 sigma
-        // every 1.0 sigma from   5 to  10 sigma
-        // every 2.0 sigma from  10 to  40 sigma
-        double signdca_bins[91];
-        for (int i = 0; i <= 15; i++)
-          signdca_bins[i] = -40 + 2 * i;
-        for (int i = 1; i <= 5; i++)
-          signdca_bins[15 + i] = -10 + 1 * i;
-        for (int i = 1; i <= 50; i++)
-          signdca_bins[20 + i] = -5 + 0.2 * i;
-        for (int i = 1; i <= 5; i++)
-          signdca_bins[70 + i] = 5 + 1 * i;
-        for (int i = 1; i <= 15; i++)
-          signdca_bins[75 + i] = 10 + 2 * i;
-        int nbins_signdca = sizeof(signdca_bins) / sizeof(*signdca_bins) - 1;
-
-        hm->AddHistogram(histClass, "Mass_Pt_PhiV", "", false, 20, 0.0, 0.2, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPt, 100, 0.0, TMath::Pi(), VarManager::kPairPhiv);
         hm->AddHistogram(histClass, "Mass_QuadDCAsigXY", "", false, nbins_mee, mee_bins, VarManager::kMass, nbins_dca, dca_bins, VarManager::kQuadDCAsigXY);
         hm->AddHistogram(histClass, "Mass_QuadDCAsigZ", "", false, nbins_mee, mee_bins, VarManager::kMass, nbins_dca, dca_bins, VarManager::kQuadDCAsigZ);
         hm->AddHistogram(histClass, "Mass_Pt_QuadDCAsigXYZ", "", false, nbins_mee, mee_bins, VarManager::kMass, nbins_ptee, ptee_bins, VarManager::kPt, nbins_dca, dca_bins, VarManager::kQuadDCAsigXYZ);
-        hm->AddHistogram(histClass, "Mass_Pt_SignQuadDCAsigXYZ", "", false, nbins_mee, mee_bins, VarManager::kMass, nbins_ptee, ptee_bins, VarManager::kPt, nbins_signdca, signdca_bins, VarManager::kSignQuadDCAsigXY);
       }
     }
     if (subGroupStr.Contains("opencharm")) {

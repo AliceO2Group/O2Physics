@@ -55,8 +55,8 @@ struct FemtoCorrelations {
   Configurable<float> _min_P{"min_P", 0.0, "lower mometum limit"};
   Configurable<float> _max_P{"max_P", 100.0, "upper mometum limit"};
   Configurable<float> _eta{"eta", 100.0, "abs eta value limit"};
-  Configurable<float> _dcaXY{"dcaXY", 10.0, "abs dcaXY value limit"};
-  Configurable<float> _dcaZ{"dcaZ", 10.0, "abs dcaZ value limit"};
+  Configurable<std::vector<float>> _dcaXY{"dcaXY", std::vector<float>{0.3f, 0.0f, 0.0f}, "abs dcaXY value limit; formula: [0] + [1]*pT^[2]"};
+  Configurable<std::vector<float>> _dcaZ{"dcaZ", std::vector<float>{0.3f, 0.0f, 0.0f}, "abs dcaZ value limit; formula: [0] + [1]*pT^[2]"};
   Configurable<int16_t> _tpcNClsFound{"minTpcNClsFound", 0, "minimum allowed number of TPC clasters"};
   Configurable<float> _tpcChi2NCl{"tpcChi2NCl", 100.0, "upper limit for chi2 value of a fit over TPC clasters"};
   Configurable<float> _tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0, "lower limit of TPC CrossedRows/FindableCls value"};
@@ -130,9 +130,6 @@ struct FemtoCorrelations {
   Filter tpcTrkFilter = o2::aod::singletrackselector::tpcNClsFound >= _tpcNClsFound &&
                         o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedTpcChi2NCl) < _tpcChi2NCl &&
                         o2::aod::singletrackselector::unPack<singletrackselector::binning::rowsOverFindable>(o2::aod::singletrackselector::storedTpcCrossedRowsOverFindableCls) > _tpcCrossedRowsOverFindableCls;
-
-  Filter dcaFilter = nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) < _dcaXY &&
-                     nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaZ)) < _dcaZ;
 
   Filter itsTrkFilter = o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedItsChi2NCl) < _itsChi2NCl;
 
@@ -388,6 +385,8 @@ struct FemtoCorrelations {
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() < *_centBins.value.begin() || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() >= *(_centBins.value.end() - 1))
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().hadronicRate() < _IRcut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().hadronicRate() >= _IRcut.value.second)
+        continue;
+      if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
         continue;
 
       if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1.value))) { // filling the map: eventID <-> selected particles1

@@ -785,7 +785,7 @@ struct AnalysisSameEventPairing {
       }
       if constexpr ((TPairType == VarManager::kDecayToEE) && (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
         if (fConfigFlatTables.value) {
-          dielectronAllList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision,
+          dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision,
                             t1.pt(), t1.eta(), t1.phi(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
                             t2.pt(), t2.eta(), t2.phi(), t2.tpcNClsCrossedRows(), t2.tpcNClsFound(), t2.tpcChi2NCl(), t2.dcaXY(), t2.dcaZ(), t2.tpcSignal(), t2.tpcNSigmaEl(), t2.tpcNSigmaPi(), t2.tpcNSigmaPr(), t2.beta(), t2.tofNSigmaEl(), t2.tofNSigmaPi(), t2.tofNSigmaPr(),
                             VarManager::fgValues[VarManager::kKFTrack0DCAxyz], VarManager::fgValues[VarManager::kKFTrack1DCAxyz], VarManager::fgValues[VarManager::kKFDCAxyzBetweenProngs], VarManager::fgValues[VarManager::kKFTrack0DCAxy], VarManager::fgValues[VarManager::kKFTrack1DCAxy], VarManager::fgValues[VarManager::kKFDCAxyBetweenProngs],
@@ -1298,22 +1298,22 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,vertexing-barrel,kalman-filter");
       }
       if (classStr.Contains("Muon")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "dimuon,vertexing-forward");
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "dimuon,dimuon-multi-diff,vertexing-forward");
       }
     }
 
     if (classStr.Contains("MCTruthGenPair")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_pair");
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt", "MC generator p_{T} distribution", false, 120, 0.0, 30.0, VarManager::kMCPt);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt_Rapidity", "MC generator p_{T}, y distribution", false, 120, 0.0, 30.0, VarManager::kMCPt, 150, 2.5, 4.0, VarManager::kMCY);
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 200, 2.5, 4.0, VarManager::kMCEta);
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Rapidity", "MC generator y distribution", false, 150, 2.5, 4.0, VarManager::kMCY);
+      // histMan->AddHistogram(objArray->At(iclass)->GetName(), "Rapidity", "MC generator y distribution", false, 150, 2.5, 4.0, VarManager::kMCY);
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 50, 0.0, 2. * TMath::Pi(), VarManager::kMCPhi);
     }
     if (classStr.Contains("MCTruthGen")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth");
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt", "MC generator p_{T} distribution", false, 120, 0.0, 30.0, VarManager::kMCPt);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt_Rapidity", "MC generator p_{T}, y distribution", false, 120, 0.0, 30.0, VarManager::kMCPt, 150, 2.5, 4.0, VarManager::kMCY);
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 200, 2.5, 4.0, VarManager::kMCEta);
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Rapidity", "MC generator y distribution", false, 150, 2.5, 4.0, VarManager::kMCY);
+      // histMan->AddHistogram(objArray->At(iclass)->GetName(), "Rapidity", "MC generator y distribution", false, 150, 2.5, 4.0, VarManager::kMCY);
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 50, 0.0, 2. * TMath::Pi(), VarManager::kMCPhi);
     }
     if (classStr.Contains("DileptonsSelected")) {

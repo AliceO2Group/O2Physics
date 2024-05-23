@@ -230,7 +230,7 @@ struct findableStudy {
       pdgCodePositive = -2212;
     if (pdgCode == 22) {
       pdgCodePositive = -11;
-      pdgCodeNegative = -11;
+      pdgCodeNegative = +11;
     }
 
     if (v0.pdgCode() != pdgCode || v0.pdgCodePositive() != pdgCodePositive || v0.pdgCodeNegative() != pdgCodeNegative)

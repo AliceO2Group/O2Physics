@@ -178,8 +178,8 @@ struct lambdakzeromcfinder {
   {
     int nPosReco = 0;
     int nNegReco = 0;
-    int trackIndexPositive[20];
-    int trackIndexNegative[20];
+    std::vector<int> trackIndexPositive;
+    std::vector<int> trackIndexNegative;
 
     int positivePdg = 211;
     int negativePdg = -211;
@@ -220,7 +220,7 @@ struct lambdakzeromcfinder {
                 tpcOnlyFound = true;
               }
               if (track.sign() > 0 && (track.hasTPC() || !requireTPC)) {
-                trackIndexPositive[nPosReco] = track.globalIndex(); // assign only if TPC present
+                trackIndexPositive.push_back(track.globalIndex()); // assign only if TPC present
                 nPosReco++;
               }
             } // end track list loop
@@ -237,7 +237,7 @@ struct lambdakzeromcfinder {
                 tpcOnlyFound = true;
               }
               if (track.sign() < 0 && (track.hasTPC() || !requireTPC)) {
-                trackIndexNegative[nNegReco] = track.globalIndex(); // assign only if TPC present
+                trackIndexNegative.push_back(track.globalIndex()); // assign only if TPC present
                 nNegReco++;
               }
             } // end track list loop
