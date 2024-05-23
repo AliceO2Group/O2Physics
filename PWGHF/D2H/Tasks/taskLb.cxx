@@ -73,7 +73,7 @@ struct HfTaskLb {
     reso *= resoCorrectionFactor; // In case real resolution is worse
     double numerator = 1. / lengthParameter * std::exp(-DCA / lengthParameter);
     double denominator = (1. - largeLifetimeBG) * TMath::Gaus(DCA, 0., reso) + largeLifetimeBG / 0.2; // flat distribution to 2 mm
-    return log(numerator / denominator);
+    return std::log(numerator / denominator);
   } // Creates the single track log likelihood assuming an exonential law for the secondaries
 
   HistogramRegistry registry{
