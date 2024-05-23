@@ -67,8 +67,8 @@ DECLARE_SOA_TABLE_VERSIONED(StraRawCents_004, "AOD", "STRARAWCENTS", 4,     //! 
                             mult::MultAllTracksTPCOnly,                     // TPConly track multiplicities, all, no eta cut
                             mult::MultAllTracksITSTPC,                      // ITSTPC track multiplicities, all, no eta cut
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
-                            mult::MultZEM2, mult::MultZPA, mult::MultZPC, 
-                            evsel::NumTracksInTimeRange); // add occupancy as extra 
+                            mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                            evsel::NumTracksInTimeRange); // add occupancy as extra
 DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selection: sel8
                   evsel::Sel8, evsel::Selection);
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
