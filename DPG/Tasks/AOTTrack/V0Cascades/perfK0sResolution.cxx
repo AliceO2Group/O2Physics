@@ -95,8 +95,8 @@ struct perfK0sResolution {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<int> minOccupancyCut{"minOccupancyCut", 0.5, "Minimum occupancy cut. Enabled if min < max"};
-  Configurable<int> maxOccupancyCut{"maxOccupancyCut", -0.5, "Maximum occupancy cut. Enabled if min < max"};
+  Configurable<int> minOccupancyCut{"minOccupancyCut", 1, "Minimum occupancy cut. Enabled if min < max"};
+  Configurable<int> maxOccupancyCut{"maxOccupancyCut", -1, "Maximum occupancy cut. Enabled if min < max"};
 
   int runNumber = -1;
 
