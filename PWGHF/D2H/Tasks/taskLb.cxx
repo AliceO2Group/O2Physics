@@ -38,18 +38,18 @@ using namespace o2::framework::expressions;
 /// Λb0 analysis task
 struct HfTaskLb {
   Configurable<int> selectionFlagLb{"selectionFlagLb", 0, "Selection Flag for Lb"};
-  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
-  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
-  Configurable<double> DCALengthParameter{"DCALengthParameter", 0.02, "decay length for DCA"};
-  Configurable<double> minLikelihoodRatio{"minLikelihoodRatio", 10., "min. likelihood ratio for combined DCAs"};
-  Configurable<double> minLikelihoodRatioLc{"minLikelihoodRatioLc", 10., "min. likelihood ratio for Lc cross check"};
-  Configurable<double> mDiffKStar892Max{"mDiffKStar892Max", 0.0473, "Accepted range around KStar mass peak"};
-  Configurable<double> mDiffDelta1232Max{"mDiffDelta1232Max", 0.117, "Accepted range around Delta mass peak"};
-  Configurable<double> mDiffLambda1520Max{"mDiffLambda1520Max", 0.016 * 2., "Accepted range around Lambda 1520 mass peak"};
-  Configurable<double> mDiffLcMax{"mDiffLcMax", 0.1, "Accepted range around LambdaC mass peak for filling two body mass histograms"};
-  Configurable<double> maximumImpactParameterForLambdaCCrossChecks{"maximumImpactParameterForLambdaCCrossChecks", 0.2, "maximum d0 for LambdaC checks"};
-  Configurable<double> resoCorrectionFactor{"resoCorrectionFactor", 1.1, "Resolution correction compared to reconstruction estimate"};
-  Configurable<double> largeLifetimeBG{"largeLifetimeBG", 0.01, "fraction of strange contribution within 2mm"};
+  Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<float> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
+  Configurable<float> DCALengthParameter{"DCALengthParameter", 0.02, "decay length for DCA"};
+  Configurable<float> minLikelihoodRatio{"minLikelihoodRatio", 10., "min. likelihood ratio for combined DCAs"};
+  Configurable<float> minLikelihoodRatioLc{"minLikelihoodRatioLc", 10., "min. likelihood ratio for Lc cross check"};
+  Configurable<float> mDiffKStar892Max{"mDiffKStar892Max", 0.0473, "Accepted range around KStar mass peak"};
+  Configurable<float> mDiffDelta1232Max{"mDiffDelta1232Max", 0.117, "Accepted range around Delta mass peak"};
+  Configurable<float> mDiffLambda1520Max{"mDiffLambda1520Max", 0.016 * 2., "Accepted range around Lambda 1520 mass peak"};
+  Configurable<float> mDiffLcMax{"mDiffLcMax", 0.1, "Accepted range around LambdaC mass peak for filling two body mass histograms"};
+  Configurable<float> maximumImpactParameterForLambdaCCrossChecks{"maximumImpactParameterForLambdaCCrossChecks", 0.2, "maximum d0 for LambdaC checks"};
+  Configurable<float> resoCorrectionFactor{"resoCorrectionFactor", 1.1, "Resolution correction compared to reconstruction estimate"};
+  Configurable<float> largeLifetimeBG{"largeLifetimeBG", 0.01, "fraction of strange contribution within 2mm"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
 
   HfHelper hfHelper;
@@ -209,16 +209,16 @@ struct HfTaskLb {
         double mDiffKStar892 = std::abs(mRecoKstar - massKStar892);
         double mDiffDelta1232 = std::abs(mRecoDelta1232 - massDelta1232);
         double mDiffLambda1520 = std::abs(mRecoLambda1520 - o2::constants::physics::MassLambda1520);
-        if (mDiffKStar892 < massRangeKStar || mDiffDelta1232 < massRangeDelta || mDiffLambda1520 < massRangeLambda)
+        if (mDiffKStar892 < mDiffKStar892Max || mDiffDelta1232 < mDiffDelta1232Max || mDiffLambda1520 < mDiffLambda1520Max)
           registry.get<TH2>(HIST("hPtinvMassLcReso"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
-        if (mDiffKStar892 < massRangeKStar)
+        if (mDiffKStar892 < mDiffKStar892Max)
           registry.get<TH2>(HIST("hPtinvMassLcKStar"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
-        if (mDiffDelta1232 < massRangeDelta)
+        if (mDiffDelta1232 < mDiffDelta1232Max)
           registry.get<TH2>(HIST("hPtinvMassLcDelta"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
-        if (mDiffLambda1520 < massRangeLambda)
+        if (mDiffLambda1520 < mDiffLambda1520Max)
           registry.get<TH2>(HIST("hPtinvMassLcLambda1520"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
 
-        if (std::abs(hfHelper.invMassLcToPKPi(candidateLc) - o2::constants::physics::MassLambdaCPlus) < resonanceMassCheckRange) {
+        if (std::abs(hfHelper.invMassLcToPKPi(candidateLc) - o2::constants::physics::MassLambdaCPlus) < mDiffLcMax) {
           registry.get<TH2>(HIST("hPtinvMassKStar"))->Fill(candidateLc.pt(), mRecoKstar);
           registry.get<TH2>(HIST("hPtinvMassDelta"))->Fill(candidateLc.pt(), mRecoDelta1232);
           registry.get<TH2>(HIST("hPtinvMassLambda1520"))->Fill(candidateLc.pt(), mRecoLambda1520);
@@ -232,16 +232,16 @@ struct HfTaskLb {
         double mDiffKStar892 = std::abs(mRecoKstar - massKStar892);
         double mDiffDelta1232 = std::abs(mRecoDelta1232 - massDelta1232);
         double mDiffLambda1520 = std::abs(mRecoLambda1520 - o2::constants::physics::MassLambda1520);
-        if (mDiffKStar892 < massRangeKStar || mDiffDelta1232 < massRangeDelta || mDiffLambda1520 < massRangeLambda)
+        if (mDiffKStar892 < mDiffKStar892Max || mDiffDelta1232 < mDiffDelta1232Max || mDiffLambda1520 < mDiffLambda1520Max)
           registry.get<TH2>(HIST("hPtinvMassLcReso"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
-        if (mDiffKStar892 < massRangeKStar)
+        if (mDiffKStar892 < mDiffKStar892Max)
           registry.get<TH2>(HIST("hPtinvMassLcKStar"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
-        if (mDiffDelta1232 < massRangeDelta)
+        if (mDiffDelta1232 < mDiffDelta1232Max)
           registry.get<TH2>(HIST("hPtinvMassLcDelta"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
-        if (mDiffLambda1520 < massRangeLambda)
+        if (mDiffLambda1520 < mDiffLambda1520Max)
           registry.get<TH2>(HIST("hPtinvMassLcLambda1520"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
 
-        if (std::abs(hfHelper.invMassLcToPiKP(candidateLc) - o2::constants::physics::MassLambdaCPlus) < resonanceMassCheckRange) {
+        if (std::abs(hfHelper.invMassLcToPiKP(candidateLc) - o2::constants::physics::MassLambdaCPlus) < mDiffLcMax) {
           registry.get<TH2>(HIST("hPtinvMassKStar"))->Fill(candidateLc.pt(), mRecoKstar);
           registry.get<TH2>(HIST("hPtinvMassDelta"))->Fill(candidateLc.pt(), mRecoDelta1232);
           registry.get<TH2>(HIST("hPtinvMassLambda1520"))->Fill(candidateLc.pt(), mRecoLambda1520);
