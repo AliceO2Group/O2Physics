@@ -97,6 +97,5 @@ struct HfTaskMcGenPtRapShapes {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<HfTaskMcGenPtRapShapes>(cfgc)};
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<HfTaskMcGenPtRapShapes>(cfgc)};
 }
