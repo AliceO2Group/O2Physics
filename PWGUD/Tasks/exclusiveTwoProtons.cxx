@@ -320,10 +320,10 @@ struct ExclusiveTwoProtons {
         }
 
         // DCA checks
-        dcaZ[0] = rawProtonTracks[0].dcaZ();
-        dcaZ[1] = rawProtonTracksTOF[0].dcaZ();
-        dcaXY[0] = rawProtonTracks[0].dcaXY();
-        dcaXY[1] = rawProtonTracksTOF[0].dcaXY();
+        dcaZ[0] = rawProtonTracksTOF[0].dcaZ();
+        dcaZ[1] = rawProtonTracksTOF[1].dcaZ();
+        dcaXY[0] = rawProtonTracksTOF[0].dcaXY();
+        dcaXY[1] = rawProtonTracksTOF[1].dcaXY();
         if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
           dcaZbool = 1;
         } else {
