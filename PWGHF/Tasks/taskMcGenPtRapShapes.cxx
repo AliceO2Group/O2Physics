@@ -35,7 +35,7 @@ const int nCharmHadrons = 10;
 static constexpr std::array<int, nCharmHadrons> pdgCodesCharm = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kSigmaC0, Pdg::kSigmaCPlusPlus, Pdg::kXiC0, Pdg::kXiCPlus, Pdg::kOmegaC0};
 
 const int nBeautyHadrons = 4;
-static constexpr std::array<int, nCharmHadrons> pdgCodesBeauty = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
+static constexpr std::array<int, nBeautyHadrons> pdgCodesBeauty = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
 } // namespace
 
 struct HfTaskMcGenPtRapShapes {
