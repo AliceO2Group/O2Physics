@@ -1760,20 +1760,20 @@ struct QaEfficiency {
   Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
   PresliceUnsorted<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> collPerCollMc = o2::aod::mccollisionlabel::mcCollisionId;
   void processMC(o2::aod::McCollisions const& mcCollisions,
-                 //o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
+                 // o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>> const& collisions,
                  o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels> const& collisions,
                  o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
                  o2::aod::McParticles const& mcParticles)
   {
 
     /// loop over generated collisions
-    for(const auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       histos.fill(HIST("MC/generatedCollisions"), 1);
 
       const auto groupedCollisions = collisions.sliceBy(collPerCollMc, mcCollision.globalIndex());
       const auto groupedMcParticles = mcParticles.sliceBy(perCollisionMc, mcCollision.globalIndex());
 
-      //LOG(info) << "groupedCollisions.size() " << groupedCollisions.size();
+      // LOG(info) << "groupedCollisions.size() " << groupedCollisions.size();
 
       if (groupedCollisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
         continue;
@@ -1816,7 +1816,7 @@ struct QaEfficiency {
           // search for particles from HF decays
           // no need to check if track.has_mcParticle() == true, this is done already in isTrackSelected
           const auto& particle = track.mcParticle();
-          if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
+          if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
             continue;
           }
 
@@ -1842,15 +1842,15 @@ struct QaEfficiency {
         } else {
           // skip generated collisions outside the allowed vtx-z range
           // putting this condition here avoids the particle loop a few lines below
-          if(applyPvZCutGenColl) {
+          if (applyPvZCutGenColl) {
             const float genPvZ = mcCollision.posZ();
-            if(genPvZ < vertexZMin || genPvZ > vertexZMax) {
+            if (genPvZ < vertexZMin || genPvZ > vertexZMax) {
               continue;
             }
           }
         }
 
-        /// only to fill denominator of ITS-TPC matched primary tracks only in MC events with at least 1 reco. vtx 
+        /// only to fill denominator of ITS-TPC matched primary tracks only in MC events with at least 1 reco. vtx
         for (const auto& particle : groupedMcParticles) { // Particle loop
 
           /// require generated particle in acceptance
@@ -1859,7 +1859,7 @@ struct QaEfficiency {
           }
 
           // search for particles from HF decays
-          if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
+          if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
             continue;
           }
 
@@ -1879,9 +1879,9 @@ struct QaEfficiency {
 
       // skip generated collisions outside the allowed vtx-z range
       // putting this condition here avoids the particle loop a few lines below
-      if(applyPvZCutGenColl) {
+      if (applyPvZCutGenColl) {
         const float genPvZ = mcCollision.posZ();
-        if(genPvZ < vertexZMin || genPvZ > vertexZMax) {
+        if (genPvZ < vertexZMin || genPvZ > vertexZMax) {
           continue;
         }
       }
@@ -1897,7 +1897,7 @@ struct QaEfficiency {
         }
 
         // search for particles from HF decays
-        if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, /*searchUpToQuark*/ true)) {
+        if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, /*searchUpToQuark*/ true)) {
           continue;
         }
 
@@ -1928,8 +1928,6 @@ struct QaEfficiency {
         fillMCEfficiency<pdgSign, o2::track::PID::Alpha>(doAl);
       });
     } /// end loop over generated collisions
-
-    
   }
   PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
 
@@ -1948,10 +1946,10 @@ struct QaEfficiency {
       }
 
       /// checking the PV z coordinate, if the track has been assigned to any collision
-      if(applyPvZCutInProcessMcWoColl && track.has_collision()) {
+      if (applyPvZCutInProcessMcWoColl && track.has_collision()) {
         const auto collision = track.collision();
         const float posZ = collision.posZ();
-        if(posZ < vertexZMin || posZ > vertexZMax) {
+        if (posZ < vertexZMin || posZ > vertexZMax) {
           continue;
         }
       }
@@ -1959,7 +1957,7 @@ struct QaEfficiency {
       // search for particles from HF decays
       // no need to check if track.has_mcParticle() == true, this is done already in isTrackSelected
       const auto& particle = track.mcParticle();
-      if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
+      if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
         continue;
       }
 
@@ -1984,16 +1982,16 @@ struct QaEfficiency {
       }
 
       /// checking the PV z coordinate for the generated collision
-      if(applyPvZCutInProcessMcWoColl && applyPvZCutGenColl) {
+      if (applyPvZCutInProcessMcWoColl && applyPvZCutGenColl) {
         const auto mcCollision = mcParticle.mcCollision();
         const float posZ = mcCollision.posZ();
-        if(posZ < vertexZMin || posZ > vertexZMax) {
+        if (posZ < vertexZMin || posZ > vertexZMax) {
           continue;
         }
       }
 
       // search for particles from HF decays
-      if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, /*searchUpToQuark*/ true)) {
+      if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, /*searchUpToQuark*/ true)) {
         continue;
       }
 
