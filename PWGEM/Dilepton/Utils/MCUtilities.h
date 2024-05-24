@@ -235,6 +235,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
 template <typename T, typename U>
 int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
 { // find the first ancestor that is equal/not-equal pdg
+
   if (!p.has_mothers()) {
     return -1;
   }
@@ -259,32 +260,51 @@ int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
     allmothersids.push_back(mothersids[0]);
   }
 
-  if (equal) {                    // we are searching for the quark
-    for (int i : allmothersids) { // first check if we find it in the direct mothers
-      auto mother = mcParticles.iteratorAt(i);
-      int mpdg = abs(mother.pdgCode());
-      if (mpdg == pdg) {
-        return i; // found it
-      }
-    }
+  if (equal) { // we are searching for the quark
+    int quark_id = -1;
+    int next_mother_id = -1;
     for (int i : allmothersids) {
       auto mother = mcParticles.iteratorAt(i);
-      int id = searchMothers(mother, mcParticles, pdg, equal); // search recursivly through entire history
-      if (id > -1) {                                           // we found a hf quark somewhere up in the history
-        return id;
+      int mpdg = mother.pdgCode();
+      if (abs(mpdg) == pdg && mpdg * p.pdgCode() > 0) { // check for quark
+        if (quark_id > -1 || next_mother_id > -1) {     // we already found a possible candidate in the list of mothers, so now we have (at least) two
+          // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
+          return -1;
+        }
+        quark_id = i;
+      } else if ((int(abs(mpdg) / 100) == pdg || int(abs(mpdg) / 1000) == pdg) && mpdg * p.pdgCode() > 0) { // check for other mothers with flavour content
+        if (quark_id > -1 || next_mother_id > -1) {                                                         // we already found a possible candidate in the list of mothers, so now we have (at least) two
+          // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
+          return -1;
+        }
+        next_mother_id = i;
       }
     }
+    if (quark_id > -1) { // we found the quark
+      return quark_id;
+    }
+    if (next_mother_id > -1) {
+      auto mother = mcParticles.iteratorAt(next_mother_id);
+      return searchMothers(mother, mcParticles, pdg, equal); // we found at least something with flavour content, go deeper recursively
+    }
+    return -1;
   } else { // searching for first ancestor that is not quark anymore
-    bool found = false;
+    int quark_id = -1;
     for (int i : allmothersids) {
       auto mother = mcParticles.iteratorAt(i);
       int mpdg = abs(mother.pdgCode());
-      if (mpdg == pdg) { // found the quark, so we go deeper
-        found = true;
-        return searchMothers(mother, mcParticles, pdg, equal); // search recursivly through entire history
+      if (mpdg == pdg && mother.pdgCode() == p.pdgCode()) { // found the quark
+        if (quark_id > -1) {                                // we already found a possible candidate in the list of mothers, so now we have (at least) two
+          // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
+          return -1;
+        }
+        quark_id = i;
       }
     }
-    if (!found) { // no HF quark as mother, so this is the ancestor
+    if (quark_id > -1) { // we found a quark and now search recursivly through entire history
+      auto mother = mcParticles.iteratorAt(quark_id);
+      return searchMothers(mother, mcParticles, pdg, equal);
+    } else { // no HF quark as mother, so this is the ancestor
       return allmothersids[0];
     }
   }
