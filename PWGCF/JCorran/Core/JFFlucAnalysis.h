@@ -64,8 +64,6 @@ class JFFlucAnalysis : public TNamed
     HIST_THN_PHIETAZ,
     HIST_THN_PTETA,
     HIST_THN_PHIETA,
-    // HIST_THN_VN,
-    // HIST_THN_VN_VN,
     HIST_THN_SC_with_QC_4corr,
     HIST_THN_SC_with_QC_2corr,
     HIST_THN_SC_with_QC_2corr_gap,
@@ -152,14 +150,9 @@ class JFFlucAnalysis : public TNamed
       if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
         corrInv /= track.weightNUA();
       pht[HIST_THN_PHIETA]->Fill(fCent, track.phi(), track.eta(), corrInv);
-
-      // if (TMath::Abs(track.eta()) < fEta_min || TMath::Abs(track.eta()) > fEta_max)
-      //   continue;
       pht[HIST_THN_PHIETAZ]->Fill(fCent, track.phi(), track.eta(), fVertex[2], corrInv);
     }
 
-    // for (UInt_t iaxis = 0; iaxis < 3; iaxis++)
-    // fh_vertex[iaxis]->Fill(fVertex[iaxis]);
     ph1[HIST_TH1_ZVERTEX]->Fill(fVertex[2]);
   }
 
