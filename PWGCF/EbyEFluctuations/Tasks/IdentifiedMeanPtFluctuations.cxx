@@ -32,7 +32,6 @@
 #include "TDatabasePDG.h"
 #include <TPDGCode.h>
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/CCDB/EventSelectionParams.h"
 
 
 using namespace o2;
