@@ -1532,7 +1532,7 @@ struct MultiplicityCounter {
         if constexpr (hasSimCent<MC>()) {
           binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
         } else {
-          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_rec);
+          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), min_c_rec);
         }
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
@@ -1745,7 +1745,7 @@ struct MultiplicityCounter {
         if constexpr (hasSimCent<MC>()) {
           binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
         } else {
-          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_rec);
+          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), min_c_rec);
         }
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
