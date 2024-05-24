@@ -440,6 +440,7 @@ struct QaEfficiency {
   Configurable<float> vertexZMin{"vertex-z-min", -10.f, "Minimum position of the primary vertez in Z (cm)"};
   Configurable<float> vertexZMax{"vertex-z-max", 10.f, "Maximum position of the primary vertez in Z (cm)"};
   Configurable<bool> applyPvZCutGenColl{"applyPvZCutGenColl", false, "Flag to enable the cut on the generated vertex z coordinate"};
+  Configurable<bool> applyPvZCutInProcessMcWoColl{"applyPvZCutInProcessMcWoColl", false, "Flag to enable the cut on the vertex z coordinate (reco. & gen.) also in processMCWithoutCollisions"};
   // Histogram configuration
   ConfigurableAxis ptBins{"ptBins", {200, 0.f, 5.f}, "Pt binning"};
   Configurable<int> logPt{"log-pt", 0, "Flag to use a logarithmic pT axis"};
@@ -1753,6 +1754,7 @@ struct QaEfficiency {
   }
 
   // MC process
+  // Single-track efficiency calculated only for MC collisions with at least 1 reco. collision
   SliceCache cache;
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
   Preslice<o2::aod::McParticles> perCollisionMc = o2::aod::mcparticle::mcCollisionId;
@@ -1857,7 +1859,6 @@ struct QaEfficiency {
           }
 
           // search for particles from HF decays
-          // no need to check if track.has_mcParticle() == true, this is done already in isTrackSelected
           if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
             continue;
           }
@@ -1896,7 +1897,6 @@ struct QaEfficiency {
         }
 
         // search for particles from HF decays
-        // no need to check if track.has_mcParticle() == true, this is done already in isTrackSelected
         if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, /*searchUpToQuark*/ true)) {
           continue;
         }
@@ -1934,14 +1934,35 @@ struct QaEfficiency {
   PROCESS_SWITCH(QaEfficiency, processMC, "process MC", false);
 
   // MC process without the collision association
-  void processMCWithoutCollisions(o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks,
-                                  o2::aod::McParticles const& mcParticles)
+  // Single-track efficiency calculated:
+  //  - considering also MC collisions without any reco. collision
+  //  - considering also tracks not associated to any collision
+  //  - ignoring the track-to-collision association
+  void processMCWithoutCollisions(o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels> const& tracks, o2::aod::Collisions const&,
+                                  o2::aod::McParticles const& mcParticles, o2::aod::McCollisions const&)
   {
     // Track loop
     for (const auto& track : tracks) {
       if (!isTrackSelected(track, HIST("MC/trackSelection"))) {
         continue;
       }
+
+      /// checking the PV z coordinate, if the track has been assigned to any collision
+      if(applyPvZCutInProcessMcWoColl && track.has_collision()) {
+        const auto collision = track.collision();
+        const float posZ = collision.posZ();
+        if(posZ < vertexZMin || posZ > vertexZMax) {
+          continue;
+        }
+      }
+
+      // search for particles from HF decays
+      // no need to check if track.has_mcParticle() == true, this is done already in isTrackSelected
+      const auto& particle = track.mcParticle();
+      if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
+        continue;
+      }
+
       // Filling variable histograms
       histos.fill(HIST("MC/trackLength"), track.length());
       static_for<0, 1>([&](auto pdgSign) {
@@ -1959,6 +1980,20 @@ struct QaEfficiency {
 
     for (const auto& mcParticle : mcParticles) {
       if (!isInAcceptance(mcParticle, HIST("MC/particleSelection"))) {
+        continue;
+      }
+
+      /// checking the PV z coordinate for the generated collision
+      if(applyPvZCutInProcessMcWoColl && applyPvZCutGenColl) {
+        const auto mcCollision = mcParticle.mcCollision();
+        const float posZ = mcCollision.posZ();
+        if(posZ < vertexZMin || posZ > vertexZMax) {
+          continue;
+        }
+      }
+
+      // search for particles from HF decays
+      if(keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, /*searchUpToQuark*/ true)) {
         continue;
       }
 
