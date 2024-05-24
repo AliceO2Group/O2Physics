@@ -1469,6 +1469,14 @@ struct MultiplicityCounter {
     return nCharged;
   }
 
+  std::vector<int> NrecPerCol;
+  std::vector<float> c_recPerCol;
+  std::vector<int> NPVPerCol;
+  std::vector<float> NFT0APerCol;
+  std::vector<float> NFT0CPerCol;
+  std::vector<float> NFDDAPerCol;
+  std::vector<float> NFDDCPerCol;
+
   template <typename MC, typename C>
   void processGenGeneralAmbiguous(
     typename MC::iterator const& mcCollision,
@@ -1481,19 +1489,36 @@ struct MultiplicityCounter {
       c_gen = mcCollision.centrality();
     }
 
+    NrecPerCol.clear();
+    c_recPerCol.clear();
+    NPVPerCol.clear();
+    NFT0APerCol.clear();
+    NFT0CPerCol.clear();
+    NFDDAPerCol.clear();
+    NFDDCPerCol.clear();
+
     bool atLeastOne = false;
     bool atLeastOne_gt0 = false;
     bool atLeastOne_PVgt0 = false;
     auto moreThanOne = 0;
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
 
-    std::vector<int> NrecPerCol;
-    std::vector<float> c_recPerCol;
-    std::vector<int> NPVPerCol;
-    std::vector<float> NFT0APerCol;
-    std::vector<float> NFT0CPerCol;
-    std::vector<float> NFDDAPerCol;
-    std::vector<float> NFDDCPerCol;
+    [[maybe_unused]] float min_c_rec = 2e2;
+    if constexpr (hasRecoCent<C>()) {
+      for (auto& collision : collisions) {
+        if (!useEvSel || isCollisionSelected(collision)) {
+          float c = -1;
+          if constexpr (C::template contains<aod::CentFT0Cs>()) {
+            c = collision.centFT0C();
+          } else if (C::template contains<aod::CentFT0Ms>()) {
+            c = collision.centFT0M();
+          }
+          if (c < min_c_rec) {
+            min_c_rec = c;
+          }
+        }
+      }
+    }
 
     for (auto& collision : collisions) {
       usedTracksIds.clear();
@@ -1504,17 +1529,21 @@ struct MultiplicityCounter {
         } else if (C::template contains<aod::CentFT0Ms>()) {
           c_rec = collision.centFT0M();
         }
-        c_recPerCol.emplace_back(c_rec);
-        binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
+        if constexpr (hasSimCent<MC>()) {
+          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
+        } else {
+          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), min_c_rec);
+        }
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
       if (!useEvSel || isCollisionSelected(collision)) {
+        c_recPerCol.emplace_back(c_rec);
         auto z = collision.posZ();
         ++moreThanOne;
         if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
           if (!atLeastOne) {
-            c_gen = c_rec; // if there is no generator centrality info, fall back to reco (from the first reco collision)
+            c_gen = min_c_rec; // if there is no generator centrality info, fall back to reco (from the largest reco collision)
           }
         }
         atLeastOne = true;
@@ -1679,13 +1708,30 @@ struct MultiplicityCounter {
     auto moreThanOne = 0;
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
 
-    std::vector<int> NrecPerCol;
-    std::vector<float> c_recPerCol;
-    std::vector<int> NPVPerCol;
-    std::vector<float> NFT0APerCol;
-    std::vector<float> NFT0CPerCol;
-    std::vector<float> NFDDAPerCol;
-    std::vector<float> NFDDCPerCol;
+    NrecPerCol.clear();
+    c_recPerCol.clear();
+    NPVPerCol.clear();
+    NFT0APerCol.clear();
+    NFT0CPerCol.clear();
+    NFDDAPerCol.clear();
+    NFDDCPerCol.clear();
+
+    [[maybe_unused]] float min_c_rec = 2e2;
+    if constexpr (hasRecoCent<C>()) {
+      for (auto& collision : collisions) {
+        if (!useEvSel || isCollisionSelected(collision)) {
+          float c = -1;
+          if constexpr (C::template contains<aod::CentFT0Cs>()) {
+            c = collision.centFT0C();
+          } else if (C::template contains<aod::CentFT0Ms>()) {
+            c = collision.centFT0M();
+          }
+          if (c < min_c_rec) {
+            min_c_rec = c;
+          }
+        }
+      }
+    }
 
     for (auto& collision : collisions) {
       usedTracksIds.clear();
@@ -1696,17 +1742,21 @@ struct MultiplicityCounter {
         } else if (C::template contains<aod::CentFT0Ms>()) {
           c_rec = collision.centFT0M();
         }
-        c_recPerCol.emplace_back(c_rec);
-        binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
+        if constexpr (hasSimCent<MC>()) {
+          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), c_gen);
+        } else {
+          binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec), min_c_rec);
+        }
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
       if (!useEvSel || isCollisionSelected(collision)) {
+        c_recPerCol.emplace_back(c_rec);
         auto z = collision.posZ();
         ++moreThanOne;
         if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
           if (!atLeastOne) {
-            c_gen = c_rec; // if there is no generator centrality info, fall back to reco (from the first reco collision)
+            c_gen = min_c_rec; // if there is no generator centrality info, fall back to reco (from the largest reco collision)
           }
         }
         atLeastOne = true;
