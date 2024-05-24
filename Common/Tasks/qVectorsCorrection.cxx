@@ -203,9 +203,9 @@ struct qVectorsCorrection {
     histosQA.fill(HIST("histCentFull"), qVec.cent());
     if (cfgAddEvtSel && (!qVec.sel8() ||
                          !qVec.selection_bit(aod::evsel::kNoTimeFrameBorder) ||
-                         !qVec.selection_bit(aod::evsel::kNoTimeFrameBorder) ||
                          !qVec.selection_bit(aod::evsel::kNoITSROFrameBorder) ||
-                         !qVec.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+                         !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) ||
+                         !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))) {
       return;
     }
     fillHistosQvec(qVec);
