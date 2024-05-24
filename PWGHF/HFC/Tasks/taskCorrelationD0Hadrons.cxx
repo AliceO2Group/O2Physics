@@ -251,16 +251,16 @@ struct HfTaskCorrelationD0Hadrons {
       //==============================================================================================================
 
       if (signalStatus == ParticleTypeData::D0Only || (signalStatus == ParticleTypeData::D0D0barBoth)) {
-        registry.fill(HIST("hCorInfoCorrelationState"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massD, correlationStatus);
+        registry.fill(HIST("hCorInfoCorrelationState"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massD, correlationStatus, efficiencyWeight);
       }
       if (signalStatus == ParticleTypeData::D0barOnly || (signalStatus == ParticleTypeData::D0D0barBoth)) {
-        registry.fill(HIST("hCorInfoCorrelationState"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massDbar, correlationStatus);
+        registry.fill(HIST("hCorInfoCorrelationState"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massDbar, correlationStatus, efficiencyWeight);
       }
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
       if ((massD > signalRegionLeft->at(ptBinD) && massD < signalRegionRight->at(ptBinD)) && ((signalStatus == ParticleTypeData::D0Only) || (signalStatus == ParticleTypeData::D0D0barBoth))) {
         // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta);
+        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
       }
