@@ -281,7 +281,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -332,7 +333,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -401,7 +403,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
