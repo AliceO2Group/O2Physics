@@ -12,11 +12,7 @@
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 
-#include <TFile.h>
-#include <TH1.h>
-#include <TTree.h>
 #include <deque>
-#include <memory>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -35,122 +31,13 @@
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "JFFlucAnalysis.h"
 #include "JFFlucAnalysisO2Hist.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
-{
-  ConfigParamSpec optionLoadWeights{"loadWeights", VariantType::Bool, false, {"Load correction weights"}};
-  workflowOptions.push_back(optionLoadWeights);
-}
-
-#include "Framework/runDataProcessing.h"
-
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
-
-namespace o2::aod
-{
-namespace jweight
-{
-DECLARE_SOA_COLUMN(WeightNUA, weightNUA, float); //! Non-uniform acceptance weight
-DECLARE_SOA_COLUMN(WeightEff, weightEff, float); //! Non-uniform efficiency weight
-} // namespace jweight
-DECLARE_SOA_TABLE(JWeights, "AOD", "JWEIGHT", jweight::WeightNUA, jweight::WeightEff); //! JFluc table for weights
-} // namespace o2::aod
-
-// The standalone jfluc code expects the entire list of tracks for an event. At the same time, it expects weights together with other track attributes.
-// This workflow creates a table of weights that can be joined with track tables.
-struct jflucWeightsLoader {
-  O2_DEFINE_CONFIGURABLE(pathPhiWeights, std::string, "", "Local (local://) or CCDB path for the phi acceptance correction histogram");
-
-  UInt_t ncent;
-  float* pcentEdges = 0;
-
-  struct Map {
-    Map(int _runNumber, UInt_t _centBin, TH1* _ph) : runNumber(_runNumber), centBin(_centBin), ph(_ph) {}
-    ~Map() { delete ph; }
-    int runNumber;
-    UInt_t centBin;
-    TH1* ph;
-  };
-  std::deque<Map> nuaCache;
-  TFile* pf = 0;
-
-  ~jflucWeightsLoader()
-  {
-    if (pcentEdges)
-      delete[] pcentEdges;
-    if (pf) {
-      pf->Close();
-      delete pf;
-    }
-  }
-
-  Produces<aod::JWeights> output;
-  void init(InitContext const&)
-  {
-    //
-    if (!doprocessLoadWeights)
-      return;
-    if (pathPhiWeights.value.substr(0, 8) == "local://") {
-      pf = new TFile(pathPhiWeights.value.substr(8).c_str(), "read");
-
-      // TODO: who knows someday, replace the old collection of TH3Ds with a 4D axis that includes the centrality info.
-      // At the same time, the centBin indexing needs to go, use actual bin edges instead.
-      TTree* pt = static_cast<TTree*>(pf->Get("axes"));
-      if (pt)
-        LOGF(fatal, "The NUA correction root file does not have the axis information.");
-      pt->SetBranchAddress("Ncentrality", &ncent);
-      pt->GetEntry(0);
-
-      pcentEdges = new float[ncent];
-      pt->SetBranchAddress("centrality", pcentEdges);
-      pt->GetEntry(0);
-    }
-  }
-
-  void processLoadWeights(aod::JCollision const& collision, aod::JTracks const& tracks)
-  {
-    UInt_t centBin = 0;
-    for (UInt_t i = 0, n = ncent - 1; i < n; ++i)
-      if (collision.multiplicity() < pcentEdges[i + 1]) {
-        centBin = i;
-        break;
-      }
-
-    for (auto& track : tracks) {
-      if (pf) {
-        float phiWeight, effWeight;
-        auto m = std::find_if(nuaCache.begin(), nuaCache.end(), [&](auto& t) -> bool {
-          return t.runNumber == collision.runNumber() && t.centBin == centBin;
-        });
-        if (m == nuaCache.end()) {
-          TH1* ph = static_cast<TH1*>(pf->Get(Form("PhiWeights_%u_%02u", collision.runNumber(), centBin)));
-          if (ph) {
-            ph->SetDirectory(0); // we delete when we please
-            nuaCache.emplace_back(collision.runNumber(), centBin, ph);
-            if (nuaCache.size() > ncent * 3)
-              nuaCache.pop_front(); // keep at most maps for 3 runs
-            Int_t bin = ph->FindBin(track.phi(), track.eta(), collision.posZ());
-            phiWeight = ph->GetBinContent(bin);
-          } else {
-            phiWeight = 1.0f;
-          }
-        } else {
-          Int_t bin = m->ph->FindBin(track.phi(), track.eta(), collision.posZ());
-          phiWeight = m->ph->GetBinContent(bin);
-        }
-
-        effWeight = 1.0f; //<--- todo
-
-        output(phiWeight, effWeight);
-      }
-    }
-  }
-  PROCESS_SWITCH(jflucWeightsLoader, processLoadWeights, "Load weights histograms", false);
-};
 
 struct jflucAnalysisTask {
   ~jflucAnalysisTask()
@@ -169,7 +56,6 @@ struct jflucAnalysisTask {
   Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax); // eta cuts done by jfluc
 
   HistogramRegistry registry{"registry"};
-  // OutputObj<JFFlucAnalysis> output{JFFlucAnalysis("jflucO2")};
 
   void init(InitContext const&)
   {
@@ -223,11 +109,5 @@ struct jflucAnalysisTask {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  if (cfgc.options().get<bool>("loadWeights")) {
-    return WorkflowSpec{
-      adaptAnalysisTask<jflucWeightsLoader>(cfgc),
-      adaptAnalysisTask<jflucAnalysisTask>(cfgc)};
-  } else {
-    return WorkflowSpec{adaptAnalysisTask<jflucAnalysisTask>(cfgc)};
-  }
+  return WorkflowSpec{adaptAnalysisTask<jflucAnalysisTask>(cfgc)};
 }
