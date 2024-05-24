@@ -698,7 +698,7 @@ struct IdentifiedMeanPtFluctuations {
 
   } // ends
 
-  PROCESS_SWITCH(MCMeanpTFluct, processMCReco, "process reconstructed information", true);
+  PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCReco, "process reconstructed information", true);
 
   //++++++++++++++++++++++++++++Monte Carlo Generated ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
@@ -827,7 +827,7 @@ struct IdentifiedMeanPtFluctuations {
     histos.fill(HIST("hVarpx_gen"), sample_gen, nChp_gen);
     histos.fill(HIST("hVar2meanptpx_gen"), nCh_gen, var2p_gen);
   }
-  PROCESS_SWITCH(MCMeanpTFluct, processMCGen, "process generated information", true);
+  PROCESS_SWITCH(IdentifiedMeanPtFluctuations, processMCGen, "process generated information", true);
 
   //+++++++++++++++++++++++++++++DATA CALCULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++
   void process(aod::MyCollision const& coll, aod::MyTracks const& inputTracks)
@@ -1171,7 +1171,7 @@ struct IdentifiedMeanPtFluctuations {
 
   } // event loop ends!
 
-  PROCESS_SWITCH(MCMeanpTFluct, process, "process real data information", true);
+  PROCESS_SWITCH(IdentifiedMeanPtFluctuations, process, "process real data information", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
