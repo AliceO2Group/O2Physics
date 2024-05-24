@@ -217,11 +217,6 @@ struct DalitzEEQC {
     fRegistry.add("Pair/same/hMvsPhiV_uls", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, false);
     fRegistry.addClone("Pair/same/hMvsPhiV_uls", "Pair/same/hMvsPhiV_lspp");
     fRegistry.addClone("Pair/same/hMvsPhiV_uls", "Pair/same/hMvsPhiV_lsmm");
-
-    fRegistry.add("Pair/same/hDeltaPhivsPhiV_uls", "#varphi_{ee} vs. #varphi_{V};#varphi (rad.);#varphi_{ee} (rad.)", kTH2F, {{90, 0, M_PI}, {200, -0.1, 0.1}}, false);
-    fRegistry.addClone("Pair/same/hDeltaPhivsPhiV_uls", "Pair/same/hDeltaPhivsPhiV_lspp");
-    fRegistry.addClone("Pair/same/hDeltaPhivsPhiV_uls", "Pair/same/hDeltaPhivsPhiV_lsmm");
-
     fRegistry.addClone("Pair/same/", "Pair/mix/");
 
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
@@ -395,27 +390,16 @@ struct DalitzEEQC {
     float dca_t2_3d = t2.dca3DinSigma();
     float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
     float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
-    float dphi = t1.phi() - t2.phi();
 
     if (t1.sign() * t2.sign() < 0) { // ULS
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_uls"), v12.M(), v12.Pt(), dca_ee_3d);
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hMvsPhiV_uls"), phiv, v12.M());
-      if (v12.M() < 0.03) {
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hDeltaPhivsPhiV_uls"), phiv, dphi);
-      }
-
     } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_lspp"), v12.M(), v12.Pt(), dca_ee_3d);
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hMvsPhiV_lspp"), phiv, v12.M());
-      if (v12.M() < 0.03) {
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hDeltaPhivsPhiV_lspp"), phiv, dphi);
-      }
     } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_lsmm"), v12.M(), v12.Pt(), dca_ee_3d);
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hMvsPhiV_lsmm"), phiv, v12.M());
-      if (v12.M() < 0.03) {
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hDeltaPhivsPhiV_lsmm"), phiv, dphi);
-      }
     }
 
     // store tracks for event mixing without double counting
