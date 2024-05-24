@@ -72,25 +72,27 @@ struct CFFillterPPPhi {
     false,
     "Evt sel: check for offline selection"};
 
-  Configurable<float> InvMassCutWidth{"InvMassCutWidth", 0.008, "Phi Inv Mass Cut Width (GeV)"};
+  Configurable<float> InvMassCutWidth{"InvMassCutWidth", 0.024, "Phi Inv Mass Cut Width (GeV)"};
 
   Configurable<float> Q3Max{"Q3Max", 1.f, "Max Q3"};
 
   /*track selection*/
 
-  Configurable<float> ConfTrkEta{"ConfTrkEta", 0.8, "Eta"};
-  Configurable<float> ConfTrkDCAxy{"ConfTrkDCAxy", 0.1, "DCAxy"};
-  Configurable<float> ConfTrkDCAz{"ConfTrkDCAz", 0.2, "DCAz"};
+  Configurable<float> ConfTrkEta{"ConfTrkEta", 0.85, "Eta"};            // 0.8
+  Configurable<float> ConfTrkDCAxy{"ConfTrkDCAxy", 0.15, "DCAxy"};      // 0.1
+  Configurable<float> ConfTrkDCAz{"ConfTrkDCAz", 0.3, "DCAz"};          // 0.2
+  Configurable<float> ConfNClus{"ConfNClus", 70, "NClusters"};          // 0.2
+  Configurable<float> ConfNCrossed{"ConfNCrossed", 65, "NCrossedRows"}; // 0.2
 
-  Configurable<float> ConfTrkPtPrUp{"ConfTrkPtPrUp", 4.0, "Pt_up proton"};
-  Configurable<float> ConfTrkPtPrDown{"ConfTrkPtPrDown", 0.5, "Pt_down proton"};
-  Configurable<float> ConfTrkPTPCPrThr{"ConfTrkPTPCPrThr", 0.75, "p_TPC,Thr proton"};
-  Configurable<float> ConfTrkPrSigmaPID{"ConfTrkPrSigmaPID", 3.00, "n_sigma proton"};
+  Configurable<float> ConfTrkPtPrUp{"ConfTrkPtPrUp", 6.0, "Pt_up proton"};            // 2.0
+  Configurable<float> ConfTrkPtPrDown{"ConfTrkPtPrDown", 0.35, "Pt_down proton"};     // 0.5
+  Configurable<float> ConfTrkPTPCPrThr{"ConfTrkPTPCPrThr", 0.8, "p_TPC,Thr proton"};  // 0.75
+  Configurable<float> ConfTrkPrSigmaPID{"ConfTrkPrSigmaPID", 3.50, "n_sigma proton"}; // 3.0
 
-  Configurable<float> ConfTrkPtKaUp{"ConfTrkPtKaUp", 4.0, "Pt_up kaon"};
-  Configurable<float> ConfTrkPtKaDown{"ConfTrkPtKaDown", 0.15, "Pt_down kaon"};
-  Configurable<float> ConfTrkPTPCKaThr{"ConfTrkPTPCKaThr", 0.40, "p_TPC,Thr kaon"};
-  Configurable<float> ConfTrkKaSigmaPID{"ConfTrkKaSigmaPID", 3.00, "n_sigma kaon"};
+  Configurable<float> ConfTrkPtKaUp{"ConfTrkPtKaUp", 6.0, "Pt_up kaon"};            // 2.0
+  Configurable<float> ConfTrkPtKaDown{"ConfTrkPtKaDown", 0.05, "Pt_down kaon"};     // 0.15
+  Configurable<float> ConfTrkPTPCKaThr{"ConfTrkPTPCKaThr", 0.40, "p_TPC,Thr kaon"}; // 0.4
+  Configurable<float> ConfTrkKaSigmaPID{"ConfTrkKaSigmaPID", 3.50, "n_sigma kaon"}; // 3.0
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -118,6 +120,8 @@ struct CFFillterPPPhi {
     registry.add("TrackCuts/Proton/fPProton", "Momentum of protons at PV;p (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/Proton/fPTPCProton", "Momentum of protons at PV;p (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/Proton/fPtProton", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    registry.add("TrackCuts/Proton/fMomCorProtonDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/Proton/fMomCorProtonRatio", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
     registry.add("TrackCuts/Proton/fEtaProton", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/Proton/fPhiProton", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/Proton/fDCAxyProton", "fDCAxy Proton;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
@@ -126,9 +130,16 @@ struct CFFillterPPPhi {
     registry.add("TrackCuts/Proton/fNsigmaTOFvsPProton", "NSigmaTOF Proton;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
     registry.add("TrackCuts/Proton/fNsigmaTPCTOFvsPProton", "NSigmaTPCTOF Proton;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
 
+    registry.add("TrackCuts/Proton/fTPCsClsProton", "fTPCsCls Proton;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/Proton/fTPCcRowsProton", "fTPCcRows Proton;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/Proton/fTrkTPCfClsProton", "fTrkTPCfCls Proton;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
+    registry.add("TrackCuts/Proton/fTPCnclsProton", "fTPCncls Proton;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+
     registry.add("TrackCuts/AntiProton/fPAntiProton", "Momentum of antiprotons at PV;p (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/AntiProton/fPTPCAntiProton", "Momentum of protons at PV;p (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/AntiProton/fPtAntiProton", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    registry.add("TrackCuts/AntiProton/fMomCorAntiProtonDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/AntiProton/fMomCorAntiProtonRatio", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
     registry.add("TrackCuts/AntiProton/fEtaAntiProton", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/AntiProton/fPhiAntiProton", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/AntiProton/fDCAxyAntiProton", "fDCAxy AntiProton;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
@@ -137,10 +148,17 @@ struct CFFillterPPPhi {
     registry.add("TrackCuts/AntiProton/fNsigmaTOFvsPAntiProton", "NSigmaTOF AntiProton;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
     registry.add("TrackCuts/AntiProton/fNsigmaTPCTOFvsPAntiProton", "NSigmaTPCTOF AntiProton;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
 
+    registry.add("TrackCuts/AntiProton/fTPCsClsAntiProton", "fTPCsCls AntiProton;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/AntiProton/fTPCcRowsAntiProton", "fTPCcRows AntiProton;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/AntiProton/fTrkTPCfClsAntiProton", "fTrkTPCfCls AntiProton;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
+    registry.add("TrackCuts/AntiProton/fTPCnclsAntiProton", "fTPCncls AntiProton;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+
     // kaon cuts
     registry.add("TrackCuts/Kaon/fPKaon", "Momentum of kaons at PV;p (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/Kaon/fPTPCKaon", "Momentum of protons at PV;p (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/Kaon/fPtKaon", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    registry.add("TrackCuts/Kaon/fMomCorKaonDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/Kaon/fMomCorKaonRatio", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
     registry.add("TrackCuts/Kaon/fEtaKaon", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/Kaon/fPhiKaon", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/Kaon/fDCAxyKaon", "fDCAxy Kaon;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
@@ -149,9 +167,16 @@ struct CFFillterPPPhi {
     registry.add("TrackCuts/Kaon/fNsigmaTOFvsPKaon", "NSigmaTOF Kaon;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
     registry.add("TrackCuts/Kaon/fNsigmaTPCTOFvsPKaon", "NSigmaTPCTOF Kaon;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
 
+    registry.add("TrackCuts/Kaon/fTPCsClsKaon", "fTPCsCls Kaon;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/Kaon/fTPCcRowsKaon", "fTPCcRows Kaon;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/Kaon/fTrkTPCfClsKaon", "fTrkTPCfCls Kaon;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
+    registry.add("TrackCuts/Kaon/fTPCnclsKaon", "fTPCncls Kaon;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+
     registry.add("TrackCuts/AntiKaon/fPAntiKaon", "Momentum of antikaons at PV;p (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/AntiKaon/fPTPCAntiKaon", "Momentum of protons at PV;p (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     registry.add("TrackCuts/AntiKaon/fPtAntiKaon", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    registry.add("TrackCuts/AntiKaon/fMomCorAntiKaonDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/AntiKaon/fMomCorAntiKaonRatio", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
     registry.add("TrackCuts/AntiKaon/fEtaAntiKaon", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
     registry.add("TrackCuts/AntiKaon/fPhiAntiKaon", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     registry.add("TrackCuts/AntiKaon/fDCAxyAntiKaon", "fDCAxy AntiKaon;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
@@ -159,6 +184,11 @@ struct CFFillterPPPhi {
     registry.add("TrackCuts/AntiKaon/fNsigmaTPCvsPAntiKaon", "NSigmaTPC AntiKaon;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
     registry.add("TrackCuts/AntiKaon/fNsigmaTOFvsPAntiKaon", "NSigmaTOF AntiKaon;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
     registry.add("TrackCuts/AntiKaon/fNsigmaTPCTOFvsPAntiKaon", "NSigmaTPCTOF AntiKaon;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
+
+    registry.add("TrackCuts/AntiKaon/fTPCsClsAntiKaon", "fTPCsCls AntiKaon;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/AntiKaon/fTPCcRowsAntiKaon", "fTPCcRows AntiKaon;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/AntiKaon/fTrkTPCfClsAntiKaon", "fTrkTPCfCls AntiKaon;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
+    registry.add("TrackCuts/AntiKaon/fTPCnclsAntiKaon", "fTPCncls AntiKaon;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
 
     // phi cuts
     registry.add("TrackCuts/Phi/fPtPhiBefore", "Transverse momentum V0s;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
@@ -206,7 +236,7 @@ struct CFFillterPPPhi {
   bool isSelectedTrackProton(T const& track)
   {
     bool isSelected = false;
-    if (track.pt() < ConfTrkPtPrUp.value && track.pt() > ConfTrkPtPrDown.value && std::abs(track.eta()) < ConfTrkEta.value && std::abs(track.dcaXY())<ConfTrkDCAxy.value && std::abs(track.dcaZ())<ConfTrkDCAz.value) {
+    if (track.pt() < ConfTrkPtPrUp.value && track.pt() > ConfTrkPtPrDown.value && std::abs(track.eta()) < ConfTrkEta.value && std::abs(track.dcaXY()) < ConfTrkDCAxy.value && std::abs(track.dcaZ()) < ConfTrkDCAz.value && track.tpcNClsCrossedRows() >= ConfNCrossed.value && track.tpcNClsFound() >= ConfNClus.value) {
       if (track.tpcInnerParam() < ConfTrkPTPCPrThr.value && std::abs(track.tpcNSigmaPr()) < ConfTrkPrSigmaPID.value) {
         isSelected = true;
       }
@@ -221,7 +251,7 @@ struct CFFillterPPPhi {
   bool isSelectedTrackKaon(T const& track)
   {
     bool isSelected = false;
-    if (track.pt() < ConfTrkPtKaUp.value && track.pt() > ConfTrkPtKaDown.value && std::abs(track.eta()) < ConfTrkEta.value  && std::abs(track.dcaXY())<ConfTrkDCAxy.value && std::abs(track.dcaZ())<ConfTrkDCAz.value) {
+    if (track.pt() < ConfTrkPtKaUp.value && track.pt() > ConfTrkPtKaDown.value && std::abs(track.eta()) < ConfTrkEta.value && std::abs(track.dcaXY()) < ConfTrkDCAxy.value && std::abs(track.dcaZ()) < ConfTrkDCAz.value && track.tpcNClsCrossedRows() >= ConfNCrossed.value && track.tpcNClsFound() >= ConfNClus.value) {
       if (track.tpcInnerParam() < ConfTrkPTPCKaThr.value && std::abs(track.tpcNSigmaKa()) < ConfTrkKaSigmaPID.value) {
         isSelected = true;
       }
@@ -346,6 +376,8 @@ struct CFFillterPPPhi {
             registry.fill(HIST("TrackCuts/Proton/fPProton"), track.p());
             registry.fill(HIST("TrackCuts/Proton/fPTPCProton"), track.tpcInnerParam());
             registry.fill(HIST("TrackCuts/Proton/fPtProton"), track.pt());
+            registry.fill(HIST("TrackCuts/Proton/fMomCorProtonDif"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/Proton/fMomCorProtonRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             registry.fill(HIST("TrackCuts/Proton/fEtaProton"), track.eta());
             registry.fill(HIST("TrackCuts/Proton/fPhiProton"), track.phi());
             registry.fill(HIST("TrackCuts/Proton/fNsigmaTPCvsPProton"), track.tpcInnerParam(), track.tpcNSigmaPr());
@@ -354,6 +386,10 @@ struct CFFillterPPPhi {
 
             registry.fill(HIST("TrackCuts/Proton/fDCAxyProton"), track.dcaXY());
             registry.fill(HIST("TrackCuts/Proton/fDCAzProton"), track.dcaZ());
+            registry.fill(HIST("TrackCuts/Proton/fTPCsClsProton"), track.tpcNClsShared());
+            registry.fill(HIST("TrackCuts/Proton/fTPCcRowsProton"), track.tpcNClsCrossedRows());
+            registry.fill(HIST("TrackCuts/Proton/fTrkTPCfClsProton"), track.tpcCrossedRowsOverFindableCls());
+            registry.fill(HIST("TrackCuts/Proton/fTPCnclsProton"), track.tpcNClsFound());
             // ProtonIndex.push_back(track.globalIndex());
           }
           if (track.sign() < 0) {
@@ -363,6 +399,8 @@ struct CFFillterPPPhi {
             registry.fill(HIST("TrackCuts/AntiProton/fPAntiProton"), track.p());
             registry.fill(HIST("TrackCuts/AntiProton/fPTPCAntiProton"), track.tpcInnerParam());
             registry.fill(HIST("TrackCuts/AntiProton/fPtAntiProton"), track.pt());
+            registry.fill(HIST("TrackCuts/AntiProton/fMomCorAntiProtonDif"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/AntiProton/fMomCorAntiProtonRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             registry.fill(HIST("TrackCuts/AntiProton/fEtaAntiProton"), track.eta());
             registry.fill(HIST("TrackCuts/AntiProton/fPhiAntiProton"), track.phi());
             registry.fill(HIST("TrackCuts/AntiProton/fNsigmaTPCvsPAntiProton"), track.tpcInnerParam(), track.tpcNSigmaPr());
@@ -371,6 +409,10 @@ struct CFFillterPPPhi {
 
             registry.fill(HIST("TrackCuts/AntiProton/fDCAxyAntiProton"), track.dcaXY());
             registry.fill(HIST("TrackCuts/AntiProton/fDCAzAntiProton"), track.dcaZ());
+            registry.fill(HIST("TrackCuts/AntiProton/fTPCsClsAntiProton"), track.tpcNClsShared());
+            registry.fill(HIST("TrackCuts/AntiProton/fTPCcRowsAntiProton"), track.tpcNClsCrossedRows());
+            registry.fill(HIST("TrackCuts/AntiProton/fTrkTPCfClsAntiProton"), track.tpcCrossedRowsOverFindableCls());
+            registry.fill(HIST("TrackCuts/AntiProton/fTPCnclsAntiProton"), track.tpcNClsFound());
             // AntiProtonIndex.push_back(track.globalIndex());
           }
         }
@@ -382,6 +424,8 @@ struct CFFillterPPPhi {
             registry.fill(HIST("TrackCuts/Kaon/fPKaon"), track.p());
             registry.fill(HIST("TrackCuts/Kaon/fPTPCKaon"), track.tpcInnerParam());
             registry.fill(HIST("TrackCuts/Kaon/fPtKaon"), track.pt());
+            registry.fill(HIST("TrackCuts/Kaon/fMomCorKaonDif"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/Kaon/fMomCorKaonRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             registry.fill(HIST("TrackCuts/Kaon/fEtaKaon"), track.eta());
             registry.fill(HIST("TrackCuts/Kaon/fPhiKaon"), track.phi());
             registry.fill(HIST("TrackCuts/Kaon/fNsigmaTPCvsPKaon"), track.tpcInnerParam(), track.tpcNSigmaKa());
@@ -390,6 +434,11 @@ struct CFFillterPPPhi {
 
             registry.fill(HIST("TrackCuts/Kaon/fDCAxyKaon"), track.dcaXY());
             registry.fill(HIST("TrackCuts/Kaon/fDCAzKaon"), track.dcaZ());
+
+            registry.fill(HIST("TrackCuts/Kaon/fTPCsClsKaon"), track.tpcNClsShared());
+            registry.fill(HIST("TrackCuts/Kaon/fTPCcRowsKaon"), track.tpcNClsCrossedRows());
+            registry.fill(HIST("TrackCuts/Kaon/fTrkTPCfClsKaon"), track.tpcCrossedRowsOverFindableCls());
+            registry.fill(HIST("TrackCuts/Kaon/fTPCnclsKaon"), track.tpcNClsFound());
             // KaonIndex.push_back(track.globalIndex());
           }
           if (track.sign() < 0) {
@@ -397,6 +446,8 @@ struct CFFillterPPPhi {
             registry.fill(HIST("TrackCuts/AntiKaon/fPAntiKaon"), track.p());
             registry.fill(HIST("TrackCuts/AntiKaon/fPTPCAntiKaon"), track.tpcInnerParam());
             registry.fill(HIST("TrackCuts/AntiKaon/fPtAntiKaon"), track.pt());
+            registry.fill(HIST("TrackCuts/AntiKaon/fMomCorAntiKaonDif"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/AntiKaon/fMomCorAntiKaonRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
             registry.fill(HIST("TrackCuts/AntiKaon/fEtaAntiKaon"), track.eta());
             registry.fill(HIST("TrackCuts/AntiKaon/fPhiAntiKaon"), track.phi());
             registry.fill(HIST("TrackCuts/AntiKaon/fNsigmaTPCvsPAntiKaon"), track.tpcInnerParam(), track.tpcNSigmaKa());
@@ -405,6 +456,10 @@ struct CFFillterPPPhi {
 
             registry.fill(HIST("TrackCuts/AntiKaon/fDCAxyAntiKaon"), track.dcaXY());
             registry.fill(HIST("TrackCuts/AntiKaon/fDCAzAntiKaon"), track.dcaZ());
+            registry.fill(HIST("TrackCuts/AntiKaon/fTPCsClsAntiKaon"), track.tpcNClsShared());
+            registry.fill(HIST("TrackCuts/AntiKaon/fTPCcRowsAntiKaon"), track.tpcNClsCrossedRows());
+            registry.fill(HIST("TrackCuts/AntiKaon/fTrkTPCfClsAntiKaon"), track.tpcCrossedRowsOverFindableCls());
+            registry.fill(HIST("TrackCuts/AntiKaon/fTPCnclsAntiKaon"), track.tpcNClsFound());
             // AntiKaonIndex.push_back(track.globalIndex());
           }
         }
