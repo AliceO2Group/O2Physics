@@ -119,13 +119,13 @@ struct chargedKstarpp {
   Configurable<float> ConfDaughDCAMin{
     "ConfDaughDCAMin", 0.06f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
   Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 5,
-                                       "PID selections for KS0 daughters"};	//In run2 this is 5 for pp collisions
+                                       "PID selections for KS0 daughters"}; // In run2 this is 5 for pp collisions
 
   // Configurables for track selections
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2f, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 0.5f,
-                                  "DCAxy range for tracks"};	//need to change in in Run 2 we have 7sigma cut on DCAxy for primaries
+                                  "DCAxy range for tracks"}; // need to change in in Run 2 we have 7sigma cut on DCAxy for primaries
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0,
                                    "Value of the TPC Nsigma cut"};
@@ -137,7 +137,7 @@ struct chargedKstarpp {
   Configurable<bool> cfgCentFT0C{"cfgCentFT0C", true, "cfgCentFT0C"};
   Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "iscustomDCAcut"};
   Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};	//In Run2 we require at least ITS cluster
+  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"}; // In Run2 we require at least ITS cluster
   ConfigurableAxis cMixMultBins{"cMixMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "Mixing bins - multiplicity"};
   Configurable<bool> isMC{"isMC", true, "Run MC"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
@@ -196,7 +196,7 @@ struct chargedKstarpp {
     // CKStar histograms
     histos.add("h3CKSInvMassUnlikeSign",
                "Invariant mass of CKS meson Unlike Sign", kTHnSparseF,
-               {{200, 0.0f, 20.0f}, {90, 0.6, 1.5}}, true);	//THn Sparse to store the mass and momentum of particle
+               {{200, 0.0f, 20.0f}, {90, 0.6, 1.5}}, true); // THn Sparse to store the mass and momentum of particle
     histos.add("h3CKSInvMassMixed", "Invariant mass of CKS meson Mixed",
                kTHnSparseF,
                {{200, 0.0f, 20.0f}, {90, 0.6, 1.5}}, true);
@@ -208,7 +208,6 @@ struct chargedKstarpp {
       rGenParticles.add("hCKSGen", "hCKSGen", {HistType::kTH1F, {{ptAxis}}});
       rRecParticles.add("hCKSRec", "hCKSRec", {HistType::kTH1F, {{ptAxis}}});
     }
-
   }
 
   double massPi = TDatabasePDG::Instance()
@@ -413,7 +412,7 @@ struct chargedKstarpp {
   ConfigurableAxis axisMultiplicity{
     "axisMultiplicity",
     {2, 0, 100},
-    "TPC multiplicity  for bin"};	//Mixing scheme
+    "TPC multiplicity  for bin"}; // Mixing scheme
 
   using BinningTypeTPCMultiplicity =
     ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
@@ -431,8 +430,8 @@ struct chargedKstarpp {
     pair{binningOnPositions, cfgNoMixedEvents, -1, &cache};
 
   void processDataSE(EventCandidates::iterator const& collision,
-                 TrackCandidates const& tracks, aod::V0Datas const& V0s,
-                 aod::BCs const&)
+                     TrackCandidates const& tracks, aod::V0Datas const& V0s,
+                     aod::BCs const&)
 
   {
 
@@ -440,7 +439,7 @@ struct chargedKstarpp {
       return;
     }
 
-    TLorentzVector pions, kshort,chargedkstar;
+    TLorentzVector pions, kshort, chargedkstar;
 
     float multiplicity = 0.0f;
     multiplicity = collision.centFT0M();
@@ -466,7 +465,7 @@ struct chargedKstarpp {
         continue;
       }
 
-      //To store the QA plots after event slection
+      // To store the QA plots after event slection
       if (QAafter) {
         histos.fill(HIST("hEta_after"), track1.eta());
         histos.fill(HIST("hDcaxy_after"), track1.dcaXY());
@@ -478,37 +477,39 @@ struct chargedKstarpp {
       auto PionIndex = track1.globalIndex();
 
       auto PionSign = track1.sign();
-      if(PionSign ==0) continue;	//TO skip the neutral pions
-// Let try to make the combination of the pions with the selected v0's say the kshort
+      if (PionSign == 0)
+        continue; // TO skip the neutral pions
+      // Let try to make the combination of the pions with the selected v0's say the kshort
 
-    for (auto& v0 : V0s) {
-    	auto postrack = v0.template posTrack_as<TrackCandidates>();
-	auto negtrack = v0.template negTrack_as<TrackCandidates>();
-	double nTPCSigmaPos[1]{postrack.tpcNSigmaPi()};
-	double nTPCSigmaNeg[1]{negtrack.tpcNSigmaPi()};
-	if (!isSelectedV0Daughter(postrack, 1, nTPCSigmaPos[0])) {
-        continue;
+      for (auto& v0 : V0s) {
+        auto postrack = v0.template posTrack_as<TrackCandidates>();
+        auto negtrack = v0.template negTrack_as<TrackCandidates>();
+        double nTPCSigmaPos[1]{postrack.tpcNSigmaPi()};
+        double nTPCSigmaNeg[1]{negtrack.tpcNSigmaPi()};
+        if (!isSelectedV0Daughter(postrack, 1, nTPCSigmaPos[0])) {
+          continue;
         }
         if (!isSelectedV0Daughter(negtrack, -1, nTPCSigmaNeg[0])) {
-        continue;
-        } 
-   	if (!SelectionV0(collision, v0, multiplicity)) {
-        continue;
-        } 
-	if(PionIndex == postrack.globalIndex() || PionIndex == negtrack.globalIndex()) continue; // To avoid combining the primary and secondary pions
-	//If everything is fine then we storing the informations
-	
-        pions.SetXYZM(track1.px(),track1.py(),track1.pz(),massPi);
-        kshort.SetXYZM(v0.px(),v0.py(),v0.pz(),massK0s);
-	chargedkstar = pions + kshort;
+          continue;
+        }
+        if (!SelectionV0(collision, v0, multiplicity)) {
+          continue;
+        }
+        if (PionIndex == postrack.globalIndex() || PionIndex == negtrack.globalIndex())
+          continue; // To avoid combining the primary and secondary pions
+                    // If everything is fine then we storing the informations
+
+        pions.SetXYZM(track1.px(), track1.py(), track1.pz(), massPi);
+        kshort.SetXYZM(v0.px(), v0.py(), v0.pz(), massK0s);
+        chargedkstar = pions + kshort;
         if (TMath::Abs(chargedkstar.Rapidity()) < 0.5) {
-            histos.fill(HIST("h3CKSInvMassUnlikeSign"),
-                        chargedkstar.Pt(), chargedkstar.M());
+          histos.fill(HIST("h3CKSInvMassUnlikeSign"),
+                      chargedkstar.Pt(), chargedkstar.M());
         }
 
-    } // v02 loop ends
+      } // v02 loop ends
 
-   }  //tracks loop ends
+    } // tracks loop ends
   }
 
   PROCESS_SWITCH(chargedKstarpp, processDataSE, "Process Same event", true);
@@ -526,7 +527,7 @@ struct chargedKstarpp {
       if (!c2.sel8()) {
         continue;
       }
-//      auto multiplicity = c1.centFT0M();
+      //      auto multiplicity = c1.centFT0M();
       auto mulitiplicity2 = c2.centFT0M();
 
       if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
@@ -545,7 +546,7 @@ struct chargedKstarpp {
 
         if (!SelectionV0(c2, t2, mulitiplicity2))
           continue;
-// To select the Kshort
+        // To select the Kshort
         auto postrack = t2.template posTrack_as<TrackCandidates>();
         auto negtrack = t2.template negTrack_as<TrackCandidates>();
         double nTPCSigmaPos[1]{postrack.tpcNSigmaPi()};
@@ -574,7 +575,6 @@ struct chargedKstarpp {
   }
 
   PROCESS_SWITCH(chargedKstarpp, processME, "Process Mixed event", true);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
