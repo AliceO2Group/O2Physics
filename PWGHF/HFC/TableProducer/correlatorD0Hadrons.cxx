@@ -571,7 +571,7 @@ struct HfCorrelatorD0Hadrons {
         }
 
         registry.fill(HIST("hTrackCounterRec"), 3); // fill no. of tracks after soft pion removal
-        
+
         if (correlateD0WithLeadingParticle) {
           if (track.globalIndex() != leadingIndex) {
             continue;
@@ -681,7 +681,7 @@ struct HfCorrelatorD0Hadrons {
         using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
         BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBinsMcGen}, true};
         int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), getTracksSize(mcCollision)));
-        
+
         bool correlationStatus = false;
         entryD0HadronPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                           particle2.eta() - particle1.eta(),
@@ -752,7 +752,7 @@ struct HfCorrelatorD0Hadrons {
           }
         }
         bool correlationStatus = false;
-        entryD0HadronPair(getDeltaPhi(t1.phi(), t2.phi()), t1.eta() - t2.eta(), t1.pt(), t2.pt(), poolBin,correlationStatus);
+        entryD0HadronPair(getDeltaPhi(t1.phi(), t2.phi()), t1.eta() - t2.eta(), t1.pt(), t2.pt(), poolBin, correlationStatus);
         entryD0HadronRecoInfo(hfHelper.invMassD0ToPiK(t1), hfHelper.invMassD0barToKPi(t1), signalStatus);
       }
     }
@@ -851,9 +851,9 @@ struct HfCorrelatorD0Hadrons {
             SETBIT(signalStatus, aod::hf_correlation_d0_hadron::ParticleTypeMcRec::SoftPi);
           }
         } // background case D0bar
-        bool correlationStatus = false;
         registry.fill(HIST("hSignalStatusMERec"), signalStatus);
-        entryD0HadronPair(getDeltaPhi(t1.phi(), t2.phi()), t1.eta() - t2.eta(), t1.pt(), t2.pt(), poolBin,correlationStatus);
+        bool correlationStatus = false;
+        entryD0HadronPair(getDeltaPhi(t1.phi(), t2.phi()), t1.eta() - t2.eta(), t1.pt(), t2.pt(), poolBin, correlationStatus);
         entryD0HadronRecoInfo(hfHelper.invMassD0ToPiK(t1), hfHelper.invMassD0barToKPi(t1), signalStatus);
       }
     }
