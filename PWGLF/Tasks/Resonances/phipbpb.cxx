@@ -666,6 +666,7 @@ struct phipbpb {
       if (timFrameEvsel && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
+      int occupancy = collision1.trackOccupancyInTimeRange();
       auto centrality = collision1.centFT0C();
       auto centrality2 = collision2.centFT0C();
       auto psiFT0C = collision1.psiFT0C();
@@ -735,7 +736,7 @@ struct phipbpb {
           histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
           histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
           histos.fill(HIST("hSparseV2SAMixedEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
-          histos.fill(HIST("hSparseV2SAMixedEvent_SP"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_SP"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality, occupancy);
         }
         if (fillRapidity) {
           histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
