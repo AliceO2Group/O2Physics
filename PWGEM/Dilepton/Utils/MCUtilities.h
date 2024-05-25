@@ -272,7 +272,7 @@ int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
           return -1;
         }
         quark_id = i;
-      } else if ((int(abs(mpdg) / 100) == pdg || int(abs(mpdg) / 1000) == pdg) && mpdg * p.pdgCode() > 0) { // check for other mothers with flavour content
+      } else if ((static_cast<int>(abs(mpdg) / 100) == pdg || static_cast<int>(abs(mpdg) / 1000) == pdg) && mpdg * p.pdgCode() > 0) { // check for other mothers with flavour content
         if (quark_id > -1 || next_mother_id > -1) {                                                         // we already found a possible candidate in the list of mothers, so now we have (at least) two
           // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
           return -1;
