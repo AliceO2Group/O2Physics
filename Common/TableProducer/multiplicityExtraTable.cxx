@@ -49,7 +49,7 @@ struct MultiplicityExtraTable {
 
   void init(InitContext&)
   {
-    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>  (std::chrono::system_clock::now().time_since_epoch()).count());
+    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setURL("http://alice-ccdb.cern.ch");
