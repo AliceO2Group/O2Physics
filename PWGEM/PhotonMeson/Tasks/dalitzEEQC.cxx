@@ -74,6 +74,8 @@ struct DalitzEEQC {
   Configurable<bool> cfg_apply_pf{"cfg_apply_pf", false, "flag to apply phiv prefilter"};
   Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", true, "flag to require ITS ib any hits"};
   Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
+  Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
+  Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"};
 
   Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
   Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", 0.9, "max eta for single track"};
@@ -266,7 +268,7 @@ struct DalitzEEQC {
 
     // for pair
     fDielectronCut.SetMeeRange(cfg_min_mee, cfg_max_mee);
-    fDielectronCut.SetMaxPhivPairMeeDep([](float mee) { return (mee - -0.028) / 0.0185; });
+    fDielectronCut.SetMaxPhivPairMeeDep([&](float mee) { return (mee - cfg_phiv_intercept) / cfg_phiv_slope; });
     fDielectronCut.SetPairDCARange(cfg_min_pair_dca3d, cfg_max_pair_dca3d); // in sigma
     fDielectronCut.ApplyPhiV(cfg_apply_phiv);
     fDielectronCut.ApplyPrefilter(cfg_apply_pf);
@@ -404,23 +406,23 @@ struct DalitzEEQC {
     if constexpr (ev_id == 0) {
       if (t1.sign() > 0) {
         if (std::find(used_trackIds.begin(), used_trackIds.end(), std::make_pair(ndf, t1.trackId())) == used_trackIds.end()) {
-          map_posTracks_to_collision[std::make_pair(ndf, collision.globalIndex())].emplace_back(EMTrack(collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), t1.sign(), t1.dca3DinSigma()));
+          map_posTracks_to_collision[std::make_pair(ndf, collision.globalIndex())].emplace_back(EMTrack(collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron, t1.sign(), t1.dca3DinSigma()));
           used_trackIds.emplace_back(std::make_pair(ndf, t1.trackId()));
         }
       } else {
         if (std::find(used_trackIds.begin(), used_trackIds.end(), std::make_pair(ndf, t1.trackId())) == used_trackIds.end()) {
-          map_negTracks_to_collision[std::make_pair(ndf, collision.globalIndex())].emplace_back(EMTrack(collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), t1.sign(), t1.dca3DinSigma()));
+          map_negTracks_to_collision[std::make_pair(ndf, collision.globalIndex())].emplace_back(EMTrack(collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron, t1.sign(), t1.dca3DinSigma()));
           used_trackIds.emplace_back(std::make_pair(ndf, t1.trackId()));
         }
       }
       if (t2.sign() > 0) {
         if (std::find(used_trackIds.begin(), used_trackIds.end(), std::make_pair(ndf, t2.trackId())) == used_trackIds.end()) {
-          map_posTracks_to_collision[std::make_pair(ndf, collision.globalIndex())].emplace_back(EMTrack(collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), t2.dca3DinSigma()));
+          map_posTracks_to_collision[std::make_pair(ndf, collision.globalIndex())].emplace_back(EMTrack(collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron, t2.sign(), t2.dca3DinSigma()));
           used_trackIds.emplace_back(std::make_pair(ndf, t2.trackId()));
         }
       } else {
         if (std::find(used_trackIds.begin(), used_trackIds.end(), std::make_pair(ndf, t2.trackId())) == used_trackIds.end()) {
-          map_negTracks_to_collision[std::make_pair(ndf, collision.globalIndex())].emplace_back(EMTrack(collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), t2.dca3DinSigma()));
+          map_negTracks_to_collision[std::make_pair(ndf, collision.globalIndex())].emplace_back(EMTrack(collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron, t2.sign(), t2.dca3DinSigma()));
           used_trackIds.emplace_back(std::make_pair(ndf, t2.trackId()));
         }
       }
@@ -539,7 +541,7 @@ struct DalitzEEQC {
         }
       }
 
-      if (!cfgDoMix) {
+      if (!cfgDoMix || !(nuls > 0 || nlspp > 0 || nlsmm > 0)) {
         continue;
       }
 
