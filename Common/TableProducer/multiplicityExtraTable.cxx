@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <bitset>
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -22,7 +23,6 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
-#include <bitset>
 
 using namespace o2;
 using namespace o2::framework;
