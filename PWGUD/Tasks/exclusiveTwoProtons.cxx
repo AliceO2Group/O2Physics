@@ -367,15 +367,15 @@ struct ExclusiveTwoProtons {
         registry.fill(HIST("PP/hMassUnlike"), resonance.M());
         registry.fill(HIST("PP/hRapidity"), resonance.Rapidity());
         if (resonance.Pt() < 0.15) {
-        //   registry.fill(HIST("PP/hCoherentMassWithoutDCAcuts"), resonance.M());
-        //   if (dcaZbool == 1) {
-        //     registry.fill(HIST("PP/hCoherentMassWithoutDCAxycut"), resonance.M());
-        //   }
-        //   if (dcaXYbool == 1) {
-        //     registry.fill(HIST("PP/hCoherentMassWithoutDCAzcut"), resonance.M());
-        //   }
-        // }
-        // if (resonance.Pt() < 0.15 && dcaZbool == 1 && dcaXYbool == 1) {
+          //   registry.fill(HIST("PP/hCoherentMassWithoutDCAcuts"), resonance.M());
+          //   if (dcaZbool == 1) {
+          //     registry.fill(HIST("PP/hCoherentMassWithoutDCAxycut"), resonance.M());
+          //   }
+          //   if (dcaXYbool == 1) {
+          //     registry.fill(HIST("PP/hCoherentMassWithoutDCAzcut"), resonance.M());
+          //   }
+          // }
+          // if (resonance.Pt() < 0.15 && dcaZbool == 1 && dcaXYbool == 1) {
           registry.fill(HIST("PP/hCoherentMass"), resonance.M());
           if (resonance.M() < 3.0) {
             registry.fill(HIST("PP/hAngularDstribLab"), a.Phi() + TMath::Pi(), a.CosTheta());
@@ -400,7 +400,7 @@ struct ExclusiveTwoProtons {
           }
         }
         // outside the hard pT cut, but with opposite charges
-        dcaZbool = 1; 
+        dcaZbool = 1;
         dcaXYbool = 1;
         if (dcaZbool == 1 && dcaXYbool == 1) {
           if (resonance.M() > 2.4 && resonance.M() < 2.75) {
