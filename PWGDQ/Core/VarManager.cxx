@@ -29,6 +29,11 @@ TString VarManager::fgRunStr = "";
 std::vector<int> VarManager::fgRunList = {0};
 float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
 float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
+float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
+int VarManager::fgITSROFbias = 0;
+int VarManager::fgITSROFlength = 100;
+int VarManager::fgITSROFBorderMarginLow = 0;
+int VarManager::fgITSROFBorderMarginHigh = 0;
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
@@ -56,29 +61,32 @@ void VarManager::SetVariableDependencies()
   // Set as used variables on which other variables calculation depends
   //
   if (fgUsedVars[kP]) {
-    fgUsedVars[kPt] = kTRUE;
-    fgUsedVars[kEta] = kTRUE;
+    fgUsedVars[kPt] = true;
+    fgUsedVars[kEta] = true;
   }
 
   if (fgUsedVars[kVertexingLxyOverErr]) {
-    fgUsedVars[kVertexingLxy] = kTRUE;
-    fgUsedVars[kVertexingLxyErr] = kTRUE;
+    fgUsedVars[kVertexingLxy] = true;
+    fgUsedVars[kVertexingLxyErr] = true;
   }
   if (fgUsedVars[kVertexingLzOverErr]) {
-    fgUsedVars[kVertexingLz] = kTRUE;
-    fgUsedVars[kVertexingLzErr] = kTRUE;
+    fgUsedVars[kVertexingLz] = true;
+    fgUsedVars[kVertexingLzErr] = true;
   }
   if (fgUsedVars[kVertexingLxyzOverErr]) {
-    fgUsedVars[kVertexingLxyz] = kTRUE;
-    fgUsedVars[kVertexingLxyzErr] = kTRUE;
+    fgUsedVars[kVertexingLxyz] = true;
+    fgUsedVars[kVertexingLxyzErr] = true;
   }
   if (fgUsedVars[kKFTracksDCAxyzMax]) {
-    fgUsedVars[kKFTrack0DCAxyz] = kTRUE;
-    fgUsedVars[kKFTrack1DCAxyz] = kTRUE;
+    fgUsedVars[kKFTrack0DCAxyz] = true;
+    fgUsedVars[kKFTrack1DCAxyz] = true;
   }
   if (fgUsedVars[kKFTracksDCAxyMax]) {
-    fgUsedVars[kKFTrack0DCAxy] = kTRUE;
-    fgUsedVars[kKFTrack1DCAxy] = kTRUE;
+    fgUsedVars[kKFTrack0DCAxy] = true;
+    fgUsedVars[kKFTrack1DCAxy] = true;
+  }
+  if (fgUsedVars[kTrackIsInsideTPCModule]) {
+    fgUsedVars[kPhiTPCOuter] = true;
   }
 }
 
@@ -122,45 +130,6 @@ void VarManager::SetRunNumbers(std::vector<int> runs)
   fgRunList = runs;
 }
 
-//__________________________________________________________________
-void VarManager::SetRunlist(TString period)
-{
-  //
-  // runlist for the different periods
-  // TODO: add more periods
-  std::vector<int> LHC22f = {520259, 520294, 520471, 520472, 520473};
-  std::vector<int> LHC22m = {523141, 523142, 523148, 523182, 523186, 523298, 523306, 523308, 523309, 523397, 523399, 523401, 523441, 523541, 523559, 523669, 523671, 523677, 523728, 523731, 523779, 523783, 523786, 523788, 523789, 523792, 523797, 523821, 523897};
-  std::vector<int> LHC22o = {526463, 526465, 526466, 526467, 526468, 526486, 526505, 526508, 526510, 526512, 526525, 526526, 526528, 526534, 526559, 526596, 526606, 526612, 526638, 526639, 526641, 526643, 526647, 526649, 526689, 526712, 526713, 526714, 526715, 526776, 526865, 526886, 526926, 526927, 526928, 526929, 526934, 526935, 526937, 526966, 526968, 527015, 527109, 527228, 527237, 527240, 527259, 527260, 527261, 527262, 527345, 527347, 527349, 527446, 527518, 527522, 527523, 527799, 527821, 527825, 527826, 527828, 527848, 527850, 527852, 527863, 527864, 527865, 527869, 527871, 527895, 527898, 527899, 527902, 527963, 527976, 527978, 527979, 528021, 528026, 528036, 528093, 528094, 528097, 528105, 528107, 528109, 528110, 528231, 528232, 528233, 528263, 528266, 528292, 528294, 528316, 528319, 528328, 528329, 528330, 528332, 528336, 528347, 528359, 528379, 528381, 528386, 528448, 528451, 528461, 528463, 528529, 528530, 528531, 528534, 528537, 528543};
-  std::vector<int> LHC22p = {528602, 528604, 528617, 528781, 528782, 528783, 528784, 528798, 528801};
-  std::vector<int> LHC22q = {528991, 528997, 529003, 529005, 529006, 529009, 529015, 529035, 529037, 529038, 529039, 529043};
-  std::vector<int> LHC22r = {529066, 529067, 529077, 529078, 529084, 529088, 529115, 529116, 529117, 529128, 529129, 529208, 529209, 529210, 529211, 529235, 529237, 529242, 529248, 529252, 529270, 529306, 529310, 529317, 529320, 529324, 529337, 529338, 529341};
-  std::vector<int> LHC22s = {529397, 529399, 529403, 529414, 529418};
-  std::vector<int> LHC22t = {529450, 529452, 529454, 529458, 529460, 529461, 529462, 529542, 529552, 529554, 529610, 529662, 529663, 529664, 529674, 529675, 529690, 529691};
-  if (period.Contains("LHC22f")) {
-    SetRunNumbers(LHC22f);
-  }
-  if (period.Contains("LHC22q")) {
-    SetRunNumbers(LHC22q);
-  }
-  if (period.Contains("LHC22m")) {
-    SetRunNumbers(LHC22m);
-  }
-  if (period.Contains("LHC22o")) {
-    SetRunNumbers(LHC22o);
-  }
-  if (period.Contains("LHC22p")) {
-    SetRunNumbers(LHC22p);
-  }
-  if (period.Contains("LHC22r")) {
-    SetRunNumbers(LHC22r);
-  }
-  if (period.Contains("LHC22s")) {
-    SetRunNumbers(LHC22s);
-  }
-  if (period.Contains("LHC22t")) {
-    SetRunNumbers(LHC22t);
-  }
-}
 //__________________________________________________________________
 void VarManager::SetDummyRunlist(int InitRunnumber)
 {
@@ -309,6 +278,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultZNC] = "";
   fgVariableNames[kMultTracklets] = "Multiplicity Tracklets";
   fgVariableUnits[kMultTracklets] = "";
+  fgVariableNames[kMultDimuons] = "Multiplicity Dimuons Unlike Sign";
+  fgVariableUnits[kMultDimuons] = "";
   fgVariableNames[kCentFT0C] = "Centrality FT0C";
   fgVariableUnits[kCentFT0C] = "%";
   fgVariableNames[kMCEventGeneratorId] = "MC Generator ID";
@@ -325,6 +296,42 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCEventTime] = ""; // TODO: add proper unit
   fgVariableUnits[kMCEventWeight] = "";
   fgVariableUnits[kMCEventImpParam] = "b";
+  fgVariableNames[kTwoEvPosZ1] = "vtx-z_{1}";
+  fgVariableUnits[kTwoEvPosZ1] = "cm";
+  fgVariableNames[kTwoEvPosZ2] = "vtx-z_{2}";
+  fgVariableUnits[kTwoEvPosZ2] = "cm";
+  fgVariableNames[kTwoEvPosR1] = "vtx-R_{1}";
+  fgVariableUnits[kTwoEvPosR1] = "cm";
+  fgVariableNames[kTwoEvPosR2] = "vtx-R_{2}";
+  fgVariableUnits[kTwoEvPosR2] = "cm";
+  fgVariableNames[kTwoEvDeltaZ] = "#Delta_{z}";
+  fgVariableUnits[kTwoEvDeltaZ] = "cm";
+  fgVariableNames[kTwoEvDeltaR] = "#Delta_{R}";
+  fgVariableUnits[kTwoEvDeltaR] = "cm";
+  fgVariableNames[kTwoEvDeltaX] = "#Delta_{x}";
+  fgVariableUnits[kTwoEvDeltaX] = "cm";
+  fgVariableNames[kTwoEvDeltaY] = "#Delta_{y}";
+  fgVariableUnits[kTwoEvDeltaY] = "cm";
+  fgVariableNames[kTwoEvPVcontrib1] = "n.contrib 1";
+  fgVariableUnits[kTwoEvPVcontrib1] = "";
+  fgVariableNames[kTwoEvPVcontrib2] = "n.contrib 2";
+  fgVariableUnits[kTwoEvPVcontrib2] = "";
+  fgVariableNames[kEnergyCommonZNA] = "ZNA common energy";
+  fgVariableUnits[kEnergyCommonZNA] = "";
+  fgVariableNames[kEnergyCommonZNC] = "ZNA common energy";
+  fgVariableUnits[kEnergyCommonZNC] = "";
+  fgVariableNames[kEnergyCommonZPA] = "ZPA common energy";
+  fgVariableUnits[kEnergyCommonZPA] = "";
+  fgVariableNames[kEnergyCommonZPC] = "ZPC common energy";
+  fgVariableUnits[kEnergyCommonZPC] = "";
+  fgVariableNames[kTimeZNA] = "ZNA time";
+  fgVariableUnits[kTimeZNA] = "";
+  fgVariableNames[kTimeZNC] = "ZNC time";
+  fgVariableUnits[kTimeZNC] = "";
+  fgVariableNames[kTimeZPA] = "ZPA time";
+  fgVariableUnits[kTimeZPA] = "";
+  fgVariableNames[kTimeZPC] = "ZPC time";
+  fgVariableUnits[kTimeZPC] = "";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kInvPt] = "1/p_{T}";
@@ -388,6 +395,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCchi2] = "";
   fgVariableNames[kTPCsignal] = "TPC dE/dx";
   fgVariableUnits[kTPCsignal] = "";
+  fgVariableNames[kPhiTPCOuter] = "#varphi_{TPCout}";
+  fgVariableUnits[kPhiTPCOuter] = "rad.";
+  fgVariableNames[kTrackIsInsideTPCModule] = "Track is in TPC module";
+  fgVariableUnits[kTrackIsInsideTPCModule] = "";
   fgVariableNames[kTRDsignal] = "TRD dE/dx";
   fgVariableUnits[kTRDsignal] = "";
   fgVariableNames[kTOFbeta] = "TOF #beta";
@@ -526,6 +537,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingTauxy] = "ns";
   fgVariableNames[kVertexingTauzErr] = "Pair pseudo-proper Tauz err.";
   fgVariableUnits[kVertexingTauzErr] = "ns";
+  fgVariableNames[kVertexingLxyProjected] = "Pair Lxy";
+  fgVariableUnits[kVertexingLxyProjected] = "cm";
+  fgVariableNames[kVertexingLzProjected] = "Pair Lz";
+  fgVariableUnits[kVertexingLzProjected] = "cm";
+  fgVariableNames[kVertexingLxyzProjected] = "Pair Lxyz";
+  fgVariableUnits[kVertexingLxyzProjected] = "cm";
+  fgVariableNames[kVertexingTauzProjected] = "Pair pseudo-proper Tauz";
+  fgVariableUnits[kVertexingTauzProjected] = "ns";
+  fgVariableNames[kVertexingTauxyProjected] = "Pair pseudo-proper Tauxy";
+  fgVariableUnits[kVertexingTauxyProjected] = "ns";
+  fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper Tauxyz";
+  fgVariableUnits[kVertexingTauxyzProjected] = "ns";
   fgVariableNames[kVertexingPz] = "Pz Pair";
   fgVariableUnits[kVertexingPz] = "GeV/c";
   fgVariableNames[kVertexingSV] = "Secondary Vertexing z";
@@ -588,6 +611,30 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQ2X0C] = "";
   fgVariableNames[kQ2Y0C] = "Q_{2,y}^{C} ";
   fgVariableUnits[kQ2Y0C] = "";
+  fgVariableNames[kQ2YYAB] = "<Q_{2,y}^{A}*Q_{2,y}^{B}> ";
+  fgVariableUnits[kQ2YYAB] = "";
+  fgVariableNames[kQ2XXAB] = "<Q_{2,x}^{A}*Q_{2,x}^{B}> ";
+  fgVariableUnits[kQ2XXAB] = "";
+  fgVariableNames[kQ2XYAB] = "<Q_{2,x}^{A}*Q_{2,y}^{B}> ";
+  fgVariableUnits[kQ2XYAB] = "";
+  fgVariableNames[kQ2YXAB] = "<Q_{2,y}^{A}*Q_{2,x}^{B}> ";
+  fgVariableUnits[kQ2YXAB] = "";
+  fgVariableNames[kQ2YYAC] = "<Q_{2,y}^{A}*Q_{2,y}^{C}> ";
+  fgVariableUnits[kQ2YYAC] = "";
+  fgVariableNames[kQ2XXAC] = "<Q_{2,x}^{A}*Q_{2,x}^{C}> ";
+  fgVariableUnits[kQ2XXAC] = "";
+  fgVariableNames[kQ2XYAC] = "<Q_{2,x}^{A}*Q_{2,y}^{C}> ";
+  fgVariableUnits[kQ2XYAC] = "";
+  fgVariableNames[kQ2YXAC] = "<Q_{2,y}^{A}*Q_{2,x}^{C}> ";
+  fgVariableUnits[kQ2YXAC] = "";
+  fgVariableNames[kQ2YYBC] = "<Q_{2,y}^{B}*Q_{2,y}^{C}> ";
+  fgVariableUnits[kQ2YYBC] = "";
+  fgVariableNames[kQ2XXBC] = "<Q_{2,x}^{B}*Q_{2,x}^{C}> ";
+  fgVariableUnits[kQ2XXBC] = "";
+  fgVariableNames[kQ2XYBC] = "<Q_{2,x}^{B}*Q_{2,y}^{C}> ";
+  fgVariableUnits[kQ2XYBC] = "";
+  fgVariableNames[kQ2YXBC] = "<Q_{2,y}^{B}*Q_{2,x}^{C}> ";
+  fgVariableUnits[kQ2YXBC] = "";
   fgVariableNames[kMultA] = "N_{ch}^{A} ";
   fgVariableUnits[kMultA] = "";
   fgVariableNames[kMultB] = "N_{ch}^{B} ";
@@ -606,22 +653,60 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQ3X0C] = "";
   fgVariableNames[kQ3Y0C] = "Q_{3,y}^{C} ";
   fgVariableUnits[kQ3Y0C] = "";
-  fgVariableNames[kQ4X0A] = "Q_{1,x}^{A} ";
+  fgVariableNames[kQ4X0A] = "Q_{4,x}^{A} ";
   fgVariableUnits[kQ4X0A] = "";
-  fgVariableNames[kQ4Y0A] = "Q_{1,y}^{A} ";
+  fgVariableNames[kQ4Y0A] = "Q_{4,y}^{A} ";
   fgVariableUnits[kQ4Y0A] = "";
-  fgVariableNames[kQ4X0B] = "Q_{1,x}^{B} ";
+  fgVariableNames[kQ4X0B] = "Q_{4,x}^{B} ";
   fgVariableUnits[kQ4X0B] = "";
-  fgVariableNames[kQ4Y0B] = "Q_{1,y}^{B} ";
+  fgVariableNames[kQ4Y0B] = "Q_{4,y}^{B} ";
   fgVariableUnits[kQ4Y0B] = "";
-  fgVariableNames[kQ4X0C] = "Q_{1,x}^{C} ";
+  fgVariableNames[kQ4X0C] = "Q_{4,x}^{C} ";
   fgVariableUnits[kQ4X0C] = "";
-  fgVariableNames[kQ4Y0C] = "Q_{1,y}^{C} ";
+  fgVariableNames[kQ4Y0C] = "Q_{4,y}^{C} ";
   fgVariableUnits[kQ4Y0C] = "";
   fgVariableNames[kU2Q2] = "u_{2}Q_{2}^{A} ";
   fgVariableUnits[kU2Q2] = "";
   fgVariableNames[kU3Q3] = "u_{3}Q_{3}^{A} ";
   fgVariableUnits[kU3Q3] = "";
+  fgVariableNames[kQ42XA] = "Q_{42,x}^{A} ";
+  fgVariableUnits[kQ42XA] = "";
+  fgVariableNames[kQ42YA] = "Q_{42,y}^{A} ";
+  fgVariableUnits[kQ42YA] = "";
+  fgVariableNames[kQ23XA] = "Q_{23,x}^{A} ";
+  fgVariableUnits[kQ23XA] = "";
+  fgVariableNames[kQ23YA] = "Q_{23,y}^{A} ";
+  fgVariableUnits[kQ23YA] = "";
+  fgVariableNames[kS11A] = "S_{11}^{A} ";
+  fgVariableUnits[kS11A] = "";
+  fgVariableNames[kS12A] = "S_{12}^{A} ";
+  fgVariableUnits[kS12A] = "";
+  fgVariableNames[kS13A] = "S_{13}^{A} ";
+  fgVariableUnits[kS13A] = "";
+  fgVariableNames[kS31A] = "S_{31}^{A} ";
+  fgVariableUnits[kS31A] = "";
+  fgVariableNames[kM11REF] = "M_{11}^{REF} ";
+  fgVariableUnits[kM11REF] = "";
+  fgVariableNames[kM01POI] = "M_{01}^{POI} ";
+  fgVariableUnits[kM01POI] = "";
+  fgVariableNames[kM1111REF] = "M_{1111}^{REF} ";
+  fgVariableUnits[kM1111REF] = "";
+  fgVariableNames[kM0111POI] = "M_{0111}^{POI} ";
+  fgVariableUnits[kM0111POI] = "";
+  fgVariableNames[kCORR2REF] = "<2> ";
+  fgVariableUnits[kCORR2REF] = "";
+  fgVariableNames[kCORR2POI] = " <2'> ";
+  fgVariableUnits[kCORR2POI] = "";
+  fgVariableNames[kCORR4REF] = " <4>";
+  fgVariableUnits[kCORR4REF] = "";
+  fgVariableNames[kCORR4POI] = "<4'> ";
+  fgVariableUnits[kCORR4POI] = "";
+  fgVariableNames[kC4REF] = "c_{2}(4)";
+  fgVariableUnits[kC4REF] = "";
+  fgVariableNames[kC4POI] = "d_{2}(4)";
+  fgVariableUnits[kC4POI] = "";
+  fgVariableNames[kV4] = "v_{2}(4)";
+  fgVariableUnits[kV4] = "";
   fgVariableNames[kCos2DeltaPhi] = "cos 2(#varphi-#Psi_{2}^{A}) ";
   fgVariableUnits[kCos2DeltaPhi] = "";
   fgVariableNames[kCos3DeltaPhi] = "cos 3(#varphi-#Psi_{3}^{A}) ";
@@ -632,18 +717,44 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPsi2B] = "";
   fgVariableNames[kPsi2C] = "#Psi_{2}^{C} ";
   fgVariableUnits[kPsi2C] = "";
-  fgVariableNames[kR2SP] = "R_{2}^{SP} ";
-  fgVariableUnits[kR2SP] = "";
+  fgVariableNames[kR2SP_AB] = "R_{2}^{SP} (AB) ";
+  fgVariableUnits[kR2SP_AB] = "";
+  fgVariableNames[kR2SP_AC] = "R_{2}^{SP} (AC) ";
+  fgVariableUnits[kR2SP_AC] = "";
+  fgVariableNames[kR2SP_BC] = "R_{2}^{SP} (BC) ";
+  fgVariableUnits[kR2SP_BC] = "";
+  fgVariableNames[kR2SP_FT0CTPCPOS] = "R_{2}^{SP} (FT0C-TPCpos) ";
+  fgVariableUnits[kR2SP_FT0CTPCPOS] = "";
+  fgVariableNames[kR2SP_FT0CTPCNEG] = "R_{2}^{SP}  (FT0C-TPCneg) ";
+  fgVariableUnits[kR2SP_FT0CTPCNEG] = "";
+  fgVariableNames[kR2SP_FT0ATPCPOS] = "R_{2}^{SP} (FT0A-TPCpos) ";
+  fgVariableUnits[kR2SP_FT0ATPCPOS] = "";
+  fgVariableNames[kR2SP_FT0ATPCNEG] = "R_{2}^{SP} (FT0A-TPCneg) ";
+  fgVariableUnits[kR2SP_FT0ATPCNEG] = "";
+  fgVariableNames[kR2EP_AB] = "R_{2}^{EP} (TPC-FT0A) ";
+  fgVariableUnits[kR2EP_AB] = "";
+  fgVariableNames[kR2EP_AC] = "R_{2}^{EP} (TPC-FT0C) ";
+  fgVariableUnits[kR2EP_AC] = "";
+  fgVariableNames[kR2EP_BC] = "R_{2}^{EP} (FT0C-FT0A) ";
+  fgVariableUnits[kR2EP_BC] = "";
+  fgVariableNames[kR2EP_FT0CTPCPOS] = "R_{2}^{EP} (FT0C-TPCpos) ";
+  fgVariableUnits[kR2EP_FT0CTPCPOS] = "";
+  fgVariableNames[kR2EP_FT0CTPCNEG] = "R_{2}^{EP}  (FT0C-TPCneg) ";
+  fgVariableUnits[kR2EP_FT0CTPCNEG] = "";
+  fgVariableNames[kR2EP_FT0ATPCPOS] = "R_{2}^{EP} (FT0A-TPCpos) ";
+  fgVariableUnits[kR2EP_FT0ATPCPOS] = "";
+  fgVariableNames[kR2EP_FT0ATPCNEG] = "R_{2}^{EP} (FT0A-TPCneg) ";
+  fgVariableUnits[kR2EP_FT0ATPCNEG] = "";
   fgVariableNames[kR3SP] = "R_{3}^{SP} ";
   fgVariableUnits[kR3SP] = "";
-  fgVariableNames[kR2EP] = "R_{2}^{EP} ";
-  fgVariableUnits[kR2EP] = "";
   fgVariableNames[kR3EP] = "R_{3}^{EP} ";
   fgVariableUnits[kR3EP] = "";
   fgVariableNames[kPairMass] = "mass";
   fgVariableUnits[kPairMass] = "GeV/c2";
   fgVariableNames[kPairMassDau] = "mass dilepton";
   fgVariableUnits[kPairMassDau] = "GeV/c2";
+  fgVariableNames[kDeltaMass] = "mass - dilepton mass";
+  fgVariableUnits[kDeltaMass] = "GeV/c2";
   fgVariableNames[kMassDau] = "mass HF";
   fgVariableUnits[kMassDau] = "GeV/c2";
   fgVariableNames[kPairPt] = "p_{T}";
@@ -684,6 +795,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQuadDCAsigZ] = "#sigma";
   fgVariableNames[kQuadDCAsigXYZ] = "DCA_{xyz}^{quad}";
   fgVariableUnits[kQuadDCAsigXYZ] = "#sigma";
+  fgVariableNames[kSignQuadDCAsigXY] = "signDCA_{xy}^{quad}";
+  fgVariableUnits[kSignQuadDCAsigXY] = "#sigma";
   fgVariableNames[kTrackDCAsigXY] = "DCA_{xy}";
   fgVariableUnits[kTrackDCAsigXY] = "#sigma";
   fgVariableNames[kTrackDCAsigZ] = "DCA_{z}";
@@ -710,4 +823,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kIsSingleGapA] = "";
   fgVariableNames[kIsSingleGapC] = "is single gap event side C";
   fgVariableUnits[kIsSingleGapC] = "";
+  fgVariableNames[kQuadMass] = "mass quadruplet";
+  fgVariableUnits[kQuadMass] = "GeV/c2";
+  fgVariableNames[kQuadPt] = "p_{T}";
+  fgVariableUnits[kQuadPt] = "GeV/c";
+  fgVariableNames[kQuadEta] = "#eta";
+  fgVariableUnits[kQuadEta] = "";
+  fgVariableNames[kQuadPhi] = "#varphi";
+  fgVariableUnits[kQuadPhi] = "rad.";
+  fgVariableNames[kCosthetaDileptonDitrack] = "cos#it{#theta}_{dilepton-ditrack}";
+  fgVariableUnits[kCosthetaDileptonDitrack] = "";
+  fgVariableNames[kDitrackMass] = "mass di-track";
+  fgVariableUnits[kDitrackMass] = "GeV/c2";
+  fgVariableNames[kDitrackPt] = "p_{T}";
+  fgVariableUnits[kDitrackPt] = "GeV/c";
 }

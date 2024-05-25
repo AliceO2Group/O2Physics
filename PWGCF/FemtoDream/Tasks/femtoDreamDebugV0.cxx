@@ -44,6 +44,7 @@ struct femtoDreamDebugV0 {
   Configurable<aod::femtodreamparticle::cutContainerType> ConfV01_CutBit{"ConfV01_CutBit", 338, "V0 - Selection bit from cutCulator"};
   ConfigurableAxis ConfV0TempFitVarBins{"ConfV0TempFitVarBins", {300, 0.95, 1.}, "V0: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfV0TempFitVarMomentumBins{"ConfV0TempFitVarMomentumBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfBinmult{"ConfBinmult", {1, 0, 1}, "multiplicity Binning"};
   ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis for inv mass"};
 
   Configurable<int> ConfV0TempFitVarMomentum{"ConfV0TempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
@@ -78,17 +79,17 @@ struct femtoDreamDebugV0 {
 
   void init(InitContext&)
   {
-    eventHisto.init(&EventRegistry);
-    posChildHistos.init(&V0Registry, ConfDummy, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_ChildPos_PDGCode.value, true);
-    negChildHistos.init(&V0Registry, ConfDummy, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_ChildNeg_PDGCode, true);
-    V0Histos.init(&V0Registry, ConfDummy, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_PDGCode.value, true);
+    eventHisto.init(&EventRegistry, false);
+    posChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_ChildPos_PDGCode.value, true);
+    negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_ChildNeg_PDGCode, true);
+    V0Histos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_PDGCode.value, true);
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework
   void process(o2::aod::FDCollision const& col, FemtoFullParticles const& parts)
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    eventHisto.fillQA(col);
+    eventHisto.fillQA<false>(col);
     for (auto& part : groupPartsOne) {
       if (!part.has_children()) {
         continue;
@@ -110,9 +111,9 @@ struct femtoDreamDebugV0 {
           negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) &&
           (negChild.cut() & ConfV01_ChildNeg_CutBit) == ConfV01_ChildNeg_CutBit &&
           (negChild.pidcut() & ConfV01_ChildNeg_TPCBit) == ConfV01_ChildNeg_TPCBit) {
-        V0Histos.fillQA<false, true>(part, col, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value));
-        posChildHistos.fillQA<false, true>(posChild, col, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value));
-        negChildHistos.fillQA<false, true>(negChild, col, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value));
+        V0Histos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
+        negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
       }
     }
   }

@@ -48,7 +48,13 @@ const char* selectionLabels[kNsel] = {
   "kNoPileupTPC",
   "kIsTriggerTVX",
   "kIsINT1",
-  "kNoITSROFrameBorder"};
+  "kNoITSROFrameBorder",
+  "kNoTimeFrameBorder",
+  "kNoSameBunchPileup",
+  "kIsGoodZvtxFT0vsPV",
+  "kIsVertexITSTPC",
+  "kIsVertexTOFmatched",
+  "kIsVertexTRDmatched"};
 } // namespace o2::aod::evsel
 
 using namespace o2::aod::evsel;

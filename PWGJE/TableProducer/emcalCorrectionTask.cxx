@@ -34,6 +34,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DataFormatsEMCAL/Cell.h"
+#include "DataFormatsEMCAL/CellLabel.h"
 #include "DataFormatsEMCAL/Constants.h"
 #include "DataFormatsEMCAL/AnalysisCluster.h"
 #include "EMCALBase/Geometry.h"
@@ -55,6 +56,7 @@ using filteredMCCells = o2::soa::Filtered<mcCells>;
 
 struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
+  Produces<o2::aod::EMCALMCClusters> mcclusters;
   Produces<o2::aod::EMCALAmbiguousClusters> clustersAmbiguous;
   Produces<o2::aod::EMCALClusterCells> clustercells; // cells belonging to given cluster
   Produces<o2::aod::EMCALAmbiguousClusterCells> clustercellsambiguous;
@@ -101,6 +103,7 @@ struct EmcalCorrectionTask {
   o2::emcal::NonlinearityHandler mNonlinearityHandler;
   // Cells and clusters
   std::vector<o2::emcal::AnalysisCluster> mAnalysisClusters;
+  std::vector<o2::emcal::ClusterLabel> mClusterLabels;
 
   std::vector<o2::aod::EMCALClusterDefinition> mClusterDefinitions;
   // QA
@@ -223,6 +226,7 @@ struct EmcalCorrectionTask {
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
+    std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
     for (auto bc : bcs) {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -233,6 +237,7 @@ struct EmcalCorrectionTask {
       auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
 
       numberCollsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), collisionsInFoundBC.size()));
+      numberCellsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), cellsInBC.size()));
 
       if (!cellsInBC.size()) {
         LOG(debug) << "No cells found for BC";
@@ -316,9 +321,10 @@ struct EmcalCorrectionTask {
     // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
     for (const auto& collision : collisions) {
       auto globalbcid = collision.foundBC_as<bcEvSels>().globalIndex();
-      auto found = numberCollsInBC.find(globalbcid);
-      if (found != numberCollsInBC.end()) {
-        emcalcollisionmatch(collision.globalIndex(), found->second != 1);
+      auto foundColls = numberCollsInBC.find(globalbcid);
+      auto foundCells = numberCellsInBC.find(globalbcid);
+      if (foundColls != numberCollsInBC.end() && foundCells != numberCellsInBC.end()) {
+        emcalcollisionmatch(collision.globalIndex(), foundColls->second != 1, foundCells->second > 0);
       } else {
         LOG(warning) << "BC not found in map of number of collisions.";
       }
@@ -328,12 +334,14 @@ struct EmcalCorrectionTask {
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processFull, "run full analysis", true);
 
-  void processMCFull(bcEvSels const& bcs, collEventSels const& collisions, myGlobTracks const& tracks, filteredMCCells const& cells, aod::StoredMcParticles_001 const& mcparticles)
+  void processMCFull(bcEvSels const& bcs, collEventSels const& collisions, myGlobTracks const& tracks, filteredMCCells const& cells, aod::StoredMcParticles_001 const&)
   {
     LOG(debug) << "Starting process full.";
 
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
+    std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
+    std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
     for (auto bc : bcs) {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -342,6 +350,9 @@ struct EmcalCorrectionTask {
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(mcCellsPerFoundBC, bc.globalIndex());
+
+      numberCollsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), collisionsInFoundBC.size()));
+      numberCellsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), cellsInBC.size()));
 
       if (!cellsInBC.size()) {
         LOG(debug) << "No cells found for BC";
@@ -352,6 +363,7 @@ struct EmcalCorrectionTask {
       countBC(collisionsInFoundBC.size(), true);
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
+      std::vector<o2::emcal::CellLabel> cellLabels;
       for (auto& cell : cellsInBC) {
         mHistManager.fill(HIST("hContributors"), cell.mcParticle_as<aod::StoredMcParticles_001>().size());
         auto cellParticles = cell.mcParticle_as<aod::StoredMcParticles_001>();
@@ -367,6 +379,7 @@ struct EmcalCorrectionTask {
                              cell.time(),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
+        cellLabels.emplace_back(cell.mcParticleIds(), cell.amplitudeA());
       }
       LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
       nCellsProcessed += cellsBC.size();
@@ -384,7 +397,7 @@ struct EmcalCorrectionTask {
       //  Run the clusterizers
       LOG(debug) << "Running clusterizers";
       for (size_t iClusterizer = 0; iClusterizer < mClusterizers.size(); iClusterizer++) {
-        cellsToCluster(iClusterizer, cellsBC);
+        cellsToCluster(iClusterizer, cellsBC, cellLabels);
 
         if (collisionsInFoundBC.size() == 1) {
           // dummy loop to get the first collision
@@ -417,12 +430,24 @@ struct EmcalCorrectionTask {
           }
           FillAmbigousClusterTable<bcEvSels::iterator>(bc, iClusterizer, cellIndicesBC, hasCollision);
         }
-
         LOG(debug) << "Cluster loop done for clusterizer " << iClusterizer;
       } // end of clusterizer loop
       LOG(debug) << "Done with process BC.";
       nBCsProcessed++;
     } // end of bc loop
+
+    // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
+    for (const auto& collision : collisions) {
+      auto globalbcid = collision.foundBC_as<bcEvSels>().globalIndex();
+      auto foundColls = numberCollsInBC.find(globalbcid);
+      auto foundCells = numberCellsInBC.find(globalbcid);
+      if (foundColls != numberCollsInBC.end() && foundCells != numberCellsInBC.end()) {
+        emcalcollisionmatch(collision.globalIndex(), foundColls->second != 1, foundCells->second > 0);
+      } else {
+        LOG(warning) << "BC not found in map of number of collisions.";
+      }
+    } // end of collision loop
+
     LOG(detail) << "Processed " << nBCsProcessed << " BCs with " << nCellsProcessed << " cells";
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processMCFull, "run full analysis with MC info", false);
@@ -509,7 +534,7 @@ struct EmcalCorrectionTask {
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processStandalone, "run stand alone analysis", false);
 
-  void cellsToCluster(size_t iClusterizer, const gsl::span<o2::emcal::Cell> cellsBC)
+  void cellsToCluster(size_t iClusterizer, const gsl::span<o2::emcal::Cell> cellsBC, std::optional<const gsl::span<o2::emcal::CellLabel>> cellLabels = std::nullopt)
   {
     mClusterizers.at(iClusterizer)->findClusters(cellsBC);
 
@@ -521,15 +546,21 @@ struct EmcalCorrectionTask {
     // First, the cluster factory requires cluster and cell information in order
     // to build the clusters.
     mAnalysisClusters.clear();
+    mClusterLabels.clear();
     mClusterFactories.reset();
-    mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices);
+    if (cellLabels) {
+      mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices, cellLabels);
+    } else {
+      mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices);
+    }
 
     LOG(debug) << "Cluster factory set up.";
     // Convert to analysis clusters.
-    for (int icl = 0; icl < mClusterFactories.getNumberOfClusters();
-         icl++) {
-      auto analysisCluster = mClusterFactories.buildCluster(icl);
+    for (int icl = 0; icl < mClusterFactories.getNumberOfClusters(); icl++) {
+      o2::emcal::ClusterLabel clusterLabel;
+      auto analysisCluster = mClusterFactories.buildCluster(icl, &clusterLabel);
       mAnalysisClusters.emplace_back(analysisCluster);
+      mClusterLabels.push_back(clusterLabel);
       LOG(debug) << "Cluster " << icl << ": E: " << analysisCluster.E()
                  << ", NCells " << analysisCluster.getNCells();
     }
@@ -541,6 +572,9 @@ struct EmcalCorrectionTask {
   {
     // we found a collision, put the clusters into the none ambiguous table
     clusters.reserve(mAnalysisClusters.size());
+    if (mClusterLabels.size() > 0) {
+      mcclusters.reserve(mClusterLabels.size());
+    }
     int cellindex = -1;
     unsigned int iCluster = 0;
     for (const auto& cluster : mAnalysisClusters) {
@@ -571,7 +605,9 @@ struct EmcalCorrectionTask {
                cluster.getClusterTime(), cluster.getIsExotic(),
                cluster.getDistanceToBadChannel(), cluster.getNExMax(),
                static_cast<int>(mClusterDefinitions.at(iClusterizer)));
-
+      if (mClusterLabels.size() > 0) {
+        mcclusters(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
+      }
       clustercells.reserve(cluster.getNCells());
       // loop over cells in cluster and save to table
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {

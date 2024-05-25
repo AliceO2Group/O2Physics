@@ -23,12 +23,13 @@
 #include <string>
 #include <vector>
 #include <TComplex.h>
-#include <TMath.h>
+#include <TH3F.h>
 
 // o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/EventSelection.h"
@@ -66,30 +67,30 @@ struct qVectorsTable {
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL",
                                      "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int> nolaterthan{"ccdb-no-later-than",
-                                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                                  "Latest acceptable timestamp of creation for the object"};
+    Configurable<int64_t> nolaterthan{"ccdb-no-later-than",
+                                      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
+                                      "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
   Configurable<int> cfgCentEsti{"cfgCentEsti",
                                 2, "Centrality estimator (Run3): 0 = FT0M, 1 = FT0A, 2 = FT0C, 3 = FV0A"};
 
-  Configurable<int> cfgCCDBConst{"cfgCCDBConst", 1, "Using constants in CCDB, 1 = CCDB, 2= Configurable"};
-
-  // LOKI: We have here all centrality estimators for Run 3 (except FDDM and NTPV),
-  // but the Q-vectors are calculated only for some of them.
-  // FIXME: 6 correction factors for each centrality and 8 centrality intervals are hard-coded.
-  // TODO: Constants from the CCDB
-  Configurable<std::vector<float>> cfgFT0CCorr{"cfgFT0CCorr", std::vector<float>{0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.}, "Correction constants for FT0C"};
-  Configurable<std::vector<float>> cfgFT0ACorr{"cfgFT0ACorr", std::vector<float>{0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.}, "Correction constants for FT0A"};
-  Configurable<std::vector<float>> cfgFT0MCorr{"cfgFT0MCorr", std::vector<float>{0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.}, "Correction constants for FT0M"};
-  Configurable<std::vector<float>> cfgFV0ACorr{"cfgFV0ACorr", std::vector<float>{0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.}, "Correction constants for FV0A"};
-  Configurable<std::vector<float>> cfgBPosCorr{"cfgBPosCorr", std::vector<float>{0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.}, "Correction constants for positive TPC tracks"};
-  Configurable<std::vector<float>> cfgBNegCorr{"cfgBNegCorr", std::vector<float>{0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.}, "Correction constants for negative TPC tracks"};
-
   Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<int> cfgnMod{"cfgnMod", 2, "Modulation of interest"};
+  Configurable<int> cfgCorrLevel{"cfgCorrLevel", 4, "calibration step: 0 = no corr, 1 = gain corr, 2 = rectr, 3 = twist, 4 = full"};
+
+  Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Users/j/junlee/Qvector/GainEq", "CCDB path for gain equalization constants"};
+  Configurable<std::string> cfgQvecCalibPath{"cfgQvecCalibPath", "Analysis/EventPlane/QVecCorrections", "CCDB pasth for Q-vecteor calibration constants"};
+
+  ConfigurableAxis cfgaxisFITamp{"cfgaxisFITamp", {1000, 0, 5000}, ""};
+
+  Configurable<bool> cfgUseFT0C{"cfgUseFT0C", false, "Initial value for using FT0C. By default obtained from DataModel."};
+  Configurable<bool> cfgUseFT0A{"cfgUseFT0A", false, "Initial value for using FT0A. By default obtained from DataModel."};
+  Configurable<bool> cfgUseFT0M{"cfgUseFT0M", false, "Initial value for using FT0M. By default obtained from DataModel."};
+  Configurable<bool> cfgUseFV0A{"cfgUseFV0A", false, "Initial value for using FV0A. By default obtained from DataModel."};
+  Configurable<bool> cfgUseBPos{"cfgUseBPos", false, "Initial value for using BPos. By default obtained from DataModel."};
+  Configurable<bool> cfgUseBNeg{"cfgUseBNeg", false, "Initial value for using BNeg. By default obtained from DataModel."};
 
   // Table.
   Produces<aod::Qvectors> qVector;
@@ -100,41 +101,97 @@ struct qVectorsTable {
   Produces<aod::QvectorBPoss> qVectorBPos;
   Produces<aod::QvectorBNegs> qVectorBNeg;
 
+  std::vector<float> FT0RelGainConst{};
+  std::vector<float> FV0RelGainConst{};
+
   // Enable access to the CCDB for the offset and correction constants and save them
   // in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  std::vector<o2::detectors::AlignParam>* offsetFT0;
-  std::vector<o2::detectors::AlignParam>* offsetFV0;
 
-  std::vector<int> TrkBPosLabel;
-  std::vector<int> TrkBNegLabel;
-  std::vector<float> qvecRe;
-  std::vector<float> qvecIm;
-  std::vector<float> qvecAmp;
-  std::vector<std::vector<float>> cfgCorr;
+  // geometry instances for V0 and T0
+  o2::fv0::Geometry* fv0geom;
+  o2::ft0::Geometry ft0geom;
 
   // Variables for other classes.
   EventPlaneHelper helperEP;
 
   HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  void init(InitContext const&)
+  int runNumber{-1};
+
+  TH3F* objQvec = nullptr;
+
+  std::unordered_map<string, bool> useDetector = {
+    {"QvectorBNegs", cfgUseBNeg},
+    {"QvectorBPoss", cfgUseBPos},
+    {"QvectorFV0As", cfgUseFV0A},
+    {"QvectorFT0Ms", cfgUseFT0M},
+    {"QvectorFT0As", cfgUseFT0A},
+    {"QvectorFT0Cs", cfgUseFT0C}};
+
+  void init(InitContext& initContext)
   {
+    // Check the sub-detector used
+    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (DeviceSpec const& device : workflows.devices) {
+      for (auto const& input : device.inputs) {
+        if (input.matcher.binding == "Qvectors") {
+          for (auto det : useDetector) {
+            useDetector[det.first.data()] = true;
+          }
+          LOGF(info, "Using all detectors.");
+          goto allDetectorsInUse; // Added to break from nested loop if all detectors are in use.
+        }
+        for (auto det : useDetector) {
+          if (input.matcher.binding == det.first) {
+            useDetector[det.first.data()] = true;
+            LOGF(info, Form("Using detector: %s.", det.first.data()));
+          }
+        }
+      }
+    }
+
+  // Exit point in case all detectors are being used.
+  allDetectorsInUse:
     // Setup the access to the CCDB objects of interest.
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(cfgCcdbParam.nolaterthan.value);
+    ccdb->setFatalWhenNull(false);
 
-    LOGF(info, "Getting alignment offsets from the CCDB...");
-    offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align",
-                                                                              cfgCcdbParam.nolaterthan.value);
-    offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align",
-                                                                              cfgCcdbParam.nolaterthan.value);
+    AxisSpec axisPt = {40, 0.0, 4.0};
+    AxisSpec axisEta = {32, -0.8, 0.8};
+    AxisSpec axisPhi = {32, 0, constants::math::TwoPI};
+    AxisSpec axixCent = {20, 0, 100};
 
-    // Get the offset values for the different parts of FIT.
+    AxisSpec axisFITamp{cfgaxisFITamp, "FIT amp"};
+    AxisSpec axisChID = {220, 0, 220};
+
+    fv0geom = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
+
+    histosQA.add("ChTracks", "", {HistType::kTHnSparseF, {axisPt, axisEta, axisPhi, axixCent}});
+    histosQA.add("FT0Amp", "", {HistType::kTH2F, {axisFITamp, axisChID}});
+    histosQA.add("FT0AmpCor", "", {HistType::kTH2F, {axisFITamp, axisChID}});
+    histosQA.add("FV0Amp", "", {HistType::kTH2F, {axisFITamp, axisChID}});
+    histosQA.add("FV0AmpCor", "", {HistType::kTH2F, {axisFITamp, axisChID}});
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc, int harmonics)
+  {
+    FT0RelGainConst.clear();
+    FV0RelGainConst.clear();
+    FT0RelGainConst = {};
+    FV0RelGainConst = {};
+
+    std::string fullPath;
+
+    auto timestamp = bc.timestamp();
+
+    auto offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp);
+    auto offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", timestamp);
+
     if (offsetFT0 != nullptr) {
-      // FT0 has vector size 2: one element for A side, one for C side.
       helperEP.SetOffsetFT0A((*offsetFT0)[0].getX(), (*offsetFT0)[0].getY());
       helperEP.SetOffsetFT0C((*offsetFT0)[1].getX(), (*offsetFT0)[1].getY());
     } else {
@@ -142,117 +199,38 @@ struct qVectorsTable {
     }
 
     if (offsetFV0 != nullptr) {
-      // FV0 has vector size 2: one element for left side, one for right side.
       helperEP.SetOffsetFV0left((*offsetFV0)[0].getX(), (*offsetFV0)[0].getY());
       helperEP.SetOffsetFV0right((*offsetFV0)[1].getX(), (*offsetFV0)[1].getY());
     } else {
       LOGF(fatal, "Could not get the alignment parameters for FV0.");
     }
 
-    if (cfgCCDBConst == 1) {
-      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C", cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C", cfgCcdbParam.nolaterthan.value)));
-      } else {
-        if (cfgFT0CCorr->size() < 48) {
-          LOGF(fatal, "No proper correction factor assigned for FT0C");
-        } else {
-          cfgCorr.push_back(cfgFT0CCorr);
-        }
-      }
+    fullPath = cfgQvecCalibPath;
+    fullPath += "/v";
+    fullPath += std::to_string(harmonics);
+    objQvec = ccdb->getForTimeStamp<TH3F>(fullPath, timestamp);
 
-      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0A", cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0A", cfgCcdbParam.nolaterthan.value)));
-      } else {
-        if (cfgFT0ACorr->size() < 48) {
-          LOGF(fatal, "No proper correction factor assigned for FT0A");
-        } else {
-          cfgCorr.push_back(cfgFT0ACorr);
-        }
+    fullPath = cfgGainEqPath;
+    fullPath += "/FT0";
+    auto objft0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
+    if (!objft0Gain || cfgCorrLevel == 0) {
+      for (auto i{0u}; i < 208; i++) {
+        FT0RelGainConst.push_back(1.);
       }
-
-      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0M", cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0M", cfgCcdbParam.nolaterthan.value)));
-      } else {
-        if (cfgFT0MCorr->size() < 48) {
-          LOGF(fatal, "No proper correction factor assigned for FT0M");
-        } else {
-          cfgCorr.push_back(cfgFT0MCorr);
-        }
-      }
-
-      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C", cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C", cfgCcdbParam.nolaterthan.value)));
-      } else {
-        if (cfgFV0ACorr->size() < 48) {
-          LOGF(fatal, "No proper correction factor assigned for FV0A");
-        } else {
-          cfgCorr.push_back(cfgFV0ACorr);
-        }
-      } // no FV0A
-
-      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BPos", cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BPos", cfgCcdbParam.nolaterthan.value)));
-      } else {
-        if (cfgBPosCorr->size() < 48) {
-          LOGF(fatal, "No proper correction factor assigned for BPos");
-        } else {
-          cfgCorr.push_back(cfgBPosCorr);
-        }
-      }
-
-      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BNeg", cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BNeg", cfgCcdbParam.nolaterthan.value)));
-      } else {
-        if (cfgBNegCorr->size() < 48) {
-          LOGF(fatal, "No proper correction factor assigned for BNeg");
-        } else {
-          cfgCorr.push_back(cfgBNegCorr);
-        }
-      }
-    } else if (cfgCCDBConst == 2) {
-      if (cfgFT0CCorr->size() < 48) {
-        LOGF(fatal, "No proper correction factor assigned for FT0C");
-      }
-      if (cfgFT0ACorr->size() < 48) {
-        LOGF(fatal, "No proper correction factor assigned for FT0A");
-      }
-      if (cfgFT0MCorr->size() < 48) {
-        LOGF(fatal, "No proper correction factor assigned for FT0M");
-      }
-      if (cfgFV0ACorr->size() < 48) {
-        LOGF(fatal, "No proper correction factor assigned for FV0A");
-      }
-      if (cfgBPosCorr->size() < 48) {
-        LOGF(fatal, "No proper correction factor assigned for positive TPC tracks");
-      }
-      if (cfgBNegCorr->size() < 48) {
-        LOGF(fatal, "No proper correction factor assigned for negative TPC tracks");
-      } // will be replaced with method that call constants from CCDB
-
-      cfgCorr.push_back(cfgFT0CCorr);
-      cfgCorr.push_back(cfgFT0ACorr);
-      cfgCorr.push_back(cfgFT0MCorr);
-      cfgCorr.push_back(cfgFV0ACorr);
-      cfgCorr.push_back(cfgBPosCorr);
-      cfgCorr.push_back(cfgBNegCorr);
+    } else {
+      FT0RelGainConst = *(objft0Gain);
     }
 
-    /*  // Debug printing.
-      printf("Offset for FT0A: x = %.3f y = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY());
-      printf("Offset for FT0C: x = %.3f y = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY());
-      printf("Offset for FV0-left: x = %.3f y = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY());
-      printf("Offset for FV0-right: x = %.3f y = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY());
-    */
-
-    // LOKI: If we need to access the corrections from the CCDB, insert that here.
-    // In the meantime, call upon the external files with all the configurables.
-
-    AxisSpec axisPt = {40, 0.0, 4.0};
-    AxisSpec axisEta = {32, -0.8, 0.8};
-    AxisSpec axisPhi = {32, -TMath::Pi(), TMath::Pi()};
-    AxisSpec axixCent = {20, 0, 100};
-
-    histosQA.add("ChTracks", "", {HistType::kTHnSparseF, {axisPt, axisEta, axisPhi, axixCent}});
+    fullPath = cfgGainEqPath;
+    fullPath += "/FV0";
+    auto objfv0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
+    if (!objfv0Gain || cfgCorrLevel == 0) {
+      for (auto i{0u}; i < 48; i++) {
+        FV0RelGainConst.push_back(1.);
+      }
+    } else {
+      FV0RelGainConst = *(objfv0Gain);
+    }
   }
 
   template <typename TrackType>
@@ -280,9 +258,21 @@ struct qVectorsTable {
     return true;
   }
 
-  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) //, aod::FV0Cs const&)
-                                                                                                                          //  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  void process(MyCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aod::FT0s const&, aod::FV0As const&, MyTracks const& tracks)
   {
+    std::vector<int> TrkBPosLabel{};
+    std::vector<int> TrkBNegLabel{};
+    std::vector<float> qvecRe{};
+    std::vector<float> qvecIm{};
+    std::vector<float> qvecAmp{};
+
+    auto bc = coll.bc_as<aod::BCsWithTimestamps>();
+    int currentRun = bc.runNumber();
+    if (runNumber != currentRun) {
+      initCCDB(bc, static_cast<int>(cfgnMod));
+      runNumber = currentRun;
+    }
+
     // Get the centrality value for all subscribed estimators and takes the one
     // corresponding to cfgCentEsti. Reject also the events with invalid values.
     // NOTE: centFDDM and centNTPV not implemented as it makes the compilation crashes...
@@ -290,8 +280,10 @@ struct qVectorsTable {
       coll.centFT0M(), coll.centFT0A(), coll.centFT0C(),
       coll.centFV0A()};
     float cent = centAllEstim[cfgCentEsti];
-    if (cent < 0. || cent > 100.) {
+    bool IsCalibrated = true;
+    if (cent < 0. || cent > 80.) {
       cent = 110.;
+      IsCalibrated = false;
     }
 
     // Calculate the Q-vectors values for this event.
@@ -314,55 +306,74 @@ struct qVectorsTable {
     /// First check if the collision has a found FT0. If yes, calculate the
     /// Q-vectors for FT0A and FT0C (both real and imaginary parts). If no,
     /// attribute dummy values to the corresponding qVect.
-    if (coll.has_foundFT0()) {
+    if (coll.has_foundFT0() && (useDetector["QvectorFT0As"] || useDetector["QvectorFT0Cs"] || useDetector["QvectorFT0Ms"])) {
       auto ft0 = coll.foundFT0();
 
-      // Iterate over the non-dead channels for FT0-A to get the total Q-vector
-      // and sum of amplitudes.
-      for (std::size_t iChA = 0; iChA < ft0.channelA().size(); iChA++) {
-        // Get first the corresponding amplitude.
-        float ampl = ft0.amplitudeA()[iChA];
+      // Check whether FT0-A is being used.
+      if (useDetector["QvectorFT0As"]) {
+        // Iterate over the non-dead channels for FT0-A to get the total Q-vector
+        // and sum of amplitudes.
+        for (std::size_t iChA = 0; iChA < ft0.channelA().size(); iChA++) {
+          // Get first the corresponding amplitude.
+          float ampl = ft0.amplitudeA()[iChA];
+          int FT0AchId = ft0.channelA()[iChA];
 
-        // Update the Q-vector and sum of amplitudes using the helper function.
-        // LOKI: Note this assumes nHarmo = 2!! Likely generalise in the future.
-        helperEP.SumQvectors(0, iChA, ampl, cfgnMod, QvecDet, sumAmplFT0A);
-        helperEP.SumQvectors(0, iChA, ampl, cfgnMod, QvecFT0M, sumAmplFT0M);
-      } // Go to the next channel iChA.
+          histosQA.fill(HIST("FT0Amp"), ampl, FT0AchId);
+          histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0AchId], FT0AchId);
+          // Update the Q-vector and sum of amplitudes using the helper function.
+          // LOKI: Note this assumes nHarmo = 2!! Likely generalise in the future.
+          helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], cfgnMod, QvecDet, sumAmplFT0A, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], cfgnMod, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
+        } // Go to the next channel iChA.
 
-      // Set the Qvectors for FT0A with the normalised Q-vector values if the sum of
-      // amplitudes is non-zero. Otherwise, set it to a dummy 999.
-      if (sumAmplFT0A > 1e-8) {
-        QvecDet /= sumAmplFT0A;
-        qVectFT0A[0] = QvecDet.Re();
-        qVectFT0A[1] = QvecDet.Im();
-        // printf("qVectFT0A[0] = %.2f ; qVectFT0A[1] = %.2f \n", qVectFT0A[0], qVectFT0A[1]); // Debug printing.
+        // Set the Qvectors for FT0A with the normalised Q-vector values if the sum of
+        // amplitudes is non-zero. Otherwise, set it to a dummy 999.
+        if (sumAmplFT0A > 1e-8) {
+          QvecDet /= sumAmplFT0A;
+          qVectFT0A[0] = QvecDet.Re();
+          qVectFT0A[1] = QvecDet.Im();
+          // printf("qVectFT0A[0] = %.2f ; qVectFT0A[1] = %.2f \n", qVectFT0A[0], qVectFT0A[1]); // Debug printing.
+        } else {
+          qVectFT0A[0] = 999.;
+          qVectFT0A[1] = 999.;
+        }
       } else {
-        qVectFT0A[0] = 999.;
-        qVectFT0A[1] = 999.;
+        qVectFT0A[0] = -999.;
+        qVectFT0A[1] = -999.;
       }
 
-      // Repeat the procedure with FT0-C for the found FT0.
-      // Start by resetting to zero the intermediate quantities.
-      QvecDet = TComplex(0., 0.);
-      for (std::size_t iChC = 0; iChC < ft0.channelC().size(); iChC++) {
-        // iChC ranging from 0 to max 112. We need to add 96 (= max channels in FT0-A)
-        // to ensure a proper channel number in FT0 as a whole.
-        float ampl = ft0.amplitudeC()[iChC];
-        helperEP.SumQvectors(0, iChC + 96, ampl, cfgnMod, QvecDet, sumAmplFT0C);
-        helperEP.SumQvectors(0, iChC + 96, ampl, cfgnMod, QvecFT0M, sumAmplFT0M);
-      }
+      if (useDetector["QvectorFT0Cs"]) {
+        // Repeat the procedure with FT0-C for the found FT0.
+        // Start by resetting to zero the intermediate quantities.
+        QvecDet = TComplex(0., 0.);
+        for (std::size_t iChC = 0; iChC < ft0.channelC().size(); iChC++) {
+          // iChC ranging from 0 to max 112. We need to add 96 (= max channels in FT0-A)
+          // to ensure a proper channel number in FT0 as a whole.
+          float ampl = ft0.amplitudeC()[iChC];
+          int FT0CchId = ft0.channelC()[iChC] + 96;
 
-      if (sumAmplFT0C > 1e-8) {
-        QvecDet /= sumAmplFT0C;
-        qVectFT0C[0] = QvecDet.Re();
-        qVectFT0C[1] = QvecDet.Im();
-        // printf("qVectFT0C[0] = %.2f ; qVectFT0C[1] = %.2f \n", qVectFT0C[0], qVectFT0C[1]); // Debug printing.
+          histosQA.fill(HIST("FT0Amp"), ampl, FT0CchId);
+          histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0CchId], FT0CchId);
+
+          helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], cfgnMod, QvecDet, sumAmplFT0C, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], cfgnMod, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
+        }
+
+        if (sumAmplFT0C > 1e-8) {
+          QvecDet /= sumAmplFT0C;
+          qVectFT0C[0] = QvecDet.Re();
+          qVectFT0C[1] = QvecDet.Im();
+          // printf("qVectFT0C[0] = %.2f ; qVectFT0C[1] = %.2f \n", qVectFT0C[0], qVectFT0C[1]); // Debug printing.
+        } else {
+          qVectFT0C[0] = 999.;
+          qVectFT0C[1] = 999.;
+        }
       } else {
-        qVectFT0C[0] = 999.;
-        qVectFT0C[1] = 999.;
+        qVectFT0C[0] = -999.;
+        qVectFT0C[1] = -999.;
       }
 
-      if (sumAmplFT0M > 1e-8) {
+      if (sumAmplFT0M > 1e-8 && useDetector["QvectorFT0Ms"]) {
         QvecFT0M /= sumAmplFT0M;
         qVectFT0M[0] = QvecFT0M.Re();
         qVectFT0M[1] = QvecFT0M.Im();
@@ -379,16 +390,18 @@ struct qVectorsTable {
       qVectFT0M[1] = -999.;
     }
 
-    /// Repeat the procedure for FV0 if one has been found for this collision.
-    /// Again reset the intermediate quantities to zero.
     QvecDet = TComplex(0., 0.);
     sumAmplFV0A = 0;
-    if (coll.has_foundFV0()) {
+    if (coll.has_foundFV0() && useDetector["QvectorFV0As"]) {
       auto fv0 = coll.foundFV0();
 
       for (std::size_t iCh = 0; iCh < fv0.channel().size(); iCh++) {
         float ampl = fv0.amplitude()[iCh];
-        helperEP.SumQvectors(1, iCh, ampl, cfgnMod, QvecDet, sumAmplFV0A);
+        int FV0AchId = fv0.channel()[iCh];
+        histosQA.fill(HIST("FV0Amp"), ampl, FV0AchId);
+        histosQA.fill(HIST("FV0AmpCor"), ampl / FV0RelGainConst[FV0AchId], FV0AchId);
+
+        helperEP.SumQvectors(1, FV0AchId, ampl / FV0RelGainConst[FV0AchId], cfgnMod, QvecDet, sumAmplFV0A, ft0geom, fv0geom);
       }
 
       if (sumAmplFV0A > 1e-8) {
@@ -408,27 +421,27 @@ struct qVectorsTable {
     int nTrkBPos = 0;
     int nTrkBNeg = 0;
 
-    TrkBPosLabel.clear();
-    TrkBNegLabel.clear();
-
     for (auto& trk : tracks) {
-      if (!SelTrack(trk))
+      if (!SelTrack(trk)) {
         continue;
+      }
       histosQA.fill(HIST("ChTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
-      if (abs(trk.eta()) < 0.1 || abs(trk.eta()) > 0.8)
+      if (std::abs(trk.eta()) < 0.1 || std::abs(trk.eta()) > 0.8) {
         continue;
-      if (trk.eta() > 0) {
-        qVectBPos[0] += trk.pt() * TMath::Cos(trk.phi() * cfgnMod);
-        qVectBPos[1] += trk.pt() * TMath::Sin(trk.phi() * cfgnMod);
+      }
+      if (trk.eta() > 0 && useDetector["QvectorBPoss"]) {
+        qVectBPos[0] += trk.pt() * std::cos(trk.phi() * cfgnMod);
+        qVectBPos[1] += trk.pt() * std::sin(trk.phi() * cfgnMod);
         TrkBPosLabel.push_back(trk.globalIndex());
         nTrkBPos++;
-      } else if (trk.eta() < 0) {
-        qVectBNeg[0] += trk.pt() * TMath::Cos(trk.phi() * cfgnMod);
-        qVectBNeg[1] += trk.pt() * TMath::Sin(trk.phi() * cfgnMod);
+      } else if (trk.eta() < 0 && useDetector["QvectorBNegs"]) {
+        qVectBNeg[0] += trk.pt() * std::cos(trk.phi() * cfgnMod);
+        qVectBNeg[1] += trk.pt() * std::sin(trk.phi() * cfgnMod);
         TrkBNegLabel.push_back(trk.globalIndex());
         nTrkBNeg++;
       }
     }
+
     if (nTrkBPos > 0) {
       qVectBPos[0] /= nTrkBPos;
       qVectBPos[1] /= nTrkBPos;
@@ -445,33 +458,27 @@ struct qVectorsTable {
       qVectBNeg[1] = 999.;
     }
 
-    qvecRe.clear();
-    qvecIm.clear();
-    qvecAmp.clear();
-
-    int cBin = helperEP.GetCentBin(cent);
-
-    for (int i = 0; i < 4; i++) {
+    for (auto i{0u}; i < 4; i++) {
       qvecRe.push_back(qVectFT0C[0]);
       qvecIm.push_back(qVectFT0C[1]);
     }
-    for (int i = 0; i < 4; i++) {
+    for (auto i{0u}; i < 4; i++) {
       qvecRe.push_back(qVectFT0A[0]);
       qvecIm.push_back(qVectFT0A[1]);
     }
-    for (int i = 0; i < 4; i++) {
+    for (auto i{0u}; i < 4; i++) {
       qvecRe.push_back(qVectFT0M[0]);
       qvecIm.push_back(qVectFT0M[1]);
     }
-    for (int i = 0; i < 4; i++) {
+    for (auto i{0u}; i < 4; i++) {
       qvecRe.push_back(qVectFV0A[0]);
       qvecIm.push_back(qVectFV0A[1]);
     }
-    for (int i = 0; i < 4; i++) {
+    for (auto i{0u}; i < 4; i++) {
       qvecRe.push_back(qVectBPos[0]);
       qvecIm.push_back(qVectBPos[1]);
     }
-    for (int i = 0; i < 4; i++) {
+    for (auto i{0u}; i < 4; i++) {
       qvecRe.push_back(qVectBNeg[0]);
       qvecIm.push_back(qVectBNeg[1]);
     }
@@ -483,27 +490,48 @@ struct qVectorsTable {
     qvecAmp.push_back(static_cast<float>(nTrkBPos));
     qvecAmp.push_back(static_cast<float>(nTrkBNeg));
 
-    if (cBin != -1) {
-      for (int i = 0; i < 6; i++) {
-        helperEP.DoRecenter(qvecRe[i * 4 + 1], qvecIm[i * 4 + 1], cfgCorr[i][cBin * 6], cfgCorr[i][cBin * 6 + 1]);
+    if (cent < 80) {
+      int i = 0;
+      for (auto det : useDetector) {
+        // Check whether Q-vectors are found for a detector
+        if (!useDetector[det.first.data()]) {
+          i++;
+          continue;
+        }
 
-        helperEP.DoRecenter(qvecRe[i * 4 + 2], qvecIm[i * 4 + 2], cfgCorr[i][cBin * 6], cfgCorr[i][cBin * 6 + 1]);
-        helperEP.DoTwist(qvecRe[i * 4 + 2], qvecIm[i * 4 + 2], cfgCorr[i][cBin * 6 + 2], cfgCorr[i][cBin * 6 + 3]);
+        helperEP.DoRecenter(qvecRe[i * 4 + 1], qvecIm[i * 4 + 1],
+                            objQvec->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
 
-        helperEP.DoRecenter(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3], cfgCorr[i][cBin * 6], cfgCorr[i][cBin * 6 + 1]);
-        helperEP.DoTwist(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3], cfgCorr[i][cBin * 6 + 2], cfgCorr[i][cBin * 6 + 3]);
-        helperEP.DoRescale(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3], cfgCorr[i][cBin * 6 + 4], cfgCorr[i][cBin * 6 + 5]);
+        helperEP.DoRecenter(qvecRe[i * 4 + 2], qvecIm[i * 4 + 2],
+                            objQvec->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+        helperEP.DoTwist(qvecRe[i * 4 + 2], qvecIm[i * 4 + 2],
+                         objQvec->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+
+        helperEP.DoRecenter(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3],
+                            objQvec->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+        helperEP.DoTwist(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3],
+                         objQvec->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+        helperEP.DoRescale(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3],
+                           objQvec->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), objQvec->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
+        i++;
       }
     }
 
-    // Fill the columns of the Qvectors table.
-    qVector(cent, cBin, qvecRe, qvecIm, qvecAmp);
-    qVectorFT0C(cBin, qvecRe[kFT0C * 4 + 3], qvecIm[kFT0C * 4 + 3], sumAmplFT0C);
-    qVectorFT0A(cBin, qvecRe[kFT0A * 4 + 3], qvecIm[kFT0A * 4 + 3], sumAmplFT0A);
-    qVectorFT0M(cBin, qvecRe[kFT0M * 4 + 3], qvecIm[kFT0M * 4 + 3], sumAmplFT0M);
-    qVectorFV0A(cBin, qvecRe[kFV0A * 4 + 3], qvecIm[kFV0A * 4 + 3], sumAmplFV0A);
-    qVectorBPos(cBin, qvecRe[kBPos * 4 + 3], qvecIm[kBPos * 4 + 3], nTrkBPos, TrkBPosLabel);
-    qVectorBNeg(cBin, qvecRe[kBNeg * 4 + 3], qvecIm[kBNeg * 4 + 3], nTrkBNeg, TrkBNegLabel);
+    // Fill the columns of the Qvectors table if they are found for a detector.
+    int CorrLevel = cfgCorrLevel == 0 ? 0 : cfgCorrLevel - 1;
+    qVector(cent, IsCalibrated, qvecRe, qvecIm, qvecAmp);
+    if (useDetector["QvectorFT0Cs"])
+      qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + CorrLevel], qvecIm[kFT0C * 4 + CorrLevel], sumAmplFT0C);
+    if (useDetector["QvectorFT0As"])
+      qVectorFT0A(IsCalibrated, qvecRe[kFT0A * 4 + CorrLevel], qvecIm[kFT0A * 4 + CorrLevel], sumAmplFT0A);
+    if (useDetector["QvectorFT0Ms"])
+      qVectorFT0M(IsCalibrated, qvecRe[kFT0M * 4 + CorrLevel], qvecIm[kFT0M * 4 + CorrLevel], sumAmplFT0M);
+    if (useDetector["QvectorFV0As"])
+      qVectorFV0A(IsCalibrated, qvecRe[kFV0A * 4 + CorrLevel], qvecIm[kFV0A * 4 + CorrLevel], sumAmplFV0A);
+    if (useDetector["QvectorBPoss"])
+      qVectorBPos(IsCalibrated, qvecRe[kBPos * 4 + CorrLevel], qvecIm[kBPos * 4 + CorrLevel], nTrkBPos, TrkBPosLabel);
+    if (useDetector["QvectorBNegs"])
+      qVectorBNeg(IsCalibrated, qvecRe[kBNeg * 4 + CorrLevel], qvecIm[kBNeg * 4 + CorrLevel], nTrkBNeg, TrkBNegLabel);
 
   } // End process.
 };

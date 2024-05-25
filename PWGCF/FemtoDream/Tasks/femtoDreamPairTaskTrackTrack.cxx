@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <vector>
 #include <bitset>
+#include "TRandom3.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -27,7 +28,6 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/Configurable.h"
 #include "Framework/Expressions.h"
-#include "TDatabasePDG.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
@@ -48,90 +48,132 @@ struct femtoDreamPairTaskTrackTrack {
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
   /// General options
-  Configurable<bool> ConfOptIsMC{"ConfOptIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
-  Configurable<bool> ConfOptUse4D{"ConfOptUse4D", false, "Enable four dimensional histogramms (to be used only for analysis with high statistics): k* vs multiplicity vs multiplicity percentil vs mT"};
-  Configurable<bool> ConfOptExtendedPlots{"ConfOptExtendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
-  Configurable<float> ConfOptHighkstarCut{"ConfOptHighkstarCut", -1., "Set a cut for high k*, above which the pairs are rejected. Set it to -1 to deactivate it"};
-  Configurable<bool> ConfOptSameSpecies{"ConfOptSameSpecies", false, "Set to true if particle 1 and particle 2 are the same species"};
-  Configurable<bool> ConfOptUseCPR{"ConfOptCPR", true, "Close Pair Rejection"};
-  Configurable<bool> ConfOptCPRPlotPerRadii{"ConfOptCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfOptCPRdeltaPhiMax{"ConfOptCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  Configurable<float> ConfOptCPRdeltaEtaMax{"ConfOptCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
-  ConfigurableAxis ConfOptDummy{"ConfOptDummy", {1, 0, 1}, "Dummy axis"};
+  struct : ConfigurableGroup {
+    Configurable<bool> IsMC{"Option.IsMC", false, "Enable additional Histogramms in the case of runninger over Monte Carlo"};
+    Configurable<bool> Use4D{"Option.Use4D", false, "Enable four dimensional histogramms (to be used only for analysis with high statistics): k* vs multiplicity vs multiplicity percentil vs mT"};
+    Configurable<bool> ExtendedPlots{"Option.ExtendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
+    Configurable<float> HighkstarCut{"Option.HighkstarCut", -1., "Set a cut for high k*, above which the pairs are rejected. Set it to -1 to deactivate it"};
+    Configurable<bool> SameSpecies{"Option.SameSpecies", false, "Set to true if particle 1 and particle 2 are the same species"};
+    Configurable<bool> MixEventWithPairs{"Option.MixEventWithPairs", false, "Only use events that contain particle 1 and partile 2 for the event mixing"};
+    Configurable<bool> RandomizePair{"Option.RandomizePair", true, "Randomly mix particle 1 and particle 2 in case both are identical"};
+    Configurable<bool> CPROn{"Option.CPROn", true, "Close Pair Rejection"};
+    Configurable<bool> CPROld{"Option.CPROld", false, "Set to FALSE to use fixed version of CPR (for testing now, will be default soon)"};
+    Configurable<bool> CPRSepMeSe{"Option.CPRSepMESE", true, "Use seperated plots for same and mixed event for CPR plots"};
+    Configurable<bool> CPRPlotPerRadii{"Option.CPRPlotPerRadii", false, "Plot CPR per radii"};
+    Configurable<float> CPRdeltaPhiMax{"Option.CPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
+    Configurable<float> CPRdeltaEtaMax{"Option.CPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+    Configurable<bool> DCACutPtDep{"Option.DCACutPtDep", false, "Use pt dependent dca cut"};
+    ConfigurableAxis Dummy{"Option.Dummy", {1, 0, 1}, "Dummy axis"};
+    Configurable<bool> SmearingByOrigin{"Option.SmearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption"};
+  } Option;
 
   /// Event selection
-  Configurable<int> ConfEvent_minMult{"ConfEvent_minMult", 0, "Minimum Multiplicity (MultNtr)"};
-  Configurable<int> ConfEvent_maxMult{"ConfEvent_maxMult", 99999, "Maximum Multiplicity (MultNtr)"};
-  Configurable<float> ConfEvent_minMultPercentile{"ConfEvent_minMultPercentile", 0, "Minimum Multiplicity Percentile"};
-  Configurable<float> ConfEvent_maxMultPercentile{"ConfEvent_maxMultPercentile", 100, "Maximum Multiplicity Percentile"};
+  struct : ConfigurableGroup {
+    Configurable<int> MultMin{"EventSel.MultMin", 0, "Minimum Multiplicity (MultNtr)"};
+    Configurable<int> MultMax{"EventSel.MultMax", 99999, "Maximum Multiplicity (MultNtr)"};
+    Configurable<float> MultPercentileMin{"EventSel.MultPercentileMin", 0, "Maximum Multiplicity Percentile"};
+    Configurable<float> MultPercentileMax{"EventSel.MultPercentileMax", 100, "Minimum Multiplicity Percentile"};
+  } EventSel;
 
-  Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= ConfEvent_minMult && aod::femtodreamcollision::multNtr <= ConfEvent_maxMult;
-  Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= ConfEvent_minMultPercentile && aod::femtodreamcollision::multV0M <= ConfEvent_maxMultPercentile;
+  Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
+  Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
 
   using FilteredCollisions = soa::Filtered<FDCollisions>;
   using FilteredCollision = FilteredCollisions::iterator;
+  using FilteredMCCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDMCCollLabels>>;
+  using FilteredMCCollision = FilteredMCCollisions::iterator;
+
   using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, FDDownSample>>;
   using FilteredMaskedCollision = FilteredMaskedCollisions::iterator;
-  femtodreamcollision::BitMaskType BitMask = -1;
+  using FilteredMaskedMCCollisions = soa::Filtered<soa::Join<FDCollisions, aod::FDMCCollLabels, FDColMasks, FDDownSample>>;
+  using FilteredMaskedMCCollision = FilteredMaskedMCCollisions::iterator;
+
+  femtodreamcollision::BitMaskType BitMask = 0;
 
   /// Track 1
-  Configurable<int> ConfTrk1_PDGCode{"ConfTrk1_PDGCode", 2212, "PDG code of particle 1 (Track)"};
-  Configurable<femtodreamparticle::cutContainerType> ConfTrk1_CutBit{"ConfTrk1_CutBit", 3191978, "Selection bit from cutCulator for particle 1 (Track)"};
-  Configurable<femtodreamparticle::cutContainerType> ConfTrk1_TPCBit{"ConfTrk1_TPCBit", 4, "PID TPC bit from cutCulator for particle 1 (Track)"};
-  Configurable<femtodreamparticle::cutContainerType> ConfTrk1_TPCTOFBit{"ConfTrk1_TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 1 (Track)"};
-  Configurable<float> ConfTrk1_PIDThres{"ConfTrk1_PIDThres", 0.75, "Momentum threshold for PID selection for particle 1 (Track)"};
-  Configurable<float> ConfTrk1_minPt{"ConfTrk1_minPt", 0., "Minimum pT of partricle 1 (Track)"};
-  Configurable<float> ConfTrk1_maxPt{"ConfTrk1_maxPt", 999., "Maximum pT of partricle 1 (Track)"};
-  Configurable<float> ConfTrk1_minEta{"ConfTrk1_minEta", -10., "Minimum eta of partricle 1 (Track)"};
-  Configurable<float> ConfTrk1_maxEta{"ConfTrk1_maxEta", 10., "Maximum eta of partricle 1 (Track)"};
+  struct : ConfigurableGroup {
+    Configurable<int> PDGCode{"Track1.PDGCode", 2212, "PDG code of particle 1 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> CutBit{"Track1.CutBit", 3191978, "Selection bit from cutCulator for particle 1 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCBit{"Track1.TPCBit", 4, "PID TPC bit from cutCulator for particle 1 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCBit_Reject{"Track1.TPCBit_Reject", 0, "PID TPC bit from cutCulator to reject a particle hypothesis for particle 1 (set to 0 to ignore)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCTOFBit{"Track1.TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 1 (Track)"};
+    Configurable<float> PIDThres{"Track1.PIDThres", 0.75, "Momentum threshold for PID selection for particle 1 (Track)"};
+    Configurable<float> PtMin{"Track1.PtMin", 0., "Minimum pT of partricle 1 (Track)"};
+    Configurable<float> PtMax{"Track1.PtMax", 999., "Maximum pT of partricle 1 (Track)"};
+    Configurable<float> EtaMin{"Track1.EtaMin", -10., "Minimum eta of partricle 1 (Track)"};
+    Configurable<float> EtaMax{"Track1.EtaMax", 10., "Maximum eta of partricle 1 (Track)"};
+    Configurable<float> TempFitVarMin{"Track1.TempFitVarMin", -10., "Minimum DCAxy of partricle 1 (Track)"};
+    Configurable<float> TempFitVarMax{"Track1.TempFitVarMax", 10., "Maximum DCAxy of partricle 1 (Track)"};
+  } Track1;
 
   /// Partition for particle 1
-  Partition<aod::FDParticles> PartitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                              (ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit)) &&
-                                              ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit)) &&
-                                              (aod::femtodreamparticle::pt > ConfTrk1_minPt) &&
-                                              (aod::femtodreamparticle::pt < ConfTrk1_maxPt) &&
-                                              (aod::femtodreamparticle::eta > ConfTrk1_minEta) &&
-                                              (aod::femtodreamparticle::eta < ConfTrk1_maxEta);
+  Partition<aod::FDParticles> PartitionTrk1 =
+    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
+    ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
+    (aod::femtodreamparticle::pt >= Track1.PtMin) &&
+    (aod::femtodreamparticle::pt <= Track1.PtMax) &&
+    (aod::femtodreamparticle::eta >= Track1.EtaMin) &&
+    (aod::femtodreamparticle::eta <= Track1.EtaMax) &&
+    ifnode(Option.DCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+           ((aod::femtodreamparticle::tempFitVar >= Track1.TempFitVarMin) &&
+            (aod::femtodreamparticle::tempFitVar <= Track1.TempFitVarMax)));
 
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                                                            (ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit)) &&
-                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit)) &&
-                                                                            (aod::femtodreamparticle::pt > ConfTrk1_minPt) &&
-                                                                            (aod::femtodreamparticle::pt < ConfTrk1_maxPt) &&
-                                                                            (aod::femtodreamparticle::eta > ConfTrk1_minEta) &&
-                                                                            (aod::femtodreamparticle::eta < ConfTrk1_maxEta);
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk1 =
+    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (ncheckbit(aod::femtodreamparticle::cut, Track1.CutBit)) &&
+    ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track1.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCBit) && ((aod::femtodreamparticle::pidcut & Track1.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track1.TPCTOFBit)) &&
+    (aod::femtodreamparticle::pt >= Track1.PtMin) &&
+    (aod::femtodreamparticle::pt <= Track1.PtMax) &&
+    (aod::femtodreamparticle::eta >= Track1.EtaMin) &&
+    (aod::femtodreamparticle::eta < Track1.EtaMax) &&
+    ifnode(Option.DCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+           ((aod::femtodreamparticle::tempFitVar >= Track1.TempFitVarMin) &&
+            (aod::femtodreamparticle::tempFitVar <= Track1.TempFitVarMax)));
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
 
   /// Track 2
-  Configurable<int> ConfTrk2_PDGCode{"ConfTrk2_PDGCode", 2212, "PDG code of particle 2 (Track)"};
-  Configurable<femtodreamparticle::cutContainerType> ConfTrk2_CutBit{"ConfTrk2_CutBit", 3191978, "Selection bit from cutCulator for particle 2 (Track)"};
-  Configurable<femtodreamparticle::cutContainerType> ConfTrk2_TPCBit{"ConfTrk2_TPCBit", 4, "PID TPC bit from cutCulator for particle 2 (Track)"};
-  Configurable<femtodreamparticle::cutContainerType> ConfTrk2_TPCTOFBit{"ConfTrk2_TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 2 (Track)"};
-  Configurable<float> ConfTrk2_PIDThres{"ConfTrk2_PIDThres", 0.75, "Momentum threshold for PID selection for particle 2 (Track)"};
-  Configurable<float> ConfTrk2_minPt{"ConfTrk2_minPt", 0., "Minimum pT of partricle 2 (Track)"};
-  Configurable<float> ConfTrk2_maxPt{"ConfTrk2_maxPt", 999., "Maximum pT of partricle 2 (Track)"};
-  Configurable<float> ConfTrk2_minEta{"ConfTrk2_minEta", -10., "Minimum eta of partricle 2 (Track)"};
-  Configurable<float> ConfTrk2_maxEta{"ConfTrk2_maxEta", 10., "Maximum eta of partricle 2 (Track)"};
+  struct : ConfigurableGroup {
+    Configurable<int> PDGCode{"Track2.PDGCode", 2212, "PDG code of particle 2 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> CutBit{"Track2.CutBit", 3191978, "Selection bit from cutCulator for particle 2 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCBit{"Track2.TPCBit", 4, "PID TPC bit from cutCulator for particle 2 (Track)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCBit_Reject{"Track2.TPCBit_Reject", 0, "PID TPC bit from cutCulator to reject a particle hypothesis for particle 2 (set to 0 to ignore)"};
+    Configurable<femtodreamparticle::cutContainerType> TPCTOFBit{"Track2.TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 2 (Track)"};
+    Configurable<float> PIDThres{"Track2.PIDThres", 0.75, "Momentum threshold for PID selection for particle 2 (Track)"};
+    Configurable<float> PtMin{"Track2.PtMin", 0., "Minimum pT of particle 2 (Track)"};
+    Configurable<float> PtMax{"Track2.PtMax", 999., "Maximum pT of particle 2 (Track)"};
+    Configurable<float> EtaMin{"Track2.EtaMin", -10., "Minimum eta of particle 2 (Track)"};
+    Configurable<float> EtaMax{"Track2.EtaMax", 10., "Maximum eta of particle 2 (Track)"};
+    Configurable<float> TempFitVarMin{"Track2.TempFitVarMin", -10., "Minimum DCAxy of partricle 1 (Track)"};
+    Configurable<float> TempFitVarMax{"Track2.TempFitVarMax", 10., "Maximum DCAxy of partricle 1 (Track)"};
+  } Track2;
 
   /// Partition for track 2
-  Partition<aod::FDParticles> PartitionTrk2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                              (ncheckbit(aod::femtodreamparticle::cut, ConfTrk2_CutBit)) &&
-                                              ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk2_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCTOFBit)) &&
-                                              (aod::femtodreamparticle::pt > ConfTrk2_minPt) &&
-                                              (aod::femtodreamparticle::pt < ConfTrk2_maxPt) &&
-                                              (aod::femtodreamparticle::eta > ConfTrk2_minEta) &&
-                                              (aod::femtodreamparticle::eta < ConfTrk2_maxEta);
+  Partition<aod::FDParticles> PartitionTrk2 =
+    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (ncheckbit(aod::femtodreamparticle::cut, Track2.CutBit)) &&
+    ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track2.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCBit) && ((aod::femtodreamparticle::pidcut & Track2.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCTOFBit)) &&
+    (aod::femtodreamparticle::pt >= Track2.PtMin) &&
+    (aod::femtodreamparticle::pt <= Track2.PtMax) &&
+    (aod::femtodreamparticle::eta >= Track2.EtaMin) &&
+    (aod::femtodreamparticle::eta <= Track2.EtaMax) &&
+    ifnode(Option.DCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+           ((aod::femtodreamparticle::tempFitVar >= Track2.TempFitVarMin) &&
+            (aod::femtodreamparticle::tempFitVar <= Track2.TempFitVarMax)));
 
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
-                                                                            (ncheckbit(aod::femtodreamparticle::cut, ConfTrk2_CutBit)) &&
-                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk2_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCTOFBit)) &&
-                                                                            (aod::femtodreamparticle::pt > ConfTrk2_minPt) &&
-                                                                            (aod::femtodreamparticle::pt < ConfTrk2_maxPt) &&
-                                                                            (aod::femtodreamparticle::eta > ConfTrk2_minEta) &&
-                                                                            (aod::femtodreamparticle::eta < ConfTrk2_maxEta);
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk2 =
+    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    (ncheckbit(aod::femtodreamparticle::cut, Track2.CutBit)) &&
+    ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= Track2.PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCBit) && ((aod::femtodreamparticle::pidcut & Track2.TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, Track2.TPCTOFBit)) &&
+    (aod::femtodreamparticle::pt >= Track2.PtMin) &&
+    (aod::femtodreamparticle::pt <= Track2.PtMax) &&
+    (aod::femtodreamparticle::eta > Track2.EtaMin) &&
+    (aod::femtodreamparticle::eta < Track2.EtaMax) &&
+    ifnode(Option.DCACutPtDep, (nabs(aod::femtodreamparticle::tempFitVar) <= 0.0105f + (0.035f / npow(aod::femtodreamparticle::pt, 1.1f))),
+           ((aod::femtodreamparticle::tempFitVar >= Track2.TempFitVarMin) &&
+            (aod::femtodreamparticle::tempFitVar <= Track2.TempFitVarMax)));
 
   /// Histogramming for track 2
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
@@ -140,61 +182,79 @@ struct femtoDreamPairTaskTrackTrack {
   FemtoDreamEventHisto eventHisto;
 
   /// Binning configurables
-  ConfigurableAxis ConfBinTempFitVar{"ConfBinTempFitVar", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfBinTrackpT{"ConfBinTrackpT", {20, 0.5, 4.05}, "pT binning for pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfBinpT{"ConfBinpT", {20, 0.5, 4.05}, "pT binning"};
-  ConfigurableAxis ConfBinkstar{"ConfBinkstar", {1500, 0., 6.}, "binning kstar"};
-  ConfigurableAxis ConfBinkT{"ConfBinkT", {150, 0., 9.}, "binning kT"};
-  ConfigurableAxis ConfBinmT{"ConfBinmT", {225, 0., 7.5}, "binning mT"};
+  struct : ConfigurableGroup {
+    std::string prefix = "Binning";
+    ConfigurableAxis TempFitVar{"TempFitVar", {300, -0.15, 0.15}, "Binning of the TempFitVar in the pT vs. TempFitVar plot"};
+    ConfigurableAxis TrackpT{"TrackpT", {20, 0.5, 4.05}, "pT binning for pT vs. TempFitVar plot"};
+    ConfigurableAxis pT{"pT", {20, 0.5, 4.05}, "pT binning for extended plots"};
+    ConfigurableAxis kstar{"kstar", {1500, 0., 6.}, "kstar binning"};
+    ConfigurableAxis kT{"kT", {150, 0., 9.}, "kT binning"};
+    ConfigurableAxis mT{"mT", {225, 0., 7.5}, "mT binning"};
+    ConfigurableAxis multTempFit{"multTempFit", {1, 0, 1}, "Multiplicity Binning for the TempFitVar plot"};
+  } Binning;
 
-  ConfigurableAxis ConfBin4Dkstar{"ConfBin4Dkstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
-  ConfigurableAxis ConfBin4DmT{"ConfBin4DmT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
-  ConfigurableAxis ConfBin4Dmult{"ConfBin4Dmult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
-  ConfigurableAxis ConfBin4DmultPercentile{"ConfBin4DmultPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
+  struct : ConfigurableGroup {
+    std::string prefix = "Binning4D";
+    ConfigurableAxis kstar{"kstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
+    ConfigurableAxis mT{"mT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
+    ConfigurableAxis mult{"mult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
+    ConfigurableAxis multPercentile{"multPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true)"};
+  } Binning4D;
 
   // Mixing configurables
-  ConfigurableAxis ConfMixingBinMult{"ConfMixingBinMult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
-  ConfigurableAxis ConfMixingBinMultPercentile{"ConfMixingBinMultPercentile", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "Mixing bins - multiplicity percentile"};
-  ConfigurableAxis ConfMixingBinVztx{"ConfMixingBinVztx", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  Configurable<int> ConfMixingDepth{"ConfMixingDepth", 5, "Number of events for mixing"};
-  Configurable<int> ConfMixingPolicy{"ConfMixingBinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
+  struct : ConfigurableGroup {
+    std::string prefix = "Mixing";
+    ConfigurableAxis MultMixBins{"MultMixBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
+    ConfigurableAxis MultPercentileMixBins{"MultPercentileMixBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "Mixing bins - multiplicity percentile"};
+    ConfigurableAxis VztxMixBins{"VztxMixBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+    Configurable<int> Depth{"Depth", 5, "Number of events for mixing"};
+    Configurable<int> Policy{"Policy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
+  } Mixing;
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{ConfMixingBinVztx, ConfMixingBinMult}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{ConfMixingBinVztx, ConfMixingBinMultPercentile}, true};
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{ConfMixingBinVztx, ConfMixingBinMult, ConfMixingBinMultPercentile}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleaner;
-  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejection;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionSE;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionME;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  TRandom3* random;
+
   void init(InitContext& context)
   {
-    eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinTrackpT, ConfOptDummy, ConfOptDummy, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
-    if (!ConfOptSameSpecies) {
-      trackHistoPartTwo.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinTrackpT, ConfOptDummy, ConfOptDummy, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk2_PDGCode);
+    if (Option.RandomizePair.value) {
+      random = new TRandom3(0);
+    }
+    eventHisto.init(&qaRegistry, Option.IsMC);
+    trackHistoPartOne.init(&qaRegistry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track1.PDGCode);
+    if (!Option.SameSpecies) {
+      trackHistoPartTwo.init(&qaRegistry, Binning.multTempFit, Option.Dummy, Binning.TrackpT, Option.Dummy, Option.Dummy, Binning.TempFitVar, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.Dummy, Option.IsMC, Track2.PDGCode);
     }
 
     sameEventCont.init(&resultRegistry,
-                       ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
-                       ConfBin4Dkstar, ConfBin4DmT, ConfBin4Dmult, ConfBin4DmultPercentile,
-                       ConfOptIsMC, ConfOptUse4D, ConfOptExtendedPlots,
-                       ConfOptHighkstarCut);
+                       Binning.kstar, Binning.pT, Binning.kT, Binning.mT, Mixing.MultMixBins, Mixing.MultPercentileMixBins,
+                       Binning4D.kstar, Binning4D.mT, Binning4D.mult, Binning4D.multPercentile,
+                       Option.IsMC, Option.Use4D, Option.ExtendedPlots,
+                       Option.HighkstarCut,
+                       Option.SmearingByOrigin);
     mixedEventCont.init(&resultRegistry,
-                        ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
-                        ConfBin4Dkstar, ConfBin4DmT, ConfBin4Dmult, ConfBin4DmultPercentile,
-                        ConfOptIsMC, ConfOptUse4D, ConfOptExtendedPlots,
-                        ConfOptHighkstarCut);
-
-    sameEventCont.setPDGCodes(ConfTrk1_PDGCode, ConfTrk2_PDGCode);
-    mixedEventCont.setPDGCodes(ConfTrk1_PDGCode, ConfTrk2_PDGCode);
+                        Binning.kstar, Binning.pT, Binning.kT, Binning.mT, Mixing.MultMixBins, Mixing.MultPercentileMixBins,
+                        Binning4D.kstar, Binning4D.mT, Binning4D.mult, Binning4D.multPercentile,
+                        Option.IsMC, Option.Use4D, Option.ExtendedPlots,
+                        Option.HighkstarCut,
+                        Option.SmearingByOrigin);
+    sameEventCont.setPDGCodes(Track1.PDGCode, Track2.PDGCode);
+    mixedEventCont.setPDGCodes(Track1.PDGCode, Track2.PDGCode);
     pairCleaner.init(&qaRegistry);
-    if (ConfOptUseCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfOptCPRdeltaPhiMax.value, ConfOptCPRdeltaEtaMax.value, ConfOptCPRPlotPerRadii.value);
+    if (Option.CPROn.value) {
+      pairCloseRejectionSE.init(&resultRegistry, &qaRegistry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 1, Option.CPROld.value);
+      pairCloseRejectionME.init(&resultRegistry, &qaRegistry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 2, Option.CPROld.value);
     }
 
     // get bit for the collision mask
@@ -203,25 +263,31 @@ struct femtoDreamPairTaskTrackTrack {
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       if (device.name.find("femto-dream-pair-task-track-track") != std::string::npos) {
-        if (containsNameValuePair(device.options, "ConfTrk1_CutBit", ConfTrk1_CutBit.value) &&
-            containsNameValuePair(device.options, "ConfTrk1_TPCBit", ConfTrk1_TPCBit.value) &&
-            containsNameValuePair(device.options, "ConfTrk1_TPCTOFBit", ConfTrk1_TPCTOFBit.value) &&
-            containsNameValuePair(device.options, "ConfTrk1_PIDThres", ConfTrk1_PIDThres.value) &&
-            containsNameValuePair(device.options, "ConfTrk1_minPt", ConfTrk1_minPt.value) &&
-            containsNameValuePair(device.options, "ConfTrk1_maxPt", ConfTrk1_maxPt.value) &&
-            containsNameValuePair(device.options, "ConfTrk1_minEta", ConfTrk1_minEta.value) &&
-            containsNameValuePair(device.options, "ConfTrk1_maxEta", ConfTrk1_maxEta.value) &&
-            containsNameValuePair(device.options, "ConfTrk2_CutBit", ConfTrk2_CutBit.value) &&
-            containsNameValuePair(device.options, "ConfTrk2_TPCBit", ConfTrk2_TPCBit.value) &&
-            containsNameValuePair(device.options, "ConfTrk2_TPCTOFBit", ConfTrk2_TPCTOFBit.value) &&
-            containsNameValuePair(device.options, "ConfTrk2_PIDThres", ConfTrk2_PIDThres.value) &&
-            containsNameValuePair(device.options, "ConfTrk2_minPt", ConfTrk2_minPt.value) &&
-            containsNameValuePair(device.options, "ConfTrk2_maxPt", ConfTrk2_maxPt.value) &&
-            containsNameValuePair(device.options, "ConfTrk2_minEta", ConfTrk2_minEta.value) &&
-            containsNameValuePair(device.options, "ConfTrk2_maxEta", ConfTrk2_maxEta.value)) {
+        if (containsNameValuePair(device.options, "Option.DCACutPtDep", Option.DCACutPtDep.value) &&
+            containsNameValuePair(device.options, "Option.SameSpecies", Option.SameSpecies.value) &&
+            containsNameValuePair(device.options, "Track1.CutBit", Track1.CutBit.value) &&
+            containsNameValuePair(device.options, "Track1.TPCBit", Track1.TPCBit.value) &&
+            containsNameValuePair(device.options, "Track1.TPCTOFBit", Track1.TPCTOFBit.value) &&
+            containsNameValuePair(device.options, "Track1.PIDThres", Track1.PIDThres.value) &&
+            containsNameValuePair(device.options, "Track1.PtMin", Track1.PtMin.value) &&
+            containsNameValuePair(device.options, "Track1.PtMax", Track1.PtMax.value) &&
+            containsNameValuePair(device.options, "Track1.EtaMin", Track1.EtaMin.value) &&
+            containsNameValuePair(device.options, "Track1.EtaMax", Track1.EtaMax.value) &&
+            containsNameValuePair(device.options, "Track1.TempFitVarMin", Track1.TempFitVarMin.value) &&
+            containsNameValuePair(device.options, "Track1.TempFitVarMax", Track1.TempFitVarMax.value) &&
+            containsNameValuePair(device.options, "Track2.CutBit", Track2.CutBit.value) &&
+            containsNameValuePair(device.options, "Track2.TPCBit", Track2.TPCBit.value) &&
+            containsNameValuePair(device.options, "Track2.TPCTOFBit", Track2.TPCTOFBit.value) &&
+            containsNameValuePair(device.options, "Track2.PIDThres", Track2.PIDThres.value) &&
+            containsNameValuePair(device.options, "Track2.PtMin", Track2.PtMin.value) &&
+            containsNameValuePair(device.options, "Track2.PtMax", Track2.PtMax.value) &&
+            containsNameValuePair(device.options, "Track2.EtaMin", Track2.EtaMin.value) &&
+            containsNameValuePair(device.options, "Track2.EtaMax", Track2.EtaMax.value) &&
+            containsNameValuePair(device.options, "Track2.TempFitVarMin", Track2.TempFitVarMin.value) &&
+            containsNameValuePair(device.options, "Track2.TempFitVarMax", Track2.TempFitVarMax.value)) {
           mask.set(index);
           BitMask = static_cast<femtodreamcollision::BitMaskType>(mask.to_ulong());
-          LOG(info) << "Device name matched: " << device.name;
+          LOG(info) << "Configuration matched for device: " << device.name;
           LOG(info) << "Bitmask for collisions: " << mask.to_string();
           break;
         } else {
@@ -237,10 +303,10 @@ struct femtoDreamPairTaskTrackTrack {
     }
   };
 
-  template <typename CollisionType>
+  template <bool isMC, typename CollisionType>
   void fillCollision(CollisionType col)
   {
-    eventHisto.fillQA(col);
+    eventHisto.fillQA<isMC>(col);
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -257,20 +323,21 @@ struct femtoDreamPairTaskTrackTrack {
   void doSameEvent(PartitionType SliceTrk1, PartitionType SliceTrk2, PartType parts, Collision col)
   {
     for (auto& part : SliceTrk1) {
-      trackHistoPartOne.fillQA<isMC, false>(part, col, aod::femtodreamparticle::kPt);
+      trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
     }
 
-    if (!ConfOptSameSpecies.value) {
+    if (!Option.SameSpecies.value) {
       for (auto& part : SliceTrk2) {
-        trackHistoPartTwo.fillQA<isMC, false>(part, col, aod::femtodreamparticle::kPt);
+        trackHistoPartTwo.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
       }
     }
 
     /// Now build the combinations
-    if (ConfOptSameSpecies.value) {
+    float rand = 0.;
+    if (Option.SameSpecies.value) {
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(SliceTrk1, SliceTrk2))) {
-        if (ConfOptUseCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, col.magField())) {
+        if (Option.CPROn.value) {
+          if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
             continue;
           }
         }
@@ -278,12 +345,19 @@ struct femtoDreamPairTaskTrackTrack {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots);
+        if (Option.RandomizePair.value) {
+          rand = random->Rndm();
+        }
+        if (rand <= 0.5) {
+          sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
+        } else {
+          sameEventCont.setPair<isMC>(p2, p1, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
+        }
       }
     } else {
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
-        if (ConfOptUseCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, col.magField())) {
+        if (Option.CPROn.value) {
+          if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
             continue;
           }
         }
@@ -291,7 +365,7 @@ struct femtoDreamPairTaskTrackTrack {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots);
+        sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
       }
     }
   }
@@ -301,7 +375,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// \param parts subscribe to the femtoDreamParticleTable
   void processSameEvent(FilteredCollision& col, o2::aod::FDParticles& parts)
   {
-    fillCollision(col);
+    fillCollision<false>(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     if (SliceTrk1.size() == 0 && SliceTrk2.size() == 0) {
@@ -313,16 +387,16 @@ struct femtoDreamPairTaskTrackTrack {
 
   void processSameEventMasked(FilteredMaskedCollision& col, o2::aod::FDParticles& parts)
   {
-    if (ConfOptSameSpecies.value) {
+    if (Option.SameSpecies.value) {
       if ((col.bitmaskTrackOne() & BitMask) != BitMask) {
         return;
       }
     } else {
-      if ((col.bitmaskTrackOne() & BitMask) != BitMask && (col.bitmaskTrackTwo() & BitMask) != BitMask) {
+      if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
         return;
       }
     }
-    fillCollision(col);
+    fillCollision<false>(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<false>(SliceTrk1, SliceTrk2, parts, col);
@@ -333,10 +407,12 @@ struct femtoDreamPairTaskTrackTrack {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
   /// \param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(FilteredCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+  void processSameEventMC(FilteredMCCollision& col,
+                          o2::aod::FDMCCollisions&,
+                          soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                           o2::aod::FDMCParticles&)
   {
-    fillCollision(col);
+    fillCollision<true>(col);
     auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMCTrk2 = PartitionMCTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     if (SliceMCTrk1.size() == 0 && SliceMCTrk2.size() == 0) {
@@ -346,10 +422,10 @@ struct femtoDreamPairTaskTrackTrack {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
-  void processSameEventMCMasked(FilteredMaskedCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+  void processSameEventMCMasked(FilteredMaskedMCCollision& col, o2::aod::FDMCCollisions&, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                                 o2::aod::FDMCParticles&)
   {
-    if (ConfOptSameSpecies.value) {
+    if (Option.SameSpecies.value) {
       if ((col.bitmaskTrackOne() & BitMask) != BitMask) {
         return;
       }
@@ -358,7 +434,7 @@ struct femtoDreamPairTaskTrackTrack {
         return;
       }
     }
-    fillCollision(col);
+    fillCollision<true>(col);
     auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceMCTrk2 = PartitionMCTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<true>(SliceMCTrk1, SliceMCTrk2, parts, col);
@@ -368,19 +444,19 @@ struct femtoDreamPairTaskTrackTrack {
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
   void doMixedEvent_NotMasked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
   {
-    for (auto const& [collision1, collision2] : soa::selfCombinations(policy, ConfMixingDepth.value, -1, cols, cols)) {
+    for (auto const& [collision1, collision2] : soa::selfCombinations(policy, Mixing.Depth.value, -1, cols, cols)) {
       auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto SliceTrk2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
       if (SliceTrk1.size() == 0 || SliceTrk2.size() == 0) {
         continue;
       }
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
-        if (ConfOptUseCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, collision1.magField())) {
+        if (Option.CPROn.value) {
+          if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
             continue;
           }
         }
-        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots);
+        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
       }
     }
   }
@@ -388,20 +464,67 @@ struct femtoDreamPairTaskTrackTrack {
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
   void doMixedEvent_Masked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
   {
-    Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
-    Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
-    PartitionMaskedCol1.bindTable(cols);
-    PartitionMaskedCol2.bindTable(cols);
-    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, ConfMixingDepth.value, -1, PartitionMaskedCol1, PartitionMaskedCol2))) {
-      auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
-      auto SliceTrk2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
-        if (ConfOptUseCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, collision1.magField())) {
-            continue;
+    if (!Option.SameSpecies.value && !Option.MixEventWithPairs.value) {
+      // If the two particles are not the same species and the events which are mixed should contain at least one particle of interest, create two paritition of collisions that contain at least one of the two particle of interest and mix them
+      // Make sure there is a check that we do not mix a event with itself in case it contains both partilces
+      Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
+      PartitionMaskedCol1.bindTable(cols);
+      Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
+      PartitionMaskedCol2.bindTable(cols);
+      // use *Partition.mFiltered when passing the partition to mixing object
+      // there is an issue when the partition is passed directly
+      // workaround for now, change back once it is fixed
+      for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, Mixing.Depth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol2.mFiltered))) {
+        // make sure that tracks in the same events are not mixed
+        if (collision1.globalIndex() == collision2.globalIndex()) {
+          continue;
+        }
+        auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto SliceTrk2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+
+        for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
+          if (Option.CPROn.value) {
+            if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
+              continue;
+            }
+          }
+          mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
+        }
+      }
+    } else {
+      // In the other case where the two particles are not the same species and we do not mix event with pairs,  we only need to define one partition of collisions and make self combinations
+
+      // define a lambda function for the mixing with selfCombinations policy
+      auto MixEvents = [policy, &part1, &part2, parts, this](auto& partition) {
+        for (auto const& [collision1, collision2] : selfCombinations(policy, Mixing.Depth.value, -1, *partition.mFiltered, *partition.mFiltered)) {
+          auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
+          auto SliceTrk2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+          for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
+            if (Option.CPROn.value) {
+              if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
+                continue;
+              }
+            }
+            mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D.value, Option.ExtendedPlots.value, Option.SmearingByOrigin.value);
           }
         }
-        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots);
+      };
+      if (Option.SameSpecies.value && Option.MixEventWithPairs.value) {
+        // in case of mixing the same species and events that contain pairs, check for bitmask of particle two
+        // when same species is set to true the bit of particle two is only set if the event contains at least two selected particles
+        Partition<CollisionType> PartitionMaskedCol1 = ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask) && aod::femtodreamcollision::downsample == true;
+        PartitionMaskedCol1.bindTable(cols);
+        MixEvents(PartitionMaskedCol1);
+      } else if (Option.SameSpecies.value && !Option.MixEventWithPairs.value) {
+        // in case of mixing the same species and events that contain at least one selected paritcle, check for bitmask of particle one
+        Partition<CollisionType> PartitionMaskedCol1 = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, BitMask) && aod::femtodreamcollision::downsample == true;
+        PartitionMaskedCol1.bindTable(cols);
+        MixEvents(PartitionMaskedCol1);
+      } else if (!Option.SameSpecies.value && Option.MixEventWithPairs.value) {
+        // in case of mixing different species and events that contain a pair of selected paritcles, check for both bitmasks of paritcle one and particle two
+        Partition<CollisionType> PartitionMaskedCol1 = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, BitMask) && ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask) && aod::femtodreamcollision::downsample == true;
+        PartitionMaskedCol1.bindTable(cols);
+        MixEvents(PartitionMaskedCol1);
       }
     }
   }
@@ -411,7 +534,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// @param parts subscribe to the femtoDreamParticleTable
   void processMixedEvent(FilteredCollisions& cols, o2::aod::FDParticles& parts)
   {
-    switch (ConfMixingPolicy.value) {
+    switch (Mixing.Policy.value) {
       case femtodreamcollision::kMult:
         doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMult);
         break;
@@ -429,7 +552,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   void processMixedEventMasked(FilteredMaskedCollisions& cols, o2::aod::FDParticles& parts)
   {
-    switch (ConfMixingPolicy.value) {
+    switch (Mixing.Policy.value) {
       case static_cast<int>(femtodreamcollision::kMult):
         doMixedEvent_Masked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMult);
         break;
@@ -449,9 +572,9 @@ struct femtoDreamPairTaskTrackTrack {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
   /// @param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(FilteredCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  void processMixedEventMC(FilteredMCCollisions& cols, o2::aod::FDMCCollisions&, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
-    switch (ConfMixingPolicy.value) {
+    switch (Mixing.Policy.value) {
       case femtodreamcollision::kMult:
         doMixedEvent_NotMasked<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMult);
         break;
@@ -467,9 +590,9 @@ struct femtoDreamPairTaskTrackTrack {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEventMC, "Enable processing mixed events MC", false);
 
-  void processMixedEventMCMasked(FilteredMaskedCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  void processMixedEventMCMasked(FilteredMaskedMCCollisions& cols, o2::aod::FDMCCollisions&, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
-    switch (ConfMixingPolicy.value) {
+    switch (Mixing.Policy.value) {
       case femtodreamcollision::kMult:
         doMixedEvent_Masked<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMult);
         break;

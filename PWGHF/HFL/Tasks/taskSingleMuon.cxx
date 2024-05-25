@@ -116,7 +116,7 @@ struct HfTaskSingleMuon {
   }
 
   template <typename TCollision, typename TMFT, typename TMuons>
-  void runMuonSel(TCollision const& collision, TMFT const& tracksMFT, TMuons const& muons)
+  void runMuonSel(TCollision const& collision, TMFT const& /*tracksMFT*/, TMuons const& muons)
   {
     if (!collision.sel8()) {
       return;
@@ -175,7 +175,7 @@ struct HfTaskSingleMuon {
   }
 
   template <typename TCollision, typename TMFT, typename TMuons, typename TMC>
-  void runMuonSelMc(TCollision const& collision, TMFT const& tracksMFT, TMuons const& muons, TMC const& mc)
+  void runMuonSelMc(TCollision const& collision, TMFT const& /*tracksMFT*/, TMuons const& muons, TMC const& /*mc*/)
   {
     if (!collision.sel8()) {
       return;

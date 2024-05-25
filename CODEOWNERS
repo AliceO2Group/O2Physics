@@ -17,8 +17,9 @@
 /ALICE3 @alibuild @njacazio @hscheid
 /DPG @alibuild @chiarazampolli @noferini
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
-/DPG/Tasks/AOTTrack @alibuild @mfaggin @belikov @njacazio
+/DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio
 /DPG/Tasks/TOF @alibuild @noferini @njacazio
+/DPG/Tasks/FT0 @alibuild @afurs
 /EventFiltering @alibuild @mpuccio @strogolo
 /EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @strogolo
 /EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @strogolo
@@ -26,18 +27,22 @@
 /EventFiltering/PWGCF @alibuild @lauraser @mpuccio @strogolo
 /EventFiltering/PWGMM @alibuild @aortizve @mpuccio @strogolo
 /EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @strogolo
-/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGCF               @alibuild @saganatt @victor-gonzalez @zchochul
+/PWGCF/Core          @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGCF/DataModel     @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGCF/TableProducer @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
 /PWGDQ @alibuild @iarsene @dsekihat @feisenhu @lucamicheletti93
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
-/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @nzardosh @NicoleBastid
-/PWGLF @alibuild @fmazzasc @chiarapinto @BongHwi @smaff92 @mbombara @ChiaraDeMartin95 @njacazio @skundu692
+/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @nzardosh @NicoleBastid @hahassan7 @jpxrk
+/PWGLF @alibuild @ercolessi @fmazzasc @chiarapinto @BongHwi @smaff92 @mbombara @ChiaraDeMartin95 @njacazio @skundu692
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
 /PWGMM/UE @alibuild @aalkin @aortizve
-/PWGUD @alibuild @pbuehler
+/PWGUD @alibuild @pbuehler @abylinkin @rolavick
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
 /Tools/PIDML @alibuild @saganatt
 /Tools/ML @alibuild @fcatalan92 @fmazzasc

@@ -137,7 +137,7 @@ struct DQEventSelectionTask {
   }
 
   template <uint32_t TEventFillMap, typename TEvent>
-  void runEventSelection(TEvent const& collision, aod::BCs const& bcs)
+  void runEventSelection(TEvent const& collision, aod::BCs const&)
   {
     // Reset the Values array
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -384,6 +384,8 @@ struct DQFilterPPTask {
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:pairMassLow:1", "<track-cut>:[<pair-cut>]:<n>,[<track-cut>:[<pair-cut>]:<n>],..."};
   Configurable<std::string> fConfigMuonSelections{"cfgMuonSels", "muonQualityCuts:pairNoCut:1", "<muon-cut>:[<pair-cut>]:<n>"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
+  Configurable<std::string> fConfigFilterLsBarrelTracksPairs{"cfgWithBarrelLS", "false", "Comma separated list of booleans for each trigger, If true, also select like sign (--/++) barrel track pairs"};
+  Configurable<std::string> fConfigFilterLsMuonsPairs{"cfgWithMuonLS", "false", "Comma separated list of booleans for each trigger, If true, also select like sign (--/++) muon pairs"};
 
   Filter filterBarrelTrackSelected = aod::dqppfilter::isDQBarrelSelected > uint32_t(0);
   Filter filterMuonTrackSelected = aod::dqppfilter::isDQMuonSelected > uint32_t(0);
@@ -489,7 +491,7 @@ struct DQFilterPPTask {
   }
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons>
-  void runFilterPP(TEvent const& collision, aod::BCs const& bcs, TTracks const& tracksBarrel, TMuons const& muons)
+  void runFilterPP(TEvent const& collision, aod::BCs const&, TTracks const& tracksBarrel, TMuons const& muons)
   {
     fStats->Fill(-2.0);
     // if the event is not selected produce tables and return
@@ -531,14 +533,21 @@ struct DQFilterPPTask {
       }
     }
 
+    // check which selection should use like sign (LS) (--/++) barrel track pairs
+    uint32_t pairingLS = 0; // used to set in which cut setting LS pairs will be analysed
+    TString barrelLSstr = fConfigFilterLsBarrelTracksPairs.value;
+    std::unique_ptr<TObjArray> objArrayLS(barrelLSstr.Tokenize(","));
+    for (int icut = 0; icut < fNBarrelCuts; icut++) {
+      TString objStr = objArrayLS->At(icut)->GetName();
+      if (!objStr.CompareTo("true")) {
+        pairingLS |= (uint32_t(1) << icut);
+      }
+    }
+
     // run pairing if there is at least one selection that requires it
     uint32_t pairFilter = 0;
     if (pairingMask > 0) {
       for (auto& [t1, t2] : combinations(tracksBarrel, tracksBarrel)) {
-        // keep just opposite-sign pairs
-        if (t1.sign() * t2.sign() > 0) {
-          continue;
-        }
         // check the pairing mask and that the tracks share a cut bit
         pairFilter = pairingMask & t1.isDQBarrelSelected() & t2.isDQBarrelSelected();
         if (pairFilter == 0) {
@@ -547,6 +556,12 @@ struct DQFilterPPTask {
         // construct the pair and apply pair cuts
         VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNBarrelCuts; icut++) {
+          // select like-sign pairs if trigger has set boolean true within fConfigFilterLsBarrelTracksPairs
+          if (!(pairingLS & (uint32_t(1) << icut))) {
+            if (t1.sign() * t2.sign() > 0) {
+              continue;
+            }
+          }
           if (!(pairFilter & (uint32_t(1) << icut))) {
             continue;
           }
@@ -582,14 +597,21 @@ struct DQFilterPPTask {
       }
     }
 
+    // check which selection should use like sign (LS) (--/++) muon track pairs
+    pairingLS = 0; // reset the decisions for muons
+    TString musonLSstr = fConfigFilterLsMuonsPairs.value;
+    std::unique_ptr<TObjArray> objArrayMuonLS(musonLSstr.Tokenize(","));
+    for (int icut = 0; icut < fNMuonCuts; icut++) {
+      TString objStr = objArrayMuonLS->At(icut)->GetName();
+      if (!objStr.CompareTo("true")) {
+        pairingLS |= (uint32_t(1) << icut);
+      }
+    }
+
     // run pairing if there is at least one selection that requires it
     pairFilter = 0;
     if (pairingMask > 0) {
       for (auto& [t1, t2] : combinations(muons, muons)) {
-        // keep just opposite-sign pairs
-        if (t1.sign() * t2.sign() > 0) {
-          continue;
-        }
         // check the pairing mask and that the tracks share a cut bit
         pairFilter = pairingMask & t1.isDQMuonSelected() & t2.isDQMuonSelected();
         if (pairFilter == 0) {
@@ -598,6 +620,12 @@ struct DQFilterPPTask {
         // construct the pair and apply cuts
         VarManager::FillPair<VarManager::kDecayToMuMu, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNMuonCuts; icut++) {
+          // select like-sign pairs if trigger has set boolean true within fConfigFilterLsMuonsPairs
+          if (!(pairingLS & (uint32_t(1) << icut))) {
+            if (t1.sign() * t2.sign() > 0) {
+              continue;
+            }
+          }
           if (!(pairFilter & (uint32_t(1) << icut))) {
             continue;
           }

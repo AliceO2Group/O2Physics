@@ -42,33 +42,33 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTOFFullDe>;
-using MCLabeledFullTracksExtIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
+using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 template <class TMCTrackTo, typename TMCParticle>
 bool is3bodyDecayedH3L(TMCParticle const& particle)
 {
-  if (particle.pdgCode() != 1010010030 && particle.pdgCode() != -1010010030) {
+  if (std::abs(particle.pdgCode()) != 1010010030) {
     return false;
   }
   bool haveProton = false, havePion = false, haveDeuteron = false;
   bool haveAntiProton = false, haveAntiPion = false, haveAntiDeuteron = false;
-  for (auto& mcparticleDaughter : particle.template daughters_as<TMCTrackTo>()) {
-    if (mcparticleDaughter.pdgCode() == 2212)
+  for (auto& mcDaughter : particle.template daughters_as<TMCTrackTo>()) {
+    if (mcDaughter.pdgCode() == 2212)
       haveProton = true;
-    if (mcparticleDaughter.pdgCode() == -2212)
+    if (mcDaughter.pdgCode() == -2212)
       haveAntiProton = true;
-    if (mcparticleDaughter.pdgCode() == 211)
+    if (mcDaughter.pdgCode() == 211)
       havePion = true;
-    if (mcparticleDaughter.pdgCode() == -211)
+    if (mcDaughter.pdgCode() == -211)
       haveAntiPion = true;
-    if (mcparticleDaughter.pdgCode() == 1000010020)
+    if (mcDaughter.pdgCode() == 1000010020)
       haveDeuteron = true;
-    if (mcparticleDaughter.pdgCode() == -1000010020)
+    if (mcDaughter.pdgCode() == -1000010020)
       haveAntiDeuteron = true;
   }
-  if (haveProton && haveAntiPion && haveDeuteron && particle.pdgCode() == 1010010030) {
+  if (haveProton && haveAntiPion && haveDeuteron && particle.pdgCode() > 0) {
     return true;
-  } else if (haveAntiProton && havePion && haveAntiDeuteron && particle.pdgCode() == -1010010030) {
+  } else if (haveAntiProton && havePion && haveAntiDeuteron && particle.pdgCode() < 0) {
     return true;
   }
   return false;
@@ -83,10 +83,10 @@ bool isPairedH3LDaughters(TMCParticle const& mctrack0, TMCParticle const& mctrac
       continue;
     }
     bool flag1 = false, flag2 = false;
-    for (auto& mcparticleDaughter : particleMother.template daughters_as<TMCTrackTo>()) {
-      if (mcparticleDaughter.globalIndex() == mctrack1.globalIndex())
+    for (auto& mcDaughter : particleMother.template daughters_as<TMCTrackTo>()) {
+      if (mcDaughter.globalIndex() == mctrack1.globalIndex())
         flag1 = true;
-      if (mcparticleDaughter.globalIndex() == mctrack2.globalIndex())
+      if (mcDaughter.globalIndex() == mctrack2.globalIndex())
         flag2 = true;
     }
     if (!flag1 || !flag2)
@@ -108,13 +108,14 @@ struct hypertriton3bodyTrackMcinfo {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
       {"hParticleCount", "hParticleCount", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
 
-      {"hTPCNClsCrossedRows", "hTPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
+      {"hTPCNCls", "hTPCNCls", {HistType::kTH1F, {{160, 0.0f, 160.0f}}}},
+      {"hTPCNClsCrossedRows", "hTPCNClsCrossedRows", {HistType::kTH1F, {{160, 0.0f, 160.0f}}}},
       {"hTrackEta", "hTrackEta", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
       {"hTrackITSNcls", "hTrackITSNcls", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
       {"hTrackMcRapidity", "hTrackMcRapidity", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
-      {"hTrackNsigmaProton", "hTrackNsigmaProton", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"hTrackNsigmaPion", "hTrackNsigmaPion", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"hTrackNsigmaDeuteron", "hTrackNsigmaDeuteron", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+      {"hTrackNsigmaProton", "hTrackNsigmaProton", {HistType::kTH1F, {{120, -6.0f, 6.0f}}}},
+      {"hTrackNsigmaPion", "hTrackNsigmaPion", {HistType::kTH1F, {{120, -6.0f, 6.0f}}}},
+      {"hTrackNsigmaDeuteron", "hTrackNsigmaDeuteron", {HistType::kTH1F, {{120, -6.0f, 6.0f}}}},
 
       {"hHypertritonEta", "hHypertritomEta", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
       {"hHypertritonMcRapidity", "hHypertritonMcRapidity", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
@@ -127,14 +128,14 @@ struct hypertriton3bodyTrackMcinfo {
       {"hProtonMcP", "hProtonMcP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hProtonEta", "hProtonEta", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
       {"hProtonMcRapidity", "hProtonMcRapidity", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
-      {"hProtonNsigmaProton", "hProtonNsigmaProton", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"hProtonTPCNClsCrossedRows", "hProtonTPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
+      {"hProtonNsigmaProton", "hProtonNsigmaProton", {HistType::kTH1F, {{120, -6.0f, 6.0f}}}},
+      {"hProtonTPCNCls", "hProtonTPCNCls", {HistType::kTH1F, {{120, 0.0f, 120.0f}}}},
       {"hProtonTPCBB", "hProtonTPCBB", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal"}}}},
       {"hProtonTPCBBAfterTPCNclsCut", "hProtonTPCBBAfterTPCNclsCut", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal"}}}},
       {"hDauProtonPt", "hDauProtonPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDauProtonMcPt", "hDauProtonMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
-      {"hDauProtonNsigmaProton", "hDauProtonNsigmaProton", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"hDauProtonTPCVsPt", "hDauProtonTPCVsPt", {HistType::kTH2F, {{50, 0.0f, 5.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
+      {"hDauProtonNsigmaProton", "hDauProtonNsigmaProton", {HistType::kTH1F, {{120, -6.0f, 6.0f}}}},
+      {"hDauProtonTPCVsPt", "hDauProtonTPCVsPt", {HistType::kTH2F, {{50, 0.0f, 5.0f, "#it{p}_{T} (GeV/c)"}, {120, -6.0f, 6.0f, "TPC n#sigma"}}}},
 
       {"hPionCount", "hPionCount", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
       {"hPionPt", "hPionPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
@@ -143,14 +144,14 @@ struct hypertriton3bodyTrackMcinfo {
       {"hPionMcP", "hPionMcP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hPionEta", "hPionEta", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
       {"hPionMcRapidity", "hPionMcRapidity", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
-      {"hPionNsigmaPion", "hPionNsigmaPion", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"hPionTPCNClsCrossedRows", "hPionTPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
+      {"hPionNsigmaPion", "hPionNsigmaPion", {HistType::kTH1F, {{120, -6.0f, 6.0f}}}},
+      {"hPionTPCNCls", "hPionTPCNCls", {HistType::kTH1F, {{160, 0.0f, 160.0f}}}},
       {"hPionTPCBB", "hPionTPCBB", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal"}}}},
       {"hPionTPCBBAfterTPCNclsCut", "hPionTPCBBAfterTPCNclsCut", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal"}}}},
       {"hDauPionPt", "hDauPionPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDauPionMcPt", "hDauPionMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
-      {"hDauPionNsigmaPion", "hDauPionNsigmaPion", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"hDauPionTPCVsPt", "hDauPionTPCVsPt", {HistType::kTH2F, {{20, 0.0f, 2.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
+      {"hDauPionNsigmaPion", "hDauPionNsigmaPion", {HistType::kTH1F, {{120, -6.0f, 6.0f}}}},
+      {"hDauPionTPCVsPt", "hDauPionTPCVsPt", {HistType::kTH2F, {{20, 0.0f, 2.0f, "#it{p}_{T} (GeV/c)"}, {120, -6.0f, 6.0f, "TPC n#sigma"}}}},
 
       {"hDeuteronCount", "hDeuteronCount", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
       {"hDeuteronPt", "hDeuteronPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
@@ -159,21 +160,24 @@ struct hypertriton3bodyTrackMcinfo {
       {"hDeuteronMcP", "hDeuteronMcP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDeuteronEta", "hDeuteronEta", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
       {"hDeuteronMcRapidity", "hDeuteronMcRapidity", {HistType::kTH1F, {{200, -10.0f, 10.0f}}}},
-      {"hDeuteronNsigmaDeuteron", "hDeuteronNsigmaDeuteron", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"hDeuteronTPCNClsCrossedRows", "hDeuteronTPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
+      {"hDeuteronNsigmaDeuteron", "hDeuteronNsigmaDeuteron", {HistType::kTH1F, {{120, -6.0f, 6.0f}}}},
+      {"hDeuteronTPCNCls", "hDeuteronTPCNCls", {HistType::kTH1F, {{120, 0.0f, 120.0f}}}},
       {"hDeuteronTPCBB", "hDeuteronTPCBB", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal"}}}},
       {"hDeuteronTPCBBAfterTPCNclsCut", "hDeuteronTPCBBAfterTPCNclsCut", {HistType::kTH2F, {{320, -8.0f, 8.0f, "p/z(GeV/c)"}, {200, 0.0f, 1000.0f, "TPCSignal"}}}},
       {"hDauDeuteronPt", "hDauDeuteronPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDauDeuteronMcPt", "hDauDeuteronMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
-      {"hDauDeuteronTPCVsPt", "hDauDeuteronTPCVsPt", {HistType::kTH2F, {{80, 0.0f, 8.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
-      {"hDauDeuteronTOFNSigmaVsP", "hDauDeuteronTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {200, -100.0f, 100.0f, "TPC n#sigma"}}}},
-      {"hDauDeuteronTOFNSigmaVsPifhasTOF", "hDauDeuteronTOFNSigmaVsPifhasTOF", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {200, -100.0f, 100.0f, "TPC n#sigma"}}}},
+      {"hDauDeuteronTPCVsPt", "hDauDeuteronTPCVsPt", {HistType::kTH2F, {{80, 0.0f, 8.0f, "#it{p}_{T} (GeV/c)"}, {120, -6.0f, 6.0f, "TPC n#sigma"}}}},
+      {"hDauDeuteronTOFNSigmaVsP", "hDauDeuteronTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
+      {"hDauDeuteronTOFNSigmaVsPHasTOF", "hDauDeuteronTOFNSigmaVsPHasTOF", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {600, -300.0f, 300.0f, "TOF n#sigma"}}}},
+      {"hDeuteronTOFMatchCounter", "hDeuteronTOFMatchCounter", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
+      {"hDauDeuteronMatchCounter", "hDauDeuteronMatchCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
 
       {"hTPCBB", "hTPCBB", {HistType::kTH2F, {{120, -8.0f, 8.0f, "p/z(GeV/c)"}, {100, 0.0f, 1000.0f, "TPCSignal"}}}},
 
       {"hPairedH3LDaughers", "hPairedH3LDaughers", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
       {"hPairedH3LDaughersInvMass", "hPairedH3LDaughersInvMass", {HistType::kTH1F, {{300, 2.9f, 3.2f}}}},
       {"hDuplicatedH3LDaughers", "hDuplicatedH3LDaughers", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
+      {"hTestCounter", "hTestCounter", {HistType::kTH1F, {{22, 0.0f, 22.0f}}}},
     },
   };
 
@@ -187,6 +191,16 @@ struct hypertriton3bodyTrackMcinfo {
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(6, "McisPion");
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(7, "McisDeuteron");
 
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(1, "All track");
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(2, "hasMC");
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(3, "hasMC&TPC&TOF");
+    for (int i = 0; i < 16; i++) {
+      registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(i + 4, Form("Bit %d", i));
+    }
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(20, "hasMC&TPC&TOF&(!Bit15)");
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(21, "hasMC&TPC&TOF&(!Bit11)");
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(21, "hasMC&TPC&TOF&(!Bit13)&(Bit15)");
+
     TString TrackCounterbinLabel[6] = {"hasMom", "FromHypertriton", "TPCNcls", "Eta", "Pt", "TPCPID"};
     for (int i{0}; i < 6; i++) {
       registry.get<TH1>(HIST("hProtonCount"))->GetXaxis()->SetBinLabel(i + 1, TrackCounterbinLabel[i]);
@@ -198,6 +212,11 @@ struct hypertriton3bodyTrackMcinfo {
     registry.get<TH1>(HIST("hDuplicatedH3LDaughers"))->GetXaxis()->SetBinLabel(1, "proton");
     registry.get<TH1>(HIST("hDuplicatedH3LDaughers"))->GetXaxis()->SetBinLabel(2, "pion");
     registry.get<TH1>(HIST("hDuplicatedH3LDaughers"))->GetXaxis()->SetBinLabel(3, "deuteron");
+
+    registry.get<TH1>(HIST("hDauDeuteronMatchCounter"))->GetXaxis()->SetBinLabel(1, "Total");
+    registry.get<TH1>(HIST("hDauDeuteronMatchCounter"))->GetXaxis()->SetBinLabel(2, "correct collision");
+    registry.get<TH1>(HIST("hDauDeuteronMatchCounter"))->GetXaxis()->SetBinLabel(3, "hasTOF");
+    registry.get<TH1>(HIST("hDauDeuteronMatchCounter"))->GetXaxis()->SetBinLabel(4, "hasTOF & correct collsion");
   }
 
   Configurable<float> dcapiontopv{"dcapiontopv", .05, "DCA Pion To PV"};
@@ -220,7 +239,7 @@ struct hypertriton3bodyTrackMcinfo {
     }
   };
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::McParticles const& particlesMC, MCLabeledFullTracksExtIU const& tracks)
+  void process(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels>::iterator const& collision, aod::McParticles const& /*particlesMC*/, MCLabeledTracksIU const& tracks, aod::McCollisions const& /*mcCollisions*/)
   {
 
     registry.fill(HIST("hEventCounter"), 0.5);
@@ -235,22 +254,46 @@ struct hypertriton3bodyTrackMcinfo {
 
     std::vector<int> protons, pions, deuterons;                     // index for daughter tracks
     std::unordered_set<int64_t> set_proton, set_pion, set_deuteron; // check duplicated daughters
-    int itrack = 0;
+    int itrack = -1;
 
     for (auto& track : tracks) {
+
+      ++itrack;
       registry.fill(HIST("hParticleCount"), 0.5);
       registry.fill(HIST("hTrackITSNcls"), track.itsNCls());
+      registry.fill(HIST("hTPCNCls"), track.tpcNClsFound());
       registry.fill(HIST("hTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
       registry.fill(HIST("hTrackNsigmaDeuteron"), track.tpcNSigmaDe());
       registry.fill(HIST("hTrackNsigmaProton"), track.tpcNSigmaPr());
       registry.fill(HIST("hTrackNsigmaPion"), track.tpcNSigmaPi());
 
+      registry.fill(HIST("hTestCounter"), 0.5);
+      for (int i = 0; i < 16; i++) {
+        if (track.mcMask() & 1 << i) { // Bit ON means mismatch
+          registry.fill(HIST("hTestCounter"), i + 3.5);
+        }
+      }
+
       if (!track.has_mcParticle()) {
         continue;
       }
-      registry.fill(HIST("hParticleCount"), 1.5);
+      registry.fill(HIST("hTestCounter"), 1.5);
       auto mcparticle = track.mcParticle_as<aod::McParticles>();
       registry.fill(HIST("hTPCBB"), track.p() * track.sign(), track.tpcSignal());
+
+      if (track.hasTOF() && track.hasTPC()) {
+        registry.fill(HIST("hTestCounter"), 2.5);
+        if (!(track.mcMask() & 1 << 15)) {
+          registry.fill(HIST("hTestCounter"), 19.5);
+        }
+        if (!(track.mcMask() & 1 << 11)) {
+          registry.fill(HIST("hTestCounter"), 20.5);
+        }
+        if (!(track.mcMask() & 1 << 13) && (track.mcMask() & 1 << 15)) {
+          registry.fill(HIST("hTestCounter"), 21.5);
+        }
+      }
+      registry.fill(HIST("hParticleCount"), 1.5);
 
       // if (TMath::Abs(mcparticle.y()) > 0.9) {continue;}
       registry.fill(HIST("hParticleCount"), 2.5);
@@ -268,7 +311,7 @@ struct hypertriton3bodyTrackMcinfo {
       // Proton
       if (mcparticle.pdgCode() == 2212 || mcparticle.pdgCode() == -2212) {
         registry.fill(HIST("hParticleCount"), 4.5);
-        if (track.tpcNClsCrossedRows() > 70) {
+        if (track.tpcNClsFound() > 70) {
           registry.fill(HIST("hProtonTPCBBAfterTPCNclsCut"), track.p() * track.sign(), track.tpcSignal());
         }
 
@@ -288,7 +331,7 @@ struct hypertriton3bodyTrackMcinfo {
             registry.fill(HIST("hDauProtonMcPt"), mcparticle.pt());
             registry.fill(HIST("hDauProtonNsigmaProton"), track.tpcNSigmaPr());
             registry.fill(HIST("hDauProtonTPCVsPt"), track.pt(), track.tpcNSigmaPr());
-            if (track.tpcNClsCrossedRows() < 70) {
+            if (track.tpcNClsFound() < 70) {
               continue;
             }
             registry.fill(HIST("hProtonCount"), 2.5);
@@ -313,7 +356,7 @@ struct hypertriton3bodyTrackMcinfo {
         registry.fill(HIST("hProtonP"), track.p());
 
         registry.fill(HIST("hProtonNsigmaProton"), track.tpcNSigmaPr());
-        registry.fill(HIST("hProtonTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
+        registry.fill(HIST("hProtonTPCNCls"), track.tpcNClsFound());
         registry.fill(HIST("hProtonEta"), track.eta());
         registry.fill(HIST("hProtonMcRapidity"), mcparticle.y());
         registry.fill(HIST("hProtonTPCBB"), track.p() * track.sign(), track.tpcSignal());
@@ -322,7 +365,7 @@ struct hypertriton3bodyTrackMcinfo {
       // Pion
       if (mcparticle.pdgCode() == 211 || mcparticle.pdgCode() == -211) {
         registry.fill(HIST("hParticleCount"), 5.5);
-        if (track.tpcNClsCrossedRows() > 70) {
+        if (track.tpcNClsFound() > 70) {
           registry.fill(HIST("hPionTPCBBAfterTPCNclsCut"), track.p() * track.sign(), track.tpcSignal());
         }
 
@@ -341,7 +384,7 @@ struct hypertriton3bodyTrackMcinfo {
             registry.fill(HIST("hDauPionPt"), track.pt());
             registry.fill(HIST("hDauPionMcPt"), mcparticle.pt());
             registry.fill(HIST("hDauPionTPCVsPt"), track.pt(), track.tpcNSigmaPi());
-            if (track.tpcNClsCrossedRows() < 70) {
+            if (track.tpcNClsFound() < 70) {
               continue;
             }
             registry.fill(HIST("hPionCount"), 2.5);
@@ -370,7 +413,7 @@ struct hypertriton3bodyTrackMcinfo {
         registry.fill(HIST("hPionP"), track.p());
 
         registry.fill(HIST("hPionNsigmaPion"), track.tpcNSigmaPi());
-        registry.fill(HIST("hPionTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
+        registry.fill(HIST("hPionTPCNCls"), track.tpcNClsFound());
         registry.fill(HIST("hPionEta"), track.eta());
         registry.fill(HIST("hPionMcRapidity"), mcparticle.y());
         registry.fill(HIST("hPionTPCBB"), track.p() * track.sign(), track.tpcSignal());
@@ -379,7 +422,7 @@ struct hypertriton3bodyTrackMcinfo {
       // Deuteron
       if (mcparticle.pdgCode() == 1000010020 || mcparticle.pdgCode() == -1000010020) {
         registry.fill(HIST("hParticleCount"), 6.5);
-        if (track.tpcNClsCrossedRows() > 70) {
+        if (track.tpcNClsFound() > 70) {
           registry.fill(HIST("hDeuteronTPCBBAfterTPCNclsCut"), track.p() * track.sign(), track.tpcSignal());
         }
 
@@ -400,9 +443,19 @@ struct hypertriton3bodyTrackMcinfo {
             registry.fill(HIST("hDauDeuteronTPCVsPt"), track.pt(), track.tpcNSigmaDe());
             registry.fill(HIST("hDauDeuteronTOFNSigmaVsP"), track.sign() * track.p(), track.tofNSigmaDe());
             if (track.hasTOF()) {
-              registry.fill(HIST("hDauDeuteronTOFNSigmaVsPifhasTOF"), track.sign() * track.p(), track.tofNSigmaDe());
+              registry.fill(HIST("hDauDeuteronTOFNSigmaVsPHasTOF"), track.sign() * track.p(), track.tofNSigmaDe());
             }
-            if (track.tpcNClsCrossedRows() < 70) {
+            registry.fill(HIST("hDauDeuteronMatchCounter"), 0.5);
+            if (mcparticle.mcCollisionId() == collision.mcCollisionId()) {
+              registry.fill(HIST("hDauDeuteronMatchCounter"), 1.5);
+            }
+            if (track.hasTOF()) {
+              registry.fill(HIST("hDauDeuteronMatchCounter"), 2.5);
+              if (mcparticle.mcCollisionId() == collision.mcCollisionId()) {
+                registry.fill(HIST("hDauDeuteronMatchCounter"), 3.5);
+              }
+            }
+            if (track.tpcNClsFound() < 70) {
               continue;
             }
             registry.fill(HIST("hDeuteronCount"), 2.5);
@@ -418,7 +471,7 @@ struct hypertriton3bodyTrackMcinfo {
               continue;
             }
             registry.fill(HIST("hDeuteronCount"), 5.5);
-            if (track.hasTOF()) {
+            if (!track.hasTOF()) {
               continue;
             }
             registry.fill(HIST("hDeuteronCount"), 6.5);
@@ -431,12 +484,21 @@ struct hypertriton3bodyTrackMcinfo {
         registry.fill(HIST("hDeuteronP"), track.p());
 
         registry.fill(HIST("hDeuteronNsigmaDeuteron"), track.tpcNSigmaDe());
-        registry.fill(HIST("hDeuteronTPCNClsCrossedRows"), track.tpcNClsCrossedRows());
+        registry.fill(HIST("hDeuteronTPCNCls"), track.tpcNClsFound());
         registry.fill(HIST("hDeuteronEta"), track.eta());
         registry.fill(HIST("hDeuteronMcRapidity"), mcparticle.y());
         registry.fill(HIST("hDeuteronTPCBB"), track.p() * track.sign(), track.tpcSignal());
+        registry.fill(HIST("hDeuteronTOFMatchCounter"), 0.5);
+        if (!(track.mcMask() & 1 << 15)) {
+          registry.fill(HIST("hDeuteronTOFMatchCounter"), 1.5);
+          if (track.hasTPC() && track.hasTOF()) {
+            registry.fill(HIST("hDeuteronTOFMatchCounter"), 2.5);
+            if (!(track.mcMask() & 1 << 11)) { // Bit ON means mismatch
+              registry.fill(HIST("hDeuteronTOFMatchCounter"), 3.5);
+            }
+          }
+        }
       }
-      ++itrack;
     }
 
     std::vector<Indexdaughters> set_pair;
@@ -606,12 +668,12 @@ struct hypertriton3bodyMcParticleCount {
         registry.fill(HIST("hMcRecoInvMass"), RecoDecay::m(array{array{dauProtonMom[0], dauProtonMom[1], dauProtonMom[2]}, array{dauPionMom[0], dauPionMom[1], dauPionMom[2]}, array{dauDeuteronMom[0], dauDeuteronMom[1], dauDeuteronMom[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron}));
         registry.fill(HIST("h3dMCDecayedHypertriton"), mcparticle.y(), mcparticle.pt(), MClifetime);
 
-        int daughterPionCount = 0;
-        for (auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
-          if (std::abs(mcparticleDaughter.pdgCode()) == 211) {
-            daughterPionCount++;
-          }
-        }
+        // int daughterPionCount = 0;
+        // for (auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
+        //   if (std::abs(mcparticleDaughter.pdgCode()) == 211) {
+        //     daughterPionCount++;
+        //   }
+        // }
 
         // Count for hypertriton N_gen
         if (TMath::Abs(mcparticle.y()) < 1) {

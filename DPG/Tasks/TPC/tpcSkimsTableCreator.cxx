@@ -145,7 +145,7 @@ struct TreeWriterTpcV0 {
 
   /// Event selection
   template <typename CollisionType, typename TrackType>
-  bool isEventSelected(const CollisionType& collision, const TrackType& tracks)
+  bool isEventSelected(const CollisionType& collision, const TrackType& /*tracks*/)
   {
     if (applyEvSel == 1) {
       if (!collision.sel7()) {
@@ -159,7 +159,7 @@ struct TreeWriterTpcV0 {
     return true;
   };
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
   }
 
@@ -342,7 +342,7 @@ struct TreeWriterTPCTOF {
 
   /// Event selection
   template <typename CollisionType, typename TrackType>
-  bool isEventSelected(const CollisionType& collision, const TrackType& tracks)
+  bool isEventSelected(const CollisionType& collision, const TrackType& /*tracks*/)
   {
     if (applyEvSel == 1) {
       if (!collision.sel7()) {
@@ -356,7 +356,7 @@ struct TreeWriterTPCTOF {
     return true;
   };
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
   }
 

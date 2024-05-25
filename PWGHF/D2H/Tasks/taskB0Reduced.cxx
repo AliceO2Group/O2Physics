@@ -90,11 +90,26 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_b0_lite::PtGen);
+
+DECLARE_SOA_TABLE(HfRedB0McCheck, "AOD", "HFREDB0MCCHECK", //! Table with MC decay type check
+                  hf_cand_3prong::FlagMcMatchRec,
+                  hf_cand_b0_lite::MProng0,
+                  hf_cand_b0_lite::PtProng0,
+                  hf_cand_b0_lite::M,
+                  hf_cand_b0_lite::Pt,
+                  hf_cand_b0_lite::MlScoreSig,
+                  hf_b0_mc::PdgCodeBeautyMother,
+                  hf_b0_mc::PdgCodeCharmMother,
+                  hf_b0_mc::PdgCodeProng0,
+                  hf_b0_mc::PdgCodeProng1,
+                  hf_b0_mc::PdgCodeProng2,
+                  hf_b0_mc::PdgCodeProng3);
 } // namespace o2::aod
 
 /// B0 analysis task
 struct HfTaskB0Reduced {
   Produces<aod::HfRedCandB0Lites> hfRedCandB0Lite;
+  Produces<aod::HfRedB0McCheck> hfRedB0McCheck;
 
   Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
@@ -107,8 +122,6 @@ struct HfTaskB0Reduced {
   Configurable<bool> fillBackground{"fillBackground", false, "Flag to enable filling of background histograms/sparses/tree (only MC)"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
-  // MC checks
-  Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
 
   HfHelper hfHelper;
 
@@ -124,7 +137,7 @@ struct HfTaskB0Reduced {
     if ((std::accumulate(processFuncData.begin(), processFuncData.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for data can be enabled at a time.");
     }
-    std::array<bool, 3> processFuncMc{doprocessMc, doprocessMcWithDmesMl, doprocessMcWithB0Ml};
+    std::array<bool, 5> processFuncMc{doprocessMc, doprocessMcWithDecayTypeCheck, doprocessMcWithDmesMl, doprocessMcWithB0Ml, doprocessMcWithB0MlAndDecayTypeCheck};
     if ((std::accumulate(processFuncMc.begin(), processFuncMc.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for MC can be enabled at a time.");
     }
@@ -190,7 +203,7 @@ struct HfTaskB0Reduced {
       }
     }
 
-    if (doprocessMc || doprocessMcWithDmesMl || doprocessMcWithB0Ml) {
+    if (doprocessMc || doprocessMcWithDecayTypeCheck || doprocessMcWithDmesMl || doprocessMcWithB0Ml || doprocessMcWithB0MlAndDecayTypeCheck) {
       if (fillHistograms) {
         // gen histos
         registry.add("hEtaGen", "B^{0} particles (generated);#it{p}_{T}^{gen}(B^{0}) (GeV/#it{c});#it{#eta}^{gen}(B^{0});entries", {HistType::kTH2F, {axisPtB0, axisEta}});
@@ -245,7 +258,7 @@ struct HfTaskB0Reduced {
           registry.add("hCospXyDRecBg", "B^{0} candidates (unmatched);#it{p}_{T}(D^{#minus}) (GeV/#it{c});D^{#minus} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtDminus, axisCosp}});
         }
         // MC checks
-        if (checkDecayTypeMc) {
+        if (doprocessMcWithDecayTypeCheck || doprocessMcWithB0MlAndDecayTypeCheck) {
           constexpr uint8_t kNBinsDecayTypeMc = hf_cand_b0::DecayTypeMc::NDecayTypeMc;
           TString labels[kNBinsDecayTypeMc];
           labels[hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
@@ -270,7 +283,7 @@ struct HfTaskB0Reduced {
           registry.add("hMlScoreNonPromptDRecBg", "B^{0} candidates (unmatched);#it{p}_{T}(D^{#minus}) (GeV/#it{c});prong0, D^{#minus} ML nonprompt score;entries", {HistType::kTH2F, {axisPtDminus, axisMlScore}});
         }
         // ML scores of B0 candidate
-        if (doprocessMcWithB0Ml) {
+        if (doprocessMcWithB0Ml || doprocessMcWithB0MlAndDecayTypeCheck) {
           // signal
           registry.add("hMlScoreSigB0RecSig", "B^{0} candidates (matched);#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML signal score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
           // background
@@ -310,13 +323,14 @@ struct HfTaskB0Reduced {
 
   /// Fill candidate information at reconstruction level
   /// \param doMc is the flag to enable the filling with MC information
+  /// \param withDecayTypeCheck is the flag to enable MC with decay type check
   /// \param withDmesMl is the flag to enable the filling with ML scores for the D- daughter
   /// \param withB0Ml is the flag to enable the filling with ML scores for the B0 candidate
   /// \param candidate is the B0 candidate
   /// \param candidatesD is the table with D- candidates
-  template <bool doMc, bool withDmesMl, bool withB0Ml, typename Cand>
+  template <bool doMc, bool withDecayTypeCheck, bool withDmesMl, bool withB0Ml, typename Cand>
   void fillCand(Cand const& candidate,
-                aod::HfRed3Prongs const& candidatesD)
+                aod::HfRed3Prongs const&)
   {
     auto ptCandB0 = candidate.pt();
     auto invMassB0 = hfHelper.invMassB0ToDPi(candidate);
@@ -325,7 +339,7 @@ struct HfTaskB0Reduced {
     auto invMassD = candD.invMass();
     std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
     std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
-    std::array<float, 3> momD{candD.px(), candD.py(), candD.pz()};
+    std::array<float, 3> momD{candD.pVector()};
     auto cospD = RecoDecay::cpa(posPv, posSvD, momD);
     auto cospXyD = RecoDecay::cpaXY(posPv, posSvD, momD);
     auto decLenD = RecoDecay::distance(posPv, posSvD);
@@ -359,7 +373,7 @@ struct HfTaskB0Reduced {
           registry.fill(HIST("hDecLengthXyDRecSig"), ptD, decLenXyD);
           registry.fill(HIST("hCospDRecSig"), ptD, cospD);
           registry.fill(HIST("hCospXyDRecSig"), ptD, cospXyD);
-          if (checkDecayTypeMc) {
+          if constexpr (withDecayTypeCheck) {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi, invMassB0, ptCandB0);
           }
           if constexpr (withDmesMl) {
@@ -397,7 +411,7 @@ struct HfTaskB0Reduced {
           if constexpr (withB0Ml) {
             registry.fill(HIST("hMlScoreSigB0RecBg"), ptCandB0, candidate.mlProbB0ToDPi());
           }
-        } else if (checkDecayTypeMc) {
+        } else if constexpr (withDecayTypeCheck) {
           if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0 → Ds- π+ → (K- K+ π-) π+
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi, invMassB0, ptCandB0);
           } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
@@ -512,6 +526,25 @@ struct HfTaskB0Reduced {
           isSignal,
           ptMother);
       }
+      if constexpr (withDecayTypeCheck) {
+        float candidateMlScoreSig = -1;
+        if constexpr (withB0Ml) {
+          candidateMlScoreSig = candidate.mlProbB0ToDPi();
+        }
+        hfRedB0McCheck(
+          flagMcMatchRec,
+          invMassD,
+          ptD,
+          invMassB0,
+          ptCandB0,
+          candidateMlScoreSig,
+          candidate.pdgCodeBeautyMother(),
+          candidate.pdgCodeCharmMother(),
+          candidate.pdgCodeProng0(),
+          candidate.pdgCodeProng1(),
+          candidate.pdgCodeProng2(),
+          candidate.pdgCodeProng3());
+      }
     }
   }
 
@@ -559,13 +592,10 @@ struct HfTaskB0Reduced {
                    TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<false, false, false>(candidate, candidatesD);
+      fillCand<false, false, false, false>(candidate, candidatesD);
     } // candidate loop
   }   // processData
   PROCESS_SWITCH(HfTaskB0Reduced, processData, "Process data without ML scores for B0 and D daughter", true);
@@ -575,13 +605,10 @@ struct HfTaskB0Reduced {
                              TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<false, true, false>(candidate, candidatesD);
+      fillCand<false, false, true, false>(candidate, candidatesD);
     } // candidate loop
   }   // processDataWithDmesMl
   PROCESS_SWITCH(HfTaskB0Reduced, processDataWithDmesMl, "Process data with(out) ML scores for D daughter (B0)", false);
@@ -591,13 +618,10 @@ struct HfTaskB0Reduced {
                            TracksPion const&)
   {
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<false, false, true>(candidate, candidatesD);
+      fillCand<false, false, false, true>(candidate, candidatesD);
     } // candidate loop
   }   // processDataWithB0Ml
   PROCESS_SWITCH(HfTaskB0Reduced, processDataWithB0Ml, "Process data with(out) ML scores for B0 (D daughter)", false);
@@ -609,13 +633,10 @@ struct HfTaskB0Reduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, false, false>(candidate, candidatesD);
+      fillCand<true, false, false, false>(candidate, candidatesD);
     } // rec
 
     // MC gen. level
@@ -625,6 +646,26 @@ struct HfTaskB0Reduced {
   }   // processMc
   PROCESS_SWITCH(HfTaskB0Reduced, processMc, "Process MC without ML scores for B0 and D daughter", false);
 
+  void processMcWithDecayTypeCheck(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s, aod::HfMcCheckB0s>> const& candidates,
+                                   aod::HfMcGenRedB0s const& mcParticles,
+                                   aod::HfRed3Prongs const& candidatesD,
+                                   TracksPion const&)
+  {
+    // MC rec
+    for (const auto& candidate : candidates) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
+        continue;
+      }
+      fillCand<true, true, false, false>(candidate, candidatesD);
+    } // rec
+
+    // MC gen. level
+    for (const auto& particle : mcParticles) {
+      fillCandMcGen(particle);
+    } // gen
+  }   // processMc
+  PROCESS_SWITCH(HfTaskB0Reduced, processMcWithDecayTypeCheck, "Process MC with decay type check and without ML scores for B0 and D daughter", false);
+
   void processMcWithDmesMl(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfRedB0DpMls, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s>> const& candidates,
                            aod::HfMcGenRedB0s const& mcParticles,
                            aod::HfRed3Prongs const& candidatesD,
@@ -632,13 +673,10 @@ struct HfTaskB0Reduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, true, false>(candidate, candidatesD);
+      fillCand<true, false, true, false>(candidate, candidatesD);
     } // rec
 
     // MC gen. level
@@ -655,13 +693,10 @@ struct HfTaskB0Reduced {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, false, true>(candidate, candidatesD);
+      fillCand<true, false, false, true>(candidate, candidatesD);
     } // rec
 
     // MC gen. level
@@ -670,6 +705,26 @@ struct HfTaskB0Reduced {
     } // gen
   }   // processMcWithB0Ml
   PROCESS_SWITCH(HfTaskB0Reduced, processMcWithB0Ml, "Process MC with(out) ML scores for B0 (D daughter)", false);
+
+  void processMcWithB0MlAndDecayTypeCheck(soa::Filtered<soa::Join<aod::HfRedCandB0, aod::HfMlB0ToDPi, aod::HfSelB0ToDPi, aod::HfMcRecRedB0s, aod::HfMcCheckB0s>> const& candidates,
+                                          aod::HfMcGenRedB0s const& mcParticles,
+                                          aod::HfRed3Prongs const& candidatesD,
+                                          TracksPion const&)
+  {
+    // MC rec
+    for (const auto& candidate : candidates) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yB0(candidate)) > yCandRecoMax) {
+        continue;
+      }
+      fillCand<true, true, false, true>(candidate, candidatesD);
+    } // rec
+
+    // MC gen. level
+    for (const auto& particle : mcParticles) {
+      fillCandMcGen(particle);
+    } // gen
+  }   // processMc
+  PROCESS_SWITCH(HfTaskB0Reduced, processMcWithB0MlAndDecayTypeCheck, "Process MC with decay type check and with(out) ML scores for B0 (D daughter)", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

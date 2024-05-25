@@ -145,17 +145,19 @@ class V0PhotonCut : public TNamed
         return false;
       }
 
-      auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
-      auto hits_ob = std::count_if(its_ob_Requirement.second.begin(), its_ob_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
-      bool its_ob_only = (hits_ib <= its_ib_Requirement.first) && (hits_ob >= its_ob_Requirement.first);
-      if (isITSonlyTrack(track) && !its_ob_only) { // ITSonly tracks should not have any ITSib hits.
-        return false;
-      }
+      if (mRejectITSib) {
+        auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+        auto hits_ob = std::count_if(its_ob_Requirement.second.begin(), its_ob_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+        bool its_ob_only = (hits_ib <= its_ib_Requirement.first) && (hits_ob >= its_ob_Requirement.first);
+        if (isITSonlyTrack(track) && !its_ob_only) { // ITSonly tracks should not have any ITSib hits.
+          return false;
+        }
 
-      auto hits_ob_itstpc = std::count_if(its_ob_Requirement_ITSTPC.second.begin(), its_ob_Requirement_ITSTPC.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
-      bool its_ob_only_itstpc = (hits_ib <= its_ib_Requirement.first) && (hits_ob_itstpc >= its_ob_Requirement_ITSTPC.first);
-      if (isITSTPCTrack(track) && !its_ob_only_itstpc) { // ITSTPC tracks should not have any ITSib hits.
-        return false;
+        auto hits_ob_itstpc = std::count_if(its_ob_Requirement_ITSTPC.second.begin(), its_ob_Requirement_ITSTPC.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+        bool its_ob_only_itstpc = (hits_ib <= its_ib_Requirement.first) && (hits_ob_itstpc >= its_ob_Requirement_ITSTPC.first);
+        if (isITSTPCTrack(track) && !its_ob_only_itstpc) { // ITSTPC tracks should not have any ITSib hits.
+          return false;
+        }
       }
 
       if (track.hasITS() && !CheckITSCuts(track)) {
@@ -269,7 +271,7 @@ class V0PhotonCut : public TNamed
         return v0.eta() >= mMinV0Eta && v0.eta() <= mMaxV0Eta;
 
       case V0PhotonCuts::kMee:
-        return true;
+        return v0.mGamma() < mMaxQt * 2.f;
 
       case V0PhotonCuts::kAP:
         return pow(v0.alpha() / mMaxAlpha, 2) + pow(v0.qtarm() / mMaxQt, 2) < 1.0;
@@ -280,8 +282,17 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kPhiV:
         return true;
 
-      case V0PhotonCuts::kRxy:
-        return v0.v0radius() >= mMinRxy && v0.v0radius() <= mMaxRxy;
+      case V0PhotonCuts::kRxy: {
+        if (v0.v0radius() < mMinRxy || mMaxRxy < v0.v0radius()) {
+          return false;
+        }
+        if (mRejectITSib) {
+          if (v0.v0radius() < 4.f || v0.pca() < -0.05 * v0.v0radius() + 0.3) {
+            return false;
+          }
+        }
+        return true;
+      }
 
       case V0PhotonCuts::kCosPA:
         return v0.cospa() >= mMinCosPA;
@@ -290,7 +301,7 @@ class V0PhotonCut : public TNamed
         return v0.pca() <= mMaxPCA;
 
       case V0PhotonCuts::kRZLine:
-        return v0.v0radius() > abs(v0.vz()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxV0Eta))) - mMaxMarginZ;
+        return v0.v0radius() > abs(v0.vz()) * std::tan(2 * std::atan(std::exp(-mMaxV0Eta))) - mMaxMarginZ;
 
       case V0PhotonCuts::kOnWwireIB: {
         const float margin_xy = 1.0; // cm
@@ -304,7 +315,7 @@ class V0PhotonCut : public TNamed
         float z = v0.vz();      // cm, measured secondary vertex of gamma->ee
 
         float rxy = sqrt(x * x + y * y);
-        if (rxy < 7.0 || 15.0 < rxy) {
+        if (rxy < 7.0 || 14.0 < rxy) {
           return false;
         }
 
@@ -313,7 +324,7 @@ class V0PhotonCut : public TNamed
           return false;
         }
 
-        float dxy = abs(1.0 * y - x * TMath::Tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(TMath::Tan(-8.52 * TMath::DegToRad()), 2));
+        float dxy = abs(1.0 * y - x * std::tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(std::tan(-8.52 * TMath::DegToRad()), 2));
         return !(dxy > margin_xy);
       }
       case V0PhotonCuts::kOnWwireOB: {
@@ -385,7 +396,7 @@ class V0PhotonCut : public TNamed
         if (!isITSonlyTrack(track)) {
           return true;
         }
-        return mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
+        return mMinMeanClusterSizeITS < track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
       }
 
       case V0PhotonCuts::kIsWithinBeamPipe: {
@@ -399,7 +410,7 @@ class V0PhotonCut : public TNamed
         if (track.x() < 0.1 && abs(track.y()) > 15.f) {
           return false;
         }
-        if (track.x() > 82.9 && abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 5.f) {
+        if (track.x() > 82.9 && abs(track.y()) > abs(track.x() * std::tan(10.f * TMath::DegToRad())) + 5.f) {
           return false;
         }
         if (track.x() > 82.9 && abs(track.y()) < 15.0 && abs(abs(track.z()) - 44.5) < 2.5) {
@@ -447,6 +458,7 @@ class V0PhotonCut : public TNamed
   void SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut);
   void SetOnWwireIB(bool flag = false);
   void SetOnWwireOB(bool flag = false);
+  void RejectITSib(bool flag = false);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -456,7 +468,7 @@ class V0PhotonCut : public TNamed
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
-  void SetMeanClusterSizeITS(float min, float max);
+  void SetMeanClusterSizeITSob(float min, float max);
 
   void SetTPCNsigmaElRange(float min = -3, float max = +3);
   void SetTPCNsigmaPiRange(float min = -1e+10, float max = 1e+10);
@@ -493,6 +505,7 @@ class V0PhotonCut : public TNamed
   std::function<float(float)> mMaxMeePsiPairDep{}; // max mee as a function of psipair
   bool mIsOnWwireIB{false};
   bool mIsOnWwireOB{false};
+  bool mRejectITSib{false};
 
   // pid cuts
   float mMinTPCNsigmaEl{-5}, mMaxTPCNsigmaEl{+5};

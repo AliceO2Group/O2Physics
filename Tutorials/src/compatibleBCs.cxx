@@ -81,7 +81,7 @@ struct CompatibleBCs {
 // Note that one has to subscribe to aod::FT0s and aod::FV0As to load
 // the relevant data even if you access the data itself through m.ft0() and m.fv0a()
 struct CompatibleT0V0A {
-  void process(aod::Collision const& collision, soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& bct0s, aod::FT0s& ft0s, aod::FV0As& fv0as)
+  void process(aod::Collision const& collision, soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& bct0s, aod::FT0s& /*ft0s*/, aod::FV0As& /*fv0as*/)
   {
     // NOTE collision.bc() causes SEGV here because we have only subscribed to BCs joined, therefore:
     auto bc = collision.bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();

@@ -43,12 +43,6 @@ struct eventWiseConstituentSubtractorTask {
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc->PKPi"};
-  Configurable<int> selectionFlagLcToPiPK{"selectionFlagLcToPiPK", 1, "Selection Flag for Lc->PiPK"};
-  Configurable<int> selectionFlagBplus{"selectionFlagBplus", 1, "Selection Flag for B+"};
-
   Configurable<float> alpha{"alpha", 1.0, "exponent of transverse momentum in calculating the distance measure between pairs"};
   Configurable<float> rMax{"rMax", 0.24, "maximum distance of subtraction"};
   Configurable<float> eventEtaMax{"eventEtaMax", 0.9, "maximum pseudorapidity of event"};
@@ -111,19 +105,19 @@ struct eventWiseConstituentSubtractorTask {
   }
   PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processCollisions, "Fill table of subtracted tracks for collisions", true);
 
-  void processD0Collisions(JetCollision const& collision, aod::BkgD0Rhos const& bkgRhos, soa::Filtered<JetTracks> const& tracks, CandidatesD0Data const& candidates)
+  void processD0Collisions(JetCollision const&, aod::BkgD0Rhos const& bkgRhos, soa::Filtered<JetTracks> const& tracks, CandidatesD0Data const& candidates)
   {
     analyseHF(tracks, candidates, bkgRhos, trackSubtractedD0Table);
   }
   PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processD0Collisions, "Fill table of subtracted tracks for collisions with D0 candidates", false);
 
-  void processLcCollisions(JetCollision const& collision, aod::BkgLcRhos const& bkgRhos, soa::Filtered<JetTracks> const& tracks, CandidatesLcData const& candidates)
+  void processLcCollisions(JetCollision const&, aod::BkgLcRhos const& bkgRhos, soa::Filtered<JetTracks> const& tracks, CandidatesLcData const& candidates)
   {
     analyseHF(tracks, candidates, bkgRhos, trackSubtractedLcTable);
   }
   PROCESS_SWITCH(eventWiseConstituentSubtractorTask, processLcCollisions, "Fill table of subtracted tracks for collisions with Lc candidates", false);
 
-  void processBplusCollisions(JetCollision const& collision, aod::BkgBplusRhos const& bkgRhos, soa::Filtered<JetTracks> const& tracks, CandidatesBplusData const& candidates)
+  void processBplusCollisions(JetCollision const&, aod::BkgBplusRhos const& bkgRhos, soa::Filtered<JetTracks> const& tracks, CandidatesBplusData const& candidates)
   {
     analyseHF(tracks, candidates, bkgRhos, trackSubtractedBplusTable);
   }

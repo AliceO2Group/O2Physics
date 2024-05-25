@@ -76,13 +76,13 @@ struct JetMatchingQA {
   {
   }
 
-  void processDummy(JetMcCollisions const& mcCollisions)
+  void processDummy(JetMcCollisions const&)
   {
   }
   PROCESS_SWITCH(JetMatchingQA, processDummy, "Dummy process", true);
 
-  void processMCD(JetCollision const& collision, JetParticles const& mcParticles, JetTracksMCD const& tracks,
-                  BaseJetCollection const& djets, TagJetCollection const& pjets)
+  void processMCD(JetCollision const&, JetParticles const&, JetTracksMCD const&,
+                  BaseJetCollection const& djets, TagJetCollection const&)
   {
     for (const auto& djet : djets) {
       if (djet.has_matchedJetCand() || djet.has_matchedJetGeo()) {
@@ -94,8 +94,6 @@ struct JetMatchingQA {
 
       // HF matching QA
       for (auto& pjet : djet.template matchedJetCand_as<TagJetCollection>()) {
-        LOGF(info, "djet %d (pt of %g GeV/c) is HF-matched to %d (pt of %g GeV/c)",
-             djet.globalIndex(), djet.pt(), pjet.globalIndex(), pjet.pt());
         registry.fill(HIST("h_jet_match_hf_pt"), pjet.pt(), djet.pt());
         const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
         registry.fill(HIST("h_jet_match_hf_deta_dphi"), dphi, djet.eta() - pjet.eta());
@@ -123,8 +121,6 @@ struct JetMatchingQA {
 
       // geo matching QA
       for (auto& pjet : djet.template matchedJetGeo_as<TagJetCollection>()) {
-        LOGF(info, "djet %d (pt of %g GeV/c) is geo-matched to %d (pt of %g GeV/c)",
-             djet.globalIndex(), djet.pt(), pjet.globalIndex(), pjet.pt());
         registry.fill(HIST("h_jet_match_geo_pt"), pjet.pt(), djet.pt());
         const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
         registry.fill(HIST("h_jet_match_geo_deta_dphi"), dphi, djet.eta() - pjet.eta());
@@ -152,8 +148,6 @@ struct JetMatchingQA {
 
       // pT matching QA
       for (auto& pjet : djet.template matchedJetPt_as<TagJetCollection>()) {
-        LOGF(info, "djet %d (pt of %g GeV/c) is pt-matched to %d (pt of %g GeV/c)",
-             djet.globalIndex(), djet.pt(), pjet.globalIndex(), pjet.pt());
         registry.fill(HIST("h_jet_match_pt_pt"), pjet.pt(), djet.pt());
         const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
         registry.fill(HIST("h_jet_match_pt_deta_dphi"), dphi, djet.eta() - pjet.eta());
@@ -182,8 +176,8 @@ struct JetMatchingQA {
   }
   PROCESS_SWITCH(JetMatchingQA, processMCD, "QA on detector-level jets", true);
 
-  void processMCP(JetMcCollision const& collision,
-                  TagJetCollection const& pjets, BaseJetCollection const& djets)
+  void processMCP(JetMcCollision const&,
+                  TagJetCollection const& pjets, BaseJetCollection const&)
   {
     for (const auto& pjet : pjets) {
       if (pjet.has_matchedJetCand() || pjet.has_matchedJetGeo()) {
@@ -191,21 +185,6 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_gen_phi"), pjet.phi());
         registry.fill(HIST("h_jet_gen_eta"), pjet.eta());
         registry.fill(HIST("h_jet_gen_ntracks"), pjet.tracksIds().size() + 1); // adding HF candidate
-      }
-
-      for (auto& djet : pjet.template matchedJetCand_as<BaseJetCollection>()) {
-        LOGF(info, "pjet %d (pt of %g GeV/c) is HF-matched to %d (pt of %g GeV/c)",
-             pjet.globalIndex(), pjet.pt(), djet.globalIndex(), djet.pt());
-      }
-
-      for (auto& djet : pjet.template matchedJetGeo_as<BaseJetCollection>()) {
-        LOGF(info, "pjet %d (pt of %g GeV/c) is geo-matched to %d (pt of %g GeV/c)",
-             pjet.globalIndex(), pjet.pt(), djet.globalIndex(), djet.pt());
-      }
-
-      for (auto& djet : pjet.template matchedJetPt_as<BaseJetCollection>()) {
-        LOGF(info, "pjet %d (pt of %g GeV/c) is pT-matched to %d (pt of %g GeV/c)",
-             pjet.globalIndex(), pjet.pt(), djet.globalIndex(), djet.pt());
       }
     }
   }

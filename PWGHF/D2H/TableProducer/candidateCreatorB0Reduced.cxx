@@ -27,11 +27,13 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_trkcandsel;
 
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0Reduced {
@@ -49,21 +51,22 @@ struct HfCandidateCreatorB0Reduced {
   Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   // selection
   Configurable<float> invMassWindowDPiTolerance{"invMassWindowDPiTolerance", 0.01, "invariant-mass window tolerance for DPi pair preselections (GeV/c2)"};
-  // variable that will store the value of invMassWindowDPi (defined in dataCreatorDplusPiReduced.cxx)
-  float myInvMassWindowDPi{1.};
 
+  float myInvMassWindowDPi{1.}; // variable that will store the value of invMassWindowDPi (defined in dataCreatorDplusPiReduced.cxx)
   float massPi{0.};
   float massD{0.};
   float massB0{0.};
   float bz{0.};
 
-  // Fitter for B vertex (2-prong vertex filter)
-  o2::vertexing::DCAFitterN<2> df2;
+  o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter)
+
+  using HfRedCollisionsWithExtras = soa::Join<aod::HfRedCollisions, aod::HfRedCollExtras>;
 
   Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov>> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov, aod::HfRed3ProngsMl>> candsDWithMlPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov>> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
 
+  std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -72,12 +75,6 @@ struct HfCandidateCreatorB0Reduced {
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function for data should be enabled at a time.");
     }
-
-    // histograms
-    registry.add("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
-    registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
-    registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
-    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
 
     // invariant-mass window cut
     massPi = o2::constants::physics::MassPiPlus;
@@ -92,6 +89,16 @@ struct HfCandidateCreatorB0Reduced {
     df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    // histograms
+    registry.add("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
+    registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
+    registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
+
+    /// candidate monitoring
+    hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
+    setLabelHistoCands(hCandidates);
   }
 
   /// Main function to perform B0 candidate creation
@@ -101,8 +108,8 @@ struct HfCandidateCreatorB0Reduced {
   /// \param tracksPionThisCollision pion tracks in this collision
   /// \param invMass2DPiMin minimum B0 invariant-mass
   /// \param invMass2DPiMax maximum B0 invariant-mass
-  template <bool withDmesMl, typename Cands, typename Pions>
-  void runCandidateCreation(aod::HfRedCollisions::iterator const& collision,
+  template <bool withDmesMl, typename Cands, typename Pions, typename Coll>
+  void runCandidateCreation(Coll const& collision,
                             Cands const& candsDThisColl,
                             Pions const& tracksPionThisCollision,
                             const float& invMass2DPiMin,
@@ -117,7 +124,7 @@ struct HfCandidateCreatorB0Reduced {
 
     for (const auto& candD : candsDThisColl) {
       auto trackParCovD = getTrackParCov(candD);
-      std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
+      std::array<float, 3> pVecD = candD.pVector();
 
       for (const auto& trackPion : tracksPionThisCollision) {
         // this track is among daughters
@@ -126,7 +133,7 @@ struct HfCandidateCreatorB0Reduced {
         }
 
         auto trackParCovPi = getTrackParCov(trackPion);
-        std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+        std::array<float, 3> pVecPion = trackPion.pVector();
 
         // compute invariant mass square and apply selection
         auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
@@ -135,9 +142,18 @@ struct HfCandidateCreatorB0Reduced {
         }
         // ---------------------------------
         // reconstruct the 2-prong B0 vertex
-        if (df2.process(trackParCovD, trackParCovPi) == 0) {
+        hCandidates->Fill(SVFitting::BeforeFit);
+        try {
+          if (df2.process(trackParCovD, trackParCovPi) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+          hCandidates->Fill(SVFitting::Fail);
           continue;
         }
+        hCandidates->Fill(SVFitting::FitOk);
+
         // DPi passed B0 reconstruction
 
         // calculate relevant properties
@@ -177,19 +193,18 @@ struct HfCandidateCreatorB0Reduced {
                          pVecD[0], pVecD[1], pVecD[2],
                          pVecPion[0], pVecPion[1], pVecPion[2],
                          dcaD.getY(), dcaPion.getY(),
-                         std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
-                         BIT(hf_cand_b0::DecayType::B0ToDPi));
+                         std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
 
         rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
 
         if constexpr (withDmesMl) {
-          rowCandidateDmesMlScores(candD.mlScoreBkg(), candD.mlScorePrompt(), candD.mlScoreNonprompt());
+          rowCandidateDmesMlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
         }
       } // pi loop
     }   // D loop
   }
 
-  void processData(aod::HfRedCollisions const& collisions,
+  void processData(HfRedCollisionsWithExtras const& collisions,
                    soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov> const& candsD,
                    soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& tracksPion,
                    aod::HfOrigColCounts const& collisionsCounter,
@@ -223,7 +238,7 @@ struct HfCandidateCreatorB0Reduced {
 
   PROCESS_SWITCH(HfCandidateCreatorB0Reduced, processData, "Process data without any ML score", true);
 
-  void processDataWithDmesMl(aod::HfRedCollisions const& collisions,
+  void processDataWithDmesMl(HfRedCollisionsWithExtras const& collisions,
                              soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov, aod::HfRed3ProngsMl> const& candsD,
                              soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& tracksPion,
                              aod::HfOrigColCounts const& collisionsCounter,
@@ -263,8 +278,14 @@ struct HfCandidateCreatorB0ReducedExpressions {
   Spawns<aod::HfCandB0Ext> rowCandidateB0;
   Spawns<aod::HfRedTracksExt> rowTracksExt;
   Produces<aod::HfMcRecRedB0s> rowB0McRec;
+  Produces<aod::HfMcCheckB0s> rowB0McCheck;
 
-  void processMc(HfMcRecRedDpPis const& rowsDPiMcRec, HfRedB0Prongs const& candsB0)
+  /// Fill candidate information at MC reconstruction level
+  /// \param checkDecayTypeMc
+  /// \param rowsDPiMcRec MC reco information on DPi pairs
+  /// \param candsB0 prong global indices of B0 candidates
+  template <bool checkDecayTypeMc, typename McRec>
+  void fillB0McRec(McRec const& rowsDPiMcRec, HfRedB0Prongs const& candsB0)
   {
     for (const auto& candB0 : candsB0) {
       bool filledMcInfo{false};
@@ -274,14 +295,36 @@ struct HfCandidateCreatorB0ReducedExpressions {
         }
         rowB0McRec(rowDPiMcRec.flagMcMatchRec(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
         filledMcInfo = true;
+        if constexpr (checkDecayTypeMc) {
+          rowB0McCheck(rowDPiMcRec.pdgCodeBeautyMother(),
+                       rowDPiMcRec.pdgCodeCharmMother(),
+                       rowDPiMcRec.pdgCodeProng0(),
+                       rowDPiMcRec.pdgCodeProng1(),
+                       rowDPiMcRec.pdgCodeProng2(),
+                       rowDPiMcRec.pdgCodeProng3());
+        }
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
         rowB0McRec(0, -1, -1.f);
+        if constexpr (checkDecayTypeMc) {
+          rowB0McCheck(-1, -1, -1, -1, -1, -1);
+        }
       }
     }
   }
+
+  void processMc(HfMcRecRedDpPis const& rowsDPiMcRec, HfRedB0Prongs const& candsB0)
+  {
+    fillB0McRec<false>(rowsDPiMcRec, candsB0);
+  }
   PROCESS_SWITCH(HfCandidateCreatorB0ReducedExpressions, processMc, "Process MC", false);
+
+  void processMcWithDecayTypeCheck(soa::Join<HfMcRecRedDpPis, HfMcCheckDpPis> const& rowsDPiMcRec, HfRedB0Prongs const& candsB0)
+  {
+    fillB0McRec<true>(rowsDPiMcRec, candsB0);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorB0ReducedExpressions, processMcWithDecayTypeCheck, "Process MC with decay type checks", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

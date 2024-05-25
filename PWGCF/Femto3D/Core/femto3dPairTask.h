@@ -42,8 +42,8 @@ namespace o2::aod::singletrackselector
 template <typename Type>
 Type getBinIndex(float const& value, std::vector<float> const& binning, int const& NsubBins = 1)
 {
-  Type res = -100;
-  for (int i = 0; i < binning.size() - 1; i++) {
+  Type res = 10e6;
+  for (unsigned int i = 0; i < binning.size() - 1; i++) {
     if (value >= binning[i] && binning[i + 1] > value) {
       if (NsubBins < 2) {
         res = (Type)i;
@@ -205,8 +205,10 @@ bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi, con
     return true;
   if (_magfield1 * _magfield2 == 0)
     return true;
-  if (abs(GetEtaDiff()) < deta && abs(GetPhiStarDiff(radius)) < dphi)
+  if (std::pow(abs(GetEtaDiff()) / deta, 2) + std::pow(abs(GetPhiStarDiff(radius)) / dphi, 2) < 1.0f)
     return true;
+  // if (abs(GetEtaDiff()) < deta && abs(GetPhiStarDiff(radius)) < dphi)
+  //   return true;
 
   return false;
 }

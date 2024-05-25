@@ -800,7 +800,7 @@ struct MultiParticleCorrelationsARTask {
   };
 
   template <typename TrackObject>
-  double GetWeight(TrackObject track)
+  double GetWeight(TrackObject /*track*/)
   {
     // for efficiency corrections, tbi
     return 1.;

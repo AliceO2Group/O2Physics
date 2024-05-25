@@ -19,6 +19,7 @@
 #include "TLorentzVector.h"
 
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/CaloClusters.h"
 #include "DataFormatsPHOS/Cell.h"
 #include "DataFormatsPHOS/Cluster.h"
 #include "DataFormatsPHOS/TriggerRecord.h"
@@ -72,10 +73,20 @@ struct phosCalibration {
 
   ConfigurableAxis timeAxis{"t", {200, -50.e-9, 150.e-9}, "t (s)"};
   ConfigurableAxis timeAxisLarge{"celltime", {1000, -1500.e-9, 3500.e-9}, "cell time (ns)"};
-  ConfigurableAxis timeAxisRunStart{"timeRunStart", {50000, 0., 50000.}, "Time from start of the run (s)"};
+  ConfigurableAxis timeAxisRunStart{"timeRunStart", {650, 0., 650.}, "Time from start of the run (min)"};
+  ConfigurableAxis amplitudeAxisAverage{"amplitudeAverage", {400, 0., 40.}, "Amplutude (GeV)"};
   ConfigurableAxis amplitudeAxisLarge{"amplitude", {1000, 0., 100.}, "Amplutude (GeV)"};
   ConfigurableAxis mggAxis{"mgg", {250, 0., 1.}, "m_{#gamma#gamma} (GeV/c^{2})"};
+  ConfigurableAxis nCellsAxis{"nCells", {50, 0., 50}, "nCells"};
+  ConfigurableAxis M02Axis{"M02", {50, 0., 10.}, "M_{02} (cm^{2})"};
+  ConfigurableAxis M20Axis{"M20", {50, 0., 10.}, "M_{20} (cm^{2})"};
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
+  Configurable<float> mMinCluE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"};
+  Configurable<int> mMinCluNcell{"mMinCluNcell", 2, "Min number of cells in cluster"};
+  Configurable<float> mMinCluTime{"minCluTime", -100.e-9, "Min. cluster time"};
+  Configurable<float> mMaxCluTime{"mMinCluTime", 100.e-9, "Max. cluster time"};
+  Configurable<double> mMinM02{"mMinM02", 0.2, "Min number of cells in cluster"};
+  Configurable<double> mMinM20{"mMinM20", 0.2, "Min number of cells in cluster"};
   Configurable<double> mMinCellAmplitude{"minCellAmplitude", 0.3, "Minimum cell amplitude for histograms."};
   Configurable<double> mCellTimeMinE{"minCellTimeAmp", 100, "Minimum cell amplitude for time histograms (ADC)"};
   Configurable<double> mMinCellTimeMain{"minCellTimeMain", -50.e-9, "Min. cell time of main bunch selection"};
@@ -101,6 +112,7 @@ struct phosCalibration {
   std::vector<o2::phos::TriggerRecord> phosClusterTrigRecs;
   std::vector<photon> event;
   int mL1 = 0;
+  int64_t sorTimestamp = 0;
 
   /// \brief Create output histograms
   void init(o2::framework::InitContext const&)
@@ -125,14 +137,20 @@ struct phosCalibration {
     mHistManager.add("cellAmp", "Cell amplitude per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
     mHistManager.add("cellTimeHG", "Time per cell, High Gain", HistType::kTH2F, {absIdAxis, timeAxis});
     mHistManager.add("cellTimeLG", "Time per cell, Low Gain", HistType::kTH2F, {absIdAxis, timeAxis});
+    mHistManager.add("cellEnergyHG", "Energy per cell, High Gain", HistType::kTH2F, {absIdAxis, amplitudeAxisAverage});
+    mHistManager.add("cellEnergyLG", "Energy per cell, Low Gain", HistType::kTH2F, {absIdAxis, amplitudeAxisAverage});
     mHistManager.add("timeDDL", "time vs bc for DDL", HistType::kTH3F, {timeDdlAxis, bcAxis, ddlAxis});
-    mHistManager.add("cellTimeFromRunStart", "time in cells vs time from start of the run", HistType::kTH3F, {absIdAxis, timeAxis, timeAxisRunStart});
+    mHistManager.add("cellTimeFromRunStart", "time in cells vs time from start of the run", HistType::kTH3F, {ddlAxis, timeAxis, timeAxisRunStart});
 
     // Clusters
     mHistManager.add("hSoftClu", "Soft clu occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
     mHistManager.add("hSoftCluGood", "Soft clu occupancy per module after bad map", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
     mHistManager.add("hHardClu", "Hard clu occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
+    mHistManager.add("hM02Clu", "M02 in clusters", HistType::kTH3F, {M02Axis, amplitudeAxisLarge, modAxis});
+    mHistManager.add("hM20Clu", "M20 in clusters", HistType::kTH3F, {M20Axis, amplitudeAxisLarge, modAxis});
+    mHistManager.add("hNcellClu", "Number of cells in clusters", HistType::kTH3F, {nCellsAxis, amplitudeAxisLarge, modAxis});
     mHistManager.add("hSpClu", "Spectra", HistType::kTH2F, {amplitudeAxisLarge, modAxis});
+    mHistManager.add("hSpCluAfterCuts", "Spectra after cuts", HistType::kTH2F, {amplitudeAxisLarge, modAxis});
     mHistManager.add("hTimeEClu", "Time vs E vs DDL", HistType::kTH3F, {ddlAxis, amplitudeAxisLarge, timeAxis});
     mHistManager.add("hTimeDdlCorr", "Time vs DDL", HistType::kTH3F, {ddlAxis, timeAxis, bcAxis});
     mHistManager.add("hRemgg", "Real m_{#gamma#gamma}", HistType::kTH2F, {absIdAxis, mggAxis});
@@ -150,21 +168,31 @@ struct phosCalibration {
   }
 
   using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
   /// \brief Process PHOS data
   void process(BCsWithBcSels const& bcs,
+               SelCollisions const&,
                o2::aod::Calos const& cells,
-               o2::aod::CaloTriggers const& ctrs)
+               o2::aod::CaloTriggers const&,
+               aod::CaloClusters const& clusters)
   {
     // Fill cell histograms
     // clusterize
     // Fill clusters histograms
 
     int64_t timestamp = 0;
+    int runNumber = 0;
     if (bcs.begin() != bcs.end()) {
       timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
+      runNumber = bcs.begin().runNumber();
     } else {
       return;
+    }
+
+    if (sorTimestamp == 0) {
+      auto eorsor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb_api, runNumber);
+      sorTimestamp = eorsor.first;
     }
 
     if (!clusterizer) {
@@ -191,10 +219,24 @@ struct phosCalibration {
       if (vec) {
         clusterizer->setL1phase((*vec)[0]);
         mL1 = (*vec)[0];
-        LOG(info) << "Got L1phase=" << mL1;
+        LOG(info) << "Got L1phase = " << mL1;
       } else {
         LOG(fatal) << "Can not get PHOS L1phase calibration";
       }
+    }
+
+    for (const auto& clu : clusters) {
+      if (!clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
+        continue;
+      mHistManager.fill(HIST("hM02Clu"), clu.m02(), clu.e(), clu.mod());
+      mHistManager.fill(HIST("hM20Clu"), clu.m20(), clu.e(), clu.mod());
+      mHistManager.fill(HIST("hNcellClu"), clu.ncell(), clu.e(), clu.mod());
+      mHistManager.fill(HIST("hSpClu"), clu.e(), clu.mod());
+      if (clu.e() < mMinCluE || clu.ncell() < mMinCluNcell || clu.time() > mMaxCluTime || clu.time() < mMinCluTime ||
+          clu.m02() < mMinM02 || clu.m20() < mMinM20) {
+        continue;
+      }
+      mHistManager.fill(HIST("hSpCluAfterCuts"), clu.e(), clu.mod());
     }
 
     phosCells.clear();
@@ -222,21 +264,23 @@ struct phosCalibration {
         ir.setFromLong(c.bc_as<BCsWithBcSels>().globalBC());
         phosCellTRs.emplace_back(ir, phosCells.size(), 0);
         mHistManager.fill(HIST("eventsAll"), 1.);
+        if (c.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
+          mHistManager.fill(HIST("eventsTrig"), 1.);
       }
       phosCells.emplace_back(c.cellNumber(), c.amplitude(), c.time(),
                              static_cast<o2::phos::ChannelType_t>(c.cellType()));
 
       if (!c.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
         continue;
-      mHistManager.fill(HIST("eventsTrig"), 1.);
 
       // Fill calibraiton histos
       if (c.amplitude() < mMinCellAmplitude)
         continue;
+
       char relid[3];
       o2::phos::Geometry::absToRelNumbering(c.cellNumber(), relid);
-      mHistManager.fill(HIST("cellOcc"), relid[0], relid[1], relid[2]);
-      mHistManager.fill(HIST("cellAmp"), relid[0], relid[1], relid[2], c.amplitude());
+      mHistManager.fill(HIST("cellOcc"), relid[0], relid[1] - 0.5, relid[2] - 0.5);
+      mHistManager.fill(HIST("cellAmp"), relid[0], relid[1] - 0.5, relid[2] - 0.5, c.amplitude());
 
       int ddl = (relid[0] - 1) * 4 + (relid[1] - 1) / 16 - 2;
       uint64_t bc = c.bc_as<BCsWithBcSels>().globalBC();
@@ -244,9 +288,10 @@ struct phosCalibration {
       if (c.cellType() == o2::phos::HIGH_GAIN) {
         tcorr -= calibParams->getHGTimeCalib(c.cellNumber());
       } else {
-        tcorr -= calibParams->getLGTimeCalib(c.cellNumber());
+        if (c.cellType() == o2::phos::LOW_GAIN) {
+          tcorr -= calibParams->getLGTimeCalib(c.cellNumber());
+        }
       }
-
       if (!mSkipL1phase) {
         int shift = (mL1 >> (ddl * 2)) & 3; // extract 2 bits corresponding to this ddl
         shift = bc % 4 - shift;
@@ -256,26 +301,22 @@ struct phosCalibration {
         tcorr -= shift * 25.e-9;
       }
 
-      int runNumber = c.bc_as<BCsWithBcSels>().runNumber();
-      std::map<std::string, std::string> metadata, headers;
-      const std::string run_path = Form("%s/%i", rctPath.value.data(), runNumber);
-      headers = ccdb_api.retrieveHeaders(run_path, metadata, -1);
-      if (headers.count("SOR") == 0)
-        LOGF(fatal, "Cannot find start-of-run timestamp for run number in path '%s'.", run_path.data());
-      int64_t sorTimestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
-
+      int64_t curTimestamp = c.bc_as<BCsWithBcSels>().timestamp();
       if (c.amplitude() > mCellTimeMinE) {
         mHistManager.fill(HIST("timeDDL"), tcorr, bc % 4, ddl);
-        mHistManager.fill(HIST("cellTimeFromRunStart"), c.cellNumber(), tcorr, (timestamp - sorTimestamp) / 1000.);
+        mHistManager.fill(HIST("cellTimeFromRunStart"), ddl, tcorr, (curTimestamp - sorTimestamp) / 1000. / 60.);
         if (c.cellType() == o2::phos::HIGH_GAIN) {
           mHistManager.fill(HIST("cellTimeHG"), c.cellNumber(), tcorr);
+          mHistManager.fill(HIST("cellEnergyHG"), c.cellNumber(), c.amplitude() * 5 / 1000);
         } else {
           if (c.cellType() == o2::phos::LOW_GAIN) {
             mHistManager.fill(HIST("cellTimeLG"), c.cellNumber(), tcorr);
+            mHistManager.fill(HIST("cellEnergyLG"), c.cellNumber(), c.amplitude() * 5 / 1000);
           }
         }
       }
     }
+
     // Set number of cells in last TrigRec
     if (phosCellTRs.size() > 0) {
       phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
@@ -323,7 +364,7 @@ struct phosCalibration {
         int ddl = (relid[0] - 1) * 4 + (relid[1] - 1) / 16 - 2;
 
         mHistManager.fill(HIST("hTimeEClu"), ddl, e, clu.getTime());
-        mHistManager.fill(HIST("hSpClu"), e, mod);
+        // mHistManager.fill(HIST("hSpClu"), e, mod);
         if (e > 0.5) {
           mHistManager.fill(HIST("hTimeDdlCorr"), static_cast<float>(ddl), clu.getTime(), tr.getBCData().toLong() % 4);
         }

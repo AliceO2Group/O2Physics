@@ -119,6 +119,7 @@ struct kinkAnalysis {
   Configurable<float> zDiff{"zDiff", 20., "mother-daughter z diff"};
   Configurable<float> phiDiff{"phiDiff", 100., "mother-daughter phi diff"};
   Configurable<bool> cfgIsMC{"cfgIsMC", true, "data or MC"};
+  Configurable<bool> cfgMassCheck{"cfgMassCheck", false, "check if the reconstructed neutral mass is within 0.1 of the PDG mass"};
 
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::dataformats::MeanVertexObject* mVtx = nullptr;
@@ -341,6 +342,8 @@ struct kinkAnalysis {
 
     histos.add("hNSigmaTrVsPt", "hNSigmaTrVsPt", kTH2F, {axisPtHyp, {100, -5, 5, "nSigmaTPC"}});
     histos.add("hpRes", "hpRes", kTH2F, {axisPtHyp, {100, -0.5, 0.5, "p_{T} Res"}});
+    histos.add("hDCAdaughterMC", "hDCAdaughterMC", kTH1F, {axisDCAdaugh});
+    histos.add("tpcClusterTriton", "tpcClusterTriton", kTH1F, {{100, 0, 300, "TPC clusters"}});
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(cfgLUTpath));
     ft2.setMaxChi2(5);
@@ -508,7 +511,7 @@ struct kinkAnalysis {
     return pools;
   }
 
-  void calculateInvMass(CompleteCollisions const& collisions, CompleteTracks const& tracks, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcWtmp, gsl::span<std::vector<TrackCand>> trackPoolM, gsl::span<std::vector<TrackCand>> trackPoolD, int chargeM, int chargeD, int particleName, const aod::McParticles* partTable = nullptr)
+  void calculateInvMass(CompleteCollisions const& collisions, CompleteTracks const& tracks, o2::aod::AmbiguousTracks const& /*ambiTracks*/, aod::BCsWithTimestamps const& /*bcWtmp*/, gsl::span<std::vector<TrackCand>> trackPoolM, gsl::span<std::vector<TrackCand>> trackPoolD, int chargeM, int chargeD, int particleName, const aod::McParticles* partTable = nullptr)
   {
 
     int ntrInner = chargeM < 0 ? trackPoolM[NEG].size() : trackPoolM[POS].size();
@@ -730,8 +733,10 @@ struct kinkAnalysis {
               neutronPabs = sqrt(pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
               neutronM = sqrt((sigmaE - pionE) * (sigmaE - pionE) - neutronPabs * neutronPabs);
 
-              if (abs(neutronM - mNeutralDaughter) / mNeutralDaughter > 0.1)
-                continue;
+              if (cfgMassCheck) {
+                if (abs(neutronM - mNeutralDaughter) / mNeutralDaughter > 0.1)
+                  continue;
+              }
 
               if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi)) {
                 if ((theta * radToDeg > (angleCutFunction(particleName, sigmaPabsDC))) && (sigmaPabsDC > 1.6))
@@ -799,6 +804,18 @@ struct kinkAnalysis {
               neutronE = sqrt(mNeutralDaughter * mNeutralDaughter + pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
 
               mass = sqrt((neutronE + pionE) * (neutronE + pionE) - sigmaPabsDC * sigmaPabsDC);
+
+              if (isDaughter)
+                histos.fill(HIST("hDCAdaughterMC"), kinkdcaXY);
+
+              if (particleName == Hypertriton) {
+                if (trackDgh.tpcNSigmaTr() > 4 || trackDgh.tpcNSigmaTr() < -2)
+                  continue;
+
+                histos.fill(HIST("tpcClusterTriton"), trackDgh.tpcNClsFound());
+                if (trackDgh.tpcNClsFound() < 90)
+                  continue;
+              }
 
               if (particleName == Hypertriton) {
                 histos.fill(HIST("hHypMass"), mass);
