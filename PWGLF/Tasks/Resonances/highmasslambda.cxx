@@ -83,11 +83,12 @@ struct highmasslambda {
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
   // proton track cut
+  Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
   Configurable<bool> rejectPID{"rejectPID", true, "Reject PID"};
   Configurable<float> confRapidity{"confRapidity", 0.8, "cut on Rapidity"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.3, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
-  Configurable<float> cfgCutDCAxymin{"cfgCutDCAxymin", 0.002f, "Minimum DCAxy range for tracks"};
+  Configurable<float> cfgCutDCAxymin{"cfgCutDCAxymin", 0.001f, "Minimum DCAxy range for tracks"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 0.1f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 1.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 5, "Number of ITS cluster"};
@@ -149,7 +150,7 @@ struct highmasslambda {
   void init(o2::framework::InitContext&)
   {
     std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 3000.0, 6000.0, 50000.0};
-    std::vector<double> dcaBinning = {0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008, 0.0009, 0.001, 0.0012, 0.0014, 0.0016, 0.0018, 0.002, 0.0025, 0.003, 0.004, 0.005, 0.006, 0.008, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.09, 0.1, 0.5, 1.0};
+    std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.02, 0.03, 0.05, 0.1, 0.5, 1.0};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisCosThetaStar{configThnAxisCosThetaStar, "cos(#vartheta)"};
@@ -202,7 +203,7 @@ struct highmasslambda {
       histos.add("hSparseV2SASameEvent_V2_occupancy", "hSparseV2SASameEvent_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisPtProton, thnAxisCentrality, occupancyAxis});
       histos.add("hSparseV2SASameEventRotational_V2_occupancy", "hSparseV2SASameEventRotational_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisPtProton, thnAxisCentrality, occupancyAxis});
       histos.add("hSparseV2SASameEvent_V2_new_occupancy", "hSparseV2SASameEvent_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisPtProton, thnAxisCentrality, occupancyAxis});
-      histos.add("hSparseV2SASameEventRotational_V2_new_occupancy", "hSparseV2SASameEventRotational_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisPtProton, occupancyAxis});
+      histos.add("hSparseV2SASameEventRotational_V2_new_occupancy", "hSparseV2SASameEventRotational_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, dcaAxis, thnAxisPtProton, thnAxisCentrality, occupancyAxis});
     }
     if (fillPolarization) {
       histos.add("hSparseV2SASameEventplus_SA", "hSparseV2SASameEventplus_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
@@ -231,11 +232,16 @@ struct highmasslambda {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
-      // if (!(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    if (isPVContributor && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
-    if (candidate.pt() < 2.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin) {
+    if (!isPVContributor && !(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+      return false;
+    }
+    if (candidate.pt() < 1.0 && TMath::Abs(candidate.dcaXY()) < 0.002) {
+      return false;
+    }
+    if (candidate.pt() >= 1.0 && candidate.pt() < 2.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin) {
       return false;
     }
     return true;
