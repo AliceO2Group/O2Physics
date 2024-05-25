@@ -34,6 +34,12 @@ struct MultiplicityExtraTable {
   Produces<aod::MultsBC> multBC;
   Produces<aod::MultNeighs> multNeigh;
 
+  // Allow for downscaling of BC table for less space use in derived data
+  Configurable<float> bcDownscaleFactor{"bcDownscaleFactor", 2, "Downscale factor for BC table (0: save nothing, 1: save all)"};
+
+  // needed for downscale
+  unsigned int randomSeed = 0;
+
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   BCPattern CollidingBunch;
@@ -43,6 +49,8 @@ struct MultiplicityExtraTable {
 
   void init(InitContext&)
   {
+    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>  (std::chrono::system_clock::now().time_since_epoch()).count());
+
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -53,6 +61,11 @@ struct MultiplicityExtraTable {
 
   void processBCs(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&)
   {
+    // downscale if requested to do so
+    if (bcDownscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > bcDownscaleFactor) {
+      return;
+    }
+
     bool Tvx = false;
     bool isFV0OrA = false;
     float multFT0C = 0.f;
