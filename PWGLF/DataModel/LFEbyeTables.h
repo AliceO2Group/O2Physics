@@ -20,11 +20,12 @@ namespace o2::aod
 
 namespace LFEbyeTable
 {
+DECLARE_SOA_COLUMN(IdColl, idColl, int64_t);
+DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(Zvtx, zvtx, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
-DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float); // Run 3
-DECLARE_SOA_COLUMN(CentFV0M, centFV0M, float); // Run 2
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);
 DECLARE_SOA_COLUMN(DcaPV, dcaPV, float);
 DECLARE_SOA_COLUMN(TpcNcls, tpcNcls, uint8_t);
@@ -46,6 +47,9 @@ DECLARE_SOA_COLUMN(IsReco, isReco, bool);
 } // namespace LFEbyeTable
 
 DECLARE_SOA_TABLE(NucleiEbyeTable, "AOD", "NUCLEBYETABLE",
+                  LFEbyeTable::IdColl,
+                  LFEbyeTable::Centrality,
+                  LFEbyeTable::Zvtx,
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,
@@ -56,6 +60,9 @@ DECLARE_SOA_TABLE(NucleiEbyeTable, "AOD", "NUCLEBYETABLE",
                   LFEbyeTable::TofMass);
 
 DECLARE_SOA_TABLE(McNucleiEbyeTable, "AOD", "MCNUCLEBYETABLE",
+                  LFEbyeTable::IdColl,
+                  LFEbyeTable::Centrality,
+                  LFEbyeTable::Zvtx,
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,
@@ -70,6 +77,9 @@ DECLARE_SOA_TABLE(McNucleiEbyeTable, "AOD", "MCNUCLEBYETABLE",
                   LFEbyeTable::IsReco);
 
 DECLARE_SOA_TABLE(LambdaEbyeTable, "AOD", "LAMBEBYETABLE",
+                  LFEbyeTable::IdColl,
+                  LFEbyeTable::Centrality,
+                  LFEbyeTable::Zvtx,
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,
@@ -85,6 +95,9 @@ DECLARE_SOA_TABLE(LambdaEbyeTable, "AOD", "LAMBEBYETABLE",
                   LFEbyeTable::IdPos);
 
 DECLARE_SOA_TABLE(McLambdaEbyeTable, "AOD", "MCLAMBEBYETABLE",
+                  LFEbyeTable::IdColl,
+                  LFEbyeTable::Centrality,
+                  LFEbyeTable::Zvtx,
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,

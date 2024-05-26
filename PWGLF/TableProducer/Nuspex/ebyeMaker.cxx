@@ -61,18 +61,7 @@ constexpr double partMass[kNpart]{o2::constants::physics::MassProton, o2::consta
 constexpr double partPdg[kNpart]{2212, o2::constants::physics::kDeuteron};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNamesBB{"p", "d"};
-std::array<std::shared_ptr<TH2>, kNpart> tempTracks;
-std::shared_ptr<TH2> tempAntiLambda;
-std::shared_ptr<TH2> tempLambda;
-std::array<std::shared_ptr<TH3>, kNpart> recTracks;
-std::array<std::shared_ptr<TH3>, kNpart> recAntiTracks;
-std::array<std::shared_ptr<TH3>, kNpart> genTracks;
-std::array<std::shared_ptr<TH3>, kNpart> genAntiTracks;
-std::array<std::shared_ptr<TH2>, kNpart> tpcNsigma;
-std::array<std::shared_ptr<TH3>, kNpart> tpcNsigmaGlo;
 std::array<std::shared_ptr<TH3>, kNpart> tofMass;
-std::array<std::shared_ptr<TH2>, kNpart> tofSignal;
-std::array<std::shared_ptr<TH2>, kNpart> tofSignal_glo;
 void momTotXYZ(std::array<float, 3>& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
   for (int i = 0; i < 3; ++i) {
@@ -171,7 +160,6 @@ struct ebyeMaker {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> fitter;
 
-  int nSubsamples;
   int mRunNumber;
   float d_bz;
   // o2::base::MatLayerCylSet* lut = nullptr;
@@ -180,33 +168,17 @@ struct ebyeMaker {
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 2, 6, particleNamesBB, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
-  ConfigurableAxis subsampleAxis{"subsampleAxis", {30, 0, 30}, "binning of the subsample axis"};
-  ConfigurableAxis deltaEtaAxis{"deltaEtaAxis", {4, 0, 0.8}, "binning of the delta eta axis"};
-  ConfigurableAxis ptAntidAxis{"ptAntidAxis", {VARIABLE_WIDTH, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.4f, 1.6f, 1.8f}, "binning of the antideuteron pT axis (GeV/c)"};
-  ConfigurableAxis ptAntipAxis{"ptAntipAxis", {VARIABLE_WIDTH, 0.4f, 0.6f, 0.7f, 0.8f, 0.9f}, "binning of the antiproton pT axis (GeV/c)"};
-  ConfigurableAxis ptLambdaAxis{"ptLambdaAxis", {VARIABLE_WIDTH, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f}, "binning of the (anti)lambda pT axis (GeV/c)"};
-
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
   ConfigurableAxis multAxis{"multAxis", {100, 0, 10000}, "Binning for the multiplicity axis"};
   ConfigurableAxis multFt0Axis{"multFt0Axis", {100, 0, 100000}, "Binning for the ft0 multiplicity axis"};
-  ConfigurableAxis nGenRecAxis{"nGenRecAxis", {20, 0, 20}, "binning for the number of reconstructed or generated candidates per event"};
 
-  // binning of (anti)lambda QA histograms
+  // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
-  ConfigurableAxis cosPaAxis{"cosPaAxis", {1e3, 0.95f, 1.00f}, "binning for the cosPa axis"};
-  ConfigurableAxis radiusAxis{"radiusAxis", {1e3, 0.f, 100.f}, "binning for the radius axis"};
-  ConfigurableAxis dcaV0daughAxis{"dcaV0daughAxis", {2e2, 0.f, 2.f}, "binning for the dca of V0 daughters"};
-  ConfigurableAxis dcaDaughPvAxis{"dcaDaughPvAxis", {1e3, -10.f, 10.f}, "binning for the dca of positive daughter to PV"};
 
-  // binning of deuteron QA histograms
-  ConfigurableAxis tpcNsigmaAxis{"tpcNsigmaAxis", {100, -5.f, 5.f}, "tpc nsigma axis"};
-  ConfigurableAxis tofMassAxis{"tofMassAxis", {1000, 0., 3.f}, "tof mass axis"};
-  ConfigurableAxis momAxis{"momAxis", {60., 0.f, 3.f}, "momentum axis binning"};
-  ConfigurableAxis momAxisFine{"momAxisFine", {5.e2, 0.f, 5.f}, "momentum axis binning"};
-  ConfigurableAxis momResAxis{"momResAxis", {1.e2, -1.f, 1.f}, "momentum resolution binning"};
+  // binning of PID QA histograms
+  ConfigurableAxis momAxis{"momAxisFine", {5.e2, 0.f, 5.f}, "momentum axis binning"};
   ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
-  ConfigurableAxis tofAxis{"tofAxis", {1.e3, 0.f, 1.f}, "tof signal axis binning"};
-  ConfigurableAxis tpcClsAxis{"tpcClsAxis", {160, 0.f, 160.f}, "tpc n clusters binning"};
+  ConfigurableAxis tofMassAxis{"tofMassAxis", {1000, 0., 3.f}, "tof mass axis"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -260,7 +232,7 @@ struct ebyeMaker {
   Configurable<float> v0setting_radius{"v0setting_radius", 0.5f, "v0radius"};
   Configurable<float> v0setting_lifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
   Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
-  Configurable<float> lambdaMassCutQA{"lambdaMassCutQA", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
+  Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
   Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 2.f, "cluster size cut for antideuterons"};
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 1.f, "pt for cluster size cut for antideuterons"};
@@ -274,7 +246,6 @@ struct ebyeMaker {
   std::array<float, kNpart> tofMassMax;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry tempHistos{"tempHistos", {}, OutputObjHandlingPolicy::TransientObject};
 
   Preslice<TracksFull> perCollisionTracksFull = o2::aod::track::collisionId;
   Preslice<TracksFullIU> perCollisionTracksFullIU = o2::aod::track::collisionId;
@@ -343,36 +314,6 @@ struct ebyeMaker {
     return sum / track.itsNCls();
   }
 
-  void fillHistoN(std::shared_ptr<THnSparse> hFull, std::shared_ptr<TH2> const& hTmp, int const subsample, int const centrality)
-  {
-    for (int iEta{1}; iEta < hTmp->GetNbinsX() + 1; ++iEta) {
-      for (int iPt{1}; iPt < hTmp->GetNbinsY() + 1; ++iPt) {
-        auto eta = hTmp->GetXaxis()->GetBinCenter(iEta);
-        auto pt = hTmp->GetYaxis()->GetBinCenter(iPt);
-        auto num = hTmp->Integral(1, iEta, iPt, iPt);
-
-        hFull->Fill(subsample, centrality, eta, pt, num);
-      }
-    }
-  }
-
-  void fillHistoN(std::shared_ptr<THnSparse> hFull, std::shared_ptr<TH2> const& hTmpA, std::shared_ptr<TH2> const& hTmpB, int const subsample, int const centrality)
-  {
-    for (int iEta{1}; iEta < hTmpA->GetNbinsX() + 1; ++iEta) {
-      auto eta = hTmpA->GetXaxis()->GetBinCenter(iEta);
-      for (int iPtA{1}; iPtA < hTmpA->GetNbinsY() + 1; ++iPtA) {
-        for (int iPtB{1}; iPtB < hTmpB->GetNbinsY() + 1; ++iPtB) {
-          auto ptA = hTmpA->GetYaxis()->GetBinCenter(iPtA);
-          auto ptB = hTmpB->GetYaxis()->GetBinCenter(iPtB);
-          auto numA = hTmpA->Integral(1, iEta, iPtA, iPtA);
-          auto numB = hTmpB->Integral(1, iEta, iPtB, iPtB);
-
-          hFull->Fill(subsample, centrality, eta, ptA, ptB, numA * numB);
-        }
-      }
-    }
-  }
-
   template <class Bc>
   void initCCDB(Bc const& bc)
   {
@@ -431,20 +372,8 @@ struct ebyeMaker {
     int mat{static_cast<int>(cfgMaterialCorrection)};
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
-    uint32_t randomSeed = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    gen32.seed(randomSeed);
-
-    histos.add<TH1>("QA/zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
-
-    auto hNev = histos.add<THnSparse>("nEv", ";Subsample;Centrality (%);", HistType::kTHnSparseD, {subsampleAxis, centAxis});
-    nSubsamples = hNev->GetAxis(0)->GetNbins();
-
-    histos.add<TH2>("QA/nRecPerEvAntid", ";Centrality (%);#it{N}_{#bar{d}};#it{N}_{ev}", HistType::kTH2D, {centAxis, nGenRecAxis});
-    histos.add<TH2>("QA/nRecPerEvAntip", ";Centrality (%);#it{N}_{#bar{p}};#it{N}_{ev}", HistType::kTH2D, {centAxis, nGenRecAxis});
-    histos.add<TH2>("QA/nRecPerEvAntiL", ";Centrality (%);#it{N}_{#bar{#Lambda}};#it{N}_{ev}", HistType::kTH2D, {centAxis, nGenRecAxis});
-    histos.add<TH2>("QA/nRecPerEvL", ";Centrality (%);#it{N}_{#Lambda};#it{N}_{ev}", HistType::kTH2D, {centAxis, nGenRecAxis});
-
     // event QA
+    histos.add<TH1>("QA/zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
     if (doprocessRun3) {
       histos.add<TH2>("QA/PvMultVsCent", ";Centrality T0C (%);#it{N}_{PV contributors};", HistType::kTH2F, {centAxis, multAxis});
       histos.add<TH2>("QA/MultVsCent", ";Centrality T0C (%);Multiplicity T0C;", HistType::kTH2F, {centAxis, multFt0Axis});
@@ -455,73 +384,11 @@ struct ebyeMaker {
 
     // v0 QA
     histos.add<TH3>("QA/massLambda", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
-    histos.add<TH1>("QA/cosPa", ";cosPa;Entries", HistType::kTH1F, {cosPaAxis});
-    histos.add<TH1>("QA/cosPaSig", ";cosPa;Entries", HistType::kTH1F, {cosPaAxis});
-    histos.add<TH1>("QA/cosPaBkg", ";cosPa;Entries", HistType::kTH1F, {cosPaAxis});
-    histos.add<TH1>("QA/dcaV0daughSig", ";dcaV0daugh;Entries", HistType::kTH1F, {dcaV0daughAxis});
-    histos.add<TH1>("QA/dcaV0daughBkg", ";dcaV0daugh;Entries", HistType::kTH1F, {dcaV0daughAxis});
-    histos.add<TH1>("QA/dcaV0PvSig", ";dcaV0Pv;Entries", HistType::kTH1F, {dcaV0daughAxis});
-    histos.add<TH1>("QA/dcaV0PvBkg", ";dcaV0Pv;Entries", HistType::kTH1F, {dcaV0daughAxis});
-    histos.add<TH2>("QA/cosPaDcaV0daughSig", ";cosPa;dcaV0daugh", HistType::kTH2F, {cosPaAxis, dcaV0daughAxis});
-    histos.add<TH2>("QA/cosPaDcaV0daughBkg", ";cosPa;dcaV0daugh", HistType::kTH2F, {cosPaAxis, dcaV0daughAxis});
-    histos.add<TH3>("QA/massLambdaEvRej", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
-    histos.add<TH3>("QA/massLambdaEvRejSig", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
-    histos.add<TH3>("QA/massLambdaEvRejBkg", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
-    histos.add<TH1>("QA/radius", ";radius;Entries", HistType::kTH1F, {radiusAxis});
-    histos.add<TH1>("QA/dcaV0daugh", ";dcaV0daugh;Entries", HistType::kTH1F, {dcaV0daughAxis});
-    histos.add<TH1>("QA/dcaV0Pv", ";dcaV0Pv;Entries", HistType::kTH1F, {dcaV0daughAxis});
-    histos.add<TH1>("QA/dcaPosPv", ";dcaPosPv;Entries", HistType::kTH1F, {dcaDaughPvAxis});
-    histos.add<TH1>("QA/dcaNegPv", ";dcaNegPv;Entries", HistType::kTH1F, {dcaDaughPvAxis});
-    histos.add<TH1>("QA/cosPaBeforeCut", ";cosPa;Entries", HistType::kTH1F, {cosPaAxis});
-    histos.add<TH1>("QA/radiusBeforeCut", ";radius;Entries", HistType::kTH1F, {radiusAxis});
-    histos.add<TH1>("QA/dcaV0daughBeforeCut", ";dcaV0daugh;Entries", HistType::kTH1F, {dcaV0daughAxis});
-    histos.add<TH1>("QA/dcaV0PvBeforeCut", ";dcaV0Pv;Entries", HistType::kTH1F, {dcaV0daughAxis});
-
-    // d QA
-    histos.add<TH2>("QA/dcaPv", ";#it{p}_{T} (GeV/#it{c});dcaPv;Entries", HistType::kTH2F, {momAxis, dcaDaughPvAxis});
-    histos.add<TH1>("QA/nClsTPC", ";tpcCls;Entries", HistType::kTH1F, {tpcClsAxis});
-    histos.add<TH1>("QA/nCrossedRowsTPC", ";nCrossedRowsTPC;Entries", HistType::kTH1F, {tpcClsAxis});
-    histos.add<TH2>("QA/dcaPvBefore", ";#it{p}_{T} (GeV/#it{c});dcaPv;Entries", HistType::kTH2F, {momAxis, dcaDaughPvAxis});
-    histos.add<TH1>("QA/nClsTPCBeforeCut", ";tpcCls;Entries", HistType::kTH1F, {tpcClsAxis});
-    histos.add<TH1>("QA/nCrossedRowsTPCBeforeCut", ";nCrossedRowsTPC;Entries", HistType::kTH1F, {tpcClsAxis});
 
     // antid and antip QA
-    histos.add<TH2>("QA/tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
-    histos.add<TH2>("QA/tpcSignal_glo", ";#it{p}_{glo} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.);", HistType::kTH2F, {momAxisFine, tpcAxis});
-
-    tpcNsigma[0] = histos.add<TH2>("QA/tpcNsigma_p", ";#it{p}_{TPC} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
-    tpcNsigmaGlo[0] = histos.add<TH3>("QA/tpcNsigmaGlo_p", ";Centrality (%);#it{p}_{T} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH3F, {centAxis, momAxis, tpcNsigmaAxis});
+    histos.add<TH2>("QA/tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcAxis});
     tofMass[0] = histos.add<TH3>("QA/tofMass_p", ";Centrality (%);#it{p}_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, tofMassAxis});
-    tofSignal[0] = histos.add<TH2>("QA/tofSignal_p", ";#it{p}_{TPC} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
-    tofSignal_glo[0] = histos.add<TH2>("QA/tofSignal_glo_p", ";#it{p}_{T} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
-
-    tpcNsigma[1] = histos.add<TH2>("QA/tpcNsigma_d", ";#it{p}_{TPC} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
-    tpcNsigmaGlo[1] = histos.add<TH3>("QA/tpcNsigmaGlo_d", ";Centrality (%);#it{p}_{T} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH3F, {centAxis, momAxis, tpcNsigmaAxis});
     tofMass[1] = histos.add<TH3>("QA/tofMass_d", ";Centrality (%);#it{p}_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, tofMassAxis});
-    tofSignal[1] = histos.add<TH2>("QA/tofSignal_d", ";#it{p}_{TPC} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
-    tofSignal_glo[1] = histos.add<TH2>("QA/tofSignal_glo_d", ";#it{p}_{T} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
-
-    // mc histograms
-    if (doprocessMcRun3 || doprocessMcRun2) {
-      histos.add<TH3>("recL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
-      histos.add<TH3>("recAntiL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
-      recTracks[0] = histos.add<TH3>("recP", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
-      recTracks[1] = histos.add<TH3>("recD", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
-      recAntiTracks[0] = histos.add<TH3>("recAntip", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
-      recAntiTracks[1] = histos.add<TH3>("recAntid", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
-      histos.add<TH3>("genL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
-      histos.add<TH3>("genAntiL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
-      genTracks[0] = histos.add<TH3>("genP", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
-      genTracks[1] = histos.add<TH3>("genD", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
-      genAntiTracks[0] = histos.add<TH3>("genAntip", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
-      genAntiTracks[1] = histos.add<TH3>("genAntid", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
-    }
-
-    // temporary histograms
-    tempTracks[0] = tempHistos.add<TH2>("tempAntip", ";#Delta#eta;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {deltaEtaAxis, ptAntipAxis});
-    tempTracks[1] = tempHistos.add<TH2>("tempAntid", ";#Delta#eta;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {deltaEtaAxis, ptAntidAxis});
-    tempLambda = tempHistos.add<TH2>("tempLambda", ";#Delta#eta;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {deltaEtaAxis, ptLambdaAxis});
-    tempAntiLambda = tempHistos.add<TH2>("tempAntiLambda", ";#Delta#eta;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {deltaEtaAxis, ptLambdaAxis});
 
     ptMin = std::array<float, kNpart>{antipPtMin, antidPtMin};
     ptMax = std::array<float, kNpart>{antipPtMax, antidPtMax};
@@ -534,22 +401,15 @@ struct ebyeMaker {
   }
 
   template <class C, class T>
-  int fillRecoEvent(C const& collision, T const& tracksAll, aod::V0s const& V0s, float const& centrality)
+  void fillRecoEvent(C const& collision, T const& tracksAll, aod::V0s const& V0s, float const& centrality)
   {
     auto tracks = (doprocessRun3 || doprocessMcRun3) ? tracksAll.sliceBy(perCollisionTracksFullIU, collision.globalIndex()) : tracksAll.sliceBy(perCollisionTracksFull, collision.globalIndex());
     candidateTracks[0].clear();
     candidateTracks[1].clear();
     candidateV0s.clear();
 
-    auto rnd = static_cast<float>(gen32()) / static_cast<float>(gen32.max());
-    auto subsample = static_cast<int>(rnd * nSubsamples);
-    LOGF(info, "%d", subsample);
-
     gpu::gpustd::array<float, 2> dcaInfo;
     for (const auto& track : tracks) {
-
-      histos.fill(HIST("QA/nClsTPCBeforeCut"), track.tpcNClsFound());
-      histos.fill(HIST("QA/nCrossedRowsTPCBeforeCut"), track.tpcNClsCrossedRows());
 
       if (!selectTrack(track)) {
         continue;
@@ -560,16 +420,10 @@ struct ebyeMaker {
       auto dca = std::hypot(dcaInfo[0], dcaInfo[1]);
       auto trackPt = trackParCov.getPt();
       auto trackEta = trackParCov.getEta();
-      histos.fill(HIST("QA/dcaPvBefore"), trackPt, dca);
       if (dca > trackDcaCut) {
         continue;
       }
-      histos.fill(HIST("QA/dcaPv"), trackPt, dca);
-
-      histos.fill(HIST("QA/nClsTPC"), track.tpcNClsFound());
-      histos.fill(HIST("QA/nCrossedRowsTPC"), track.tpcNClsCrossedRows());
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-      histos.fill(HIST("QA/tpcSignal_glo"), track.p(), track.tpcSignal());
 
       for (int iP{0}; iP < kNpart; ++iP) {
         if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
@@ -593,7 +447,6 @@ struct ebyeMaker {
         bool hasTof = track.hasTOF() && track.tofChi2() < 3;
 
         if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMaxQA)) { // for QA histograms
-          tpcNsigmaGlo[iP]->Fill(centrality, trackPt, nSigmaTPC);
           if (nSigmaTPC > nSigmaTpcCutLow[iP] && nSigmaTPC < nSigmaTpcCutUp[iP]) {
             tofMass[iP]->Fill(centrality, trackPt, mass);
           }
@@ -601,12 +454,6 @@ struct ebyeMaker {
 
         if (nSigmaTPC < nSigmaTpcCutLow[iP] || nSigmaTPC > nSigmaTpcCutUp[iP]) {
           continue;
-        }
-
-        tpcNsigma[iP]->Fill(track.tpcInnerParam(), nSigmaTPC);
-        if (trackPt > ptTof[iP] && hasTof) {
-          tofSignal_glo[iP]->Fill(track.p(), beta);
-          tofSignal[iP]->Fill(track.tpcInnerParam(), beta);
         }
 
         // temporary cut to reject fake matches (run 3)
@@ -618,7 +465,6 @@ struct ebyeMaker {
         }
 
         if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMax[iP])) {
-          tempTracks[iP]->Fill(std::abs(trackEta), trackPt);
           CandidateTrack candTrack;
           candTrack.pt = trackPt;
           candTrack.eta = trackEta;
@@ -711,7 +557,6 @@ struct ebyeMaker {
       }
 
       float dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
-      histos.fill(HIST("QA/dcaV0daughBeforeCut"), dcaV0dau);
       if (dcaV0dau > v0setting_dcav0dau) {
         continue;
       }
@@ -720,7 +565,6 @@ struct ebyeMaker {
       const auto& vtx = fitter.getPCACandidate();
 
       float radiusV0 = std::hypot(vtx[0], vtx[1]);
-      histos.fill(HIST("QA/radiusBeforeCut"), radiusV0);
       if (radiusV0 < v0setting_radius || radiusV0 > v0radiusMax) {
         continue;
       }
@@ -731,13 +575,11 @@ struct ebyeMaker {
         momPos[1] + momNeg[1],
         momPos[2] + momNeg[2],
         collision.posX(), collision.posY(), collision.posZ());
-      histos.fill(HIST("QA/dcaV0PvBeforeCut"), dcaV0Pv);
       if (std::abs(dcaV0Pv) > v0setting_dcav0pv) {
         continue;
       }
 
       double cosPA = RecoDecay::cpa(primVtx, vtx, momV0);
-      histos.fill(HIST("QA/cosPaBeforeCut"), cosPA);
       if (cosPA < v0setting_cospa) {
         continue;
       }
@@ -761,29 +603,10 @@ struct ebyeMaker {
         continue;
       }
 
-      if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCutQA) { // for QA histograms
+      if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCut) { // for QA histograms
         continue;
       }
       histos.fill(HIST("QA/massLambda"), centrality, ptV0, mLambda);
-
-      // if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCut) {
-      //   continue;
-      // }
-      histos.fill(HIST("QA/cosPa"), cosPA);
-      histos.fill(HIST("QA/radius"), radiusV0);
-      histos.fill(HIST("QA/dcaV0daugh"), dcaV0dau);
-      histos.fill(HIST("QA/dcaPosPv"), posDcaToPv);
-      histos.fill(HIST("QA/dcaNegPv"), negDcaToPv);
-      histos.fill(HIST("QA/dcaV0Pv"), dcaV0Pv);
-
-      if (matter) {
-        tempHistos.fill(HIST("tempLambda"), std::abs(etaV0), ptV0);
-      } else {
-        tempHistos.fill(HIST("tempAntiLambda"), std::abs(etaV0), ptV0);
-      }
-
-      trkId.emplace_back(posTrack.globalIndex());
-      trkId.emplace_back(negTrack.globalIndex());
 
       CandidateV0 candV0;
       candV0.pt = ptV0;
@@ -801,32 +624,12 @@ struct ebyeMaker {
       candV0.globalIndexNeg = negTrack.globalIndex();
       candidateV0s.push_back(candV0);
     }
-
-    for (auto& candidateV0 : candidateV0s) {
-      histos.fill(HIST("QA/massLambdaEvRej"), centrality, candidateV0.pt, candidateV0.mass);
-    }
-
-    histos.fill(HIST("nEv"), subsample, centrality);
-
-    if ((doprocessMcRun3 || doprocessMcRun2) && fillOnlySignal)
-      return subsample;
-
-    histos.fill(HIST("QA/nRecPerEvAntip"), centrality, tempTracks[0]->GetEntries());
-    histos.fill(HIST("QA/nRecPerEvAntid"), centrality, tempTracks[1]->GetEntries());
-    histos.fill(HIST("QA/nRecPerEvAntiL"), centrality, tempAntiLambda->GetEntries());
-    histos.fill(HIST("QA/nRecPerEvL"), centrality, tempLambda->GetEntries());
-
-    return 0;
   }
 
   template <class C, class T>
   void fillMcEvent(C const& collision, T const& tracks, aod::V0s const& V0s, float const& centrality, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
   {
-    /* int subsample =  */fillRecoEvent<C, T>(collision, tracks, V0s, centrality);
-    // subsample += 1;
-    // if (candidateV0s.size() == 1 && candidateV0s[0].pt < -998.f && candidateV0s[0].eta < -998.f && candidateV0s[0].globalIndexPos == -999 && candidateV0s[0].globalIndexPos == -999) {
-    //   return;
-    // }
+    fillRecoEvent<C, T>(collision, tracks, V0s, centrality);
 
     for (int iP{0}; iP < kNpart; ++iP) {
       for (auto& candidateTrack : candidateTracks[iP]) {
@@ -866,22 +669,12 @@ struct ebyeMaker {
               if (!((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212)))
                 continue;
               if (std::abs(posMother.pdgCode()) != 3122) {
-                histos.fill(HIST("QA/cosPaBkg"), candidateV0.cpa);
-                histos.fill(HIST("QA/dcaV0daughBkg"), candidateV0.dcav0daugh);
-                histos.fill(HIST("QA/dcaV0PvBkg"), candidateV0.dcav0pv);
-                histos.fill(HIST("QA/cosPaDcaV0daughBkg"), candidateV0.cpa, candidateV0.dcav0daugh);
-                histos.fill(HIST("QA/massLambdaEvRejBkg"), centrality, candidateV0.pt, candidateV0.mass);
                 continue;
               }
               if (!posMother.isPhysicalPrimary() && !posMother.has_mothers())
                 continue;
               if (((posMother.flags() & 0x8) && doprocessMcRun2) || (posMother.flags() & 0x2) || (posMother.flags() & 0x1))
                 continue;
-              histos.fill(HIST("QA/cosPaSig"), candidateV0.cpa);
-              histos.fill(HIST("QA/dcaV0daughSig"), candidateV0.dcav0daugh);
-              histos.fill(HIST("QA/dcaV0PvSig"), candidateV0.dcav0pv);
-              histos.fill(HIST("QA/cosPaDcaV0daughSig"), candidateV0.cpa, candidateV0.dcav0daugh);
-              histos.fill(HIST("QA/massLambdaEvRejSig"), centrality, candidateV0.pt, candidateV0.mass);
 
               auto genPt = std::hypot(posMother.px(), posMother.py());
               candidateV0.pdgcode = posMother.pdgCode();
@@ -892,13 +685,6 @@ struct ebyeMaker {
           }
         }
       }
-    }
-
-    if (fillOnlySignal) {
-      histos.fill(HIST("QA/nRecPerEvAntip"), centrality, tempTracks[0]->GetEntries());
-      histos.fill(HIST("QA/nRecPerEvAntid"), centrality, tempTracks[1]->GetEntries());
-      histos.fill(HIST("QA/nRecPerEvAntiL"), centrality, tempAntiLambda->GetEntries());
-      histos.fill(HIST("QA/nRecPerEvL"), centrality, tempLambda->GetEntries());
     }
   }
 
@@ -967,16 +753,7 @@ struct ebyeMaker {
       if (std::abs(collision.posZ()) > zVtxMax)
         continue;
 
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
         continue;
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
@@ -991,6 +768,41 @@ struct ebyeMaker {
 
       histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
       histos.fill(HIST("QA/MultVsCent"), centrality, multiplicity);
+
+      for (auto& candidateV0 : candidateV0s) {
+        lambdaEbyeTable(
+          collision.globalIndex(),
+          centrality,
+          collision.posZ(),
+          candidateV0.pt,
+          candidateV0.eta,
+          candidateV0.mass,
+          candidateV0.matter,
+          candidateV0.dcav0pv,
+          candidateV0.dcanegpv,
+          candidateV0.dcapospv,
+          candidateV0.dcav0daugh,
+          candidateV0.cpa,
+          candidateV0.tpcnsigmaneg,
+          candidateV0.tpcnsigmapos,
+          candidateV0.globalIndexNeg,
+          candidateV0.globalIndexPos);
+      }
+
+      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
+        nucleiEbyeTable(
+          collision.globalIndex(),
+          centrality,
+          collision.posZ(),
+          candidateTrack.pt,
+          candidateTrack.eta,
+          candidateTrack.mass,
+          candidateTrack.matter,
+          candidateTrack.dcapv,
+          candidateTrack.tpcncls,
+          candidateTrack.tpcnsigma,
+          candidateTrack.tofmass);
+      }
     }
   }
   PROCESS_SWITCH(ebyeMaker, processRun3, "process (Run 3)", false);
@@ -1037,8 +849,10 @@ struct ebyeMaker {
       histos.fill(HIST("QA/trackletsVsV0M"), centrality, multTracklets);
 
       for (auto& candidateV0 : candidateV0s) {
-        // LOG(info) << candidateV0.pt;
         lambdaEbyeTable(
+          collision.globalIndex(),
+          centrality,
+          collision.posZ(),
           candidateV0.pt,
           candidateV0.eta,
           candidateV0.mass,
@@ -1054,9 +868,11 @@ struct ebyeMaker {
           candidateV0.globalIndexPos);
       }
 
-      for (auto& candidateTrack : candidateTracks[0]) { // deuterons
-        // LOG(info) << candidateV0.pt;
+      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
         nucleiEbyeTable(
+          collision.globalIndex(),
+          centrality,
+          collision.posZ(),
           candidateTrack.pt,
           candidateTrack.eta,
           candidateTrack.mass,
@@ -1072,7 +888,6 @@ struct ebyeMaker {
 
   void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& mcCollisions, TracksFullIU const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
-    std::vector<std::pair<bool, float>> goodCollisions(mcCollisions.size(), std::make_pair(false, -999.));
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -1080,24 +895,13 @@ struct ebyeMaker {
       if (!collision.sel8())
         continue;
 
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
         continue;
 
       if (std::abs(collision.posZ()) > zVtxMax)
         continue;
 
       auto centrality = collision.centFT0C();
-      goodCollisions[collision.mcCollisionId()].first = true;
-      goodCollisions[collision.mcCollisionId()].second = centrality;
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
@@ -1106,8 +910,49 @@ struct ebyeMaker {
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
       fillMcEvent(collision, tracks, V0Table_thisCollision, centrality, mcParticles, mcLab);
-      if (candidateV0s.size() == 1 && candidateV0s[0].pt < -998.f && candidateV0s[0].eta < -998.f && candidateV0s[0].globalIndexPos == -999 && candidateV0s[0].globalIndexPos == -999) {
-        goodCollisions[collision.mcCollisionId()].first = false;
+      fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
+
+      for (auto& candidateV0 : candidateV0s) {
+        mcLambdaEbyeTable(
+          collision.globalIndex(),
+          centrality,
+          collision.posZ(),
+          candidateV0.pt,
+          candidateV0.eta,
+          candidateV0.mass,
+          candidateV0.matter,
+          candidateV0.dcav0pv,
+          candidateV0.dcanegpv,
+          candidateV0.dcapospv,
+          candidateV0.dcav0daugh,
+          candidateV0.cpa,
+          candidateV0.tpcnsigmaneg,
+          candidateV0.tpcnsigmapos,
+          candidateV0.globalIndexNeg,
+          candidateV0.globalIndexPos,
+          candidateV0.genpt,
+          candidateV0.geneta,
+          candidateV0.pdgcode,
+          candidateV0.isreco);
+      }
+
+      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
+        mcNucleiEbyeTable(
+          collision.globalIndex(),
+          centrality,
+          collision.posZ(),
+          candidateTrack.pt,
+          candidateTrack.eta,
+          candidateTrack.mass,
+          candidateTrack.matter,
+          candidateTrack.dcapv,
+          candidateTrack.tpcncls,
+          candidateTrack.tpcnsigma,
+          candidateTrack.tofmass,
+          candidateTrack.genpt,
+          candidateTrack.geneta,
+          candidateTrack.pdgcode,
+          candidateTrack.isreco);
       }
     }
   }
@@ -1137,8 +982,10 @@ struct ebyeMaker {
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
       for (auto& candidateV0 : candidateV0s) {
-        // LOG(info) << candidateV0.pt;
         mcLambdaEbyeTable(
+          collision.globalIndex(),
+          centrality,
+          collision.posZ(),
           candidateV0.pt,
           candidateV0.eta,
           candidateV0.mass,
@@ -1158,9 +1005,11 @@ struct ebyeMaker {
           candidateV0.isreco);
       }
 
-      for (auto& candidateTrack : candidateTracks[0]) { // deuterons
-        // LOG(info) << candidateV0.pt;
+      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
         mcNucleiEbyeTable(
+          collision.globalIndex(),
+          centrality,
+          collision.posZ(),
           candidateTrack.pt,
           candidateTrack.eta,
           candidateTrack.mass,
