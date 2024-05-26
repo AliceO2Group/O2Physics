@@ -89,6 +89,8 @@ struct nucleiEbye {
   std::mt19937 gen32;
   std::vector<CandidateV0> candidateV0s;
   std::array<std::vector<CandidateTrack>, 2> candidateTracks;
+  PresliceUnsorted<aod::McNucleiEbyeTables> perCollTrack = o2::aod::LFEbyeTable::collEbyeTableId;
+  PresliceUnsorted<aod::McLambdaEbyeTables> perCollV0s = o2::aod::LFEbyeTable::collEbyeTableId;
   int nSubsamples;
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
@@ -541,6 +543,7 @@ struct nucleiEbye {
     for (int iP{0}; iP < kNpart; ++iP) {
       for (auto& candidateTrack : candidateTracks[iP]) {
         auto mcTrack = tracks.rawIteratorAt(candidateTrack.globalIndex);
+        LOGF(info, "globalIndex = %ld, reco = %d", candidateTrack.globalIndex, mcTrack.isReco());
         if (std::abs(mcTrack.pdgCode()) != partPdg[iP])
           continue;
         if (!mcTrack.isReco())
@@ -606,13 +609,13 @@ struct nucleiEbye {
     auto rnd = static_cast<float>(gen32()) / static_cast<float>(gen32.max());
     auto subsample = static_cast<int>(rnd * nSubsamples);
     for (auto& mcPart : v0s) {
-      auto genEta = mcPart.eta();
+      auto genEta = mcPart.genEta();
       if (std::abs(genEta) > etaMax) {
         continue;
       }
       auto pdgCode = mcPart.pdgCode();
       if (std::abs(pdgCode) == 3122) {
-        auto genPt = mcPart.pt();
+        auto genPt = mcPart.genPt();
         if (pdgCode > 0) {
           histos.fill(HIST("genL"), centrality, genPt, std::abs(genEta));
           tempHistos.fill(HIST("tempLambda"), std::abs(genEta), genPt);
@@ -623,7 +626,7 @@ struct nucleiEbye {
       }
     }
     for (auto& mcPart : tracks) {
-      auto genEta = mcPart.eta();
+      auto genEta = mcPart.genEta();
       if (std::abs(genEta) > etaMax) {
         continue;
       }
@@ -633,7 +636,7 @@ struct nucleiEbye {
         if (std::abs(pdgCode) == partPdg[0]) {
           iP = 0;
         }
-        auto genPt = mcPart.pt();
+        auto genPt = mcPart.genPt();
         if (pdgCode > 0) {
           genTracks[iP]->Fill(centrality, genPt, std::abs(genEta));
         } else {
@@ -667,9 +670,11 @@ struct nucleiEbye {
   }
   PROCESS_SWITCH(nucleiEbye, processRun2, "process (Run 2)", false);
 
-  void processMcRun2(aod::CollEbyeTables const& collisions, aod::McNucleiEbyeTables const& tracks, aod::McLambdaEbyeTables const& v0s)
+  void processMcRun2(aod::CollEbyeTables const& collisions, aod::McNucleiEbyeTables const& tracksTot, aod::McLambdaEbyeTables const& v0sTot)
   {
     for (auto& collision : collisions) {
+      auto tracks = tracksTot.sliceBy(perCollTrack, collision.globalIndex());
+      auto v0s = v0sTot.sliceBy(perCollV0s, collision.globalIndex());
       histos.fill(HIST("QA/zVtx"), collision.zvtx());
       fillMcEvent(collision, tracks, v0s, collision.centrality());
       fillMcGen(collision, tracks, v0s, collision.centrality());

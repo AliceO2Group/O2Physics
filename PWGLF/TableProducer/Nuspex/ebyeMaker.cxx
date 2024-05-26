@@ -717,7 +717,7 @@ struct ebyeMaker {
         CandidateV0 candV0;
         candV0.genpt = genPt;
         candV0.geneta = mcPart.eta();
-        candV0.pdgcode = mcPart.pdgCode();
+        candV0.pdgcode = pdgCode;
         auto it = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 v0){return v0.mcIndex == mcPart.globalIndex();});
         if (it != candidateV0s.end()) {
           continue;
@@ -736,7 +736,7 @@ struct ebyeMaker {
         CandidateTrack candTrack;
         candTrack.genpt = genPt;
         candTrack.geneta = mcPart.eta();
-        candTrack.pdgcode = mcPart.pdgCode();
+        candTrack.pdgcode = pdgCode;
         auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](CandidateTrack trk){return trk.mcIndex == mcPart.globalIndex();});
         if (it != candidateTracks[iP].end()) {
           continue;

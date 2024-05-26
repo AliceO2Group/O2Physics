@@ -50,7 +50,7 @@ DECLARE_SOA_COLUMN(TpcNsigmaNeg, tpcNsigmaNeg, float);
 DECLARE_SOA_COLUMN(TpcNsigmaPos, tpcNsigmaPos, float);
 DECLARE_SOA_COLUMN(IdNeg, idNeg, int64_t);
 DECLARE_SOA_COLUMN(IdPos, idPos, int64_t);
-DECLARE_SOA_COLUMN(GenPt, gentPt, float);
+DECLARE_SOA_COLUMN(GenPt, genPt, float);
 DECLARE_SOA_COLUMN(GenEta, genEta, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
