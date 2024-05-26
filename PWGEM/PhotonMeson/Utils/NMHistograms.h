@@ -40,7 +40,7 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool doFlow, bool isMC, const
   const AxisSpec axis_pt{ptbins, Form("p_{T,%s} (GeV/c)", pairname)};
 
   const AxisSpec axis_mass{400, 0, 0.8, Form("m_{%s} (GeV/c^{2})", pairname)};
-  const AxisSpec sp2_mass{50, -5, 5, Form("u_{2}^{%s} #upoint Q_{2}", pairname)};
+  const AxisSpec sp2_mass{100, -5, 5, Form("u_{2}^{%s} #upoint Q_{2}", pairname)};
 
   if (isMC) {
     fRegistry->add("Generated/Pi0/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{2000, 0.0f, 20}});
