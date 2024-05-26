@@ -553,7 +553,6 @@ struct CFFillterPPPhi {
     } else {
       registry.fill(HIST("fProcessedEvents"), 1);
     }
-
   };
 };
 
