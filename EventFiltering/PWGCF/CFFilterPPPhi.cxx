@@ -547,7 +547,6 @@ struct CFFillterPPPhi {
 
     // create tags for three body triggers
     if (lowQ3Triplets > 0) {
-      // keepEvent3N[CFTrigger::kPPPhi] = true;
       registry.fill(HIST("fProcessedEvents"), 2);
       registry.fill(HIST("ppphi/fMultiplicity"), col.multNTracksPV());
       registry.fill(HIST("ppphi/fZvtx"), col.posZ());
@@ -555,8 +554,6 @@ struct CFFillterPPPhi {
       registry.fill(HIST("fProcessedEvents"), 1);
     }
 
-    // if ((Nproton > 1 && Nphi > 0) || (Nantiproton > 1 && Nphi > 0)) {
-    // }
   };
 };
 
