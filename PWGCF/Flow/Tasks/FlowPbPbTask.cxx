@@ -530,7 +530,7 @@ struct FlowPbPbTask {
       return;
     }
     mRunNumber = bc.runNumber();
-    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()){
+    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()) {
       auto runDuration = ccdb->getRunDuration(mRunNumber);
       mSOR = runDuration.first;
       mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
