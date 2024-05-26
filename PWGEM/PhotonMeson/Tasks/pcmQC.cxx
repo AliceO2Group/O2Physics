@@ -305,11 +305,12 @@ struct PCMQC {
   }
 
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
-  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
-  void processQC(MyCollisions const&, MyV0Photons const& v0photons, aod::V0Legs const&)
+  void processQC(FilteredMyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const&)
   {
-    for (auto& collision : grouped_collisions) {
+    for (auto& collision : collisions) {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
