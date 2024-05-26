@@ -150,6 +150,7 @@ struct CandidateTrack {
 };
 
 struct ebyeMaker {
+  Produces<aod::CollEbyeTable> collisionEbyeTable;
   Produces<aod::NucleiEbyeTable> nucleiEbyeTable;
   Produces<aod::LambdaEbyeTable> lambdaEbyeTable;
   Produces<aod::McNucleiEbyeTable> mcNucleiEbyeTable;
@@ -769,11 +770,11 @@ struct ebyeMaker {
       histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
       histos.fill(HIST("QA/MultVsCent"), centrality, multiplicity);
 
+      collisionEbyeTable(centrality, collision.posZ());
+
       for (auto& candidateV0 : candidateV0s) {
         lambdaEbyeTable(
-          collision.globalIndex(),
-          centrality,
-          collision.posZ(),
+          collisionEbyeTable.lastIndex(),
           candidateV0.pt,
           candidateV0.eta,
           candidateV0.mass,
@@ -791,9 +792,7 @@ struct ebyeMaker {
 
       for (auto& candidateTrack : candidateTracks[1]) { // deuterons
         nucleiEbyeTable(
-          collision.globalIndex(),
-          centrality,
-          collision.posZ(),
+          collisionEbyeTable.lastIndex(),
           candidateTrack.pt,
           candidateTrack.eta,
           candidateTrack.mass,
@@ -848,11 +847,11 @@ struct ebyeMaker {
       histos.fill(HIST("QA/V0MvsCL0"), centralityCl0, centrality);
       histos.fill(HIST("QA/trackletsVsV0M"), centrality, multTracklets);
 
+      collisionEbyeTable(centrality, collision.posZ());
+
       for (auto& candidateV0 : candidateV0s) {
         lambdaEbyeTable(
-          collision.globalIndex(),
-          centrality,
-          collision.posZ(),
+          collisionEbyeTable.lastIndex(),
           candidateV0.pt,
           candidateV0.eta,
           candidateV0.mass,
@@ -870,9 +869,7 @@ struct ebyeMaker {
 
       for (auto& candidateTrack : candidateTracks[1]) { // deuterons
         nucleiEbyeTable(
-          collision.globalIndex(),
-          centrality,
-          collision.posZ(),
+          collisionEbyeTable.lastIndex(),
           candidateTrack.pt,
           candidateTrack.eta,
           candidateTrack.mass,
@@ -912,11 +909,11 @@ struct ebyeMaker {
       fillMcEvent(collision, tracks, V0Table_thisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
+      collisionEbyeTable(centrality, collision.posZ());
+
       for (auto& candidateV0 : candidateV0s) {
         mcLambdaEbyeTable(
-          collision.globalIndex(),
-          centrality,
-          collision.posZ(),
+          collisionEbyeTable.lastIndex(),
           candidateV0.pt,
           candidateV0.eta,
           candidateV0.mass,
@@ -938,9 +935,7 @@ struct ebyeMaker {
 
       for (auto& candidateTrack : candidateTracks[1]) { // deuterons
         mcNucleiEbyeTable(
-          collision.globalIndex(),
-          centrality,
-          collision.posZ(),
+          collisionEbyeTable.lastIndex(),
           candidateTrack.pt,
           candidateTrack.eta,
           candidateTrack.mass,
@@ -981,11 +976,11 @@ struct ebyeMaker {
       fillMcEvent(collision, tracks, V0Table_thisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
+      collisionEbyeTable(centrality, collision.posZ());
+
       for (auto& candidateV0 : candidateV0s) {
         mcLambdaEbyeTable(
-          collision.globalIndex(),
-          centrality,
-          collision.posZ(),
+          collisionEbyeTable.lastIndex(),
           candidateV0.pt,
           candidateV0.eta,
           candidateV0.mass,
@@ -1007,9 +1002,7 @@ struct ebyeMaker {
 
       for (auto& candidateTrack : candidateTracks[1]) { // deuterons
         mcNucleiEbyeTable(
-          collision.globalIndex(),
-          centrality,
-          collision.posZ(),
+          collisionEbyeTable.lastIndex(),
           candidateTrack.pt,
           candidateTrack.eta,
           candidateTrack.mass,

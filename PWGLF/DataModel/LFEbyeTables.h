@@ -18,11 +18,21 @@
 namespace o2::aod
 {
 
-namespace LFEbyeTable
+namespace LFEbyeCollTable
 {
-DECLARE_SOA_COLUMN(IdColl, idColl, int64_t);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 DECLARE_SOA_COLUMN(Zvtx, zvtx, float);
+} // namespace LFEbyeCollTable
+
+DECLARE_SOA_TABLE(CollEbyeTables, "AOD", "COLLEBYETABLE",
+                  o2::soa::Index<>,
+                  LFEbyeCollTable::Centrality,
+                  LFEbyeCollTable::Zvtx);
+using CollEbyeTable = CollEbyeTables::iterator;
+
+namespace LFEbyeTable
+{
+DECLARE_SOA_INDEX_COLUMN(CollEbyeTable, collEbyeTable);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
@@ -47,9 +57,8 @@ DECLARE_SOA_COLUMN(IsReco, isReco, bool);
 } // namespace LFEbyeTable
 
 DECLARE_SOA_TABLE(NucleiEbyeTable, "AOD", "NUCLEBYETABLE",
-                  LFEbyeTable::IdColl,
-                  LFEbyeTable::Centrality,
-                  LFEbyeTable::Zvtx,
+                  o2::soa::Index<>,
+                  LFEbyeTable::CollEbyeTableId,
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,
@@ -60,9 +69,8 @@ DECLARE_SOA_TABLE(NucleiEbyeTable, "AOD", "NUCLEBYETABLE",
                   LFEbyeTable::TofMass);
 
 DECLARE_SOA_TABLE(McNucleiEbyeTable, "AOD", "MCNUCLEBYETABLE",
-                  LFEbyeTable::IdColl,
-                  LFEbyeTable::Centrality,
-                  LFEbyeTable::Zvtx,
+                  o2::soa::Index<>,
+                  LFEbyeTable::CollEbyeTableId,
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,
@@ -77,9 +85,8 @@ DECLARE_SOA_TABLE(McNucleiEbyeTable, "AOD", "MCNUCLEBYETABLE",
                   LFEbyeTable::IsReco);
 
 DECLARE_SOA_TABLE(LambdaEbyeTable, "AOD", "LAMBEBYETABLE",
-                  LFEbyeTable::IdColl,
-                  LFEbyeTable::Centrality,
-                  LFEbyeTable::Zvtx,
+                  o2::soa::Index<>,
+                  LFEbyeTable::CollEbyeTableId,
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,
@@ -95,9 +102,8 @@ DECLARE_SOA_TABLE(LambdaEbyeTable, "AOD", "LAMBEBYETABLE",
                   LFEbyeTable::IdPos);
 
 DECLARE_SOA_TABLE(McLambdaEbyeTable, "AOD", "MCLAMBEBYETABLE",
-                  LFEbyeTable::IdColl,
-                  LFEbyeTable::Centrality,
-                  LFEbyeTable::Zvtx,
+                  o2::soa::Index<>,
+                  LFEbyeTable::CollEbyeTableId,
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,

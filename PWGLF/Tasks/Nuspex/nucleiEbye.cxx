@@ -859,46 +859,6 @@ struct nucleiEbye {
     }
   }
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults> const& collisions, TracksFullIU const& tracks, aod::V0s const& V0s, aod::BCsWithTimestamps const&)
-  {
-    for (const auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-
-      if (!collision.sel8())
-        continue;
-
-      if (std::abs(collision.posZ()) > zVtxMax)
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
-        continue;
-
-      histos.fill(HIST("QA/zVtx"), collision.posZ());
-
-      const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
-
-      auto multiplicity = collision.multFT0C();
-      auto centrality = collision.centFT0C();
-      fillRecoEvent(collision, tracks, V0Table_thisCollision, centrality);
-
-      histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
-      histos.fill(HIST("QA/MultVsCent"), centrality, multiplicity);
-    }
-  }
-  PROCESS_SWITCH(nucleiEbye, processRun3, "process (Run 3)", false);
-
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::TrackletMults> const& collisions, TracksFull const& tracks, aod::V0s const& V0s, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
@@ -942,51 +902,6 @@ struct nucleiEbye {
     }
   }
   PROCESS_SWITCH(nucleiEbye, processRun2, "process (Run 2)", false);
-
-  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& mcCollisions, TracksFullIU const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
-  {
-    std::vector<std::pair<bool, float>> goodCollisions(mcCollisions.size(), std::make_pair(false, -999.));
-    for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-
-      if (!collision.sel8())
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup))
-        continue;
-
-      if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
-        continue;
-
-      if (std::abs(collision.posZ()) > zVtxMax)
-        continue;
-
-      auto centrality = collision.centFT0C();
-      goodCollisions[collision.mcCollisionId()].first = true;
-      goodCollisions[collision.mcCollisionId()].second = centrality;
-
-      histos.fill(HIST("QA/zVtx"), collision.posZ());
-
-      const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
-
-      fillMcEvent(collision, tracks, V0Table_thisCollision, centrality, mcParticles, mcLab);
-      if (candidateV0s.size() == 1 && candidateV0s[0].pt < -998.f && candidateV0s[0].eta < -998.f && candidateV0s[0].globalIndexPos == -999 && candidateV0s[0].globalIndexPos == -999) {
-        goodCollisions[collision.mcCollisionId()].first = false;
-      }
-    }
-
-    fillMcGen(mcParticles, mcLab, goodCollisions);
-  }
-  PROCESS_SWITCH(nucleiEbye, processMcRun3, "process MC (Run 3)", false);
 
   void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const& mcCollisions, TracksFull const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
