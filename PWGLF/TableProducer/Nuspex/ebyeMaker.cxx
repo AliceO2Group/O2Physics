@@ -719,7 +719,10 @@ struct ebyeMaker {
         candV0.geneta = mcPart.eta();
         candV0.pdgcode = mcPart.pdgCode();
         auto it = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 v0){return v0.mcIndex == mcPart.globalIndex();});
-        if (it == candidateV0s.end()) {
+        if (it != candidateV0s.end()) {
+          continue;
+        } else {
+          LOGF(info, "not found!");
           candidateV0s.emplace_back(candV0);
         }
       } else if (std::abs(pdgCode) == partPdg[0] || std::abs(pdgCode) == partPdg[1]) {
@@ -735,7 +738,9 @@ struct ebyeMaker {
         candTrack.geneta = mcPart.eta();
         candTrack.pdgcode = mcPart.pdgCode();
         auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](CandidateTrack trk){return trk.mcIndex == mcPart.globalIndex();});
-        if (it == candidateTracks[iP].end()) {
+        if (it != candidateTracks[iP].end()) {
+          continue;
+        } else {
           candidateTracks[iP].emplace_back(candTrack);
         }
       }

@@ -12,6 +12,7 @@
 #include <vector>
 #include <utility>
 #include <random>
+#include <iostream>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -75,11 +76,13 @@ struct CandidateV0 {
   float dcav0pv;
   int64_t globalIndexPos = -999;
   int64_t globalIndexNeg = -999;
+  int64_t globalIndex = -999;
 };
 
 struct CandidateTrack {
   float pt;
   float eta;
+  int64_t globalIndex = -999;
 };
 
 struct nucleiEbye {
@@ -381,6 +384,7 @@ struct nucleiEbye {
           CandidateTrack candTrack;
           candTrack.pt = trackPt;
           candTrack.eta = trackEta;
+          candTrack.globalIndex = track.globalIndex();
           candidateTracks[iP].push_back(candTrack);
         }
       }
@@ -470,6 +474,7 @@ struct nucleiEbye {
       candV0.dcav0pv = dcaV0Pv;
       candV0.globalIndexPos = v0.idPos();
       candV0.globalIndexNeg = v0.idNeg();
+      candV0.globalIndex = v0.globalIndex();
       candidateV0s.push_back(candV0);
     }
 
@@ -518,6 +523,142 @@ struct nucleiEbye {
     return 0;
   }
 
+  template <class C, class T, class V0>
+  void fillMcEvent(C const& collision, T const& tracks, V0 const& v0s, float const& centrality)
+  {
+    int subsample = fillRecoEvent<C, T, V0>(collision, tracks, v0s, centrality);
+    if (candidateV0s.size() == 1 && candidateV0s[0].pt < -998.f && candidateV0s[0].eta < -998.f && candidateV0s[0].globalIndexPos == -999 && candidateV0s[0].globalIndexPos == -999) {
+      return;
+    }
+
+    if (fillOnlySignal) {
+      tempTracks[0]->Reset();
+      tempTracks[1]->Reset();
+      tempLambda->Reset();
+      tempAntiLambda->Reset();
+    }
+
+    for (int iP{0}; iP < kNpart; ++iP) {
+      for (auto& candidateTrack : candidateTracks[iP]) {
+        auto mcTrack = tracks.rawIteratorAt(candidateTrack.globalIndex);
+        if (std::abs(mcTrack.pdgCode()) != partPdg[iP])
+          continue;
+        if (!mcTrack.isReco())
+          continue;
+        if (mcTrack.pdgCode() > 0) {
+          recTracks[iP]->Fill(centrality, candidateTrack.pt, std::abs(candidateTrack.eta));
+        } else {
+          recAntiTracks[iP]->Fill(centrality, candidateTrack.pt, std::abs(candidateTrack.eta));
+          if (fillOnlySignal)
+            tempTracks[iP]->Fill(std::abs(candidateTrack.eta), candidateTrack.pt);
+        }
+      }
+    }
+    for (auto& candidateV0 : candidateV0s) {
+      auto mcTrack = v0s.rawIteratorAt(candidateV0.globalIndex);
+      if (std::abs(mcTrack.pdgCode()) != 3122)
+        continue;
+      if (!mcTrack.isReco())
+        continue;
+      if (mcTrack.pdgCode() > 0) {
+        histos.fill(HIST("recL"), centrality, candidateV0.pt, std::abs(candidateV0.eta));
+        if (fillOnlySignal)
+          tempLambda->Fill(std::abs(candidateV0.eta), candidateV0.pt);
+      } else {
+        histos.fill(HIST("recAntiL"), centrality, candidateV0.pt, std::abs(candidateV0.eta));
+        if (fillOnlySignal)
+          tempAntiLambda->Fill(std::abs(candidateV0.eta), candidateV0.pt);
+      }
+    }
+
+    if (fillOnlySignal) {
+      fillHistoN(nAntip, tempTracks[0], subsample, centrality);
+      fillHistoN(nAntid, tempTracks[1], subsample, centrality);
+      fillHistoN(nAntiL, tempAntiLambda, subsample, centrality);
+      fillHistoN(nL, tempLambda, subsample, centrality);
+
+      fillHistoN(nSqAntip, tempTracks[0], tempTracks[0], subsample, centrality);
+      fillHistoN(nSqAntid, tempTracks[1], tempTracks[1], subsample, centrality);
+      fillHistoN(nSqAntiL, tempAntiLambda, tempAntiLambda, subsample, centrality);
+      fillHistoN(nSqL, tempLambda, tempLambda, subsample, centrality);
+
+      fillHistoN(nAntipAntid, tempTracks[0], tempTracks[1], subsample, centrality);
+      fillHistoN(nLantid, tempLambda, tempTracks[1], subsample, centrality);
+      fillHistoN(nLantiL, tempLambda, tempAntiLambda, subsample, centrality);
+      fillHistoN(nAntiLantid, tempAntiLambda, tempTracks[1], subsample, centrality);
+
+      histos.fill(HIST("QA/nRecPerEvAntip"), centrality, tempTracks[0]->GetEntries());
+      histos.fill(HIST("QA/nRecPerEvAntid"), centrality, tempTracks[1]->GetEntries());
+      histos.fill(HIST("QA/nRecPerEvAntiL"), centrality, tempAntiLambda->GetEntries());
+      histos.fill(HIST("QA/nRecPerEvL"), centrality, tempLambda->GetEntries());
+    }
+  }
+
+  template <class C, class T, class V0>
+  void fillMcGen(C const& collision, T const& tracks, V0 const& v0s, float const& centrality)
+  {
+
+    tempTracks[0]->Reset();
+    tempTracks[1]->Reset();
+    tempLambda->Reset();
+    tempAntiLambda->Reset();
+
+    auto rnd = static_cast<float>(gen32()) / static_cast<float>(gen32.max());
+    auto subsample = static_cast<int>(rnd * nSubsamples);
+    for (auto& mcPart : v0s) {
+      auto genEta = mcPart.eta();
+      if (std::abs(genEta) > etaMax) {
+        continue;
+      }
+      auto pdgCode = mcPart.pdgCode();
+      if (std::abs(pdgCode) == 3122) {
+        auto genPt = mcPart.pt();
+        if (pdgCode > 0) {
+          histos.fill(HIST("genL"), centrality, genPt, std::abs(genEta));
+          tempHistos.fill(HIST("tempLambda"), std::abs(genEta), genPt);
+        } else {
+          histos.fill(HIST("genAntiL"), centrality, genPt, std::abs(genEta));
+          tempHistos.fill(HIST("tempAntiLambda"), std::abs(genEta), genPt);
+        }
+      }
+    }
+    for (auto& mcPart : tracks) {
+      auto genEta = mcPart.eta();
+      if (std::abs(genEta) > etaMax) {
+        continue;
+      }
+      auto pdgCode = mcPart.pdgCode();
+      if (std::abs(pdgCode) == partPdg[0] || std::abs(pdgCode) == partPdg[1]) {
+        int iP = 1;
+        if (std::abs(pdgCode) == partPdg[0]) {
+          iP = 0;
+        }
+        auto genPt = mcPart.pt();
+        if (pdgCode > 0) {
+          genTracks[iP]->Fill(centrality, genPt, std::abs(genEta));
+        } else {
+          genAntiTracks[iP]->Fill(centrality, genPt, std::abs(genEta));
+          tempTracks[iP]->Fill(std::abs(genEta), genPt);
+        }
+      }
+    }
+
+    fillHistoN(nGenAntip, tempTracks[0], subsample, centrality);
+    fillHistoN(nGenAntid, tempTracks[1], subsample, centrality);
+    fillHistoN(nGenAntiL, tempAntiLambda, subsample, centrality);
+    fillHistoN(nGenL, tempLambda, subsample, centrality);
+
+    fillHistoN(nGenSqAntip, tempTracks[0], tempTracks[0], subsample, centrality);
+    fillHistoN(nGenSqAntid, tempTracks[1], tempTracks[1], subsample, centrality);
+    fillHistoN(nGenSqAntiL, tempAntiLambda, tempAntiLambda, subsample, centrality);
+    fillHistoN(nGenSqL, tempLambda, tempLambda, subsample, centrality);
+
+    fillHistoN(nGenAntipAntid, tempTracks[0], tempTracks[1], subsample, centrality);
+    fillHistoN(nGenLantid, tempLambda, tempTracks[1], subsample, centrality);
+    fillHistoN(nGenLantiL, tempLambda, tempAntiLambda, subsample, centrality);
+    fillHistoN(nGenAntiLantid, tempAntiLambda, tempTracks[1], subsample, centrality);
+  }
+
   void processRun2(aod::CollEbyeTable const& collision, aod::NucleiEbyeTables const& tracks, aod::LambdaEbyeTables const& v0s)
   {
     histos.fill(HIST("QA/zVtx"), collision.zvtx());
@@ -526,11 +667,13 @@ struct nucleiEbye {
   }
   PROCESS_SWITCH(nucleiEbye, processRun2, "process (Run 2)", false);
 
-  void processMcRun2(aod::CollEbyeTable const& collision, aod::NucleiEbyeTables const& tracks, aod::LambdaEbyeTables const& v0s)
+  void processMcRun2(aod::CollEbyeTables const& collisions, aod::McNucleiEbyeTables const& tracks, aod::McLambdaEbyeTables const& v0s)
   {
-    histos.fill(HIST("QA/zVtx"), collision.zvtx());
-    fillRecoEvent(collision, tracks, v0s, collision.centrality());
-
+    for (auto& collision : collisions) {
+      histos.fill(HIST("QA/zVtx"), collision.zvtx());
+      fillMcEvent(collision, tracks, v0s, collision.centrality());
+      fillMcGen(collision, tracks, v0s, collision.centrality());
+    }
   }
   PROCESS_SWITCH(nucleiEbye, processMcRun2, "process Mc (Run 2)", false);
 };
