@@ -27,6 +27,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 
 #include "GFWPowerArray.h"
 #include "GFW.h"
@@ -112,6 +113,12 @@ struct FlowPbPbTask {
     // Count the total number of enum
     kCount_ExtraProfile
   };
+  int mRunNumber{-1};
+  uint64_t mSOR{0};
+  double mMinSeconds{-1.};
+  std::unordered_map<int, TH2*> gHadronicRate;
+  ctpRateFetcher mRateFetcher;
+  TH2* gCurrentHadronicRate;
 
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
@@ -517,6 +524,23 @@ struct FlowPbPbTask {
     return true;
   }
 
+  void initHadronicRate(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    mRunNumber = bc.runNumber();
+    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()){
+      auto runDuration = ccdb->getRunDuration(mRunNumber);
+      mSOR = runDuration.first;
+      mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
+      double maxSec = std::ceil(runDuration.second * 1.e-3); /// round tsEOR to the lowest integer higher than tsEOR
+      const AxisSpec axisSeconds{static_cast<int>((maxSec - mMinSeconds) / 20.f), 0, maxSec - mMinSeconds, "Seconds since SOR"};
+      gHadronicRate[mRunNumber] = registry.add<TH2>(Form("HadronicRate/%i", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {axisSeconds, {510, 0., 51.}}).get();
+    }
+    gCurrentHadronicRate = gHadronicRate[mRunNumber];
+  }
+
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
@@ -545,6 +569,10 @@ struct FlowPbPbTask {
     registry.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initHadronicRate(bc);
+    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
+    double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+    gCurrentHadronicRate->Fill(seconds, hadronicRate);
     loadCorrections(bc.timestamp());
     registry.fill(HIST("hEventCount"), 4.5);
 
