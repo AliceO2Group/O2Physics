@@ -421,7 +421,7 @@ struct strangederivedbuilder {
         uint32_t indMCColl = -1;
         if (v0.has_mcParticle()) {
           auto mcParticle = v0.mcParticle();
-          if (mcParticle.has_has_mcCollision()) {
+          if (mcParticle.has_mcCollision()) {
             indMCColl = mcParticle.mcCollisionId();
           }
         }
@@ -431,7 +431,7 @@ struct strangederivedbuilder {
         uint32_t indMCColl = -1;
         if (casc.has_mcParticle()) {
           auto mcParticle = casc.mcParticle();
-          if (mcParticle.has_has_mcCollision()) {
+          if (mcParticle.has_mcCollision()) {
             indMCColl = mcParticle.mcCollisionId();
           }
         }
