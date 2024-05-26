@@ -121,6 +121,7 @@ struct UpcCandProducer {
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelRabs + 1, "Rabs");
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelpDCA + 1, "pDCA");
     histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelChi2 + 1, "Chi2");
+    histRegistry.get<TH1>(HIST("MuonsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kFwdSelHasMFT + 1, "HasMFT");
 
     const AxisSpec axisSelBar{upchelpers::kNBarrelSels, 0., static_cast<double>(upchelpers::kNBarrelSels), ""};
     histRegistry.add("BarrelsSelCounter", "", kTH1F, {axisSelBar});
@@ -158,8 +159,11 @@ struct UpcCandProducer {
       histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelpDCA, 1);
     if (fwdSelectors[upchelpers::kFwdSelChi2])
       histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelChi2, 1);
-
-    bool pass = fwdSelectors[upchelpers::kFwdSelPt] &&
+    if (fwdSelectors.at(upchelpers::kFwdSelHasMFT))
+      histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelHasMFT, 1);
+    if (upcCuts.getRequireMFT() && !fwdSelectors[upchelpers::kFwdSelHasMFT])
+      return false;
+    bool pass = fwdSelectors[upchelpers::kFwdSelPt] &&  
                 fwdSelectors[upchelpers::kFwdSelEta] &&
                 fwdSelectors[upchelpers::kFwdSelRabs] &&
                 fwdSelectors[upchelpers::kFwdSelpDCA] &&
@@ -1215,6 +1219,7 @@ struct UpcCandProducer {
     // pairs of global BCs and vectors of matched track IDs:
     std::vector<BCTracksPair> bcsMatchedTrIdsMID;
     std::vector<BCTracksPair> bcsMatchedTrIdsMCH;
+    std::vector<BCTracksPair> bcsMatchedTrIdsGlobal;
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
@@ -1225,15 +1230,26 @@ struct UpcCandProducer {
                          bcs, collisions,
                          fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
+
     collectForwardTracks(bcsMatchedTrIdsMCH,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack,
                          bcs, collisions,
                          fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
+
+    collectForwardTracks(bcsMatchedTrIdsGlobal,
+                         o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack,
+                         bcs, collisions,
+                         fwdTracks, ambFwdTracks, ambFwdTrBCs);
+                        
+
     std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
 
     std::sort(bcsMatchedTrIdsMCH.begin(), bcsMatchedTrIdsMCH.end(),
+              [](const auto& left, const auto& right) { return left.first < right.first; });
+
+   std::sort(bcsMatchedTrIdsGlobal.begin(), bcsMatchedTrIdsGlobal.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
 
     std::map<uint64_t, int32_t> mapGlobalBcWithT0A{};
@@ -1275,6 +1291,7 @@ struct UpcCandProducer {
     auto nFV0As = mapGlobalBcWithV0A.size();
     auto nZdcs = mapGlobalBcWithZdc.size();
     auto nBcsWithMCH = bcsMatchedTrIdsMCH.size();
+  //  auto nBcsWithMFT = bcsMatchedTrIdsGlobal.size();
 
     // todo: calculate position of UD collision?
     float dummyX = 0.;
@@ -1287,6 +1304,7 @@ struct UpcCandProducer {
 
     // storing n-prong matches
     int32_t candID = 0;
+
     for (auto& pair : bcsMatchedTrIdsMID) {
       auto globalBC = static_cast<int64_t>(pair.first);
       const auto& fwdTrackIDs = pair.second; // only MID-matched tracks at the moment
@@ -1535,7 +1553,7 @@ struct UpcCandProducer {
   PROCESS_SWITCH(UpcCandProducer, processCentral, "Produce candidates in central region", false);
   PROCESS_SWITCH(UpcCandProducer, processSemiFwdMC, "Produce candidates in semiforward/forward region with MC information", false);
   PROCESS_SWITCH(UpcCandProducer, processCentralMC, "Produce candidates in central region with MC information", false);
-  PROCESS_SWITCH(UpcCandProducer, processForward, "Produce caniddates in forward region", false);
+  PROCESS_SWITCH(UpcCandProducer, processForward, "Produce caniddates in forward region", true);
   PROCESS_SWITCH(UpcCandProducer, processForwardMC, "Produce caniddates in forward region with MC information", false);
 };
 

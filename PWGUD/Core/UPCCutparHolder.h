@@ -31,6 +31,7 @@ class UPCCutparHolder
                   float muonPDcaHighSecond = 324.0,
                   float fwdChi2Low = 0.0,
                   float fwdChi2High = 10000.0,
+                  bool requireMFT = false,
                   bool useBarCuts = true,
                   float barPtLow = 0.,
                   float barPtHigh = 1000.,
@@ -63,6 +64,7 @@ class UPCCutparHolder
       fMuonPDcaHighSecond{muonPDcaHighSecond},
       fFwdChi2Low{fwdChi2Low},
       fFwdChi2High{fwdChi2High},
+      fRequireMFT{requireMFT},
       fUseBarCuts{useBarCuts},
       fBarPtLow{barPtLow},
       fBarPtHigh{barPtHigh},
@@ -98,6 +100,7 @@ class UPCCutparHolder
   void setMuonPDcaHighSecond(float muonPDcaHighSecond);
   void setFwdChi2Low(float fwdChi2Low);
   void setFwdChi2High(float fwdChi2High);
+  void setRequireMFT(bool requireMFT);
   void setUseBarCuts(bool useBarCuts);
   void setBarPtLow(float barPtLow);
   void setBarPtHigh(float barPtHigh);
@@ -133,6 +136,7 @@ class UPCCutparHolder
   float getMuonPDcaHighSecond() const;
   float getFwdChi2Low() const;
   float getFwdChi2High() const;
+  bool getRequireMFT() const;
   bool getUseBarCuts() const;
   float getBarPtLow() const;
   float getBarPtHigh() const;
@@ -181,6 +185,9 @@ class UPCCutparHolder
   float fMuonPDcaHighSecond{324.0};    // "Additional PDCA cut: Maximal value for R >= 26.5
   float fFwdChi2Low{0.0};              // "Minimal Chi2 for forward tracks
   float fFwdChi2High{10000.0};         // "Maximal Chi2 for forward tracks
+
+  // forward matching
+  bool fRequireMFT{false}; // Require all tracks in event candidates to have MFT matches
 
   // cuts for central-barrel tracks
   bool fUseBarCuts{true}; // Use cuts for barrel tracks

@@ -24,6 +24,7 @@ void UPCCutparHolder::setMuonPDcaHighFirst(float muonPDcaHighFirst) { fMuonPDcaH
 void UPCCutparHolder::setMuonPDcaHighSecond(float muonPDcaHighSecond) { fMuonPDcaHighSecond = muonPDcaHighSecond; }
 void UPCCutparHolder::setFwdChi2Low(float fwdChi2Low) { fFwdChi2Low = fwdChi2Low; }
 void UPCCutparHolder::setFwdChi2High(float fwdChi2High) { fFwdChi2High = fwdChi2High; }
+void UPCCutparHolder::setRequireMFT(bool requireMFT) { fRequireMFT = requireMFT; }
 void UPCCutparHolder::setUseBarCuts(bool useBarCuts) { fUseBarCuts = useBarCuts; }
 void UPCCutparHolder::setBarPtLow(float barPtLow) { fBarPtLow = barPtLow; }
 void UPCCutparHolder::setBarPtHigh(float barPtHigh) { fBarPtHigh = barPtHigh; }
@@ -59,6 +60,7 @@ float UPCCutparHolder::getMuonPDcaHighFirst() const { return fMuonPDcaHighFirst;
 float UPCCutparHolder::getMuonPDcaHighSecond() const { return fMuonPDcaHighSecond; }
 float UPCCutparHolder::getFwdChi2Low() const { return fFwdChi2Low; }
 float UPCCutparHolder::getFwdChi2High() const { return fFwdChi2High; }
+bool UPCCutparHolder::getRequireMFT() const { return fRequireMFT; }
 bool UPCCutparHolder::getUseBarCuts() const { return fUseBarCuts; }
 float UPCCutparHolder::getBarPtLow() const { return fBarPtLow; }
 float UPCCutparHolder::getBarPtHigh() const { return fBarPtHigh; }
