@@ -56,7 +56,7 @@ DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
 } // namespace LFEbyeTable
 
-DECLARE_SOA_TABLE(NucleiEbyeTable, "AOD", "NUCLEBYETABLE",
+DECLARE_SOA_TABLE(NucleiEbyeTables, "AOD", "NUCLEBYETABLE",
                   o2::soa::Index<>,
                   LFEbyeTable::CollEbyeTableId,
                   LFEbyeTable::Pt,
@@ -67,8 +67,9 @@ DECLARE_SOA_TABLE(NucleiEbyeTable, "AOD", "NUCLEBYETABLE",
                   LFEbyeTable::TpcNcls,
                   LFEbyeTable::TpcNsigma,
                   LFEbyeTable::TofMass);
+using NucleiEbyeTable = NucleiEbyeTables::iterator;
 
-DECLARE_SOA_TABLE(McNucleiEbyeTable, "AOD", "MCNUCLEBYETABLE",
+DECLARE_SOA_TABLE(McNucleiEbyeTables, "AOD", "MCNUCLEBYETABLE",
                   o2::soa::Index<>,
                   LFEbyeTable::CollEbyeTableId,
                   LFEbyeTable::Pt,
@@ -83,8 +84,9 @@ DECLARE_SOA_TABLE(McNucleiEbyeTable, "AOD", "MCNUCLEBYETABLE",
                   LFEbyeTable::GenEta,
                   LFEbyeTable::PdgCode,
                   LFEbyeTable::IsReco);
+using McNucleiEbyeTable = McNucleiEbyeTables::iterator;
 
-DECLARE_SOA_TABLE(LambdaEbyeTable, "AOD", "LAMBEBYETABLE",
+DECLARE_SOA_TABLE(LambdaEbyeTables, "AOD", "LAMBEBYETABLE",
                   o2::soa::Index<>,
                   LFEbyeTable::CollEbyeTableId,
                   LFEbyeTable::Pt,
@@ -100,8 +102,9 @@ DECLARE_SOA_TABLE(LambdaEbyeTable, "AOD", "LAMBEBYETABLE",
                   LFEbyeTable::TpcNsigmaPos,
                   LFEbyeTable::IdNeg,
                   LFEbyeTable::IdPos);
+using LambdaEbyeTable = LambdaEbyeTables::iterator;
 
-DECLARE_SOA_TABLE(McLambdaEbyeTable, "AOD", "MCLAMBEBYETABLE",
+DECLARE_SOA_TABLE(McLambdaEbyeTables, "AOD", "MCLAMBEBYETABLE",
                   o2::soa::Index<>,
                   LFEbyeTable::CollEbyeTableId,
                   LFEbyeTable::Pt,
@@ -121,6 +124,7 @@ DECLARE_SOA_TABLE(McLambdaEbyeTable, "AOD", "MCLAMBEBYETABLE",
                   LFEbyeTable::GenEta,
                   LFEbyeTable::PdgCode,
                   LFEbyeTable::IsReco);
+using McLambdaEbyeTable = McLambdaEbyeTables::iterator;
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFEBYENUCLEISTRANGE_H_
