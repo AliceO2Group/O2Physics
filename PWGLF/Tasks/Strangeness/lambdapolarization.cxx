@@ -86,7 +86,8 @@ struct lambdapolarization {
   Configurable<bool> cfgQAv0{"cfgQAv0", false, "QA plot"};
 
   Configurable<int> cfgDaughTPCnclsMin{"cfgDaughTPCnclsMin", 70, "minimum fired crossed rows"};
-  Configurable<float> cfgDaughPIDCutsTPC{"cfgDaughPIDCutsTPC", 5, "nsigma for TPC"};
+  Configurable<float> cfgDaughPIDCutsTPCPr{"cfgDaughPIDCutsTPCPr", 5, "proton nsigma for TPC"};
+  Configurable<float> cfgDaughPIDCutsTPCPi{"cfgDaughPIDCutsTPCPi", 5, "pion nsigma for TPC"};
   Configurable<float> cfgDaughEtaMin{"cfgDaughEtaMin", -0.8, "minimum daughter eta"};
   Configurable<float> cfgDaughEtaMax{"cfgDaughEtaMax", 0.8, "maximum daughter eta"};
   Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.6, "minimum daughter proton pt"};
@@ -192,7 +193,9 @@ struct lambdapolarization {
   {
     if (track.tpcNClsFound() < cfgDaughTPCnclsMin)
       return false;
-    if (std::abs(track.tpcNSigmaPr()) > cfgDaughPIDCutsTPC)
+    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > cfgDaughPIDCutsTPCPr)
+      return false;
+    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > cfgDaughPIDCutsTPCPi)
       return false;
     if (track.eta() > cfgDaughEtaMax)
       return false;
