@@ -21,7 +21,7 @@
 namespace o2::hf_evsel
 {
 // event rejection types
-enum EventRejection {
+enum EventRejection : int {
   None = 0,
   Centrality,
   Trigger,
@@ -72,15 +72,14 @@ void setLabelHistoEvSel(Histo& hCollisions)
 /// \return a bitmask with the event selections not satisfied by the analysed collision
 template <bool applyEvSel, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
 uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, float centralityMin, float centralityMax,
-  bool useSel8Trigger,
-  int triggerClass,
-  bool useTimeFrameBorderCut,
-  float zPvPosMin, float zPvPosMax,
-  int nPvContributorsMin,
-  float chi2PvMax,
-  bool useIsGoodZvtxFT0vsPV, bool useNoSameBunchPileup,
-  bool useNumTracksInTimeRange, int numTracksInTimeRangeMin, int numTracksInTimeRangeMax
-  )
+                                     bool useSel8Trigger,
+                                     int triggerClass,
+                                     bool useTimeFrameBorderCut,
+                                     float zPvPosMin, float zPvPosMax,
+                                     int nPvContributorsMin,
+                                     float chi2PvMax,
+                                     bool useIsGoodZvtxFT0vsPV, bool useNoSameBunchPileup,
+                                     bool useNumTracksInTimeRange, int numTracksInTimeRangeMin, int numTracksInTimeRangeMax)
 {
 
   uint16_t statusCollision{0}; // 16 bits, in case new ev. selections will be added
@@ -118,7 +117,7 @@ uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, f
     /// remove collisions in bunches with more than 1 reco collision
     /// POTENTIALLY BAD FOR BEAUTY ANALYSES
     if (useNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      SETBIT(statusCollision, EventRejection::NoSameBunchPileup)
+      SETBIT(statusCollision, EventRejection::NoSameBunchPileup);
     }
     /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
     if (useNumTracksInTimeRange) {
@@ -186,19 +185,19 @@ void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist&
   if (TESTBIT(rejectionMask, EventRejection::IsGoodZvtxFT0vsPV)) {
     return;
   }
-  hCollisions->Fill(rejectionMask, EventRejection::IsGoodZvtxFT0vsPV); // Centrality + sel8 + TF border + PVz FTO ok
+  hCollisions->Fill(EventRejection::IsGoodZvtxFT0vsPV); // Centrality + sel8 + TF border + PVz FTO ok
 
   /// same bunch pile-up
   if (TESTBIT(rejectionMask, EventRejection::NoSameBunchPileup)) {
     return;
   }
-  hCollisions->Fill(rejectionMask, EventRejection::NoSameBunchPileup); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up ok
+  hCollisions->Fill(EventRejection::NoSameBunchPileup); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up ok
 
   /// occupancy
   if (TESTBIT(rejectionMask, EventRejection::NumTracksInTimeRange)) {
     return;
   }
-  hCollisions->Fill(rejectionMask, EventRejection::NumTracksInTimeRange); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up + occupancy ok
+  hCollisions->Fill(EventRejection::NumTracksInTimeRange); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up + occupancy ok
 
   /// PV contributors
   if (TESTBIT(rejectionMask, EventRejection::NContrib)) {
