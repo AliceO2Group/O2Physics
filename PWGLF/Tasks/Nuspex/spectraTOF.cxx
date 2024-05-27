@@ -1555,7 +1555,7 @@ struct tofSpectra {
         }
       }
     } else {
-if (isEventSelected<true, true>(collision)){ 
+if (isEventSelected<true, true>(collision)){
       if (includeCentralityMC) {
         histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt(), multiplicity); // RD
       } else {
