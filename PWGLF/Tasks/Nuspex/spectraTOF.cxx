@@ -1537,9 +1537,9 @@ struct tofSpectra {
     }
 
     const float multiplicity = getMultiplicity(collision);
-   if (!isEventSelected<true, true>(collision)) {
-      return;
-    }
+if (!isEventSelected<true, true>(collision)) {
+return;
+}
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
         if (includeCentralityMC) {
