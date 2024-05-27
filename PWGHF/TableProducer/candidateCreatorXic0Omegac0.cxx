@@ -71,7 +71,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
   Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
   Configurable<int> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "min. value for occupancy selection"};
-  Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1e+10, "max. value for occupancy selection"};
+  Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1000000, "max. value for occupancy selection"};
 
   Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
