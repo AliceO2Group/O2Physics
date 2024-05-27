@@ -50,6 +50,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 
+#include "CCDB/CcdbApi.h"
 #include "CCDB/BasicCCDBManager.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -71,6 +72,18 @@ struct lambdapolarization {
     "histos",
     {},
     OutputObjHandlingPolicy::AnalysisObject};
+
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgURL{"cfgURL",
+                                     "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
+    Configurable<int64_t> nolaterthan{"ccdb-no-later-than",
+                                      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
+                                      "Latest acceptable timestamp of creation for the object"};
+  } cfgCcdbParam;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
+
+  Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
 
   Configurable<float> cfgv0radiusMin{"cfgv0radiusMin", 1.2, "minimum decay radius"};
   Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin", 0.05, "minimum DCA to PV for positive track"};
@@ -95,11 +108,19 @@ struct lambdapolarization {
 
   Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
 
+  Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "additional shift correction"};
+  Configurable<bool> cfgShiftCorrDef{"cfgShiftCorrDef", false, "additional shift correction definition"};
+  Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/ShiftCorr", "Path for Shift"};
+
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
 
   double angle;
   double relphi;
+
+  int currentRunNumber = -999;
+  int lastRunNumber = -999;
+  TProfile3D* shiftprofile;
 
   void init(o2::framework::InitContext&)
   {
@@ -111,8 +132,13 @@ struct lambdapolarization {
     AxisSpec cosAxis = {100, -1.0, 1.0};
     AxisSpec centAxis = {80, 0.0, 80.0};
     AxisSpec epAxis = {6, 0.0, 2.0 * constants::math::PI};
+    AxisSpec epQaAxis = {100, -1.0 * constants::math::PI, constants::math::PI};
 
     AxisSpec pidAxis = {100, -10, 10};
+
+    AxisSpec shiftAxis = {10, 0, 10, "shift"};
+    AxisSpec basisAxis = {6, 0, 6, "basis"};
+
     for (auto i = 2; i < cfgnMods + 2; i++) {
       histos.add(Form("h_lambda_cos_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
       histos.add(Form("h_alambda_cos_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
@@ -125,12 +151,30 @@ struct lambdapolarization {
       histos.add("QA/nsigma_tpc_pt_ppi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA/nsigma_tpc_pt_mpr", "", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA/nsigma_tpc_pt_mpi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
+
+      histos.add("QA/EP_FT0C", "", {HistType::kTH2F, {centAxis, epQaAxis}});
+      histos.add("QA/EP_FT0A", "", {HistType::kTH2F, {centAxis, epQaAxis}});
+      histos.add("QA/EP_FV0A", "", {HistType::kTH2F, {centAxis, epQaAxis}});
+
+      histos.add("QA/EPRes_FT0C_FT0A", "", {HistType::kTH2F, {centAxis, cosAxis}});
+      histos.add("QA/EPRes_FT0C_FV0A", "", {HistType::kTH2F, {centAxis, cosAxis}});
+      histos.add("QA/EPRes_FT0A_FV0A", "", {HistType::kTH2F, {centAxis, cosAxis}});
+    }
+
+    if (cfgShiftCorrDef) {
+      histos.add("ShiftFIT", "ShiftFIT", kTProfile3D, {centAxis, basisAxis, shiftAxis});
     }
 
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
     fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+
+    ccdb->setURL(cfgCcdbParam.cfgURL);
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
   }
 
   double massLambda = o2::constants::physics::MassLambda;
@@ -148,15 +192,19 @@ struct lambdapolarization {
     auto centrality = collision.centFT0C();
     auto multNTracksPV = collision.multNTracksPV();
 
+    if (cfgCentSel > centrality) {
+      return 0;
+    }
     if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
       return 0;
     }
-
     if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
       return 0;
     }
-
-    if ((!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return 0;
+    }
+    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
 
@@ -262,6 +310,37 @@ struct lambdapolarization {
       angle = ProtonBoostedVec.Pz() / ProtonBoostedVec.P();
       relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24])));
 
+      if (cfgShiftCorr) {
+        auto deltapsiFT0C = 0.0;
+        auto deltapsiFT0A = 0.0;
+        auto deltapsiFV0A = 0.0;
+
+        auto psidefFT0C = TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24]);
+        auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 24], collision.qvecRe()[3 + 4 + (nmode - 2) * 24]);
+        auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 24], collision.qvecRe()[3 + 12 + (nmode - 2) * 24]);
+        for (int ishift = 1; ishift <= 10; ishift++) {
+          auto coeffshiftxFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(collision.centFT0C(), 0.5, ishift - 0.5));
+          auto coeffshiftyFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(collision.centFT0C(), 1.5, ishift - 0.5));
+          auto coeffshiftxFT0A = shiftprofile->GetBinContent(shiftprofile->FindBin(collision.centFT0C(), 2.5, ishift - 0.5));
+          auto coeffshiftyFT0A = shiftprofile->GetBinContent(shiftprofile->FindBin(collision.centFT0C(), 3.5, ishift - 0.5));
+          auto coeffshiftxFV0A = shiftprofile->GetBinContent(shiftprofile->FindBin(collision.centFT0C(), 4.5, ishift - 0.5));
+          auto coeffshiftyFV0A = shiftprofile->GetBinContent(shiftprofile->FindBin(collision.centFT0C(), 5.5, ishift - 0.5));
+
+          deltapsiFT0C += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * 2.0 * psidefFT0C) + coeffshiftyFT0C * TMath::Sin(ishift * 2.0 * psidefFT0C)));
+          deltapsiFT0A += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0A * TMath::Cos(ishift * 2.0 * psidefFT0A) + coeffshiftyFT0A * TMath::Sin(ishift * 2.0 * psidefFT0A)));
+          deltapsiFV0A += ((1 / (1.0 * ishift)) * (-coeffshiftxFV0A * TMath::Cos(ishift * 2.0 * psidefFV0A) + coeffshiftyFV0A * TMath::Sin(ishift * 2.0 * psidefFV0A)));
+        }
+        relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - psidefFT0C - deltapsiFT0C));
+
+        histos.fill(HIST("QA/EP_FT0C"), collision.centFT0C(), psidefFT0C + deltapsiFT0C);
+        histos.fill(HIST("QA/EP_FT0A"), collision.centFT0C(), psidefFT0A + deltapsiFT0A);
+        histos.fill(HIST("QA/EP_FV0A"), collision.centFT0C(), psidefFV0A + deltapsiFV0A);
+
+        histos.fill(HIST("QA/EPRes_FT0C_FT0A"), collision.centFT0C(), TMath::Cos( 2.0 * (psidefFT0C + deltapsiFT0C - psidefFT0A - deltapsiFT0A)));
+        histos.fill(HIST("QA/EPRes_FT0C_FV0A"), collision.centFT0C(), TMath::Cos( 2.0 * (psidefFT0C + deltapsiFT0C - psidefFV0A - deltapsiFV0A)));
+        histos.fill(HIST("QA/EPRes_FT0A_FV0A"), collision.centFT0C(), TMath::Cos( 2.0 * (psidefFT0A + deltapsiFT0A - psidefFV0A - deltapsiFV0A)));
+      }
+
       if (nmode == 2) { ////////////
         if (LambdaTag) {
           histos.fill(HIST("h_lambda_cos_psi2"), v0.mLambda(), v0.pt(), angle, collision.centFT0C(), relphi);
@@ -290,6 +369,28 @@ struct lambdapolarization {
   {
     if (!eventSelected(collision)) {
       return;
+    }
+    if (cfgShiftCorrDef) {
+      for (int ishift = 1; ishift <= 10; ishift++) {
+        printf( "debug %.3lf, %.3lf, %.3lf, %.3lf",collision.centFT0C(), 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])));
+
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])));
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])));
+          
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 2.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 4], collision.qvecRe()[3 + 4])));
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 3.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 4], collision.qvecRe()[3 + 4])));
+                                                    
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 4.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 12], collision.qvecRe()[3 + 12])));
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 5.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 12], collision.qvecRe()[3 + 12])));
+      }
+    }
+    if (cfgShiftCorr) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
+      if (currentRunNumber != lastRunNumber) {
+        shiftprofile = ccdb->getForTimeStamp<TProfile3D>(cfgShiftPath.value, bc.timestamp());
+        lastRunNumber = currentRunNumber;
+      }
     }
     for (auto i = 2; i < cfgnMods + 2; i++) {
       FillHistograms(collision, V0s, i);
