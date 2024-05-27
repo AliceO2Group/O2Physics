@@ -31,23 +31,23 @@ using namespace o2::analysis;
 struct HfCandidateSelectorLbToLcPi {
   Produces<aod::HfSelLbToLcPi> hfSelLbToLcPiCandidate;
 
-  Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-  Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
+  Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
+  Configurable<float> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // TPC PID
-  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 10., "Upper bound of track pT for TPC PID"};
-  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 5., "Nsigma cut on TPC only"};
-  Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
+  Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
+  Configurable<float> ptPidTpcMax{"ptPidTpcMax", 10., "Upper bound of track pT for TPC PID"};
+  Configurable<float> nSigmaTpcMax{"nSigmaTpcMax", 5., "Nsigma cut on TPC only"};
+  Configurable<float> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
   // TOF PID
-  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> ptPidTofMax{"ptPidTofMax", 10., "Upper bound of track pT for TOF PID"};
-  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
-  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
+  Configurable<float> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+  Configurable<float> ptPidTofMax{"ptPidTofMax", 10., "Upper bound of track pT for TOF PID"};
+  Configurable<float> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
+  Configurable<float> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<double> impactParameterMaximum{"impactParameterMaximum", 0.2, "Maximum impact parameter for single tracks"};
-  Configurable<double> maxDecayLengthError{"maxDecayLengthError", 0.015, "decay length error quality selection"};
-  Configurable<double> maxDecayLengthXYError{"maxDecayLengthXYError", 0.01, "decay length xy error quality selection"};
+  Configurable<float> impactParameterMaximum{"impactParameterMaximum", 0.2, "Maximum impact parameter for single tracks"};
+  Configurable<float> maxDecayLengthError{"maxDecayLengthError", 0.015, "decay length error quality selection"};
+  Configurable<float> maxDecayLengthXYError{"maxDecayLengthXYError", 0.01, "decay length xy error quality selection"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lb_to_lc_pi::cuts[0], hf_cuts_lb_to_lc_pi::nBinsPt, hf_cuts_lb_to_lc_pi::nCutVars, hf_cuts_lb_to_lc_pi::labelsPt, hf_cuts_lb_to_lc_pi::labelsCutVar}, "Lb0 candidate selection per pT bin"};
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc+"};
 
@@ -165,9 +165,9 @@ struct HfCandidateSelectorLbToLcPi {
       auto track0 = candLc.prong0_as<aod::Tracks>();
       auto track1 = candLc.prong1_as<aod::Tracks>();
       auto track2 = candLc.prong2_as<aod::Tracks>();
-      double reso0 = candLc.errorImpactParameter0();
-      double reso1 = candLc.errorImpactParameter1();
-      double reso2 = candLc.errorImpactParameter2();
+      float reso0 = candLc.errorImpactParameter0();
+      float reso1 = candLc.errorImpactParameter1();
+      float reso2 = candLc.errorImpactParameter2();
       if (!passesImpactParameterResolution(track0.pt(), reso0) || !passesImpactParameterResolution(track1.pt(), reso1) || !passesImpactParameterResolution(track2.pt(), reso2) || !passesImpactParameterResolution(trackPi.pt(), hfCandLb.errorImpactParameter1())) {
         hfSelLbToLcPiCandidate(statusLb);
         continue;
