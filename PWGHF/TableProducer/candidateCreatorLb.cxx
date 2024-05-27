@@ -238,9 +238,9 @@ struct HfCandidateCreatorLb {
           hMassLbToLcPi->Fill(massLcPi);
         }
       } // pi- loop
-    } // Lc loop
-  } // process
-}; // struct
+    }   // Lc loop
+  }     // process
+};      // struct
 
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorLbExpressions {
@@ -310,6 +310,7 @@ struct HfCandidateCreatorLbExpressions {
   }
   PROCESS_SWITCH(HfCandidateCreatorLbExpressions, processMc, "Process MC", false);
 };
+
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
