@@ -48,7 +48,7 @@ struct HfElectronSelectionWithTPCEMcal {
 
   // Event Selection
   Configurable<float> mVertexCut{"mVertexCut", 10., "apply z-vertex cut with value in cm"};
-  Configurable<bool> Isrun3{"Isrun3", true, "Data is from Run3 or Run2"};
+  Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
 
   // Track selection
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 0.5f, "DCA XY cut"};
@@ -188,10 +188,10 @@ struct HfElectronSelectionWithTPCEMcal {
   }
 
   // Electron Identification
-  template <bool IsData, bool IsMC, typename TracksType, typename ClusterType, typename MatchType, typename CollisionType>
+  template <bool isData, bool isMc, typename TracksType, typename ClusterType, typename MatchType, typename CollisionType>
   void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, ClusterType const& cluster, MatchType const& matchedTracks)
   {
-    if (!(Isrun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
+    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
       return;
 
     registry.fill(HIST("hNevents"), 1);
@@ -226,11 +226,11 @@ struct HfElectronSelectionWithTPCEMcal {
 
       // Apply Track Selection
 
-      if constexpr (IsData) {
+      if constexpr (isData) {
         if (!selTracks(track))
           continue;
       }
-      if constexpr (IsMC) {
+      if constexpr (isMc) {
         if (!mcSelTracks(track))
           continue;
       }
@@ -259,7 +259,7 @@ struct HfElectronSelectionWithTPCEMcal {
       float deltaPhiMatch = -999.;
       float deltaEtaMatch = -999.;
       float eop = -999;
-      bool isEMcal = 0;
+      bool isEMcal = false;
 
       float trackRapidity = track.rapidity(massEl);
 
@@ -287,13 +287,13 @@ struct HfElectronSelectionWithTPCEMcal {
 
         // Track and cluster Matching
 
-        if constexpr (IsData) {
+        if constexpr (isData) {
           if (std::abs(timeCluster) > clusterTimeMax)
             continue;
           if (std::abs(deltaPhiMatch) > deltaPhiMatchMin || std::abs(deltaEtaMatch) > deltaEtaMatchMin)
             continue;
         }
-        if constexpr (IsMC) {
+        if constexpr (isMc) {
           if (std::abs(timeCluster) > mcRecClusterTimeMax)
             continue;
           if (std::abs(deltaPhiMatch) > mcRecDeltaPhiMatchMin || std::abs(deltaEtaMatch) > mcRecDeltaEtaMatchMin)
@@ -308,11 +308,11 @@ struct HfElectronSelectionWithTPCEMcal {
         registry.fill(HIST("hPIDafterMatch"), eop, matchTrack.tpcSignal(), tpcNsigmaMatchTrack, pMatchTrack, ptMatchTrack, etaMatchTrack, phiMatchTrack);
 
         // Apply Electron Identification cuts
-        if constexpr (IsData) {
+        if constexpr (isData) {
           if ((tpcNsigmaMatchTrack < tpcNsigmaElectronMin || tpcNsigmaMatchTrack > tpcNsigmaElectronMax) || (m02MatchCluster < m02ElectronMin || m02MatchCluster > m02ElectronMax) || (m20MatchCluster < m20ElectronMin || m20MatchCluster > m20ElectronMax))
             continue;
         }
-        if constexpr (IsMC) {
+        if constexpr (isMc) {
 
           if ((tpcNsigmaMatchTrack < mcRecTpcNsigmaElectronMin || tpcNsigmaMatchTrack > mcRecTpcNsigmaElectronMax) || (m02MatchCluster < mcRecM02ElectronMin || m02MatchCluster > mcRecM02ElectronMax) || (m20MatchCluster < mcRecM20ElectronMin || m20MatchCluster > mcRecM20ElectronMax))
             continue;
@@ -323,13 +323,13 @@ struct HfElectronSelectionWithTPCEMcal {
           continue;
 
         registry.fill(HIST("hPIDafterPIDcuts"), eop, pMatchTrack, ptMatchTrack, tpcNsigmaMatchTrack, eMatchCluster, m02MatchCluster, m20MatchCluster);
-        isEMcal = 1;
+        isEMcal = true;
         electronSel(matchTrack.collisionId(), matchTrack.globalIndex(), matchTrack.eta(), matchTrack.phi(), ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
                     eMatchCluster, etaMatchCluster, phiMatchCluster, m02MatchCluster, m20MatchCluster, cellCluster, timeCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }
 
       /// Electron information without Emcal and use TPC and TOF
-      if (isEMcal == 1)
+      if (isEMcal)
         continue;
       electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
                   eMatchCluster, etaMatchCluster, phiMatchCluster, m02MatchCluster, m20MatchCluster, cellCluster, timeCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
@@ -354,3 +354,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfElectronSelectionWithTPCEMcal>(cfgc)};
 }
+
