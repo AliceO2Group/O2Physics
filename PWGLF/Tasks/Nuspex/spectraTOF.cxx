@@ -1537,9 +1537,9 @@ struct tofSpectra {
     }
 
     const float multiplicity = getMultiplicity(collision);
-    if (!isEventSelected<true, true>(collision)) {
-      return;
-    }
+
+
+
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
         if (includeCentralityMC) {
@@ -1555,11 +1555,13 @@ struct tofSpectra {
         }
       }
     } else {
+if (isEventSelected<true, true>(collision)){
       if (includeCentralityMC) {
         histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt(), multiplicity); // RD
       } else {
         histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt());
       }
+     }
     }
   }
 
