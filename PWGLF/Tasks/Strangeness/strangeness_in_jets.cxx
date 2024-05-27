@@ -44,8 +44,10 @@ using namespace o2::constants::physics;
 using std::array;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
 
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::McTrackLabels>;
 
 struct strangeness_in_jets {
 
@@ -60,6 +62,14 @@ struct strangeness_in_jets {
   // Analysis Histograms: Data
   HistogramRegistry registryData{
     "registryData",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
+
+  // MC Histograms
+  HistogramRegistry registryMC{
+    "registryMC",
     {},
     OutputObjHandlingPolicy::AnalysisObject,
     true,
@@ -96,18 +106,16 @@ struct strangeness_in_jets {
   // V0 Parameters
   Configurable<float> yMin{"yMin", -0.5f, "minimum y"};
   Configurable<float> yMax{"yMax", +0.5f, "maximum y"};
-  Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5f,
-                                      "Minimum V0 Radius"};
-  Configurable<float> maximumV0Radius{"maximumV0Radius", 40.0f,
-                                      "Maximum V0 Radius"};
+  Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5f, "Minimum V0 Radius"};
+  Configurable<float> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius"};
   Configurable<float> v0cospaMin{"v0cospaMin", 0.99f, "Minimum V0 CosPA"};
-  Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f,
-                                        "Maximum DCA Daughters"};
+  Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f, "Maximum DCA Daughters"};
 
   void init(InitContext const&)
   {
     // Global Properties and QC
     registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{15, 0, 15, "Event Cuts"}});
+    registryQC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{15, 0, 15, "Event Cuts"}});
 
     // Multiplicity Binning
     std::vector<double> multBinning = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
@@ -122,6 +130,14 @@ struct strangeness_in_jets {
     // Histograms (K0s)
     registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"}});
     registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"}});
+
+    // Histograms (MC)
+    registryMC.add("K0s_generated", "K0s_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("Lambda_generated", "Lambda_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("AntiLambda_generated", "AntiLambda_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("K0s_reconstructed", "K0s_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("Lambda_reconstructed", "Lambda_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("AntiLambda_reconstructed", "AntiLambda_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
   }
 
   template <typename T1>
@@ -613,6 +629,97 @@ struct strangeness_in_jets {
     }
   }
   PROCESS_SWITCH(strangeness_in_jets, processData, "Process data", true);
+
+  Preslice<aod::V0Datas> perCollision = o2::aod::v0data::collisionId;
+  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
+
+  void processMCefficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::McCollisions const& mcCollisions, const aod::McParticles& mcParticles)
+  {
+    for (const auto& collision : collisions) {
+      registryQC.fill(HIST("number_of_events_mc"), 0.5);
+      if (!collision.sel8())
+        continue;
+
+      registryQC.fill(HIST("number_of_events_mc"), 1.5);
+      if (abs(collision.posZ()) > 10.0)
+        continue;
+
+      registryQC.fill(HIST("number_of_events_mc"), 2.5);
+      float multiplicity = collision.centFT0M();
+
+      auto v0s_per_coll = fullV0s.sliceBy(perCollision, collision.globalIndex());
+      auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
+
+      for (auto& v0 : v0s_per_coll) {
+
+        const auto& pos = v0.posTrack_as<FullTracks>();
+        const auto& neg = v0.negTrack_as<FullTracks>();
+        if (!pos.passedTPCRefit())
+          continue;
+        if (!neg.passedTPCRefit())
+          continue;
+        if (!pos.has_mcParticle())
+          continue;
+        if (!neg.has_mcParticle())
+          continue;
+
+        auto posParticle = pos.mcParticle_as<aod::McParticles>();
+        auto negParticle = neg.mcParticle_as<aod::McParticles>();
+        if (!posParticle.has_mothers())
+          continue;
+        if (!negParticle.has_mothers())
+          continue;
+
+        int pdg_parent(0);
+        bool isPhysPrim = false;
+        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
+          for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
+            if (particleMotherOfNeg.globalIndex() == particleMotherOfPos.globalIndex()) {
+              pdg_parent = particleMotherOfNeg.pdgCode();
+              isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
+            }
+          }
+        }
+        if (pdg_parent==0)
+          continue;
+        if (!isPhysPrim)
+          continue;
+
+        // K0s
+        if (passedK0ShortSelection(v0, pos, neg, collision) && pdg_parent==310) {
+          registryMC.fill(HIST("K0s_reconstructed"), multiplicity, v0.pt());
+        }
+        if (passedLambdaSelection(v0, pos, neg, collision) && pdg_parent==3122) {
+          registryMC.fill(HIST("Lambda_reconstructed"), multiplicity, v0.pt());
+        }
+        if (passedAntiLambdaSelection(v0, pos, neg, collision) && pdg_parent==-3122) {
+          registryMC.fill(HIST("AntiLambda_reconstructed"), multiplicity, v0.pt());
+        }
+      }
+
+      for (auto& mcParticle : mcParticles_per_coll) {
+
+        if (mcParticle.y() < yMin || mcParticle.y() > yMax)
+          continue;
+        if (!mcParticle.isPhysicalPrimary())
+          continue;
+
+        // K0s
+        if (mcParticle.pdgCode() == 310) {
+          registryMC.fill(HIST("K0s_Generated"), multiplicity, mcParticle.pt());
+        }
+        // Lambda
+        if (mcParticle.pdgCode() == 3122) {
+          registryMC.fill(HIST("Lambda_Generated"), multiplicity, mcParticle.pt());
+        }
+        // AntiLambda
+        if (mcParticle.pdgCode() == -3122) {
+          registryMC.fill(HIST("AntiLambda_Generated"), multiplicity, mcParticle.pt());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(strangeness_in_jets, processMCefficiency, "Process MC Efficiency", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
