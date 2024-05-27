@@ -680,19 +680,19 @@ struct strangeness_in_jets {
             }
           }
         }
-        if (pdg_parent==0)
+        if (pdg_parent == 0)
           continue;
         if (!isPhysPrim)
           continue;
 
         // K0s
-        if (passedK0ShortSelection(v0, pos, neg, collision) && pdg_parent==310) {
+        if (passedK0ShortSelection(v0, pos, neg, collision) && pdg_parent == 310) {
           registryMC.fill(HIST("K0s_reconstructed"), multiplicity, v0.pt());
         }
-        if (passedLambdaSelection(v0, pos, neg, collision) && pdg_parent==3122) {
+        if (passedLambdaSelection(v0, pos, neg, collision) && pdg_parent == 3122) {
           registryMC.fill(HIST("Lambda_reconstructed"), multiplicity, v0.pt());
         }
-        if (passedAntiLambdaSelection(v0, pos, neg, collision) && pdg_parent==-3122) {
+        if (passedAntiLambdaSelection(v0, pos, neg, collision) && pdg_parent == -3122) {
           registryMC.fill(HIST("AntiLambda_reconstructed"), multiplicity, v0.pt());
         }
       }
