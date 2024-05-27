@@ -491,7 +491,7 @@ struct strangeness_in_jets {
       int label_jet_particle(0);
       int i_jet_particle(0);
 
-      for (int i = 0; i < particle_ID.size(); i++) {
+      for (int i = 0; i < nParticles; i++) {
 
         // Skip Leading Particle & Elements already associated to the Jet
         if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
@@ -652,8 +652,8 @@ struct strangeness_in_jets {
 
       for (auto& v0 : v0s_per_coll) {
 
-        const auto& pos = v0.posTrack_as<FullTracks>();
-        const auto& neg = v0.negTrack_as<FullTracks>();
+        const auto& pos = v0.posTrack_as<MCTracks>();
+        const auto& neg = v0.negTrack_as<MCTracks>();
         if (!pos.passedTPCRefit())
           continue;
         if (!neg.passedTPCRefit())
