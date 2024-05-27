@@ -376,10 +376,10 @@ struct lambdapolarization {
 
         histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])));
         histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])));
-          
+
         histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 2.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 4], collision.qvecRe()[3 + 4])));
         histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 3.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 4], collision.qvecRe()[3 + 4])));
-                                                    
+
         histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 4.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 12], collision.qvecRe()[3 + 12])));
         histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 5.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 12], collision.qvecRe()[3 + 12])));
       }
