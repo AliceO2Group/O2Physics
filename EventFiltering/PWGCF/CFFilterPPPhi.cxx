@@ -367,7 +367,6 @@ struct CFFillterPPPhi {
           ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), mMassProton);
           if (track.sign() > 0) {
             protons.push_back(temp);
-            Nproton++;
 
             registry.fill(HIST("TrackCuts/Proton/fPProton"), track.p());
             registry.fill(HIST("TrackCuts/Proton/fPTPCProton"), track.tpcInnerParam());
@@ -390,7 +389,6 @@ struct CFFillterPPPhi {
           }
           if (track.sign() < 0) {
             antiprotons.push_back(temp);
-            Nantiproton++;
 
             registry.fill(HIST("TrackCuts/AntiProton/fPAntiProton"), track.p());
             registry.fill(HIST("TrackCuts/AntiProton/fPTPCAntiProton"), track.tpcInnerParam());
@@ -476,7 +474,6 @@ struct CFFillterPPPhi {
           if ((CalculateInvMass(postrack, negtrack) > mMassPhi - InvMassCutWidth.value) && CalculateInvMass(postrack, negtrack) < (mMassPhi + InvMassCutWidth.value)) {
             // ROOT::Math::PtEtaPhiMVector temp = postrack + negtrack;
             phi.push_back(temp);
-            Nphi++;
 
             registry.fill(HIST("TrackCuts/Phi/fPtPhi"), temp.pt());
             registry.fill(HIST("TrackCuts/Phi/fEtaPhi"), temp.eta());
