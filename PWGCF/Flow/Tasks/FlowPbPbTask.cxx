@@ -57,6 +57,8 @@ struct FlowPbPbTask {
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
+  O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
+  O2_DEFINE_CONFIGURABLE(cfgCutIR, float, 50.0, "maximum interaction rate (kHz)")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
@@ -530,7 +532,7 @@ struct FlowPbPbTask {
       return;
     }
     mRunNumber = bc.runNumber();
-    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()) {
+    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()){
       auto runDuration = ccdb->getRunDuration(mRunNumber);
       mSOR = runDuration.first;
       mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
@@ -572,6 +574,8 @@ struct FlowPbPbTask {
     initHadronicRate(bc);
     double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
     double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+    if (cfgUseInteractionRateCut && hadronicRate > cfgCutIR) // cut on hadronic rate
+      return;
     gCurrentHadronicRate->Fill(seconds, hadronicRate);
     loadCorrections(bc.timestamp());
     registry.fill(HIST("hEventCount"), 4.5);
