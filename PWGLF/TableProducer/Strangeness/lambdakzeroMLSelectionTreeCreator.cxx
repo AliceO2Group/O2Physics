@@ -105,6 +105,12 @@ struct lambdakzeroMLSelectionTreeCreator {
   Configurable<float> K0Shortv0radius{"K0Shortv0radius", 1.5, "minimum V0 radius (cm)"};
   Configurable<float> K0ShortWindow{"K0ShortWindow", 0.01, "Mass window around expected (in GeV/c2)"};
 
+  Configurable<int> RejectHypothesis{"RejectHypothesis", -1, "SelHypothesis to reject"};
+  Configurable<bool> SelMCCand{"SelMCCand", true, "Select candidate based on PDG Code"};
+  Configurable<bool> SelMCCandMother{"SelMCCandMother", false, "Select candidate based on PDGCodeMother"};
+  Configurable<int> SelPDGCode{"SelPDGCode", 22, "PDGCode to select candidate"};
+  Configurable<int> SelPDGCodeMother{"SelPDGCodeMother", 3212, "PDGCodeMother to select candidate"};
+
   // Axis:
   ConfigurableAxis centralityAxis{"centralityAxis", {100, 0.0f, 100.0f}, ""};
   ConfigurableAxis candSelectionAxis{"candSelectionAxis", {16, 0.0f, 16.0f}, ""};
@@ -121,8 +127,8 @@ struct lambdakzeroMLSelectionTreeCreator {
     int negITSCls;
     uint32_t posITSClSize;
     uint32_t negITSClSize;
-    float posTPCRows;
-    float negTPCRows;
+    uint8_t posTPCRows;
+    uint8_t negTPCRows;
     float posTPCSigmaPi;
     float negTPCSigmaPi;
     float posTPCSigmaPr;
@@ -160,6 +166,7 @@ struct lambdakzeroMLSelectionTreeCreator {
     bool isAntiLambda;
     bool isGamma;
     bool isKZeroShort;
+    int PDGCodeMother;
   } Candidate;
 
   // Process candidate and store properties in object
@@ -229,7 +236,7 @@ struct lambdakzeroMLSelectionTreeCreator {
       lConsistentWithLambda = false;
     if ((std::abs(cand.mAntiLambda() - 1.115683) > AntiLambdaWindow) || (cand.v0radius() < AntiLambdav0radius) || (cand.v0cosPA() < AntiLambdav0cospa) || (TMath::Abs(cand.dcapostopv()) < AntiLambdadcapostopv) || (TMath::Abs(cand.dcanegtopv()) < AntiLambdadcanegtopv) || (cand.dcaV0daughters() > AntiLambdadcav0dau))
       lConsistentWithAntiLambda = false;
-    if ((std::abs(cand.mGamma()) > PhotonWindow) || (cand.mGamma() > PhotonMaxMass) || (cand.v0radius() < PhotonMinRadius) || (cand.v0radius() > PhotonMaxRadius) || (cand.pt() < PhotonMinPt) || (cand.qtarm() > PhotonMaxqt) || (TMath::Abs(cand.alpha()) > PhotonMaxalpha))
+    if ((std::abs(cand.mGamma()) > PhotonWindow) || (cand.v0radius() < PhotonMinRadius) || (cand.v0radius() > PhotonMaxRadius) || (cand.pt() < PhotonMinPt) || (cand.qtarm() > PhotonMaxqt) || (TMath::Abs(cand.alpha()) > PhotonMaxalpha))
       lConsistentWithGamma = false;
     if ((std::abs(cand.mK0Short() - 0.497) > K0ShortWindow) || (cand.v0radius() < K0Shortv0radius) || (cand.v0cosPA() < K0Shortv0cospa) || (TMath::Abs(cand.dcapostopv()) < K0Shortdcapostopv) || (TMath::Abs(cand.dcanegtopv()) < K0Shortdcanegtopv) || (cand.dcaV0daughters() > K0Shortdcav0dau))
       lConsistentWithK0Short = false;
@@ -246,7 +253,7 @@ struct lambdakzeroMLSelectionTreeCreator {
 
     histos.fill(HIST("hCandSelection"), Candidate.SelHypothesis);
 
-    if (Candidate.SelHypothesis == 0)
+    if (Candidate.SelHypothesis == RejectHypothesis)
       return;
 
     // MC flags
@@ -254,12 +261,23 @@ struct lambdakzeroMLSelectionTreeCreator {
     Candidate.isAntiLambda = false;
     Candidate.isGamma = false;
     Candidate.isKZeroShort = false;
+    Candidate.PDGCodeMother = -1;
 
     if constexpr (requires { cand.pdgCode(); }) {
+      if (SelMCCand && (cand.pdgCode() != SelPDGCode))
+        return;
+
       Candidate.isLambda = (cand.pdgCode() == 3122);
       Candidate.isAntiLambda = (cand.pdgCode() == -3122);
       Candidate.isGamma = (cand.pdgCode() == 22);
       Candidate.isKZeroShort = (cand.pdgCode() == 310);
+    }
+
+    if constexpr (requires { cand.pdgCodeMother(); }) {
+      if (SelMCCandMother && (cand.pdgCodeMother() != SelPDGCodeMother))
+        return;
+
+      Candidate.PDGCodeMother = cand.pdgCodeMother();
     }
 
     // Filling TTree for ML analysis
@@ -270,7 +288,7 @@ struct lambdakzeroMLSelectionTreeCreator {
                    Candidate.LambdaMass, Candidate.AntiLambdaMass, Candidate.GammaMass, Candidate.KZeroShortMass, Candidate.pT,
                    Candidate.qt, Candidate.alpha, Candidate.posEta, Candidate.negEta, Candidate.v0Eta, Candidate.Z,
                    Candidate.v0radius, Candidate.PA, Candidate.dcapostopv, Candidate.dcanegtopv, Candidate.dcaV0daughters, Candidate.dcav0topv, Candidate.PsiPair,
-                   Candidate.v0type, Candidate.centrality, Candidate.SelHypothesis, Candidate.isLambda, Candidate.isAntiLambda, Candidate.isGamma, Candidate.isKZeroShort);
+                   Candidate.v0type, Candidate.centrality, Candidate.SelHypothesis, Candidate.isLambda, Candidate.isAntiLambda, Candidate.isGamma, Candidate.isKZeroShort, Candidate.PDGCodeMother);
   }
 
   void processRealData(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFNSigmas> const& v0s, dauTracks const&)

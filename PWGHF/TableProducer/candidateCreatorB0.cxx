@@ -342,8 +342,6 @@ struct HfCandidateCreatorB0 {
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-          int hfFlag = BIT(hf_cand_b0::DecayType::B0ToDPi);
-
           // fill the candidate table for the B0 here:
           rowCandidateBase(thisCollId,
                            collision.posX(), collision.posY(), collision.posZ(),
@@ -353,8 +351,7 @@ struct HfCandidateCreatorB0 {
                            pVecD[0], pVecD[1], pVecD[2],
                            pVecPion[0], pVecPion[1], pVecPion[2],
                            dcaD.getY(), dcaPion.getY(),
-                           std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
-                           hfFlag);
+                           std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
 
           rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
         } // pi loop

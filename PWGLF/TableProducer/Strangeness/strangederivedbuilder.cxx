@@ -281,7 +281,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -332,7 +333,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -401,7 +403,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -418,7 +421,9 @@ struct strangederivedbuilder {
         uint32_t indMCColl = -1;
         if (v0.has_mcParticle()) {
           auto mcParticle = v0.mcParticle();
-          indMCColl = mcParticle.mcCollisionId();
+          if (mcParticle.has_mcCollision()) {
+            indMCColl = mcParticle.mcCollisionId();
+          }
         }
         v0mccollref(indMCColl);
       }
@@ -426,7 +431,9 @@ struct strangederivedbuilder {
         uint32_t indMCColl = -1;
         if (casc.has_mcParticle()) {
           auto mcParticle = casc.mcParticle();
-          indMCColl = mcParticle.mcCollisionId();
+          if (mcParticle.has_mcCollision()) {
+            indMCColl = mcParticle.mcCollisionId();
+          }
         }
         cascmccollref(indMCColl);
       }
@@ -808,21 +815,11 @@ struct strangederivedbuilder {
     histos.fill(HIST("hFoundTagsCounters"), 0.0f, foundV0s.size());
     histos.fill(HIST("hFoundTagsCounters"), 1.0f, findableV0s.size());
 
-    // pack the found V0s in a long long
-    std::vector<uint64_t> foundV0sPacked;
-    foundV0sPacked.reserve(foundV0s.size());
-    for (auto const& foundV0 : foundV0s) {
-      foundV0sPacked[foundV0.globalIndex()] = combineProngIndices(foundV0.posTrackId(), foundV0.negTrackId());
-    }
-
-    bool hasBeenFound = false;
     for (auto const& findableV0 : findableV0s) {
-      uint64_t indexPack = combineProngIndices(findableV0.posTrackId(), findableV0.negTrackId());
-      for (uint32_t ic = 0; ic < foundV0s.size(); ic++) {
-        if (indexPack == foundV0sPacked[ic]) {
+      bool hasBeenFound = false;
+      for (auto const& foundV0 : foundV0s) {
+        if (foundV0.posTrackId() == findableV0.posTrackId() && foundV0.negTrackId() == findableV0.negTrackId()) {
           hasBeenFound = true;
-          histos.fill(HIST("hFoundTagsCounters"), 2.0f);
-          break;
         }
       }
       v0FoundTags(hasBeenFound);

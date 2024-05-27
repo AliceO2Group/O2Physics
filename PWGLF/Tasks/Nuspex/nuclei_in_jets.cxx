@@ -138,6 +138,7 @@ struct nuclei_in_jets {
     registryQC.add("eta_leading", "eta_leading", HistType::kTH1F, {{100, -1, 1, "#eta"}});
     registryQC.add("phi_leading", "phi_leading", HistType::kTH1F, {{100, -TMath::Pi(), TMath::Pi(), "#phi"}});
     registryQC.add("angle_jet_leading_track", "angle_jet_leading_track", HistType::kTH1F, {{200, 0.0, TMath::Pi() / 4.0, "#theta"}});
+    registryQC.add("deltaPt", "deltaPt", HistType::kTH1F, {{200, -2, 2, "#Delta p_{T}"}});
 
     // Antiprotons
     registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH3F, {{20, 0.0, 1.0, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}, {2, 0, 100, "#it{N}_{ch}"}});
@@ -531,14 +532,11 @@ struct nuclei_in_jets {
     bool containsParticleOfInterest(false);
     float pt_max(0);
 
-    // Track Index Initialization
-    int i = -1;
-
     // Loop over Reconstructed Tracks
     for (auto track : tracks) {
 
-      // Track Index
-      i++;
+      // Global Track
+      int i = track.globalIndex();
 
       // Track Selection for Jet
       if (!passedMinimalTrackSelection(track))
@@ -884,9 +882,7 @@ struct nuclei_in_jets {
         registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe, jet_Nch);
       }
     }
-
-  } // end processData
-  PROCESS_SWITCH(nuclei_in_jets, processData, "Process data", true);
+  }
 
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<MCTracks> perCollision = o2::aod::track::collisionId;
@@ -1057,7 +1053,7 @@ struct nuclei_in_jets {
     }
   }
 
-  void processAntipJet(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  void processAntiNucleiJet(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
 
     // Loop over MC Collisions
@@ -1078,14 +1074,11 @@ struct nuclei_in_jets {
       int leading_ID = 0;
       float pt_max(0);
 
-      // Track Index Initialization
-      int i = -1;
-
       // Generated Particles
       for (auto& particle : mcParticles_per_coll) {
 
-        // Index
-        i++;
+        // Global Index
+        int i = particle.globalIndex();
 
         // Select Primary Particles
         float deltaX = particle.vx() - mccollision.posX();
@@ -1101,7 +1094,7 @@ struct nuclei_in_jets {
 
         // PDG Selection
         int pdg = abs(particle.pdgCode());
-        if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
+        if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212) && (pdg != 1000010020))
           continue;
 
         // Find pt Leading
@@ -1116,7 +1109,7 @@ struct nuclei_in_jets {
 
       // Skip Events with pt<pt_leading_min
       if (pt_max < min_pt_leading)
-        return;
+        continue;
       registryQC.fill(HIST("event_counter_mc"), 2.5);
 
       // Number of Stored Particles
@@ -1125,6 +1118,7 @@ struct nuclei_in_jets {
       // Momentum of the Leading Particle
       auto const& leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
       TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
+      registryQC.fill(HIST("deltaPt"), leading_track.pt() - pt_max);
 
       // Array of Particles inside Jet
       std::vector<int> jet_particle_ID;
@@ -1150,8 +1144,7 @@ struct nuclei_in_jets {
 
           // Get Particle Momentum
           auto stored_track = mcParticles_per_coll.iteratorAt(particle_ID[i]);
-          TVector3 p_particle(stored_track.px(), stored_track.py(),
-                              stored_track.pz());
+          TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
 
           // Variables
           float one_over_pt2_part = 1.0 / (p_particle.Pt() * p_particle.Pt());
@@ -1206,7 +1199,7 @@ struct nuclei_in_jets {
       // Event Counter: Skip Events with jet not fully inside acceptance
       float eta_jet_axis = p_leading.Eta();
       if ((TMath::Abs(eta_jet_axis) + Rmax_jet_ue) > max_eta)
-        return;
+        continue;
       registryQC.fill(HIST("event_counter_mc"), 3.5);
 
       // Perpendicular Cones for UE Estimate
@@ -1217,9 +1210,9 @@ struct nuclei_in_jets {
 
       // Protection against delta<0
       if (ue_axis1.X() == 0 && ue_axis1.Y() == 0 && ue_axis1.Z() == 0)
-        return;
+        continue;
       if (ue_axis2.X() == 0 && ue_axis2.Y() == 0 && ue_axis2.Z() == 0)
-        return;
+        continue;
       registryQC.fill(HIST("event_counter_mc"), 4.5);
 
       // Store UE
@@ -1267,34 +1260,44 @@ struct nuclei_in_jets {
         if (R > Rmax_jet_ue)
           continue;
 
-        if (jet_track.pdgCode() != -2212)
-          continue;
-
         // Rapidity Cut
         if (jet_track.y() < min_y || jet_track.y() > max_y)
           continue;
 
-        registryMC.fill(HIST("antiproton_eta_pt_jet"), jet_track.pt(),
-                        jet_track.eta());
+        if (jet_track.pdgCode() == -2212) {
+          registryMC.fill(HIST("antiproton_eta_pt_jet"), jet_track.pt(),
+                          jet_track.eta());
+        }
+
+        if (jet_track.pdgCode() == -1000010020) {
+          registryMC.fill(HIST("antideuteron_eta_pt_jet"), jet_track.pt(),
+                          jet_track.eta());
+        }
       }
 
       // Loop over particles inside UE
       for (int i = 0; i < nParticlesUE; i++) {
 
         const auto& ue_track = mcParticles_per_coll.iteratorAt(ue_particle_ID[i]);
-        if (ue_track.pdgCode() != -2212)
-          continue;
 
         // Rapidity Cut
         if (ue_track.y() < min_y || ue_track.y() > max_y)
           continue;
 
-        registryMC.fill(HIST("antiproton_eta_pt_ue"), ue_track.pt(),
-                        ue_track.eta());
+        if (ue_track.pdgCode() != -2212) {
+          registryMC.fill(HIST("antiproton_eta_pt_ue"), ue_track.pt(),
+                          ue_track.eta());
+        }
+
+        if (ue_track.pdgCode() != -1000010020) {
+          registryMC.fill(HIST("antideuteron_eta_pt_ue"), ue_track.pt(),
+                          ue_track.eta());
+        }
       }
     }
   }
 
+  /*
   void processAntidJet(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
 
@@ -1322,14 +1325,11 @@ struct nuclei_in_jets {
       bool containsProton(false);
       bool containsNeutron(false);
 
-      // Track Index Initialization
-      int i = -1;
-
       // Generated Particles
       for (auto& particle : mcParticles_per_coll) {
 
-        // Index
-        i++;
+        // Global Index
+        int i = particle.globalIndex();
 
         // Select Primary Particles
         float deltaX = particle.vx() - mccollision.posX();
@@ -1366,7 +1366,7 @@ struct nuclei_in_jets {
 
       // Skip Events with pt<pt_leading_min
       if (pt_max < min_pt_leading)
-        return;
+          continue;
 
       // Number of Stored Particles
       int nParticles = static_cast<int>(particle_ID.size());
@@ -1463,7 +1463,7 @@ struct nuclei_in_jets {
       // Event Counter: Skip Events with jet not fully inside acceptance
       float eta_jet_axis = p_leading.Eta();
       if ((TMath::Abs(eta_jet_axis) + Rmax_jet_ue) > max_eta)
-        return;
+          continue;
 
       // Perpendicular Cones for UE Estimate
       TVector3 ue_axis1(0.0, 0.0, 0.0);
@@ -1473,9 +1473,9 @@ struct nuclei_in_jets {
 
       // Protection against delta<0
       if (ue_axis1.X() == 0 && ue_axis1.Y() == 0 && ue_axis1.Z() == 0)
-        return;
+          continue;
       if (ue_axis2.X() == 0 && ue_axis2.Y() == 0 && ue_axis2.Z() == 0)
-        return;
+          continue;
 
       // Store UE
       std::vector<int> ue_particle_ID;
@@ -1645,11 +1645,13 @@ struct nuclei_in_jets {
       }
     }
   }
+  */
 
+  PROCESS_SWITCH(nuclei_in_jets, processData, "Process data", true);
   PROCESS_SWITCH(nuclei_in_jets, processGen, "process Gen MC", false);
   PROCESS_SWITCH(nuclei_in_jets, processRec, "process Rec MC", false);
-  PROCESS_SWITCH(nuclei_in_jets, processAntipJet, "process antiprotons in jet and UE (MC)", false);
-  PROCESS_SWITCH(nuclei_in_jets, processAntidJet, "process antideuterons in jet and UE (MC)", false);
+  PROCESS_SWITCH(nuclei_in_jets, processAntiNucleiJet, "process antinuclei in jet and UE (MC)", false);
+  // PROCESS_SWITCH(nuclei_in_jets, processAntidJet, "process antideuterons in jet and UE (MC)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

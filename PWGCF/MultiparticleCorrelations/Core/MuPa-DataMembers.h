@@ -42,10 +42,8 @@ struct TaskConfiguration {
   TString fRunNumber = "";                         // over which run number this task is executed
   Bool_t fRunNumberIsDetermined = kFALSE;          // ensures that run number is determined in process() and propagated to already booked objects only once
   Bool_t fDryRun = kFALSE;                         // book all histos and run without storing and calculating anything
-  Bool_t fVerbose = kFALSE;                        // print additional info like Green(__PRETTY_FUNCTION__); etc., to
-                                                   // be used during debugging, but not for function calls per particle
-  Bool_t fVerboseForEachParticle = kFALSE;         // print additional info like Green(__PRETTY_FUNCTION__); etc., to
-                                                   // be used during debugging, also for function calls per particle
+  Bool_t fVerbose = kFALSE;                        // print additional info during debugging, but not for function calls per particle (see next)
+  Bool_t fVerboseForEachParticle = kFALSE;         // print additional info during debugging, also for function calls per particle
   Bool_t fDoAdditionalInsanityChecks = kFALSE;     // do additional insanity checks at run time, at the expense of losing a bit of performance
                                                    // (for instance, check if the run number in the current 'collision' is the same as run number in the first 'collision', etc.)
   Bool_t fInsanityCheckForEachParticle = kFALSE;   // do additional insanity checks at run time for each particle, at the expense of losing a lot of performance. Use only during debugging.
@@ -67,36 +65,58 @@ struct TaskConfiguration {
 // *) Event-by-event quantities:
 struct EventByEventQuantities {
   Int_t fSelectedTracks = 0; // integer counter of tracks used to calculate Q-vectors, after all particle cuts have been applied
-  Double_t fCentrality = 0.; // event-by-event centrality from default estimator
+  Double_t fCentrality = 0.; // event-by-event centrality. Value of the default centrality estimator, set via configurable cfCentralityEstimator
 } ebye;                      // "ebye" is a common label for objects in this struct
 
 // *) QA:
+//    Remark: I keep new histograms in this group, until I need them permanently in the analysis. Then, they are moved to EventHistograms or ParticleHistograms (yes, even if they are 2D).
 struct QualityAssurance {
-  TList* fQAList = NULL; //!<! base list to hold all QA output object
-} qa;                    // "qa" is a common label for objects in this struct
+  TList* fQAList = NULL;                                                          //!<! base list to hold all QA output object
+  TProfile* fQAHistogramsPro = NULL;                                              //!<! keeps flags relevant for the QA histograms
+  Bool_t fCheckUnderflowAndOverflow = kFALSE;                                     // check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins
+  TH2D* fQAEventHistograms2D[eQAEventHistograms2D_N][2][2] = {{{NULL}}};          //! [ type - see enum eQAEventHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillQAEventHistograms2D = kTRUE;                                        // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookQAEventHistograms2D[eQAEventHistograms2D_N] = {kTRUE};              // book or not this 2D histogram, see configurable cfBookQAEventHistograms2D
+  Double_t fEventHistogramsBins2D[eQAEventHistograms2D_N][2][3] = {{{0.}}};       // [type - see enum][x,y][nBins,min,max]
+  TString fEventHistogramsName2D[eQAEventHistograms2D_N] = {""};                  // name of fQAEventHistograms2D, determined programatically from other 1D names, to ease bookkeeping
+  TH2D* fQAParticleHistograms2D[eQAParticleHistograms2D_N][2][2] = {{{NULL}}};    //! [ type - see enum eQAParticleHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillQAParticleHistograms2D = kTRUE;                                     // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookQAParticleHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookQAParticleHistograms2D[eQAParticleHistograms2D_N] = {kTRUE};        // book or not this 2D histogram, see configurable cfBookQAParticleHistograms2D
+  Double_t fParticleHistogramsBins2D[eQAParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
+  TString fParticleHistogramsName2D[eQAParticleHistograms2D_N] = {""};            // name of fQAParticleHistograms2D, determined programatically from other 1D names, to ease bookkeeping
+  Double_t fCentrality[eCentralityEstimators_N] = {0.};                           // used mostly in QA correlation plots
+  TString fCentralityEstimatorName[eCentralityEstimators_N] = {""};               //
+} qa;                                                                             // "qa" is a common label for objects in this struct
 
 // *) Event histograms:
 struct EventHistograms {
-  TList* fEventHistogramsList = NULL;                                     //!<! list to hold all control event histograms
-  TProfile* fEventHistogramsPro = NULL;                                   //!<! keeps flags relevant for the control event histograms
-  TH1D* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}};          //! [ type - see enum eEventHistograms ][reco,sim][before, after event cuts]
-  Bool_t fFillEventHistograms = kTRUE;                                    // if kFALSE, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled
-  Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};              // book or not this histogram, see SetBookEventHistograms
-  Double_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}};          // [nBins,min,max]
-  TH2D* fEventHistograms2D[eEventHistograms2D_N][2][2] = {{{NULL}}};      //! [ type - see enum eEventHistograms2D ][reco,sim][before, after particle cuts]
-  Bool_t fFillEventHistograms2D = kTRUE;                                  // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms2D[...] is kTRUE, are filled
-  Bool_t fBookEventHistograms2D[eEventHistograms2D_N] = {kTRUE};          // book or not this 2D histogram, see configurable cfBookEventHistograms2D
-  Double_t fEventHistogramsBins2D[eEventHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
-} eh;                                                                     // "eh" labels an instance of group of histograms "EventHistograms"
+  TList* fEventHistogramsList = NULL;                            //!<! list to hold all control event histograms
+  TProfile* fEventHistogramsPro = NULL;                          //!<! keeps flags relevant for the control event histograms
+  TH1D* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum eEventHistograms ][reco,sim][before, after event cuts]
+  Bool_t fFillEventHistograms = kTRUE;                           // if kFALSE, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled
+  Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};     // book or not this histogram, see SetBookEventHistograms
+  Double_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}}; // [nBins,min,max]
+  TString fEventHistogramsName[eEventHistograms_N] = {""};       // name of event histogram, used both for 1D and 2D histograms
+} eh;                                                            // "eh" labels an instance of group of histograms "EventHistograms"
 
 // *) Event cuts:
 struct EventCuts {
-  TList* fEventCutsList = NULL;                   //!<! list to hold all event cuts objects
-  TProfile* fEventCutsPro = NULL;                 //!<! keeps flags relevant for the event cuts
-  Bool_t fUseEventCuts[eEventCuts_N] = {kFALSE};  // Use or do not use a cut enumerated in eEventHistograms + eEventCuts
-  Double_t fdEventCuts[eEventCuts_N][2] = {{0.}}; // [min,max)
-  TString fsEventCuts[eEventCuts_N] = {""};       // specific option passed via string
-} ec;                                             // "ec" is a common label for objects in this struct
+  TList* fEventCutsList = NULL;                            //!<! list to hold all event cuts objects
+  TProfile* fEventCutsPro = NULL;                          //!<! keeps flags relevant for the event cuts
+  Bool_t fUseEventCuts[eEventCuts_N] = {kFALSE};           // Use or do not use a cut enumerated in eEventHistograms + eEventCuts
+  Bool_t fUseEventCutCounterAbsolute = kFALSE;             // profile and save how many times each event cut counter triggered (absolute). Use with care, as this is computationally heavy
+  Bool_t fUseEventCutCounterSequential = kFALSE;           // profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy
+  Bool_t fEventCutCounterBinLabelingIsDone = kFALSE;       // this flag ensures that ordered labeling of bins, to resemble ordering of cut implementation, is done only once.
+  Bool_t fPrintCutCounterContent = kFALSE;                 // if true, prints on the screen content of fEventCutCounterHist[][] (all which were booked)
+  TString fEventCutName[eEventCuts_N] = {""};              // event cut name, with default ordering defined by ordering in enum eEventCuts
+  TExMap* fEventCutCounterMap[2] = {NULL};                 // map (key, value) = (enum eEventCuts, ordered bin number)
+  TExMap* fEventCutCounterMapInverse[2] = {NULL};          // inverse of above fEventCutCounterMap, i.e. (ordered bin number, enum eEventCuts)
+  Int_t fEventCutCounterBinNumber[2] = {1, 1};             // bin counter for set bin labels in fEventCutCounterHist
+  Double_t fdEventCuts[eEventCuts_N][2] = {{0.}};          // event cuts defined via [min,max)
+  TString fsEventCuts[eEventCuts_N] = {""};                // event cuts defined via string
+  TH1D* fEventCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each event cut triggered TBI 20240515 Shall I use TH1I instead?
+  Int_t fBeforeAfterColor[2] = {kRed, kGreen};             // color code before and after cuts
+} ec;                                                      // "ec" is a common label for objects in this struct
 
 // *) Particle histograms:
 struct ParticleHistograms {
@@ -106,20 +126,30 @@ struct ParticleHistograms {
   Bool_t fFillParticleHistograms = kTRUE;                                       // if kFALSE, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled
   Bool_t fBookParticleHistograms[eParticleHistograms_N] = {kTRUE};              // book or not the particular particle histogram, see configurable cfBookParticleHistograms
   Double_t fParticleHistogramsBins[eParticleHistograms_N][3] = {{0.}};          // [nBins,min,max]
+  TString fParticleHistogramsName[eParticleHistograms_N] = {""};                // name of particle histogram, used both for 1D and 2D histograms
   TH2D* fParticleHistograms2D[eParticleHistograms2D_N][2][2] = {{{NULL}}};      //! [ type - see enum eParticleHistograms2D ][reco,sim][before, after particle cuts]
   Bool_t fFillParticleHistograms2D = kTRUE;                                     // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled
   Bool_t fBookParticleHistograms2D[eParticleHistograms2D_N] = {kTRUE};          // book or not this 2D histogram, see configurable cfBookParticleHistograms2D
   Double_t fParticleHistogramsBins2D[eParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
+  TString fParticleHistogramsName2D[eParticleHistograms2D_N] = {""};            // name of particle histogram 2D, determined programatically from two 1D
 } ph;                                                                           // "ph" labels an instance of group of histograms "ParticleHistograms"
 
 // *) Particle cuts:
 struct ParticleCuts {
-  TList* fParticleCutsList = NULL;                      //!<! list to hold all particle cuts objects
-  TProfile* fParticleCutsPro = NULL;                    //!<! keeps flags relevant for the particle cuts
-  Bool_t fUseParticleCuts[eParticleCuts_N] = {kFALSE};  // true or false .
-  Double_t fdParticleCuts[eParticleCuts_N][2] = {{0.}}; // [min,max) . Remark: I use here eParticleHistograms_N , not to duplicate these enums for ParticleCuts.
-  TString fsParticleCuts[eParticleCuts_N] = {""};       // specific option passed via string
-} pc;                                                   // "pc" is a common label for objects in this struct
+  TList* fParticleCutsList = NULL;                            //!<! list to hold all particle cuts objects
+  TProfile* fParticleCutsPro = NULL;                          //!<! keeps flags relevant for the particle cuts
+  Bool_t fUseParticleCuts[eParticleCuts_N] = {kFALSE};        // true or false .
+  Bool_t fUseParticleCutCounterAbsolute = kFALSE;             // profile and save how many times each particle cut counter triggered (absolute). Use with care, as this is computationally heavy
+  Bool_t fUseParticleCutCounterSequential = kFALSE;           // profile and save how many times each particle cut counter triggered (sequential). Use with care, as this is computationally heavy
+  Bool_t fParticleCutCounterBinLabelingIsDone = kFALSE;       // this flag ensures that ordered labeling of bins, to resemble ordering of cut implementation, is done only once.
+  TString fParticleCutName[eParticleCuts_N] = {""};           // particle cut name, as used in bin labels, etc.
+  TExMap* fParticleCutCounterMap[2] = {NULL};                 // map (key, value) = (enum eParticleCuts, ordered bin number)
+  TExMap* fParticleCutCounterMapInverse[2] = {NULL};          // inverse of above fParticleCutCounterMap, i.e. (ordered bin number, enum eParticleCuts)
+  Int_t fParticleCutCounterBinNumber[2] = {1, 1};             // bin counter for set bin labels in fParticleCutCounterHist
+  Double_t fdParticleCuts[eParticleCuts_N][2] = {{0.}};       // particles cuts defined via [min,max) . Remark: I use here eParticleHistograms_N , not to duplicate these enums for ParticleCuts.
+  TString fsParticleCuts[eParticleCuts_N] = {""};             // particles cuts defined via booleans via string
+  TH1D* fParticleCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each particle cut triggered
+} pc;                                                         // "pc" is a common label for objects in this struct
 
 // *) Q-vectors:
 struct Qvector {

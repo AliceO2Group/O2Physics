@@ -42,6 +42,14 @@ DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK", //! Reduced track table
                   jtrack::JCollisionId,
                   jtrack::Pt, jtrack::Eta, jtrack::Phi, jtrack::Sign);
 using JTrack = JTracks::iterator;
+
+namespace jweight
+{
+DECLARE_SOA_COLUMN(WeightNUA, weightNUA, float); //! Non-uniform acceptance weight
+DECLARE_SOA_COLUMN(WeightEff, weightEff, float); //! Non-uniform efficiency weight
+} // namespace jweight
+DECLARE_SOA_TABLE(JWeights, "AOD", "JWEIGHT", jweight::WeightNUA, jweight::WeightEff); //! JFluc table for weights
+
 } // namespace o2::aod
 
 #endif // PWGCF_JCORRAN_DATAMODEL_JCATALYST_H_
