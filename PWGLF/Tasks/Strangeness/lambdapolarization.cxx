@@ -336,9 +336,9 @@ struct lambdapolarization {
         histos.fill(HIST("QA/EP_FT0A"), collision.centFT0C(), psidefFT0A + deltapsiFT0A);
         histos.fill(HIST("QA/EP_FV0A"), collision.centFT0C(), psidefFV0A + deltapsiFV0A);
 
-        histos.fill(HIST("QA/EPRes_FT0C_FT0A"), collision.centFT0C(), TMath::Cos( 2.0 * (psidefFT0C + deltapsiFT0C - psidefFT0A - deltapsiFT0A)));
-        histos.fill(HIST("QA/EPRes_FT0C_FV0A"), collision.centFT0C(), TMath::Cos( 2.0 * (psidefFT0C + deltapsiFT0C - psidefFV0A - deltapsiFV0A)));
-        histos.fill(HIST("QA/EPRes_FT0A_FV0A"), collision.centFT0C(), TMath::Cos( 2.0 * (psidefFT0A + deltapsiFT0A - psidefFV0A - deltapsiFV0A)));
+        histos.fill(HIST("QA/EPRes_FT0C_FT0A"), collision.centFT0C(), TMath::Cos(2.0 * (psidefFT0C + deltapsiFT0C - psidefFT0A - deltapsiFT0A)));
+        histos.fill(HIST("QA/EPRes_FT0C_FV0A"), collision.centFT0C(), TMath::Cos(2.0 * (psidefFT0C + deltapsiFT0C - psidefFV0A - deltapsiFV0A)));
+        histos.fill(HIST("QA/EPRes_FT0A_FV0A"), collision.centFT0C(), TMath::Cos(2.0 * (psidefFT0A + deltapsiFT0A - psidefFV0A - deltapsiFV0A)));
       }
 
       if (nmode == 2) { ////////////
@@ -372,7 +372,7 @@ struct lambdapolarization {
     }
     if (cfgShiftCorrDef) {
       for (int ishift = 1; ishift <= 10; ishift++) {
-        printf( "debug %.3lf, %.3lf, %.3lf, %.3lf",collision.centFT0C(), 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])));
+        printf("debug %.3lf, %.3lf, %.3lf, %.3lf", collision.centFT0C(), 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])));
 
         histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])));
         histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])));
