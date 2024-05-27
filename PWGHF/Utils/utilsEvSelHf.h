@@ -21,7 +21,7 @@
 namespace o2::hf_evsel
 {
 // event rejection types
-enum EventRejection : int {
+enum EventRejection {
   None = 0,
   Centrality,
   Trigger,
