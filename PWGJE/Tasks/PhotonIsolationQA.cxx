@@ -84,15 +84,15 @@ struct Photon_Isolation_QA{
 
         const o2Axis PosZ_Axis{100, -15, 15, "Z Positions (cm)"};
         const o2Axis Num_Cluster_Axis{10, 0, 10, "N Clusters"};
-        const o2Axis Shower_Shape_Long_Axis{100, 0, 1, "#sigma^{2}_{long}"};
-        const o2Axis Shower_Shape_Short_Axis{100, 0, 1, "#sigma^{2}_{short}"};
+        const o2Axis Shower_Shape_Long_Axis{100, 0, 4, "#sigma^{2}_{long}"};
+        const o2Axis Shower_Shape_Short_Axis{100, 0, 4, "#sigma^{2}_{short}"};
         const o2Axis Phi_Axis{100, 1, 6, "#phi"};
         const o2Axis Eta_Axis{100, -0.9, 0.9, "#eta"};
-        const o2Axis Energy_Axis{100, 0, 4, "E (GeV/c)"};
+        const o2Axis Energy_Axis{100, 0, 100, "E (GeV/c)"};
         const o2Axis NCells_Axis{10,0, 10, "N Cells"};
-        const o2Axis Pt_Axis{100, 0, 10, "P_{T} (GeV/c)"};
-        const o2Axis P_Axis{100, 0, 10, "P (GeV/c)"};
-        const o2Axis RatioP_Axis{50, 0, 5, "E/P"};
+        const o2Axis Pt_Axis{100, 0, 100, "P_{T} (GeV/c)"};
+        const o2Axis P_Axis{100, 0, 100, "P (GeV/c)"};
+        const o2Axis RatioP_Axis{50, 0, 10, "E/P"};
         const o2Axis Num_Track_Axis{10, 0, 10, "N Tracks"};
         const o2Axis PtIso_Axis{100, -10, 15, "P_{T, Iso} (GeV/c)"};
         const o2Axis Rho_Axis{100, 0,100, "#rho (#frac{GeV/c}{A})"};
