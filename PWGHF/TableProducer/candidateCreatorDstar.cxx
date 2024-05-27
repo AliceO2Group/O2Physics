@@ -70,8 +70,8 @@ struct HfCandidateCreatorDstar {
   Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "check consistency between PVz from central barrel with that from FT0 timing"};
   Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
   Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
-  Configurable<float> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "min. value for occupancy selection"};
-  Configurable<float> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1e+10, "max. value for occupancy selection"};
+  Configurable<int> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "min. value for occupancy selection"};
+  Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1e+10, "max. value for occupancy selection"};
 
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
