@@ -358,10 +358,6 @@ struct CFFillterPPPhi {
       std::vector<int> KaonIndex = {};
       std::vector<int> AntiKaonIndex = {};
 
-      int Nproton = 0;
-      int Nphi = 0;
-      int Nantiproton = 0;
-
       for (auto& track : tracks) {
         registry.fill(HIST("TrackCuts/fPtBefore"), track.pt());
         registry.fill(HIST("TrackCuts/fEtaBefore"), track.eta());
