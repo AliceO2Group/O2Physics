@@ -670,7 +670,7 @@ struct HfCandidateCreator2ProngExpressions {
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-2prong") == 0) {
         for (const auto& option : device.options) {
-          if (option.name.compare("zPvPosMax") == 0) {
+          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
             zPvPosMax = option.defaultValue.get<float>();
             break;
           }

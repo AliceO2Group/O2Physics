@@ -483,7 +483,7 @@ struct HfCandidateCreator3ProngExpressions {
             createLc = option.defaultValue.get<bool>();
           } else if (option.name.compare("createXic") == 0) {
             createXic = option.defaultValue.get<bool>();
-          } else if (option.name.compare("zPvPosMax") == 0) {
+          } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
             zPvPosMax = option.defaultValue.get<float>();
           }
         }

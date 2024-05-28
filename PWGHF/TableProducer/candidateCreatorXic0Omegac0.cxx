@@ -681,7 +681,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-xic0-omegac0") == 0) {
         for (const auto& option : device.options) {
-          if (option.name.compare("zPvPosMax") == 0) {
+          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
             zPvPosMax = option.defaultValue.get<float>();
             break;
           }
