@@ -61,8 +61,8 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
 
-  /// \brief Function to put labels on collision monitoring histogram
-  /// \param hCollisions is the histogram
+  /// \brief Puts labels on the collision monitoring histogram.
+  /// \param hCollisions histogram
   template <typename Histo>
   void setLabelHistoEvSel(Histo& hCollisions)
   {
@@ -79,13 +79,13 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "PV #it{z}");
   }
 
-  /// \brief Function to apply event selections in HF analyses
-  /// \tparam applyEvSel use information from the EvSel table
+  /// \brief Applies event selection.
+  /// \tparam useEvSel use information from the EvSel table
   /// \tparam centEstimator centrality estimator
-  /// \param collision collision that has to satisfy the selection criteria
-  /// \param centrality collision centrality to be set in this function
-  /// \return bitmask with the event selections not satisfied by the collision
-  template <bool applyEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
+  /// \param collision collision to test against the selection criteria
+  /// \param centrality collision centrality variable to be set in this function
+  /// \return bitmask with the event selection criteria not satisfied by the collision
+  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
   uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality)
   {
     uint16_t statusCollision{0}; // 16 bits, in case new ev. selections will be added
@@ -107,7 +107,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       }
     }
 
-    if constexpr (applyEvSel) {
+    if constexpr (useEvSel) {
       /// trigger condition
       if ((useSel8Trigger && !collision.sel8()) || (!useSel8Trigger && triggerClass > -1 && !collision.alias_bit(triggerClass))) {
         SETBIT(statusCollision, EventRejection::Trigger);
@@ -152,15 +152,15 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     return statusCollision;
   }
 
-  /// \brief function to monitor the event selection satisfied by collisions used for HF analyses
-  /// \param collision is the analysed collision
-  /// \param rejectionMask is the bitmask storing the info about which ev. selections are not satisfied by the collision
-  /// \param hCollisions is a histogram to keep track of the satisfied event selections
-  /// \param hPosZBeforeEvSel is a histogram for the PV position Z for all analysed collisions
-  /// \param hPosZAfterEvSel is a histogram for the PV position Z only for collisions satisfying the event selections
-  /// \param hPosXAfterEvSel is a histogram for the PV position X only for collisions satisfying the event selections
-  /// \param hPosYAfterEvSel is a histogram for the PV position Y only for collisions satisfying the event selections
-  /// \param hNumContributors is a histogram for the number of PV contributors only for collisions satisfying the event selections
+  /// \brief Fills histograms for monitoring event selections satisfied by the collision.
+  /// \param collision analysed collision
+  /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
+  /// \param hCollisions histogram to keep track of the satisfied event selections
+  /// \param hPosZBeforeEvSel histogram for the PV position Z for all analysed collisions
+  /// \param hPosZAfterEvSel histogram for the PV position Z only for collisions satisfying the event selections
+  /// \param hPosXAfterEvSel histogram for the PV position X only for collisions satisfying the event selections
+  /// \param hPosYAfterEvSel histogram for the PV position Y only for collisions satisfying the event selections
+  /// \param hNumContributors histogram for the number of PV contributors only for collisions satisfying the event selections
   template <typename Coll, typename Hist>
   void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist& hCollisions, Hist& hPosZBeforeEvSel, Hist& hPosZAfterEvSel, Hist& hPosXAfterEvSel, Hist& hPosYAfterEvSel, Hist& hNumContributors)
   {
