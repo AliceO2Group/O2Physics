@@ -12,6 +12,7 @@
 /// \file utilsEvSelHf.h
 /// \brief Utility set the event selections for HF analyses
 /// \author Mattia Faggin <mfaggin@cern.ch>, CERN
+/// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
 #ifndef PWGHF_UTILS_UTILSEVSELHF_H_
 #define PWGHF_UTILS_UTILSEVSELHF_H_
@@ -19,7 +20,7 @@
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
 
-namespace o2::framework::hf_evsel
+namespace o2::hf_evsel
 {
 // event rejection types
 enum EventRejection {
@@ -227,27 +228,27 @@ void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist&
 struct HfEvSel : o2::framework::ConfigurableGroup {
   std::string prefix = "hfEvSel"; // JSON group name
   // event selection parameters (in chronological order of application)
-  Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
-  Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
-  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "apply the sel8 event selection"};
-  Configurable<int> triggerClass{"triggerClass", -1, "trigger class different from sel8 (e.g. kINT7 for Run2) used only if useSel8Trigger is false"};
-  Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "apply TF border cut"};
-  Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "check consistency between PVz from central barrel with that from FT0 timing"};
-  Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
-  Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
-  Configurable<int> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "min. value for occupancy selection"};
-  Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1000000, "max. value for occupancy selection"};
-  Configurable<int> nPvContributorsMin{"nPvContributorsMin", 0, "minimum number of PV contributors"};
-  Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "maximum PV chi2"};
-  Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "min. PV posZ (cm)"};
-  Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "max. PV posZ (cm)"};
+  o2::framework::Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
+  o2::framework::Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
+  o2::framework::Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "Apply the sel8 event selection"};
+  o2::framework::Configurable<int> triggerClass{"triggerClass", -1, "Trigger class different from sel8 (e.g. kINT7 for Run2) used only if useSel8Trigger is false"};
+  o2::framework::Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "Apply TF border cut"};
+  o2::framework::Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "Check consistency between PVz from central barrel with that from FT0 timing"};
+  o2::framework::Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "Exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
+  o2::framework::Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "Apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
+  o2::framework::Configurable<int> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "Minimum occupancy"};
+  o2::framework::Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1000000, "Maximum occupancy"};
+  o2::framework::Configurable<int> nPvContributorsMin{"nPvContributorsMin", 0, "Minimum number of PV contributors"};
+  o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
+  o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
+  o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
 
   /// @brief Function to put labels on collision monitoring histogram
   /// \param hCollisions is the histogram
   template <typename Histo>
   void setLabelHistoEvSel(Histo& hCollisions)
   {
-    hCollisions->SetTitle("HF event counter;;accepted collisions");
+    hCollisions->SetTitle("HF event counter;;# of accepted collisions");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All collisions");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Trigger");
@@ -282,7 +283,7 @@ struct HfEvSel : o2::framework::ConfigurableGroup {
       } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FV0A) {
         centrality = collision.centFV0A();
       } else {
-        LOGP(fatal, "Centrality estimator different from FT0A, FT0C, FT0M, and FV0A, fix it!");
+        LOGP(fatal, "Unsupported centrality estimator!");
       }
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(statusCollision, EventRejection::Centrality);
@@ -334,7 +335,7 @@ struct HfEvSel : o2::framework::ConfigurableGroup {
     return statusCollision;
   }
 
-  /// @brief function to monitor the event selection satisfied by collisions used for HF analyses
+  /// \brief function to monitor the event selection satisfied by collisions used for HF analyses
   /// \param collision is the analysed collision
   /// \param rejectionMask is the bitmask storing the info about which ev. selections are not satisfied by the collision
   /// \param hCollisions is a histogram to keep track of the satisfied event selections
@@ -346,64 +347,17 @@ struct HfEvSel : o2::framework::ConfigurableGroup {
   template <typename Coll, typename Hist>
   void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist& hCollisions, Hist& hPosZBeforeEvSel, Hist& hPosZAfterEvSel, Hist& hPosXAfterEvSel, Hist& hPosYAfterEvSel, Hist& hNumContributors)
   {
-
     hCollisions->Fill(EventRejection::None); // all collisions
     const float posZ = collision.posZ();
     hPosZBeforeEvSel->Fill(posZ);
 
-    /// centrality
-    if (TESTBIT(rejectionMask, EventRejection::Centrality)) {
-      return;
+    for (size_t reason = 1; reason < EventRejection::NEventRejection; reason++)
+    {
+      if (TESTBIT(rejectionMask, reason)) {
+        return;
+      }
+      hCollisions->Fill(reason); // Centrality ok
     }
-    hCollisions->Fill(EventRejection::Centrality); // Centrality ok
-
-    /// sel8()
-    if (TESTBIT(rejectionMask, EventRejection::Trigger)) {
-      return;
-    }
-    hCollisions->Fill(EventRejection::Trigger); // Centrality + sel8 ok
-
-    /// Time Frame border cut
-    if (TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut)) {
-      return;
-    }
-    hCollisions->Fill(EventRejection::TimeFrameBorderCut); // Centrality + sel8 + TF border ok
-
-    /// PVz consistency tracking - FT0 timing
-    if (TESTBIT(rejectionMask, EventRejection::IsGoodZvtxFT0vsPV)) {
-      return;
-    }
-    hCollisions->Fill(EventRejection::IsGoodZvtxFT0vsPV); // Centrality + sel8 + TF border + PVz FTO ok
-
-    /// same bunch pile-up
-    if (TESTBIT(rejectionMask, EventRejection::NoSameBunchPileup)) {
-      return;
-    }
-    hCollisions->Fill(EventRejection::NoSameBunchPileup); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up ok
-
-    /// occupancy
-    if (TESTBIT(rejectionMask, EventRejection::NumTracksInTimeRange)) {
-      return;
-    }
-    hCollisions->Fill(EventRejection::NumTracksInTimeRange); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up + occupancy ok
-
-    /// PV contributors
-    if (TESTBIT(rejectionMask, EventRejection::NContrib)) {
-      return;
-    }
-    hCollisions->Fill(EventRejection::NContrib); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up + occupancy + PV contr ok
-
-    /// PV chi2
-    if (TESTBIT(rejectionMask, EventRejection::Chi2)) {
-      return;
-    }
-    hCollisions->Fill(EventRejection::Chi2); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up + occupancy + PV contr + chi2 ok
-
-    /// PV position Z
-    if (TESTBIT(rejectionMask, EventRejection::PositionZ)) {
-      return;
-    }
-    hCollisions->Fill(EventRejection::PositionZ); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up + occupancy + PV contr + chi2 + posZ ok
 
     hPosXAfterEvSel->Fill(collision.posX());
     hPosYAfterEvSel->Fill(collision.posY());
@@ -411,6 +365,6 @@ struct HfEvSel : o2::framework::ConfigurableGroup {
     hNumContributors->Fill(collision.numContrib());
   }
 };
-} // namespace o2::framework::hf_evsel
+} // namespace o2::hf_evsel
 
 #endif // PWGHF_UTILS_UTILSEVSELHF_H_

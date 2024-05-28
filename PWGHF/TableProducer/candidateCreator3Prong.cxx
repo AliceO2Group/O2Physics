@@ -34,7 +34,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
-using namespace o2::framework::hf_evsel;
+using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_collision_centrality;
@@ -46,7 +46,6 @@ using namespace o2::framework::expressions;
 struct HfCandidateCreator3Prong {
   Produces<aod::HfCand3ProngBase> rowCandidateBase;
 
-  HfEvSel hfEvSel;
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
@@ -68,6 +67,7 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> createLc{"createLc", false, "enable Lc+/- candidate creation"};
   Configurable<bool> createXic{"createXic", false, "enable Xic+/- candidate creation"};
 
+  HfEvSel hfEvSel; // event selection and monitoring
   o2::vertexing::DCAFitterN<3> df; // 3-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;

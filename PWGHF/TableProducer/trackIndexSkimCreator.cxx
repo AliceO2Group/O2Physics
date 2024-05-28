@@ -55,7 +55,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
-using namespace o2::framework::hf_evsel;
+using namespace o2::hf_evsel;
 using namespace o2::aod;
 using namespace o2::aod::hf_collision_centrality;
 using namespace o2::framework;
