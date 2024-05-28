@@ -59,20 +59,6 @@ struct HfCandidateCreatorDstar {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  // centrality
-  Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
-  Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
-
-  // event selection
-  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "apply the sel8 event selection"};
-  Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "max. PV posZ (cm)"};
-  Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "apply TF border cut"};
-  Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "check consistency between PVz from central barrel with that from FT0 timing"};
-  Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
-  Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
-  Configurable<int> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "min. value for occupancy selection"};
-  Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1000000, "max. value for occupancy selection"};
-
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};                                   // ........... what is unit of this?
@@ -82,6 +68,7 @@ struct HfCandidateCreatorDstar {
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
 
+  HfEvSel hfEvSel; // event selection and monitoring
   Service<o2::ccdb::BasicCCDBManager> ccdb; // From utilsBfieldCCDB.h
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   // D0-prong vertex fitter
@@ -174,7 +161,7 @@ struct HfCandidateCreatorDstar {
     bz = 0;
 
     /// collision monitoring
-    setLabelHistoEvSel(hCollisions);
+    hfEvSel.setLabelHistoEvSel(hCollisions);
 
     /// candidate monitoring
     setLabelHistoCands(hCandidates);
@@ -203,7 +190,7 @@ struct HfCandidateCreatorDstar {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexDstar.template collision_as<Coll>();
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator>(collision, centrality);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -472,10 +459,10 @@ struct HfCandidateCreatorDstar {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+      hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
   }
@@ -489,10 +476,10 @@ struct HfCandidateCreatorDstar {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+      hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
   }
@@ -506,10 +493,10 @@ struct HfCandidateCreatorDstar {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+      hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
   }

@@ -96,19 +96,10 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   Produces<aod::HfSelCollision> rowSelectedCollision;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
-  Configurable<float> zVertexMin{"zVertexMin", -100., "min. z of primary vertex [cm]"};
-  Configurable<float> zVertexMax{"zVertexMax", 100., "max. z of primary vertex [cm]"};
-  Configurable<int> nContribMin{"nContribMin", 0, "min. number of contributors to primary-vertex reconstruction"};
-  Configurable<float> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "Run 2 trigger class, only for Run 2 converted data"};
-  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "use sel8 trigger condition, for Run3 studies"};
-  Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
-  Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
-  Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "use time-frame border cut in event selection"};
+  HfEvSel hfEvSel; // event selection and monitoring
 
   ConfigurableAxis axisNumContributors{"axisNumContributors", {200, -0.5f, 199.5f}, "Number of PV contributors"};
-
-  int triggerClassRun2 = -1; // numerical value of the trigger class for Run2
 
   // QA histos
   std::shared_ptr<TH1> hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel;
@@ -121,14 +112,15 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       LOGP(fatal, "One and only one process function for collision selection can be enabled at a time!");
     }
 
+    // set numerical value of the Run 2 trigger class
     auto triggerAlias = std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data());
     if (triggerAlias != aliasLabels + kNaliases) {
-      triggerClassRun2 = std::distance(aliasLabels, triggerAlias);
+      hfEvSel.triggerClass.value = std::distance(aliasLabels, triggerAlias);
     }
 
     if (fillHistograms) {
       hEvents = registry.add<TH1>("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
-      setLabelHistoEvSel(hEvents);
+      hfEvSel.setLabelHistoEvSel(hEvents);
 
       // primary vertex histograms
       hPrimVtxZBeforeSel = registry.add<TH1>("hPrimVtxZBeforeSel", "all events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -20., 20.}}});
@@ -151,10 +143,10 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   void selectCollision(const Col& collision)
   {
     float centrality = -1.;
-    const auto statusCollision = getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, triggerClassRun2, useTimeFrameBorderCut, zVertexMin, zVertexMax, nContribMin, chi2Max, /*useIsGoodZvtxFT0vsPV*/ false, /*useNoSameBunchPileup*/ false, /*useNumTracksInTimeRange*/ false, /*numTracksInTimeRangeMin*/ 0, /*numTracksInTimeRangeMax*/ 1e+10);
+    const auto statusCollision = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality);
 
     if (fillHistograms) {
-      monitorCollision(collision, statusCollision, hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel);
+      hfEvSel.monitorCollision(collision, statusCollision, hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel);
       // additional centrality histos
       if constexpr (centEstimator != o2::aod::hf_collision_centrality::None) {
         if (statusCollision == 0) {

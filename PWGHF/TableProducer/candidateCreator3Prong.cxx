@@ -160,7 +160,6 @@ struct HfCandidateCreator3Prong {
     runNumber = 0;
 
     /// collision monitoring
-    // setLabelHistoEvSel(hCollisions);
     hfEvSel.setLabelHistoEvSel(hCollisions);
 
     /// candidate monitoring
@@ -179,7 +178,6 @@ struct HfCandidateCreator3Prong {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng3.template collision_as<Coll>();
       float centrality{-1.f};
-      // const auto rejectionMask = getHfCollisionRejectionMask<true, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator>(collision, centrality);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
@@ -412,11 +410,9 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      // const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality);
 
       /// monitor the satisfied event selections
-      // monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
       hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
@@ -431,11 +427,9 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      // const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality);
 
       /// monitor the satisfied event selections
-      // monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
       hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
@@ -450,11 +444,9 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      // const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality);
 
       /// monitor the satisfied event selections
-      // monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
       hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
