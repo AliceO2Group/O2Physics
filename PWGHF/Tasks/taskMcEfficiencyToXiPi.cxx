@@ -58,7 +58,7 @@ struct HfTaskMcEfficiencyToXiPi {
                 kHFStepTracked,             // signal candidates which have been found by candidateCreator for the desired decay channel
                 kHFStepTrackedCuts,         // signal candidates which have been found and pass the candidateSelector cuts but PID
                 kHFStepTrackedSelected,     // signal candidates which pass the selector and pass the candidateSelector cuts including PID
-                kHFNSteps };
+                kHFNSteps }; //comment
 
   enum TrackableStep { kTrackableAll = 0, // all tracks
                        kTrackableITS,     // track contains ITS information
