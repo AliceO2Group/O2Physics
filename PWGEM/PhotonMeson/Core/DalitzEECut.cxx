@@ -18,7 +18,10 @@
 
 ClassImp(DalitzEECut);
 
-const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairEtaRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "ITSClusterSize", "Prefilter"};
+const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairRapidityRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "ITSClusterSize", "Prefilter"};
+
+const std::pair<int8_t, std::set<uint8_t>> DalitzEECut::its_ib_any_Requirement = {1, {0, 1, 2}}; // hits on any ITS ib layers.
+const std::pair<int8_t, std::set<uint8_t>> DalitzEECut::its_ib_1st_Requirement = {1, {0}};       // hit on 1st ITS ib layers.
 
 void DalitzEECut::SetPairPtRange(float minPt, float maxPt)
 {
@@ -26,11 +29,11 @@ void DalitzEECut::SetPairPtRange(float minPt, float maxPt)
   mMaxPairPt = maxPt;
   LOG(info) << "DalitzEE Cut, set pair pt range: " << mMinPairPt << " - " << mMaxPairPt;
 }
-void DalitzEECut::SetPairEtaRange(float minEta, float maxEta)
+void DalitzEECut::SetPairYRange(float minY, float maxY)
 {
-  mMinPairEta = minEta;
-  mMaxPairEta = maxEta;
-  LOG(info) << "DalitzEE Cut, set pair eta range: " << mMinPairEta << " - " << mMaxPairEta;
+  mMinPairY = minY;
+  mMaxPairY = maxY;
+  LOG(info) << "DalitzEE Cut, set pair eta range: " << mMinPairY << " - " << mMaxPairY;
 }
 void DalitzEECut::SetPairDCARange(float min, float max)
 {
@@ -139,7 +142,7 @@ void DalitzEECut::ApplyPrefilter(bool flag)
   LOG(info) << "DalitzEE Cut, apply prefilter: " << mApplyPF;
 }
 
-void DalitzEECut::SetPIDScheme(PIDSchemes scheme)
+void DalitzEECut::SetPIDScheme(int scheme)
 {
   mPIDScheme = scheme;
   LOG(info) << "DalitzEE Cut, PID scheme: " << static_cast<int>(mPIDScheme);
@@ -229,6 +232,16 @@ void DalitzEECut::SetMaxPinMuonTPConly(float max)
 {
   mMaxPinMuonTPConly = max;
   LOG(info) << "DalitzEE Cut, set max pin for Muon ID with TPC only: " << mMaxPinMuonTPConly;
+}
+void DalitzEECut::RequireITSibAny(bool flag)
+{
+  mRequireITSibAny = flag;
+  LOG(info) << "DalitzEE Cut, require ITS ib any: " << mRequireITSibAny;
+}
+void DalitzEECut::RequireITSib1st(bool flag)
+{
+  mRequireITSib1st = flag;
+  LOG(info) << "DalitzEE Cut, require ITS ib 1st: " << mRequireITSib1st;
 }
 
 void DalitzEECut::print() const

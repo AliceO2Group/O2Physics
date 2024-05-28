@@ -68,7 +68,7 @@ using LabeledTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLab
 using FullMcParticles = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
 
 struct lambdakzeromcfinder {
-  Produces<aod::V0s> v0;
+  Produces<aod::FindableV0s> v0;
   Produces<aod::McFullV0Labels> fullv0labels;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -178,15 +178,16 @@ struct lambdakzeromcfinder {
   {
     int nPosReco = 0;
     int nNegReco = 0;
-    const int maxReco = 20;
-    int trackIndexPositive[maxReco];
-    int trackIndexNegative[maxReco];
+    std::vector<int> trackIndexPositive;
+    std::vector<int> trackIndexNegative;
 
     int positivePdg = 211;
     int negativePdg = -211;
+    int relevantProcess = 4; // normal search: decay
     if (mcParticle.pdgCode() == 22) {
       positivePdg = -11;
       negativePdg = +11;
+      relevantProcess = 5; // look for pair production if photon
     }
     if (mcParticle.pdgCode() == 3122) {
       positivePdg = 2212;
@@ -205,7 +206,7 @@ struct lambdakzeromcfinder {
       auto const& daughters = mcParticle.template daughters_as<FullMcParticles>();
       if (daughters.size() >= 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
-          if (daughter.getProcess() != 4)
+          if (daughter.getProcess() != relevantProcess)
             continue; // skip deltarays (if ever), stick to decay products only
           if (daughter.pdgCode() == positivePdg) {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
@@ -219,7 +220,7 @@ struct lambdakzeromcfinder {
                 tpcOnlyFound = true;
               }
               if (track.sign() > 0 && (track.hasTPC() || !requireTPC)) {
-                trackIndexPositive[nPosReco] = track.globalIndex(); // assign only if TPC present
+                trackIndexPositive.push_back(track.globalIndex()); // assign only if TPC present
                 nPosReco++;
               }
             } // end track list loop
@@ -236,7 +237,7 @@ struct lambdakzeromcfinder {
                 tpcOnlyFound = true;
               }
               if (track.sign() < 0 && (track.hasTPC() || !requireTPC)) {
-                trackIndexNegative[nNegReco] = track.globalIndex(); // assign only if TPC present
+                trackIndexNegative.push_back(track.globalIndex()); // assign only if TPC present
                 nNegReco++;
               }
             } // end track list loop

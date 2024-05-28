@@ -17,7 +17,7 @@
 /ALICE3 @alibuild @njacazio @hscheid
 /DPG @alibuild @chiarazampolli @noferini
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
-/DPG/Tasks/AOTTrack @alibuild @mfaggin @belikov @njacazio
+/DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio
 /DPG/Tasks/TOF @alibuild @noferini @njacazio
 /DPG/Tasks/FT0 @alibuild @afurs
 /EventFiltering @alibuild @mpuccio @strogolo
@@ -36,7 +36,7 @@
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
-/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @nzardosh @NicoleBastid @hahassan7
+/PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @nzardosh @NicoleBastid @hahassan7 @jpxrk
 /PWGLF @alibuild @ercolessi @fmazzasc @chiarapinto @BongHwi @smaff92 @mbombara @ChiaraDeMartin95 @njacazio @skundu692
 /PWGMM @alibuild @aalkin
 /PWGMM/Lumi @alibuild @aalkin

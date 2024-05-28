@@ -101,8 +101,6 @@ struct femtoUniversePairTaskTrackV0Extended {
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
@@ -214,8 +212,8 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event
     for (auto& part : groupPartsTwo) {
-      const auto& posChild = parts.iteratorAt(part.globalIndex() - 2);
-      const auto& negChild = parts.iteratorAt(part.globalIndex() - 1);
+      const auto& posChild = parts.iteratorAt(part.index() - 2);
+      const auto& negChild = parts.iteratorAt(part.index() - 1);
       /// Daughters that do not pass this condition are not selected
       if (!IsParticleTPC(posChild, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild, V0ChildTable[ConfV0Type1][1]))
         continue;
@@ -257,8 +255,8 @@ struct femtoUniversePairTaskTrackV0Extended {
       /// PID using stored binned nsigma
       if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
         continue;
-      const auto& posChild = parts.iteratorAt(p2.globalIndex() - 2);
-      const auto& negChild = parts.iteratorAt(p2.globalIndex() - 1);
+      const auto& posChild = parts.iteratorAt(p2.index() - 2);
+      const auto& negChild = parts.iteratorAt(p2.index() - 1);
 
       /// Daughters that do not pass this condition are not selected
       if (!IsParticleTPC(posChild, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild, V0ChildTable[ConfV0Type1][1]))
@@ -282,8 +280,8 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event
     for (auto& part : groupPartsTwo) {
-      const auto& posChild = parts.iteratorAt(part.globalIndex() - 2);
-      const auto& negChild = parts.iteratorAt(part.globalIndex() - 1);
+      const auto& posChild = parts.iteratorAt(part.index() - 2);
+      const auto& negChild = parts.iteratorAt(part.index() - 1);
 
       /// Check daughters of first V0 particle
       if (IsParticleTPC(posChild, V0ChildTable[ConfV0Type1][0]) && IsParticleTPC(negChild, V0ChildTable[ConfV0Type1][1])) {
@@ -300,7 +298,7 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
 
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
       // track cleaning
       if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
         continue;
@@ -310,14 +308,14 @@ struct femtoUniversePairTaskTrackV0Extended {
           continue;
         }
       }
-      const auto& posChild1 = parts.iteratorAt(p1.globalIndex() - 2);
-      const auto& negChild1 = parts.iteratorAt(p1.globalIndex() - 1);
+      const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
+      const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
       /// Daughters that do not pass this condition are not selected
       if (!IsParticleTPC(posChild1, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild1, V0ChildTable[ConfV0Type1][1]))
         continue;
 
-      const auto& posChild2 = parts.iteratorAt(p2.globalIndex() - 2);
-      const auto& negChild2 = parts.iteratorAt(p2.globalIndex() - 1);
+      const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
+      const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
       /// Daughters that do not pass this condition are not selected
       if (!IsParticleTPC(posChild2, V0ChildTable[ConfV0Type2][0]) || !IsParticleTPC(negChild2, V0ChildTable[ConfV0Type2][1]))
         continue;

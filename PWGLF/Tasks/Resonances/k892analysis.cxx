@@ -84,6 +84,9 @@ struct k892analysis {
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
   Configurable<bool> additionalQAplots{"additionalQAplots", true, "Additional QA plots"};
+  Configurable<bool> additionalQAeventPlots{"additionalQAeventPlots", false, "Additional QA event plots"};
+  Configurable<bool> additionalMEPlots{"additionalMEPlots", false, "Additional Mixed event plots"};
+
   Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
   Configurable<bool> additionalEvsel{"additionalEvsel", true, "Additional event selcection"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
@@ -93,6 +96,9 @@ struct k892analysis {
   Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
+  Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
+  Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
+  Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
   // MC Event selection
   Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0, "MC Z-vertex cut"};
 
@@ -103,16 +109,44 @@ struct k892analysis {
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
 
+  // cuts on mother
+  Configurable<bool> cfgCutsOnMother{"cfgCutsOnMother", false, "Enamble additional cuts on mother"};
+  Configurable<double> cMaxPtMotherCut{"cMaxPtMotherCut", 15.0, "Maximum pt of mother cut"};
+  Configurable<double> cMaxMinvMotherCut{"cMaxMinvMotherCut", 1.5, "Maximum Minv of mother cut"};
+  Configurable<bool> cfgCutsOnDaughters{"cfgCutsOnDaughters", false, "Enamble additional cuts on daughters"};
+  Configurable<int> cetaphiBins{"cetaphiBins", 400, "number of eta and phi bins"};
+  Configurable<double> cMaxDeltaEtaCut{"cMaxDeltaEtaCut", 0.7, "Maximum deltaEta between daughters"};
+  Configurable<double> cMaxDeltaPhiCut{"cMaxDeltaPhiCut", 1.5, "Maximum deltaPhi between daughters"};
+
   void init(o2::framework::InitContext&)
   {
     AxisSpec centAxis = {binsCent, "V0M (%)"};
     AxisSpec dcaxyAxis = {cDCABins, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
     AxisSpec dcazAxis = {cDCABins, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
-    AxisSpec mcLabelAxis = {4, -0.5, 3.5, "MC Label"};
+    AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
     AxisSpec ptAxis = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisQA = {binsPtQA, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec invMassAxis = {cInvMassBins, cInvMassStart, cInvMassEnd, "Invariant Mass (GeV/#it{c}^2)"};
     AxisSpec pidQAAxis = {cPIDBins, -cPIDQALimit, cPIDQALimit};
+
+    if (additionalQAeventPlots) {
+      // Test on Mixed event
+      histos.add("TestME/hCollisionIndexSameE", "coll index sameE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
+      histos.add("TestME/hCollisionIndexMixedE", "coll index mixedE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
+      histos.add("TestME/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+      histos.add("TestME/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+      histos.add("TestME/hPairsCounterSameE", "tot n pairs sameE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
+      histos.add("TestME/hPairsCounterMixedE", "tot n pairs mixedE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
+
+      // event histograms
+      histos.add("QAevent/hEvtCounterSameE", "Number of analyzed Same Events", HistType::kTH1F, {{1, 0.5, 1.5}});
+      histos.add("QAevent/hVertexZSameE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
+      histos.add("QAevent/hMultiplicityPercentSameE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
+
+      histos.add("QAevent/hEvtCounterMixedE", "Number of analyzed Mixed Events", HistType::kTH1F, {{1, 0.5, 1.5}});
+      histos.add("QAevent/hVertexZMixedE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15., 15.}});
+      histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
+    }
 
     // Mass QA (quick check)
     histos.add("k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH1F, {invMassAxis});
@@ -120,6 +154,11 @@ struct k892analysis {
     histos.add("k892invmassLS", "Invariant mass of K(892)0 like sign", kTH1F, {invMassAxis});
     histos.add("k892invmassLSAnti", "Invariant mass of Anti-K(892)0 like sign", kTH1F, {invMassAxis});
     histos.add("k892invmassME", "Invariant mass of K(892)0 mixed event", kTH1F, {invMassAxis});
+
+    if (additionalMEPlots) {
+      histos.add("k892invmassME_DS", "Invariant mass of K(892)0 mixed event DS", kTH1F, {invMassAxis});
+      histos.add("k892invmassME_DSAnti", "Invariant mass of K(892)0 mixed event DSAnti", kTH1F, {invMassAxis});
+    }
 
     if (additionalQAplots) {
       // TPC ncluster distirbutions
@@ -169,12 +208,39 @@ struct k892analysis {
     histos.add("QAafter/TOF_Nsigma_ka_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
     histos.add("QAafter/TPC_Nsigmaka_all", "TPC NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
 
+    // eta phi QA
+    if (cfgCutsOnDaughters) {
+      histos.add("QAbefore/deltaEta", "deltaEta of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAbefore/deltaPhi", "deltaPhi of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAbefore/Eta", "Eta of  tracks candidates", HistType::kTH1F, {{cetaphiBins, -1.6, 1.6}});
+      histos.add("QAbefore/Phi", "Phi of tracks candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
+
+      histos.add("QAafter/deltaEta", "deltaEta of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAafter/deltaPhi", "deltaPhi of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAafter/EtaPi", "Eta of  pion candidates", HistType::kTH1F, {{cetaphiBins, -1.6, 1.6}});
+      histos.add("QAafter/PhiPi", "Phi of  pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
+      histos.add("QAafter/EtaKa", "Eta of kaon  candidates", HistType::kTH1F, {{cetaphiBins, -1.6, 1.6}});
+      histos.add("QAafter/PhiKa", "Phi of kaon  candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
+
+      histos.add("QAafter/deltaEtaafter", "deltaEta of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAafter/deltaPhiafter", "deltaPhi of kaon and pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 3.15}});
+      histos.add("QAafter/EtaPiafter", "Eta of  pion candidates", HistType::kTH1F, {{cetaphiBins, -1.6, 1.6}});
+      histos.add("QAafter/PhiPiafter", "Phi of  pion candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
+      histos.add("QAafter/EtaKaafter", "Eta of kaon  candidates", HistType::kTH1F, {{cetaphiBins, -1.6, 1.6}});
+      histos.add("QAafter/PhiKaafter", "Phi of kaon  candidates", HistType::kTH1F, {{cetaphiBins, 0.0, 6.30}});
+    }
+
     // 3d histogram
     histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTH3F, {centAxis, ptAxis, invMassAxis});
     histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTH3F, {centAxis, ptAxis, invMassAxis});
+
+    if (additionalMEPlots) {
+      histos.add("h3k892invmassME_DS", "Invariant mass of K(892)0 mixed event DS", kTH3F, {centAxis, ptAxis, invMassAxis});
+      histos.add("h3k892invmassME_DSAnti", "Invariant mass of K(892)0 mixed event DSAnti", kTH3F, {centAxis, ptAxis, invMassAxis});
+    }
 
     if (doprocessMCLight) {
       // MC QA
@@ -255,6 +321,12 @@ struct k892analysis {
     if (track.itsChi2NCl() >= cfgITSChi2NCl)
       return false;
     if (track.tpcChi2NCl() >= cfgTPCChi2NCl)
+      return false;
+    if (cfgHasITS && !track.hasITS())
+      return false;
+    if (cfgHasTPC && !track.hasTPC())
+      return false;
+    if (cfgHasTOF && !track.hasTOF())
       return false;
     if (cfgUseITSRefit && !track.passedITSRefit())
       return false;
@@ -346,12 +418,27 @@ struct k892analysis {
   {
     // auto multNTracksPV = collision.multNTracksPV();
     auto multiplicity = collision.cent();
+    if (additionalEvsel && !eventSelected(collision, multiplicity)) {
+      return;
+    }
+
     if (additionalQAplots) {
       histos.fill(HIST("MultCalib/centglopi_before"), multiplicity, dTracks1.size());            // centrality vs global tracks before the multiplicity calibration cuts
       histos.fill(HIST("MultCalib/GloPVpi_before"), dTracks1.size(), collision.multNTracksPV()); // global tracks vs PV tracks before the multiplicity calibration cuts
     }
-    if (additionalEvsel && !eventSelected(collision, multiplicity)) {
-      return;
+
+    if (additionalQAeventPlots) {
+      if constexpr (!IsMix) {
+        histos.fill(HIST("QAevent/hVertexZSameE"), collision.posZ());
+        histos.fill(HIST("QAevent/hMultiplicityPercentSameE"), collision.cent());
+        histos.fill(HIST("TestME/hCollisionIndexSameE"), collision.globalIndex());
+        histos.fill(HIST("TestME/hnTrksSameE"), dTracks1.size());
+      } else {
+        histos.fill(HIST("QAevent/hVertexZMixedE"), collision.posZ());
+        histos.fill(HIST("QAevent/hMultiplicityPercentMixedE"), collision.cent());
+        histos.fill(HIST("TestME/hCollisionIndexMixedE"), collision.globalIndex());
+        histos.fill(HIST("TestME/hnTrksMixedE"), dTracks1.size());
+      }
     }
 
     if (additionalQAplots) {
@@ -365,6 +452,15 @@ struct k892analysis {
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
         continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
+
+      if (additionalQAeventPlots) {
+        if constexpr (!IsMix) {
+          histos.fill(HIST("TestME/hPairsCounterSameE"), 1.0);
+        } else {
+          histos.fill(HIST("TestME/hPairsCounterMixedE"), 1.0);
+        }
+      }
+
       //// Initialize variables
       // Trk1: Pion, Trk2: Kaon
       // apply the track cut
@@ -379,6 +475,10 @@ struct k892analysis {
       auto trk2ptKa = trk2.pt();
       auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
       auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
+
+      auto deltaEta = TMath::Abs(trk1.eta() - trk2.eta());
+      auto deltaPhi = TMath::Abs(trk1.phi() - trk2.phi());
+      deltaPhi = (deltaPhi > TMath::Pi()) ? (2 * TMath::Pi() - deltaPhi) : deltaPhi;
 
       if constexpr (!IsMix) {
         //// QA plots before the selection
@@ -400,6 +500,13 @@ struct k892analysis {
         histos.fill(HIST("QAbefore/trkDCAxy_ka"), trk2.dcaXY());
         histos.fill(HIST("QAbefore/trkDCAz_pi"), trk1.dcaZ());
         histos.fill(HIST("QAbefore/trkDCAz_ka"), trk2.dcaZ());
+
+        if (cfgCutsOnDaughters) {
+          histos.fill(HIST("QAbefore/Eta"), trk1.eta());
+          histos.fill(HIST("QAbefore/Phi"), trk1.phi());
+          histos.fill(HIST("QAbefore/deltaEta"), deltaEta);
+          histos.fill(HIST("QAbefore/deltaPhi"), deltaPhi);
+        }
       }
 
       // Apply the selection
@@ -438,6 +545,16 @@ struct k892analysis {
         histos.fill(HIST("QAafter/trkDCAxy_ka"), trk2.dcaXY());
         histos.fill(HIST("QAafter/trkDCAz_pi"), trk1.dcaZ());
         histos.fill(HIST("QAafter/trkDCAz_ka"), trk2.dcaZ());
+
+        if (cfgCutsOnDaughters) {
+          histos.fill(HIST("QAafter/EtaPi"), trk1.eta());
+          histos.fill(HIST("QAafter/PhiPi"), trk1.phi());
+          histos.fill(HIST("QAafter/EtaKa"), trk2.eta());
+          histos.fill(HIST("QAafter/PhiKa"), trk2.phi());
+
+          histos.fill(HIST("QAafter/deltaEta"), deltaEta);
+          histos.fill(HIST("QAafter/deltaPhi"), deltaPhi);
+        }
       }
 
       //// Resonance reconstruction
@@ -447,6 +564,29 @@ struct k892analysis {
       // Rapidity cut
       if (abs(lResonance.Rapidity()) >= 0.5)
         continue;
+      if (cfgCutsOnMother) {
+        if (lResonance.Pt() >= cMaxPtMotherCut) // excluding candidates in overflow
+          continue;
+        if (lResonance.M() >= cMaxMinvMotherCut) // excluding candidates in overflow
+          continue;
+      }
+
+      if (cfgCutsOnDaughters) {
+        if (deltaEta >= cMaxDeltaEtaCut)
+          continue;
+        if (deltaPhi >= cMaxDeltaPhiCut)
+          continue;
+
+        if constexpr (!IsMix) {
+          histos.fill(HIST("QAafter/EtaPiafter"), trk1.eta());
+          histos.fill(HIST("QAafter/PhiPiafter"), trk1.phi());
+          histos.fill(HIST("QAafter/EtaKaafter"), trk2.eta());
+          histos.fill(HIST("QAafter/PhiKaafter"), trk2.phi());
+          histos.fill(HIST("QAafter/deltaEtaafter"), deltaEta);
+          histos.fill(HIST("QAafter/deltaPhiafter"), deltaPhi);
+        }
+      }
+
       //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
         if constexpr (!IsMix) {
@@ -460,6 +600,15 @@ struct k892analysis {
         } else {
           histos.fill(HIST("k892invmassME"), lResonance.M());
           histos.fill(HIST("h3k892invmassME"), multiplicity, lResonance.Pt(), lResonance.M());
+          if (additionalMEPlots) {
+            if (trk1.sign() < 0) {
+              histos.fill(HIST("k892invmassME_DS"), lResonance.M());
+              histos.fill(HIST("h3k892invmassME_DS"), multiplicity, lResonance.Pt(), lResonance.M());
+            } else if (trk1.sign() > 0) {
+              histos.fill(HIST("k892invmassME_DSAnti"), lResonance.M());
+              histos.fill(HIST("h3k892invmassME_DSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
+            }
+          }
         }
 
         // MC
@@ -514,6 +663,8 @@ struct k892analysis {
                         aod::ResoTracks const& resotracks)
   {
     // LOG(info) << "new collision, zvtx: " << collision.posZ();
+    if (additionalQAeventPlots)
+      histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
     fillHistograms<false, false>(collision, resotracks, resotracks);
   }
   PROCESS_SWITCH(k892analysis, processDataLight, "Process Event for data", false);
@@ -553,12 +704,19 @@ struct k892analysis {
         else
           histos.fill(HIST("k892GenAnti"), 1, part.pt(), multiplicity);
       }
-      if (collision.isInAfterAllCuts()) // after all event selection
+      if (collision.isVtxIn10() && collision.isTriggerTVX()) // vtx10, TriggerTVX
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("k892Gen"), 2, part.pt(), multiplicity);
         else
           histos.fill(HIST("k892GenAnti"), 2, part.pt(), multiplicity);
+      }
+      if (collision.isInAfterAllCuts()) // after all event selection
+      {
+        if (part.pdgCode() > 0)
+          histos.fill(HIST("k892Gen"), 3, part.pt(), multiplicity);
+        else
+          histos.fill(HIST("k892GenAnti"), 3, part.pt(), multiplicity);
       }
     }
   }
@@ -573,6 +731,8 @@ struct k892analysis {
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+      if (additionalQAeventPlots)
+        histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
       fillHistograms<false, true>(collision1, tracks1, tracks2);
     }
   };

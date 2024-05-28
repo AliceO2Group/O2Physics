@@ -338,7 +338,8 @@ struct HfCandidateCreatorDstar {
                        rowTrackIndexDstar.prong0Id(), rowTrackIndexDstar.prongD0Id(),
                        pVecSoftPi[0], pVecSoftPi[1], pVecSoftPi[2],
                        signSoftPi,
-                       impactParameterPi.getY(), std::sqrt(impactParameterPi.getSigmaY2()),
+                       impactParameterPi.getY(), impactParameterPi.getZ(),
+                       std::sqrt(impactParameterPi.getSigmaY2()), std::sqrt(impactParameterPi.getSigmaZ2()),
                        pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
                        pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2],
                        prongD0.prong0Id(), prongD0.prong1Id());
@@ -351,7 +352,9 @@ struct HfCandidateCreatorDstar {
                     pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
                     pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2],
                     impactParameter0.getY(), impactParameter1.getY(),
+                    impactParameter0.getZ(), impactParameter1.getZ(),
                     std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
+                    std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()),
                     prongD0.prong0Id(), prongD0.prong1Id(),
                     prongD0.hfflag());
 
@@ -555,6 +558,7 @@ struct HfCandidateCreatorDstarExpressions {
       flagD0 = 0;
       originDstar = 0;
       originD0 = 0;
+      std::vector<int> idxBhadMothers{};
 
       auto indexDstar = rowCandidateDstar.globalIndex();
       auto candD0 = rowsCandidateD0->iteratorAt(indexDstar);
@@ -578,13 +582,18 @@ struct HfCandidateCreatorDstarExpressions {
       // check wether the particle is non-promt (from a B0 hadron)
       if (flagDstar != 0) {
         auto particleDstar = mcParticles.iteratorAt(indexRecDstar);
-        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particleDstar);
+        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particleDstar, false, &idxBhadMothers);
       }
       if (flagD0 != 0) {
         auto particleD0 = mcParticles.iteratorAt(indexRecD0);
         originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particleD0);
       }
-      rowsMcMatchRecDstar(flagDstar, originDstar);
+      if (originDstar == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowsMcMatchRecDstar(flagDstar, originDstar, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
+      }
       rowsMcMatchRecD0(flagD0, originD0);
     }
 
@@ -594,11 +603,12 @@ struct HfCandidateCreatorDstarExpressions {
       flagD0 = 0;
       originDstar = 0;
       originD0 = 0;
+      std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
       float zPv = mcCollision.posZ();
       if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
-        rowsMcMatchGenDstar(flagDstar, originDstar);
+        rowsMcMatchGenDstar(flagDstar, originDstar, -1);
         rowsMcMatchGenD0(flagD0, originD0);
         continue;
       }
@@ -614,12 +624,17 @@ struct HfCandidateCreatorDstarExpressions {
 
       // check wether the particle is non-promt (from a B0 hadron)
       if (flagDstar != 0) {
-        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
       if (flagD0 != 0) {
         originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
-      rowsMcMatchGenDstar(flagDstar, originDstar);
+
+      if (originDstar == RecoDecay::OriginType::NonPrompt) {
+        rowsMcMatchGenDstar(flagDstar, originDstar, idxBhadMothers[0]);
+      } else {
+        rowsMcMatchGenDstar(flagDstar, originDstar, -1);
+      }
       rowsMcMatchGenD0(flagD0, originD0);
     }
   }

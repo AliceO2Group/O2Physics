@@ -100,7 +100,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   Configurable<float> zVertexMax{"zVertexMax", 100., "max. z of primary vertex [cm]"};
   Configurable<int> nContribMin{"nContribMin", 0, "min. number of contributors to primary-vertex reconstruction"};
   Configurable<float> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
-  Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
+  Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "Run 2 trigger class, only for Run 2 converted data"};
   Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "use sel8 trigger condition, for Run3 studies"};
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
@@ -108,7 +108,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   ConfigurableAxis axisNumContributors{"axisNumContributors", {200, -0.5f, 199.5f}, "Number of PV contributors"};
 
-  int triggerClass;
+  int triggerClassRun2 = -1; // numerical value of the trigger class for Run2
 
   // QA histos
   std::shared_ptr<TH1> hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel;
@@ -121,7 +121,10 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       LOGP(fatal, "One and only one process function for collision selection can be enabled at a time!");
     }
 
-    triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
+    auto triggerAlias = std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data());
+    if (triggerAlias != aliasLabels + kNaliases) {
+      triggerClassRun2 = std::distance(aliasLabels, triggerAlias);
+    }
 
     if (fillHistograms) {
       hEvents = registry.add<TH1>("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
@@ -148,7 +151,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   void selectCollision(const Col& collision)
   {
     float centrality = -1.;
-    const auto statusCollision = getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, triggerClass, useTimeFrameBorderCut, zVertexMin, zVertexMax, nContribMin, chi2Max);
+    const auto statusCollision = getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, triggerClassRun2, useTimeFrameBorderCut, zVertexMin, zVertexMax, nContribMin, chi2Max);
 
     if (fillHistograms) {
       monitorCollision(collision, statusCollision, hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel);

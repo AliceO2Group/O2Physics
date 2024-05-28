@@ -73,6 +73,7 @@ DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
 DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
 } // namespace jcollision
 
@@ -138,10 +139,12 @@ DECLARE_SOA_TABLE(StoredJCollisionBCs, "AOD1", "JCOLLISIONBC",
 
 DECLARE_SOA_TABLE(CollisionCounts, "AOD", "COLLCOUNT",
                   jcollision::ReadCounts,
+                  jcollision::ReadSelectedCounts,
                   jcollision::WrittenCounts);
 
 DECLARE_SOA_TABLE(StoredCollisionCounts, "AOD1", "COLLCOUNT",
                   jcollision::ReadCounts,
+                  jcollision::ReadSelectedCounts,
                   jcollision::WrittenCounts,
                   o2::soa::Marker<1>);
 
@@ -200,6 +203,7 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
 DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);
+DECLARE_SOA_COLUMN(Sigma1Pt, sigma1Pt, float);
 DECLARE_SOA_COLUMN(TrackSel, trackSel, uint8_t);
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -250,11 +254,13 @@ using StoredJTrack = StoredJTracks::iterator;
 
 DECLARE_SOA_TABLE(JTrackExtras, "AOD", "JTRACKEXTRA",
                   jtrack::DCAXY,
-                  jtrack::DCAZ);
+                  jtrack::DCAZ,
+                  jtrack::Sigma1Pt);
 
 DECLARE_SOA_TABLE(StoredJTrackExtras, "AOD1", "JTRACKEXTRA",
                   jtrack::DCAXY,
                   jtrack::DCAZ,
+                  jtrack::Sigma1Pt,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(JTrackPIs, "AOD", "JTRACKPI",

@@ -246,9 +246,6 @@ struct femtoUniverseProducerTask {
   struct : o2::framework::ConfigurableGroup {
     Configurable<float> ConfD0D0barCandMaxY{"ConfD0D0barCandMaxY", -1., "max. cand. rapidity"};
     Configurable<float> ConfD0D0barCandEtaCut{"ConfD0D0barCandEtaCut", 0.8, "max. cand. pseudorapidity"};
-    Configurable<bool> ConfStoreD0D0barWithinTheMassRange{"ConfStoreD0D0barWithinTheMassRange", false, "Switch to save D0/D0bar within declared inv. mass range"};
-    Configurable<float> ConfStoreD0D0barInvMassLowLimit{"ConfStoreD0D0barInvMassLowLimit", 1.810, "Lower inv. mass limit of D0/D0bar candidate"};
-    Configurable<float> ConfStoreD0D0barInvMassUpLimit{"ConfStoreD0D0barInvMassUpLimit", 1.922, "Upper inv. mass limit of D0/D0bar candidate"};
   } ConfD0Selection;
 
   HfHelper hfHelper;
@@ -816,11 +813,6 @@ struct femtoUniverseProducerTask {
         invMassD0 = 0.0;
         invMassD0bar = 0.0;
         isD0D0bar = false;
-      }
-
-      if (ConfD0Selection.ConfStoreD0D0barWithinTheMassRange) {
-        if ((invMassD0 < ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0 > ConfD0Selection.ConfStoreD0D0barInvMassUpLimit) || (invMassD0bar < ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0bar > ConfD0Selection.ConfStoreD0D0barInvMassUpLimit))
-          continue;
       }
 
       if (isD0D0bar) {

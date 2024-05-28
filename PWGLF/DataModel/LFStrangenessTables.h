@@ -58,6 +58,17 @@ DECLARE_SOA_TABLE_VERSIONED(StraRawCents_003, "AOD", "STRARAWCENTS", 3,     //! 
                             mult::MultAllTracksITSTPC,                      // ITSTPC track multiplicities, all, no eta cut
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC);
+DECLARE_SOA_TABLE_VERSIONED(StraRawCents_004, "AOD", "STRARAWCENTS", 4,     //! debug information
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                            mult::MultNTracksPVeta1,                        // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors,                  // number of PV contribs total
+                            mult::MultNTracksGlobal,                        // global track multiplicities
+                            mult::MultNTracksITSTPC,                        // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,                     // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,                      // ITSTPC track multiplicities, all, no eta cut
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
+                            mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                            evsel::NumTracksInTimeRange); // add occupancy as extra
 DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selection: sel8
                   evsel::Sel8, evsel::Selection);
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
@@ -73,7 +84,7 @@ DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to comp
 DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
 
-using StraRawCents = StraRawCents_003;
+using StraRawCents = StraRawCents_004;
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;
 
@@ -132,6 +143,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTRD, hasTRD, //! Flag to check if track has a TRD 
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TRD; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF measurement
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasITSTracker, hasITSTracker, //! Flag to check if track is from ITS tracker
+                           [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl > -1e-3f) : false; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasITSAfterburner, hasITSAfterburner, //! Flag to check if track is from ITS AB
+                           [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl < -1e-3f) : false; });
 } // namespace dautrack
 
 DECLARE_SOA_TABLE(DauTrackExtras_000, "AOD", "DAUTRACKEXTRA", //! detector properties of decay daughters
@@ -144,7 +159,9 @@ DECLARE_SOA_TABLE(DauTrackExtras_000, "AOD", "DAUTRACKEXTRA", //! detector prope
                   dautrack::HasITS<dautrack::DetectorMap>,
                   dautrack::HasTPC<dautrack::DetectorMap>,
                   dautrack::HasTRD<dautrack::DetectorMap>,
-                  dautrack::HasTOF<dautrack::DetectorMap>);
+                  dautrack::HasTOF<dautrack::DetectorMap>,
+                  dautrack::HasITSTracker<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>,
+                  dautrack::HasITSAfterburner<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>);
 
 DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_001, "AOD", "DAUTRACKEXTRA", 1, //! detector properties of decay daughters
                             dautrack::ITSChi2PerNcl,
@@ -157,7 +174,9 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_001, "AOD", "DAUTRACKEXTRA", 1, //! d
                             dautrack::HasITS<dautrack::DetectorMap>,
                             dautrack::HasTPC<dautrack::DetectorMap>,
                             dautrack::HasTRD<dautrack::DetectorMap>,
-                            dautrack::HasTOF<dautrack::DetectorMap>);
+                            dautrack::HasTOF<dautrack::DetectorMap>,
+                            dautrack::HasITSTracker<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>,
+                            dautrack::HasITSAfterburner<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>);
 
 DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
                   dautrack::ParticleMCId);
@@ -693,15 +712,39 @@ namespace v0data
 DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data);                         //! Index to V0Data entry
 DECLARE_SOA_INDEX_COLUMN(V0fCData, v0fCData);                     //! Index to V0Data entry
 DECLARE_SOA_INDEX_COLUMN_FULL(V0MC, v0MC, int, V0MCCores, "_MC"); //!
+DECLARE_SOA_INDEX_COLUMN(V0MCCore, v0MCCore);
 } // namespace v0data
 
 DECLARE_SOA_TABLE(V0DataLink, "AOD", "V0DATALINK", //! Joinable table with V0s which links to V0Data which is not produced for all entries
                   o2::soa::Index<>, v0data::V0DataId, v0data::V0fCDataId);
 DECLARE_SOA_TABLE(V0MCRefs, "AOD", "V0MCREF", //! index table when using AO2Ds
                   o2::soa::Index<>, v0data::V0MCId);
+DECLARE_SOA_TABLE(V0CoreMCLabels, "AOD", "V0COREMCLABEL", //! optional table to refer to V0MCCores if not joinable
+                  o2::soa::Index<>, v0data::V0MCCoreId);
 
 using V0sLinked = soa::Join<V0s, V0DataLink>;
 using V0Linked = V0sLinked::iterator;
+
+namespace v0data
+{
+DECLARE_SOA_COLUMN(IsFound, isFound, bool); //! is this FindableV0 actually in the V0s table?
+}
+
+// Major bypass for simultaneous found vs findable study
+DECLARE_SOA_TABLE(FindableV0s, "AOD", "FindableV0", //! Will store findable
+                  o2::soa::Index<>, v0::CollisionId,
+                  v0::PosTrackId, v0::NegTrackId,
+                  v0::V0Type,
+                  v0::IsStandardV0<v0::V0Type>,
+                  v0::IsPhotonV0<v0::V0Type>,
+                  v0::IsCollinearV0<v0::V0Type>,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(V0FoundTags, "AOD", "V0FoundTag", //! found or not?
+                  v0data::IsFound);
+
+using FindableV0sLinked = soa::Join<FindableV0s, V0DataLink>;
+using FindableV0Linked = FindableV0sLinked::iterator;
 
 // helper for building
 namespace v0tag
@@ -1238,6 +1281,21 @@ using CascadesLinked = soa::Join<Cascades, CascDataLink>;
 using CascadeLinked = CascadesLinked::iterator;
 using KFCascadesLinked = soa::Join<Cascades, KFCascDataLink>;
 using KFCascadeLinked = KFCascadesLinked::iterator;
+
+namespace cascdata
+{
+DECLARE_SOA_INDEX_COLUMN(FindableV0, findableV0); //! V0 index
+DECLARE_SOA_COLUMN(IsFound, isFound, bool);       //! is this FindableCascade actually in the Cascades table?
+} // namespace cascdata
+
+DECLARE_SOA_TABLE(FindableCascades, "AOD", "FINDABLECASCS", //! Run 3 cascade table
+                  o2::soa::Index<>, cascade::CollisionId, cascdata::FindableV0Id, cascade::BachelorId, o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(CascFoundTags, "AOD", "CascFoundTag", //! found or not?
+                  cascdata::IsFound);
+
+using FindableCascadesLinked = soa::Join<FindableCascades, CascDataLink>;
+using FindableCascadeLinked = FindableCascadesLinked::iterator;
 
 namespace casctag
 {

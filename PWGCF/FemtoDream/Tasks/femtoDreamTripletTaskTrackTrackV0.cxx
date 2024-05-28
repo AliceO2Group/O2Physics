@@ -53,6 +53,8 @@ struct femtoDreamTripletTaskTrackTrackV0 {
 
   // which CPR to use, old is with a possible bug and new is fixed
   Configurable<bool> ConfUseOLD_possiblyWrong_CPR{"ConfUseOLD_possiblyWrong_CPR", true, "Use for old CPR, which possibly has a bug. This is implemented only for debugging reasons to compare old and new code on hyperloop datasets."};
+  Configurable<int> ConfAtWhichRadiiToCut{"ConfAtWhichRadiiToCut", 1, "At which radii perform deta dphi selection: 0 - at PV, 1 - averaged phi, 2 - at given radii"};
+  Configurable<float> ConfAtWhichTPCRadii{"ConfAtWhichTPCRadii", 85., "If ConfAtWhichRadiiToCut = 2; this allows to select at which TPC radii to cut"};
 
   /// Track selection
   Configurable<int> ConfPDGCodePart{"ConfPDGCodePart", 2212, "Particle PDG code"};
@@ -151,9 +153,12 @@ struct femtoDreamTripletTaskTrackTrackV0 {
   ConfigurableAxis ConfQ3BinsFor4D{"ConfQ3BinsFor4D", {500, 0., 2.}, "binning Q3 for 4D hist"};
   Configurable<int> ConfNEventsMix{"ConfNEventsMix", 5, "Number of events for mixing"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
+  Configurable<bool> ConfFillCPRQA{"ConfFillCPRQA", false, "Fill Close Pair Rejection plots as a function of eta and phi"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaPhiMax_pp{"ConfCPRdeltaPhiMax_pp", 0.01, "Max. Delta Phi for Close Pair Rejection of pp"};
+  Configurable<float> ConfCPRdeltaEtaMax_pp{"ConfCPRdeltaEtaMax_pp", 0.01, "Max. Delta Eta for Close Pair Rejection of pp"};
+  Configurable<float> ConfCPRdeltaPhiMax_pL{"ConfCPRdeltaPhiMax_pL", 0.1, "Max. Delta Phi for Close Pair Rejection of p and Lambda daughter"};
+  Configurable<float> ConfCPRdeltaEtaMax_pL{"ConfCPRdeltaEtaMax_pL", 0.1, "Max. Delta Eta for Close Pair Rejection of p and Lambda daughter"};
   Configurable<float> ConfMaxQ3IncludedInCPRPlots{"ConfMaxQ3IncludedInCPRPlots", 8., "Maximum Q3, for which the pair CPR is included in plots"};
   ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis"};
 
@@ -203,10 +208,10 @@ struct femtoDreamTripletTaskTrackTrackV0 {
     pairCleanerTrackTrack.init(&qaRegistry);
     pairCleanerTrackV0.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejectionTrackTrackSE.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value, 1, ConfUseOLD_possiblyWrong_CPR, ConfMaxQ3IncludedInCPRPlots);
-      pairCloseRejectionTrackV0SE.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value, 1, ConfUseOLD_possiblyWrong_CPR, ConfMaxQ3IncludedInCPRPlots);
-      pairCloseRejectionTrackTrackME.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value, 2, ConfUseOLD_possiblyWrong_CPR, ConfMaxQ3IncludedInCPRPlots);
-      pairCloseRejectionTrackV0ME.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value, 2, ConfUseOLD_possiblyWrong_CPR, ConfMaxQ3IncludedInCPRPlots, true);
+      pairCloseRejectionTrackTrackSE.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax_pp.value, ConfCPRdeltaEtaMax_pp.value, ConfCPRPlotPerRadii.value, 1, ConfUseOLD_possiblyWrong_CPR, ConfMaxQ3IncludedInCPRPlots, false, ConfAtWhichRadiiToCut, ConfAtWhichTPCRadii, ConfFillCPRQA);
+      pairCloseRejectionTrackV0SE.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax_pL.value, ConfCPRdeltaEtaMax_pL.value, ConfCPRPlotPerRadii.value, 1, ConfUseOLD_possiblyWrong_CPR, ConfMaxQ3IncludedInCPRPlots, false, ConfAtWhichRadiiToCut, ConfAtWhichTPCRadii, ConfFillCPRQA);
+      pairCloseRejectionTrackTrackME.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax_pp.value, ConfCPRdeltaEtaMax_pp.value, ConfCPRPlotPerRadii.value, 2, ConfUseOLD_possiblyWrong_CPR, ConfMaxQ3IncludedInCPRPlots, false, ConfAtWhichRadiiToCut, ConfAtWhichTPCRadii, ConfFillCPRQA);
+      pairCloseRejectionTrackV0ME.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax_pL.value, ConfCPRdeltaEtaMax_pL.value, ConfCPRPlotPerRadii.value, 2, ConfUseOLD_possiblyWrong_CPR, ConfMaxQ3IncludedInCPRPlots, true, ConfAtWhichRadiiToCut, ConfAtWhichTPCRadii, ConfFillCPRQA);
     }
 
     // get masses

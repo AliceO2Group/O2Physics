@@ -54,6 +54,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(FoundFT0, foundFT0, int, FT0s, "_foundFT0");  //! 
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundFV0, foundFV0, int, FV0As, "_foundFV0"); //! FV0 entry index in FV0As table (-1 if doesn't exist)
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundFDD, foundFDD, int, FDDs, "_foundFDD");  //! FDD entry index in FDDs table (-1 if doesn't exist)
 DECLARE_SOA_INDEX_COLUMN_FULL(FoundZDC, foundZDC, int, Zdcs, "_foundZDC");  //! ZDC entry index in ZDCs table (-1 if doesn't exist)
+DECLARE_SOA_COLUMN(NumTracksInTimeRange, trackOccupancyInTimeRange, int);   //! Occupancy in specified time interval
 } // namespace evsel
 
 // bc-joinable event selection decisions
@@ -63,7 +64,7 @@ using BcSel = BcSels::iterator;
 
 // collision-joinable event selection decisions
 DECLARE_SOA_TABLE(EvSels, "AOD", "EVSEL", //!
-                  evsel::Alias, evsel::Selection, evsel::Sel7, evsel::Sel8, evsel::FoundBCId, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId, evsel::FoundZDCId);
+                  evsel::Alias, evsel::Selection, evsel::Sel7, evsel::Sel8, evsel::FoundBCId, evsel::FoundFT0Id, evsel::FoundFV0Id, evsel::FoundFDDId, evsel::FoundZDCId, evsel::NumTracksInTimeRange);
 using EvSel = EvSels::iterator;
 } // namespace o2::aod
 

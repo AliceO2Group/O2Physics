@@ -28,7 +28,6 @@ using namespace o2;
 using namespace o2::framework;
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
-using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 int nBCsPerOrbit = 3564;
 
@@ -43,15 +42,17 @@ struct lumiStabilityTask {
 
   void init(InitContext const&)
   {
-    const AxisSpec axisCounts{3, -0.5, 2.5};
+    const AxisSpec axisCounts{5, -0.5, 4.5};
     const AxisSpec axisTriggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
 
     // histo about triggers
-    histos.add("FDD/hCounts", "0 CountVertexFDD - 1 CountPFPVertexCoincidencesFDD - 2 CountPFPTriggerCoincidencesFDD; Number of Count; counts", kTH1F, {axisCounts});
+    histos.add("FDD/hCounts", "0 CountVertexFDD - 1 CountPFPVertexCoincidencesFDD - 2 CountPFPTriggerCoincidencesFDD - 3 CountPPVertexCoincidencesFDD - 4 CountPPTriggerCoincidencesFDD; Number; counts", kTH1F, {axisCounts});
     histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
     histos.add("FDD/bcVertexTriggerCoincidence", "vertex trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
     histos.add("FDD/bcVertexTriggerCoincidencePFP", "vertex trigger per BC (FDD) with coincidences and Past Future Protection;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVertexTriggerCoincidencePP", "vertex trigger per BC (FDD) with coincidences and Past Protection;BC in FDD; counts", kTH1F, {axisTriggger});
     histos.add("FDD/bcVertexTriggerBothSidesCoincidencePFP", "vertex per BC (FDD) with coincidences, at least one side trigger and Past Future Protection;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVertexTriggerBothSidesCoincidencePP", "vertex per BC (FDD) with coincidences, at least one side trigger and Past Protection;BC in FDD; counts", kTH1F, {axisTriggger});
     histos.add("FDD/bcSCentralTrigger", "scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
     histos.add("FDD/bcSCentralTriggerCoincidence", "scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
     histos.add("FDD/bcVSCTrigger", "vertex and scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
@@ -61,22 +62,26 @@ struct lumiStabilityTask {
     histos.add("FDD/bcVCTrigger", "vertex and central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
     histos.add("FDD/bcVCTriggerCoincidence", "vertex and central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
 
-    histos.add("FT0/hCounts", "0 CountVertexFT0 - 1 CountPFPVertexCoincidencesFT0 - 2 CountPFPTriggerCoincidencesFT0; Number of Count; counts", kTH1F, {axisCounts});
+    histos.add("FT0/hCounts", "0 CountVertexFT0 - 1 CountPFPVertexCoincidencesFT0 - 2 CountPFPTriggerCoincidencesFT0 - 3 CountPPVertexCoincidencesFT0 - 4 CountPPTriggerCoincidencesFT0; Number; counts", kTH1F, {axisCounts});
     histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
     histos.add("FT0/bcVertexTriggerPFP", "vertex trigger per BC (FT0) with Past Future Protection;BC in FT0; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcVertexTriggerPP", "vertex trigger per BC (FT0) with Past Protection;BC in FT0; counts", kTH1F, {axisTriggger});
     histos.add("FT0/bcVertexTriggerBothSidesPFP", "vertex per BC (FDD) with coincidences, at least one side trigger and Past Future Protection;BC in FDD; counts", kTH1F, {axisTriggger});
+    histos.add("FT0/bcVertexTriggerBothSidesPP", "vertex per BC (FDD) with coincidences, at least one side trigger and Past Protection;BC in FDD; counts", kTH1F, {axisTriggger});
     histos.add("FT0/bcSCentralTrigger", "Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
     histos.add("FT0/bcVSCTrigger", "vertex and Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
     histos.add("FT0/bcCentralTrigger", "central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
     histos.add("FT0/bcVCTrigger", "vertex and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
 
-    histos.add("FV0/hCounts", "0 CountCentralFV0 - 1 CountPFPCentralFV0 - 2 CountPFPOutInFV0; Number of Count; counts", kTH1F, {axisCounts});
+    histos.add("FV0/hCounts", "0 CountCentralFV0 - 1 CountPFPCentralFV0 - 2 CountPFPOutInFV0 - 3 CountPPCentralFV0 - 4 CountPPOutInFV0; Number; counts", kTH1F, {axisCounts});
     histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
     histos.add("FV0/bcInTrigger", "In trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
     histos.add("FV0/bcSCenTrigger", "SCen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
     histos.add("FV0/bcCenTrigger", "Central trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
     histos.add("FV0/bcCenTriggerPFPCentral", "Central trigger per BC (FV0) with PFP in central trigger;BC in V0; counts", kTH1F, {axisTriggger});
+    histos.add("FV0/bcCenTriggerPPCentral", "Central trigger per BC (FV0) with PP in central trigger;BC in V0; counts", kTH1F, {axisTriggger});
     histos.add("FV0/bcCenTriggerPFPOutIn", "Central trigger per BC (FV0) with PFP in Out and In trigger;BC in V0; counts", kTH1F, {axisTriggger});
+    histos.add("FV0/bcCenTriggerPPOutIn", "Central trigger per BC (FV0) with PP in Out and In trigger;BC in V0; counts", kTH1F, {axisTriggger});
   }
 
   bool checkAnyCoincidence(const std::vector<int>& channels)
@@ -217,10 +222,20 @@ struct lumiStabilityTask {
           } else {
             histos.fill(HIST("FDD/bcVertexTriggerBothSidesCoincidencePFP"), localBC);
           }
+          if (pastActivityFDDTriggerACoincidenceA == true || pastActivityFDDTriggerCCoincidenceC == true) {
+            histos.fill(HIST("FDD/hCounts"), 4);
+          } else {
+            histos.fill(HIST("FDD/bcVertexTriggerBothSidesCoincidencePP"), localBC);
+          }
           if (pastActivityFDDVertexCoincidences == true || futureActivityFDDVertexCoincidences == true) {
             histos.fill(HIST("FDD/hCounts"), 1);
           } else {
             histos.fill(HIST("FDD/bcVertexTriggerCoincidencePFP"), localBC);
+          }
+          if (pastActivityFDDVertexCoincidences == true) {
+            histos.fill(HIST("FDD/hCounts"), 3);
+          } else {
+            histos.fill(HIST("FDD/bcVertexTriggerCoincidencePP"), localBC);
           }
         }
       } // vertex true
@@ -327,10 +342,20 @@ struct lumiStabilityTask {
         } else {
           histos.fill(HIST("FT0/bcVertexTriggerBothSidesPFP"), localBC);
         }
+        if (pastActivityFT0TriggerA == true || pastActivityFT0TriggerC == true) {
+          histos.fill(HIST("FT0/hCounts"), 4);
+        } else {
+          histos.fill(HIST("FT0/bcVertexTriggerBothSidesPP"), localBC);
+        }
         if (pastActivityFT0Vertex == true || futureActivityFT0Vertex == true) {
           histos.fill(HIST("FT0/hCounts"), 1);
         } else {
           histos.fill(HIST("FT0/bcVertexTriggerPFP"), localBC);
+        }
+        if (pastActivityFT0Vertex == true) {
+          histos.fill(HIST("FT0/hCounts"), 3);
+        } else {
+          histos.fill(HIST("FT0/bcVertexTriggerPP"), localBC);
         }
       } // vertex true
 
@@ -438,10 +463,20 @@ struct lumiStabilityTask {
         } else {
           histos.fill(HIST("FV0/bcCenTriggerPFPOutIn"), localBC);
         }
+        if (pastActivityFV0TriggerOut == true || pastActivityFV0TriggerIn == true) {
+          histos.fill(HIST("FV0/hCounts"), 4);
+        } else {
+          histos.fill(HIST("FV0/bcCenTriggerPPOutIn"), localBC);
+        }
         if (pastActivityFV0Cen == true || futureActivityFV0Cen == true) {
           histos.fill(HIST("FV0/hCounts"), 1);
         } else {
           histos.fill(HIST("FV0/bcCenTriggerPFPCentral"), localBC);
+        }
+        if (pastActivityFV0Cen == true) {
+          histos.fill(HIST("FV0/hCounts"), 3);
+        } else {
+          histos.fill(HIST("FV0/bcCenTriggerPPCentral"), localBC);
         }
       }
     } // loop over V0 events
