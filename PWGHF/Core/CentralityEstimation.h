@@ -16,9 +16,6 @@
 #ifndef PWGHF_CORE_CENTRALITYESTIMATION_H_
 #define PWGHF_CORE_CENTRALITYESTIMATION_H_
 
-#include "Framework/Configurable.h"
-#include "Framework/HistogramSpec.h"
-
 namespace o2::hf_centrality
 {
 // centrality selection estimators
