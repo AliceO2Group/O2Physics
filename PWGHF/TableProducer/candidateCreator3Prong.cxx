@@ -476,6 +476,9 @@ struct HfCandidateCreator3ProngExpressions {
   bool createLc{false};
   bool createXic{false};
   float zPvPosMax{1000.f};
+  float useTimeFrameBorderCut{false};
+
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   void init(InitContext& initContext)
   {
@@ -495,6 +498,8 @@ struct HfCandidateCreator3ProngExpressions {
             createXic = option.defaultValue.get<bool>();
           } else if (option.name.compare("zPvPosMax") == 0) {
             zPvPosMax = option.defaultValue.get<float>();
+          } else if (option.name.compare("useTimeFrameBorderCut") == 0) {
+            useTimeFrameBorderCut = option.defaultValue.get<bool>();
           }
         }
         break;
@@ -511,7 +516,8 @@ struct HfCandidateCreator3ProngExpressions {
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 aod::McCollisions const&)
+                 aod::McCollisions const&,
+                 BCsInfo const&)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
 
@@ -633,6 +639,14 @@ struct HfCandidateCreator3ProngExpressions {
       if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
         rowMcMatchGen(flag, origin, channel);
         continue;
+      }
+
+      if (useTimeFrameBorderCut) { // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
+        auto bc = mcCollision.bc_as<BCsInfo>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          rowMcMatchGen(flag, origin, channel);
+          continue;
+        }
       }
 
       // D± → π± K∓ π±
