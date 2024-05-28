@@ -13,8 +13,8 @@
 /// \brief Definitions of centrality estimators
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
-#ifndef PWGHF_CORE_CENT_H_
-#define PWGHF_CORE_CENT_H_
+#ifndef PWGHF_CORE_CENTRALITYESTIMATION_H_
+#define PWGHF_CORE_CENTRALITYESTIMATION_H_
 
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
@@ -31,6 +31,6 @@ enum CentralityEstimator {
   NTracksPV,
   NCentralityEstimators
 };
-}
+} // namespace o2::hf_centrality
 
-#endif // PWGHF_CORE_CENT_H_
+#endif // PWGHF_CORE_CENTRALITYESTIMATION_H_

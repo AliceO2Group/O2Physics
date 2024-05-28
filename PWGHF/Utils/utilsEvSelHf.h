@@ -17,6 +17,8 @@
 #ifndef PWGHF_UTILS_UTILSEVSELHF_H_
 #define PWGHF_UTILS_UTILSEVSELHF_H_
 
+#include <string>
+
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
 
@@ -65,7 +67,7 @@ struct HfEvSel : o2::framework::ConfigurableGroup {
   void setLabelHistoEvSel(Histo& hCollisions)
   {
     hCollisions->SetTitle("HF event counter;;# of accepted collisions");
-    hCollisions->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All collisions");
+    hCollisions->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Trigger");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::TimeFrameBorderCut + 1, "TF border");
