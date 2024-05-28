@@ -151,7 +151,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   void selectCollision(const Col& collision)
   {
     float centrality = -1.;
-    const auto statusCollision = getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, triggerClassRun2, useTimeFrameBorderCut, zVertexMin, zVertexMax, nContribMin, chi2Max);
+    const auto statusCollision = getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, triggerClassRun2, useTimeFrameBorderCut, zVertexMin, zVertexMax, nContribMin, chi2Max, /*useIsGoodZvtxFT0vsPV*/ false, /*useNoSameBunchPileup*/ false, /*useNumTracksInTimeRange*/ false, /*numTracksInTimeRangeMin*/ 0, /*numTracksInTimeRangeMax*/ 1e+10);
 
     if (fillHistograms) {
       monitorCollision(collision, statusCollision, hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel);
