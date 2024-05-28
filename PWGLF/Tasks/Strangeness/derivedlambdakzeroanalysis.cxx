@@ -81,6 +81,8 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", true, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
 
+  Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
+
   // Selection criteria: acceptance
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
   Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
@@ -127,6 +129,10 @@ struct derivedlambdakzeroanalysis {
   // for MC
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
   Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
+
+  // fast check on occupancy
+  Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
+  Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -295,7 +301,7 @@ struct derivedlambdakzeroanalysis {
     secondaryMaskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific;
 
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1F, {{10, -0.5f, +9.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1F, {{12, -0.5f, +11.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
@@ -306,6 +312,8 @@ struct derivedlambdakzeroanalysis {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "Below min occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "Above max occup.");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisCentrality, {500, 0.0f, +2000.0f}});
@@ -1066,6 +1074,15 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 9 /* Not at same bunch pile-up */);
 
+    if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 10 /* Below min occupancy */);
+    if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 11 /* Above max occupancy */);
+
     float centrality = collision.centFT0C();
     if (qaCentrality) {
       auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
@@ -1081,6 +1098,9 @@ struct derivedlambdakzeroanalysis {
     for (auto& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > daughterEtaCut || std::abs(v0.positiveeta()) > daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
+
+      if (v0.v0Type() != v0TypeSelection && v0TypeSelection > -1)
+        continue; // skip V0s that are not standard
 
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
