@@ -43,7 +43,7 @@ enum EventRejection {
 
 o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
 
-struct HfEvSel : o2::framework::ConfigurableGroup {
+struct HfEventSelection : o2::framework::ConfigurableGroup {
   std::string prefix = "hfEvSel"; // JSON group name
   // event selection parameters (in chronological order of application)
   o2::framework::Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
