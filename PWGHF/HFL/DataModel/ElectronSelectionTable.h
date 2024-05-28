@@ -36,14 +36,14 @@ DECLARE_SOA_COLUMN(TrackDcaZ, trackdcaZ, float);         //!  dca of Electron in
 DECLARE_SOA_COLUMN(TrackTPCNSigmaE, trackTPCNSigmaE, float); //! NSigma electron (TPC PID)
 DECLARE_SOA_COLUMN(TrackTOFNSigmaE, trackTOFNSigmaE, float); //! NSigma electron (TOF PID)
 
-// cluster values
-DECLARE_SOA_COLUMN(ClusterEnergy, clusterE, float);        //! cluster energy (GeV)
-DECLARE_SOA_COLUMN(ClusterEta, clusterEta, float);         //! cluster pseudorapidity
-DECLARE_SOA_COLUMN(ClusterPhi, clusterPhi, float);         //! cluster azimuthal angle
-DECLARE_SOA_COLUMN(M02, m02, float);                       //! shower shape long axis
-DECLARE_SOA_COLUMN(M20, m20, float);                       //! shower shape short axis
-DECLARE_SOA_COLUMN(ClusterNCells, clusterNCells, uint8_t); //! number of cells in cluster
-DECLARE_SOA_COLUMN(ClusterTime, clusterTime, float);       //! cluster time (ns)
+// EMCal cluster values
+DECLARE_SOA_COLUMN(EmcClusterEnergy, emcclusterE, float);        //! EMCal cluster energy (GeV)
+DECLARE_SOA_COLUMN(EmcClusterEta, emcclusterEta, float);         //! EMCal cluster pseudorapidity
+DECLARE_SOA_COLUMN(EmcClusterPhi, emcclusterPhi, float);         //! EMCal cluster azimuthal angle
+DECLARE_SOA_COLUMN(EmcM02, emcm02, float);                       //! EMCal shower shape long axis
+DECLARE_SOA_COLUMN(EmcM20, emcm20, float);                       //! EMCal shower shape short axis
+DECLARE_SOA_COLUMN(EmcClusterNCells, emcclusterNCells, uint8_t); //! EMCal number of cells in cluster
+DECLARE_SOA_COLUMN(EmcClusterTime, emcclusterTime, float);       //! EMCal cluster time (ns)
 
 DECLARE_SOA_COLUMN(DeltaEtaMatch, deltaEtaMatch, float); //! dEta  matched track  to calorimeter
 DECLARE_SOA_COLUMN(DeltaPhiMatch, deltaPhiMatch, float); //! dPhi  matched track to calorimeter
@@ -63,13 +63,13 @@ DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
                   hf_sel_electron::TrackDcaZ,
                   hf_sel_electron::TrackTPCNSigmaE,
                   hf_sel_electron::TrackTOFNSigmaE,
-                  hf_sel_electron::ClusterEnergy,
-                  hf_sel_electron::ClusterEta,
-                  hf_sel_electron::ClusterPhi,
-                  hf_sel_electron::M02,
-                  hf_sel_electron::M20,
-                  hf_sel_electron::ClusterNCells,
-                  hf_sel_electron::ClusterTime,
+                  hf_sel_electron::EmcClusterEnergy,
+                  hf_sel_electron::EmcClusterEta,
+                  hf_sel_electron::EmcClusterPhi,
+                  hf_sel_electron::EmcM02,
+                  hf_sel_electron::EmcM20,
+                  hf_sel_electron::EmcClusterNCells,
+                  hf_sel_electron::EmcClusterTime,
                   hf_sel_electron::DeltaEtaMatch,
                   hf_sel_electron::DeltaPhiMatch,
                   hf_sel_electron::ISEMcal);
