@@ -168,8 +168,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     const float posZ = collision.posZ();
     hPosZBeforeEvSel->Fill(posZ);
 
-    for (size_t reason = 1; reason < EventRejection::NEventRejection; reason++)
-    {
+    for (size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
       if (TESTBIT(rejectionMask, reason)) {
         return;
       }
