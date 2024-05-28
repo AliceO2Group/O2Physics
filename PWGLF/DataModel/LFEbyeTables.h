@@ -122,4 +122,4 @@ DECLARE_SOA_TABLE(McLambdaEbyeTables, "AOD", "MCLAMBEBYETABLE",
 using McLambdaEbyeTable = McLambdaEbyeTables::iterator;
 } // namespace o2::aod
 
-#endif // PWGLF_DATAMODEL_LFEBYENUCLEISTRANGE_H_
+#endif // PWGLF_DATAMODEL_LFEBYETABLES_H_
