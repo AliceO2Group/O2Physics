@@ -323,9 +323,9 @@ struct lambdapolarization {
         auto deltapsiFT0A = 0.0;
         auto deltapsiFV0A = 0.0;
 
-        auto psidefFT0C = TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24])/static_cast<float>(nmode);
-        auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 24], collision.qvecRe()[3 + 4 + (nmode - 2) * 24])/static_cast<float>(nmode);
-        auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 24], collision.qvecRe()[3 + 12 + (nmode - 2) * 24])/static_cast<float>(nmode);
+        auto psidefFT0C = TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24]) / static_cast<float>(nmode);
+        auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 24], collision.qvecRe()[3 + 4 + (nmode - 2) * 24]) / static_cast<float>(nmode);
+        auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 24], collision.qvecRe()[3 + 12 + (nmode - 2) * 24]) / static_cast<float>(nmode);
         for (int ishift = 1; ishift <= 10; ishift++) {
           auto coeffshiftxFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(collision.centFT0C(), 0.5, ishift - 0.5));
           auto coeffshiftyFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(collision.centFT0C(), 1.5, ishift - 0.5));
@@ -382,15 +382,15 @@ struct lambdapolarization {
     }
     if (cfgShiftCorrDef) {
       for (int ishift = 1; ishift <= 10; ishift++) {
-        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])/2.));
-        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])/2.));
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3]) / 2.));
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3]) / 2.));
 
-        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 2.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 4], collision.qvecRe()[3 + 4])/2.));
-        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 3.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 4], collision.qvecRe()[3 + 4])/2.));
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 2.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 4], collision.qvecRe()[3 + 4]) / 2.));
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 3.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 4], collision.qvecRe()[3 + 4]) / 2.));
 
-        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 4.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 12], collision.qvecRe()[3 + 12])/2.));
-        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 5.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 12], collision.qvecRe()[3 + 12])/2.));
-      } //FIXME: hard coded for second harmonic
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 4.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 12], collision.qvecRe()[3 + 12]) / 2.));
+        histos.fill(HIST("ShiftFIT"), collision.centFT0C(), 5.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * TMath::ATan2(collision.qvecIm()[3 + 12], collision.qvecRe()[3 + 12]) / 2.));
+      } // FIXME: hard coded for second harmonic
     }
     if (cfgShiftCorr) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -401,9 +401,9 @@ struct lambdapolarization {
       }
     }
     if (cfgQAv0) {
-      histos.fill(HIST("QA/EP_Det"), collision.centFT0C(), TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3])/2.);
-      histos.fill(HIST("QA/EP_RefA"), collision.centFT0C(), TMath::ATan2(collision.qvecIm()[3 + 16], collision.qvecRe()[3 + 16])/2.);
-      histos.fill(HIST("QA/EP_RefB"), collision.centFT0C(), TMath::ATan2(collision.qvecIm()[3 + 20], collision.qvecRe()[3 + 20])/2.);
+      histos.fill(HIST("QA/EP_Det"), collision.centFT0C(), TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3]) / 2.);
+      histos.fill(HIST("QA/EP_RefA"), collision.centFT0C(), TMath::ATan2(collision.qvecIm()[3 + 16], collision.qvecRe()[3 + 16]) / 2.);
+      histos.fill(HIST("QA/EP_RefB"), collision.centFT0C(), TMath::ATan2(collision.qvecIm()[3 + 20], collision.qvecRe()[3 + 20]) / 2.);
 
       histos.fill(HIST("QA/EPRes_Det_RefA"), collision.centFT0C(), TMath::Cos(TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3]) - TMath::ATan2(collision.qvecIm()[3 + 16], collision.qvecRe()[3 + 16])));
       histos.fill(HIST("QA/EPRes_Det_RefB"), collision.centFT0C(), TMath::Cos(TMath::ATan2(collision.qvecIm()[3], collision.qvecRe()[3]) - TMath::ATan2(collision.qvecIm()[3 + 20], collision.qvecRe()[3 + 20])));
