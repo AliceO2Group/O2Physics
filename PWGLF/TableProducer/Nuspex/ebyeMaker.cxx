@@ -122,7 +122,6 @@ struct CandidateV0 {
   float dcav0pv = -999.f;
   float tpcnsigmaneg = -999.f;
   float tpcnsigmapos = -999.f;
-  bool matter = 0;
   float genpt = -999.f;
   float geneta = -999.f;
   int pdgcode = -999;
@@ -135,8 +134,7 @@ struct CandidateV0 {
 struct CandidateTrack {
   float pt = -999.f;
   float eta = -999.f;
-  float mass = -999.f;
-  bool matter = -999.f;
+  uint8_t mass = 100;
   float dcapv = 0;
   uint8_t tpcncls = 0;
   float tpcnsigma = -999.f;
@@ -191,7 +189,7 @@ struct ebyeMaker {
   Configurable<bool> kUseTPCPileUpCut{"kUseTPCPileUpCut", false, "toggle strong correlation cuts (Run 2)"};
   Configurable<bool> kUseEstimatorsCorrelationCut{"kUseEstimatorsCorrelationCut", false, "toggle cut on the correlation between centrality estimators (2018 Pb-Pb)"};
 
-  Configurable<float> antidPtMin{"antidPtMin", 0.8f, "minimum antideuteron pT (GeV/c)"};
+  Configurable<float> antidPtMin{"antidPtMin", 0.6f, "minimum antideuteron pT (GeV/c)"};
   Configurable<float> antidPtTof{"antidPtTof", 1.0f, "antideuteron pT to switch to TOF pid (GeV/c) "};
   Configurable<float> antidPtMax{"antidPtMax", 1.8f, "maximum antideuteron pT (GeV/c)"};
 
@@ -199,44 +197,44 @@ struct ebyeMaker {
   Configurable<float> antipPtTof{"antipPtTof", 0.6f, "antiproton pT to switch to TOF pid (GeV/c) "};
   Configurable<float> antipPtMax{"antipPtMax", 0.9f, "maximum antiproton pT (GeV/c)"};
 
-  Configurable<float> lambdaPtMin{"lambdaPtMin", 0.5f, "minimum (anti)lambda pT (GeV/c)"};
-  Configurable<float> lambdaPtMax{"lambdaPtMax", 3.0f, "maximum (anti)lambda pT (GeV/c)"};
+  Configurable<float> lambdaPtMin{"lambdaPtMin", 1.f, "minimum (anti)lambda pT (GeV/c)"};
+  Configurable<float> lambdaPtMax{"lambdaPtMax", 4.f, "maximum (anti)lambda pT (GeV/c)"};
 
   Configurable<float> trackNcrossedRows{"trackNcrossedRows", 70, "Minimum number of crossed TPC rows"};
-  Configurable<float> trackNclusItsCut{"trackNclusITScut", 5, "Minimum number of ITS clusters"};
-  Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 70, "Minimum number of TPC clusters"};
+  Configurable<float> trackNclusItsCut{"trackNclusITScut", 2, "Minimum number of ITS clusters"};
+  Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 60, "Minimum number of TPC clusters"};
   Configurable<float> trackDcaCut{"trackDcaCut", 0.1f, "DCA antid to PV"};
 
-  Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 70, "Minimum number of crossed TPC rows for V0 daughter"};
-  Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 1, "Minimum number of ITS clusters for V0 daughter"};
-  Configurable<float> v0trackNclusTpcCut{"v0trackNclusTPCcut", 70, "Minimum number of TPC clusters for V0 daughter"};
-  Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 10, "Maximum number of shared TPC clusters for V0 daughter"};
+  Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 100, "Minimum number of crossed TPC rows for V0 daughter"};
+  Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 0, "Minimum number of ITS clusters for V0 daughter"};
+  Configurable<float> v0trackNclusTpcCut{"v0trackNclusTPCcut", 100, "Minimum number of TPC clusters for V0 daughter"};
+  Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 5, "Maximum number of shared TPC clusters for V0 daughter"};
   Configurable<bool> v0requireITSrefit{"v0requireITSrefit", false, "require ITS refit for V0 daughter"};
-  Configurable<float> vetoMassK0Short{"vetoMassK0Short", -999.f, "veto for V0 compatible with K0s mass"};
+  Configurable<float> vetoMassK0Short{"vetoMassK0Short", 0.01f, "veto for V0 compatible with K0s mass"};
   Configurable<float> v0radiusMax{"v0radiusMax", 100.f, "maximum V0 radius eccepted"};
 
-  Configurable<float> antidNsigmaTpcCutLow{"antidNsigmaTpcCutLow", 4.f, "TPC PID cut low"};
+  Configurable<float> antidNsigmaTpcCutLow{"antidNsigmaTpcCutLow", -4.f, "TPC PID cut low"};
   Configurable<float> antidNsigmaTpcCutUp{"antidNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
-  Configurable<float> antidTpcInnerParamMax{"tpcInnerParamMax", 0.6f, "(temporary) tpc inner param cut"};
+  Configurable<float> antidTpcInnerParamMax{"tpcInnerParamMax", 0.f, "(temporary) tpc inner param cut"};
   Configurable<float> antidTofMassMax{"tofMassMax", 0.3f, "(temporary) tof mass cut"};
 
-  Configurable<float> antipNsigmaTpcCutLow{"antipNsigmaTpcCutLow", 4.f, "TPC PID cut low"};
+  Configurable<float> antipNsigmaTpcCutLow{"antipNsigmaTpcCutLow", -4.f, "TPC PID cut low"};
   Configurable<float> antipNsigmaTpcCutUp{"antipNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
-  Configurable<float> antipTpcInnerParamMax{"antipTpcInnerParamMax", 0.6f, "(temporary) tpc inner param cut"};
+  Configurable<float> antipTpcInnerParamMax{"antipTpcInnerParamMax", 0.f, "(temporary) tpc inner param cut"};
   Configurable<float> antipTofMassMax{"antipTofMassMax", 0.3f, "(temporary) tof mass cut"};
   Configurable<float> tofMassMaxQA{"tofMassMaxQA", 0.6f, "(temporary) tof mass cut (for QA histograms)"};
 
-  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
-  Configurable<float> v0setting_dcav0pv{"v0setting_dcav0pv", 1, "DCA V0 to Pv"};
+  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 0.5f, "DCA V0 Daughters"};
+  Configurable<float> v0setting_dcav0pv{"v0setting_dcav0pv", 1.f, "DCA V0 to Pv"};
   Configurable<float> v0setting_dcadaughtopv{"v0setting_dcadaughtopv", 0.1f, "DCA Pos To PV"};
-  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"};
-  Configurable<float> v0setting_radius{"v0setting_radius", 0.5f, "v0radius"};
+  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.99f, "V0 CosPA"};
+  Configurable<float> v0setting_radius{"v0setting_radius", 5.f, "v0radius"};
   Configurable<float> v0setting_lifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
   Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
-  Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 2.f, "cluster size cut for antideuterons"};
-  Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 1.f, "pt for cluster size cut for antideuterons"};
+  Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 1.e-10f, "cluster size cut for antideuterons"};
+  Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
 
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
@@ -467,10 +465,9 @@ struct ebyeMaker {
 
         if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMax[iP])) {
           CandidateTrack candTrack;
-          candTrack.pt = trackPt;
+          candTrack.pt = track.sign() > 0. ? trackPt : -trackPt;
           candTrack.eta = trackEta;
-          candTrack.mass = partMass[iP];
-          candTrack.matter = track.sign() > 0.;
+          candTrack.mass = iP;
           candTrack.dcapv = dca;
           candTrack.tpcncls = track.tpcNClsFound();
           candTrack.tpcnsigma = nSigmaTPC;
@@ -610,7 +607,7 @@ struct ebyeMaker {
       histos.fill(HIST("QA/massLambda"), centrality, ptV0, mLambda);
 
       CandidateV0 candV0;
-      candV0.pt = ptV0;
+      candV0.pt = matter > 0. ? ptV0 : -ptV0;
       candV0.eta = etaV0;
       candV0.mass = mLambda;
       candV0.cpa = cosPA;
@@ -620,7 +617,6 @@ struct ebyeMaker {
       candV0.dcapospv = posDcaToPv;
       candV0.tpcnsigmaneg = nSigmaTPCNeg;
       candV0.tpcnsigmapos = nSigmaTPCPos;
-      candV0.matter = matter;
       candV0.globalIndexPos = posTrack.globalIndex();
       candV0.globalIndexNeg = negTrack.globalIndex();
       candidateV0s.push_back(candV0);
@@ -783,14 +779,13 @@ struct ebyeMaker {
           candidateV0.pt,
           candidateV0.eta,
           candidateV0.mass,
-          candidateV0.matter,
           candidateV0.dcav0pv,
-          candidateV0.dcanegpv,
-          candidateV0.dcapospv,
+          // candidateV0.dcanegpv,
+          // candidateV0.dcapospv,
           candidateV0.dcav0daugh,
           candidateV0.cpa,
-          candidateV0.tpcnsigmaneg,
-          candidateV0.tpcnsigmapos,
+          // candidateV0.tpcnsigmaneg,
+          // candidateV0.tpcnsigmapos,
           candidateV0.globalIndexNeg,
           candidateV0.globalIndexPos);
       }
@@ -801,7 +796,6 @@ struct ebyeMaker {
           candidateTrack.pt,
           candidateTrack.eta,
           candidateTrack.mass,
-          candidateTrack.matter,
           candidateTrack.dcapv,
           candidateTrack.tpcncls,
           candidateTrack.tpcnsigma,
@@ -860,14 +854,13 @@ struct ebyeMaker {
           candidateV0.pt,
           candidateV0.eta,
           candidateV0.mass,
-          candidateV0.matter,
           candidateV0.dcav0pv,
-          candidateV0.dcanegpv,
-          candidateV0.dcapospv,
+          // candidateV0.dcanegpv,
+          // candidateV0.dcapospv,
           candidateV0.dcav0daugh,
           candidateV0.cpa,
-          candidateV0.tpcnsigmaneg,
-          candidateV0.tpcnsigmapos,
+          // candidateV0.tpcnsigmaneg,
+          // candidateV0.tpcnsigmapos,
           candidateV0.globalIndexNeg,
           candidateV0.globalIndexPos);
       }
@@ -878,7 +871,6 @@ struct ebyeMaker {
           candidateTrack.pt,
           candidateTrack.eta,
           candidateTrack.mass,
-          candidateTrack.matter,
           candidateTrack.dcapv,
           candidateTrack.tpcncls,
           candidateTrack.tpcnsigma,
@@ -922,14 +914,13 @@ struct ebyeMaker {
           candidateV0.pt,
           candidateV0.eta,
           candidateV0.mass,
-          candidateV0.matter,
           candidateV0.dcav0pv,
-          candidateV0.dcanegpv,
-          candidateV0.dcapospv,
+          // candidateV0.dcanegpv,
+          // candidateV0.dcapospv,
           candidateV0.dcav0daugh,
           candidateV0.cpa,
-          candidateV0.tpcnsigmaneg,
-          candidateV0.tpcnsigmapos,
+          // candidateV0.tpcnsigmaneg,
+          // candidateV0.tpcnsigmapos,
           candidateV0.globalIndexNeg,
           candidateV0.globalIndexPos,
           candidateV0.genpt,
@@ -944,7 +935,6 @@ struct ebyeMaker {
           candidateTrack.pt,
           candidateTrack.eta,
           candidateTrack.mass,
-          candidateTrack.matter,
           candidateTrack.dcapv,
           candidateTrack.tpcncls,
           candidateTrack.tpcnsigma,
@@ -989,14 +979,13 @@ struct ebyeMaker {
           candidateV0.pt,
           candidateV0.eta,
           candidateV0.mass,
-          candidateV0.matter,
           candidateV0.dcav0pv,
-          candidateV0.dcanegpv,
-          candidateV0.dcapospv,
+          // candidateV0.dcanegpv,
+          // candidateV0.dcapospv,
           candidateV0.dcav0daugh,
           candidateV0.cpa,
-          candidateV0.tpcnsigmaneg,
-          candidateV0.tpcnsigmapos,
+          // candidateV0.tpcnsigmaneg,
+          // candidateV0.tpcnsigmapos,
           candidateV0.globalIndexNeg,
           candidateV0.globalIndexPos,
           candidateV0.genpt,
@@ -1011,7 +1000,6 @@ struct ebyeMaker {
           candidateTrack.pt,
           candidateTrack.eta,
           candidateTrack.mass,
-          candidateTrack.matter,
           candidateTrack.dcapv,
           candidateTrack.tpcncls,
           candidateTrack.tpcnsigma,

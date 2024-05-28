@@ -20,7 +20,7 @@ namespace o2::aod
 
 namespace LFEbyeCollTable
 {
-DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(Centrality, centrality, uint8_t);
 DECLARE_SOA_COLUMN(Zvtx, zvtx, float);
 } // namespace LFEbyeCollTable
 
@@ -36,7 +36,6 @@ DECLARE_SOA_INDEX_COLUMN(CollEbyeTable, collEbyeTable);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
-DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);
 DECLARE_SOA_COLUMN(DcaPV, dcaPV, float);
 DECLARE_SOA_COLUMN(TpcNcls, tpcNcls, uint8_t);
 DECLARE_SOA_COLUMN(TpcNsigma, tpcNsigma, float);
@@ -62,7 +61,6 @@ DECLARE_SOA_TABLE(NucleiEbyeTables, "AOD", "NUCLEBYETABLE",
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,
-                  LFEbyeTable::IsMatter,
                   LFEbyeTable::DcaPV,
                   LFEbyeTable::TpcNcls,
                   LFEbyeTable::TpcNsigma,
@@ -75,7 +73,6 @@ DECLARE_SOA_TABLE(McNucleiEbyeTables, "AOD", "MCNUCLEBYETABLE",
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,
-                  LFEbyeTable::IsMatter,
                   LFEbyeTable::DcaPV,
                   LFEbyeTable::TpcNcls,
                   LFEbyeTable::TpcNsigma,
@@ -92,14 +89,13 @@ DECLARE_SOA_TABLE(LambdaEbyeTables, "AOD", "LAMBEBYETABLE",
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,
-                  LFEbyeTable::IsMatter,
                   LFEbyeTable::DcaV0PV,
-                  LFEbyeTable::DcaNegPV,
-                  LFEbyeTable::DcaPosPV,
+                  // LFEbyeTable::DcaNegPV,
+                  // LFEbyeTable::DcaPosPV,
                   LFEbyeTable::DcaV0Tracks,
                   LFEbyeTable::CosPA,
-                  LFEbyeTable::TpcNsigmaNeg,
-                  LFEbyeTable::TpcNsigmaPos,
+                  // LFEbyeTable::TpcNsigmaNeg,
+                  // LFEbyeTable::TpcNsigmaPos,
                   LFEbyeTable::IdNeg,
                   LFEbyeTable::IdPos);
 using LambdaEbyeTable = LambdaEbyeTables::iterator;
@@ -110,14 +106,13 @@ DECLARE_SOA_TABLE(McLambdaEbyeTables, "AOD", "MCLAMBEBYETABLE",
                   LFEbyeTable::Pt,
                   LFEbyeTable::Eta,
                   LFEbyeTable::Mass,
-                  LFEbyeTable::IsMatter,
                   LFEbyeTable::DcaV0PV,
-                  LFEbyeTable::DcaNegPV,
-                  LFEbyeTable::DcaPosPV,
+                  // LFEbyeTable::DcaNegPV,
+                  // LFEbyeTable::DcaPosPV,
                   LFEbyeTable::DcaV0Tracks,
                   LFEbyeTable::CosPA,
-                  LFEbyeTable::TpcNsigmaNeg,
-                  LFEbyeTable::TpcNsigmaPos,
+                  // LFEbyeTable::TpcNsigmaNeg,
+                  // LFEbyeTable::TpcNsigmaPos,
                   LFEbyeTable::IdNeg,
                   LFEbyeTable::IdPos,
                   LFEbyeTable::GenPt,

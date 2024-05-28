@@ -122,7 +122,6 @@ struct nucleiEbye {
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
-  Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
 
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "fill histograms only for true signal candidates (MC)"};
 
@@ -291,7 +290,7 @@ struct nucleiEbye {
     tofMass[1] = histos.add<TH3>("QA/tofMass_d", ";Centrality (%);#it{p}_{T} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, tofMassAxis});
 
     // mc histograms
-    if (doprocessMcRun2) {
+    if (doprocessMc) {
       histos.add<TH3>("recL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
       histos.add<TH3>("recAntiL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
       recTracks[0] = histos.add<TH3>("recP", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
@@ -343,12 +342,12 @@ struct nucleiEbye {
         continue;
       }
 
-      if (track.isMatter() > 0.) {
+      if (track.pt() > 0.) {
         continue;
       }
 
       auto dca = track.dcaPV();
-      auto trackPt = track.pt();
+      auto trackPt = std::abs(track.pt());
       auto trackEta = track.eta();
       histos.fill(HIST("QA/dcaPvBefore"), trackPt, dca);
       if (dca > trackDcaCut) {
@@ -395,7 +394,7 @@ struct nucleiEbye {
     std::vector<int64_t> trkId;
     for (const auto& v0 : V0s) {
 
-      auto ptV0 = v0.pt();
+      auto ptV0 = std::abs(v0.pt());
       if (ptV0 < lambdaPtMin || ptV0 > lambdaPtMax) {
         continue;
       }
@@ -405,16 +404,16 @@ struct nucleiEbye {
         continue;
       }
 
-      bool matter = v0.isMatter();
+      bool matter = v0.pt() > 0;
       auto mLambda = v0.mass();
 
       // pid selections
-      auto nSigmaTPCPos = v0.tpcNsigmaPos();
-      auto nSigmaTPCNeg = v0.tpcNsigmaNeg();
+      // auto nSigmaTPCPos = v0.tpcNsigmaPos();
+      // auto nSigmaTPCNeg = v0.tpcNsigmaNeg();
 
-      if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc) {
-        continue;
-      }
+      // if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc) {
+      //   continue;
+      // }
 
       float dcaV0dau = v0.dcaV0tracks();
       histos.fill(HIST("QA/dcaV0daughBeforeCut"), dcaV0dau);
@@ -434,15 +433,15 @@ struct nucleiEbye {
         continue;
       }
 
-      auto posDcaToPv = v0.dcaPosPv();
-      if (posDcaToPv < v0setting_dcadaughtopv) {
-        continue;
-      }
+      // auto posDcaToPv = v0.dcaPosPv();
+      // if (posDcaToPv < v0setting_dcadaughtopv) {
+      //   continue;
+      // }
 
-      auto negDcaToPv = v0.dcaNegPv();
-      if (negDcaToPv < v0setting_dcadaughtopv) {
-        continue;
-      }
+      // auto negDcaToPv = v0.dcaNegPv();
+      // if (negDcaToPv < v0setting_dcadaughtopv) {
+      //   continue;
+      // }
 
       if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCutQA) { // for QA histograms
         continue;
@@ -454,8 +453,8 @@ struct nucleiEbye {
       }
       histos.fill(HIST("QA/cosPa"), cosPA);
       histos.fill(HIST("QA/dcaV0daugh"), dcaV0dau);
-      histos.fill(HIST("QA/dcaPosPv"), posDcaToPv);
-      histos.fill(HIST("QA/dcaNegPv"), negDcaToPv);
+      // histos.fill(HIST("QA/dcaPosPv"), posDcaToPv);
+      // histos.fill(HIST("QA/dcaNegPv"), negDcaToPv);
       histos.fill(HIST("QA/dcaV0Pv"), dcaV0Pv);
 
       if (matter) {
@@ -499,7 +498,7 @@ struct nucleiEbye {
 
     histos.fill(HIST("nEv"), subsample, centrality);
 
-    if (doprocessMcRun2 && fillOnlySignal)
+    if (doprocessMc && fillOnlySignal)
       return subsample;
 
     fillHistoN(nAntip, tempTracks[0], subsample, centrality);
@@ -543,7 +542,6 @@ struct nucleiEbye {
     for (int iP{0}; iP < kNpart; ++iP) {
       for (auto& candidateTrack : candidateTracks[iP]) {
         auto mcTrack = tracks.rawIteratorAt(candidateTrack.globalIndex);
-        LOGF(info, "globalIndex = %ld, reco = %d", candidateTrack.globalIndex, mcTrack.isReco());
         if (std::abs(mcTrack.pdgCode()) != partPdg[iP])
           continue;
         if (!mcTrack.isReco())
@@ -559,10 +557,22 @@ struct nucleiEbye {
     }
     for (auto& candidateV0 : candidateV0s) {
       auto mcTrack = v0s.rawIteratorAt(candidateV0.globalIndex);
-      if (std::abs(mcTrack.pdgCode()) != 3122)
-        continue;
       if (!mcTrack.isReco())
         continue;
+      if (std::abs(mcTrack.pdgCode()) != 3122)
+      {
+        histos.fill(HIST("QA/cosPaBkg"), candidateV0.cpa);
+        histos.fill(HIST("QA/dcaV0daughBkg"), candidateV0.dcav0daugh);
+        histos.fill(HIST("QA/dcaV0PvBkg"), candidateV0.dcav0pv);
+        histos.fill(HIST("QA/cosPaDcaV0daughBkg"), candidateV0.cpa, candidateV0.dcav0daugh);
+        histos.fill(HIST("QA/massLambdaEvRejBkg"), centrality, candidateV0.pt, candidateV0.mass);
+        continue;
+      }
+      histos.fill(HIST("QA/cosPaSig"), candidateV0.cpa);
+      histos.fill(HIST("QA/dcaV0daughSig"), candidateV0.dcav0daugh);
+      histos.fill(HIST("QA/dcaV0PvSig"), candidateV0.dcav0pv);
+      histos.fill(HIST("QA/cosPaDcaV0daughSig"), candidateV0.cpa, candidateV0.dcav0daugh);
+      histos.fill(HIST("QA/massLambdaEvRejSig"), centrality, candidateV0.pt, candidateV0.mass);
       if (mcTrack.pdgCode() > 0) {
         histos.fill(HIST("recL"), centrality, candidateV0.pt, std::abs(candidateV0.eta));
         if (fillOnlySignal)
@@ -662,15 +672,15 @@ struct nucleiEbye {
     fillHistoN(nGenAntiLantid, tempAntiLambda, tempTracks[1], subsample, centrality);
   }
 
-  void processRun2(aod::CollEbyeTable const& collision, aod::NucleiEbyeTables const& tracks, aod::LambdaEbyeTables const& v0s)
+  void processData(aod::CollEbyeTable const& collision, aod::NucleiEbyeTables const& tracks, aod::LambdaEbyeTables const& v0s)
   {
     histos.fill(HIST("QA/zVtx"), collision.zvtx());
     fillRecoEvent(collision, tracks, v0s, collision.centrality());
 
   }
-  PROCESS_SWITCH(nucleiEbye, processRun2, "process (Run 2)", false);
+  PROCESS_SWITCH(nucleiEbye, processData, "process data", false);
 
-  void processMcRun2(aod::CollEbyeTables const& collisions, aod::McNucleiEbyeTables const& tracksTot, aod::McLambdaEbyeTables const& v0sTot)
+  void processMc(aod::CollEbyeTables const& collisions, aod::McNucleiEbyeTables const& tracksTot, aod::McLambdaEbyeTables const& v0sTot)
   {
     for (auto& collision : collisions) {
       auto tracks = tracksTot.sliceBy(perCollTrack, collision.globalIndex());
@@ -680,7 +690,7 @@ struct nucleiEbye {
       fillMcGen(collision, tracks, v0s, collision.centrality());
     }
   }
-  PROCESS_SWITCH(nucleiEbye, processMcRun2, "process Mc (Run 2)", false);
+  PROCESS_SWITCH(nucleiEbye, processMc, "process Mc", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
