@@ -438,8 +438,7 @@ struct IdentifiedMeanPtFluctuations {
     }
     histos.fill(HIST("tracksel_rec"), 7);
 
-    int count_rec_pi = 0, count_rec_k = 0, count_rec_p = 0;
-    int count_rec_pi_pdg = 0, count_rec_k_pdg = 0, count_rec_p_pdg = 0;
+
     double nCh_rec = 0.;
     double nChpi_rec = 0.;
     double nChk_rec = 0.;
@@ -485,16 +484,16 @@ struct IdentifiedMeanPtFluctuations {
       //========================================================================
 
       if (abs(track1.mcParticle().pdgCode()) == 211) {
-        count_rec_pi_pdg++;
+
         histos.fill(HIST("ptHistogramPionrec_pdg"), track1.pt());
       }
       if (abs(track1.mcParticle().pdgCode()) == 321) {
-        count_rec_k_pdg++;
+
 
         histos.fill(HIST("ptHistogramKaonrec_pdg"), track1.pt());
       }
       if (abs(track1.mcParticle().pdgCode()) == 2212) {
-        count_rec_p_pdg++;
+
 
         histos.fill(HIST("ptHistogramProtonrec_pdg"), track1.pt());
       }
@@ -523,7 +522,7 @@ struct IdentifiedMeanPtFluctuations {
 
       {
 
-        count_rec_pi++;
+
         histos.fill(HIST("ptHistogramPionrec"), track1.pt());
 
         nChpi_rec += 1.;
@@ -569,7 +568,7 @@ struct IdentifiedMeanPtFluctuations {
       SelTPCTOFKaons(track1);  // Kaons passes from TPC and TOF both!
 
       {
-        count_rec_k++;
+
 
         histos.fill(HIST("ptHistogramKaonrec"), track1.pt());
 
@@ -616,7 +615,7 @@ struct IdentifiedMeanPtFluctuations {
       SelTPCTOFProtons(track1);  // Protons passes from TPC and TOF both!
 
       {
-        count_rec_p++;
+
 
         histos.fill(HIST("ptHistogramProtonrec"), track1.pt());
 
@@ -710,7 +709,7 @@ struct IdentifiedMeanPtFluctuations {
     }
     histos.fill(HIST("MC_hZvtx_after_sel"), mcCollision.posZ());
 
-    int count_gen_pi = 0, count_gen_k = 0, count_gen_p = 0;
+
     double nCh_gen = 0.;
     double nChpi_gen = 0.;
     double nChk_gen = 0.;
@@ -750,7 +749,7 @@ struct IdentifiedMeanPtFluctuations {
       histos.fill(HIST("ptHistogram_allcharge_gen"), mcgentrack.pt());
 
       if (pdgcode == 211) {
-        count_gen_pi++;
+
         histos.fill(HIST("ptHistogramPion"), mcgentrack.pt());
 
         nChpi_gen += 1.;
@@ -759,7 +758,7 @@ struct IdentifiedMeanPtFluctuations {
       }
 
       if (pdgcode == 321) {
-        count_gen_k++;
+
         histos.fill(HIST("ptHistogramKaon"), mcgentrack.pt());
 
         nChk_gen += 1.;
@@ -768,7 +767,7 @@ struct IdentifiedMeanPtFluctuations {
       }
 
       if (pdgcode == 2212) {
-        count_gen_p++;
+
         histos.fill(HIST("ptHistogramProton"), mcgentrack.pt());
 
         nChp_gen += 1.;
