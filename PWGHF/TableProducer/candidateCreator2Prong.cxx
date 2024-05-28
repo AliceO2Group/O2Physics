@@ -46,7 +46,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
-using namespace o2::hf_evsel;
+using namespace o2::framework::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::aod::hf_collision_centrality;
