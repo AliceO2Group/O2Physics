@@ -1534,7 +1534,7 @@ struct AnalysisAsymmetricPairing {
   std::map<int, uint32_t> fTrackCutFilterMasks;
   // Filter map for common track cuts
   uint32_t fCommonTrackCutMask;
-  // Map tracking which common track cut the track cuts correspond to 
+  // Map tracking which common track cut the track cuts correspond to
   std::map<int, uint32_t> fCommonTrackCutFilterMasks;
 
   int fNLegCuts;
@@ -1662,7 +1662,7 @@ struct AnalysisAsymmetricPairing {
             fTrackHistNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut] = names;
             for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
               names = {};
-              names.push_back(Form("TripletsBarrelSE_%s_%s_%s",  legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName()));
+              names.push_back(Form("TripletsBarrelSE_%s_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName()));
               histNames += Form("%s;", names[0].Data());
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
@@ -1718,12 +1718,12 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        } // end if (pair cuts)
+        }   // end if (pair cuts)
       }
     }
     for (auto& pair : fTrackHistNames) {
       cout << "!!! ";
-      for (auto &str : pair.second) {
+      for (auto& str : pair.second) {
         cout << str << " ";
       }
       cout << endl;
@@ -2072,7 +2072,7 @@ struct AnalysisAsymmetricPairing {
           // Histograms with pair cuts and common track cuts
           for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
             if (threeTrackFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
-                fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
+              fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
             }
           }
         } // end loop (pair cuts)

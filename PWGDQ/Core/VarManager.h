@@ -2925,18 +2925,18 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
     if (trackHasCov) {
       std::array<float, 5> t1pars = {t1.y(), t1.z(), t1.snp(), t1.tgl(), t1.signed1Pt()};
       std::array<float, 15> t1covs = {t1.cYY(), t1.cZY(), t1.cZZ(), t1.cSnpY(), t1.cSnpZ(),
-        t1.cSnpSnp(), t1.cTglY(), t1.cTglZ(), t1.cTglSnp(), t1.cTglTgl(),
-        t1.c1PtY(), t1.c1PtZ(), t1.c1PtSnp(), t1.c1PtTgl(), t1.c1Pt21Pt2()};
+                                      t1.cSnpSnp(), t1.cTglY(), t1.cTglZ(), t1.cTglSnp(), t1.cTglTgl(),
+                                      t1.c1PtY(), t1.c1PtZ(), t1.c1PtSnp(), t1.c1PtTgl(), t1.c1Pt21Pt2()};
       o2::track::TrackParCov pars1{t1.x(), t1.alpha(), t1pars, t1covs};
       std::array<float, 5> t2pars = {t2.y(), t2.z(), t2.snp(), t2.tgl(), t2.signed1Pt()};
       std::array<float, 15> t2covs = {t2.cYY(), t2.cZY(), t2.cZZ(), t2.cSnpY(), t2.cSnpZ(),
-        t2.cSnpSnp(), t2.cTglY(), t2.cTglZ(), t2.cTglSnp(), t2.cTglTgl(),
-        t2.c1PtY(), t2.c1PtZ(), t2.c1PtSnp(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
+                                      t2.cSnpSnp(), t2.cTglY(), t2.cTglZ(), t2.cTglSnp(), t2.cTglTgl(),
+                                      t2.c1PtY(), t2.c1PtZ(), t2.c1PtSnp(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
       o2::track::TrackParCov pars2{t2.x(), t2.alpha(), t2pars, t2covs};
       std::array<float, 5> t3pars = {t3.y(), t3.z(), t3.snp(), t3.tgl(), t3.signed1Pt()};
       std::array<float, 15> t3covs = {t3.cYY(), t3.cZY(), t3.cZZ(), t3.cSnpY(), t3.cSnpZ(),
-        t3.cSnpSnp(), t3.cTglY(), t3.cTglZ(), t3.cTglSnp(), t3.cTglTgl(),
-        t3.c1PtY(), t3.c1PtZ(), t3.c1PtSnp(), t3.c1PtTgl(), t3.c1Pt21Pt2()};
+                                      t3.cSnpSnp(), t3.cTglY(), t3.cTglZ(), t3.cTglSnp(), t3.cTglTgl(),
+                                      t3.c1PtY(), t3.c1PtZ(), t3.c1PtSnp(), t3.c1PtTgl(), t3.c1Pt21Pt2()};
       o2::track::TrackParCov pars3{t3.x(), t3.alpha(), t3pars, t3covs};
       procCode = VarManager::fgFitterThreeProngBarrel.process(pars1, pars2, pars3);
     } else {
@@ -2982,11 +2982,11 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
-          std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +
-            (secondaryVertex[1] - collision.posY()) * (secondaryVertex[1] - collision.posY())));
+                                std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +
+                                          (secondaryVertex[1] - collision.posY()) * (secondaryVertex[1] - collision.posY())));
 
       values[kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
-        (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
+                              (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
       values[kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
       values[kVertexingLxyz] = values[kVertexingLxy] + values[kVertexingLz];
       values[kVertexingLxy] = std::sqrt(values[kVertexingLxy]);
@@ -3086,9 +3086,9 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * KFGeoThreeProng.GetMass() / (KFGeoThreeProng.GetPt() * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauzErr] = values[kVertexingLzErr] * KFGeoThreeProng.GetMass() / (TMath::Abs(KFGeoThreeProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kCosPointingAngle] = (std::sqrt(dxTriplet2PV * dxTriplet2PV) * v123.Px() +
-          std::sqrt(dyTriplet2PV * dyTriplet2PV) * v123.Py() +
-          std::sqrt(dzTriplet2PV * dzTriplet2PV) * v123.Pz()) /
-        (v123.P() * values[VarManager::kVertexingLxyz]);
+                                   std::sqrt(dyTriplet2PV * dyTriplet2PV) * v123.Py() +
+                                   std::sqrt(dzTriplet2PV * dzTriplet2PV) * v123.Pz()) /
+                                  (v123.P() * values[VarManager::kVertexingLxyz]);
 
       values[kVertexingLzProjected] = (dzTriplet2PV * KFGeoThreeProng.GetPz()) / TMath::Sqrt(KFGeoThreeProng.GetPz() * KFGeoThreeProng.GetPz());
       values[kVertexingLxyProjected] = (dxTriplet2PV * KFGeoThreeProng.GetPx()) + (dyTriplet2PV * KFGeoThreeProng.GetPy());
