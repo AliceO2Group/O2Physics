@@ -20,19 +20,7 @@
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
 
-namespace o2::hf_centrality
-{
-// centrality selection estimators
-enum CentralityEstimator {
-  None = 0,
-  FT0A,
-  FT0C,
-  FT0M,
-  FV0A,
-  NTracksPV,
-  NCentralityEstimators
-};
-}
+#include "PWGHF/Core/CentralityEstimation.h"
 
 namespace o2::hf_evsel
 {
