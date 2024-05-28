@@ -82,7 +82,7 @@ void checkSkimming(std::string original_path = "AnalysisResults.root", std::stri
 
   TH1D hOriginal("hOriginal", "Original AO2D;;Number of events", labels.size(), 0, labels.size());       // Histogram for the original values
   TH1D hSkimmed("hSkimmed", "AO2D from skimmed CTF;;Number of events", labels.size(), 0, labels.size()); // Histogram for the skimmed values
-  TH1D hRatio("hRatio", (runNumber + ";;Skimmed / Original").data(), labels.size(), 0, labels.size());                        // Histogram for the ratio of the two
+  TH1D hRatio("hRatio", (runNumber + ";;Skimmed / Original").data(), labels.size(), 0, labels.size());   // Histogram for the ratio of the two
 
   // Fill the histograms
   for (int i = 0; i < labels.size(); i++) {
@@ -102,7 +102,8 @@ void checkSkimming(std::string original_path = "AnalysisResults.root", std::stri
   }
 }
 
-void checkSkimming(std::string listName = "period.txt", bool skipDownscaled = true) {
+void checkSkimming(std::string listName = "period.txt", bool skipDownscaled = true)
+{
   std::string periodName = listName.substr(0, listName.find_last_of('.'));
   std::ifstream file(listName);
   std::string line;
