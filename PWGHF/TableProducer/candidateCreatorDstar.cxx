@@ -67,6 +67,11 @@ struct HfCandidateCreatorDstar {
   Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "apply the sel8 event selection"};
   Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "max. PV posZ (cm)"};
   Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "apply TF border cut"};
+  Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "check consistency between PVz from central barrel with that from FT0 timing"};
+  Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
+  Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
+  Configurable<int> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "min. value for occupancy selection"};
+  Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1000000, "max. value for occupancy selection"};
 
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -198,7 +203,7 @@ struct HfCandidateCreatorDstar {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexDstar.template collision_as<Coll>();
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+      const auto rejectionMask = getHfCollisionRejectionMask<true, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -338,7 +343,8 @@ struct HfCandidateCreatorDstar {
                        rowTrackIndexDstar.prong0Id(), rowTrackIndexDstar.prongD0Id(),
                        pVecSoftPi[0], pVecSoftPi[1], pVecSoftPi[2],
                        signSoftPi,
-                       impactParameterPi.getY(), std::sqrt(impactParameterPi.getSigmaY2()),
+                       impactParameterPi.getY(), impactParameterPi.getZ(),
+                       std::sqrt(impactParameterPi.getSigmaY2()), std::sqrt(impactParameterPi.getSigmaZ2()),
                        pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
                        pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2],
                        prongD0.prong0Id(), prongD0.prong1Id());
@@ -351,7 +357,9 @@ struct HfCandidateCreatorDstar {
                     pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
                     pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2],
                     impactParameter0.getY(), impactParameter1.getY(),
+                    impactParameter0.getZ(), impactParameter1.getZ(),
                     std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
+                    std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()),
                     prongD0.prong0Id(), prongD0.prong1Id(),
                     prongD0.hfflag());
 
@@ -464,7 +472,7 @@ struct HfCandidateCreatorDstar {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
 
       /// monitor the satisfied event selections
       monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
@@ -481,7 +489,7 @@ struct HfCandidateCreatorDstar {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
 
       /// monitor the satisfied event selections
       monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
@@ -498,7 +506,7 @@ struct HfCandidateCreatorDstar {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
 
       /// monitor the satisfied event selections
       monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
@@ -555,6 +563,7 @@ struct HfCandidateCreatorDstarExpressions {
       flagD0 = 0;
       originDstar = 0;
       originD0 = 0;
+      std::vector<int> idxBhadMothers{};
 
       auto indexDstar = rowCandidateDstar.globalIndex();
       auto candD0 = rowsCandidateD0->iteratorAt(indexDstar);
@@ -578,13 +587,18 @@ struct HfCandidateCreatorDstarExpressions {
       // check wether the particle is non-promt (from a B0 hadron)
       if (flagDstar != 0) {
         auto particleDstar = mcParticles.iteratorAt(indexRecDstar);
-        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particleDstar);
+        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particleDstar, false, &idxBhadMothers);
       }
       if (flagD0 != 0) {
         auto particleD0 = mcParticles.iteratorAt(indexRecD0);
         originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particleD0);
       }
-      rowsMcMatchRecDstar(flagDstar, originDstar);
+      if (originDstar == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowsMcMatchRecDstar(flagDstar, originDstar, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
+      }
       rowsMcMatchRecD0(flagD0, originD0);
     }
 
@@ -594,11 +608,12 @@ struct HfCandidateCreatorDstarExpressions {
       flagD0 = 0;
       originDstar = 0;
       originD0 = 0;
+      std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
       float zPv = mcCollision.posZ();
       if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
-        rowsMcMatchGenDstar(flagDstar, originDstar);
+        rowsMcMatchGenDstar(flagDstar, originDstar, -1);
         rowsMcMatchGenD0(flagD0, originD0);
         continue;
       }
@@ -614,12 +629,17 @@ struct HfCandidateCreatorDstarExpressions {
 
       // check wether the particle is non-promt (from a B0 hadron)
       if (flagDstar != 0) {
-        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
       if (flagD0 != 0) {
         originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
       }
-      rowsMcMatchGenDstar(flagDstar, originDstar);
+
+      if (originDstar == RecoDecay::OriginType::NonPrompt) {
+        rowsMcMatchGenDstar(flagDstar, originDstar, idxBhadMothers[0]);
+      } else {
+        rowsMcMatchGenDstar(flagDstar, originDstar, -1);
+      }
       rowsMcMatchGenD0(flagD0, originD0);
     }
   }

@@ -19,19 +19,24 @@
 #include <utility>
 #include <vector>
 
-namespace o2::aod::pwgem::utils
+namespace o2::aod::pwgem::photonmeson::utils
 {
 template <typename T, typename U, typename V>
-class EventMixingHandler : public TNamed
+class EventMixingHandler
 {
-  EventMixingHandler(const char* name, const char* title) : TNamed(name, title)
+ public:
+  EventMixingHandler()
   {
     fNdepth = 0;
+    fMapMixBins.clear();
+    fMap_Tracks_per_collision.clear();
   }
 
-  EventMixingHandler(const char* name, const char* title, int ndepth) : TNamed(name, title)
+  explicit EventMixingHandler(int ndepth)
   {
     fNdepth = ndepth;
+    fMapMixBins.clear();
+    fMap_Tracks_per_collision.clear();
   }
 
   ~EventMixingHandler()
@@ -42,17 +47,19 @@ class EventMixingHandler : public TNamed
 
   void SetNdepth(int ndepth) { fNdepth = ndepth; }
 
-  void AddLast(U key_df_collision, V obj)
+  void AddTrackToEventPool(U key_df_collision, V obj)
   {
     fMap_Tracks_per_collision[key_df_collision].emplace_back(obj);
   }
 
-  std::vector<U> GetCollisionIds(T key_bin) { return fMapMixBins[key_bin]; }
+  std::vector<U> GetCollisionIdsFromEventPool(T key_bin) { return fMapMixBins[key_bin]; }
   std::vector<V> GetTracksPerCollision(T key_bin, int index) { return fMap_Tracks_per_collision[fMapMixBins[key_bin][index]]; }
   std::vector<V> GetTracksPerCollision(U key_df_collision) { return fMap_Tracks_per_collision[key_df_collision]; }
 
-  void Update(T key_bin, U key_df_collision)
+  // call this function at the end of collision loop
+  void AddCollisionIdAtLast(T key_bin, U key_df_collision)
   {
+    // LOGF(info, "fMapMixBins[key_bin].size() = %d", fMapMixBins[key_bin].size());
     if (static_cast<int>(fMapMixBins[key_bin].size()) >= fNdepth) {
       fMap_Tracks_per_collision[fMapMixBins[key_bin][0]].clear();
       fMap_Tracks_per_collision[fMapMixBins[key_bin][0]].shrink_to_fit();
@@ -66,5 +73,5 @@ class EventMixingHandler : public TNamed
   std::map<T, std::vector<U>> fMapMixBins;               // map : e.g. <zbin, centbin, epbin> -> pair<df index, global collision index>
   std::map<U, std::vector<V>> fMap_Tracks_per_collision; // map : e.g. pair<df index, global collision index> -> track array
 };
-} // namespace o2::aod::pwgem::utils
+} // namespace o2::aod::pwgem::photonmeson::utils
 #endif // PWGEM_PHOTONMESON_UTILS_EVENTMIXINGHANDLER_H_
