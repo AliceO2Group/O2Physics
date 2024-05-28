@@ -20,6 +20,7 @@
 #include <string>
 
 #include "Framework/Configurable.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
 
 #include "PWGHF/Core/CentralityEstimation.h"
@@ -41,8 +42,6 @@ enum EventRejection {
   NEventRejection
 };
 
-o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
-
 struct HfEventSelection : o2::framework::ConfigurableGroup {
   std::string prefix = "hfEvSel"; // JSON group name
   // event selection parameters (in chronological order of application)
@@ -61,11 +60,26 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
 
-  /// \brief Puts labels on the collision monitoring histogram.
-  /// \param hCollisions histogram
-  template <typename Histo>
-  void setLabelHistoEvSel(Histo& hCollisions)
+  // histogram names
+  static constexpr char nameHistCollisions[] = "hCollisions";
+  static constexpr char nameHistPosZBeforeEvSel[] = "hPosZBeforeEvSel";
+  static constexpr char nameHistPosZAfterEvSel[] = "hPosZAfterEvSel";
+  static constexpr char nameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
+  static constexpr char nameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
+  static constexpr char nameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
+
+  /// \brief Adds collision monitoring histograms in the histogram registry.
+  /// \param registry reference to the histogram registry
+  void addHistograms(o2::framework::HistogramRegistry& registry)
   {
+    o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
+    auto hCollisions = registry.add<TH1>(nameHistCollisions, "HF event counter;;entries", {o2::framework::HistType::kTH1D, {axisEvents}});
+    registry.add<TH1>(nameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
+    registry.add<TH1>(nameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
+    registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
+    registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
+    registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
+    // Puts labels on the collision monitoring histogram.
     hCollisions->SetTitle("HF event counter;;# of accepted collisions");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality");
@@ -88,7 +102,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
   uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality)
   {
-    uint16_t statusCollision{0}; // 16 bits, in case new ev. selections will be added
+    uint16_t rejectionMask{0}; // 16 bits, in case new ev. selections will be added
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
       if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
@@ -103,82 +117,77 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
         LOGP(fatal, "Unsupported centrality estimator!");
       }
       if (centrality < centralityMin || centrality > centralityMax) {
-        SETBIT(statusCollision, EventRejection::Centrality);
+        SETBIT(rejectionMask, EventRejection::Centrality);
       }
     }
 
     if constexpr (useEvSel) {
       /// trigger condition
       if ((useSel8Trigger && !collision.sel8()) || (!useSel8Trigger && triggerClass > -1 && !collision.alias_bit(triggerClass))) {
-        SETBIT(statusCollision, EventRejection::Trigger);
+        SETBIT(rejectionMask, EventRejection::Trigger);
       }
       /// time frame border cut
       if (useTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        SETBIT(statusCollision, EventRejection::TimeFrameBorderCut);
+        SETBIT(rejectionMask, EventRejection::TimeFrameBorderCut);
       }
       /// PVz consistency tracking - FT0 timing
       if (useIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        SETBIT(statusCollision, EventRejection::IsGoodZvtxFT0vsPV);
+        SETBIT(rejectionMask, EventRejection::IsGoodZvtxFT0vsPV);
       }
       /// remove collisions in bunches with more than 1 reco collision
       /// POTENTIALLY BAD FOR BEAUTY ANALYSES
       if (useNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-        SETBIT(statusCollision, EventRejection::NoSameBunchPileup);
+        SETBIT(rejectionMask, EventRejection::NoSameBunchPileup);
       }
       /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
       if (useNumTracksInTimeRange) {
         const int numTracksInTimeRange = collision.trackOccupancyInTimeRange();
         if (numTracksInTimeRange < numTracksInTimeRangeMin || numTracksInTimeRange > numTracksInTimeRangeMax) {
-          SETBIT(statusCollision, EventRejection::NumTracksInTimeRange);
+          SETBIT(rejectionMask, EventRejection::NumTracksInTimeRange);
         }
       }
     }
 
     /// number of PV contributors
     if (collision.numContrib() < nPvContributorsMin) {
-      SETBIT(statusCollision, EventRejection::NContrib);
+      SETBIT(rejectionMask, EventRejection::NContrib);
     }
 
     /// max PV chi2
     if (chi2PvMax > 0. && collision.chi2() > chi2PvMax) {
-      SETBIT(statusCollision, EventRejection::Chi2);
+      SETBIT(rejectionMask, EventRejection::Chi2);
     }
 
     /// primary vertex z
     if (collision.posZ() < zPvPosMin || collision.posZ() > zPvPosMax) {
-      SETBIT(statusCollision, EventRejection::PositionZ);
+      SETBIT(rejectionMask, EventRejection::PositionZ);
     }
 
-    return statusCollision;
+    return rejectionMask;
   }
 
   /// \brief Fills histograms for monitoring event selections satisfied by the collision.
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
-  /// \param hCollisions histogram to keep track of the satisfied event selections
-  /// \param hPosZBeforeEvSel histogram for the PV position Z for all analysed collisions
-  /// \param hPosZAfterEvSel histogram for the PV position Z only for collisions satisfying the event selections
-  /// \param hPosXAfterEvSel histogram for the PV position X only for collisions satisfying the event selections
-  /// \param hPosYAfterEvSel histogram for the PV position Y only for collisions satisfying the event selections
-  /// \param hNumContributors histogram for the number of PV contributors only for collisions satisfying the event selections
-  template <typename Coll, typename Hist>
-  void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist& hCollisions, Hist& hPosZBeforeEvSel, Hist& hPosZAfterEvSel, Hist& hPosXAfterEvSel, Hist& hPosYAfterEvSel, Hist& hNumContributors)
+  /// \param registry reference to the histogram registry
+  template <typename Coll>
+  void fillHistograms(Coll const& collision, const uint16_t rejectionMask, o2::framework::HistogramRegistry& registry)
   {
-    hCollisions->Fill(EventRejection::None); // all collisions
+    registry.fill(HIST(nameHistCollisions), EventRejection::None);
     const float posZ = collision.posZ();
-    hPosZBeforeEvSel->Fill(posZ);
+    registry.fill(HIST(nameHistPosZBeforeEvSel), posZ);
 
     for (size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
       if (TESTBIT(rejectionMask, reason)) {
         return;
       }
-      hCollisions->Fill(reason); // Centrality ok
+      registry.fill(HIST(nameHistCollisions), reason);
     }
 
-    hPosXAfterEvSel->Fill(collision.posX());
-    hPosYAfterEvSel->Fill(collision.posY());
-    hPosZAfterEvSel->Fill(posZ);
-    hNumContributors->Fill(collision.numContrib());
+    registry.fill(HIST(nameHistPosXAfterEvSel), collision.posX());
+    registry.fill(HIST(nameHistPosYAfterEvSel), collision.posY());
+    registry.fill(HIST(nameHistPosZAfterEvSel), posZ);
+    registry.fill(HIST(nameHistNumPvContributorsAfterSel), collision.numContrib());
   }
 };
 } // namespace o2::hf_evsel

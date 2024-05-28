@@ -135,12 +135,6 @@ struct HfCandidateCreator2Prong {
     registry.add("hDcaXYProngs", "DCAxy of 2-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
     registry.add("hDcaZProngs", "DCAz of 2-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
     registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
-    hCollisions = registry.add<TH1>("hCollisions", "HF event counter;;entries", {HistType::kTH1D, {axisEvents}});
-    hPosZBeforeEvSel = registry.add<TH1>("hPosZBeforeEvSel", "all events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
-    hPosZAfterEvSel = registry.add<TH1>("hPosZAfterEvSel", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
-    hPosXAfterEvSel = registry.add<TH1>("hPosXAfterEvSel", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hPosYAfterEvSel = registry.add<TH1>("hPosYAfterEvSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hNumPvContributorsAfterSel = registry.add<TH1>("hNumPvContributorsAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{500, -0.5, 499.5}}});
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     massPi = MassPiPlus;
@@ -169,7 +163,7 @@ struct HfCandidateCreator2Prong {
     runNumber = 0;
 
     /// collision monitoring
-    hfEvSel.setLabelHistoEvSel(hCollisions);
+    hfEvSel.addHistograms(registry);
 
     /// candidate monitoring
     setLabelHistoCands(hCandidates);
@@ -614,7 +608,7 @@ struct HfCandidateCreator2Prong {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality);
 
       /// monitor the satisfied event selections
-      hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+      hfEvSel.fillHistograms(collision, rejectionMask, registry);
 
     } /// end loop over collisions
   }
@@ -631,7 +625,7 @@ struct HfCandidateCreator2Prong {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality);
 
       /// monitor the satisfied event selections
-      hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+      hfEvSel.fillHistograms(collision, rejectionMask, registry);
 
     } /// end loop over collisions
   }
@@ -648,7 +642,7 @@ struct HfCandidateCreator2Prong {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality);
 
       /// monitor the satisfied event selections
-      hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+      hfEvSel.fillHistograms(collision, rejectionMask, registry);
 
     } /// end loop over collisions
   }

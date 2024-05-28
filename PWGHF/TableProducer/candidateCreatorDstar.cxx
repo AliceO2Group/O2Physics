@@ -132,13 +132,6 @@ struct HfCandidateCreatorDstar {
       }
     }
 
-    // histograms (evSel)
-    hCollisions = registry.add<TH1>("EvSel/hCollisions", "HF event counter;;entries", {HistType::kTH1D, {axisEvents}});
-    hPosZBeforeEvSel = registry.add<TH1>("EvSel/hPosZBeforeEvSel", "all events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
-    hPosZAfterEvSel = registry.add<TH1>("EvSel/hPosZAfterEvSel", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
-    hPosXAfterEvSel = registry.add<TH1>("EvSel/hPosXAfterEvSel", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hPosYAfterEvSel = registry.add<TH1>("EvSel/hPosYAfterEvSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hNumPvContributorsAfterSel = registry.add<TH1>("EvSel/hNumPvContributorsAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{500, -0.5, 499.5}}});
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     // LOG(info) << "Init Function Invoked";
@@ -162,7 +155,7 @@ struct HfCandidateCreatorDstar {
     bz = 0;
 
     /// collision monitoring
-    hfEvSel.setLabelHistoEvSel(hCollisions);
+    hfEvSel.addHistograms(registry);
 
     /// candidate monitoring
     setLabelHistoCands(hCandidates);
@@ -463,7 +456,7 @@ struct HfCandidateCreatorDstar {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality);
 
       /// monitor the satisfied event selections
-      hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+      hfEvSel.fillHistograms(collision, rejectionMask, registry);
 
     } /// end loop over collisions
   }
@@ -480,7 +473,7 @@ struct HfCandidateCreatorDstar {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality);
 
       /// monitor the satisfied event selections
-      hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+      hfEvSel.fillHistograms(collision, rejectionMask, registry);
 
     } /// end loop over collisions
   }
@@ -497,7 +490,7 @@ struct HfCandidateCreatorDstar {
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality);
 
       /// monitor the satisfied event selections
-      hfEvSel.monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
+      hfEvSel.fillHistograms(collision, rejectionMask, registry);
 
     } /// end loop over collisions
   }

@@ -120,15 +120,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     }
 
     if (fillHistograms) {
-      hEvents = registry.add<TH1>("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
-      hfEvSel.setLabelHistoEvSel(hEvents);
-
-      // primary vertex histograms
-      hPrimVtxZBeforeSel = registry.add<TH1>("hPrimVtxZBeforeSel", "all events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -20., 20.}}});
-      hPrimVtxZAfterSel = registry.add<TH1>("hPrimVtxZAfterSel", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -20., 20.}}});
-      hPrimVtxXAfterSel = registry.add<TH1>("hPrimVtxXAfterSel", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
-      hPrimVtxYAfterSel = registry.add<TH1>("hPrimVtxYAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
-      hNContributorsAfterSel = registry.add<TH1>("hNContributorsAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {axisNumContributors}});
+      hfEvSel.addHistograms(registry);
 
       if (doprocessTrigAndCentFT0ASel || doprocessTrigAndCentFT0CSel || doprocessTrigAndCentFT0MSel || doprocessTrigAndCentFV0ASel) {
         AxisSpec axisCentrality{200, 0., 100., "centrality percentile"};
@@ -144,22 +136,22 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   void selectCollision(const Col& collision)
   {
     float centrality = -1.;
-    const auto statusCollision = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality);
 
     if (fillHistograms) {
-      hfEvSel.monitorCollision(collision, statusCollision, hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel);
+      hfEvSel.fillHistograms(collision, rejectionMask, registry);
       // additional centrality histos
       if constexpr (centEstimator != o2::hf_centrality::None) {
-        if (statusCollision == 0) {
+        if (rejectionMask == 0) {
           registry.fill(HIST("hCentralitySelected"), centrality);
-        } else if (statusCollision == BIT(EventRejection::Centrality)) { // rejected by centrality only
+        } else if (rejectionMask == BIT(EventRejection::Centrality)) { // rejected by centrality only
           registry.fill(HIST("hCentralityRejected"), centrality);
         }
       }
     }
 
     // fill table row
-    rowSelectedCollision(statusCollision);
+    rowSelectedCollision(rejectionMask);
   }
 
   /// Event selection with trigger and FT0A centrality selection
