@@ -54,7 +54,7 @@ namespace j2prongweight
 {
 DECLARE_SOA_COLUMN(WeightNUA, weightNUA, float); //! Non-uniform acceptance weight
 DECLARE_SOA_COLUMN(WeightEff, weightEff, float); //! Non-uniform efficiency weight
-} // namespace jweight
+} // namespace j2prongweight
 DECLARE_SOA_TABLE(J2ProngWeights, "AOD", "J2PRONGWEIGHT", j2prongweight::WeightNUA, j2prongweight::WeightEff); //! JFluc table for weights, associated with 2Prong particles
 
 } // namespace o2::aod
