@@ -559,8 +559,7 @@ struct nucleiEbye {
       auto mcTrack = v0s.rawIteratorAt(candidateV0.globalIndex);
       if (!mcTrack.isReco())
         continue;
-      if (std::abs(mcTrack.pdgCode()) != 3122)
-      {
+      if (std::abs(mcTrack.pdgCode()) != 3122) {
         histos.fill(HIST("QA/cosPaBkg"), candidateV0.cpa);
         histos.fill(HIST("QA/dcaV0daughBkg"), candidateV0.dcav0daugh);
         histos.fill(HIST("QA/dcaV0PvBkg"), candidateV0.dcav0pv);
@@ -676,7 +675,6 @@ struct nucleiEbye {
   {
     histos.fill(HIST("QA/zVtx"), collision.zvtx());
     fillRecoEvent(collision, tracks, v0s, collision.centrality());
-
   }
   PROCESS_SWITCH(nucleiEbye, processData, "process data", false);
 
