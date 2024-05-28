@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file utilsEvSelHf.h
-/// \brief Utility set the event selections for HF analyses
+/// \brief Event selection utilities for HF analyses
 /// \author Mattia Faggin <mfaggin@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
@@ -59,7 +59,7 @@ struct HfEvSel : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
 
-  /// @brief Function to put labels on collision monitoring histogram
+  /// \brief Function to put labels on collision monitoring histogram
   /// \param hCollisions is the histogram
   template <typename Histo>
   void setLabelHistoEvSel(Histo& hCollisions)
@@ -81,12 +81,11 @@ struct HfEvSel : o2::framework::ConfigurableGroup {
   /// \tparam applyEvSel use information from the EvSel table
   /// \tparam centEstimator centrality estimator
   /// \param collision collision that has to satisfy the selection criteria
-  /// \param centrality collision centrality to be initialised in this function
-  /// \return a bitmask with the event selections not satisfied by the analysed collision
+  /// \param centrality collision centrality to be set in this function
+  /// \return bitmask with the event selections not satisfied by the collision
   template <bool applyEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
   uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality)
   {
-
     uint16_t statusCollision{0}; // 16 bits, in case new ev. selections will be added
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
