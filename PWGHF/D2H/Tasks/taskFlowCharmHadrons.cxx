@@ -30,7 +30,7 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_collision_centrality;
+using namespace o2::hf_centrality;
 
 enum DecayChannel { DplusToPiKPi = 0,
                     DsToKKPi,

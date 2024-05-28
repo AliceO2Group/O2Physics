@@ -48,7 +48,7 @@ using namespace o2::aod;
 using namespace o2::aod::cascdata;
 using namespace o2::aod::v0data;
 using namespace o2::aod::hf_track_index;
-using namespace o2::aod::hf_collision_centrality;
+using namespace o2::hf_centrality;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -173,7 +173,7 @@ struct HfCandidateCreatorXic0Omegac0 {
     runNumber = 0;
   }
 
-  template <o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runXic0Omegac0Creator(Coll const&,
                              aod::BCsWithTimestamps const&,
                              TracksWCovDca const&,

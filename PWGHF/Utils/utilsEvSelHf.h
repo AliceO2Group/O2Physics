@@ -20,6 +20,20 @@
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
 
+namespace o2::hf_centrality
+{
+// centrality selection estimators
+enum CentralityEstimator {
+  None = 0,
+  FT0A,
+  FT0C,
+  FT0M,
+  FV0A,
+  NTracksPV,
+  NCentralityEstimators
+};
+}
+
 namespace o2::hf_evsel
 {
 // event rejection types
@@ -77,24 +91,24 @@ struct HfEvSel : o2::framework::ConfigurableGroup {
 
   /// \brief Function to apply event selections in HF analyses
   /// \tparam applyEvSel use information from the EvSel table
-  /// \tparam centEstimator select the centrality estimator
+  /// \tparam centEstimator centrality estimator
   /// \param collision collision that has to satisfy the selection criteria
   /// \param centrality collision centrality to be initialised in this function
   /// \return a bitmask with the event selections not satisfied by the analysed collision
-  template <bool applyEvSel, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
+  template <bool applyEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
   uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality)
   {
 
     uint16_t statusCollision{0}; // 16 bits, in case new ev. selections will be added
 
-    if constexpr (centEstimator != o2::aod::hf_collision_centrality::CentralityEstimator::None) {
-      if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0A) {
+    if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
+      if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
         centrality = collision.centFT0A();
-      } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0C) {
+      } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
         centrality = collision.centFT0C();
-      } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0M) {
+      } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
         centrality = collision.centFT0M();
-      } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FV0A) {
+      } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
         centrality = collision.centFV0A();
       } else {
         LOGP(fatal, "Unsupported centrality estimator!");

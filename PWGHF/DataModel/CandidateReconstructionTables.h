@@ -61,20 +61,6 @@ using TracksPidTinyPi = soa::Join<aod::pidTPCPi, aod::pidTOFPi>;
 using TracksPidTinyKa = soa::Join<aod::pidTPCKa, aod::pidTOFKa>;
 using TracksPidTinyPr = soa::Join<aod::pidTPCPr, aod::pidTOFPr>;
 
-namespace hf_collision_centrality
-{
-// centrality selection estimators
-enum CentralityEstimator {
-  None = 0,
-  FT0A,
-  FT0C,
-  FT0M,
-  FV0A,
-  NTracksPV,
-  NCentralityEstimators
-};
-} // namespace hf_collision_centrality
-
 // namespace pid_tpc_tof_utils
 // {
 // /// Function to combine TPC and TOF NSigma (for ML purposes)

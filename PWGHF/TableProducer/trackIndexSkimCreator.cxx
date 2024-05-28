@@ -57,7 +57,7 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::hf_evsel;
 using namespace o2::aod;
-using namespace o2::aod::hf_collision_centrality;
+using namespace o2::hf_centrality;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -139,7 +139,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Collision selection
   /// \param collision  collision table with
-  template <bool applyTrigSel, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Col>
+  template <bool applyTrigSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Col>
   void selectCollision(const Col& collision)
   {
     float centrality = -1.;
@@ -148,7 +148,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     if (fillHistograms) {
       hfEvSel.monitorCollision(collision, statusCollision, hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel);
       // additional centrality histos
-      if constexpr (centEstimator != o2::aod::hf_collision_centrality::None) {
+      if constexpr (centEstimator != o2::hf_centrality::None) {
         if (statusCollision == 0) {
           registry.fill(HIST("hCentralitySelected"), centrality);
         } else if (statusCollision == BIT(EventRejection::Centrality)) { // rejected by centrality only
