@@ -409,7 +409,7 @@ struct lambdakzeroBuilder {
   {
     statisticsRegistry.exceptions = 0;
     statisticsRegistry.eventCounter = 0;
-    for (Int_t ii = 0; ii < kNV0Steps; ii++){
+    for (Int_t ii = 0; ii < kNV0Steps; ii++) {
       statisticsRegistry.v0stats[ii] = 0;
       statisticsRegistry.v0statsUnassociated[ii] = 0;
     }
@@ -423,7 +423,7 @@ struct lambdakzeroBuilder {
   {
     registry.fill(HIST("hEventCounter"), 0.0, statisticsRegistry.eventCounter);
     registry.fill(HIST("hCaughtExceptions"), 0.0, statisticsRegistry.exceptions);
-    for (Int_t ii = 0; ii < kNV0Steps; ii++){
+    for (Int_t ii = 0; ii < kNV0Steps; ii++) {
       registry.fill(HIST("hV0Criteria"), ii, statisticsRegistry.v0stats[ii]);
       registry.fill(HIST("hV0CriteriaUnassociated"), ii, statisticsRegistry.v0statsUnassociated[ii]);
     }
@@ -817,7 +817,7 @@ struct lambdakzeroBuilder {
 
     // value 0.5: any considered V0
     statisticsRegistry.v0stats[kV0All]++;
-    if(!V0.has_collision())
+    if (!V0.has_collision())
       statisticsRegistry.v0statsUnassociated[kV0All]++;
 
     if (tpcrefit) {
@@ -831,7 +831,7 @@ struct lambdakzeroBuilder {
 
     // Passes TPC refit
     statisticsRegistry.v0stats[kV0TPCrefit]++;
-    if(!V0.has_collision())
+    if (!V0.has_collision())
       statisticsRegistry.v0statsUnassociated[kV0TPCrefit]++;
 
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
@@ -855,7 +855,7 @@ struct lambdakzeroBuilder {
 
     // passes DCAxy
     statisticsRegistry.v0stats[kV0DCAxy]++;
-    if(!V0.has_collision())
+    if (!V0.has_collision())
       statisticsRegistry.v0statsUnassociated[kV0DCAxy]++;
 
     // Change strangenessBuilder tracks
@@ -904,7 +904,7 @@ struct lambdakzeroBuilder {
 
     // Passes DCA between daughters check
     statisticsRegistry.v0stats[kV0DCADau]++;
-    if(!V0.has_collision())
+    if (!V0.has_collision())
       statisticsRegistry.v0statsUnassociated[kV0DCADau]++;
 
     v0candidate.cosPA = RecoDecay::cpa(array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, array{v0candidate.pos[0], v0candidate.pos[1], v0candidate.pos[2]}, array{v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1], v0candidate.posP[2] + v0candidate.negP[2]});
@@ -921,7 +921,7 @@ struct lambdakzeroBuilder {
 
     // Passes CosPA check
     statisticsRegistry.v0stats[kV0CosPA]++;
-    if(!V0.has_collision())
+    if (!V0.has_collision())
       statisticsRegistry.v0statsUnassociated[kV0CosPA]++;
 
     v0candidate.V0radius = RecoDecay::sqrtSumOfSquares(v0candidate.pos[0], v0candidate.pos[1]);
@@ -931,7 +931,7 @@ struct lambdakzeroBuilder {
 
     // Passes radius check
     statisticsRegistry.v0stats[kV0Radius]++;
-    if(!V0.has_collision())
+    if (!V0.has_collision())
       statisticsRegistry.v0statsUnassociated[kV0Radius]++;
     // Return OK: passed all v0 candidate selecton criteria
 
@@ -960,7 +960,7 @@ struct lambdakzeroBuilder {
 
     // Passes momentum window check
     statisticsRegistry.v0stats[kWithinMomentumRange]++;
-    if(!V0.has_collision())
+    if (!V0.has_collision())
       statisticsRegistry.v0statsUnassociated[kWithinMomentumRange]++;
 
     // Calculate masses
@@ -1195,7 +1195,7 @@ struct lambdakzeroBuilder {
 
         // populates the various tables for analysis
         statisticsRegistry.v0stats[kCountStandardV0]++;
-        if(!V0.has_collision())
+        if (!V0.has_collision())
           statisticsRegistry.v0statsUnassociated[kCountStandardV0]++;
 
         v0indices(V0.posTrackId(), V0.negTrackId(),

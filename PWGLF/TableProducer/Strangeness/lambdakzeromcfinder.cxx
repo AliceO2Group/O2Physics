@@ -109,7 +109,7 @@ struct lambdakzeromcfinder {
     const AxisSpec axisNTimesRecoed{static_cast<int>(10), -0.5f, +9.5f, ""};
 
     histos.add("hNTimesCollRecoed", "hNTimesCollRecoed", kTH1F, {axisNTimesRecoed});
-    
+
     // store number of recoed V0s and number of recoed V0s with no collision association
     histos.add("hNCollisionAssociation", "hNCollisionAssociation", kTH1F, {axisNTimesRecoed});
 
@@ -307,7 +307,7 @@ struct lambdakzeromcfinder {
     // V0 list established, populate
     for (auto ic : sortedIndices) {
       histos.fill(HIST("hNCollisionAssociation"), 0.0f); // any correctly recoed
-      if(v0collisionId[ic] >= 0)
+      if (v0collisionId[ic] >= 0)
         histos.fill(HIST("hNCollisionAssociation"), 1.0f); // reconstructed with a collision associated to it
 
       if (v0collisionId[ic] < 0 && doUnassociatedV0s) {

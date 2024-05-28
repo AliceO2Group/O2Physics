@@ -130,7 +130,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
   Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
 
-  // fast check on occupancy 
+  // fast check on occupancy
   Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
   Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
 
@@ -1074,15 +1074,14 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 9 /* Not at same bunch pile-up */);
 
-    if ( minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) { 
-      return; 
+    if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+      return;
     }
     histos.fill(HIST("hEventSelection"), 10 /* Below min occupancy */);
-    if ( maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) { 
-      return; 
+    if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+      return;
     }
     histos.fill(HIST("hEventSelection"), 11 /* Above max occupancy */);
-
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {
@@ -1100,7 +1099,7 @@ struct derivedlambdakzeroanalysis {
       if (std::abs(v0.negativeeta()) > daughterEtaCut || std::abs(v0.positiveeta()) > daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
-      if(v0.v0Type() != v0TypeSelection && v0TypeSelection>-1)
+      if (v0.v0Type() != v0TypeSelection && v0TypeSelection > -1)
         continue; // skip V0s that are not standard
 
       // fill AP plot for all V0s
