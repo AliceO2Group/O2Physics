@@ -438,7 +438,6 @@ struct IdentifiedMeanPtFluctuations {
     }
     histos.fill(HIST("tracksel_rec"), 7);
 
-
     double nCh_rec = 0.;
     double nChpi_rec = 0.;
     double nChk_rec = 0.;
@@ -489,11 +488,9 @@ struct IdentifiedMeanPtFluctuations {
       }
       if (abs(track1.mcParticle().pdgCode()) == 321) {
 
-
         histos.fill(HIST("ptHistogramKaonrec_pdg"), track1.pt());
       }
       if (abs(track1.mcParticle().pdgCode()) == 2212) {
-
 
         histos.fill(HIST("ptHistogramProtonrec_pdg"), track1.pt());
       }
@@ -521,7 +518,6 @@ struct IdentifiedMeanPtFluctuations {
       SelTPCTOFPions(track1);  // Pion passes TPC and TOF both!
 
       {
-
 
         histos.fill(HIST("ptHistogramPionrec"), track1.pt());
 
@@ -569,7 +565,6 @@ struct IdentifiedMeanPtFluctuations {
 
       {
 
-
         histos.fill(HIST("ptHistogramKaonrec"), track1.pt());
 
         nChk_rec += 1.;
@@ -615,7 +610,6 @@ struct IdentifiedMeanPtFluctuations {
       SelTPCTOFProtons(track1);  // Protons passes from TPC and TOF both!
 
       {
-
 
         histos.fill(HIST("ptHistogramProtonrec"), track1.pt());
 
@@ -708,7 +702,6 @@ struct IdentifiedMeanPtFluctuations {
       return;
     }
     histos.fill(HIST("MC_hZvtx_after_sel"), mcCollision.posZ());
-
 
     double nCh_gen = 0.;
     double nChpi_gen = 0.;
