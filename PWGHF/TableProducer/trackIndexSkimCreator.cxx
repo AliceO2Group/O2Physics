@@ -120,7 +120,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     }
 
     if (fillHistograms) {
-      hfEvSel.addHistograms(registry);
+      hfEvSel.addHistograms(registry); // collision monitoring
 
       if (doprocessTrigAndCentFT0ASel || doprocessTrigAndCentFT0CSel || doprocessTrigAndCentFT0MSel || doprocessTrigAndCentFV0ASel) {
         AxisSpec axisCentrality{200, 0., 100., "centrality percentile"};

@@ -134,6 +134,7 @@ struct HfCandidateCreator3Prong {
     registry.add("hDcaXYProngs", "DCAxy of 3-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
     registry.add("hDcaZProngs", "DCAz of 3-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
+    hfEvSel.addHistograms(registry); // collision monitoring
 
     massPi = MassPiPlus;
     massK = MassKPlus;
@@ -153,9 +154,6 @@ struct HfCandidateCreator3Prong {
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
-
-    /// collision monitoring
-    hfEvSel.addHistograms(registry);
 
     /// candidate monitoring
     setLabelHistoCands(hCandidates);

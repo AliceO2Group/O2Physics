@@ -133,6 +133,7 @@ struct HfCandidateCreatorDstar {
     }
 
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
+    hfEvSel.addHistograms(registry); // collision monitoring
 
     // LOG(info) << "Init Function Invoked";
     massPi = MassPiPlus;
@@ -153,9 +154,6 @@ struct HfCandidateCreatorDstar {
     ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
     runNumber = 0;
     bz = 0;
-
-    /// collision monitoring
-    hfEvSel.addHistograms(registry);
 
     /// candidate monitoring
     setLabelHistoCands(hCandidates);
