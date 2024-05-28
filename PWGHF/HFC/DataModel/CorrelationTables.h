@@ -286,7 +286,7 @@ DECLARE_SOA_TABLE(DstarHadronPair, "AOD", "DSTRHPAIR", // D* Hadrons pairs Infor
 // Note: Table for selection of Lc in a collision
 namespace hf_selection_lc_collision
 {
-DECLARE_SOA_COLUMN(LcSel, lcSel, bool); //! Selection flag for Lc in a collision
+DECLARE_SOA_COLUMN(LcSel, lcSel, int); //! Selection flag for Lc in a collision
 } // namespace hf_selection_lc_collision
 
 DECLARE_SOA_TABLE(LcSelection, "AOD", "LCINCOLL", // Selection of Lc in collisions
