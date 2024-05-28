@@ -254,9 +254,8 @@ struct HfCandidateCreatorLbExpressions {
   /// @brief dummy process function, to be run on data
   void process(aod::Tracks const&) {}
 
-  void processMc(aod::HfCandLb const& candidates,
-                 aod::HfCand3Prong const&,
-                 aod::TracksWMc const&,
+  void processMc(aod::HfCand3Prong const&,
+                 aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles)
   {
     int indexRec = -1;
@@ -265,8 +264,10 @@ struct HfCandidateCreatorLbExpressions {
     int8_t origin = 0;
     int8_t debug = 0;
 
+    rowCandidateLb->bindExternalIndices(&tracks);
+
     // Match reconstructed candidates.
-    for (const auto& candidate : candidates) {
+    for (const auto& candidate : *rowCandidateLb) {
       flag = 0;
       origin = 0;
       debug = 0;
@@ -310,7 +311,6 @@ struct HfCandidateCreatorLbExpressions {
   }
   PROCESS_SWITCH(HfCandidateCreatorLbExpressions, processMc, "Process MC", false);
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
