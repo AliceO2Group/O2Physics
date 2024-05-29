@@ -13,6 +13,7 @@
 /// \author Rashi Gupta <rashi.gupta@cern.ch>, IIT Indore
 /// \author Ravindra Singh <ravindra.singh@cern.ch>, IIT Indore
 
+#include <boost/move/detail/meta_utils_core.hpp>
 #include "THnSparse.h"
 
 #include "DataFormatsEMCAL/AnalysisCluster.h"
@@ -171,7 +172,7 @@ struct HfElectronSelectionWithTPCEMcal {
   }
 
   // Electron Identification
-  template <bool isData, bool isMc, typename TracksType, typename ClusterType, typename MatchType, typename CollisionType, typename ParticleType>
+  template <bool isMc, typename TracksType, typename ClusterType, typename MatchType, typename CollisionType, typename ParticleType>
   void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, ClusterType const& cluster, MatchType const& matchedTracks, ParticleType const& particlemc)
   {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
@@ -208,10 +209,8 @@ struct HfElectronSelectionWithTPCEMcal {
       tpcNsigmaTrack = track.tpcNSigmaEl();
 
       // Apply Track Selection
-
       if (!selTracks(track))
         continue;
-
       passEMCal = 0;
 
       if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
@@ -265,7 +264,7 @@ struct HfElectronSelectionWithTPCEMcal {
 
         // Track and cluster Matching
 
-        if constexpr (isData) {
+        if constexpr (!isMc) {
           if (std::abs(timeCluster) > clusterTimeMax)
             continue;
           if (std::abs(deltaPhiMatch) > deltaPhiMatchMin || std::abs(deltaEtaMatch) > deltaEtaMatchMin)
@@ -286,12 +285,11 @@ struct HfElectronSelectionWithTPCEMcal {
         registry.fill(HIST("hPIDafterMatch"), eop, matchTrack.tpcSignal(), tpcNsigmaMatchTrack, pMatchTrack, ptMatchTrack, etaMatchTrack, phiMatchTrack);
 
         // Apply Electron Identification cuts
-        if constexpr (isData) {
+        if constexpr (!isMc) {
           if ((tpcNsigmaMatchTrack < tpcNsigmaElectronMin || tpcNsigmaMatchTrack > tpcNsigmaElectronMax) || (m02MatchCluster < m02ElectronMin || m02MatchCluster > m02ElectronMax) || (m20MatchCluster < m20ElectronMin || m20MatchCluster > m20ElectronMax))
             continue;
         }
         if constexpr (isMc) {
-
           if ((tpcNsigmaMatchTrack < mcRecTpcNsigmaElectronMin || tpcNsigmaMatchTrack > mcRecTpcNsigmaElectronMax) || (m02MatchCluster < mcRecM02ElectronMin || m02MatchCluster > mcRecM02ElectronMax) || (m20MatchCluster < mcRecM20ElectronMin || m20MatchCluster > mcRecM20ElectronMax))
             continue;
         }
@@ -299,8 +297,8 @@ struct HfElectronSelectionWithTPCEMcal {
         registry.fill(HIST("hEPRatioafterPID"), eop, ptMatchTrack);
         if (eop < eopElectronMin || eop > eopElectronMax)
           continue;
-
         registry.fill(HIST("hPIDafterPIDcuts"), eop, pMatchTrack, ptMatchTrack, tpcNsigmaMatchTrack, eMatchCluster, m02MatchCluster, m20MatchCluster);
+
         isEMcal = true;
         electronSel(matchTrack.collisionId(), matchTrack.globalIndex(), matchTrack.eta(), matchTrack.phi(), ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
                     eMatchCluster, etaMatchCluster, phiMatchCluster, m02MatchCluster, m20MatchCluster, cellCluster, timeCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
@@ -316,16 +314,16 @@ struct HfElectronSelectionWithTPCEMcal {
 
   void processData(CollisionTable const& collision, aod::EMCALClusters const& mAnalysisClusters, o2::aod::EMCALMatchedTracks const& matchedTracks, TrackTables const& tracks)
   {
-    fillElectronTrack<true, false>(collision, tracks, mAnalysisClusters, matchedTracks, 0);
+    fillElectronTrack<false>(collision, tracks, mAnalysisClusters, matchedTracks, 0);
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTPCEMcal, processData, "process Data info only", false);
+  PROCESS_SWITCH(HfElectronSelectionWithTPCEMcal, processData, "process Data info only", true);
 
   // group according to reconstructed Collisions
   void processMcRec(McCollisionTables const& mccollision, McTrackTables const& mctracks, McEMcalTable const& mcClusters, o2::aod::EMCALMatchedTracks const& matchedTracks, aod::McParticles const& particlesMC)
   {
-    fillElectronTrack<false, true>(mccollision, mctracks, mcClusters, matchedTracks, particlesMC);
+    fillElectronTrack<true>(mccollision, mctracks, mcClusters, matchedTracks, particlesMC);
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTPCEMcal, processMcRec, "Process MC Reco mode", true);
+  PROCESS_SWITCH(HfElectronSelectionWithTPCEMcal, processMcRec, "Process MC Reco mode", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
