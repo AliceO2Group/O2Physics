@@ -65,7 +65,7 @@ struct JetFinderQATask {
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
-  Configurable<bool> checkMCcollisionsMatched{"checkMCcollisionsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
+  Configurable<bool> checkMcCollisionsMatched{"checkMcCollisionsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
 
   std::vector<bool> filledJetR_Both;
   std::vector<bool> filledJetR_Low;
@@ -624,6 +624,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCDWeighted, "jet finder QA mcd with weighted events", false);
 
+  PresliceUnsorted<soa::Filtered<JetCollisionsMCD>> CollisionsPerMcpJets = aod::jmccollisionlb::mcCollisionId;
   void processJetsMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, JetParticles const&, JetMcCollisions const&, soa::Filtered<JetCollisionsMCD> const& collisions)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -632,9 +633,10 @@ struct JetFinderQATask {
     if (!isAcceptedJet<JetParticles>(jet)) {
       return;
     }
-    if (checkMCcollisionsMatched) {
+    if (checkMcCollisionsMatched) {
       bool isMatchFound = false;
-      for (auto const& collision : collisions) {
+      auto collisionspermcpejt = collisions.sliceBy(CollisionsPerMcpJets, jet.mcCollision().globalIndex()); 
+      for (auto const& collision : collisionspermcpejt) {
         if (collision.mcCollision().globalIndex() == jet.mcCollision().globalIndex()) {
           isMatchFound = true;
           break;
@@ -662,9 +664,10 @@ struct JetFinderQATask {
         registry.fill(HIST("h_jet_ptcut_part"), jet.pt(), N * 0.25, jet.eventWeight());
       }
     }
-    if (checkMCcollisionsMatched) {
+    if (checkMcCollisionsMatched) {
       bool isMatchFound = false;
-      for (auto const& collision : collisions) {
+      auto collisionspermcpejt = collisions.sliceBy(CollisionsPerMcpJets, jet.mcCollision().globalIndex()); 
+      for (auto const& collision : collisionspermcpejt) {
         if (collision.mcCollision().globalIndex() == jet.mcCollision().globalIndex()) {
           isMatchFound = true;
           break;
