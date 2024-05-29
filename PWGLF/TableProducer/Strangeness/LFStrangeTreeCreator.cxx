@@ -124,6 +124,7 @@ struct CandidateV0 {
   int pdgcodemother = -999;
   bool isreco = 0;
   int64_t mcIndex = -999;
+  int64_t globalIndex = -999;
   int64_t globalIndexPos = -999;
   int64_t globalIndexNeg = -999;
 };
@@ -404,6 +405,7 @@ struct LFStrangeTreeCreator {
       candV0.dcapospv = posDcaToPv;
       candV0.tpcnsigmaneg = nSigmaTPCNeg;
       candV0.tpcnsigmapos = nSigmaTPCPos;
+      candV0.globalIndex = v0.globalIndex();
       candV0.globalIndexPos = posTrack.globalIndex();
       candV0.globalIndexNeg = negTrack.globalIndex();
       candidateV0s.push_back(candV0);
@@ -438,6 +440,17 @@ struct LFStrangeTreeCreator {
               if ((posMother.flags() & 0x2) || (posMother.flags() & 0x1))
                 continue;
 
+              auto pdgCodeMother = -999;
+              if (posMother.isPhysicalPrimary()) {
+                pdgCodeMother = 0;
+              } else if (posMother.has_mothers()) {
+                for (auto& mcMother : posMother.mothers_as<aod::McParticles>()) {
+                  if (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334) {
+                    pdgCodeMother = mcMother.pdgCode();
+                    break;
+                  }
+                }
+              }
               auto genPt = std::hypot(posMother.px(), posMother.py());
               auto posPrimVtx = std::array{posMother.vx(), posMother.vy(), posMother.vz()};
               auto secVtx = std::array{mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
@@ -446,6 +459,7 @@ struct LFStrangeTreeCreator {
               candidateV0.genpt = genPt;
               candidateV0.genct = len / (mom + 1e-10) * o2::constants::physics::MassLambda0;
               candidateV0.pdgcode = posMother.pdgCode();
+              candidateV0.pdgcodemother = pdgCodeMother;
               candidateV0.geneta = posMother.eta();
               candidateV0.mcIndex = posMother.globalIndex();
             }
