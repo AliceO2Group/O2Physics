@@ -606,8 +606,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
       originMc,
       collisionMatched,
       responseOmegac,
-      responseOmegacBar
- );
+      responseOmegacBar);
   }
 
   template <typename T>
@@ -670,8 +669,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
       flagMc,
       debugMc,
       originMc,
-      collisionMatched
-);
+      collisionMatched);
   }
 
   void processDataFull(MyEventTable const& collisions, MyTrackTable const&,
