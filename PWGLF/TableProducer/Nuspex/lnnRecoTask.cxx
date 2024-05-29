@@ -49,6 +49,7 @@ namespace
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNames{"3H"};
+
 std::shared_ptr<TH1> hEvents;
 std::shared_ptr<TH1> hZvtx;
 std::shared_ptr<TH1> hCentFT0A;
@@ -200,7 +201,8 @@ struct lnnRecoTask {
     hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hdEdxTot = qaRegistry.add<TH2>("hdEdxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
-    hLnnMassBefSel = qaRegistry.add<TH1>("hLnnMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.9, 3.8}});
+    hLnnMassSel = qaRegistry.add<TH1>("hLnnMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.9, 3.8}});
+
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
@@ -375,7 +377,7 @@ struct lnnRecoTask {
       if (massLNNL > mLNN_HypHI - masswidth && massLNNL < mLNN_HypHI + masswidth) {
         isLNNMass = true;
       }
-      hLnnMassBefSel->Fill(massLNNL);
+      hLnnMassSel->Fill(massLNNL);
       if (!isLNNMass) {
         continue;
       }
@@ -431,9 +433,9 @@ struct lnnRecoTask {
             for (auto& posMother : mcTrackPos.mothers_as<aod::McParticles>()) {
               if (posMother.globalIndex() != negMother.globalIndex())
                 continue;
-              if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg)))
-                //LOG(info) << ":D";
+              if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg))) {
                 continue;
+              }
               if (std::abs(posMother.pdgCode()) != lnnPdg)
                 continue;
 
