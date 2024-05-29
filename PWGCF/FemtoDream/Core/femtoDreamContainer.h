@@ -74,7 +74,7 @@ class FemtoDreamContainer
   template <bool isHF = false, typename T>
   void init_base(std::string folderName, std::string femtoObs,
                  T& femtoObsAxis, T& pTAxis, T& kTAxis, T& mTAxis, T& multAxis, T& multPercentileAxis,
-                 T& kstarAxis4D, T& mTAxis4D, T& multAxis4D, T& multPercentileAxis4D,
+                 T& /*kstarAxis4D*/, T& mTAxis4D, T& multAxis4D, T& multPercentileAxis4D,
                  bool use4dplots, bool extendedplots, T& mP2Axis)
   {
 
@@ -99,7 +99,7 @@ class FemtoDreamContainer
       mHistogramRegistry->add((folderName + "/relPairkstarmTMultMultPercentile").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTHnSparseF, {femtoObsAxis, mTAxis4D, multAxis4D, multPercentileAxis4D});
     }
     if (extendedplots) {
-      mHistogramRegistry->add((folderName + "/mTPtPart1PtPart2MultPercentile").c_str(), "; #it{m}_{T} (GeV/#it{c}^{2}); #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity Percentile (%)", kTHnSparseF, {mTAxis4D, pTAxis, pTAxis, multPercentileAxis4D});
+      mHistogramRegistry->add((folderName + "/relPairkstarmTPtPart1PtPart2MultPercentile").c_str(), ("; :" + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity Percentile (%)").c_str(), kTHnSparseF, {femtoObsAxis, mTAxis4D, pTAxis, pTAxis, multPercentileAxis4D});
     }
   }
 
@@ -136,10 +136,9 @@ class FemtoDreamContainer
   /// \param kTBins kT binning for the histograms
   /// \param mTBins mT binning for the histograms
   /// \param isMC add Monte Carlo truth histograms to the output file
-  // static constexpr ConfigurableAxis ConfBinInvMass{"ConfBinInvMass", {1, 1.5, 3.5}, "InvMass binning"};
   template <bool isHF = false, typename T>
   void init(HistogramRegistry* registry,
-            T& kstarBins, T& pTBins, T& kTBins, T& mTBins, T& multBins, T& multPercentileBins,
+            T& kstarBins, T& pTBins, T& kTBins, T& mTBins, T& multBins, T& /*multPercentileBins*/,
             T& kstarBins4D, T& mTBins4D, T& multBins4D, T& multPercentileBins4D,
             bool isMC, bool use4dplots, bool extendedplots,
             float highkstarCut,
@@ -229,7 +228,7 @@ class FemtoDreamContainer
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmTMultMultPercentile"), femtoObs, mT, mult, multPercentile);
     }
     if (extendedplots) {
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/mTPtPart1PtPart2MultPercentile"), mT, part1.pt(), part2.pt(), multPercentile);
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmTPtPart1PtPart2MultPercentile"), femtoObs, mT, part1.pt(), part2.pt(), multPercentile);
     }
   }
 
@@ -266,7 +265,6 @@ class FemtoDreamContainer
   template <bool isMC, bool isHF = false, typename T1, typename T2>
   void setPair(T1 const& part1, T2 const& part2, const int mult, const float multPercentile, bool use4dplots, bool extendedplots, bool smearingByOrigin = false)
   {
-
     float femtoObs, femtoObsMC;
     // Calculate femto observable and the mT with reconstructed information
     if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
