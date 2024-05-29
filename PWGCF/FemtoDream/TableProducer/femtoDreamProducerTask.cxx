@@ -26,9 +26,6 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -58,8 +55,6 @@ using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA,
             aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
             aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
-using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using FemtoHFTrack = FemtoHFTracks::iterator;
 } // namespace o2::aod
 
 template <typename T>
@@ -78,10 +73,6 @@ int getRowDaughters(int daughID, T const& vecID)
 struct femtoDreamProducerTask {
 
   Produces<aod::FDCollisions> outputCollision;
-  Produces<aod::FDHfCand> rowCandCharmHad;
-  Produces<aod::FDHfCandMC> rowCandMCCharmHad;
-  Produces<aod::FDHfCandMCGen> rowCandCharmHadGen;
-  Produces<aod::FDParticlesIndex> outputPartsIndex;
   Produces<aod::FDMCCollisions> outputMCCollision;
   Produces<aod::FDMCCollLabels> outputCollsMCLabels;
   Produces<aod::FDParticles> outputParts;
@@ -103,10 +94,6 @@ struct femtoDreamProducerTask {
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
   Configurable<bool> ConfEvtAddOfflineCheck{"ConfEvtAddOfflineCheck", false, "Evt sel: additional checks for offline selection (not part of sel8 yet)"};
   Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", true, "Activate filling of V0 into femtodream tables"};
-
-  /// Lc table
-  Configurable<bool> useCent{"useCent", false, "Enable centrality for lc"};
-  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
 
   Configurable<bool> ConfTrkRejectNotPropagated{"ConfTrkRejectNotPropagated", false, "True: reject not propagated tracks"};
   // Configurable<bool> ConfRejectITSHitandTOFMissing{ "ConfRejectITSHitandTOFMissing", false, "True: reject if neither ITS hit nor TOF timing satisfied"};
@@ -159,36 +146,25 @@ struct femtoDreamProducerTask {
                     (nabs(aod::v0data::z) < V0DecVtxMax.value);*/
   // (aod::v0data::v0radius > V0TranRadV0Min.value); to be added, not working
   // for now do not know why
-  using CandidateLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
-  using CandidateLcMC = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
-  using GeneratedMC = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry V0Registry{"V0", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  HfHelper hfHelper;
   int mRunNumber;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   void init(InitContext&)
   {
-    std::array<bool, 8> processes = {doprocessData, doprocessMC,
-                                     doprocessMC_noCentrality, doprocessDataCharmHad, doprocessMCCharmHad, doprocessDataCharmHadWithML, doprocessMCCharmHadWithML, doprocessMCCharmHadGen};
-    if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
-      LOGP(fatal, "One and only one process function must be enabled at a time.");
+    if (doprocessData == false && doprocessMC == false && doprocessMC_noCentrality == false) {
+      LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
-
-    // if (doprocessData == false && doprocessMC == false && doprocessMCNoCentrality == false) {
-    //   LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
-    // }
-    // if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMCNoCentrality == true) || (doprocessMC == true && doprocessMCNoCentrality == true)) {
-    //   LOGF(fatal,
-    //        "Cannot enable more than one process switch at the same time. "
-    //        "Please choose one.");
-    // }
+    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true)) {
+      LOGF(fatal,
+           "Cannot enable more than one process switch at the same time. "
+           "Please choose one.");
+    }
 
     int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
@@ -303,7 +279,7 @@ struct femtoDreamProducerTask {
     mRunNumber = bc.runNumber();
   }
 
-  template <bool isTrackOrV0, bool isHF = false, typename ParticleType>
+  template <bool isTrackOrV0, typename ParticleType>
   void fillDebugParticle(ParticleType const& particle)
   {
     if constexpr (isTrackOrV0) {
@@ -329,27 +305,6 @@ struct femtoDreamProducerTask {
                        particle.tofNSigmaPr(),
                        particle.tofNSigmaDe(),
                        -999., -999., -999., -999., -999., -999.);
-
-    } else if constexpr (isHF) {
-      outputDebugParts(particle.sign(),
-                       (uint8_t)particle.tpcNClsFound(),
-                       particle.tpcNClsFindable(),
-                       (uint8_t)particle.tpcNClsCrossedRows(),
-                       particle.tpcNClsShared(),
-                       particle.tpcInnerParam(),
-                       particle.itsNCls(),
-                       particle.itsNClsInnerBarrel(),
-                       particle.dcaXY(),
-                       particle.dcaZ(),
-                       particle.tpcSignal(),
-                       particle.tpcNSigmaPi(),
-                       particle.tpcNSigmaKa(),
-                       particle.tpcNSigmaPr(),
-                       particle.tofNSigmaPi(),
-                       particle.tofNSigmaKa(),
-                       particle.tofNSigmaPr(),
-                       -999., -999., -999., -999., -999., -999., -999., -999., -999., -999.);
-
     } else {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999., -999., -999., -999.,
@@ -583,185 +538,6 @@ struct femtoDreamProducerTask {
     }
   }
 
-  template <bool isMC, typename TrackType>
-  bool fillTracksForCharmHadron(TrackType const& tracks, o2::aod::FemtoHFTrack const& prong0, o2::aod::FemtoHFTrack const& prong1, o2::aod::FemtoHFTrack const& prong2, int candSize)
-  {
-
-    std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
-    // std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
-    bool fIsTrackFilled = false;
-
-    for (auto& track : tracks) {
-      /// if the most open selection criteria are not fulfilled there is no
-      /// point looking further at the track
-      if (!trackCuts.isSelectedMinimal(track)) {
-        continue;
-      }
-
-      if ((candSize == 1) && (track.globalIndex() == prong0.globalIndex() || track.globalIndex() == prong1.globalIndex() || track.globalIndex() == prong2.globalIndex()))
-        continue;
-
-      trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, true>(track);
-      // the bit-wise container of the systematic variations is obtained
-      auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
-
-      // track global index
-      outputPartsIndex(track.globalIndex());
-      // now the table is filled
-
-      outputParts(outputCollision.lastIndex() + 1,
-                  track.pt(),
-                  track.eta(),
-                  track.phi(),
-                  aod::femtodreamparticle::ParticleType::kTrack,
-                  cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
-                  cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
-                  track.dcaXY(), childIDs, 0, 0);
-      fIsTrackFilled = true;
-      // tmpIDtrack.push_back(track.globalIndex());
-      if (ConfIsDebug.value) {
-        fillDebugParticle<false, true>(track);
-      }
-
-      if constexpr (isMC) {
-        fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
-      }
-    }
-    return fIsTrackFilled;
-  }
-
-  template <bool isMC, bool useCharmMl, typename TrackType, typename CollisionType, typename CandType>
-  void fillCharmHadronTable(CollisionType const& col, TrackType const& tracks, CandType const& candidates)
-  {
-    const auto vtxZ = col.posZ();
-    const auto sizeCand = candidates.size();
-    if (sizeCand == 0)
-      return;
-
-    const auto spher = colCuts.computeSphericity(col, tracks);
-    float mult = 0;
-    int multNtr = 0;
-    if (ConfIsRun3) {
-      if (useCent) {
-        mult = col.centFT0M();
-      } else {
-        mult = 0;
-      }
-      multNtr = col.multNTracksPV();
-    } else {
-      mult = 1; // multiplicity percentile is know in Run 2
-      multNtr = col.multTracklets();
-    }
-
-    colCuts.fillQA(col, mult);
-
-    // check whether the basic event selection criteria are fulfilled
-    // that included checking if there is at least on usable track or V0
-    if (!colCuts.isSelectedCollision(col)) {
-      return;
-    }
-
-    if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
-      return;
-    }
-    // Filling candidate properties
-    rowCandCharmHad.reserve(sizeCand);
-    bool isTrackFilled = false;
-    for (const auto& candidate : candidates) {
-      std::array<float, 3> outputMlPKPi{-1., -1., -1.};
-      std::array<float, 3> outputMlPiKP{-1., -1., -1.};
-      if constexpr (useCharmMl) {
-        /// fill with ML information
-        /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
-        if (candidate.mlProbLcToPKPi().size() > 0) {
-          outputMlPKPi.at(0) = candidate.mlProbLcToPKPi()[0]; /// bkg score
-          outputMlPKPi.at(1) = candidate.mlProbLcToPKPi()[1]; /// prompt score
-          outputMlPKPi.at(2) = candidate.mlProbLcToPKPi()[2]; /// non-prompt score
-        }
-        if (candidate.mlProbLcToPiKP().size() > 0) {
-          outputMlPiKP.at(0) = candidate.mlProbLcToPiKP()[0]; /// bkg score
-          outputMlPiKP.at(1) = candidate.mlProbLcToPiKP()[1]; /// prompt score
-          outputMlPiKP.at(2) = candidate.mlProbLcToPiKP()[2]; /// non-prompt score
-        }
-      }
-      auto trackPos1 = candidate.template prong0_as<o2::aod::FemtoHFTracks>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.template prong1_as<o2::aod::FemtoHFTracks>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.template prong2_as<o2::aod::FemtoHFTracks>(); // positive daughter (negative for the antiparticles)
-      bool isMcCandidateSignal = false;
-
-      if constexpr (isMC) {
-        isMcCandidateSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
-      }
-
-      auto fillTable = [&](int CandFlag,
-                           int FunctionSelection,
-                           float BDTScoreBkg,
-                           float BDTScorePrompt,
-                           float BDTScoreFD) {
-        if (FunctionSelection >= 1){
-        // Fill tracks if it is not filled for Lc Candidate in an event
-            if (!isTrackFilled) {
-                isTrackFilled = fillTracksForCharmHadron<false>(tracks, trackPos1, trackNeg, trackPos2, sizeCand);
-
-                // If track filling was successful, fill the collision table
-                if (isTrackFilled) {
-                    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
-                }
-            }
-
-            // fill collision table if track table is filled, i.e., there is at least one Lc-p pair
-            if (isTrackFilled) {
-                // Row for candidate charm hadron
-                rowCandCharmHad(
-                    outputCollision.lastIndex(),
-                    trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
-                    trackPos1.globalIndex(),
-                    trackNeg.globalIndex(),
-                    trackPos2.globalIndex(),
-                    trackPos1.pt(),
-                    trackNeg.pt(),
-                    trackPos2.pt(),
-                    trackPos1.eta(),
-                    trackNeg.eta(),
-                    trackPos2.eta(),
-                    trackPos1.phi(),
-                    trackNeg.phi(),
-                    trackPos2.phi(),
-                    1 << CandFlag,
-                    BDTScoreBkg,
-                    BDTScorePrompt,
-                    BDTScoreFD);
-
-                // Row for MC candidate charm hadron (if constexpr isMC)
-                if constexpr (isMC) {
-                    rowCandMCCharmHad(
-                        isMcCandidateSignal,
-                        candidate.flagMcMatchRec(),
-                        candidate.originMcRec());
-                }
-            }
-      } };
-
-      fillTable(0, candidate.isSelLcToPKPi(), outputMlPKPi.at(0), outputMlPKPi.at(1), outputMlPKPi.at(2));
-      fillTable(1, candidate.isSelLcToPiKP(), outputMlPiKP.at(0), outputMlPiKP.at(1), outputMlPiKP.at(2));
-    }
-  }
-
-  template <typename TrackType, typename ParticleType>
-  void fillCharmHadMCGen(TrackType const& tracks, ParticleType particles)
-  {
-    // Filling particle properties
-    rowCandCharmHadGen.reserve(particles.size());
-    for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
-        rowCandCharmHadGen(
-          particle.mcCollisionId(),
-          particle.flagMcMatchGen(),
-          particle.originMcGen());
-      }
-    }
-  }
-
   void
     processData(aod::FemtoFullCollision const& col,
                 aod::BCsWithTimestamps const&,
@@ -775,51 +551,6 @@ struct femtoDreamProducerTask {
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData,
                  "Provide experimental data", true);
-  void
-    processDataCharmHad(aod::FemtoFullCollision const& col,
-                        aod::FemtoHFTracks const& tracks,
-                        soa::Filtered<CandidateLc> const& candidates)
-  {
-    fillCharmHadronTable<false, false>(col, tracks, candidates);
-  }
-  PROCESS_SWITCH(femtoDreamProducerTask, processDataCharmHad,
-                 "Provide experimental data for charm hadron femto", false);
-
-  void
-    processDataCharmHadWithML(aod::FemtoFullCollision const& col,
-                              aod::FemtoHFTracks const& tracks,
-                              soa::Filtered<soa::Join<CandidateLc, aod::HfMlLcToPKPi>> const& candidates)
-  {
-
-    fillCharmHadronTable<false, true>(col, tracks, candidates);
-  }
-  PROCESS_SWITCH(femtoDreamProducerTask, processDataCharmHadWithML,
-                 "Provide experimental data for charm hadron femto with ml", false);
-
-  void processMCCharmHad(aod::FemtoFullCollisionMC const& col,
-                         soa::Join<aod::FemtoHFTracks, aod::McTrackLabels> const& tracks,
-                         soa::Filtered<CandidateLcMC> const& candidates,
-                         GeneratedMC const& particles)
-  {
-    fillCharmHadronTable<true, false>(col, tracks, candidates);
-  }
-  PROCESS_SWITCH(femtoDreamProducerTask, processMCCharmHad, "Provide MC for charm hadron", false);
-
-  void processMCCharmHadWithML(aod::FemtoFullCollisionMC const& col,
-                               soa::Join<aod::FemtoHFTracks, aod::McTrackLabels> const& tracks,
-                               soa::Filtered<soa::Join<CandidateLcMC, aod::HfMlLcToPKPi>> const& candidates,
-                               GeneratedMC const& particles)
-  {
-    fillCharmHadronTable<true, true>(col, tracks, candidates);
-  }
-  PROCESS_SWITCH(femtoDreamProducerTask, processMCCharmHadWithML, "Provide MC for charm hadron with ml", false);
-  void processMCCharmHadGen(
-    soa::Join<aod::FemtoHFTracks, aod::McTrackLabels> const& tracks,
-    GeneratedMC const& particles)
-  {
-    fillCharmHadMCGen(tracks, particles);
-  }
-  PROCESS_SWITCH(femtoDreamProducerTask, processMCCharmHadGen, "Provide MC Generated charm hadron", false);
 
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
