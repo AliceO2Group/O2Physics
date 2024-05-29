@@ -216,8 +216,10 @@ struct lithium4analysis {
   float computeNSigmaHe3(const T& candidate)
   {
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
-    float correctedTPCinnerParam = (heliumPID && cfgCompensatePIDinTracking) ? candidate.tpcInnerParam() / candidate.sign() : candidate.tpcInnerParam();
-    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(correctedTPCinnerParam * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
+
+    float correctedTPCinnerParam = (heliumPID && cfgCompensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
+    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(correctedTPCinnerParam * 2.f / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
+
     double resoTPC{expTPCSignal * mBBparamsHe[5]};
     return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resoTPC);
   }
@@ -260,7 +262,7 @@ struct lithium4analysis {
     l4Cand.DCAzPr = candidatePr.dcaZ();
 
     bool heliumPID = candidateHe3.pidForTracking() == o2::track::PID::Helium3 || candidateHe3.pidForTracking() == o2::track::PID::Alpha;
-    float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? candidateHe3.tpcInnerParam() / candidateHe3.sign() : candidateHe3.tpcInnerParam();
+    float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? candidateHe3.tpcInnerParam() / 2.f : candidateHe3.tpcInnerParam();
 
     l4Cand.tpcSignalHe3 = candidateHe3.tpcSignal();
     l4Cand.momHe3TPC = correctedTPCinnerParamHe3;
@@ -335,8 +337,9 @@ struct lithium4analysis {
 
         histos.fill(HIST("hTrackSel"), Selections::kNoCuts);
         bool heliumPID = track1.pidForTracking() == o2::track::PID::Helium3 || track1.pidForTracking() == o2::track::PID::Alpha;
-        float correctedTPCinnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track1.tpcInnerParam() / track1.sign() : track1.tpcInnerParam();
-        histos.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2., track1.tpcSignal());
+
+        float correctedTPCinnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track1.tpcInnerParam() / 2.f : track1.tpcInnerParam();
+        histos.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, track1.tpcSignal());
 
         if (!track1.isGlobalTrackWoDCA()) {
           continue;
@@ -386,8 +389,8 @@ struct lithium4analysis {
             float beta = responseBeta.GetBeta(track1);
             beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
             bool heliumPID = track1.pidForTracking() == o2::track::PID::Helium3 || track1.pidForTracking() == o2::track::PID::Alpha;
-            float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? track1.tpcInnerParam() / track1.sign() : track1.tpcInnerParam();
-            cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+            float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? track1.tpcInnerParam() / 2.f : track1.tpcInnerParam();
+            cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
           }
           if (track2.hasTOF()) {
             float beta = responseBeta.GetBeta(track2);
@@ -458,6 +461,10 @@ struct lithium4analysis {
           continue;
         }
 
+        bool heliumPID = he3Cand.pidForTracking() == o2::track::PID::Helium3 || he3Cand.pidForTracking() == o2::track::PID::Alpha;
+        float correctedTPCinnerParam = (heliumPID && cfgCompensatePIDinTracking) ? he3Cand.tpcInnerParam() / 2.f : he3Cand.tpcInnerParam();
+        histos.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, he3Cand.tpcSignal());
+
         if (!FillCandidateInfo(he3Cand, protonCand, true)) {
           continue;
         }
@@ -466,9 +473,10 @@ struct lithium4analysis {
         if (he3Cand.hasTOF()) {
           float beta = responseBeta.GetBeta(he3Cand);
           beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-          bool heliumPID = t1.pidForTracking() == o2::track::PID::Helium3 || t1.pidForTracking() == o2::track::PID::Alpha;
-          float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? t1.tpcInnerParam() / t1.sign() : t1.tpcInnerParam();
-          cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+
+          bool heliumPID = t1.pidForTracking() == o2::track::PID::Helium3 || he3Cand.pidForTracking() == o2::track::PID::Alpha;
+          float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? he3Cand.tpcInnerParam() / 2.f : he3Cand.tpcInnerParam();
+          cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
         }
         if (protonCand.hasTOF()) {
           float beta = responseBeta.GetBeta(protonCand);
@@ -583,8 +591,8 @@ struct lithium4analysis {
                 float beta = responseBetaMC.GetBeta(track1);
                 beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
                 bool heliumPID = track1.pidForTracking() == o2::track::PID::Helium3 || track1.pidForTracking() == o2::track::PID::Alpha;
-                float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? track1.tpcInnerParam() / track1.sign() : track1.tpcInnerParam();
-                cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+                float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? track1.tpcInnerParam() / 2.f : track1.tpcInnerParam();
+                cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
               }
               if (track2.hasTOF()) {
                 float beta = responseBetaMC.GetBeta(track2);
