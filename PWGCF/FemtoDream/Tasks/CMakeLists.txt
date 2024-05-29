@@ -14,11 +14,6 @@ o2physics_add_dpl_workflow(femtodream-pair-track-track
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(femtodream-pair-track-hf
-          SOURCES femtoDreamPairTaskTrackHF.cxx
-          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-          COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(femtodream-triplet-track-track-track
           SOURCES femtoDreamTripletTaskTrackTrackTrack.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
