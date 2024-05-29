@@ -334,10 +334,10 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
     std::vector<float> responseOmegacBar;
     for (float mlProbOmegac : candidate.mlProbOmegac()) {
       responseOmegac.push_back(mlProbOmegac);
-    };
+    }
     for (float mlProbOmegacBar : candidate.mlProbOmegacBar()) {
       responseOmegacBar.push_back(mlProbOmegacBar);
-    };
+    }
     rowCandidateFull(
       candidate.xPv(),
       candidate.yPv(),
@@ -459,10 +459,10 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
     std::vector<float> responseOmegacBar;
     for (float mlProbOmegac : candidate.mlProbOmegac()) {
       responseOmegac.push_back(mlProbOmegac);
-    };
+    }
     for (float mlProbOmegacBar : candidate.mlProbOmegacBar()) {
       responseOmegacBar.push_back(mlProbOmegacBar);
-    };
+    }
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
       rowCandidateLite(
@@ -543,10 +543,10 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
     std::vector<float> responseOmegacBar;
     for (float mlProbOmegac : candidate.mlProbOmegac()) {
       responseOmegac.push_back(mlProbOmegac);
-    };
+    }
     for (float mlProbOmegacBar : candidate.mlProbOmegacBar()) {
       responseOmegacBar.push_back(mlProbOmegacBar);
-    };
+    }
     rowMlKFCandidateFull(
       candidate.nSigmaTPCPiFromOmegac(),
       candidate.nSigmaTOFPiFromOmegac(),
@@ -607,8 +607,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
       collisionMatched,
       responseOmegac,
       responseOmegacBar
-
-    );
+ );
   }
 
   template <typename T>
@@ -672,8 +671,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
       debugMc,
       originMc,
       collisionMatched
-
-    );
+);
   }
 
   void processDataFull(MyEventTable const& collisions, MyTrackTable const&,
