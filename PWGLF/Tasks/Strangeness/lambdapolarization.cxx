@@ -201,19 +201,19 @@ struct lambdapolarization {
       return 0;
     }
     auto centrality = collision.centFT0C();
-//    auto multNTracksPV = collision.multNTracksPV();
+    //    auto multNTracksPV = collision.multNTracksPV();
 
     if (cfgCentSel < centrality) {
       return 0;
     }
-/*
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
-      return 0;
-    }
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
-      return 0;
-    }
-*/
+    /*
+        if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
+          return 0;
+        }
+        if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
+          return 0;
+        }
+    */
     if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return 0;
     }
