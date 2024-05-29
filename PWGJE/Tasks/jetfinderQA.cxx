@@ -635,7 +635,7 @@ struct JetFinderQATask {
     }
     if (checkMcCollisionsMatched) {
       bool isMatchFound = false;
-      auto collisionspermcpejt = collisions.sliceBy(CollisionsPerMcpJets, jet.mcCollision().globalIndex()); 
+      auto collisionspermcpejt = collisions.sliceBy(CollisionsPerMcpJets, jet.mcCollision().globalIndex());
       for (auto const& collision : collisionspermcpejt) {
         if (collision.mcCollision().globalIndex() == jet.mcCollision().globalIndex()) {
           isMatchFound = true;
@@ -666,7 +666,7 @@ struct JetFinderQATask {
     }
     if (checkMcCollisionsMatched) {
       bool isMatchFound = false;
-      auto collisionspermcpejt = collisions.sliceBy(CollisionsPerMcpJets, jet.mcCollision().globalIndex()); 
+      auto collisionspermcpejt = collisions.sliceBy(CollisionsPerMcpJets, jet.mcCollision().globalIndex());
       for (auto const& collision : collisionspermcpejt) {
         if (collision.mcCollision().globalIndex() == jet.mcCollision().globalIndex()) {
           isMatchFound = true;
