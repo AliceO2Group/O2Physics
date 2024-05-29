@@ -55,7 +55,6 @@ using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFull
 using FemtoHFTrack = FemtoHFTracks::iterator;
 } // namespace o2::aod
 
-
 struct femtoDreamProducerTask {
 
   Produces<aod::FDCollisions> outputCollision;
@@ -203,24 +202,24 @@ struct femtoDreamProducerTask {
   template <typename ParticleType>
   void fillDebugParticle(ParticleType const& particle)
   {
-      outputDebugParts(particle.sign(),
-                       (uint8_t)particle.tpcNClsFound(),
-                       particle.tpcNClsFindable(),
-                       (uint8_t)particle.tpcNClsCrossedRows(),
-                       particle.tpcNClsShared(),
-                       particle.tpcInnerParam(),
-                       particle.itsNCls(),
-                       particle.itsNClsInnerBarrel(),
-                       particle.dcaXY(),
-                       particle.dcaZ(),
-                       particle.tpcSignal(),
-                       particle.tpcNSigmaPi(),
-                       particle.tpcNSigmaKa(),
-                       particle.tpcNSigmaPr(),
-                       particle.tofNSigmaPi(),
-                       particle.tofNSigmaKa(),
-                       particle.tofNSigmaPr(),
-                       -999., -999., -999., -999., -999., -999., -999., -999., -999., -999.);  
+    outputDebugParts(particle.sign(),
+                     (uint8_t)particle.tpcNClsFound(),
+                     particle.tpcNClsFindable(),
+                     (uint8_t)particle.tpcNClsCrossedRows(),
+                     particle.tpcNClsShared(),
+                     particle.tpcInnerParam(),
+                     particle.itsNCls(),
+                     particle.itsNClsInnerBarrel(),
+                     particle.dcaXY(),
+                     particle.dcaZ(),
+                     particle.tpcSignal(),
+                     particle.tpcNSigmaPi(),
+                     particle.tpcNSigmaKa(),
+                     particle.tpcNSigmaPr(),
+                     particle.tofNSigmaPi(),
+                     particle.tofNSigmaKa(),
+                     particle.tofNSigmaPr(),
+                     -999., -999., -999., -999., -999., -999., -999., -999., -999., -999.);
   }
 
   template <typename CollisionType, typename ParticleType>
@@ -282,7 +281,6 @@ struct femtoDreamProducerTask {
       outputCollsMCLabels(-1);
     }
   }
-  
 
   template <bool isMC, typename TrackType>
   bool fillTracksForCharmHadron(TrackType const& tracks, o2::aod::FemtoHFTrack const& prong0, o2::aod::FemtoHFTrack const& prong1, o2::aod::FemtoHFTrack const& prong2, int candSize)
@@ -326,9 +324,9 @@ struct femtoDreamProducerTask {
 
       if constexpr (isMC) {
         fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
-         //    if constexpr (isMC) {
-  //      fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
-  //    }
+        //    if constexpr (isMC) {
+        //      fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
+        //    }
       }
     }
     return fIsTrackFilled;
@@ -511,7 +509,6 @@ struct femtoDreamProducerTask {
     fillCharmHadMCGen(tracks, particles);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMCCharmHadGen, "Provide MC Generated charm hadron", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
