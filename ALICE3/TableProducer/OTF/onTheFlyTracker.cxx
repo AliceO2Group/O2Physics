@@ -135,7 +135,7 @@ struct OnTheFlyTracker {
   o2::steer::InteractionSampler irSampler;
   o2::vertexing::PVertexer vertexer;
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
     if (enableLUT) {
       std::map<int, const char*> mapPdgLut;

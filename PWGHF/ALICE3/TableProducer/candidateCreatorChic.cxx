@@ -98,7 +98,7 @@ struct HfCandidateCreatorChic {
                soa::Filtered<soa::Join<
                  aod::HfCand2Prong,
                  aod::HfSelJpsi>> const& jpsiCands,
-               aod::TracksWCov const& tracks,
+               aod::TracksWCov const&,
                aod::ECALs const& ecals)
   {
     // loop over Jpsi candidates
@@ -119,7 +119,7 @@ struct HfCandidateCreatorChic {
       hCPAJpsi->Fill(jpsiCand.cpa());
       // create Jpsi track to pass to DCA fitter; use cand table + rebuild vertex
       const std::array<float, 3> vertexJpsi = {jpsiCand.xSecondaryVertex(), jpsiCand.ySecondaryVertex(), jpsiCand.zSecondaryVertex()};
-      std::array<float, 3> pvecJpsi = {jpsiCand.px(), jpsiCand.py(), jpsiCand.pz()};
+      std::array<float, 3> pvecJpsi = jpsiCand.pVector();
       auto prong0 = jpsiCand.prong0_as<aod::TracksWCov>();
       auto prong1 = jpsiCand.prong1_as<aod::TracksWCov>();
       auto prong0TrackParCov = getTrackParCov(prong0);
@@ -223,9 +223,9 @@ struct HfCandidateCreatorChicMc {
 
   void process(aod::HfCandChic const& candidates,
                aod::HfCand2Prong const&,
-               aod::TracksWMc const& tracks,
+               aod::TracksWMc const&,
                aod::McParticles const& mcParticles,
-               aod::ECALs const& ecals)
+               aod::ECALs const&)
   {
     int indexRec = -1;
     // int8_t sign = 0;
@@ -253,7 +253,7 @@ struct HfCandidateCreatorChicMc {
         if (indexMother > -1 && indexMotherGamma == indexMother && candidate.prong1().mcparticle().pdgCode() == kGamma) {
           auto particleMother = mcParticles.rawIteratorAt(indexMother);
           hEphotonMatched->Fill(candidate.prong1().e());
-          hMassEMatched->Fill(sqrt(candidate.prong1().px() * candidate.prong1().px() + candidate.prong1().py() * candidate.prong1().py() + candidate.prong1().pz() * candidate.prong1().pz()));
+          hMassEMatched->Fill(RecoDecay::p(candidate.pVectorProng1()));
           if (particleMother.has_daughters()) {
             std::vector<int> arrAllDaughtersIndex;
             RecoDecay::getDaughters(particleMother, &arrAllDaughtersIndex, std::array{static_cast<int>(kGamma), static_cast<int>(Pdg::kJPsi)}, 1);

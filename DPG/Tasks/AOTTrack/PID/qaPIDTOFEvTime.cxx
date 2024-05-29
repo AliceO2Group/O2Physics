@@ -48,7 +48,7 @@ struct tofPidCollisionTimeQa {
   OutputObj<THashList> listEfficiency{"Efficiency"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
     const AxisSpec evTimeAxis{evTimeBins, "Event time (ps)"};
     const AxisSpec evTimeDeltaAxis{evTimeDeltaBins, "Delta event time (ps)"};
@@ -195,13 +195,19 @@ struct tofPidCollisionTimeQa {
     makeEfficiency("effTOFT0ACEvTime", "Efficiency of the TOF+T0AC Event Time");
     makeEfficiency("effT0AEvTime", "Efficiency of the T0A Event Time");
     makeEfficiency("effT0CEvTime", "Efficiency of the T0C Event Time");
+
+    if (!doprocessMC) {
+      return;
+    }
+    histos.add("MC/t", "", HistType::kTH1F, {{1000, -1000, 1000, "MC time"}});
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags, aod::pidTOFbeta, aod::pidTOFmass, aod::EvTimeTOFOnly, aod::TrackSelection>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::EvTimeTOFOnly, aod::pidEvTimeFlags,
+                         aod::pidTOFbeta, aod::pidTOFmass, aod::EvTimeTOFOnly, aod::TrackSelection>;
   using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0sCorrected>;
   // Define slice per collision
   Preslice<Trks> perCollision = aod::track::collisionId;
-  void process(Trks const& tracks, EvTimeCollisions const&)
+  void processData(Trks const& tracks, EvTimeCollisions const&)
   {
     static int ncolls = 0;
     int lastCollisionId = -1; // Last collision ID analysed
@@ -211,7 +217,6 @@ struct tofPidCollisionTimeQa {
       } else if (t.collisionId() == lastCollisionId) { // Event was already processed
         continue;
       }
-      // Create new table for the tracks in a collision
       lastCollisionId = t.collisionId(); /// Cache last collision ID
       auto collision = t.collision_as<EvTimeCollisions>();
 
@@ -402,9 +407,35 @@ struct tofPidCollisionTimeQa {
       static_cast<TEfficiency*>(listEfficiency->FindObject("effTOFT0ACEvTime"))->Fill(t.isEvTimeTOF() && collision.has_foundFT0() && collision.t0ACorrectedValid(), nTracksWithTOF);
     }
   }
+  PROCESS_SWITCH(tofPidCollisionTimeQa, processData, "Process data", true);
+
+  using TrksMC = soa::Join<Trks, aod::McTrackLabels>;
+  using EvTimeCollisionsMC = soa::Join<EvTimeCollisions, aod::McCollisionLabels>;
+  void processMC(TrksMC const& tracks,
+                 EvTimeCollisionsMC const&,
+                 aod::McParticles const&,
+                 aod::BCs const&,
+                 aod::McCollisions const&)
+  {
+    // static int ncolls = 0;
+    int lastCollisionId = -1; // Last collision ID analysed
+
+    for (auto& t : tracks) {
+      if (!t.has_collision()) { // Track was not assigned to a collision
+        continue;
+      } else if (t.collisionId() == lastCollisionId) { // Event was already processed
+        continue;
+      }
+      lastCollisionId = t.collisionId(); /// Cache last collision ID
+      const auto& collision = t.collision_as<EvTimeCollisionsMC>();
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+      const auto& collisionMC = collision.mcCollision_as<aod::McCollisions>();
+      histos.fill(HIST("MC/t"), collisionMC.t());
+    }
+  }
+  PROCESS_SWITCH(tofPidCollisionTimeQa, processMC, "Process MC", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<tofPidCollisionTimeQa>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofPidCollisionTimeQa>(cfgc)}; }

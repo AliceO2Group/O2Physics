@@ -58,6 +58,7 @@ struct phosPi0 {
   Configurable<float> mOccE{"minOccE", 0.5, "Min. cluster energy of occupancy plots"};
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using SelCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using BCsWithBcSels = soa::Join<aod::BCs, aod::BcSels>;
   using mcClusters = soa::Join<aod::CaloClusters, aod::PHOSCluLabels>;
   using mcAmbClusters = soa::Join<aod::CaloAmbiguousClusters, aod::PHOSAmbCluLabels>;
@@ -220,7 +221,7 @@ struct phosPi0 {
       mHistManager.add("hMCPi0SpPrim", "pi0 spectrum Primary", HistType::kTH1F, {ptAxis});
       mHistManager.add("hMCPi0RapPrim", "pi0 rapidity primary", HistType::kTH1F, {{100, -1., 1., "Rapidity"}});
       mHistManager.add("hMCPi0PhiPrim", "pi0 phi primary", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
-      mHistManager.add("hMCPi0SecVtx", "pi0 secondary", HistType::kTH2F, {{100, 0., 500., "Rapidity"}, {100, 0., TMath::TwoPi(), "#phi (rad)"}});
+      mHistManager.add("hMCPi0SecVtx", "pi0 secondary", HistType::kTH2F, {{100, 0., 500., "R (cm)"}, {100, -TMath::Pi(), TMath::Pi(), "#phi (rad)"}});
     }
   }
 
@@ -232,7 +233,7 @@ struct phosPi0 {
     processAll<false>(col, clusters, mcPart);
   }
   PROCESS_SWITCH(phosPi0, processData, "process data", true);
-  void processMC(SelCollisions::iterator const& col,
+  void processMC(SelCollisionsMC::iterator const& col,
                  mcClusters const& clusters,
                  aod::McParticles const& mcPart)
   {
@@ -291,16 +292,21 @@ struct phosPi0 {
         if (mcPart->begin().mcCollisionId() != mPrevMCColId) {
           mPrevMCColId = mcPart->begin().mcCollisionId(); // to avoid scanning full MC table each BC
           for (auto part : *mcPart) {
+            if (col.has_mcCollision() && (part.mcCollisionId() != col.mcCollisionId())) {
+              continue;
+            }
             if (part.pdgCode() == 111) {
-              double pt = part.pt();
-              mHistManager.fill(HIST("hMCPi0SpAll"), pt);
-              double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
-              double phiVtx = atan2(part.vy(), part.vx());
-              mHistManager.fill(HIST("hMCPi0SecVtx"), r, phiVtx);
-              if (r < 0.5) {
-                mHistManager.fill(HIST("hMCPi0SpPrim"), pt);
-                mHistManager.fill(HIST("hMCPi0RapPrim"), part.y());
-                mHistManager.fill(HIST("hMCPi0PhiPrim"), part.phi());
+              if (abs(part.y()) < .5) {
+                double pt = part.pt();
+                mHistManager.fill(HIST("hMCPi0SpAll"), pt);
+                double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
+                double phiVtx = atan2(part.vy(), part.vx());
+                mHistManager.fill(HIST("hMCPi0SecVtx"), r, phiVtx);
+                if (r < 0.5) {
+                  mHistManager.fill(HIST("hMCPi0SpPrim"), pt);
+                  mHistManager.fill(HIST("hMCPi0RapPrim"), part.y());
+                  mHistManager.fill(HIST("hMCPi0PhiPrim"), part.phi());
+                }
               }
             }
           }

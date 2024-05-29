@@ -143,7 +143,7 @@ struct emcalQC {
     LOGF(info, "Number of EMC cuts = %d", fEMCCuts.size());
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     DefineCuts();
     addhistograms(); // please call this after DefinCuts();
@@ -226,7 +226,7 @@ struct emcalQC {
     }   // end of collision loop
   }     // end of process
 
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
 
   PROCESS_SWITCH(emcalQC, processQC, "run EMCal QC", false);
   PROCESS_SWITCH(emcalQC, processDummy, "Dummy function", true);

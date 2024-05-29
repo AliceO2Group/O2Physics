@@ -171,7 +171,7 @@ struct JetSubstructureHFTask {
     jetReclustering<false, isSubtracted>(jet, outputTable);
   }
 
-  void processDummy(JetTracks const& tracks)
+  void processDummy(JetTracks const&)
   {
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processDummy, "Dummy process function turned on by default", true);

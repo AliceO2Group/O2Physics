@@ -56,12 +56,8 @@ struct NucleiHistTask {
   HistogramRegistry aHelium4_reg{"aHelium4", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // MC
-  HistogramRegistry MC_truth_reg{"MC_particles", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry MC_recon_reg{"MC_particles_reconstructed", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry MC_recon_diff_reg{"MC_reconstructed_diff", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry MC_eff{"MC_efficiency", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry MC_recon_reg{"MC_particles_reco", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   OutputObj<TH1F> histPDG{TH1F("PDG", "PDG;PDG code", 100, 0.0, 100.0)};
-  OutputObj<TH1F> histPDG_eff{TH1F("PDG_eff", "PDG;PDG code", 100, 0.0, 100.0)};
 
   void init(o2::framework::InitContext&)
   {
@@ -82,8 +78,7 @@ struct NucleiHistTask {
     AxisSpec centralityAxis = {100, 0.0, 100.0, "VT0C (%)"};
     AxisSpec centralityAxis_extended = {105, 0.0, 105.0, "VT0C (%)"};
     AxisSpec etaAxis = {etaBinning, "#eta"};
-    AxisSpec PDGBINNING = {20, 0.0, 20.0, "PDG code"};
-    AxisSpec ptAxis_diff = {ptBinning_diff, "#it{p}_{T,diff} (GeV/#it{c})"};
+    AxisSpec PDGBINNING = {50, 0.0, 50.0, "PDG code"};
 
     // +++++++++++++++++++++ Data ++++++++++++++++++++++++
 
@@ -360,15 +355,9 @@ struct NucleiHistTask {
 
     // +++++++++++++++++++++ MC ++++++++++++++++++++++++++
 
-    // MC truth
-    MC_truth_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
-    MC_truth_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
-    MC_truth_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_truth_reg.add("histRecVtxMC", "MC collision z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
-    MC_truth_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
-
     // MC reconstructed
-    MC_recon_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
+    MC_recon_reg.add("histRecVtxMC", "MC reconstructed vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
+    MC_recon_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
     MC_recon_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_recon_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
     MC_recon_reg.add("histDCA", "DCA xy", HistType::kTH3F, {ptAxis, {250, -0.5, 0.5, "dca"}, PDGBINNING});
@@ -381,20 +370,9 @@ struct NucleiHistTask {
     MC_recon_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt", HistType::kTH3F, {ptAxis, {80, 0.0, 160.0, "nCluster"}, PDGBINNING});
     MC_recon_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt", HistType::kTH3F, {ptAxis, {10, 0.0, 10.0, "ITS nCls"}, PDGBINNING});
     MC_recon_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt", HistType::kTH3F, {ptAxis, {10, 0.0, 10.0, "ITS ib nCls"}, PDGBINNING});
-    MC_recon_reg.add("histTPCnClsFindable", "Findable TPC clusters", HistType::kTH3F, {ptAxis, {200, 0.0, 200.0, "nCluster"}, PDGBINNING});
-    MC_recon_reg.add("histTPCnClsFindableMinusFound", "TPC Clusters: Findable - Found", HistType::kTH3F, {ptAxis, {60, 0.0, 60.0, "nCluster"}, PDGBINNING});
-    MC_recon_reg.add("histTPCnClsFindableMinusCrossedRows", "TPC Clusters: Findable - crossed rows", HistType::kTH3F, {ptAxis, {60, 0.0, 60.0, "nCluster"}, PDGBINNING});
-    MC_recon_reg.add("histTPCnClsShared", "Number of shared TPC clusters", HistType::kTH3F, {ptAxis, {70, 0.0, 70.0, "nCluster"}, PDGBINNING});
-    MC_recon_reg.add("histTPCCrossedRowsOverFindableCls", "Ratio crossed rows over findable clusters", HistType::kTH2F, {{100, 0., 2.0, "Crossed Rows / Findable Cls"}, PDGBINNING});
-    MC_recon_reg.add("histTPCFoundOverFindable", "Ratio of found over findable clusters", HistType::kTH2F, {{100, 0., 2.0, "Found Cls / Findable Cls"}, PDGBINNING});
     MC_recon_reg.add("histChi2TPC", "chi^2 TPC vs Pt", HistType::kTH3F, {ptAxis, {100, 0.0, 5.0, "chi^2"}, PDGBINNING});
     MC_recon_reg.add("histChi2ITS", "chi^2 ITS vs Pt", HistType::kTH3F, {ptAxis, {500, 0.0, 50.0, "chi^2"}, PDGBINNING});
-    MC_recon_reg.add("histChi2ITSvsITSnCls", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
-    MC_recon_reg.add("histChi2ITSvsITSibnCls", "chi^2 ITS vs ITS ib nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS ib nCls"}});
-    MC_recon_reg.add("histChi2ITSvsITSnClsAll", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
     MC_recon_reg.add("histChi2TOF", "chi^2 TOF vs Pt", HistType::kTH3F, {ptAxis, {75, 0.0, 15.0, "chi^2"}, PDGBINNING});
-    MC_recon_reg.add("histTrackLength", "Track length", HistType::kTH2F, {{350, 0., 700., "length (cm)"}, PDGBINNING});
-    MC_recon_reg.add("histTPCFractionSharedCls", "Fraction of shared TPC clusters", HistType::kTH2F, {{100, -2.0, 2.0, "Shared Cls"}, PDGBINNING});
     MC_recon_reg.add("histTpcNsigmaDataPi", "TPC nSigma (#pi^{+})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
     MC_recon_reg.add("histTpcNsigmaDataaPi", "TPC nSigma (#pi^{-})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
     MC_recon_reg.add("histTpcNsigmaDataPr", "TPC nSigma (p)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{p}"}});
@@ -419,43 +397,6 @@ struct NucleiHistTask {
     MC_recon_reg.add("histTofNsigmaDataaHe", "TOF nSigma (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
     MC_recon_reg.add("histTofNsigmaDataAl", "TOF nSigma (^{4}He)", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
     MC_recon_reg.add("histTofNsigmaDataaAl", "TOF nSigma (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
-
-    // MC diff (truth - reconstructed)
-    MC_recon_diff_reg.add("histPhiDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
-    MC_recon_diff_reg.add("histEtaDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
-    MC_recon_diff_reg.add("histPtDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
-
-    // MC efficencies
-    MC_eff.add("histEffSkimming", "Efficiency skimming", HistType::kTH2F, {{10, 0.0, 10.0}, PDGBINNING});
-    MC_eff.add("histITS_vs_pT", "ITS pT distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_eff.add("histITS_TPC_vs_pT", "ITS_TPC pT distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_eff.add("histITS_TPC_TOFvs_pT", "ITS_TPC_TOF pT distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
-
-    MC_eff.add("histPt_TPC_Pi", "#pi^{+} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aPi", "#pi^{-} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_Pr", "p reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aPr", "#bar{p} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_De", "d reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aDe", "#bar{d} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_Tr", "t reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aTr", "#bar{t} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_He3", "^{3}He reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aHe3", "^{3}#bar{He} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_He4", "^{4}He reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TPC_aHe4", "^{4}#bar{He} reconstructed p_{T} TPC", HistType::kTH1F, {ptAxis});
-
-    MC_eff.add("histPt_TOF_Pi", "#pi^{+} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aPi", "#pi^{-} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_Pr", "p reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aPr", "#bar{p} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_De", "d reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aDe", "#bar{d} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_Tr", "t reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aTr", "#bar{t} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_He3", "^{3}He reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aHe3", "^{3}#bar{He} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_He4", "^{4}He reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-    MC_eff.add("histPt_TOF_aHe4", "^{4}#bar{He} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
   }
 
   // Configurables
@@ -486,26 +427,12 @@ struct NucleiHistTask {
   Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to required in TRD for track selection. -1 does not require any TRD cluster"};
 
   Configurable<bool> event_selection_sel8{"event_selection_sel8", true, "Enable sel8 event selection"};
-
-  Configurable<bool> enable_PVcontributor_global{"enable_PVcontributor_global", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_pion{"enable_PVcontributor_pion", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_antipion{"enable_PVcontributor_antipion", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_proton{"enable_PVcontributor_proton", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_antiproton{"enable_PVcontributor_antiproton", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_deuteron{"enable_PVcontributor_deuteron", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_antideuteron{"enable_PVcontributor_antideuteron", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_triton{"enable_PVcontributor_triton", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_antitriton{"enable_PVcontributor_antitriton", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_Helium3{"enable_PVcontributor_Helium3", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_antiHelium3{"enable_PVcontributor_antiHelium3", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_Helium4{"enable_PVcontributor_Helium4", true, "is PV contributor (global)"};
-  Configurable<bool> enable_PVcontributor_antiHelium4{"enable_PVcontributor_antiHelium4", true, "is PV contributor (global)"};
+  Configurable<bool> event_selection_MC_sel8{"event_selection_MC_sel8", true, "Enable sel8 event selection in MC processing"};
 
   template <typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
   {
 
-    // collision process loop
     bool keepEvent_pi = kFALSE;
     bool keepEvent_p = kFALSE;
     bool keepEvent_d = kFALSE;
@@ -523,16 +450,14 @@ struct NucleiHistTask {
     if (event_selection_sel8 && event.sel8()) {
       spectra_reg.fill(HIST("histRecVtxZData"), event.posZ());
     }
-
     if (!event_selection_sel8) {
       spectra_reg.fill(HIST("histRecVtxZData"), event.posZ());
     }
 
-    for (auto track : tracks) { // start loop over tracks
+    for (auto track : tracks) {
 
-      if (event_selection_sel8 && !event.sel8()) {
+      if (event_selection_sel8 && !event.sel8())
         continue;
-      }
 
       float TPCnumberClsFound = track.tpcNClsFound();
       float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
@@ -544,25 +469,11 @@ struct NucleiHistTask {
         spectra_reg.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
         spectra_reg.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
       }
-
       if (track.sign() < 0) {
         spectra_reg.fill(HIST("histDcaVsPtData_antiparticle"), track.pt(), track.dcaXY());
         spectra_reg.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
       }
 
-      if (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
-        continue;
-      }
-
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS) {
-        continue;
-      }
-
-      if (enable_PVcontributor_global && !(track.isPVContributor())) {
-        continue;
-      }
-
-      // cut on rapidity
       TLorentzVector lorentzVector_pion{};
       TLorentzVector lorentzVector_proton{};
       TLorentzVector lorentzVector_deuteron{};
@@ -582,11 +493,9 @@ struct NucleiHistTask {
           lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
           lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
           lorentzVector_He3.Rapidity() < yMin || lorentzVector_He3.Rapidity() > yMax ||
-          lorentzVector_He4.Rapidity() < yMin || lorentzVector_He4.Rapidity() > yMax) {
+          lorentzVector_He4.Rapidity() < yMin || lorentzVector_He4.Rapidity() > yMax)
         continue;
-      }
 
-      // fill QA histograms
       float nSigmaPion = track.tpcNSigmaPi();
       float nSigmaProton = track.tpcNSigmaPr();
       float nSigmaDeut = track.tpcNSigmaDe();
@@ -594,12 +503,16 @@ struct NucleiHistTask {
       float nSigmaHe3 = track.tpcNSigmaHe();
       float nSigmaHe4 = track.tpcNSigmaAl();
 
-      spectra_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal());
       spectra_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
       spectra_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
       spectra_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
       spectra_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
       spectra_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
+
+      if (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z || TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS)
+        continue;
+
+      spectra_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal());
 
       if (track.sign() > 0) {
         pion_reg.fill(HIST("histTpcNsigmaData"), track.pt(), nSigmaPion);
@@ -609,9 +522,7 @@ struct NucleiHistTask {
         Helium3_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
         Helium4_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe4);
 
-        //  fill TOF m^2 histogram
         if (track.hasTOF()) {
-
           if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
             int lastLayer = 0;
             for (int l = 7; l >= 0; l--) {
@@ -620,13 +531,10 @@ struct NucleiHistTask {
                 break;
               }
             }
-            if (lastLayer < lastRequiredTrdCluster) {
+            if (lastLayer < lastRequiredTrdCluster)
               continue;
-            }
           }
-
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
-
           spectra_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
         }
       }
@@ -639,9 +547,7 @@ struct NucleiHistTask {
         aHelium3_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe3);
         aHelium4_reg.fill(HIST("histTpcNsigmaData"), track.pt() * 2.0, nSigmaHe4);
 
-        // fill TOF m^2 histogram
         if (track.hasTOF()) {
-
           if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
             int lastLayer = 0;
             for (int l = 7; l >= 0; l--) {
@@ -650,28 +556,20 @@ struct NucleiHistTask {
                 break;
               }
             }
-            if (lastLayer < lastRequiredTrdCluster) {
+            if (lastLayer < lastRequiredTrdCluster)
               continue;
-            }
           }
-
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
-
           spectra_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
         }
       }
 
-      //**************   check offline-trigger (skimming) condidition Pion   *******************
+      //**************   Pion   *******************
 
       if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh) {
 
-        if (enable_PVcontributor_pion && !(track.isPVContributor())) {
-          continue;
-        }
-
         if (track.sign() > 0) {
           keepEvent_pi = kTRUE;
-
           pion_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           pion_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           pion_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
@@ -682,7 +580,6 @@ struct NucleiHistTask {
           pion_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -691,27 +588,19 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             pion_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             pion_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
             pion_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPi());
           }
         }
 
-        if (enable_PVcontributor_antipion && !(track.isPVContributor())) {
-          continue;
-        }
-
         if (track.sign() < 0) {
           keepEvent_antipi = kTRUE;
-
           apion_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           apion_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           apion_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
@@ -722,7 +611,6 @@ struct NucleiHistTask {
           apion_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -731,14 +619,11 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             apion_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             apion_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
             apion_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPi());
@@ -746,7 +631,6 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
-
           if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
             int lastLayer = 0;
             for (int l = 7; l >= 0; l--) {
@@ -755,26 +639,19 @@ struct NucleiHistTask {
                 break;
               }
             }
-            if (lastLayer < lastRequiredTrdCluster) {
+            if (lastLayer < lastRequiredTrdCluster)
               continue;
-            }
           }
-
           spectra_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
         }
       }
 
-      //**************   check offline-trigger (skimming) condidition Proton   *******************
+      //**************   Proton   *******************
 
       if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh) {
 
-        if (enable_PVcontributor_proton && !(track.isPVContributor())) {
-          continue;
-        }
-
         if (track.sign() > 0) {
           keepEvent_p = kTRUE;
-
           proton_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           proton_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           proton_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
@@ -785,7 +662,6 @@ struct NucleiHistTask {
           proton_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -794,27 +670,19 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             proton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             proton_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
             proton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
           }
         }
 
-        if (enable_PVcontributor_antiproton && !(track.isPVContributor())) {
-          continue;
-        }
-
         if (track.sign() < 0) {
           keepEvent_antip = kTRUE;
-
           aproton_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           aproton_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           aproton_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
@@ -825,7 +693,6 @@ struct NucleiHistTask {
           aproton_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -834,14 +701,11 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             aproton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             aproton_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
             aproton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaPr());
@@ -849,7 +713,6 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
-
           if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
             int lastLayer = 0;
             for (int l = 7; l >= 0; l--) {
@@ -858,26 +721,19 @@ struct NucleiHistTask {
                 break;
               }
             }
-            if (lastLayer < lastRequiredTrdCluster) {
+            if (lastLayer < lastRequiredTrdCluster)
               continue;
-            }
           }
-
           spectra_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
         }
       }
 
-      //**************   check offline-trigger (skimming) condidition Deuteron   *******************
+      //**************   Deuteron   *******************
 
       if (nSigmaDeut > nsigmacutLow && nSigmaDeut < nsigmacutHigh) {
 
-        if (enable_PVcontributor_deuteron && !(track.isPVContributor())) {
-          continue;
-        }
-
         if (track.sign() > 0) {
           keepEvent_d = kTRUE;
-
           deuteron_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           deuteron_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           deuteron_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
@@ -888,7 +744,6 @@ struct NucleiHistTask {
           deuteron_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -897,27 +752,19 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             deuteron_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             deuteron_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
             deuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
           }
         }
 
-        if (enable_PVcontributor_antideuteron && !(track.isPVContributor())) {
-          continue;
-        }
-
         if (track.sign() < 0) {
           keepEvent_antid = kTRUE;
-
           adeuteron_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           adeuteron_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           adeuteron_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
@@ -928,7 +775,6 @@ struct NucleiHistTask {
           adeuteron_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -937,14 +783,11 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             adeuteron_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             adeuteron_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
             adeuteron_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaDe());
@@ -952,7 +795,6 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
-
           if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
             int lastLayer = 0;
             for (int l = 7; l >= 0; l--) {
@@ -961,26 +803,19 @@ struct NucleiHistTask {
                 break;
               }
             }
-            if (lastLayer < lastRequiredTrdCluster) {
+            if (lastLayer < lastRequiredTrdCluster)
               continue;
-            }
           }
-
           spectra_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
         }
       }
 
-      //**************   check offline-trigger (skimming) condidition Triton   *******************
+      //**************   Triton   *******************
 
       if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh) {
 
-        if (enable_PVcontributor_triton && !(track.isPVContributor())) {
-          continue;
-        }
-
         if (track.sign() > 0) {
           keepEvent_t = kTRUE;
-
           triton_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           triton_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           triton_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
@@ -991,7 +826,6 @@ struct NucleiHistTask {
           triton_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -1000,27 +834,19 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             triton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             triton_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
             triton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
           }
         }
 
-        if (enable_PVcontributor_antitriton && !(track.isPVContributor())) {
-          continue;
-        }
-
         if (track.sign() < 0) {
           keepEvent_antit = kTRUE;
-
           atriton_reg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           atriton_reg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
           atriton_reg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
@@ -1031,7 +857,6 @@ struct NucleiHistTask {
           atriton_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -1040,14 +865,11 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             atriton_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
             atriton_reg.fill(HIST("histTofSignalData"), track.pt(), beta);
             atriton_reg.fill(HIST("histTofNsigmaData"), track.pt(), track.tofNSigmaTr());
@@ -1055,7 +877,6 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
-
           if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
             int lastLayer = 0;
             for (int l = 7; l >= 0; l--) {
@@ -1064,26 +885,19 @@ struct NucleiHistTask {
                 break;
               }
             }
-            if (lastLayer < lastRequiredTrdCluster) {
+            if (lastLayer < lastRequiredTrdCluster)
               continue;
-            }
           }
-
           spectra_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
         }
       }
 
-      //**************   check offline-trigger (skimming) condidition Helium-3   *******************
+      //**************   Helium-3   *******************
 
       if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) {
 
-        if (enable_PVcontributor_Helium3 && !(track.isPVContributor())) {
-          continue;
-        }
-
         if (track.sign() > 0) {
           keepEvent_He3 = kTRUE;
-
           Helium3_reg.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
           Helium3_reg.fill(HIST("histDcaZVsPtData"), track.pt() * 2.0, track.dcaZ());
           Helium3_reg.fill(HIST("histTpcSignalData"), track.pt() * 2.0, track.tpcSignal());
@@ -1094,7 +908,6 @@ struct NucleiHistTask {
           Helium3_reg.fill(HIST("histChi2ITS"), track.pt() * 2.0, track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -1103,22 +916,15 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             Helium3_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             Helium3_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0, beta);
             Helium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
           }
-        }
-
-        if (enable_PVcontributor_antiHelium3 && !(track.isPVContributor())) {
-          continue;
         }
 
         if (track.sign() < 0) {
@@ -1133,7 +939,6 @@ struct NucleiHistTask {
           aHelium3_reg.fill(HIST("histChi2ITS"), track.pt() * 2.0, track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -1142,14 +947,11 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             aHelium3_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             aHelium3_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0, beta);
             aHelium3_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaHe());
@@ -1157,7 +959,6 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
-
           if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
             int lastLayer = 0;
             for (int l = 7; l >= 0; l--) {
@@ -1166,26 +967,19 @@ struct NucleiHistTask {
                 break;
               }
             }
-            if (lastLayer < lastRequiredTrdCluster) {
+            if (lastLayer < lastRequiredTrdCluster)
               continue;
-            }
           }
-
           spectra_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0 * track.sign(), track.beta());
         }
       }
 
-      //**************   check offline-trigger (skimming) condidition Helium-4   *******************
+      //**************   Helium-4   *******************
 
       if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh) {
 
-        if (enable_PVcontributor_Helium4 && !(track.isPVContributor())) {
-          continue;
-        }
-
         if (track.sign() > 0) {
           keepEvent_He4 = kTRUE;
-
           Helium4_reg.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
           Helium4_reg.fill(HIST("histDcaZVsPtData"), track.pt() * 2.0, track.dcaZ());
           Helium4_reg.fill(HIST("histTpcSignalData"), track.pt() * 2.0, track.tpcSignal());
@@ -1196,7 +990,6 @@ struct NucleiHistTask {
           Helium4_reg.fill(HIST("histChi2ITS"), track.pt() * 2.0, track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -1205,22 +998,15 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             Helium4_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             Helium4_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0, beta);
             Helium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
           }
-        }
-
-        if (enable_PVcontributor_antiHelium4 && !(track.isPVContributor())) {
-          continue;
         }
 
         if (track.sign() < 0) {
@@ -1235,7 +1021,6 @@ struct NucleiHistTask {
           aHelium4_reg.fill(HIST("histChi2ITS"), track.pt() * 2.0, track.itsChi2NCl());
 
           if (track.hasTOF()) {
-
             if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
               int lastLayer = 0;
               for (int l = 7; l >= 0; l--) {
@@ -1244,14 +1029,11 @@ struct NucleiHistTask {
                   break;
                 }
               }
-              if (lastLayer < lastRequiredTrdCluster) {
+              if (lastLayer < lastRequiredTrdCluster)
                 continue;
-              }
             }
-
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-
             aHelium4_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2);
             aHelium4_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0, beta);
             aHelium4_reg.fill(HIST("histTofNsigmaData"), track.pt() * 2.0, track.tofNSigmaAl());
@@ -1259,7 +1041,6 @@ struct NucleiHistTask {
         }
 
         if (track.hasTOF()) {
-
           if (track.hasTRD() && (lastRequiredTrdCluster > 0)) {
             int lastLayer = 0;
             for (int l = 7; l >= 0; l--) {
@@ -1268,18 +1049,14 @@ struct NucleiHistTask {
                 break;
               }
             }
-            if (lastLayer < lastRequiredTrdCluster) {
+            if (lastLayer < lastRequiredTrdCluster)
               continue;
-            }
           }
-
           spectra_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0 * track.sign(), track.beta());
         }
       }
+    }
 
-    } // end loop over tracks
-
-    // fill trigger (skimming) results
     pion_reg.fill(HIST("histKeepEventData"), keepEvent_pi);
     apion_reg.fill(HIST("histKeepEventData"), keepEvent_antipi);
     proton_reg.fill(HIST("histKeepEventData"), keepEvent_p);
@@ -1300,23 +1077,15 @@ struct NucleiHistTask {
   void fillCentHistorgrams(const CollisionType& event, const TracksType& tracks)
   {
 
-    if (event_selection_sel8 && event.sel8()) {
+    if (event_selection_sel8 && event.sel8())
       spectra_reg.fill(HIST("histCentrality"), event.centFT0C());
-    }
-
-    if (!event_selection_sel8) {
+    if (!event_selection_sel8)
       spectra_reg.fill(HIST("histCentrality"), event.centFT0C());
-    }
 
-    for (auto track : tracks) { // start loop over tracks
+    for (auto track : tracks) {
 
-      if (event_selection_sel8 && !event.sel8()) {
+      if ((event_selection_sel8 && !event.sel8()) || (enable_Centrality_cut_global && (event.centFT0C() < minCentrality) && (event.centFT0C() > maxCentrality)))
         continue;
-      }
-
-      if (enable_Centrality_cut_global && (event.centFT0C() < minCentrality) && (event.centFT0C() > maxCentrality)) {
-        continue;
-      }
 
       spectra_reg.fill(HIST("histEtaWithOverFlow"), track.eta());
       spectra_reg.fill(HIST("histEta_cent"), event.centFT0C(), track.eta());
@@ -1331,16 +1100,9 @@ struct NucleiHistTask {
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
 
-      // track cuts
-      if (enable_PVcontributor_global && !(track.isPVContributor())) {
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS)
         continue;
-      }
 
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS) {
-        continue;
-      }
-
-      // cut on rapidity
       TLorentzVector lorentzVector_pion{};
       TLorentzVector lorentzVector_proton{};
       TLorentzVector lorentzVector_deuteron{};
@@ -1360,11 +1122,9 @@ struct NucleiHistTask {
           lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
           lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
           lorentzVector_He3.Rapidity() < yMin || lorentzVector_He3.Rapidity() > yMax ||
-          lorentzVector_He4.Rapidity() < yMin || lorentzVector_He4.Rapidity() > yMax) {
+          lorentzVector_He4.Rapidity() < yMin || lorentzVector_He4.Rapidity() > yMax)
         continue;
-      }
 
-      // fill 3D centrality histograms
       if (track.sign() > 0) {
 
         pion_reg.fill(HIST("histTpcNsigmaData_cent"), track.pt(), track.tpcNSigmaPi(), event.centFT0C());
@@ -1392,9 +1152,8 @@ struct NucleiHistTask {
                 break;
               }
             }
-            if (lastLayer < lastRequiredTrdCluster) {
+            if (lastLayer < lastRequiredTrdCluster)
               continue;
-            }
           }
 
           pion_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPi(), event.centFT0C());
@@ -1455,9 +1214,8 @@ struct NucleiHistTask {
                 break;
               }
             }
-            if (lastLayer < lastRequiredTrdCluster) {
+            if (lastLayer < lastRequiredTrdCluster)
               continue;
-            }
           }
 
           apion_reg.fill(HIST("histTofNsigmaData_cent"), track.pt(), track.tofNSigmaPi(), event.centFT0C());
@@ -1502,7 +1260,7 @@ struct NucleiHistTask {
 
   using EventCandidatesCent = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
 
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
 
   void processData(EventCandidates::iterator const& event, TrackCandidates const& tracks)
   {
@@ -1517,12 +1275,14 @@ struct NucleiHistTask {
   }
   PROCESS_SWITCH(NucleiHistTask, processDataCent, "process data with centralities", false);
 
-  void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
-                 aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+  void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
+                 aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
-    MC_truth_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
-    MC_truth_reg.fill(HIST("histCentrality"), collisions.centFT0C());
+    if (event_selection_MC_sel8 && !collisions.sel8())
+      return;
+    MC_recon_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
+    MC_recon_reg.fill(HIST("histCentrality"), collisions.centFT0C());
 
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
@@ -1534,35 +1294,67 @@ struct NucleiHistTask {
       histPDG->Fill(pdg, 1);
       const float pdgbin = histPDG->GetXaxis()->GetBinCenter(histPDG->GetXaxis()->FindBin(pdg));
 
-      MC_truth_reg.fill(HIST("histPhi"), particle.phi(), pdgbin);
-      MC_truth_reg.fill(HIST("histEta"), particle.eta(), pdgbin);
-      MC_truth_reg.fill(HIST("histPt"), particle.pt(), pdgbin);
+      TLorentzVector lorentzVector_pion{};
+      TLorentzVector lorentzVector_kaon{};
+      TLorentzVector lorentzVector_proton{};
+      TLorentzVector lorentzVector_deuteron{};
+      TLorentzVector lorentzVector_triton{};
+      TLorentzVector lorentzVector_He3{};
+      TLorentzVector lorentzVector_He4{};
 
-      MC_recon_reg.fill(HIST("histPhi"), track.phi(), pdgbin);
+      lorentzVector_pion.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
+      lorentzVector_kaon.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
+      lorentzVector_proton.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
+      lorentzVector_deuteron.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
+      lorentzVector_triton.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
+      lorentzVector_He3.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
+      lorentzVector_He4.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
+
+      if (lorentzVector_pion.Rapidity() < yMin || lorentzVector_pion.Rapidity() > yMax ||
+          lorentzVector_kaon.Rapidity() < yMin || lorentzVector_kaon.Rapidity() > yMax ||
+          lorentzVector_proton.Rapidity() < yMin || lorentzVector_proton.Rapidity() > yMax ||
+          lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
+          lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
+          lorentzVector_He3.Rapidity() < yMin || lorentzVector_He3.Rapidity() > yMax ||
+          lorentzVector_He4.Rapidity() < yMin || lorentzVector_He4.Rapidity() > yMax)
+        continue;
+
       MC_recon_reg.fill(HIST("histEta"), track.eta(), pdgbin);
-      MC_recon_reg.fill(HIST("histPt"), track.pt(), pdgbin);
-      MC_recon_reg.fill(HIST("histDCA"), track.pt(), track.dcaXY(), pdgbin);
-      MC_recon_reg.fill(HIST("histDCAz"), track.pt(), track.dcaZ(), pdgbin);
-      MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal(), pdgbin);
-      MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * track.sign(), track.tpcSignal());
-      MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows(), pdgbin);
-      MC_recon_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls(), pdgbin);
-      MC_recon_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCnClsFindable"), track.pt(), track.tpcNClsFindable(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCnClsFindableMinusFound"), track.pt(), track.tpcNClsFindableMinusFound(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), track.pt(), track.tpcNClsFindableMinusCrossedRows(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCnClsShared"), track.pt(), track.tpcNClsShared(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls(), pdgbin);
-      MC_recon_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl(), pdgbin);
-      MC_recon_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl(), pdgbin);
-      MC_recon_reg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
-      MC_recon_reg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-      MC_recon_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
-      MC_recon_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-      MC_recon_reg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2(), pdgbin);
-      MC_recon_reg.fill(HIST("histTrackLength"), track.length(), pdgbin);
-      MC_recon_reg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls(), pdgbin);
+
+      if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+        MC_recon_reg.fill(HIST("histPt"), track.pt() * 2.0, pdgbin);
+        MC_recon_reg.fill(HIST("histDCA"), track.pt() * 2.0, track.dcaXY(), pdgbin);
+        MC_recon_reg.fill(HIST("histDCAz"), track.pt() * 2.0, track.dcaZ(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * 2.0 * track.sign(), track.tpcSignal(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * 2.0 * track.sign(), track.tpcSignal());
+        MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsCrossedRows(), pdgbin);
+        MC_recon_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls(), pdgbin);
+        MC_recon_reg.fill(HIST("histNClusterITSib"), track.pt() * 2.0, track.itsNClsInnerBarrel(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2TPC"), track.pt() * 2.0, track.tpcChi2NCl(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2ITS"), track.pt() * 2.0, track.itsChi2NCl(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2TOF"), track.pt() * 2.0, track.tofChi2(), pdgbin);
+      } else {
+        MC_recon_reg.fill(HIST("histPt"), track.pt(), pdgbin);
+        MC_recon_reg.fill(HIST("histDCA"), track.pt(), track.dcaXY(), pdgbin);
+        MC_recon_reg.fill(HIST("histDCAz"), track.pt(), track.dcaZ(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal(), pdgbin);
+        MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * track.sign(), track.tpcSignal());
+        MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows(), pdgbin);
+        MC_recon_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls(), pdgbin);
+        MC_recon_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl(), pdgbin);
+        MC_recon_reg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2(), pdgbin);
+      }
+
+      float TPCnumberClsFound = track.tpcNClsFound();
+      float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
+      float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
+      float Chi2perClusterTPC = track.tpcChi2NCl();
+      float Chi2perClusterITS = track.itsChi2NCl();
+
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z)
+        continue;
 
       float nSigmaPion = track.tpcNSigmaPi();
       float nSigmaProton = track.tpcNSigmaPr();
@@ -1576,16 +1368,16 @@ struct NucleiHistTask {
         MC_recon_reg.fill(HIST("histTpcNsigmaDataPr"), track.pt(), nSigmaProton);
         MC_recon_reg.fill(HIST("histTpcNsigmaDataDe"), track.pt(), nSigmaDeuteron);
         MC_recon_reg.fill(HIST("histTpcNsigmaDataTr"), track.pt(), nSigmaTriton);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataHe"), track.pt(), nSigmaHe3);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataAl"), track.pt(), nSigmaHe4);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataHe"), track.pt() * 2.0, nSigmaHe3);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataAl"), track.pt() * 2.0, nSigmaHe4);
       }
       if (track.sign() < 0) {
         MC_recon_reg.fill(HIST("histTpcNsigmaDataaPi"), track.pt(), nSigmaPion);
         MC_recon_reg.fill(HIST("histTpcNsigmaDataaPr"), track.pt(), nSigmaProton);
         MC_recon_reg.fill(HIST("histTpcNsigmaDataaDe"), track.pt(), nSigmaDeuteron);
         MC_recon_reg.fill(HIST("histTpcNsigmaDataaTr"), track.pt(), nSigmaTriton);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataaHe"), track.pt(), nSigmaHe3);
-        MC_recon_reg.fill(HIST("histTpcNsigmaDataaAl"), track.pt(), nSigmaHe4);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaHe"), track.pt() * 2.0, nSigmaHe3);
+        MC_recon_reg.fill(HIST("histTpcNsigmaDataaAl"), track.pt() * 2.0, nSigmaHe4);
       }
 
       if (track.hasTOF()) {
@@ -1605,9 +1397,9 @@ struct NucleiHistTask {
           if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
             MC_recon_reg.fill(HIST("histTofNsigmaDataTr"), track.pt(), track.tofNSigmaTr());
           if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataHe"), track.pt(), track.tofNSigmaHe());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataHe"), track.pt() * 2.0, track.tofNSigmaHe());
           if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataAl"), track.pt(), track.tofNSigmaAl());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataAl"), track.pt() * 2.0, track.tofNSigmaAl());
         }
         if (track.sign() < 0) {
           if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
@@ -1619,174 +1411,14 @@ struct NucleiHistTask {
           if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
             MC_recon_reg.fill(HIST("histTofNsigmaDataaTr"), track.pt(), track.tofNSigmaTr());
           if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataaHe"), track.pt(), track.tofNSigmaHe());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaHe"), track.pt() * 2.0, track.tofNSigmaHe());
           if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataaAl"), track.pt(), track.tofNSigmaAl());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaAl"), track.pt() * 2.0, track.tofNSigmaAl());
         }
       }
-
-      MC_recon_diff_reg.fill(HIST("histEtaDiff"), particle.eta() - track.eta(), pdgbin);
-      auto delta = particle.phi() - track.phi();
-      if (delta > TMath::Pi()) {
-        delta -= 2 * TMath::Pi();
-      }
-      if (delta < -TMath::Pi()) {
-        delta += 2 * TMath::Pi();
-      }
-
-      MC_recon_diff_reg.fill(HIST("histPhiDiff"), delta, pdgbin);
-      MC_recon_diff_reg.fill(HIST("histPtDiff"), particle.pt() - track.pt(), pdgbin);
     }
   }
   PROCESS_SWITCH(NucleiHistTask, processMC, "process MC", false);
-
-  void processMCefficiency(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>::iterator const& collisions,
-                           soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
-                           aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
-  {
-
-    for (auto& track : tracks) {
-      const auto particle = track.mcParticle();
-      const auto pdg = Form("%i", particle.pdgCode());
-
-      if (!particle.isPhysicalPrimary())
-        continue;
-
-      histPDG_eff->Fill(pdg, 1);
-      const float pdgbin = histPDG_eff->GetXaxis()->GetBinCenter(histPDG_eff->GetXaxis()->FindBin(pdg));
-      MC_eff.fill(HIST("histEffSkimming"), 0, pdgbin);
-
-      TLorentzVector lorentzVector_pion{};
-      TLorentzVector lorentzVector_proton{};
-      TLorentzVector lorentzVector_deuteron{};
-      TLorentzVector lorentzVector_triton{};
-      TLorentzVector lorentzVector_He3{};
-      TLorentzVector lorentzVector_He4{};
-
-      lorentzVector_pion.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
-      lorentzVector_proton.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
-      lorentzVector_deuteron.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
-      lorentzVector_triton.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
-      lorentzVector_He3.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
-      lorentzVector_He4.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
-
-      if (lorentzVector_pion.Rapidity() < yMin || lorentzVector_pion.Rapidity() > yMax ||
-          lorentzVector_proton.Rapidity() < yMin || lorentzVector_proton.Rapidity() > yMax ||
-          lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
-          lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
-          lorentzVector_He3.Rapidity() < yMin || lorentzVector_He3.Rapidity() > yMax ||
-          lorentzVector_He4.Rapidity() < yMin || lorentzVector_He4.Rapidity() > yMax) {
-        continue;
-      }
-
-      bool passedITS = track.hasITS();
-      bool passedTPC = track.hasTPC();
-      bool passedTOF = track.hasTOF();
-
-      if (passedITS) {
-        MC_eff.fill(HIST("histITS_vs_pT"), particle.pt(), pdgbin);
-        MC_eff.fill(HIST("histEffSkimming"), 1, pdgbin);
-
-        if (passedTPC) {
-          MC_eff.fill(HIST("histITS_TPC_vs_pT"), particle.pt(), pdgbin);
-          MC_eff.fill(HIST("histEffSkimming"), 2, pdgbin);
-
-          if (passedTOF) {
-            MC_eff.fill(HIST("histITS_TPC_TOFvs_pT"), particle.pt(), pdgbin);
-            MC_eff.fill(HIST("histEffSkimming"), 3, pdgbin);
-          }
-        }
-      }
-
-      float TPCnumberClsFound = track.tpcNClsFound();
-      float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
-      float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
-      float Chi2perClusterTPC = track.tpcChi2NCl();
-      float Chi2perClusterITS = track.itsChi2NCl();
-
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z) {
-        continue;
-      }
-
-      MC_eff.fill(HIST("histEffSkimming"), 4, pdgbin);
-
-      float nSigmaPion = track.tpcNSigmaPi();
-      float nSigmaProton = track.tpcNSigmaPr();
-      float nSigmaDeuteron = track.tpcNSigmaDe();
-      float nSigmaTriton = track.tpcNSigmaTr();
-      float nSigmaHe3 = track.tpcNSigmaHe();
-      float nSigmaHe4 = track.tpcNSigmaAl();
-
-      float TOFnSigmaPion = track.tofNSigmaPi();
-      float TOFnSigmaProton = track.tofNSigmaPr();
-      float TOFnSigmaDeuteron = track.tofNSigmaDe();
-      float TOFnSigmaTriton = track.tofNSigmaTr();
-      float TOFnSigmaHe3 = track.tofNSigmaHe();
-      float TOFnSigmaHe4 = track.tofNSigmaAl();
-
-      if (track.sign() > 0) {
-        if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_Pi"), track.pt());
-        if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_Pr"), track.pt());
-        if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_De"), track.pt());
-        if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_Tr"), track.pt());
-        if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_He3"), track.pt());
-        if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_He4"), track.pt());
-      }
-      if (track.sign() < 0) {
-        if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aPi"), track.pt());
-        if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aPr"), track.pt());
-        if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aDe"), track.pt());
-        if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aTr"), track.pt());
-        if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aHe3"), track.pt());
-        if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
-          MC_eff.fill(HIST("histPt_TPC_aHe4"), track.pt());
-      }
-
-      if (track.hasTOF()) {
-
-        if (track.sign() > 0) {
-          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh && TOFnSigmaPion > nsigmacutLow && TOFnSigmaPion < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_Pi"), track.pt());
-          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh && TOFnSigmaProton > nsigmacutLow && TOFnSigmaProton < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_Pr"), track.pt());
-          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh && TOFnSigmaDeuteron > nsigmacutLow && TOFnSigmaDeuteron < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_De"), track.pt());
-          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh && TOFnSigmaTriton > nsigmacutLow && TOFnSigmaTriton < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_Tr"), track.pt());
-          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh && TOFnSigmaHe3 > nsigmacutLow && TOFnSigmaHe3 < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_He3"), track.pt());
-          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh && TOFnSigmaHe4 > nsigmacutLow && TOFnSigmaHe4 < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_He4"), track.pt());
-        }
-        if (track.sign() < 0) {
-          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh && TOFnSigmaPion > nsigmacutLow && TOFnSigmaPion < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aPi"), track.pt());
-          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh && TOFnSigmaProton > nsigmacutLow && TOFnSigmaProton < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aPr"), track.pt());
-          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh && TOFnSigmaDeuteron > nsigmacutLow && TOFnSigmaDeuteron < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aDe"), track.pt());
-          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh && TOFnSigmaTriton > nsigmacutLow && TOFnSigmaTriton < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aTr"), track.pt());
-          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh && TOFnSigmaHe3 > nsigmacutLow && TOFnSigmaHe3 < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aHe3"), track.pt());
-          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh && TOFnSigmaHe4 > nsigmacutLow && TOFnSigmaHe4 < nsigmacutHigh)
-            MC_eff.fill(HIST("histPt_TOF_aHe4"), track.pt());
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(NucleiHistTask, processMCefficiency, "process MC efficencies", false);
 };
 
 //****************************************************************************************************

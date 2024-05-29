@@ -69,7 +69,6 @@ using V0DerivedDatas = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs>;
 
 struct lambdakzeromlselection {
   o2::ml::OnnxModel lambda_bdt;
-  ;
   o2::ml::OnnxModel antilambda_bdt;
   o2::ml::OnnxModel gamma_bdt;
   o2::ml::OnnxModel kzeroshort_bdt;
@@ -188,14 +187,14 @@ struct lambdakzeromlselection {
   void processDerivedData(aod::StraCollision const& coll, V0DerivedDatas const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
-    for (auto& v0 : v0s) { // looping over lambdas
+    for (auto& v0 : v0s) {
       processCandidate(v0);
     }
   }
   void processStandardData(aod::Collision const& coll, V0OriginalDatas const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
-    for (auto& v0 : v0s) { // looping over lambdas
+    for (auto& v0 : v0s) {
       processCandidate(v0);
     }
   }

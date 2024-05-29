@@ -39,7 +39,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
   Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<float> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
-  Configurable<int> usePionPid{"usePionPid", 1, "Switch for PID selection for the bachelor pion (0: none, 1: TPC or TOF, 2: TPC and TOF)"};
+  Configurable<int> pionPidMethod{"pionPidMethod", 1, "PID selection method for the bachelor pion (0: none, 1: TPC or TOF, 2: TPC and TOF)"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
@@ -87,18 +87,18 @@ struct HfCandidateSelectorB0ToDPiReduced {
 
   HistogramRegistry registry{"registry"};
 
-  void init(InitContext const& initContext)
+  void init(InitContext const&)
   {
     std::array<bool, 2> doprocess{doprocessSelection, doprocessSelectionWithDmesMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function for data should be enabled at a time.");
     }
 
-    if (usePionPid < 0 || usePionPid > 2) {
+    if (pionPidMethod < 0 || pionPidMethod > 2) {
       LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
     }
 
-    if (usePionPid) {
+    if (pionPidMethod) {
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -141,7 +141,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
   /// \param configs config inherited from the Dpi data creator
   template <bool withDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsB0,
-                    TracksPion const& pionTracks,
+                    TracksPion const&,
                     HfCandB0Configs const& configs)
   {
     // get DplusPi creator configurable
@@ -153,18 +153,6 @@ struct HfCandidateSelectorB0ToDPiReduced {
       int statusB0ToDPi = 0;
       auto ptCandB0 = hfCandB0.pt();
 
-      // check if flagged as B0 → D π
-      if (!TESTBIT(hfCandB0.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        hfSelB0ToDPiCandidate(statusB0ToDPi);
-        if (applyB0Ml) {
-          hfMlB0ToDPiCandidate(outputMlNotPreselected);
-        }
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 1, ptCandB0);
-        }
-        // LOGF(info, "B0 candidate selection failed at hfflag check");
-        continue;
-      }
       SETBIT(statusB0ToDPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusB0ToDPi = 1
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandB0);
@@ -198,9 +186,9 @@ struct HfCandidateSelectorB0ToDPiReduced {
 
       // track-level PID selection
       auto trackPi = hfCandB0.template prong1_as<TracksPion>();
-      if (usePionPid) {
+      if (pionPidMethod) {
         int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
-        if (usePionPid == 1) {
+        if (pionPidMethod == 1) {
           pidTrackPi = selectorPion.statusTpcOrTof(trackPi);
         } else {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
@@ -229,7 +217,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           continue;
         }
-        SETBIT(statusB0ToDPi, SelectionStep::RecoMl); // RecoML = 3 --> statusB0ToDPi = 15 if usePionPid, 11 otherwise
+        SETBIT(statusB0ToDPi, SelectionStep::RecoMl); // RecoML = 3 --> statusB0ToDPi = 15 if pionPidMethod, 11 otherwise
         if (activateQA) {
           registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoMl, ptCandB0);
         }

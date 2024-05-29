@@ -149,7 +149,8 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
 
   // ITS-related variables
-  Configurable<int> minitsncls{"minitsncls", 2, "min. number of ITS clusters"};
+  Configurable<int> minitsibncls{"minitsibncls", 1, "min. number of ITSib clusters"};
+  Configurable<int> minitsncls{"minitsncls", 4, "min. number of ITS clusters"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
 
   // for v0
@@ -212,7 +213,7 @@ struct TreeCreatorElectronMLDDA {
   std::mt19937 engine;
   std::uniform_real_distribution<float> dist01;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -363,6 +364,9 @@ struct TreeCreatorElectronMLDDA {
       return false;
     }
 
+    if (track.itsNClsInnerBarrel() < minitsibncls) {
+      return false;
+    }
     if (track.itsNCls() < minitsncls) {
       return false;
     }
@@ -912,7 +916,7 @@ struct TreeCreatorElectronMLDDA {
   Partition<MyTracks> positrons = o2::aod::track::signed1Pt > 0.f && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& nabs(o2::aod::track::dcaXY) < maxdcaXY&& nabs(o2::aod::track::dcaZ) < maxdcaZ&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true && (minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl);
   Partition<MyTracks> electrons = o2::aod::track::signed1Pt < 0.f && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& nabs(o2::aod::track::dcaXY) < maxdcaXY&& nabs(o2::aod::track::dcaZ) < maxdcaZ&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true && (minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl);
   std::vector<uint64_t> stored_secondary_electronIds;
-  void processPrimary(filteredMyCollisions const& collisions, aod::BCsWithTimestamps const&, aod::V0s const& v0s, MyTracks const& tracks)
+  void processPrimary(filteredMyCollisions const& collisions, aod::BCsWithTimestamps const&, aod::V0s const&, MyTracks const&)
   {
     stored_trackIds.reserve(positrons.size() + electrons.size());
     stored_secondary_electronIds.reserve(positrons.size() + electrons.size());
@@ -1029,7 +1033,7 @@ struct TreeCreatorElectronMLDDA {
   } // end of process
 
   // please choose only 1 process function.
-  void processDummy(filteredMyCollisions const& collisions) {}
+  void processDummy(filteredMyCollisions const&) {}
 
   PROCESS_SWITCH(TreeCreatorElectronMLDDA, processPID, "produce ML input for single track level", false);     // this is for eID with ITSsa. e/pi/k/p are selected by TOF, and these can be used for ITS-TPC PID.
   PROCESS_SWITCH(TreeCreatorElectronMLDDA, processPrimary, "produce ML input for single track level", false); // this is for selecting electrons from primary or secondary.

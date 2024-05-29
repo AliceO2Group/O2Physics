@@ -231,15 +231,16 @@ struct Reducer {
 };
 
 struct ReducerTest {
-  HistogramRegistry r{
-    "Common",
-    {
-      {"ReconstructedMultiplicity", " ; N_{trk}", {HistType::kTH1F, {{301, -0.5, 300.5}}}},            //
-      {"GeneratedMultiplicity", " ; N_{particles}", {HistType::kTH1F, {{301, -0.5, 300.5}}}},          //
-      {"ReconstructedMultiplicityUnweighted", " ; N_{trk}", {HistType::kTH1F, {{301, -0.5, 300.5}}}},  //
-      {"GeneratedMultiplicityUnweighted", " ; N_{particles}", {HistType::kTH1F, {{301, -0.5, 300.5}}}} //
-    }                                                                                                  //
-  };
+  Configurable<int> maxMult{"maxMult", 300, "Max multiplicity bin"};
+  HistogramRegistry r{"Common", {}};
+
+  void init(InitContext const&)
+  {
+    r.add({"ReconstructedMultiplicity", " ; N_{trk}", {HistType::kTH1F, {{maxMult + 1, -0.5, maxMult + 0.5}}}});
+    r.add({"GeneratedMultiplicity", " ; N_{particles}", {HistType::kTH1F, {{maxMult + 1, -0.5, maxMult + 0.5}}}});
+    r.add({"ReconstructedMultiplicityUnweighted", " ; N_{trk}", {HistType::kTH1F, {{maxMult + 1, -0.5, maxMult + 0.5}}}});
+    r.add({"GeneratedMultiplicityUnweighted", " ; N_{particles}", {HistType::kTH1F, {{maxMult + 1, -0.5, maxMult + 0.5}}}});
+  }
 
   void process(aod::StoredRMCCollisions const& mccollisions, soa::Join<aod::StoredRCollisions, aod::StoredRMCColLabels> const& collisions)
   {

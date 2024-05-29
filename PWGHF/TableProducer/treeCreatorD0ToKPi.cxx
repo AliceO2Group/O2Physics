@@ -493,7 +493,7 @@ struct HfTreeCreatorD0ToKPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0),
           particle.flagMcMatchGen(),
           particle.originMcGen(),
           particle.globalIndex());

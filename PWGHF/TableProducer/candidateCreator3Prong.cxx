@@ -30,10 +30,12 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::hf_evsel;
+using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_collision_centrality;
 using namespace o2::constants::physics;
@@ -51,6 +53,11 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "apply the sel8 event selection"};
   Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "max. PV posZ (cm)"};
   Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "apply TF border cut"};
+  Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "check consistency between PVz from central barrel with that from FT0 timing"};
+  Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
+  Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
+  Configurable<int> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "min. value for occupancy selection"};
+  Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1000000, "max. value for occupancy selection"};
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
@@ -90,7 +97,7 @@ struct HfCandidateCreator3Prong {
   // filter candidates
   Filter filterSelected3Prongs = (createDplus && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0)) || (createDs && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0)) || (createLc && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi))) != static_cast<uint8_t>(0)) || (createXic && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi))) != static_cast<uint8_t>(0));
 
-  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
+  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hCandidates;
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -142,6 +149,7 @@ struct HfCandidateCreator3Prong {
     hPosXAfterEvSel = registry.add<TH1>("hPosXAfterEvSel", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
     hPosYAfterEvSel = registry.add<TH1>("hPosYAfterEvSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>("hNumPvContributorsAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{500, -0.5, 499.5}}});
+    hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
 
     massPi = MassPiPlus;
     massK = MassKPlus;
@@ -164,13 +172,16 @@ struct HfCandidateCreator3Prong {
 
     /// collision monitoring
     setLabelHistoEvSel(hCollisions);
+
+    /// candidate monitoring
+    setLabelHistoCands(hCandidates);
   }
 
   template <bool doPvRefit = false, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand>
-  void runCreator3Prong(Coll const& collisions,
+  void runCreator3Prong(Coll const&,
                         Cand const& rowsTrackIndexProng3,
-                        aod::TracksWCovExtra const& tracks,
-                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+                        aod::TracksWCovExtra const&,
+                        aod::BCsWithTimestamps const&)
   {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
@@ -178,7 +189,7 @@ struct HfCandidateCreator3Prong {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng3.template collision_as<Coll>();
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+      const auto rejectionMask = getHfCollisionRejectionMask<true, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -206,9 +217,18 @@ struct HfCandidateCreator3Prong {
       df.setBz(bz);
 
       // reconstruct the 3-prong secondary vertex
-      if (df.process(trackParVar0, trackParVar1, trackParVar2) == 0) {
+      hCandidates->Fill(SVFitting::BeforeFit);
+      try {
+        if (df.process(trackParVar0, trackParVar1, trackParVar2) == 0) {
+          continue;
+        }
+      } catch (const std::runtime_error& error) {
+        LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+        hCandidates->Fill(SVFitting::Fail);
         continue;
       }
+      hCandidates->Fill(SVFitting::FitOk);
+
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
@@ -401,7 +421,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
 
       /// monitor the satisfied event selections
       monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
@@ -418,7 +438,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
 
       /// monitor the satisfied event selections
       monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
@@ -435,7 +455,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f, useIsGoodZvtxFT0vsPV, useNoSameBunchPileup, useNumTracksInTimeRange, numTracksInTimeRangeMin, numTracksInTimeRangeMax);
 
       /// monitor the satisfied event selections
       monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
@@ -455,12 +475,13 @@ struct HfCandidateCreator3ProngExpressions {
   bool createDs{false};
   bool createLc{false};
   bool createXic{false};
+  float zPvPosMax{1000.f};
 
   void init(InitContext& initContext)
   {
 
-    // inspect for which particle species the candidates were created
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    // inspect for which particle species the candidates were created and which zPvPosMax cut was set for reconstructed
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-3prong") == 0) {
         for (const auto& option : device.options) {
@@ -472,8 +493,11 @@ struct HfCandidateCreator3ProngExpressions {
             createLc = option.defaultValue.get<bool>();
           } else if (option.name.compare("createXic") == 0) {
             createXic = option.defaultValue.get<bool>();
+          } else if (option.name.compare("zPvPosMax") == 0) {
+            zPvPosMax = option.defaultValue.get<float>();
           }
         }
+        break;
       }
     }
 
@@ -486,7 +510,8 @@ struct HfCandidateCreator3ProngExpressions {
 
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+                 aod::McParticles const& mcParticles,
+                 aod::McCollisions const&)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
 
@@ -602,6 +627,13 @@ struct HfCandidateCreator3ProngExpressions {
       origin = 0;
       channel = 0;
       arrDaughIndex.clear();
+
+      auto mcCollision = particle.mcCollision();
+      float zPv = mcCollision.posZ();
+      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+        rowMcMatchGen(flag, origin, channel);
+        continue;
+      }
 
       // D± → π± K∓ π±
       if (createDplus) {

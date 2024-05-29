@@ -45,7 +45,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -58,13 +58,14 @@ struct SinglePhoton {
     kEMC = 2,
   };
 
-  // HistogramRegistry registry{"SinglePhoton"};
+  Configurable<bool> cfgDoFlow{"cfgDoFlow", false, "flag to analyze vn"};
+
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,wwire_ib,qc,qc_ITSTPC,qc_ITSonly,qc_TPConly", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc,qc_ITSTPC,qc_ITSonly,qc_TPConly,wwire_ib", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
   Configurable<std::string> fConfigEMCCuts{"fConfigEMCCuts", "custom,standard,nocut", "Comma separated list of EMCal photon cuts"};
 
@@ -125,7 +126,12 @@ struct SinglePhoton {
       THashList* list_photon_subsys = reinterpret_cast<THashList*>(list_photon->FindObject(detname.data()));
       o2::aod::pwgem::photon::histogram::AddHistClass(list_photon_subsys, cutname1.data());
       THashList* list_photon_subsys_cut = reinterpret_cast<THashList*>(list_photon_subsys->FindObject(cutname1.data()));
-      o2::aod::pwgem::photon::histogram::DefineHistograms(list_photon_subsys_cut, "singlephoton", detname.data());
+      if (cfgDoFlow) {
+        o2::aod::pwgem::photon::histogram::DefineHistograms(list_photon_subsys_cut, "singlephoton", "qvector");
+      } else {
+        o2::aod::pwgem::photon::histogram::DefineHistograms(list_photon_subsys_cut, "singlephoton", "");
+      }
+
     } // end of cut1 loop
   }
 
@@ -149,7 +155,11 @@ struct SinglePhoton {
       THashList* list_ev_det = reinterpret_cast<THashList*>(list_ev->FindObject(detname.data()));
       for (const auto& evtype : event_types) {
         THashList* list_ev_det_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_det, evtype.data()));
-        o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_det_type, "Event", evtype.data());
+        if (cfgDoFlow) {
+          o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_det_type, "Event", "qvector");
+        } else {
+          o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_det_type, "Event", "");
+        }
       }
 
       o2::aod::pwgem::photon::histogram::AddHistClass(list_photon, detname.data());
@@ -276,13 +286,27 @@ struct SinglePhoton {
         continue;
       }
 
-      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_before, "", collision);
+      if (cfgDoFlow) {
+        o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent_Cent_Qvec>(list_ev_before, "", collision);
+      } else {
+        o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_before, "", collision);
+      }
+
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_after, "", collision);
+
+      if (cfgDoFlow) {
+        o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent_Cent_Qvec>(list_ev_after, "", collision);
+      } else {
+        o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_after, "", collision);
+      }
       reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
       reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
+      std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
+      std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
+      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       for (auto& cut : cuts1) {
@@ -291,11 +315,21 @@ struct SinglePhoton {
           if (!IsSelected<photontype>(photon, cut)) {
             continue;
           }
-          ROOT::Math::PtEtaPhiMVector v1(photon.pt(), photon.eta(), photon.phi(), 0.);
-          if (abs(v1.Rapidity()) > maxY) {
+          if (abs(photon.eta()) > maxY) {
             continue;
           }
-          o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kPhoton>(list_photon_det_cut, "", v1);
+          if (cfgDoFlow) {
+            std::array<float, 2> u2_photon = {std::cos(2 * photon.phi()), std::sin(2 * photon.phi())};
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0M"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0m));
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0a));
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0C"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0c));
+            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FV0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2fv0a));
+          } else {
+            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt"))->Fill(photon.pt());
+          }
+
+          reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY"))->Fill(photon.eta());
+          reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi"))->Fill(photon.phi());
         } // end of photon loop
       }   // end of cut loop
     }     // end of collision loop
@@ -303,7 +337,7 @@ struct SinglePhoton {
 
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
-  void processPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
+  void processPCM(MyCollisions const&, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
     FillPhoton<EMDetType::kPCM>(grouped_collisions, v0photons, perCollision, fPCMCuts, legs, nullptr);
   }
@@ -318,7 +352,7 @@ struct SinglePhoton {
   //    FillPhoton<EMDetType::kEMC>(grouped_collisions, emcclusters, perCollision_emc, fEMCCuts, nullptr, emcmatchedtracks);
   //  }
 
-  void processDummy(MyCollisions::iterator const& collision) {}
+  void processDummy(MyCollisions::iterator const&) {}
 
   PROCESS_SWITCH(SinglePhoton, processPCM, "single photon with PCM", false);
   // PROCESS_SWITCH(SinglePhoton, processPHOS, "single photon with PHOS", false);

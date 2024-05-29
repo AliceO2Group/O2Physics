@@ -86,6 +86,7 @@ struct strangederivedbuilder {
   //__________________________________________________
   // track extra references
   Produces<aod::DauTrackExtras> dauTrackExtras;   // daughter track detector properties
+  Produces<aod::DauTrackMCIds> dauTrackMCIds;     // daughter track MC Particle ID
   Produces<aod::DauTrackTPCPIDs> dauTrackTPCPIDs; // daughter track TPC PID
   Produces<aod::DauTrackTOFPIDs> dauTrackTOFPIDs; // daughter track TOF PID
   Produces<aod::V0Extras> v0Extras;               // references DauTracks from V0s
@@ -107,10 +108,11 @@ struct strangederivedbuilder {
 
   //__________________________________________________
   // Q-vectors
-  Produces<aod::StraFT0AQVs> StraFT0AQVs; // FT0A Q-vector
-  Produces<aod::StraFT0CQVs> StraFT0CQVs; // FT0C Q-vector
-  Produces<aod::StraFT0MQVs> StraFT0MQVs; // FT0M Q-vector
-  Produces<aod::StraFV0AQVs> StraFV0AQVs; // FV0A Q-vector
+  Produces<aod::StraFT0AQVs> StraFT0AQVs;     // FT0A Q-vector
+  Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
+  Produces<aod::StraFT0MQVs> StraFT0MQVs;     // FT0M Q-vector
+  Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
+  Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
 
   //__________________________________________________
   // Generated binned data
@@ -122,6 +124,11 @@ struct strangederivedbuilder {
   Produces<aod::GeXiPlus> geXiPlus;
   Produces<aod::GeOmegaMinus> geOmegaMinus;
   Produces<aod::GeOmegaPlus> geOmegaPlus;
+
+  //__________________________________________________
+  // Found tags for findable exercise
+  Produces<aod::V0FoundTags> v0FoundTags;
+  Produces<aod::CascFoundTags> cascFoundTags;
 
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -192,7 +199,7 @@ struct strangederivedbuilder {
     return step * static_cast<float>(static_cast<int>((number) / step)) + TMath::Sign(1.0f, number) * (0.5f) * step;
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // setup map for fast checking if enabled
     static_for<0, nSpecies - 1>([&](auto i) {
@@ -210,6 +217,16 @@ struct strangederivedbuilder {
     }
 
     histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", kTH2D, {axisCentrality, axisNVertices});
+
+    if (doprocessV0FoundTags || doprocessCascFoundTags) {
+      auto h = histos.add<TH1>("hFoundTagsCounters", "hFoundTagsCounters", kTH1D, {{6, -0.5f, 5.5f}});
+      h->GetXaxis()->SetBinLabel(1, "Found V0s");
+      h->GetXaxis()->SetBinLabel(2, "Findable V0s");
+      h->GetXaxis()->SetBinLabel(3, "Findable & found V0s");
+      h->GetXaxis()->SetBinLabel(4, "Found Cascades");
+      h->GetXaxis()->SetBinLabel(5, "Findable Cascades");
+      h->GetXaxis()->SetBinLabel(6, "Findable & found Cascades");
+    }
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
@@ -264,7 +281,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -315,7 +333,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -384,7 +403,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -401,7 +421,9 @@ struct strangederivedbuilder {
         uint32_t indMCColl = -1;
         if (v0.has_mcParticle()) {
           auto mcParticle = v0.mcParticle();
-          indMCColl = mcParticle.mcCollisionId();
+          if (mcParticle.has_mcCollision()) {
+            indMCColl = mcParticle.mcCollisionId();
+          }
         }
         v0mccollref(indMCColl);
       }
@@ -409,7 +431,9 @@ struct strangederivedbuilder {
         uint32_t indMCColl = -1;
         if (casc.has_mcParticle()) {
           auto mcParticle = casc.mcParticle();
-          indMCColl = mcParticle.mcCollisionId();
+          if (mcParticle.has_mcCollision()) {
+            indMCColl = mcParticle.mcCollisionId();
+          }
         }
         cascmccollref(indMCColl);
       }
@@ -449,22 +473,24 @@ struct strangederivedbuilder {
     // circle back and populate actual DauTrackExtra table
     for (auto const& tr : tracksExtra) {
       if (trackMap[tr.globalIndex()] >= 0) {
-        dauTrackExtras(tr.detectorMap(), tr.itsClusterSizes(),
+        dauTrackExtras(tr.itsChi2NCl(),
+                       tr.detectorMap(), tr.itsClusterSizes(),
                        tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
       }
     }
     // done!
   }
 
-  void processTrackExtras(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, TracksWithExtra const& tracksExtra, aod::V0s const&)
+  template <typename V0Datas, typename CascDatas, typename KFCascDatas, typename TraCascDatas, typename tracksWithExtra>
+  void fillTrackExtras(V0Datas const& V0s, CascDatas const& Cascades, KFCascDatas const& KFCascades, TraCascDatas const& TraCascades, tracksWithExtra const& tracksExtra)
   {
     std::vector<int> trackMap(tracksExtra.size(), -1); // index -1: not used
 
     //__________________________________________________
     // mark tracks that belong to V0s
     for (auto const& v0 : V0s) {
-      auto const& posTrack = v0.posTrack_as<TracksWithExtra>();
-      auto const& negTrack = v0.negTrack_as<TracksWithExtra>();
+      auto const& posTrack = v0.template posTrack_as<tracksWithExtra>();
+      auto const& negTrack = v0.template negTrack_as<tracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
     }
@@ -472,9 +498,9 @@ struct strangederivedbuilder {
     //__________________________________________________
     // index tracks that belong to CascDatas
     for (auto const& casc : Cascades) {
-      auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto posTrack = casc.posTrack_as<TracksWithExtra>();
-      auto negTrack = casc.negTrack_as<TracksWithExtra>();
+      auto bachTrack = casc.template bachelor_as<tracksWithExtra>();
+      auto posTrack = casc.template posTrack_as<tracksWithExtra>();
+      auto negTrack = casc.template negTrack_as<tracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
       trackMap[bachTrack.globalIndex()] = 0;
@@ -482,9 +508,9 @@ struct strangederivedbuilder {
     //__________________________________________________
     // index tracks that belong to KFCascDatas
     for (auto const& casc : KFCascades) {
-      auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto posTrack = casc.posTrack_as<TracksWithExtra>();
-      auto negTrack = casc.negTrack_as<TracksWithExtra>();
+      auto bachTrack = casc.template bachelor_as<tracksWithExtra>();
+      auto posTrack = casc.template posTrack_as<tracksWithExtra>();
+      auto negTrack = casc.template negTrack_as<tracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
       trackMap[bachTrack.globalIndex()] = 0;
@@ -492,10 +518,10 @@ struct strangederivedbuilder {
     //__________________________________________________
     // index tracks that belong to TraCascDatas
     for (auto const& casc : TraCascades) {
-      auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto posTrack = casc.posTrack_as<TracksWithExtra>();
-      auto negTrack = casc.negTrack_as<TracksWithExtra>();
-      auto strangeTrack = casc.strangeTrack_as<TracksWithExtra>();
+      auto bachTrack = casc.template bachelor_as<tracksWithExtra>();
+      auto posTrack = casc.template posTrack_as<tracksWithExtra>();
+      auto negTrack = casc.template negTrack_as<tracksWithExtra>();
+      auto strangeTrack = casc.template strangeTrack_as<tracksWithExtra>();
       trackMap[posTrack.globalIndex()] = 0;
       trackMap[negTrack.globalIndex()] = 0;
       trackMap[bachTrack.globalIndex()] = 0;
@@ -513,17 +539,17 @@ struct strangederivedbuilder {
     //__________________________________________________
     // populate track references
     for (auto const& v0 : V0s) {
-      auto const& posTrack = v0.posTrack_as<TracksWithExtra>();
-      auto const& negTrack = v0.negTrack_as<TracksWithExtra>();
+      auto const& posTrack = v0.template posTrack_as<tracksWithExtra>();
+      auto const& negTrack = v0.template negTrack_as<tracksWithExtra>();
       v0Extras(trackMap[posTrack.globalIndex()],
                trackMap[negTrack.globalIndex()]); // joinable with V0Datas
     }
     //__________________________________________________
     // populate track references
     for (auto const& casc : Cascades) {
-      auto bachTrack = casc.bachelor_as<TracksWithExtra>();
-      auto posTrack = casc.posTrack_as<TracksWithExtra>();
-      auto negTrack = casc.negTrack_as<TracksWithExtra>();
+      auto bachTrack = casc.template bachelor_as<tracksWithExtra>();
+      auto posTrack = casc.template posTrack_as<tracksWithExtra>();
+      auto negTrack = casc.template negTrack_as<tracksWithExtra>();
       cascExtras(trackMap[posTrack.globalIndex()],
                  trackMap[negTrack.globalIndex()],
                  trackMap[bachTrack.globalIndex()]); // joinable with CascDatas
@@ -531,15 +557,22 @@ struct strangederivedbuilder {
     //__________________________________________________
     // populate track references
     for (auto const& casc : TraCascades) {
-      auto strangeTrack = casc.strangeTrack_as<TracksWithExtra>();
+      auto strangeTrack = casc.template strangeTrack_as<tracksWithExtra>();
       straTrackExtras(trackMap[strangeTrack.globalIndex()]); // joinable with TraCascDatas
     }
     //__________________________________________________
     // circle back and populate actual DauTrackExtra table
     for (auto const& tr : tracksExtra) {
       if (trackMap[tr.globalIndex()] >= 0) {
-        dauTrackExtras(tr.detectorMap(), tr.itsClusterSizes(),
+        dauTrackExtras(tr.itsChi2NCl(),
+                       tr.detectorMap(), tr.itsClusterSizes(),
                        tr.tpcNClsFound(), tr.tpcNClsCrossedRows());
+
+        // if the table has MC info
+        if constexpr (requires { tr.mcParticle(); }) {
+          // do your thing with the mcParticleIds only in case the table has the MC info
+          dauTrackMCIds(tr.mcParticleId()); // joinable with dauTrackExtras
+        }
 
         // round if requested
         if (roundNSigmaVariables) {
@@ -559,6 +592,18 @@ struct strangederivedbuilder {
         dauTrackTOFPIDs(tr.tofSignal(), tr.tofEvTime(), tr.length());
       }
     }
+    // done!
+  }
+
+  void processTrackExtras(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal> const& tracksExtra, aod::V0s const&)
+  {
+    fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
+    // done!
+  }
+
+  void processTrackExtrasMC(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal> const& tracksExtra, aod::V0s const&)
+  {
+    fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
     // done!
   }
 
@@ -600,7 +645,7 @@ struct strangederivedbuilder {
 
   using interlinkedCascades = soa::Join<aod::Cascades, aod::CascDataLink, aod::KFCascDataLink, aod::TraCascDataLink>;
 
-  void processCascadeInterlinkTracked(interlinkedCascades const& masterCascades, aod::CascIndices const& Cascades, aod::TraCascIndices const& TraCascades)
+  void processCascadeInterlinkTracked(interlinkedCascades const& /*masterCascades*/, aod::CascIndices const& Cascades, aod::TraCascIndices const& TraCascades)
   {
     // Standard to tracked
     for (auto const& c : Cascades) {
@@ -622,7 +667,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCascadeInterlinkKF(interlinkedCascades const& masterCascades, aod::CascIndices const& Cascades, aod::KFCascIndices const& KFCascades)
+  void processCascadeInterlinkKF(interlinkedCascades const& /*masterCascades*/, aod::CascIndices const& Cascades, aod::KFCascIndices const& KFCascades)
   {
     // Standard to KF
     for (auto const& c : Cascades) {
@@ -658,7 +703,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processReconstructedSimulation(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>> const& collisions, aod::McParticles const& mcParticles)
+  void processReconstructedSimulation(aod::McCollision const& /*mcCollision*/, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>> const& collisions, aod::McParticles const& mcParticles)
   {
     // this process function also checks if a given collision was reconstructed and checks explicitly for splitting, etc
     // identify best-of collision
@@ -748,7 +793,8 @@ struct strangederivedbuilder {
   }
   void processFT0CQVectorsLF(soa::Join<aod::Collisions, aod::EPCalibrationTables>::iterator const& collision)
   {
-    StraFT0CQVs(std::cos(2 * collision.psiFT0C()), std::sin(2 * collision.psiFT0C()), 1.f);
+    StraFT0CQVs(collision.qFT0C() * std::cos(2 * collision.psiFT0C()), collision.qFT0C() * std::sin(2 * collision.psiFT0C()), 1.f);
+    StraFT0CQVsEv(collision.triggereventep());
   }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
   {
@@ -759,22 +805,83 @@ struct strangederivedbuilder {
     StraFV0AQVs(collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A());
   }
 
+  uint64_t combineProngIndices(uint32_t low, uint32_t high)
+  {
+    return (((uint64_t)high) << 32) | ((uint64_t)low);
+  }
+
+  void processV0FoundTags(aod::V0s const& foundV0s, aod::V0Datas const& findableV0s, aod::FindableV0s const& /* added to avoid troubles */)
+  {
+    histos.fill(HIST("hFoundTagsCounters"), 0.0f, foundV0s.size());
+    histos.fill(HIST("hFoundTagsCounters"), 1.0f, findableV0s.size());
+
+    for (auto const& findableV0 : findableV0s) {
+      bool hasBeenFound = false;
+      for (auto const& foundV0 : foundV0s) {
+        if (foundV0.posTrackId() == findableV0.posTrackId() && foundV0.negTrackId() == findableV0.negTrackId()) {
+          hasBeenFound = true;
+        }
+      }
+      v0FoundTags(hasBeenFound);
+    }
+  }
+
+  using uint128_t = __uint128_t;
+  uint128_t combineProngIndices128(uint32_t pos, uint32_t neg, uint32_t bach)
+  {
+    return (((uint128_t)pos) << 64) | (((uint128_t)neg) << 32) | ((uint128_t)bach);
+  }
+
+  void processCascFoundTags(aod::Cascades const& foundCascades, aod::CascDatas const& findableCascades, aod::V0s const&, aod::FindableCascades const& /* added to avoid troubles */)
+  {
+    histos.fill(HIST("hFoundTagsCounters"), 3.0f, foundCascades.size());
+    histos.fill(HIST("hFoundTagsCounters"), 4.0f, findableCascades.size());
+
+    // pack the found V0s in a long long
+    std::vector<uint128_t> foundCascadesPacked;
+    foundCascadesPacked.reserve(foundCascades.size());
+    for (auto const& foundCascade : foundCascades) {
+      auto v0 = foundCascade.v0();
+      foundCascadesPacked[foundCascade.globalIndex()] = combineProngIndices128(v0.posTrackId(), v0.negTrackId(), foundCascade.bachelorId());
+    }
+
+    bool hasBeenFound = false;
+    for (auto const& findableCascade : findableCascades) {
+      uint128_t indexPack = combineProngIndices128(findableCascade.posTrackId(), findableCascade.negTrackId(), findableCascade.bachelorId());
+      for (uint32_t ic = 0; ic < foundCascades.size(); ic++) {
+        if (indexPack == foundCascadesPacked[ic]) {
+          hasBeenFound = true;
+          histos.fill(HIST("hFoundTagsCounters"), 5.0f);
+          break;
+        }
+      }
+      cascFoundTags(hasBeenFound);
+    }
+  }
+
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsV0sOnly, "Produce collisions (V0s only)", true);
   PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions (V0s + casc)", true);
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsMC, "Produce collisions (V0s + casc)", false);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasV0sOnly, "Produce track extra information (V0s only)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information (V0s + casc)", true);
+  PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasMC, "Produce track extra information (V0s + casc)", false);
   PROCESS_SWITCH(strangederivedbuilder, processStrangeMothers, "Produce tables with mother info for V0s + casc", true);
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkTracked, "Produce tables interconnecting cascades", false);
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkKF, "Produce tables interconnecting cascades", false);
   PROCESS_SWITCH(strangederivedbuilder, processPureSimulation, "Produce pure simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processReconstructedSimulation, "Produce reco-ed simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processBinnedGenerated, "Produce binned generated information", false);
+
+  // event plane information
   PROCESS_SWITCH(strangederivedbuilder, processFT0AQVectors, "Produce FT0A Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectors, "Produce FT0C Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectorsLF, "Produce FT0C Q-vectors table using LF temporary calibration", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0MQVectors, "Produce FT0M Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
+
+  // dedicated findable functionality
+  PROCESS_SWITCH(strangederivedbuilder, processV0FoundTags, "Produce FoundV0Tags for findable exercise", false);
+  PROCESS_SWITCH(strangederivedbuilder, processCascFoundTags, "Produce FoundCascTags for findable exercise", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

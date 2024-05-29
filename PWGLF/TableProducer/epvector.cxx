@@ -98,7 +98,7 @@ struct epvector {
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for recentere"};
   Configurable<std::string> ConfShift{"ConfShift", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift"};
-
+  ConfigurableAxis configAxisCentrality{"configAxisCentrality", {80, 0.0, 80}, "centrality bining"};
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -108,7 +108,8 @@ struct epvector {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
+    const AxisSpec centAxis{configAxisCentrality, "V0M (%)"};
+    // AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec multiplicity = {5000, -500, 500, "TPC Multiplicity"};
     AxisSpec amplitudeFT0 = {5000, 0, 10000, "FT0 amplitude"};
     AxisSpec channelFT0Axis = {220, 0.0, 220.0, "FT0 channel"};
@@ -238,7 +239,7 @@ struct epvector {
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
   using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>>;
 
-  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const&, MyTracks const& tracks)
+  void process(MyCollisions::iterator const& coll, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, aod::BCsWithTimestamps const&, MyTracks const& tracks)
   {
     auto centrality = coll.centFT0C();
     auto bc = coll.bc_as<aod::BCsWithTimestamps>();
@@ -250,6 +251,16 @@ struct epvector {
     float psiTPC = -99;
     float psiTPCL = -99;
     float psiTPCR = -99;
+    auto qxFT0A = 0.0;
+    auto qxFT0C = 0.0;
+    auto qyFT0A = 0.0;
+    auto qyFT0C = 0.0;
+    auto qxTPC = 0.0;
+    auto qyTPC = 0.0;
+    auto qxTPCL = 0.0;
+    auto qyTPCL = 0.0;
+    auto qxTPCR = 0.0;
+    auto qyTPCR = 0.0;
     if (coll.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && coll.has_foundFT0() && eventSelected(coll, centrality) && coll.selection_bit(aod::evsel::kNoTimeFrameBorder) && coll.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       triggerevent = true;
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
@@ -258,10 +269,6 @@ struct epvector {
 
       histos.fill(HIST("hCentrality"), centrality);
       histos.fill(HIST("Vz"), vz);
-      auto qxFT0A = 0.0;
-      auto qxFT0C = 0.0;
-      auto qyFT0A = 0.0;
-      auto qyFT0C = 0.0;
 
       auto ft0 = coll.foundFT0();
       auto offsetFT0Ax = (*offsetFT0)[0].getX();
@@ -293,13 +300,6 @@ struct epvector {
         qxFT0C = qxFT0C + ampl * TMath::Cos(2.0 * phiC);
         qyFT0C = qyFT0C + ampl * TMath::Sin(2.0 * phiC);
       }
-
-      auto qxTPC = 0.0;
-      auto qyTPC = 0.0;
-      auto qxTPCL = 0.0;
-      auto qyTPCL = 0.0;
-      auto qxTPCR = 0.0;
-      auto qyTPCR = 0.0;
 
       for (auto& trk : tracks) {
         if (!selectionTrack(trk) || abs(trk.eta()) > 0.8 || trk.pt() > cfgCutPTMax || abs(trk.eta()) < cfgMinEta) {
@@ -375,7 +375,7 @@ struct epvector {
       }
       lastRunNumber = currentRunNumber;
     }
-    epcalibrationtable(triggerevent, centrality, psiFT0C, psiFT0A, psiTPC, psiTPCL, psiTPCR);
+    epcalibrationtable(triggerevent, centrality, psiFT0C, psiFT0A, psiTPC, psiTPCL, psiTPCR, TMath::Sqrt(qxFT0C * qxFT0C + qyFT0C * qyFT0C), TMath::Sqrt(qxFT0A * qxFT0A + qyFT0A * qyFT0A), TMath::Sqrt(qxTPC * qxTPC + qyTPC * qyTPC), TMath::Sqrt(qxTPCL * qxTPCL + qyTPCL * qyTPCL), TMath::Sqrt(qxTPCR * qxTPCR + qyTPCR * qyTPCR));
   }
 };
 

@@ -245,7 +245,7 @@ struct HfTaskDplus {
   void fillHistoMCGen(const T2& particle)
   {
     auto ptGen = particle.pt();
-    auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
+    auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
     registry.fill(HIST("hPtGen"), ptGen);
     registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
     if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
@@ -261,7 +261,7 @@ struct HfTaskDplus {
   // Run analysis for the reconstructed Dplus candidates from data
   /// \param candidates are reconstructed candidates
   template <bool fillMl, typename T1>
-  void runDataAnalysis(const T1& candidates)
+  void runDataAnalysis(const T1& /*candidates*/)
   {
     if constexpr (!fillMl) {
       for (const auto& candidate : selectedDPlusCandidates) {
@@ -284,7 +284,7 @@ struct HfTaskDplus {
   /// \param candidates are reconstructed candidates
   /// \param mcParticles are particles with MC information
   template <bool fillMl, typename T1, typename T2>
-  void runMCAnalysis(const T1& recoCandidates, const T2& mcParticles)
+  void runMCAnalysis(const T1& /*recoCandidates*/, const T2& mcParticles)
   {
     // MC rec. w/o Ml
     if constexpr (!fillMl) {
@@ -322,7 +322,7 @@ struct HfTaskDplus {
     }
     // MC gen.
     for (const auto& particle : mcParticles) {
-      auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
+      auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
       if ((yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) || (std::abs(particle.flagMcMatchGen()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         continue;
       }

@@ -234,7 +234,7 @@ struct HfCandidateSelectorLcToK0sP {
   }
 
   void processWithStandardPID(aod::HfCandCascade const& candidates,
-                              TracksSel const& tracks)
+                              TracksSel const&)
   {
     int statusLc = 0; // final selection flag : 0-rejected  1-accepted
 
@@ -268,7 +268,7 @@ struct HfCandidateSelectorLcToK0sP {
   PROCESS_SWITCH(HfCandidateSelectorLcToK0sP, processWithStandardPID, "Use standard PID for bachelor track", true);
 
   void processWithBayesPID(aod::HfCandCascade const& candidates,
-                           TracksSelBayes const& tracks)
+                           TracksSelBayes const&)
   {
     int statusLc = 0; // final selection flag : 0-rejected  1-accepted
 

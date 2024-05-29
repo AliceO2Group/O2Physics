@@ -488,26 +488,31 @@ struct TagTwoProngDisplacedVertices {
         if (std::abs(track.tofNSigmaPi()) < trackNumSigmaTof) {
           return true;
         }
+        break;
       }
       case aod::tagandprobe::TagChannels::DsOrDplusToKKPi: {
         if (std::abs(track.tofNSigmaKa()) < trackNumSigmaTof) {
           return true;
         }
+        break;
       }
       case aod::tagandprobe::TagChannels::DstarPlusToDzeroPi: {
         if ((track.signed1Pt() > 0 && std::abs(track.tofNSigmaPi()) < trackNumSigmaTof) || (track.signed1Pt() < 0 && std::abs(track.tofNSigmaKa()) < trackNumSigmaTof)) {
           return true;
         }
+        break;
       }
       case aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi: {
         if ((track.signed1Pt() < 0 && std::abs(track.tofNSigmaPi()) < trackNumSigmaTof) || (track.signed1Pt() > 0 && std::abs(track.tofNSigmaKa()) < trackNumSigmaTof)) {
           return true;
         }
+        break;
       }
       case aod::tagandprobe::TagChannels::DstarToDzeroToKK: {
         if (std::abs(track.tofNSigmaKa()) < trackNumSigmaTof) {
           return true;
         }
+        break;
       }
     }
     return false;
@@ -569,7 +574,7 @@ struct TagTwoProngDisplacedVertices {
   void computeCombinatorialSameCharge(CCollision const& collision,
                                       TTracks const& tracks, // pool of tracks
                                       const uint8_t channel,
-                                      float& bz,
+                                      float& /*bz*/,
                                       std::vector<int>& pdgDecayMothers,
                                       std::vector<int>& pdgResonances,
                                       PParticles const& particlesMc)
@@ -636,7 +641,7 @@ struct TagTwoProngDisplacedVertices {
                                           TTracks const& tracksPos,
                                           TTracks const& tracksNeg,
                                           const uint8_t channel,
-                                          float& bz,
+                                          float& /*bz*/,
                                           std::vector<int>& pdgDecayMothers,
                                           std::vector<int>& pdgResonances,
                                           PParticles const& particlesMc)
@@ -743,7 +748,7 @@ struct TagTwoProngDisplacedVertices {
   }
 
   void processPiPiFromDplusMc(CollisionsFiltered::iterator const& collision,
-                              TracksWithSelAndDcaMcFiltered const& tracks,
+                              TracksWithSelAndDcaMcFiltered const&,
                               aod::BCsWithTimestamps const&,
                               aod::McParticles const& particlesMc)
   {
@@ -802,7 +807,7 @@ struct TagTwoProngDisplacedVertices {
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processPiPiFromDplus, "Process pipi combinatorial to tag pion pairs from D+ decays", false);
 
   void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
-                                  TracksWithSelAndDcaMcFiltered const& tracks,
+                                  TracksWithSelAndDcaMcFiltered const&,
                                   aod::BCsWithTimestamps const&,
                                   aod::McParticles const& particlesMc)
   {
@@ -914,7 +919,7 @@ struct TagTwoProngDisplacedVertices {
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaPiFromDstar, "Process Kpi combinatorial to tag D0 from D*+ decays", false);
 
   void processKaPiFromDstarMc(CollisionsFiltered::iterator const& collision,
-                              TracksWithSelAndDcaMcFiltered const& tracks,
+                              TracksWithSelAndDcaMcFiltered const&,
                               aod::BCsWithTimestamps const&,
                               aod::McParticles const& particlesMc)
   {
@@ -1051,7 +1056,7 @@ struct ProbeThirdTrack {
   }
 
   template <typename TTrackIndices, typename TTrack, typename TTracks>
-  void loopOverThirdTrack(TTrackIndices const& groupedTrackThirdIndices, TTracks const& tracks, TTrack const& trackFirst, TTrack const& trackSecond, const uint8_t channel)
+  void loopOverThirdTrack(TTrackIndices const& groupedTrackThirdIndices, TTracks const& /*tracks*/, TTrack const& trackFirst, TTrack const& trackSecond, const uint8_t channel)
   {
     for (const auto& trackIndex : groupedTrackThirdIndices) {
       auto trackThird = trackIndex.template track_as<TTracks>();

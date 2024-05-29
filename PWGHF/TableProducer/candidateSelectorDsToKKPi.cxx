@@ -52,10 +52,10 @@ struct HfCandidateSelectorDsToKKPi {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_ds_to_k_k_pi::cuts[0], hf_cuts_ds_to_k_k_pi::nBinsPt, hf_cuts_ds_to_k_k_pi::nCutVars, hf_cuts_ds_to_k_k_pi::labelsPt, hf_cuts_ds_to_k_k_pi::labelsCutVar}, "Ds candidate selection per pT bin"};
-  // DCAxy selections
+  // DCAxy and DCAz selections
   Configurable<LabeledArray<double>> cutsSingleTrack{"cutsSingleTrack", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections"};
   // pT bins for single-track cuts
-  Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA XY pT-dependent cut"};
+  Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA pT-dependent cut"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
@@ -123,34 +123,14 @@ struct HfCandidateSelectorDsToKKPi {
   }
 
   /// Single-track cuts
-  /// \param trackPt is the prong pT
-  /// \param dcaXY is the prong dcaXY
-  /// \return true if track passes all cuts
-  bool isSelectedTrackDcaXY(const float& trackPt, const float& dcaXY)
-  {
-    auto pTBinTrack = findBin(binsPtTrack, trackPt);
-    if (pTBinTrack == -1) {
-      return false;
-    }
-
-    if (std::abs(dcaXY) < cutsSingleTrack->get(pTBinTrack, "min_dcaxytoprimary")) {
-      return false; // minimum DCAxy
-    }
-    if (std::abs(dcaXY) > cutsSingleTrack->get(pTBinTrack, "max_dcaxytoprimary")) {
-      return false; // maximum DCAxy
-    }
-    return true;
-  }
-
-  /// Single-track cuts
   /// \param candidate is the Ds candidate
   /// \return true if all the prongs pass the selections
   template <typename T1>
-  bool isSelectedCandidateDcaXY(const T1& candidate)
+  bool isSelectedCandidateProngDca(const T1& candidate)
   {
-    if (isSelectedTrackDcaXY(candidate.ptProng0(), candidate.impactParameter0()) &&
-        isSelectedTrackDcaXY(candidate.ptProng1(), candidate.impactParameter1()) &&
-        isSelectedTrackDcaXY(candidate.ptProng2(), candidate.impactParameter2())) {
+    if (isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
+        isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()) &&
+        isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2(), candidate.impactParameterZ2())) {
       return true;
     }
     return false;
@@ -189,7 +169,7 @@ struct HfCandidateSelectorDsToKKPi {
     if (candidate.chi2PCA() > cuts->get(pTBin, "chi2PCA")) {
       return false;
     }
-    if (!isSelectedCandidateDcaXY(candidate)) {
+    if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }
     return true;

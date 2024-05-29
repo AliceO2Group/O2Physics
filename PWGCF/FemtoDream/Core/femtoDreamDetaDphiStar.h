@@ -409,7 +409,6 @@ class FemtoDreamDetaDphiStar
   template <bool isHF = false, int prong = 0, typename T>
   float PhiAtSpecificRadiiTPC(const T& part, float radii)
   {
-    // Start: Get the charge from cutcontainer using masks
     int charge = 0;
     float phi0, pt;
     if constexpr (isHF) {
@@ -428,6 +427,7 @@ class FemtoDreamDetaDphiStar
       }
     } else {
       phi0 = part.phi();
+          // Start: Get the charge from cutcontainer using masks
       if ((part.cut() & kSignMinusMask) == kValue0 && (part.cut() & kSignPlusMask) == kValue0) {
         charge = 0;
       } else if ((part.cut() & kSignPlusMask) == kSignPlusMask) {

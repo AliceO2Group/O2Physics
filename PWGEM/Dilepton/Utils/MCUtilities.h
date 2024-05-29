@@ -30,6 +30,61 @@ enum class EM_HFeeType : int {
   kBCe_Be_SameB = 3, // ULS
   kBCe_Be_DiffB = 4, // LS
 };
+
+template <typename TMCParticle, typename TMCParticles>
+int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
+{
+  if (!p.has_mothers()) {
+    return -999;
+  }
+
+  int motherid = p.mothersIds()[0]; // first mother index
+  while (motherid > -1) {
+    if (motherid < mcparticles.size()) { // protect against bad mother indices. why is this needed?
+      auto mp = mcparticles.iteratorAt(motherid);
+      if (abs(mp.pdgCode()) < 1e+9 && (std::to_string(abs(mp.pdgCode()))[std::to_string(abs(mp.pdgCode())).length() - 3] == '5' || std::to_string(abs(mp.pdgCode()))[std::to_string(abs(mp.pdgCode())).length() - 4] == '5')) {
+        return motherid;
+      }
+      if (mp.has_mothers()) {
+        motherid = mp.mothersIds()[0];
+      } else {
+        return -999;
+      }
+    } else {
+      LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mcparticles.size());
+    }
+  }
+
+  return -999;
+}
+
+template <typename TMCParticle, typename TMCParticles>
+int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
+{
+  if (!p.has_mothers()) {
+    return -999;
+  }
+
+  int motherid = p.mothersIds()[0]; // first mother index
+  while (motherid > -1) {
+    if (motherid < mcparticles.size()) { // protect against bad mother indices. why is this needed?
+      auto mp = mcparticles.iteratorAt(motherid);
+      if (abs(mp.pdgCode()) < 1e+9 && (std::to_string(abs(mp.pdgCode()))[std::to_string(abs(mp.pdgCode())).length() - 3] == '4' || std::to_string(abs(mp.pdgCode()))[std::to_string(abs(mp.pdgCode())).length() - 4] == '4')) {
+        return motherid;
+      }
+      if (mp.has_mothers()) {
+        motherid = mp.mothersIds()[0];
+      } else {
+        return -999;
+      }
+    } else {
+      LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mcparticles.size());
+    }
+  }
+
+  return -999;
+}
+
 template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
 int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
 {
@@ -37,7 +92,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     return static_cast<int>(EM_HFeeType::kUndef);
   }
 
-  if (p1.mothersIds()[0] == p2.mothersIds()[0]) { // same mother
+  if (p1.mothersIds()[0] == p2.mothersIds()[0]) { // reject same mother. e.g. jspi 443
     return static_cast<int>(EM_HFeeType::kUndef); // this never happens in correlated HF->ee decays
   }
 
@@ -81,44 +136,91 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     }
   }
 
-  if (std::to_string(mothers_pdg1[0]).find("5") != std::string::npos && std::to_string(mothers_pdg2[0]).find("5") != std::string::npos) {
+  bool is_direct_from_b1 = abs(mothers_pdg1[0]) < 1e+9 && (std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 3] == '5' || std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 4] == '5');
+  bool is_direct_from_b2 = abs(mothers_pdg2[0]) < 1e+9 && (std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 3] == '5' || std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 4] == '5');
+  bool is_prompt_c1 = abs(mothers_pdg1[0]) < 1e+9 && (std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 3] == '4' || std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 4] == '4') && IsFromBeauty(p1, mcparticles) < 0;
+  bool is_prompt_c2 = abs(mothers_pdg2[0]) < 1e+9 && (std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 3] == '4' || std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 4] == '4') && IsFromBeauty(p2, mcparticles) < 0;
+  bool is_c_from_b1 = abs(mothers_pdg1[0]) < 1e+9 && (std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 3] == '4' || std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 4] == '4') && IsFromBeauty(p1, mcparticles) > 0;
+  bool is_c_from_b2 = abs(mothers_pdg2[0]) < 1e+9 && (std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 3] == '4' || std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 4] == '4') && IsFromBeauty(p2, mcparticles) > 0;
+
+  if (is_prompt_c1 && is_prompt_c2 && p1.pdgCode() * p2.pdgCode() < 0) {
+    mothers_id1.clear();
+    mothers_pdg1.clear();
+    mothers_id2.clear();
+    mothers_pdg2.clear();
+    mothers_id1.shrink_to_fit();
+    mothers_pdg1.shrink_to_fit();
+    mothers_id2.shrink_to_fit();
+    mothers_pdg2.shrink_to_fit();
+    return static_cast<int>(EM_HFeeType::kCe_Ce); // cc->ee, decay type = 0
+  } else if (is_direct_from_b1 && is_direct_from_b2 && p1.pdgCode() * p2.pdgCode() < 0) {
+    mothers_id1.clear();
+    mothers_pdg1.clear();
+    mothers_id2.clear();
+    mothers_pdg2.clear();
+    mothers_id1.shrink_to_fit();
+    mothers_pdg1.shrink_to_fit();
+    mothers_id2.shrink_to_fit();
+    mothers_pdg2.shrink_to_fit();
     return static_cast<int>(EM_HFeeType::kBe_Be); // bb->ee, decay type = 2
-    // this is easy. first mother is b hadron for both leg.
-  }
-
-  if (std::to_string(mothers_pdg1[0]).find("4") != std::string::npos && std::to_string(mothers_pdg2[0]).find("4") != std::string::npos) {
-    // mother is c hadron. next, check c is prompt or non-prompt.
-
-    bool is_c_from_b1 = false;
-    for (unsigned int i1 = 1; i1 < mothers_pdg1.size(); i1++) {
-      if (std::to_string(mothers_pdg1[i1]).find("5") != std::string::npos) {
-        is_c_from_b1 = true;
-        break;
-      }
-    }
-    bool is_c_from_b2 = false;
-    for (unsigned int i2 = 1; i2 < mothers_pdg2.size(); i2++) {
-      if (std::to_string(mothers_pdg2[i2]).find("5") != std::string::npos) {
-        is_c_from_b2 = true;
-        break;
-      }
-    }
-
-    if (!is_c_from_b1 && !is_c_from_b2) {
-      return static_cast<int>(EM_HFeeType::kCe_Ce); // prompt cc->ee, decay type = 0
-    } else if (is_c_from_b1 && is_c_from_b2) {
-      return static_cast<int>(EM_HFeeType::kBCe_BCe); // b->c->e and b->c->e, decay type = 1
-    } else {
+  } else if (is_c_from_b1 && is_c_from_b2 && p1.pdgCode() * p2.pdgCode() < 0) {
+    mothers_id1.clear();
+    mothers_pdg1.clear();
+    mothers_id2.clear();
+    mothers_pdg2.clear();
+    mothers_id1.shrink_to_fit();
+    mothers_pdg1.shrink_to_fit();
+    mothers_id2.shrink_to_fit();
+    mothers_pdg2.shrink_to_fit();
+    return static_cast<int>(EM_HFeeType::kBCe_BCe); // b->c->e and b->c->e, decay type = 1
+  } else if ((is_direct_from_b1 && is_c_from_b2) || (is_direct_from_b2 && is_c_from_b1)) {
+    if (p1.pdgCode() * p2.pdgCode() < 0) { // ULS
       for (auto& mid1 : mothers_id1) {
         for (auto& mid2 : mothers_id2) {
           if (mid1 == mid2) {
-            return static_cast<int>(EM_HFeeType::kBCe_Be_SameB); // b->c->e and c->e, decay type = 3. this should happen only in ULS.
+            auto common_mp = mcparticles.iteratorAt(mid1);
+            int mp_pdg = common_mp.pdgCode();
+            if (abs(mp_pdg) < 1e+9 && (std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 3] == '5' || std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 4] == '5')) {
+              mothers_id1.clear();
+              mothers_pdg1.clear();
+              mothers_id2.clear();
+              mothers_pdg2.clear();
+              mothers_id1.shrink_to_fit();
+              mothers_pdg1.shrink_to_fit();
+              mothers_id2.shrink_to_fit();
+              mothers_pdg2.shrink_to_fit();
+              return static_cast<int>(EM_HFeeType::kBCe_Be_SameB); // b->c->e and b->e, decay type = 3. this should happen only in ULS.
+            }
           }
-        }                                                  // end of mother id 2
-      }                                                    // end of mother id 1
-      return static_cast<int>(EM_HFeeType::kBCe_Be_DiffB); // b->c->e and c->e, decay type = 4. this should happen only in LS. But, this may happen, when ele/pos is reconstructed as pos/ele wrongly. and create LS pair
+        }    // end of motherid2
+      }      // end of motherid1
+    } else { // LS
+      bool is_same_mother_found = false;
+      for (auto& mid1 : mothers_id1) {
+        for (auto& mid2 : mothers_id2) {
+          if (mid1 == mid2) {
+            auto common_mp = mcparticles.iteratorAt(mid1);
+            int mp_pdg = common_mp.pdgCode();
+            if (abs(mp_pdg) < 1e+9 && (std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 3] == '5' || std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 4] == '5')) {
+              is_same_mother_found = true;
+            }
+          }
+        } // end of motherid2
+      }   // end of motherid1
+      if (!is_same_mother_found) {
+        mothers_id1.clear();
+        mothers_pdg1.clear();
+        mothers_id2.clear();
+        mothers_pdg2.clear();
+        mothers_id1.shrink_to_fit();
+        mothers_pdg1.shrink_to_fit();
+        mothers_id2.shrink_to_fit();
+        mothers_pdg2.shrink_to_fit();
+        return static_cast<int>(EM_HFeeType::kBCe_Be_DiffB); // b->c->e and b->e, decay type = 4. this should happen only in LS. But, this may happen, when ele/pos is reconstructed as pos/ele wrongly. and create LS pair
+      }
     }
   }
+
   mothers_id1.clear();
   mothers_pdg1.clear();
   mothers_id2.clear();
@@ -128,6 +230,105 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
   mothers_id2.shrink_to_fit();
   mothers_pdg2.shrink_to_fit();
   return static_cast<int>(EM_HFeeType::kUndef);
+}
+
+template <typename T, typename U>
+int searchMothers(T& p, U& mcParticles, int pdg, bool equal)
+{ // find the first ancestor that is equal/not-equal pdg
+
+  if (!p.has_mothers()) {
+    return -1;
+  }
+  auto mothersids = p.mothersIds();
+  std::vector<int> allmothersids;
+
+  if (mothersids.size() == 2) {
+    if (mothersids[0] == mothersids[1]) {
+      allmothersids.push_back(mothersids[0]);
+    } else if (mothersids[1] < mothersids[0]) {
+      allmothersids.push_back(mothersids[0]);
+      allmothersids.push_back(mothersids[1]);
+    } else if ((80 < abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 90) || (100 < abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 110)) { // NOTE: THIS IS GENERATOR DEPENDENT AND WORKS ONLY FOR PYTHIA!
+      for (int i = mothersids[0]; i <= mothersids[1]; i++) {
+        allmothersids.push_back(i);
+      }
+    } else {
+      allmothersids.push_back(mothersids[0]);
+      allmothersids.push_back(mothersids[1]);
+    }
+  } else {
+    allmothersids.push_back(mothersids[0]);
+  }
+
+  if (equal) { // we are searching for the quark
+    int quark_id = -1;
+    int next_mother_id = -1;
+    for (int i : allmothersids) {
+      auto mother = mcParticles.iteratorAt(i);
+      int mpdg = mother.pdgCode();
+      if (abs(mpdg) == pdg && mpdg * p.pdgCode() > 0) { // check for quark
+        if (quark_id > -1 || next_mother_id > -1) {     // we already found a possible candidate in the list of mothers, so now we have (at least) two
+          // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
+          return -1;
+        }
+        quark_id = i;
+      } else if ((static_cast<int>(abs(mpdg) / 100) == pdg || static_cast<int>(abs(mpdg) / 1000) == pdg) && mpdg * p.pdgCode() > 0) { // check for other mothers with flavour content
+        if (quark_id > -1 || next_mother_id > -1) {                                                                                   // we already found a possible candidate in the list of mothers, so now we have (at least) two
+          // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
+          return -1;
+        }
+        next_mother_id = i;
+      }
+    }
+    if (quark_id > -1) { // we found the quark
+      return quark_id;
+    }
+    if (next_mother_id > -1) {
+      auto mother = mcParticles.iteratorAt(next_mother_id);
+      return searchMothers(mother, mcParticles, pdg, equal); // we found at least something with flavour content, go deeper recursively
+    }
+    return -1;
+  } else { // searching for first ancestor that is not quark anymore
+    int quark_id = -1;
+    for (int i : allmothersids) {
+      auto mother = mcParticles.iteratorAt(i);
+      int mpdg = abs(mother.pdgCode());
+      if (mpdg == pdg && mother.pdgCode() == p.pdgCode()) { // found the quark
+        if (quark_id > -1) {                                // we already found a possible candidate in the list of mothers, so now we have (at least) two
+          // LOG(warning) << "Flavour tracking is ambiguous. Stopping here.";
+          return -1;
+        }
+        quark_id = i;
+      }
+    }
+    if (quark_id > -1) { // we found a quark and now search recursivly through entire history
+      auto mother = mcParticles.iteratorAt(quark_id);
+      return searchMothers(mother, mcParticles, pdg, equal);
+    } else { // no HF quark as mother, so this is the ancestor
+      return allmothersids[0];
+    }
+  }
+  return -1;
+}
+
+template <typename T, typename U>
+int findHFOrigin(T& p, U& mcParticles, int pdg)
+{
+  int quark_id = searchMothers(p, mcParticles, pdg, true); // try to find the hf quark
+  if (quark_id == -1) {
+    return -1;
+  }
+  auto quark = mcParticles.iteratorAt(quark_id);
+  int id = searchMothers(quark, mcParticles, pdg, false); // try to find the first ancestor that is not the hf quark anymore
+  return id;
+}
+
+template <typename T, typename U>
+bool checkFromSameQuarkPair(T& p1, T& p2, U& mcParticles, int pdg)
+{ // check if two particles come from the same hf q-qbar pair
+  int id1 = findHFOrigin(p1, mcParticles, pdg);
+  int id2 = findHFOrigin(p2, mcParticles, pdg);
+  return id1 == id2 && id1 > -1 && id2 > -1;
 }
 //_______________________________________________________________________
 //_______________________________________________________________________
