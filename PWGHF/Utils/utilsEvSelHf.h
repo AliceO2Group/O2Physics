@@ -172,7 +172,6 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \brief Fills histograms for monitoring event selections satisfied by the collision.
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
-  /// \param registry reference to the histogram registry
   template <typename Coll>
   void fillHistograms(Coll const& collision, const uint16_t rejectionMask)
   {
