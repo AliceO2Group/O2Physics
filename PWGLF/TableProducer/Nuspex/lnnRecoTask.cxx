@@ -203,7 +203,6 @@ struct lnnRecoTask {
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hLnnMassSel = qaRegistry.add<TH1>("hLnnMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.9, 3.8}});
 
-
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
     if (doprocessMC) {
@@ -371,7 +370,7 @@ struct lnnRecoTask {
         continue;
       }
       // Definition of lnn mass
-      float mLNN_HypHI = 2.99; //2993.7 MeV/c**2
+      float mLNN_HypHI = 2.99; // 2993.7 MeV/c**2
       float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
       bool isLNNMass = false;
       if (massLNNL > mLNN_HypHI - masswidth && massLNNL < mLNN_HypHI + masswidth) {
@@ -398,7 +397,7 @@ struct lnnRecoTask {
       for (int i = 0; i < 3; i++) {
         lnnCand.decVtx[i] = lnnCand.decVtx[i] - primVtx[i];
       }
-      
+
       // if survived all selections, propagate decay daughters to PV
       gpu::gpustd::array<float, 2> dcaInfo;
 
@@ -527,7 +526,7 @@ struct lnnRecoTask {
       hCentFV0A->Fill(collision.centFV0A());
 
       if (collision.has_mcCollision()) {
-      isGoodCollision[collision.mcCollisionId()] = true;
+        isGoodCollision[collision.mcCollisionId()] = true;
       }
 
       const uint64_t collIdx = collision.globalIndex();
@@ -558,7 +557,7 @@ struct lnnRecoTask {
 
     // now we fill only the signal candidates that were not reconstructed
     for (auto& mcPart : particlesMC) {
-      
+
       if (std::abs(mcPart.pdgCode()) != lnnPdg)
         continue;
       std::array<float, 3> secVtx;
