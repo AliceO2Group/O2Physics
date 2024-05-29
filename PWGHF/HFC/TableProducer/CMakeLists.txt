@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(correlator-d0-d0bar
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femtodream-producer-hf
+          SOURCES femtoDreamProducerTaskHF.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(correlator-d0-d0bar-barrel-full-pid
                     SOURCES correlatorD0D0barBarrelFullPid.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
