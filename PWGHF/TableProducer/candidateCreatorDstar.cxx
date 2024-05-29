@@ -82,7 +82,7 @@ struct HfCandidateCreatorDstar {
   AxisSpec ptAxis = {100, 0., 2.0, "#it{p}_{T} (GeV/#it{c}"};
   AxisSpec dcaAxis = {200, -500., 500., "#it{d}_{xy,z} (#mum)"};
 
-  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hCandidates;
+  std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{
     "registry",
     {{"Refit/hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}}},

@@ -100,10 +100,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "Run 2 trigger class, only for Run 2 converted data"};
   HfEventSelection hfEvSel; // event selection and monitoring
 
-  ConfigurableAxis axisNumContributors{"axisNumContributors", {200, -0.5f, 199.5f}, "Number of PV contributors"};
-
   // QA histos
-  std::shared_ptr<TH1> hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel;
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)

@@ -78,7 +78,7 @@ struct HfCandidateCreatorCascade {
   double mass2K0sP{0.};
   double bz = 0.;
 
-  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel, hCandidates;
+  std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)

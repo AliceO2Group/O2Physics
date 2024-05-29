@@ -92,7 +92,6 @@ struct HfCandidateCreatorXic0Omegac0 {
   using CascadesLinked = soa::Join<Cascades, CascDataLink>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
 
-  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
   std::shared_ptr<TH1> hInvMassCharmBaryonToXiPi, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaK, hFitterStatusToXiPi, hFitterStatusToOmegaPi, hFitterStatusToOmegaK, hCandidateCounterToXiPi, hCandidateCounterToOmegaPi, hCandidateCounterToOmegaK, hCascadesCounterToXiPi, hCascadesCounterToOmegaPi, hCascadesCounterToOmegaK;
 
   HistogramRegistry registry{"registry"};
