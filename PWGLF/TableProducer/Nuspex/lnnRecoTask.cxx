@@ -450,7 +450,7 @@ struct lnnRecoTask {
 
                 for (int i = 0; i < 3; i++) {
                   lnnCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
-              }
+                }
               lnnCand.isSignal = true;
               lnnCand.pdgCode = posMother.pdgCode();
               lnnCand.survEvSelection = isGoodCollision[posMother.mcCollisionId()];
