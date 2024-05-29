@@ -9,11 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file 
+/// \file
 /// \brief Writer of the omegac0  to Omega Pi candidates in the form of flat tables to be stored in TTrees.
 ///        In this file are defined and filled the output tables
 ///
-/// \author 
+/// \author
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -191,7 +191,7 @@ DECLARE_SOA_COLUMN(CtOmegac, ctOmegac, float);
 DECLARE_SOA_COLUMN(EtaOmegac, etaOmegac, float);
 DECLARE_SOA_COLUMN(V0Ndf, v0Ndf, float);
 DECLARE_SOA_COLUMN(CascNdf, cascNdf, float);
-DECLARE_SOA_COLUMN(OmegacNdf,omegacNdf, float);
+DECLARE_SOA_COLUMN(OmegacNdf, omegacNdf, float);
 DECLARE_SOA_COLUMN(MassV0Ndf, massV0Ndf, float);
 DECLARE_SOA_COLUMN(MassCascNdf, massCascNdf, float);
 DECLARE_SOA_COLUMN(V0Chi2OverNdf, v0Chi2OverNdf, float);
@@ -209,9 +209,9 @@ DECLARE_SOA_TABLE(HfOmegacFulls, "AOD", "HFOMEGACFULL",
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
                   full::SignDecay,
-				  full::CovVtxCharmBaryonXX, full::CovVtxCharmBaryonYY, full::CovVtxCharmBaryonZZ,
-				  full::PtCharmBaryon,full::PtCasc,full::PtPiFromCharmBaryon,full::PtLambda,full::PtKaFromCasc,                  
-				  full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
+                  full::CovVtxCharmBaryonXX, full::CovVtxCharmBaryonYY, full::CovVtxCharmBaryonZZ,
+                  full::PtCharmBaryon, full::PtCasc, full::PtPiFromCharmBaryon, full::PtLambda, full::PtKaFromCasc,
+                  full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
                   full::PxCasc, full::PyCasc, full::PzCasc,
                   full::PxPiFromCharmBaryon, full::PyPiFromCharmBaryon, full::PzPiFromCharmBaryon,
                   full::PxLambda, full::PyLambda, full::PzLambda,
@@ -262,48 +262,46 @@ DECLARE_SOA_TABLE(HfOmegacLites, "AOD", "HFOMEGACLITE",
                   full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched, full::MlProbOmegac, full::MlProbOmegacBar);
 
 DECLARE_SOA_TABLE(HfKFOmegacFulls, "AOD", "HFKFOMEGACFULL",
-				  full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc, 
-				  full::NSigmaTPCPiFromV0, full::NSigmaTPCPrFromV0, 
-				  full::KfDcaXYPiFromOmegac, full::KfDcaCascDau, full::KfDcaOmegacDau, full::KfDcaXYCascToPv,
-				  full::Chi2GeoV0, full::Chi2GeoCasc, full::Chi2GeoOmegac, 
-				  full::Chi2MassV0, full::Chi2MassCasc, 
-				  full::V0ldl, full::Cascldl, full::Omegacldl, 
-				  full::Chi2TopoV0ToPv, full::Chi2TopoCascToPv, full::Chi2TopoPiFromOmegacToPv, full::Chi2TopoOmegacToPv, 
-				  full::Chi2TopoV0ToCasc, full::Chi2TopoCascToOmegac, 
-				  full::DecayLenXYLambda, full::DecayLenXYCasc, full::DecayLenXYOmegac, 
-				  full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToOmegac, full::CosPaCascToPv, full::CosPaOmegacToPv, 
-				  full::KfMassV0, full::KfMassCasc, full::KfMassOmegac, 
-				  full::KfRapOmegac, full::KfptPiFromOmegac, full::KfptOmegac, 
-				  full::CosThetaStarPiFromOmegac, full::CtOmegac, full::EtaOmegac, 
-				  full::V0Ndf, full::CascNdf, full::OmegacNdf, 
-				  full::MassV0Ndf, full::MassCascNdf, 
-				  full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf, 
-				  full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf,
-				  full::DcaCascDau, full::DcaV0Dau,
-				  full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched			  
-				  );
+                  full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc,
+                  full::NSigmaTPCPiFromV0, full::NSigmaTPCPrFromV0,
+                  full::KfDcaXYPiFromOmegac, full::KfDcaCascDau, full::KfDcaOmegacDau, full::KfDcaXYCascToPv,
+                  full::Chi2GeoV0, full::Chi2GeoCasc, full::Chi2GeoOmegac,
+                  full::Chi2MassV0, full::Chi2MassCasc,
+                  full::V0ldl, full::Cascldl, full::Omegacldl,
+                  full::Chi2TopoV0ToPv, full::Chi2TopoCascToPv, full::Chi2TopoPiFromOmegacToPv, full::Chi2TopoOmegacToPv,
+                  full::Chi2TopoV0ToCasc, full::Chi2TopoCascToOmegac,
+                  full::DecayLenXYLambda, full::DecayLenXYCasc, full::DecayLenXYOmegac,
+                  full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToOmegac, full::CosPaCascToPv, full::CosPaOmegacToPv,
+                  full::KfMassV0, full::KfMassCasc, full::KfMassOmegac,
+                  full::KfRapOmegac, full::KfptPiFromOmegac, full::KfptOmegac,
+                  full::CosThetaStarPiFromOmegac, full::CtOmegac, full::EtaOmegac,
+                  full::V0Ndf, full::CascNdf, full::OmegacNdf,
+                  full::MassV0Ndf, full::MassCascNdf,
+                  full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
+                  full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf,
+                  full::DcaCascDau, full::DcaV0Dau,
+                  full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
 DECLARE_SOA_TABLE(HfMlKFOmegacFulls, "AOD", "HFMLKFOMEGAC",
-				  full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc, 
-				  full::NSigmaTPCPiFromV0, full::NSigmaTPCPrFromV0, 
-				  full::KfDcaXYPiFromOmegac, full::KfDcaCascDau, full::KfDcaOmegacDau, full::KfDcaXYCascToPv,
-				  full::Chi2GeoV0, full::Chi2GeoCasc, full::Chi2GeoOmegac, 
-				  full::Chi2MassV0, full::Chi2MassCasc, 
-				  full::V0ldl, full::Cascldl, full::Omegacldl, 
-				  full::Chi2TopoV0ToPv, full::Chi2TopoCascToPv, full::Chi2TopoPiFromOmegacToPv, full::Chi2TopoOmegacToPv, 
-				  full::Chi2TopoV0ToCasc, full::Chi2TopoCascToOmegac, 
-				  full::DecayLenXYLambda, full::DecayLenXYCasc, full::DecayLenXYOmegac, 
-				  full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToOmegac, full::CosPaCascToPv, full::CosPaOmegacToPv, 
-				  full::KfMassV0, full::KfMassCasc, full::KfMassOmegac, 
-				  full::KfRapOmegac, full::KfptPiFromOmegac, full::KfptOmegac, 
-				  full::CosThetaStarPiFromOmegac, full::CtOmegac, full::EtaOmegac, 
-				  full::V0Ndf, full::CascNdf, full::OmegacNdf, 
-				  full::MassV0Ndf, full::MassCascNdf, 
-				  full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf, 
-				  full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf,
-				  full::DcaCascDau, full::DcaV0Dau,
-				  full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched, full::MlProbOmegac, full::MlProbOmegacBar			  
-				  );
-					  
+                  full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc,
+                  full::NSigmaTPCPiFromV0, full::NSigmaTPCPrFromV0,
+                  full::KfDcaXYPiFromOmegac, full::KfDcaCascDau, full::KfDcaOmegacDau, full::KfDcaXYCascToPv,
+                  full::Chi2GeoV0, full::Chi2GeoCasc, full::Chi2GeoOmegac,
+                  full::Chi2MassV0, full::Chi2MassCasc,
+                  full::V0ldl, full::Cascldl, full::Omegacldl,
+                  full::Chi2TopoV0ToPv, full::Chi2TopoCascToPv, full::Chi2TopoPiFromOmegacToPv, full::Chi2TopoOmegacToPv,
+                  full::Chi2TopoV0ToCasc, full::Chi2TopoCascToOmegac,
+                  full::DecayLenXYLambda, full::DecayLenXYCasc, full::DecayLenXYOmegac,
+                  full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToOmegac, full::CosPaCascToPv, full::CosPaOmegacToPv,
+                  full::KfMassV0, full::KfMassCasc, full::KfMassOmegac,
+                  full::KfRapOmegac, full::KfptPiFromOmegac, full::KfptOmegac,
+                  full::CosThetaStarPiFromOmegac, full::CtOmegac, full::EtaOmegac,
+                  full::V0Ndf, full::CascNdf, full::OmegacNdf,
+                  full::MassV0Ndf, full::MassCascNdf,
+                  full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
+                  full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf,
+                  full::DcaCascDau, full::DcaV0Dau,
+                  full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched, full::MlProbOmegac, full::MlProbOmegacBar);
+
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -313,7 +311,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   Produces<o2::aod::HfOmegacLites> rowCandidateLite;
   Produces<o2::aod::HfKFOmegacFulls> rowKFCandidateFull;
   Produces<o2::aod::HfMlKFOmegacFulls> rowMlKFCandidateFull;
-  Produces<o2::aod::HfOmegacEvs> rowEv; 
+  Produces<o2::aod::HfOmegacEvs> rowEv;
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
 
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
@@ -331,14 +329,14 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
 
   template <typename T>
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
-  { 
-    std::vector<float> responseOmegac ;
-    std::vector<float> responseOmegacBar ;
-	for (float mlProbOmegac : candidate.mlProbOmegac()) {
-        responseOmegac.push_back(mlProbOmegac);
+  {
+    std::vector<float> responseOmegac;
+    std::vector<float> responseOmegacBar;
+    for (float mlProbOmegac : candidate.mlProbOmegac()) {
+      responseOmegac.push_back(mlProbOmegac);
     };
-	for (float mlProbOmegacBar : candidate.mlProbOmegacBar()) {
-        responseOmegacBar.push_back(mlProbOmegacBar);
+    for (float mlProbOmegacBar : candidate.mlProbOmegacBar()) {
+      responseOmegacBar.push_back(mlProbOmegacBar);
     };
     rowCandidateFull(
       candidate.xPv(),
@@ -450,23 +448,22 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
       debugMc,
       originMc,
       collisionMatched,
-	  responseOmegac,
-	  responseOmegacBar);
+      responseOmegac,
+      responseOmegacBar);
   }
 
   template <typename T>
-  void fillCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched )
+  void fillCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
   {
-    std::vector<float> responseOmegac ;
-    std::vector<float> responseOmegacBar ;
-	for (float mlProbOmegac : candidate.mlProbOmegac()) {
-        responseOmegac.push_back(mlProbOmegac);
+    std::vector<float> responseOmegac;
+    std::vector<float> responseOmegacBar;
+    for (float mlProbOmegac : candidate.mlProbOmegac()) {
+      responseOmegac.push_back(mlProbOmegac);
     };
-	for (float mlProbOmegacBar : candidate.mlProbOmegacBar()) {
-        responseOmegacBar.push_back(mlProbOmegacBar);
+    for (float mlProbOmegacBar : candidate.mlProbOmegacBar()) {
+      responseOmegacBar.push_back(mlProbOmegacBar);
     };
-    if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() 
-											&& candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
+    if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
       rowCandidateLite(
         candidate.xPv(),
@@ -534,155 +531,154 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
         flagMc,
         originMc,
         collisionMatched,
-		responseOmegac,
-	    responseOmegacBar);
+        responseOmegac,
+        responseOmegacBar);
     }
   }
-  
+
   template <typename T>
   void fillKFCandidateWithMl(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
-  { 
-    std::vector<float> responseOmegac ;
-    std::vector<float> responseOmegacBar ;
-	for (float mlProbOmegac : candidate.mlProbOmegac()) {
-        responseOmegac.push_back(mlProbOmegac);
+  {
+    std::vector<float> responseOmegac;
+    std::vector<float> responseOmegacBar;
+    for (float mlProbOmegac : candidate.mlProbOmegac()) {
+      responseOmegac.push_back(mlProbOmegac);
     };
-	for (float mlProbOmegacBar : candidate.mlProbOmegacBar()) {
-        responseOmegacBar.push_back(mlProbOmegacBar);
+    for (float mlProbOmegacBar : candidate.mlProbOmegacBar()) {
+      responseOmegacBar.push_back(mlProbOmegacBar);
     };
     rowMlKFCandidateFull(
-				candidate.nSigmaTPCPiFromOmegac(), 
-				candidate.nSigmaTOFPiFromOmegac(), 
-				candidate.nSigmaTPCKaFromCasc(),
-				candidate.nSigmaTOFKaFromCasc(), 
-				candidate.nSigmaTPCPiFromV0(), 
-				candidate.nSigmaTPCPrFromV0(), 
-				candidate.kfDcaXYPiFromOmegac(), 
-				candidate.kfDcaCascDau(), 
-				candidate.kfDcaOmegacDau(), 
-				candidate.kfDcaXYCascToPv(),
-				candidate.chi2GeoV0(), 
-				candidate.chi2GeoCasc(), 
-				candidate.chi2GeoOmegac(), 
-				candidate.chi2MassV0(), 
-				candidate.chi2MassCasc(), 
-				candidate.v0ldl(), 
-				candidate.cascldl(), 
-				candidate.omegacldl(), 
-				candidate.chi2TopoV0ToPv(), 
-				candidate.chi2TopoCascToPv(), 
-				candidate.chi2TopoPiFromOmegacToPv(), 
-				candidate.chi2TopoOmegacToPv(), 
-				candidate.chi2TopoV0ToCasc(), 
-				candidate.chi2TopoCascToOmegac(), 
-				candidate.decayLenXYLambda(), 
-				candidate.decayLenXYCasc(), 
-				candidate.decayLenXYOmegac(), 
-				candidate.cosPaV0ToCasc(), 
-				candidate.cosPaV0ToPv(), 
-				candidate.cosPaCascToOmegac(), 
-				candidate.cosPaCascToPv(), 
-				candidate.cosPaOmegacToPv(), 
-				candidate.kfMassV0(), 
-				candidate.kfMassCasc(), 
-				candidate.kfMassOmegac(), 
-				candidate.kfRapOmegac(), 
-				candidate.kfptPiFromOmegac(), 
-				candidate.kfptOmegac(), 
-				candidate.cosThetaStarPiFromOmegac(), 
-				candidate.ctOmegac(), 
-				candidate.etaOmegac(), 
-				candidate.v0Ndf(), 
-				candidate.cascNdf(), 
-				candidate.omegacNdf(), 
-				candidate.massV0Ndf(), 
-				candidate.massCascNdf(), 
-				candidate.v0Chi2OverNdf(), 
-				candidate.cascChi2OverNdf(), 
-				candidate.omegacChi2OverNdf(), 
-				candidate.massV0Chi2OverNdf(), 
-				candidate.massCascChi2OverNdf(),
-				candidate.dcaCascDau(),
-				candidate.dcaV0Dau(),
-				flagMc,
-				debugMc,
-				originMc,
-				collisionMatched,
-				responseOmegac,
-				responseOmegacBar
+      candidate.nSigmaTPCPiFromOmegac(),
+      candidate.nSigmaTOFPiFromOmegac(),
+      candidate.nSigmaTPCKaFromCasc(),
+      candidate.nSigmaTOFKaFromCasc(),
+      candidate.nSigmaTPCPiFromV0(),
+      candidate.nSigmaTPCPrFromV0(),
+      candidate.kfDcaXYPiFromOmegac(),
+      candidate.kfDcaCascDau(),
+      candidate.kfDcaOmegacDau(),
+      candidate.kfDcaXYCascToPv(),
+      candidate.chi2GeoV0(),
+      candidate.chi2GeoCasc(),
+      candidate.chi2GeoOmegac(),
+      candidate.chi2MassV0(),
+      candidate.chi2MassCasc(),
+      candidate.v0ldl(),
+      candidate.cascldl(),
+      candidate.omegacldl(),
+      candidate.chi2TopoV0ToPv(),
+      candidate.chi2TopoCascToPv(),
+      candidate.chi2TopoPiFromOmegacToPv(),
+      candidate.chi2TopoOmegacToPv(),
+      candidate.chi2TopoV0ToCasc(),
+      candidate.chi2TopoCascToOmegac(),
+      candidate.decayLenXYLambda(),
+      candidate.decayLenXYCasc(),
+      candidate.decayLenXYOmegac(),
+      candidate.cosPaV0ToCasc(),
+      candidate.cosPaV0ToPv(),
+      candidate.cosPaCascToOmegac(),
+      candidate.cosPaCascToPv(),
+      candidate.cosPaOmegacToPv(),
+      candidate.kfMassV0(),
+      candidate.kfMassCasc(),
+      candidate.kfMassOmegac(),
+      candidate.kfRapOmegac(),
+      candidate.kfptPiFromOmegac(),
+      candidate.kfptOmegac(),
+      candidate.cosThetaStarPiFromOmegac(),
+      candidate.ctOmegac(),
+      candidate.etaOmegac(),
+      candidate.v0Ndf(),
+      candidate.cascNdf(),
+      candidate.omegacNdf(),
+      candidate.massV0Ndf(),
+      candidate.massCascNdf(),
+      candidate.v0Chi2OverNdf(),
+      candidate.cascChi2OverNdf(),
+      candidate.omegacChi2OverNdf(),
+      candidate.massV0Chi2OverNdf(),
+      candidate.massCascChi2OverNdf(),
+      candidate.dcaCascDau(),
+      candidate.dcaV0Dau(),
+      flagMc,
+      debugMc,
+      originMc,
+      collisionMatched,
+      responseOmegac,
+      responseOmegacBar
 
-      );
+    );
   }
 
   template <typename T>
   void fillKFCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
-  { 
+  {
     rowKFCandidateFull(
-				candidate.nSigmaTPCPiFromOmegac(), 
-				candidate.nSigmaTOFPiFromOmegac(), 
-				candidate.nSigmaTPCKaFromCasc(),
-				candidate.nSigmaTOFKaFromCasc(), 
-				candidate.nSigmaTPCPiFromV0(), 
-				candidate.nSigmaTPCPrFromV0(), 
-				candidate.kfDcaXYPiFromOmegac(), 
-				candidate.kfDcaCascDau(), 
-				candidate.kfDcaOmegacDau(), 
-				candidate.kfDcaXYCascToPv(),
-				candidate.chi2GeoV0(), 
-				candidate.chi2GeoCasc(), 
-				candidate.chi2GeoOmegac(), 
-				candidate.chi2MassV0(), 
-				candidate.chi2MassCasc(), 
-				candidate.v0ldl(), 
-				candidate.cascldl(), 
-				candidate.omegacldl(), 
-				candidate.chi2TopoV0ToPv(), 
-				candidate.chi2TopoCascToPv(), 
-				candidate.chi2TopoPiFromOmegacToPv(), 
-				candidate.chi2TopoOmegacToPv(), 
-				candidate.chi2TopoV0ToCasc(), 
-				candidate.chi2TopoCascToOmegac(), 
-				candidate.decayLenXYLambda(), 
-				candidate.decayLenXYCasc(), 
-				candidate.decayLenXYOmegac(), 
-				candidate.cosPaV0ToCasc(), 
-				candidate.cosPaV0ToPv(), 
-				candidate.cosPaCascToOmegac(), 
-				candidate.cosPaCascToPv(), 
-				candidate.cosPaOmegacToPv(), 
-				candidate.kfMassV0(), 
-				candidate.kfMassCasc(), 
-				candidate.kfMassOmegac(), 
-				candidate.kfRapOmegac(), 
-				candidate.kfptPiFromOmegac(), 
-				candidate.kfptOmegac(), 
-				candidate.cosThetaStarPiFromOmegac(), 
-				candidate.ctOmegac(), 
-				candidate.etaOmegac(), 
-				candidate.v0Ndf(), 
-				candidate.cascNdf(), 
-				candidate.omegacNdf(), 
-				candidate.massV0Ndf(), 
-				candidate.massCascNdf(), 
-				candidate.v0Chi2OverNdf(), 
-				candidate.cascChi2OverNdf(), 
-				candidate.omegacChi2OverNdf(), 
-				candidate.massV0Chi2OverNdf(), 
-				candidate.massCascChi2OverNdf(),
-				candidate.dcaCascDau(),
-				candidate.dcaV0Dau(),
-				flagMc,
-				debugMc,
-				originMc,
-				collisionMatched
+      candidate.nSigmaTPCPiFromOmegac(),
+      candidate.nSigmaTOFPiFromOmegac(),
+      candidate.nSigmaTPCKaFromCasc(),
+      candidate.nSigmaTOFKaFromCasc(),
+      candidate.nSigmaTPCPiFromV0(),
+      candidate.nSigmaTPCPrFromV0(),
+      candidate.kfDcaXYPiFromOmegac(),
+      candidate.kfDcaCascDau(),
+      candidate.kfDcaOmegacDau(),
+      candidate.kfDcaXYCascToPv(),
+      candidate.chi2GeoV0(),
+      candidate.chi2GeoCasc(),
+      candidate.chi2GeoOmegac(),
+      candidate.chi2MassV0(),
+      candidate.chi2MassCasc(),
+      candidate.v0ldl(),
+      candidate.cascldl(),
+      candidate.omegacldl(),
+      candidate.chi2TopoV0ToPv(),
+      candidate.chi2TopoCascToPv(),
+      candidate.chi2TopoPiFromOmegacToPv(),
+      candidate.chi2TopoOmegacToPv(),
+      candidate.chi2TopoV0ToCasc(),
+      candidate.chi2TopoCascToOmegac(),
+      candidate.decayLenXYLambda(),
+      candidate.decayLenXYCasc(),
+      candidate.decayLenXYOmegac(),
+      candidate.cosPaV0ToCasc(),
+      candidate.cosPaV0ToPv(),
+      candidate.cosPaCascToOmegac(),
+      candidate.cosPaCascToPv(),
+      candidate.cosPaOmegacToPv(),
+      candidate.kfMassV0(),
+      candidate.kfMassCasc(),
+      candidate.kfMassOmegac(),
+      candidate.kfRapOmegac(),
+      candidate.kfptPiFromOmegac(),
+      candidate.kfptOmegac(),
+      candidate.cosThetaStarPiFromOmegac(),
+      candidate.ctOmegac(),
+      candidate.etaOmegac(),
+      candidate.v0Ndf(),
+      candidate.cascNdf(),
+      candidate.omegacNdf(),
+      candidate.massV0Ndf(),
+      candidate.massCascNdf(),
+      candidate.v0Chi2OverNdf(),
+      candidate.cascChi2OverNdf(),
+      candidate.omegacChi2OverNdf(),
+      candidate.massV0Chi2OverNdf(),
+      candidate.massCascChi2OverNdf(),
+      candidate.dcaCascDau(),
+      candidate.dcaV0Dau(),
+      flagMc,
+      debugMc,
+      originMc,
+      collisionMatched
 
-      );
+    );
   }
-
 
   void processDataFull(MyEventTable const& collisions, MyTrackTable const&,
                        soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi,
-					   aod::HfMlSelOmegacToOmegaPi> const& candidates)
+                                 aod::HfMlSelOmegacToOmegaPi> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -697,9 +693,9 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processDataFull, "Process KFdata with full information", false);
-  
+
   void processKFDataFull(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi,aod::HfOmegaCKF> const& candidates)
+                         soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi, aod::HfOmegaCKF> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -714,10 +710,10 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processKFDataFull, "Process KF data with full information", true);
-  
+
   void processKFDataWithMlFull(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi,aod::HfOmegaCKF,
-					   aod::HfMlSelOmegacToOmegaPi> const& candidates)
+                               soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi, aod::HfOmegaCKF,
+                                         aod::HfMlSelOmegacToOmegaPi> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -733,10 +729,10 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processKFDataWithMlFull, "Process KFdata with full information and ML infomation", false);
 
-  void processMcFull(MyEventTable const& collisions, 
-					 MyTrackTable const&,
-                     soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi, 
-					 aod::HfMlSelOmegacToOmegaPi, aod::HfOmegaCMCRec> const& candidates)
+  void processMcFull(MyEventTable const& collisions,
+                     MyTrackTable const&,
+                     soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi,
+                               aod::HfMlSelOmegacToOmegaPi, aod::HfOmegaCMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -748,15 +744,15 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(),
-	  candidate.originRec(), candidate.collisionMatched());
-	  //rowMl(candidate.mlProbOmegac())
-	}
+                    candidate.originRec(), candidate.collisionMatched());
+      // rowMl(candidate.mlProbOmegac())
+    }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPiWithKfp, processMcFull, "Process MC with full information", false);
 
   void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
                        soa::Join<aod::HfCandOmegaC, aod::HfSelOmegacToOmegaPi,
-					   aod::HfMlSelOmegacToOmegaPi> const& candidates)
+                                 aod::HfMlSelOmegacToOmegaPi> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());

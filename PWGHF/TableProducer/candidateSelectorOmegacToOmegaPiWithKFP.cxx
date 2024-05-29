@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file 
+/// \file
 /// \brief  Omegac0 → Omega Pi selection task
-/// \author 
+/// \author
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -29,7 +29,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::analysis;	
+using namespace o2::analysis;
 int toCounter = 0;
 enum pidInfoStored {
   kPiFromLam = 0,
@@ -42,7 +42,7 @@ enum pidInfoStored {
 struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
   Produces<aod::HfSelOmegacToOmegaPi> HfSelOmegacToOmegaPi;
   Produces<aod::HfMlSelOmegacToOmegaPi> hfMlToOmegaPiCandidate;
-  
+
   // LF analysis selections
   Configurable<double> radiusCascMin{"radiusCascMin", 0.6, "Min cascade radius"};
   Configurable<double> radiusV0Min{"radiusV0Min", 1.2, "Min V0 radius"};
@@ -95,7 +95,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
   Configurable<double> ptPrPidTpcMax{"ptPrPidTpcMax", 9999.9, "Upper bound of track pT for TPC PID for proton selection"};
   Configurable<double> nSigmaTpcPrMax{"nSigmaTpcPrMax", 3., "Nsigma cut on TPC only for proton selection"};
   Configurable<double> nSigmaTpcCombinedPrMax{"nSigmaTpcCombinedPrMax", 0., "Nsigma cut on TPC combined with TOF for proton selection"};
-  
+
   Configurable<double> ptKaPidTpcMin{"ptKaPidTpcMin", -1, "Lower bound of track pT for TPC PID for kaon selection"};
   Configurable<double> ptKaPidTpcMax{"ptKaPidTpcMax", 9999.9, "Upper bound of track pT for TPC PID for kaon selection"};
   Configurable<double> nSigmaTpcKaMax{"nSigmaTpcKarMax", 3., "Nsigma cut on TPC only for pkaon selection"};
@@ -110,7 +110,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
   Configurable<double> ptPrPidTofMax{"ptPrPidTofMax", 9999.9, "Upper bound of track pT for TOF PID for proton selection"};
   Configurable<double> nSigmaTofPrMax{"nSigmaTofPrMax", 3., "Nsigma cut on TOF only for proton selection"};
   Configurable<double> nSigmaTofCombinedPrMax{"nSigmaTofCombinedPrMax", 0., "Nsigma cut on TOF combined with TPC for proton selection"};
-  
+
   Configurable<double> ptKaPidTofMin{"ptKaPidTofMin", -1, "Lower bound of track pT for TOF PID for kaon selection"};
   Configurable<double> ptKaPidTofMax{"ptKaPidTofMax", 9999.9, "Upper bound of track pT for TOF PID for kaon selection"};
   Configurable<double> nSigmaTofKaMax{"nSigmaTofKaMax", 3., "Nsigma cut on TOF only for kaon selection"};
@@ -122,7 +122,6 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
   Configurable<double> tpcCrossedRowsOverFindableClustersRatioMin{"tpcCrossedRowsOverFindableClustersRatioMin", 0.8, "Minimum ratio TPC crossed rows over findable clusters requirement"};
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- charm baryon"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
- 
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
@@ -149,9 +148,9 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
   TrackSelectorKa selectorKaon;
-  
+
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
-  //using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa, aod::PidTpcTofFullPi, aod::PidTpcTofFullPr, aod::PidTpcTofFullKa>;
+  // using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa, aod::PidTpcTofFullPi, aod::PidTpcTofFullPr, aod::PidTpcTofFullKa>;
   HistogramRegistry registry{"registry"}; // for QA of selections
 
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
@@ -170,8 +169,8 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
     selectorProton.setRangePtTof(ptPrPidTofMin, ptPrPidTofMax);
     selectorProton.setRangeNSigmaTof(-nSigmaTofPrMax, nSigmaTofPrMax);
     selectorProton.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedPrMax, nSigmaTofCombinedPrMax);
-	
-	selectorKaon.setRangePtTpc(ptKaPidTpcMin, ptKaPidTpcMax);
+
+    selectorKaon.setRangePtTpc(ptKaPidTpcMin, ptKaPidTpcMax);
     selectorKaon.setRangeNSigmaTpc(-nSigmaTpcKaMax, nSigmaTpcKaMax);
     selectorKaon.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedKaMax, nSigmaTpcCombinedKaMax);
     selectorKaon.setRangePtTof(ptKaPidTofMin, ptKaPidTofMax);
@@ -216,13 +215,12 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
     registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
     registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
     registry.add("hSelDcaXYToPvKaFromCasc", "hSelDcaXYToPvKaFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
-	registry.add("hMassCascBachMass", "hMassCascBachMass", {HistType::kTH1F, {{3000, 0.0f, 1.0f, "Inv. Mass (GeV/c^{2})"}}});
-	registry.add("hBDTScoreTest1", "hBDTScoreTest1", {HistType::kTH1F, {{100, 0.0f, 1.0f, "score"}}});
-	registry.add("hBDTScoreTest2", "hBDTScoreTest2", {HistType::kTH1F, {{100, 0.0f, 1.0f, " score"}}});
-	registry.add("hBDTScoreTest3", "hBDTScoreTest3", {HistType::kTH1F, {{100, 0.0f, 1.0f, " score"}}});
+    registry.add("hMassCascBachMass", "hMassCascBachMass", {HistType::kTH1F, {{3000, 0.0f, 1.0f, "Inv. Mass (GeV/c^{2})"}}});
+    registry.add("hBDTScoreTest1", "hBDTScoreTest1", {HistType::kTH1F, {{100, 0.0f, 1.0f, "score"}}});
+    registry.add("hBDTScoreTest2", "hBDTScoreTest2", {HistType::kTH1F, {{100, 0.0f, 1.0f, " score"}}});
+    registry.add("hBDTScoreTest3", "hBDTScoreTest3", {HistType::kTH1F, {{100, 0.0f, 1.0f, " score"}}});
 
-	 
-	if (applyMl) {
+    if (applyMl) {
       hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
@@ -232,7 +230,6 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
       }
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
-	  
     }
   }
 
@@ -241,31 +238,30 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
   {
 
     double massLambdaFromPDG = o2::constants::physics::MassLambda0;
-    double massOmegaFromPDG = o2::constants::physics::MassOmegaMinus; 
+    double massOmegaFromPDG = o2::constants::physics::MassOmegaMinus;
 
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {
-		
+
       int statusOmegaC = 0;
-	  int statusOmegaCBar = 0;
+      int statusOmegaCBar = 0;
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDau = candidate.posTrack_as<TracksSel>();    // positive V0 daughter
-      auto trackV0NegDau = candidate.negTrack_as<TracksSel>();    // negative V0 daughter
-      auto trackKaFromCasc = candidate.bachelor_as<TracksSel>();  // kaon <- cascade
+      auto trackV0PosDau = candidate.posTrack_as<TracksSel>();             // positive V0 daughter
+      auto trackV0NegDau = candidate.negTrack_as<TracksSel>();             // negative V0 daughter
+      auto trackKaFromCasc = candidate.bachelor_as<TracksSel>();           // kaon <- cascade
       auto trackPiFromCharm = candidate.piFromCharmBaryon_as<TracksSel>(); // pion <- charm baryon
 
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
-		
-	  auto ptCand = candidate.ptCharmBaryon();
-	  
+
+      auto ptCand = candidate.ptCharmBaryon();
+
       int8_t signDecay = candidate.signDecay(); // sign of Kaon <- cascade
-	          
-		
-      outputMlOmegaC.clear();//Ml score
-      outputMlOmegaCbar.clear();//Ml score
-	  
+
+      outputMlOmegaC.clear();    // Ml score
+      outputMlOmegaCbar.clear(); // Ml score
+
       if (signDecay > 0) {
         trackPiFromLam = trackV0PosDau;
         trackPrFromLam = trackV0NegDau;
@@ -273,8 +269,8 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
       } else if (signDecay < 0) {
         registry.fill(HIST("hSelSignDec"), 0); // particle decay
       }
-		{ // FIXME: could be done better...
-		}
+      { // FIXME: could be done better...
+      }
       // eta selection
       double etaV0PosDau = candidate.etaV0PosDau();
       double etaV0NegDau = candidate.etaV0NegDau();
@@ -564,7 +560,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
         statusPidPiFromCharmBaryon = selectorPion.statusTpcOrTof(trackPiFromCharm);
       }
       if (resultSelections) {
-          registry.fill(HIST("hStatusCheck"), -0.5);
+        registry.fill(HIST("hStatusCheck"), -0.5);
       }
       if (statusPidPrFromLam == TrackSelectorPID::Accepted && statusPidPiFromLam == TrackSelectorPID::Accepted) {
         statusPidLambda = true;
@@ -624,54 +620,50 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
       } else {
         registry.fill(HIST("hSelMassCharmBaryon"), 0);
       }
-	  //############################# ML selections #############################
-	  if (applyMl) {
+      //############################# ML selections #############################
+      if (applyMl) {
 
         bool isSelectedMlOmegac = false;
-		bool isSelectedMlOmegacBar = false;
-		
-		if ( signDecay > 0){
-			statusOmegaC = 1;
-		}
-		
-		if ( signDecay < 0){
-			statusOmegaCBar = 1;
-		}
-		
-		if (ptCand <= 1.f || ptCand >= 6.0f)
-		{
-			hfMlToOmegaPiCandidate(outputMlOmegaC, outputMlOmegaCbar);	
-		}
-		else{
-			 if (statusOmegaC > 0) {
-			    std::vector<float> inputFeaturesOmegaC = hfMlResponse.getInputFeatures(candidate, 
-				trackV0PosDau, trackV0NegDau, trackKaFromCasc, trackPiFromCharm, o2::constants::physics::kOmegaC0);
-			    isSelectedMlOmegac = hfMlResponse.isSelectedMl(inputFeaturesOmegaC, ptCand, outputMlOmegaC);
-				registry.fill(HIST("hBDTScoreTest1"), outputMlOmegaC[0]);	
-				registry.fill(HIST("hBDTScoreTest2"), outputMlOmegaC[1]);
-				registry.fill(HIST("hBDTScoreTest3"), outputMlOmegaC[2]);	
-			 }
-			 if (statusOmegaCBar > 0){
-			 	std::vector<float> inputFeaturesOmegaCBar = hfMlResponse.getInputFeatures(candidate, 
-				trackV0PosDau, trackV0NegDau, trackKaFromCasc, trackPiFromCharm, o2::constants::physics::kOmegaC0);
-			    isSelectedMlOmegacBar = hfMlResponse.isSelectedMl(inputFeaturesOmegaCBar, ptCand, outputMlOmegaCbar);
-			 }
-			hfMlToOmegaPiCandidate(outputMlOmegaC, outputMlOmegaCbar);
-	
-		}    
+        bool isSelectedMlOmegacBar = false;
+
+        if (signDecay > 0) {
+          statusOmegaC = 1;
+        }
+
+        if (signDecay < 0) {
+          statusOmegaCBar = 1;
+        }
+
+        if (ptCand <= 1.f || ptCand >= 6.0f) {
+          hfMlToOmegaPiCandidate(outputMlOmegaC, outputMlOmegaCbar);
+        } else {
+          if (statusOmegaC > 0) {
+            std::vector<float> inputFeaturesOmegaC = hfMlResponse.getInputFeatures(candidate,
+                                                                                   trackV0PosDau, trackV0NegDau, trackKaFromCasc, trackPiFromCharm, o2::constants::physics::kOmegaC0);
+            isSelectedMlOmegac = hfMlResponse.isSelectedMl(inputFeaturesOmegaC, ptCand, outputMlOmegaC);
+            registry.fill(HIST("hBDTScoreTest1"), outputMlOmegaC[0]);
+            registry.fill(HIST("hBDTScoreTest2"), outputMlOmegaC[1]);
+            registry.fill(HIST("hBDTScoreTest3"), outputMlOmegaC[2]);
+          }
+          if (statusOmegaCBar > 0) {
+            std::vector<float> inputFeaturesOmegaCBar = hfMlResponse.getInputFeatures(candidate,
+                                                                                      trackV0PosDau, trackV0NegDau, trackKaFromCasc, trackPiFromCharm, o2::constants::physics::kOmegaC0);
+            isSelectedMlOmegacBar = hfMlResponse.isSelectedMl(inputFeaturesOmegaCBar, ptCand, outputMlOmegaCbar);
+          }
+          hfMlToOmegaPiCandidate(outputMlOmegaC, outputMlOmegaCbar);
+        }
         if (!isSelectedMlOmegac) {
           statusOmegaC = 0;
         }
         if (!isSelectedMlOmegacBar) {
           statusOmegaCBar = 0;
         }
-		
-	  }
-	  //#####################End#########################################
-      HfSelOmegacToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, 
-					statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
-                  trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
-                  trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
+      }
+      //#####################End#########################################
+      HfSelOmegacToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda,
+                           statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
+                           trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
+                           trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
 
       if (resultSelections) {
         if (!statusPidLambda) {
@@ -715,7 +707,6 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
       if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && statusInvMassCascade && statusInvMassCharmBaryon && resultSelections) {
         hInvMassCharmBaryon->Fill(invMassCharmBaryon);
       }
-
     }
   } // end process
 };  // end struct
