@@ -503,7 +503,7 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
             v0TrackParCov = df.getTrack(0);
             omegaDauChargedTrackParCov = df.getTrack(1);
           }
-        };
+        }
         //__________________________________________
         //*>~<* step 4 : reconstruc cascade(Omega) with KF
         // create KF particle for V0 and bachelor
@@ -603,7 +603,7 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
           // ask for opposite sign daughters (charm baryon daughters)
           if (trackPion.sign() * trackOmegaDauCharged.sign() >= 0) {
             continue;
-          };
+          }
 
           // pseudorapidity
           double pseudorapPiFromCharmBaryon = trackPion.eta();
@@ -640,7 +640,7 @@ struct HfCandidateCreatorOmegacToOmegaPiWithKfp {
           KFParticle kfpCasc = KFOmega;
           if (doDCAfitter && useDCAfitterTrackForKF) {
             KFParticle kfpCasc = createKFParticleFromTrackParCov(lCascadeTrack, lCascadeTrack.getCharge(), massCasc);
-          };
+          }
           KFParticle kfpBachPion = createKFParticleFromTrackParCov(trackParVarPi, trackParVarPi.getCharge(), o2::constants::physics::MassPionCharged);
           const KFParticle* OmegaC0Daugthers[2] = {&kfpBachPion, &kfpCasc};
 
