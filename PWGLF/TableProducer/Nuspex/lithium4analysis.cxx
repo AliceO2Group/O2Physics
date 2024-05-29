@@ -478,7 +478,6 @@ struct lithium4analysis {
           bool heliumPID = t1.pidForTracking() == o2::track::PID::Helium3 || he3Cand.pidForTracking() == o2::track::PID::Alpha;
           float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? he3Cand.tpcInnerParam() / 2.f : he3Cand.tpcInnerParam();
           cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
-
         }
         if (protonCand.hasTOF()) {
           float beta = responseBeta.GetBeta(protonCand);
