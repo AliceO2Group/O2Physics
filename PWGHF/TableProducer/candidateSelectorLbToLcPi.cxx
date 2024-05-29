@@ -53,9 +53,9 @@ struct HfCandidateSelectorLbToLcPi {
 
   HfHelper hfHelper;
 
-  bool passesImpactParameterResolution(double pT, double d0Resolution)
+  bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
-    double expectedResolution(0.001 + 0.0052 * exp(-0.655 * pT));
+    float expectedResolution(0.001 + 0.0052 * exp(-0.655 * pT));
     if (d0Resolution > expectedResolution * 1.5)
       return false;
     else
@@ -94,7 +94,7 @@ struct HfCandidateSelectorLbToLcPi {
       return false;
     }
 
-    double lcMass = 0.;
+    float lcMass = 0.;
     if (hfCandLc.isSelLcToPKPi())
       lcMass = hfHelper.invMassLcToPKPi(hfCandLc);
     if (hfCandLc.isSelLcToPiKP())

@@ -59,17 +59,17 @@ struct HfTaskLb {
 
   using TracksWExt = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
-  bool passesImpactParameterResolution(double pT, double d0Resolution)
+  bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
-    double expectedResolution(0.001 + 0.0052 * exp(-0.655 * pT));
+    float expectedResolution(0.001 + 0.0052 * exp(-0.655 * pT));
     return (d0Resolution <= expectedResolution * 1.5);
   } // Compares to pT dependent cut on impact parameter resolution
 
-  double logLikelihoodRatioSingleTrackDCA(double DCA, double reso, double lengthParameter)
+  float logLikelihoodRatioSingleTrackDCA(float DCA, float reso, float lengthParameter)
   {
     reso *= resoCorrectionFactor; // In case real resolution is worse
-    double numerator = 1. / lengthParameter * std::exp(-DCA / lengthParameter);
-    double denominator = (1. - largeLifetimeBG) * TMath::Gaus(DCA, 0., reso) + largeLifetimeBG / 0.2; // flat distribution to 2 mm
+    float numerator = 1. / lengthParameter * std::exp(-DCA / lengthParameter);
+    float denominator = (1. - largeLifetimeBG) * TMath::Gaus(DCA, 0., reso) + largeLifetimeBG / 0.2; // flat distribution to 2 mm
     return std::log(numerator / denominator);
   } // Creates the single track log likelihood assuming an exonential law for the secondaries
 
@@ -165,8 +165,8 @@ struct HfTaskLb {
                    soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidatesLc,
                    TracksWExt const&)
   {
-    double massKStar892 = 0.892;
-    double massDelta1232 = 1.232;
+    float massKStar892 = 0.892;
+    float massDelta1232 = 1.232;
 
     for (const auto& candidateLc : candidatesLc) {
       if (!candidateLc.isSelLcToPKPi() && !candidateLc.isSelLcToPiKP())
@@ -177,9 +177,9 @@ struct HfTaskLb {
       registry.get<TH2>(HIST("hIPs"))->Fill(candidateLc.pt(), candidateLc.impactParameter0());
       registry.get<TH2>(HIST("hIPs"))->Fill(candidateLc.pt(), candidateLc.impactParameter1());
       registry.get<TH2>(HIST("hIPs"))->Fill(candidateLc.pt(), candidateLc.impactParameter2());
-      double reso0 = candidateLc.errorImpactParameter0(); // 0.0023166 *pow(track0.pt(), -0.788);
-      double reso1 = candidateLc.errorImpactParameter1();
-      double reso2 = candidateLc.errorImpactParameter2();
+      float reso0 = candidateLc.errorImpactParameter0(); // 0.0023166 *pow(track0.pt(), -0.788);
+      float reso1 = candidateLc.errorImpactParameter1();
+      float reso2 = candidateLc.errorImpactParameter2();
       registry.get<TH2>(HIST("hIPResolution"))->Fill(track0.pt(), reso0);
       registry.get<TH2>(HIST("hIPResolution"))->Fill(track1.pt(), reso1);
       registry.get<TH2>(HIST("hIPResolution"))->Fill(track2.pt(), reso2);
@@ -189,12 +189,12 @@ struct HfTaskLb {
         continue;
       if (!passesImpactParameterResolution(track2.pt(), reso2))
         continue;
-      double DCA0 = candidateLc.impactParameter0();
-      double DCA1 = candidateLc.impactParameter1();
-      double DCA2 = candidateLc.impactParameter2();
+      float DCA0 = candidateLc.impactParameter0();
+      float DCA1 = candidateLc.impactParameter1();
+      float DCA2 = candidateLc.impactParameter2();
       if (DCA0 > maximumImpactParameterForLambdaCCrossChecks || DCA1 > maximumImpactParameterForLambdaCCrossChecks || DCA2 > maximumImpactParameterForLambdaCCrossChecks)
         continue;
-      double likelihoodRatio = logLikelihoodRatioSingleTrackDCA(DCA0, reso0, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA1, reso1, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA2, reso2, DCALengthParameter);
+      float likelihoodRatio = logLikelihoodRatioSingleTrackDCA(DCA0, reso0, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA1, reso1, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA2, reso2, DCALengthParameter);
       registry.get<TH2>(HIST("hPtlogLikelihood"))->Fill(candidateLc.pt(), likelihoodRatio);
       if (likelihoodRatio < minLikelihoodRatioLc)
         continue;
@@ -203,12 +203,12 @@ struct HfTaskLb {
       registry.get<TH2>(HIST("hIPsAfterCut"))->Fill(candidateLc.pt(), candidateLc.impactParameter2());
       if (candidateLc.isSelLcToPKPi()) {
         registry.get<TH2>(HIST("hPtinvMassLc"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
-        double mRecoKstar = RecoDecay::m(std::array{track1.pVector(), track2.pVector()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
-        double mRecoDelta1232 = RecoDecay::m(std::array{track0.pVector(), track2.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
-        double mRecoLambda1520 = RecoDecay::m(std::array{track0.pVector(), track1.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
-        double mDiffKStar892 = std::abs(mRecoKstar - massKStar892);
-        double mDiffDelta1232 = std::abs(mRecoDelta1232 - massDelta1232);
-        double mDiffLambda1520 = std::abs(mRecoLambda1520 - o2::constants::physics::MassLambda1520);
+        float mRecoKstar = RecoDecay::m(std::array{track1.pVector(), track2.pVector()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+        float mRecoDelta1232 = RecoDecay::m(std::array{track0.pVector(), track2.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
+        float mRecoLambda1520 = RecoDecay::m(std::array{track0.pVector(), track1.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
+        float mDiffKStar892 = std::abs(mRecoKstar - massKStar892);
+        float mDiffDelta1232 = std::abs(mRecoDelta1232 - massDelta1232);
+        float mDiffLambda1520 = std::abs(mRecoLambda1520 - o2::constants::physics::MassLambda1520);
         if (mDiffKStar892 < mDiffKStar892Max || mDiffDelta1232 < mDiffDelta1232Max || mDiffLambda1520 < mDiffLambda1520Max)
           registry.get<TH2>(HIST("hPtinvMassLcReso"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPKPi(candidateLc));
         if (mDiffKStar892 < mDiffKStar892Max)
@@ -226,12 +226,12 @@ struct HfTaskLb {
       }
       if (candidateLc.isSelLcToPiKP()) {
         registry.get<TH2>(HIST("hPtinvMassLc"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
-        double mRecoKstar = RecoDecay::m(std::array{track1.pVector(), track0.pVector()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
-        double mRecoDelta1232 = RecoDecay::m(std::array{track2.pVector(), track0.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
-        double mRecoLambda1520 = RecoDecay::m(std::array{track2.pVector(), track1.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
-        double mDiffKStar892 = std::abs(mRecoKstar - massKStar892);
-        double mDiffDelta1232 = std::abs(mRecoDelta1232 - massDelta1232);
-        double mDiffLambda1520 = std::abs(mRecoLambda1520 - o2::constants::physics::MassLambda1520);
+        float mRecoKstar = RecoDecay::m(std::array{track1.pVector(), track0.pVector()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+        float mRecoDelta1232 = RecoDecay::m(std::array{track2.pVector(), track0.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
+        float mRecoLambda1520 = RecoDecay::m(std::array{track2.pVector(), track1.pVector()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
+        float mDiffKStar892 = std::abs(mRecoKstar - massKStar892);
+        float mDiffDelta1232 = std::abs(mRecoDelta1232 - massDelta1232);
+        float mDiffLambda1520 = std::abs(mRecoLambda1520 - o2::constants::physics::MassLambda1520);
         if (mDiffKStar892 < mDiffKStar892Max || mDiffDelta1232 < mDiffDelta1232Max || mDiffLambda1520 < mDiffLambda1520Max)
           registry.get<TH2>(HIST("hPtinvMassLcReso"))->Fill(candidateLc.pt(), hfHelper.invMassLcToPiKP(candidateLc));
         if (mDiffKStar892 < mDiffKStar892Max)
@@ -259,16 +259,16 @@ struct HfTaskLb {
       registry.get<TH1>(HIST("hZVertex"))->Fill(collision.posZ());
 
       auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-      double d0resolution0 = candLc.errorImpactParameter0();
-      double d0resolution1 = candLc.errorImpactParameter1();
-      double d0resolution2 = candLc.errorImpactParameter2();
-      double DCA0 = candLc.impactParameter0();
-      double DCA1 = candLc.impactParameter1();
-      double DCA2 = candLc.impactParameter2();
-      double likelihoodRatio = logLikelihoodRatioSingleTrackDCA(DCA0, d0resolution0, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA1, d0resolution1, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA2, d0resolution2, DCALengthParameter);
+      float d0resolution0 = candLc.errorImpactParameter0();
+      float d0resolution1 = candLc.errorImpactParameter1();
+      float d0resolution2 = candLc.errorImpactParameter2();
+      float DCA0 = candLc.impactParameter0();
+      float DCA1 = candLc.impactParameter1();
+      float DCA2 = candLc.impactParameter2();
+      float likelihoodRatio = logLikelihoodRatioSingleTrackDCA(DCA0, d0resolution0, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA1, d0resolution1, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA2, d0resolution2, DCALengthParameter);
       if (likelihoodRatio < minLikelihoodRatio)
         continue; // Larger likelihood means more likely to be signal
-      double lbMass = hfHelper.invMassLbToLcPi(candidate);
+      float lbMass = hfHelper.invMassLbToLcPi(candidate);
       registry.get<TH2>(HIST("hPtinvMassLb"))->Fill(candidate.pt(), lbMass);
 
       registry.fill(HIST("hMass"), hfHelper.invMassLbToLcPi(candidate), candidate.pt());
@@ -292,7 +292,7 @@ struct HfTaskLb {
   }
   PROCESS_SWITCH(HfTaskLb, processData, "Process Data", true);
 
-  void processMC(soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi, aod::HfCandLbMcRec>> const& candidates,
+  void processMc(soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi, aod::HfCandLbMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandLbMcGen> const& mcParticles,
                  aod::TracksWMc const&,
                  aod::HfCand3Prong const&)
@@ -385,7 +385,7 @@ struct HfTaskLb {
       }
     } // gen
   }
-  PROCESS_SWITCH(HfTaskLb, processMC, "Process MC", false);
+  PROCESS_SWITCH(HfTaskLb, processMc, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
