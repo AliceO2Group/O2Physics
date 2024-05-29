@@ -732,10 +732,10 @@ struct strangeness_in_jets {
   }
   PROCESS_SWITCH(strangeness_in_jets, processMCefficiency, "Process MC Efficiency", false);
 
-  void processWeights(SimCollisions const &collisions, aod::McParticles const &mcParticles)
+  void processWeights(SimCollisions const& collisions, aod::McParticles const& mcParticles)
   {
     // Loop over MC Collisions
-    for (const auto &collision : collisions) {
+    for (const auto& collision : collisions) {
 
       // Selection on z_{vertex}
       if (abs(collision.posZ()) > 10)
@@ -748,7 +748,7 @@ struct strangeness_in_jets {
       int leading_ID = 0;
       float pt_max(0);
 
-      for (auto &particle : mcParticles_per_coll) {
+      for (auto& particle : mcParticles_per_coll) {
 
         // Global Index
         int i = particle.globalIndex();
@@ -800,7 +800,7 @@ struct strangeness_in_jets {
       int nParticles = static_cast<int>(particle_ID.size());
 
       // Momentum of the Leading Particle
-      auto const &leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
+      auto const& leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
       TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
 
       // Labels
@@ -891,7 +891,7 @@ struct strangeness_in_jets {
         return;
 
       // Generated Particles
-      for (auto &particle : mcParticles_per_coll) {
+      for (auto& particle : mcParticles_per_coll) {
 
         // PDG Selection
         int pdg = particle.pdgCode();
