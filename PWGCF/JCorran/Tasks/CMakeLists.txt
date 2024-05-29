@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(jfluc-analysis
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(jfluc-weights-loader
+                    SOURCES jflucWeightsLoader.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(flow-spc
                     SOURCES flowJSPCAnalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran

@@ -203,6 +203,7 @@ struct lnnRecoTask {
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hLnnMassSel = qaRegistry.add<TH1>("hLnnMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.9, 3.8}});
 
+
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
     if (doprocessMC) {
@@ -310,8 +311,9 @@ struct lnnRecoTask {
       lnnCand.isMatter = is3H && isAnti3H ? std::abs(nSigmaTPCpos) < std::abs(nSigmaTPCneg) : is3H;
       auto& h3track = lnnCand.isMatter ? posTrack : negTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
-      if (h3track.tpcNClsFound() < nTPCClusMin3H || h3Rigidity < TPCRigidityMin3H)
+      if (h3track.tpcNClsFound() < nTPCClusMin3H || h3Rigidity < TPCRigidityMin3H) {
         continue;
+      }
 
       lnnCand.nSigma3H = lnnCand.isMatter ? nSigmaTPCpos : nSigmaTPCneg;
       lnnCand.nTPCClusters3H = lnnCand.isMatter ? posTrack.tpcNClsFound() : negTrack.tpcNClsFound();
@@ -326,6 +328,7 @@ struct lnnRecoTask {
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
       hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
+      lnnCandidates.push_back(lnnCand);
 
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
@@ -369,6 +372,7 @@ struct lnnRecoTask {
       if (lnnPt < ptMin) {
         continue;
       }
+      
       // Definition of lnn mass
       float mLNN_HypHI = 2.99; // 2993.7 MeV/c**2
       float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
@@ -377,6 +381,7 @@ struct lnnRecoTask {
         isLNNMass = true;
       }
       hLnnMassSel->Fill(massLNNL);
+
       if (!isLNNMass) {
         continue;
       }
@@ -411,8 +416,6 @@ struct lnnRecoTask {
       lnnCand.isReco = true;
       lnnCand.posTrackID = posTrack.globalIndex();
       lnnCand.negTrackID = negTrack.globalIndex();
-
-      lnnCandidates.push_back(lnnCand);
     }
   }
 
@@ -430,11 +433,10 @@ struct lnnRecoTask {
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
           for (auto& negMother : mcTrackNeg.mothers_as<aod::McParticles>()) {
             for (auto& posMother : mcTrackPos.mothers_as<aod::McParticles>()) {
-              if (posMother.globalIndex() != negMother.globalIndex())
+              if (posMother.globalIndex() != negMother.globalIndex()) {
+                continue; 
+              if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg))) 
                 continue;
-              if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg))) {
-                continue;
-              }
               if (std::abs(posMother.pdgCode()) != lnnPdg)
                 continue;
 
@@ -446,6 +448,7 @@ struct lnnRecoTask {
               lnnCand.gMom = posMother.pVector();
 
               lnnCand.gMom3H = mcTrackPos.pdgCode() == h3DauPdg ? mcTrackPos.pVector() : mcTrackNeg.pVector();
+
               for (int i = 0; i < 3; i++) {
                 lnnCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
               }
@@ -537,8 +540,9 @@ struct lnnRecoTask {
       fillMCinfo(trackLabelsMC, particlesMC);
 
       for (auto& lnnCand : lnnCandidates) {
-        if (!lnnCand.isSignal && mcSignalOnly)
+        if (!lnnCand.isSignal && mcSignalOnly) {
           continue;
+        }
         int chargeFactor = -1 + 2 * (lnnCand.pdgCode > 0);
         outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                       collision.posX(), collision.posY(), collision.posZ(),
@@ -558,17 +562,22 @@ struct lnnRecoTask {
     // now we fill only the signal candidates that were not reconstructed
     for (auto& mcPart : particlesMC) {
 
-      if (std::abs(mcPart.pdgCode()) != lnnPdg)
+      if (std::abs(mcPart.pdgCode()) != lnnPdg) {
         continue;
+      }
       std::array<float, 3> secVtx;
       std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
+
       std::array<float, 3> momMother = mcPart.pVector();
+
       std::array<float, 3> mom3H;
       bool is3HFound = false;
       for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
         if (std::abs(mcDaught.pdgCode()) == h3DauPdg) {
           secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
+
           mom3H = mcDaught.pVector();
+
           is3HFound = true;
           break;
         }

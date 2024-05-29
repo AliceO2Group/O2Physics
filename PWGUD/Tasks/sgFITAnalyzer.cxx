@@ -15,6 +15,7 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 #include "TVector3.h"
 #include "TTree.h"
@@ -24,10 +25,6 @@
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
-#define mpion 0.1396
-#define mmuon 0.1057
-#define mkaon 0.4937
-#define mproton 0.9383
 
 using namespace o2;
 using namespace o2::framework;
@@ -47,6 +44,7 @@ DECLARE_SOA_TABLE(BcPvGs, "AOD", "BCPVGS",
 struct SGFITAnalyzer {
   Produces<o2::aod::BcPvGs> bcNtr;
   SGSelector sgSelector;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   // configurables
   Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
@@ -73,6 +71,7 @@ struct SGFITAnalyzer {
   Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
+  Configurable<float> pt_cut{"pt_cut", 0.1, "Track Pt"};
   Configurable<std::string> outputFileName{"outputFileName", "AnalysisResults.root", "Output file name"};
   // initialize histogram registry
   HistogramRegistry registry{
@@ -357,6 +356,8 @@ struct SGFITAnalyzer {
       LOGF(info, "<UDTutorial01sg> DG candidate %d", dgcand.globalIndex());
     }
 
+    const float mpion = pdg->Mass(211);
+    const float mmuon = pdg->Mass(13);
     // fill collision histograms
     registry.get<TH1>(HIST("collisions/GapSide"))->Fill(dgcand.gapSide(), 1.);
     // int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
@@ -382,7 +383,7 @@ struct SGFITAnalyzer {
       LOGF(info, "<UDTutorial01sg>   Number of tracks %d", dgtracks.size());
       LOGF(info, "<UDTutorial01sg>   Number of PV contributors %d", PVContributors.size());
     }
-    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
     // check rho0 signals
     bool coh_rho0 = false;
     bool coh_jpsi = false;

@@ -65,6 +65,7 @@ struct HfTaskSingleMuonSource {
 
   Configurable<int> mcMaskSelection{"mcMaskSelection", 0, "McMask for correct match, valid values are 0 and 128"};
   Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
+  Configurable<int> charge{"charge", -1, "Muon track charge, validated values are 0, 1 and -1, 0 represents both 1 and -1"};
 
   double pDcaMax = 594.0; // p*DCA maximum value for large Rabs
   double rAbsMin = 26.5;  // R at absorber end minimum value
@@ -329,6 +330,9 @@ struct HfTaskSingleMuonSource {
         continue;
       }
       if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
+        continue;
+      }
+      if (charge != 0 && muon.sign() != charge) {
         continue;
       }
       fillHistograms(muon);
