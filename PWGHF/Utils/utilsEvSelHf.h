@@ -68,17 +68,19 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   static constexpr char nameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
   static constexpr char nameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
 
+  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
+
   /// \brief Adds collision monitoring histograms in the histogram registry.
   /// \param registry reference to the histogram registry
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
     o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
-    auto hCollisions = registry.add<TH1>(nameHistCollisions, "HF event counter;;entries", {o2::framework::HistType::kTH1D, {axisEvents}});
-    registry.add<TH1>(nameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
-    registry.add<TH1>(nameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
-    registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
-    registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
-    registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
+    hCollisions = registry.add<TH1>(nameHistCollisions, "HF event counter;;entries", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hPosZBeforeEvSel = registry.add<TH1>(nameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
+    hPosZAfterEvSel = registry.add<TH1>(nameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
+    hPosXAfterEvSel = registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hPosYAfterEvSel = registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     // Puts labels on the collision monitoring histogram.
     hCollisions->SetTitle("HF event counter;;# of accepted collisions");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All");
@@ -171,23 +173,23 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
   /// \param registry reference to the histogram registry
   template <typename Coll>
-  void fillHistograms(Coll const& collision, const uint16_t rejectionMask, o2::framework::HistogramRegistry& registry)
+  void fillHistograms(Coll const& collision, const uint16_t rejectionMask)
   {
-    registry.fill(HIST(nameHistCollisions), EventRejection::None);
+    hCollisions->Fill(EventRejection::None);
     const float posZ = collision.posZ();
-    registry.fill(HIST(nameHistPosZBeforeEvSel), posZ);
+    hPosZBeforeEvSel->Fill(posZ);
 
     for (size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
       if (TESTBIT(rejectionMask, reason)) {
         return;
       }
-      registry.fill(HIST(nameHistCollisions), reason);
+      hCollisions->Fill(reason);
     }
 
-    registry.fill(HIST(nameHistPosXAfterEvSel), collision.posX());
-    registry.fill(HIST(nameHistPosYAfterEvSel), collision.posY());
-    registry.fill(HIST(nameHistPosZAfterEvSel), posZ);
-    registry.fill(HIST(nameHistNumPvContributorsAfterSel), collision.numContrib());
+    hPosXAfterEvSel->Fill(collision.posX());
+    hPosYAfterEvSel->Fill(collision.posY());
+    hPosZAfterEvSel->Fill(posZ);
+    hNumPvContributorsAfterSel->Fill(collision.numContrib());
   }
 };
 } // namespace o2::hf_evsel
