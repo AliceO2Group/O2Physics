@@ -385,7 +385,7 @@ struct HfTaskMcValidationRec {
   Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
 
   std::array<std::shared_ptr<TH1>, nChannels> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 3>, 2>, nChannels> histPtDau, histEtaDau, histImpactParameterDau;
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 5>, 2>, nChannels> histPtDau, histEtaDau, histImpactParameterDau;
   std::array<std::array<std::shared_ptr<TH1>, 2>, nChannels> histPtReco;
   std::array<std::shared_ptr<THnSparse>, 4> histOriginTracks;
   std::shared_ptr<TH2> histAmbiguousTracks, histTracks;

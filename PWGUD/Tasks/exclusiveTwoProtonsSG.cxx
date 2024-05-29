@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 /// \author Simone Ragoni, Creighton
 /// \date 29/4/2024
 
-struct ExclusiveTwoProtons {
+struct ExclusiveTwoProtonsSG {
   SGSelector sgSelector;
   Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
   Configurable<float> FT0A_cut{"FT0A", 200., "FT0A threshold"};
@@ -216,6 +216,14 @@ struct ExclusiveTwoProtons {
       if (trk.pt() < 0.7) {
         continue;
       }
+      if (!(std::abs(trk.dcaZ()) < 2.)) {
+        continue;
+      }
+      double dcaLimit = 0.0105 + 0.035 / pow(trk.pt(), 1.1);
+      if (!(std::abs(trk.dcaXY()) < dcaLimit)) {
+        continue;
+      }
+
       registry.fill(HIST("hSelectionCounter"), 3);
       registry.fill(HIST("hITSCluster"), trk.itsNCls());
 
@@ -271,10 +279,12 @@ struct ExclusiveTwoProtons {
       double sigmaTotal = -999.;
       TLorentzVector a, b;
       int positiveFlag = -1;
-      double dcaZ[2] = {-99., -99.};
-      double dcaXY[2] = {-99., -99.};
-      int dcaZbool = -1;
-      int dcaXYbool = -1;
+      // double dcaZ[2] = {-99., -99.};
+      // double dcaXY[2] = {-99., -99.};
+      // int dcaZbool = -1;
+      // int dcaXYbool = -1;
+      int dcaZbool = 1;
+      int dcaXYbool = 1;
       if (onlyProtonTracksTOF.size() == 1) {
 
         if (!(fabs(onlyProtonTracks[0].Eta()) < 0.8 && fabs(onlyProtonTracksTOF[0].Eta()) < 0.8)) {
@@ -300,24 +310,24 @@ struct ExclusiveTwoProtons {
           }
         }
 
-        // DCA checks
-        dcaZ[0] = rawProtonTracks[0].dcaZ();
-        dcaZ[1] = rawProtonTracksTOF[0].dcaZ();
-        dcaXY[0] = rawProtonTracks[0].dcaXY();
-        dcaXY[1] = rawProtonTracksTOF[0].dcaXY();
-        if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
-          dcaZbool = 1;
-        } else {
-          dcaZbool = 0;
-        }
-        double dcaLimit[2] = {-99., -99.};
-        dcaLimit[0] = 0.0105 + 0.035 / pow(a.Pt(), 1.1);
-        dcaLimit[1] = 0.0105 + 0.035 / pow(b.Pt(), 1.1);
-        if (std::abs(dcaXY[0]) < dcaLimit[0] && std::abs(dcaXY[1]) < dcaLimit[1]) {
-          dcaXYbool = 1;
-        } else {
-          dcaXYbool = 0;
-        }
+        // // DCA checks
+        // dcaZ[0] = rawProtonTracks[0].dcaZ();
+        // dcaZ[1] = rawProtonTracksTOF[0].dcaZ();
+        // dcaXY[0] = rawProtonTracks[0].dcaXY();
+        // dcaXY[1] = rawProtonTracksTOF[0].dcaXY();
+        // if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
+        //   dcaZbool = 1;
+        // } else {
+        //   dcaZbool = 0;
+        // }
+        // double dcaLimit[2] = {-99., -99.};
+        // dcaLimit[0] = 0.0105 + 0.035 / pow(a.Pt(), 1.1);
+        // dcaLimit[1] = 0.0105 + 0.035 / pow(b.Pt(), 1.1);
+        // if (std::abs(dcaXY[0]) < dcaLimit[0] && std::abs(dcaXY[1]) < dcaLimit[1]) {
+        //   dcaXYbool = 1;
+        // } else {
+        //   dcaXYbool = 0;
+        // }
 
       } else if (onlyProtonTracksTOF.size() == 2) {
 
@@ -344,24 +354,24 @@ struct ExclusiveTwoProtons {
           }
         }
 
-        // DCA checks
-        dcaZ[0] = rawProtonTracks[0].dcaZ();
-        dcaZ[1] = rawProtonTracksTOF[0].dcaZ();
-        dcaXY[0] = rawProtonTracks[0].dcaXY();
-        dcaXY[1] = rawProtonTracksTOF[0].dcaXY();
-        if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
-          dcaZbool = 1;
-        } else {
-          dcaZbool = 0;
-        }
-        double dcaLimit[2] = {-99., -99.};
-        dcaLimit[0] = 0.0105 + 0.035 / pow(a.Pt(), 1.1);
-        dcaLimit[1] = 0.0105 + 0.035 / pow(b.Pt(), 1.1);
-        if (std::abs(dcaXY[0]) < dcaLimit[0] && std::abs(dcaXY[1]) < dcaLimit[1]) {
-          dcaXYbool = 1;
-        } else {
-          dcaXYbool = 0;
-        }
+        // // DCA checks
+        // dcaZ[0] = rawProtonTracksTOF[0].dcaZ();
+        // dcaZ[1] = rawProtonTracksTOF[1].dcaZ();
+        // dcaXY[0] = rawProtonTracksTOF[0].dcaXY();
+        // dcaXY[1] = rawProtonTracksTOF[1].dcaXY();
+        // if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
+        //   dcaZbool = 1;
+        // } else {
+        //   dcaZbool = 0;
+        // }
+        // double dcaLimit[2] = {-99., -99.};
+        // dcaLimit[0] = 0.0105 + 0.035 / pow(a.Pt(), 1.1);
+        // dcaLimit[1] = 0.0105 + 0.035 / pow(b.Pt(), 1.1);
+        // if (std::abs(dcaXY[0]) < dcaLimit[0] && std::abs(dcaXY[1]) < dcaLimit[1]) {
+        //   dcaXYbool = 1;
+        // } else {
+        //   dcaXYbool = 0;
+        // }
       }
 
       if (sigmaTotal > 16.) {
@@ -465,5 +475,5 @@ struct ExclusiveTwoProtons {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ExclusiveTwoProtons>(cfgc)};
+    adaptAnalysisTask<ExclusiveTwoProtonsSG>(cfgc)};
 }

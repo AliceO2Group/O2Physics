@@ -51,12 +51,17 @@ namespace o2::analysis::identifiedbffilter
 using IdBfFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 using IdBfFullTracksAmbiguous = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
 using IdBfTracksPID = soa::Join<aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+using IdBfTracksFullPID = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using IdBfFullTracksPID = soa::Join<IdBfFullTracks, IdBfTracksPID>;
+using IdBfFullTracksFullPID = soa::Join<IdBfFullTracks, IdBfTracksFullPID>;
 using IdBfFullTracksPIDAmbiguous = soa::Join<IdBfFullTracksAmbiguous, IdBfTracksPID>;
+using IdBfFullTracksFullPIDAmbiguous = soa::Join<IdBfFullTracksAmbiguous, IdBfTracksFullPID>;
 using IdBfFullTracksDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA>;
 using IdBfFullTracksDetLevelAmbiguous = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
 using IdBfFullTracksPIDDetLevel = soa::Join<IdBfFullTracksDetLevel, IdBfTracksPID>;
+using IdBfFullTracksFullPIDDetLevel = soa::Join<IdBfFullTracksDetLevel, IdBfTracksFullPID>;
 using IdBfFullTracksPIDDetLevelAmbiguous = soa::Join<IdBfFullTracksDetLevelAmbiguous, IdBfTracksPID>;
+using IdBfFullTracksFullPIDDetLevelAmbiguous = soa::Join<IdBfFullTracksDetLevelAmbiguous, IdBfTracksFullPID>;
 
 bool fullDerivedData = false; /* produce full derived data for its external storage */
 
@@ -276,6 +281,15 @@ struct IdentifiedBfFilter {
   void processWithoutCentPID(aod::CollisionEvSel const& collision, IdBfFullTracksPID const& ftracks);
   PROCESS_SWITCH(IdentifiedBfFilter, processWithoutCentPID, "Process PID reco without centrality", false);
 
+  void processWithCentFullPID(aod::CollisionEvSelCent const& collision, IdBfFullTracksFullPID const& ftracks);
+  PROCESS_SWITCH(IdentifiedBfFilter, processWithCentFullPID, "Process Full PID reco with centrality", false);
+
+  void processWithRun2CentFullPID(aod::CollisionEvSelRun2Cent const& collision, IdBfFullTracksFullPID const& ftracks);
+  PROCESS_SWITCH(IdentifiedBfFilter, processWithRun2CentFullPID, "Process Full PID reco with centrality", false);
+
+  void processWithoutCentFullPID(aod::CollisionEvSel const& collision, IdBfFullTracksFullPID const& ftracks);
+  PROCESS_SWITCH(IdentifiedBfFilter, processWithoutCentFullPID, "Process Full PID reco without centrality", false);
+
   void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, IdBfFullTracksDetLevel const& ftracks, aod::McParticles const&);
   PROCESS_SWITCH(IdentifiedBfFilter, processWithCentDetectorLevel, "Process MC detector level with centrality", false);
 
@@ -293,6 +307,15 @@ struct IdentifiedBfFilter {
 
   void processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const& collision, IdBfFullTracksPIDDetLevel const& ftracks, aod::McParticles const&);
   PROCESS_SWITCH(IdentifiedBfFilter, processWithoutCentPIDDetectorLevel, "Process PID MC detector level without centrality", false);
+
+  void processWithCentFullPIDDetectorLevel(aod::CollisionEvSelCent const& collision, IdBfFullTracksFullPIDDetLevel const& ftracks, aod::McParticles const&);
+  PROCESS_SWITCH(IdentifiedBfFilter, processWithCentFullPIDDetectorLevel, "Process Full PID MC detector level with centrality", false);
+
+  void processWithRun2CentFullPIDDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, IdBfFullTracksFullPIDDetLevel const& ftracks, aod::McParticles const&);
+  PROCESS_SWITCH(IdentifiedBfFilter, processWithRun2CentFullPIDDetectorLevel, "Process Full PID MC detector level with centrality", false);
+
+  void processWithoutCentFullPIDDetectorLevel(aod::CollisionEvSel const& collision, IdBfFullTracksFullPIDDetLevel const& ftracks, aod::McParticles const&);
+  PROCESS_SWITCH(IdentifiedBfFilter, processWithoutCentFullPIDDetectorLevel, "Process Full PID MC detector level without centrality", false);
 
   template <typename CollisionObject, typename ParticlesList>
   void processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult);
@@ -388,6 +411,21 @@ void IdentifiedBfFilter::processWithoutCentPID(aod::CollisionEvSel const& collis
   processReconstructed(collision, ftracks, 50.0);
 }
 
+void IdentifiedBfFilter::processWithCentFullPID(aod::CollisionEvSelCent const& collision, IdBfFullTracksFullPID const& ftracks)
+{
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
+}
+
+void IdentifiedBfFilter::processWithRun2CentFullPID(aod::CollisionEvSelRun2Cent const& collision, IdBfFullTracksFullPID const& ftracks)
+{
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
+}
+
+void IdentifiedBfFilter::processWithoutCentFullPID(aod::CollisionEvSel const& collision, IdBfFullTracksFullPID const& ftracks)
+{
+  processReconstructed(collision, ftracks, 50.0);
+}
+
 void IdentifiedBfFilter::processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, IdBfFullTracksDetLevel const& ftracks, aod::McParticles const&)
 {
   processReconstructed(collision, ftracks, getCentMultPercentile(collision));
@@ -414,6 +452,21 @@ void IdentifiedBfFilter::processWithRun2CentPIDDetectorLevel(aod::CollisionEvSel
 }
 
 void IdentifiedBfFilter::processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const& collision, IdBfFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
+{
+  processReconstructed(collision, ftracks, 50.0);
+}
+
+void IdentifiedBfFilter::processWithCentFullPIDDetectorLevel(aod::CollisionEvSelCent const& collision, IdBfFullTracksFullPIDDetLevel const& ftracks, aod::McParticles const&)
+{
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
+}
+
+void IdentifiedBfFilter::processWithRun2CentFullPIDDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, IdBfFullTracksFullPIDDetLevel const& ftracks, aod::McParticles const&)
+{
+  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
+}
+
+void IdentifiedBfFilter::processWithoutCentFullPIDDetectorLevel(aod::CollisionEvSel const& collision, IdBfFullTracksFullPIDDetLevel const& ftracks, aod::McParticles const&)
 {
   processReconstructed(collision, ftracks, 50.0);
 }
@@ -980,6 +1033,30 @@ struct IdentifiedBfFilterTracks {
   }
   PROCESS_SWITCH(IdentifiedBfFilterTracks, filterDetectorLevelWithPIDAmbiguous, "Not stored derived data detector level track filtering with ambiguous tracks check", false)
 
+  void filterRecoWithFullPID(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>& collisions, IdBfFullTracksFullPID const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(IdentifiedBfFilterTracks, filterRecoWithFullPID, "Not stored derived data track filtering", false)
+
+  void filterRecoWithFullPIDAmbiguous(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>& collisions, IdBfFullTracksFullPIDAmbiguous const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(IdentifiedBfFilterTracks, filterRecoWithFullPIDAmbiguous, "Not stored derived data track filtering with ambiguous tracks check", false)
+
+  void filterDetectorLevelWithFullPID(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>& collisions, IdBfFullTracksFullPIDDetLevel const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(IdentifiedBfFilterTracks, filterDetectorLevelWithFullPID, "Not stored derived data detector level track filtering", false)
+
+  void filterDetectorLevelWithFullPIDAmbiguous(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>& collisions, IdBfFullTracksFullPIDDetLevelAmbiguous const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(IdentifiedBfFilterTracks, filterDetectorLevelWithFullPIDAmbiguous, "Not stored derived data detector level track filtering with ambiguous tracks check", false)
+
   void filterRecoWithoutPID(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo> const& collisions, IdBfFullTracks const& tracks)
   {
     filterTracks(collisions, tracks);
@@ -1133,7 +1210,8 @@ MatchRecoGenSpecies IdentifiedBfFilterTracks::trackIdentification(TrackObject co
   if (recoIdMethod == 0) {
     sp = kIdBfCharged;
   } else if (recoIdMethod == 1) {
-    if constexpr (framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
+
+    if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns> || framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
       sp = IdentifyTrack(track);
     } else {
       LOGF(fatal, "Track identification required but PID information not present");

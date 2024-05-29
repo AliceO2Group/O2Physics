@@ -26,6 +26,9 @@ enum EventRejection {
   Centrality,
   Trigger,
   TimeFrameBorderCut,
+  IsGoodZvtxFT0vsPV,
+  NoSameBunchPileup,
+  NumTracksInTimeRange,
   NContrib,
   Chi2,
   PositionZ,
@@ -44,6 +47,9 @@ void setLabelHistoEvSel(Histo& hCollisions)
   hCollisions->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality");
   hCollisions->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Trigger");
   hCollisions->GetXaxis()->SetBinLabel(EventRejection::TimeFrameBorderCut + 1, "TF border");
+  hCollisions->GetXaxis()->SetBinLabel(EventRejection::IsGoodZvtxFT0vsPV + 1, "PV #it{z} consistency FT0 timing");
+  hCollisions->GetXaxis()->SetBinLabel(EventRejection::NoSameBunchPileup + 1, "No same-bunch pile-up"); // POTENTIALLY BAD FOR BEAUTY ANALYSES
+  hCollisions->GetXaxis()->SetBinLabel(EventRejection::NumTracksInTimeRange + 1, "Occupancy");
   hCollisions->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "# of PV contributors");
   hCollisions->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV #it{#chi}^{2}");
   hCollisions->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "PV #it{z}");
@@ -65,7 +71,15 @@ void setLabelHistoEvSel(Histo& hCollisions)
 /// \param chi2PvMax maximum PV chi2
 /// \return a bitmask with the event selections not satisfied by the analysed collision
 template <bool applyEvSel, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
-uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, float centralityMin, float centralityMax, bool useSel8Trigger, int triggerClass, bool useTimeFrameBorderCut, float zPvPosMin, float zPvPosMax, int nPvContributorsMin, float chi2PvMax)
+uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, float centralityMin, float centralityMax,
+                                     bool useSel8Trigger,
+                                     int triggerClass,
+                                     bool useTimeFrameBorderCut,
+                                     float zPvPosMin, float zPvPosMax,
+                                     int nPvContributorsMin,
+                                     float chi2PvMax,
+                                     bool useIsGoodZvtxFT0vsPV, bool useNoSameBunchPileup,
+                                     bool useNumTracksInTimeRange, int numTracksInTimeRangeMin, int numTracksInTimeRangeMax)
 {
 
   uint16_t statusCollision{0}; // 16 bits, in case new ev. selections will be added
@@ -95,6 +109,22 @@ uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, f
     /// time frame border cut
     if (useTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       SETBIT(statusCollision, EventRejection::TimeFrameBorderCut);
+    }
+    /// PVz consistency tracking - FT0 timing
+    if (useIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      SETBIT(statusCollision, EventRejection::IsGoodZvtxFT0vsPV);
+    }
+    /// remove collisions in bunches with more than 1 reco collision
+    /// POTENTIALLY BAD FOR BEAUTY ANALYSES
+    if (useNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      SETBIT(statusCollision, EventRejection::NoSameBunchPileup);
+    }
+    /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+    if (useNumTracksInTimeRange) {
+      const int numTracksInTimeRange = collision.trackOccupancyInTimeRange();
+      if (numTracksInTimeRange < numTracksInTimeRangeMin || numTracksInTimeRange > numTracksInTimeRangeMax) {
+        SETBIT(statusCollision, EventRejection::NumTracksInTimeRange);
+      }
     }
   }
 
@@ -151,23 +181,41 @@ void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist&
   }
   hCollisions->Fill(EventRejection::TimeFrameBorderCut); // Centrality + sel8 + TF border ok
 
+  /// PVz consistency tracking - FT0 timing
+  if (TESTBIT(rejectionMask, EventRejection::IsGoodZvtxFT0vsPV)) {
+    return;
+  }
+  hCollisions->Fill(EventRejection::IsGoodZvtxFT0vsPV); // Centrality + sel8 + TF border + PVz FTO ok
+
+  /// same bunch pile-up
+  if (TESTBIT(rejectionMask, EventRejection::NoSameBunchPileup)) {
+    return;
+  }
+  hCollisions->Fill(EventRejection::NoSameBunchPileup); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up ok
+
+  /// occupancy
+  if (TESTBIT(rejectionMask, EventRejection::NumTracksInTimeRange)) {
+    return;
+  }
+  hCollisions->Fill(EventRejection::NumTracksInTimeRange); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up + occupancy ok
+
   /// PV contributors
   if (TESTBIT(rejectionMask, EventRejection::NContrib)) {
     return;
   }
-  hCollisions->Fill(EventRejection::NContrib); // Centrality + sel8 + TF border + PV contr ok
+  hCollisions->Fill(EventRejection::NContrib); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up + occupancy + PV contr ok
 
   /// PV chi2
   if (TESTBIT(rejectionMask, EventRejection::Chi2)) {
     return;
   }
-  hCollisions->Fill(EventRejection::Chi2); // Centrality + sel8 + TF border + PV contr + chi2 ok
+  hCollisions->Fill(EventRejection::Chi2); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up + occupancy + PV contr + chi2 ok
 
   /// PV position Z
   if (TESTBIT(rejectionMask, EventRejection::PositionZ)) {
     return;
   }
-  hCollisions->Fill(EventRejection::PositionZ); // Centrality + sel8 + TF border + PV contr + chi2 + posZ ok
+  hCollisions->Fill(EventRejection::PositionZ); // Centrality + sel8 + TF border + PVz FTO + sam bunch pile-up + occupancy + PV contr + chi2 + posZ ok
 
   hPosXAfterEvSel->Fill(collision.posX());
   hPosYAfterEvSel->Fill(collision.posY());

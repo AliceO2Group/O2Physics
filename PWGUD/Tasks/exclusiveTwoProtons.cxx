@@ -155,8 +155,8 @@ struct ExclusiveTwoProtons {
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
+  // using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
   using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
   void process(UDCollisions::iterator const& collision, udtracksfull const& tracks)
@@ -190,6 +190,13 @@ struct ExclusiveTwoProtons {
         continue;
       }
       if (trk.itsNCls() < 7) {
+        continue;
+      }
+      if (!(std::abs(trk.dcaZ()) < 2.)) {
+        continue;
+      }
+      double dcaLimit = 0.0105 + 0.035 / pow(trk.pt(), 1.1);
+      if (!(std::abs(trk.dcaXY()) < dcaLimit)) {
         continue;
       }
       registry.fill(HIST("hSelectionCounter"), 3);
@@ -247,8 +254,8 @@ struct ExclusiveTwoProtons {
       double sigmaTotal = -999.;
       TLorentzVector a, b;
       int positiveFlag = -1;
-      double dcaZ[2] = {-99., -99.};
-      double dcaXY[2] = {-99., -99.};
+      // double dcaZ[2] = {-99., -99.};
+      // double dcaXY[2] = {-99., -99.};
       int dcaZbool = -1;
       int dcaXYbool = -1;
       if (onlyProtonTracksTOF.size() == 1) {
@@ -276,24 +283,24 @@ struct ExclusiveTwoProtons {
           }
         }
 
-        // DCA checks
-        dcaZ[0] = rawProtonTracks[0].dcaZ();
-        dcaZ[1] = rawProtonTracksTOF[0].dcaZ();
-        dcaXY[0] = rawProtonTracks[0].dcaXY();
-        dcaXY[1] = rawProtonTracksTOF[0].dcaXY();
-        if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
-          dcaZbool = 1;
-        } else {
-          dcaZbool = 0;
-        }
-        double dcaLimit[2] = {-99., -99.};
-        dcaLimit[0] = 0.0105 + 0.035 / pow(a.Pt(), 1.1);
-        dcaLimit[1] = 0.0105 + 0.035 / pow(b.Pt(), 1.1);
-        if (std::abs(dcaXY[0]) < dcaLimit[0] && std::abs(dcaXY[1]) < dcaLimit[1]) {
-          dcaXYbool = 1;
-        } else {
-          dcaXYbool = 0;
-        }
+        // // DCA checks
+        // dcaZ[0] = rawProtonTracks[0].dcaZ();
+        // dcaZ[1] = rawProtonTracksTOF[0].dcaZ();
+        // dcaXY[0] = rawProtonTracks[0].dcaXY();
+        // dcaXY[1] = rawProtonTracksTOF[0].dcaXY();
+        // if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
+        //   dcaZbool = 1;
+        // } else {
+        //   dcaZbool = 0;
+        // }
+        // double dcaLimit[2] = {-99., -99.};
+        // dcaLimit[0] = 0.0105 + 0.035 / pow(a.Pt(), 1.1);
+        // dcaLimit[1] = 0.0105 + 0.035 / pow(b.Pt(), 1.1);
+        // if (std::abs(dcaXY[0]) < dcaLimit[0] && std::abs(dcaXY[1]) < dcaLimit[1]) {
+        //   dcaXYbool = 1;
+        // } else {
+        //   dcaXYbool = 0;
+        // }
       } else if (onlyProtonTracksTOF.size() == 2) {
 
         if (!(fabs(onlyProtonTracksTOF[0].Eta()) < 0.8 && fabs(onlyProtonTracksTOF[1].Eta()) < 0.8)) {
@@ -319,24 +326,24 @@ struct ExclusiveTwoProtons {
           }
         }
 
-        // DCA checks
-        dcaZ[0] = rawProtonTracks[0].dcaZ();
-        dcaZ[1] = rawProtonTracksTOF[0].dcaZ();
-        dcaXY[0] = rawProtonTracks[0].dcaXY();
-        dcaXY[1] = rawProtonTracksTOF[0].dcaXY();
-        if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
-          dcaZbool = 1;
-        } else {
-          dcaZbool = 0;
-        }
-        double dcaLimit[2] = {-99., -99.};
-        dcaLimit[0] = 0.0105 + 0.035 / pow(a.Pt(), 1.1);
-        dcaLimit[1] = 0.0105 + 0.035 / pow(b.Pt(), 1.1);
-        if (std::abs(dcaXY[0]) < dcaLimit[0] && std::abs(dcaXY[1]) < dcaLimit[1]) {
-          dcaXYbool = 1;
-        } else {
-          dcaXYbool = 0;
-        }
+        // // DCA checks
+        // dcaZ[0] = rawProtonTracksTOF[0].dcaZ();
+        // dcaZ[1] = rawProtonTracksTOF[1].dcaZ();
+        // dcaXY[0] = rawProtonTracksTOF[0].dcaXY();
+        // dcaXY[1] = rawProtonTracksTOF[1].dcaXY();
+        // if (std::abs(dcaZ[0]) < 2. && std::abs(dcaZ[1]) < 2.) {
+        //   dcaZbool = 1;
+        // } else {
+        //   dcaZbool = 0;
+        // }
+        // double dcaLimit[2] = {-99., -99.};
+        // dcaLimit[0] = 0.0105 + 0.035 / pow(a.Pt(), 1.1);
+        // dcaLimit[1] = 0.0105 + 0.035 / pow(b.Pt(), 1.1);
+        // if (std::abs(dcaXY[0]) < dcaLimit[0] && std::abs(dcaXY[1]) < dcaLimit[1]) {
+        //   dcaXYbool = 1;
+        // } else {
+        //   dcaXYbool = 0;
+        // }
       }
 
       if (sigmaTotal > 16.) {
@@ -360,15 +367,15 @@ struct ExclusiveTwoProtons {
         registry.fill(HIST("PP/hMassUnlike"), resonance.M());
         registry.fill(HIST("PP/hRapidity"), resonance.Rapidity());
         if (resonance.Pt() < 0.15) {
-          registry.fill(HIST("PP/hCoherentMassWithoutDCAcuts"), resonance.M());
-          if (dcaZbool == 1) {
-            registry.fill(HIST("PP/hCoherentMassWithoutDCAxycut"), resonance.M());
-          }
-          if (dcaXYbool == 1) {
-            registry.fill(HIST("PP/hCoherentMassWithoutDCAzcut"), resonance.M());
-          }
-        }
-        if (resonance.Pt() < 0.15 && dcaZbool == 1 && dcaXYbool == 1) {
+          //   registry.fill(HIST("PP/hCoherentMassWithoutDCAcuts"), resonance.M());
+          //   if (dcaZbool == 1) {
+          //     registry.fill(HIST("PP/hCoherentMassWithoutDCAxycut"), resonance.M());
+          //   }
+          //   if (dcaXYbool == 1) {
+          //     registry.fill(HIST("PP/hCoherentMassWithoutDCAzcut"), resonance.M());
+          //   }
+          // }
+          // if (resonance.Pt() < 0.15 && dcaZbool == 1 && dcaXYbool == 1) {
           registry.fill(HIST("PP/hCoherentMass"), resonance.M());
           if (resonance.M() < 3.0) {
             registry.fill(HIST("PP/hAngularDstribLab"), a.Phi() + TMath::Pi(), a.CosTheta());
@@ -393,6 +400,8 @@ struct ExclusiveTwoProtons {
           }
         }
         // outside the hard pT cut, but with opposite charges
+        dcaZbool = 1;
+        dcaXYbool = 1;
         if (dcaZbool == 1 && dcaXYbool == 1) {
           if (resonance.M() > 2.4 && resonance.M() < 2.75) {
             registry.fill(HIST("PP/hUnlikePtLowBand24to275"), resonance.Pt());
