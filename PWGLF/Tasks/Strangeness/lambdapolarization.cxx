@@ -103,8 +103,8 @@ struct lambdapolarization {
   Configurable<float> cfgDaughPIDCutsTPCPi{"cfgDaughPIDCutsTPCPi", 5, "pion nsigma for TPC"};
   Configurable<float> cfgDaughEtaMin{"cfgDaughEtaMin", -0.8, "minimum daughter eta"};
   Configurable<float> cfgDaughEtaMax{"cfgDaughEtaMax", 0.8, "maximum daughter eta"};
-  Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.6, "minimum daughter proton pt"};
-  Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
+  Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.5, "minimum daughter proton pt"};
+  Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.5, "minimum daughter pion pt"};
 
   Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
 
@@ -127,7 +127,7 @@ struct lambdapolarization {
     if (cfgnMods > 1)
       LOGF(fatal, "multiple harmonics not implemented yet"); // FIXME: will be updated after Qvector task updates
 
-    AxisSpec massAxis = {100, 1.0, 1.2};
+    AxisSpec massAxis = {100, 1.065, 1.165};
     AxisSpec ptAxis = {100, 0.0, 10.0};
     AxisSpec cosAxis = {100, -1.0, 1.0};
     AxisSpec centAxis = {80, 0.0, 80.0};
@@ -144,6 +144,9 @@ struct lambdapolarization {
       histos.add(Form("h_alambda_cos_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
       histos.add(Form("h_lambda_cos2_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
       histos.add(Form("h_alambda_cos2_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
+
+      histos.add(Form("h_lambda_cossin_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("h_alambda_cossin_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
     }
 
     if (cfgQAv0) {
@@ -234,9 +237,9 @@ struct lambdapolarization {
       return false;
     if (candidate.pt() < cfgV0PtMin)
       return false;
-    if (candidate.eta() < cfgV0EtaMin)
+    if (candidate.yLambda() < cfgV0EtaMin)
       return false;
-    if (candidate.eta() > cfgV0EtaMax)
+    if (candidate.yLambda() > cfgV0EtaMax)
       return false;
     if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgV0LifeTime)
       return false;
@@ -355,19 +358,23 @@ struct lambdapolarization {
         if (LambdaTag) {
           histos.fill(HIST("h_lambda_cos_psi2"), v0.mLambda(), v0.pt(), angle, collision.centFT0C(), relphi);
           histos.fill(HIST("h_lambda_cos2_psi2"), v0.mLambda(), v0.pt(), angle * angle, collision.centFT0C(), relphi);
+          histos.fill(HIST("h_lambda_cossin_psi2"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), collision.centFT0C());
         }
         if (aLambdaTag) {
           histos.fill(HIST("h_alambda_cos_psi2"), v0.mAntiLambda(), v0.pt(), angle, collision.centFT0C(), relphi);
           histos.fill(HIST("h_alambda_cos2_psi2"), v0.mAntiLambda(), v0.pt(), angle * angle, collision.centFT0C(), relphi);
+          histos.fill(HIST("h_alambda_cossin_psi2"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), collision.centFT0C());
         }
       } else if (nmode == 3) {
         if (LambdaTag) {
           histos.fill(HIST("h_lambda_cos_psi3"), v0.mLambda(), v0.pt(), angle, collision.centFT0C(), relphi);
           histos.fill(HIST("h_lambda_cos2_psi3"), v0.mLambda(), v0.pt(), angle * angle, collision.centFT0C(), relphi);
+          histos.fill(HIST("h_lambda_cossin_psi3"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), collision.centFT0C());
         }
         if (aLambdaTag) {
           histos.fill(HIST("h_alambda_cos_psi3"), v0.mAntiLambda(), v0.pt(), angle, collision.centFT0C(), relphi);
           histos.fill(HIST("h_alambda_cos2_psi3"), v0.mAntiLambda(), v0.pt(), angle * angle, collision.centFT0C(), relphi);
+          histos.fill(HIST("h_alambda_cossin_psi3"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), collision.centFT0C());
         }
       } ////////// FIXME: not possible to get histograms using nmode
     }
