@@ -564,7 +564,7 @@ struct QAHistTask {
         continue;
 
       int pdgbin = 0;
-      switch(particle.pdgCode()) {
+      switch (particle.pdgCode()) {
         case +211:
           histPDG->AddBinContent(1);
           pdgbin = 0;
