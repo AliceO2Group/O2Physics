@@ -170,26 +170,9 @@ struct HfElectronSelectionWithTPCEMcal {
     return true;
   }
 
-  // MC Reco Track Selection Cut
-  template <typename T>
-  bool mcSelTracks(T const& mcTrack)
-  {
-    if (!mcTrack.isGlobalTrackWoDCA())
-      return false;
-    if (std::abs(mcTrack.dcaXY()) > mcRecDcaXYTrackMax || std::abs(mcTrack.dcaZ()) > mcRecDcaZTrackMax)
-      return false;
-    if (mcTrack.eta() < mcRecEtaTrackMin || mcTrack.eta() > mcRecEtaTrackMax)
-      return false;
-    if ((mcTrack.phi() < mcRecPhiTrackEMCalMin || mcTrack.phi() > mcRecPhiTrackEMCalMax) && (mcTrack.phi() < mcRecPhiTrackDCalMin || mcTrack.phi() > mcRecPhiTrackDCalMax))
-      return false;
-    if (mcTrack.pt() < mcRecPtTrackMin)
-      return false;
-    return true;
-  }
-
   // Electron Identification
-  template <bool isData, bool isMc, typename TracksType, typename ClusterType, typename MatchType, typename CollisionType>
-  void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, ClusterType const& cluster, MatchType const& matchedTracks)
+  template <bool isData, bool isMc, typename TracksType, typename ClusterType, typename MatchType, typename CollisionType, typename ParticleType>
+  void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, ClusterType const& cluster, MatchType const& matchedTracks, ParticleType const& particlemc)
   {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
       return;
@@ -226,14 +209,9 @@ struct HfElectronSelectionWithTPCEMcal {
 
       // Apply Track Selection
 
-      if constexpr (isData) {
-        if (!selTracks(track))
-          continue;
-      }
-      if constexpr (isMc) {
-        if (!mcSelTracks(track))
-          continue;
-      }
+      if (!selTracks(track))
+        continue;
+
       passEMCal = 0;
 
       if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
@@ -338,16 +316,16 @@ struct HfElectronSelectionWithTPCEMcal {
 
   void processData(CollisionTable const& collision, aod::EMCALClusters const& mAnalysisClusters, o2::aod::EMCALMatchedTracks const& matchedTracks, TrackTables const& tracks)
   {
-    fillElectronTrack<true, false>(collision, tracks, mAnalysisClusters, matchedTracks);
+    fillElectronTrack<true, false>(collision, tracks, mAnalysisClusters, matchedTracks, 0);
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTPCEMcal, processData, "process Data info only", true);
+  PROCESS_SWITCH(HfElectronSelectionWithTPCEMcal, processData, "process Data info only", false);
 
   // group according to reconstructed Collisions
-  void processMcRec(McCollisionTables const& mccollision, McTrackTables const& mctracks, McEMcalTable const& mcClusters, o2::aod::EMCALMatchedTracks const& matchedTracks)
+  void processMcRec(McCollisionTables const& mccollision, McTrackTables const& mctracks, McEMcalTable const& mcClusters, o2::aod::EMCALMatchedTracks const& matchedTracks, aod::McParticles const& particlesMC)
   {
-    fillElectronTrack<false, true>(mccollision, mctracks, mcClusters, matchedTracks);
+    fillElectronTrack<false, true>(mccollision, mctracks, mcClusters, matchedTracks, particlesMC);
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTPCEMcal, processMcRec, "Process MC Reco mode", false);
+  PROCESS_SWITCH(HfElectronSelectionWithTPCEMcal, processMcRec, "Process MC Reco mode", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
