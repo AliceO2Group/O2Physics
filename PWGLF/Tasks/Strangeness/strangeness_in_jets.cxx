@@ -732,10 +732,10 @@ struct strangeness_in_jets {
   }
   PROCESS_SWITCH(strangeness_in_jets, processMCefficiency, "Process MC Efficiency", false);
 
-  void processWeights(SimCollisions const& collisions, aod::McParticles const& mcParticles)
+  void processWeights(SimCollisions const &collisions, aod::McParticles const &mcParticles)
   {
     // Loop over MC Collisions
-    for (const auto& collision : collisions) {
+    for (const auto &collision : collisions) {
 
       // Selection on z_{vertex}
       if (abs(collision.posZ()) > 10)
@@ -748,7 +748,7 @@ struct strangeness_in_jets {
       int leading_ID = 0;
       float pt_max(0);
 
-      for (auto& particle : mcParticles_per_coll) {
+      for (auto &particle : mcParticles_per_coll) {
 
         // Global Index
         int i = particle.globalIndex();
@@ -800,7 +800,7 @@ struct strangeness_in_jets {
       int nParticles = static_cast<int>(particle_ID.size());
 
       // Momentum of the Leading Particle
-      auto const& leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
+      auto const &leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
       TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
 
       // Labels
@@ -809,66 +809,66 @@ struct strangeness_in_jets {
 
       // Jet Finder
       do {
-          // Initialization
-          float distance_jet_min(1e+08);
-          float distance_bkg_min(1e+08);
-          int label_jet_particle(0);
-          int i_jet_particle(0);
+        // Initialization
+        float distance_jet_min(1e+08);
+        float distance_bkg_min(1e+08);
+        int label_jet_particle(0);
+        int i_jet_particle(0);
 
-          for (int i = 0; i < nParticles; i++) {
+        for (int i = 0; i < nParticles; i++) {
 
-            // Skip Leading Particle & Elements already associated to the Jet
-            if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
-              continue;
+          // Skip Leading Particle & Elements already associated to the Jet
+          if (particle_ID[i] == leading_ID || particle_ID[i] == -1)
+            continue;
 
-            // Get Particle Momentum
-            auto stored_track = mcParticles_per_coll.iteratorAt(particle_ID[i]);
-            TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
+          // Get Particle Momentum
+          auto stored_track = mcParticles_per_coll.iteratorAt(particle_ID[i]);
+          TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
 
-            // Variables
-            float one_over_pt2_part = 1.0 / (p_particle.Pt() * p_particle.Pt());
-            float one_over_pt2_lead = 1.0 / (p_leading.Pt() * p_leading.Pt());
-            float deltaEta = p_particle.Eta() - p_leading.Eta();
-            float deltaPhi = GetDeltaPhi(p_particle.Phi(), p_leading.Phi());
-            float min = Minimum(one_over_pt2_part, one_over_pt2_lead);
-            float Delta2 = deltaEta * deltaEta + deltaPhi * deltaPhi;
+          // Variables
+          float one_over_pt2_part = 1.0 / (p_particle.Pt() * p_particle.Pt());
+          float one_over_pt2_lead = 1.0 / (p_leading.Pt() * p_leading.Pt());
+          float deltaEta = p_particle.Eta() - p_leading.Eta();
+          float deltaPhi = GetDeltaPhi(p_particle.Phi(), p_leading.Phi());
+          float min = Minimum(one_over_pt2_part, one_over_pt2_lead);
+          float Delta2 = deltaEta * deltaEta + deltaPhi * deltaPhi;
 
-            // Distances
-            float distance_jet = min * Delta2 / (Rjet * Rjet);
-            float distance_bkg = one_over_pt2_part;
+          // Distances
+          float distance_jet = min * Delta2 / (Rjet * Rjet);
+          float distance_bkg = one_over_pt2_part;
 
-            // Find Minimum Distance Jet
-            if (distance_jet < distance_jet_min) {
-              distance_jet_min = distance_jet;
-              label_jet_particle = particle_ID[i];
-              i_jet_particle = i;
-            }
-
-            // Find Minimum Distance Bkg
-            if (distance_bkg < distance_bkg_min) {
-              distance_bkg_min = distance_bkg;
-            }
+          // Find Minimum Distance Jet
+          if (distance_jet < distance_jet_min) {
+            distance_jet_min = distance_jet;
+            label_jet_particle = particle_ID[i];
+            i_jet_particle = i;
           }
 
-          if (distance_jet_min <= distance_bkg_min) {
-
-            // Add Particle to Jet
-            //jet_particle_ID.push_back(label_jet_particle);
-
-            // Update Momentum of Leading Particle
-            auto jet_track = mcParticles_per_coll.iteratorAt(label_jet_particle);
-            TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
-            p_leading = p_leading + p_i;
-
-            // Remove Element
-            particle_ID[i_jet_particle] = -1;
-            nPartAssociated++;
+          // Find Minimum Distance Bkg
+          if (distance_bkg < distance_bkg_min) {
+            distance_bkg_min = distance_bkg;
           }
+        }
 
-          if (nPartAssociated >= (nParticles - 1))
-            exit = 1;
-          if (distance_jet_min > distance_bkg_min)
-            exit = 2;
+        if (distance_jet_min <= distance_bkg_min) {
+
+          // Add Particle to Jet
+          // jet_particle_ID.push_back(label_jet_particle);
+
+          // Update Momentum of Leading Particle
+          auto jet_track = mcParticles_per_coll.iteratorAt(label_jet_particle);
+          TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
+          p_leading = p_leading + p_i;
+
+          // Remove Element
+          particle_ID[i_jet_particle] = -1;
+          nPartAssociated++;
+        }
+
+        if (nPartAssociated >= (nParticles - 1))
+          exit = 1;
+        if (distance_jet_min > distance_bkg_min)
+          exit = 2;
 
       } while (exit == 0);
 
@@ -891,20 +891,18 @@ struct strangeness_in_jets {
         return;
 
       // Generated Particles
-      for (auto& particle : mcParticles_per_coll) {
+      for (auto &particle : mcParticles_per_coll) {
 
         // PDG Selection
         int pdg = particle.pdgCode();
 
-        TVector3 p_particle (particle.px(),particle.py(),particle.pz());
+        TVector3 p_particle(particle.px(), particle.py(), particle.pz());
         float deltaEta_jet = p_particle.Eta() - jet_axis.Eta();
         float deltaPhi_jet = GetDeltaPhi(p_particle.Phi(), jet_axis.Phi());
         float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-
         float deltaEta_ue1 = p_particle.Eta() - ue_axis1.Eta();
         float deltaPhi_ue1 = GetDeltaPhi(p_particle.Phi(), ue_axis1.Phi());
         float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-
         float deltaEta_ue2 = p_particle.Eta() - ue_axis2.Eta();
         float deltaPhi_ue2 = GetDeltaPhi(p_particle.Phi(), ue_axis2.Phi());
         float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
@@ -936,7 +934,6 @@ struct strangeness_in_jets {
     }
   }
   PROCESS_SWITCH(strangeness_in_jets, processWeights, "Process Weights", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
