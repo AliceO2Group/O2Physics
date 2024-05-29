@@ -39,8 +39,8 @@ struct NucleiEfficiencyTask {
   HistogramRegistry MC_truth_reg_cent{"MC_particles_gen_cent", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MC_recon_reg{"MC_particles_reco", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MC_recon_reg_cent{"MC_particles_reco_cent", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1F> histPDG_mctruth{TH1F("PDG_gen", "PDG;PDG code", 100, 0.0, 100.0)};
-  OutputObj<TH1F> histPDG{TH1F("PDG_reco", "PDG;PDG code", 100, 0.0, 100.0)};
+  OutputObj<TH1F> histPDG_mctruth{TH1F("PDG_gen", "PDG;PDG code", 20, 0.0, 20.0)};
+  OutputObj<TH1F> histPDG{TH1F("PDG_reco", "PDG;PDG code", 20, 0.0, 20.0)};
 
   void init(o2::framework::InitContext&)
   {
@@ -48,14 +48,15 @@ struct NucleiEfficiencyTask {
     std::vector<double> ptBinning = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
     std::vector<double> centBinning = {0., 10., 20., 30., 40., 50., 60., 70., 80., 100.};
     std::vector<double> etaBinning = {-1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+    std::vector<double> PDGBinning = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
 
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec centralityAxis = {100, 0.0, 100.0, "VT0C (%)"};
     AxisSpec centralityAxis_extended = {105, 0.0, 105.0, "VT0C (%)"};
     AxisSpec etaAxis = {etaBinning, "#eta"};
-    AxisSpec PDGBINNING = {50, 0.0, 50.0, "PDG code"};
     AxisSpec centAxis = {centBinning, "Centrality (%)"};
     AxisSpec ImPaAxis = {centBinning, "Impact parameter"};
+    AxisSpec PDGBINNING = {PDGBinning, "PDG code"};
 
     // Generated
     MC_truth_reg.add("histGenVtxMC", "MC generated vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
@@ -68,7 +69,7 @@ struct NucleiEfficiencyTask {
     MC_truth_reg_cent.add("hist_gen_pT_cent", "generated p_{T} distribution vs impact param", HistType::kTH3F, {ptAxis, PDGBINNING, ImPaAxis});
 
     // Reconstructed
-    MC_recon_reg.add("histRecVtxMC", "MC generated vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
+    MC_recon_reg.add("histRecVtxMC", "MC reconstructed vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
     MC_recon_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
     MC_recon_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_recon_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
@@ -91,6 +92,8 @@ struct NucleiEfficiencyTask {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
   Configurable<float> yMin_reco{"yMin_reco", -0.5, "Maximum rapidity (reconstructed)"};
   Configurable<float> yMax_reco{"yMax_reco", 0.5, "Minimum rapidity (reconstructed)"};
+  Configurable<float> pTmin_reco{"pTmin_reco", 0.1f, "min pT (reconstructed)"};
+  Configurable<float> pTmax_reco{"pTmax_reco", 1e+10f, "max pT (reconstructed)"};
   Configurable<float> minReqClusterITS{"minReqClusterITS", 1.0, "min number of clusters required in ITS"};
   Configurable<float> minReqClusterITSib{"minReqClusterITSib", 1.0, "min number of clusters required in ITS inner barrel"};
   Configurable<float> minTPCnClsFound{"minTPCnClsFound", 0.0f, "min number of crossed rows TPC"};
@@ -118,9 +121,68 @@ struct NucleiEfficiencyTask {
       if ((TMath::Abs(MCparticle.eta()) > cfgCutEta) && eta_cut_MC_gen)
         continue;
 
-      const auto pdg = Form("%i", MCparticle.pdgCode());
-      histPDG_mctruth->Fill(pdg, 1);
-      const float pdgbin = histPDG_mctruth->GetXaxis()->GetBinCenter(histPDG_mctruth->GetXaxis()->FindBin(pdg));
+      int pdgbin = 0;
+      switch(MCparticle.pdgCode()) {
+        case +211:
+          histPDG_mctruth->AddBinContent(1);
+          pdgbin = 0;
+          break;
+        case -211:
+          histPDG_mctruth->AddBinContent(2);
+          pdgbin = 1;
+          break;
+        case +321:
+          histPDG_mctruth->AddBinContent(3);
+          pdgbin = 2;
+          break;
+        case -321:
+          histPDG_mctruth->AddBinContent(4);
+          pdgbin = 3;
+          break;
+        case +2212:
+          histPDG_mctruth->AddBinContent(5);
+          pdgbin = 4;
+          break;
+        case -2212:
+          histPDG_mctruth->AddBinContent(6);
+          pdgbin = 5;
+          break;
+        case +1000010020:
+          histPDG_mctruth->AddBinContent(7);
+          pdgbin = 6;
+          break;
+        case -1000010020:
+          histPDG_mctruth->AddBinContent(8);
+          pdgbin = 7;
+          break;
+        case +1000010030:
+          histPDG_mctruth->AddBinContent(9);
+          pdgbin = 8;
+          break;
+        case -1000010030:
+          histPDG_mctruth->AddBinContent(10);
+          pdgbin = 9;
+          break;
+        case +1000020030:
+          histPDG_mctruth->AddBinContent(11);
+          pdgbin = 10;
+          break;
+        case -1000020030:
+          histPDG_mctruth->AddBinContent(12);
+          pdgbin = 11;
+          break;
+        case +1000020040:
+          histPDG_mctruth->AddBinContent(13);
+          pdgbin = 12;
+          break;
+        case -1000020040:
+          histPDG_mctruth->AddBinContent(14);
+          pdgbin = 13;
+          break;
+        default:
+          continue;
+      }
+
       MC_truth_reg.fill(HIST("histPhi"), MCparticle.phi(), pdgbin);
       MC_truth_reg.fill(HIST("histEta"), MCparticle.eta(), pdgbin);
       MC_truth_reg.fill(HIST("histRapid"), MCparticle.y(), pdgbin);
@@ -144,13 +206,70 @@ struct NucleiEfficiencyTask {
 
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
-      const auto pdg = Form("%i", particle.pdgCode());
-
       if (!particle.isPhysicalPrimary())
         continue;
 
-      histPDG->Fill(pdg, 1);
-      const float pdgbin = histPDG->GetXaxis()->GetBinCenter(histPDG->GetXaxis()->FindBin(pdg));
+      int pdgbin = 0;
+      switch(particle.pdgCode()) {
+        case +211:
+          histPDG->AddBinContent(1);
+          pdgbin = 0;
+          break;
+        case -211:
+          histPDG->AddBinContent(2);
+          pdgbin = 1;
+          break;
+        case +321:
+          histPDG->AddBinContent(3);
+          pdgbin = 2;
+          break;
+        case -321:
+          histPDG->AddBinContent(4);
+          pdgbin = 3;
+          break;
+        case +2212:
+          histPDG->AddBinContent(5);
+          pdgbin = 4;
+          break;
+        case -2212:
+          histPDG->AddBinContent(6);
+          pdgbin = 5;
+          break;
+        case +1000010020:
+          histPDG->AddBinContent(7);
+          pdgbin = 6;
+          break;
+        case -1000010020:
+          histPDG->AddBinContent(8);
+          pdgbin = 7;
+          break;
+        case +1000010030:
+          histPDG->AddBinContent(9);
+          pdgbin = 8;
+          break;
+        case -1000010030:
+          histPDG->AddBinContent(10);
+          pdgbin = 9;
+          break;
+        case +1000020030:
+          histPDG->AddBinContent(11);
+          pdgbin = 10;
+          break;
+        case -1000020030:
+          histPDG->AddBinContent(12);
+          pdgbin = 11;
+          break;
+        case +1000020040:
+          histPDG->AddBinContent(13);
+          pdgbin = 12;
+          break;
+        case -1000020040:
+          histPDG->AddBinContent(14);
+          pdgbin = 13;
+          break;
+        default:
+          continue;
+      }
 
       TLorentzVector lorentzVector_pion{};
       TLorentzVector lorentzVector_kaon{};
@@ -183,7 +302,7 @@ struct NucleiEfficiencyTask {
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
 
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z)
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z || track.pt() < pTmin_reco || track.pt() > pTmax_reco)
         continue;
 
       MC_recon_reg.fill(HIST("histPhi"), track.phi(), pdgbin);
