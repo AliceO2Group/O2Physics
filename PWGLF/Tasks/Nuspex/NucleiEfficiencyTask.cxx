@@ -122,7 +122,7 @@ struct NucleiEfficiencyTask {
         continue;
 
       int pdgbin = 0;
-      switch(MCparticle.pdgCode()) {
+      switch (MCparticle.pdgCode()) {
         case +211:
           histPDG_mctruth->AddBinContent(1);
           pdgbin = 0;
@@ -210,7 +210,7 @@ struct NucleiEfficiencyTask {
         continue;
 
       int pdgbin = 0;
-      switch(particle.pdgCode()) {
+      switch (particle.pdgCode()) {
         case +211:
           histPDG->AddBinContent(1);
           pdgbin = 0;
