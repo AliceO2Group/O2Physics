@@ -17,7 +17,8 @@
 #ifndef PWGHF_UTILS_UTILSEVSELHF_H_
 #define PWGHF_UTILS_UTILSEVSELHF_H_
 
-#include <string>
+#include <memory> // std::shared_ptr
+#include <string> // std::string
 
 #include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
