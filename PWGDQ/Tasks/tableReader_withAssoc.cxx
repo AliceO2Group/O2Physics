@@ -1721,13 +1721,6 @@ struct AnalysisAsymmetricPairing {
         }   // end if (pair cuts)
       }
     }
-    for (auto& pair : fTrackHistNames) {
-      cout << "!!! ";
-      for (auto& str : pair.second) {
-        cout << str << " ";
-      }
-      cout << endl;
-    }
     // Make sure only pairs or only triplets of leg cuts were given
     int tripletCheckSum = std::count(isThreeProng.begin(), isThreeProng.end(), true);
     if (tripletCheckSum != 0 && tripletCheckSum != fNLegCuts) {
