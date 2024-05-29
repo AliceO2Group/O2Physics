@@ -148,6 +148,7 @@ struct phosElId {
       axisP{momentum_binning, "p (GeV/c)"},
       axisPt{momentum_binning, "p_{T} (GeV/c)"},
       axisEta{200, -0.2, 0.2, "#eta"},
+      axisPhi{80, 240, 320, "#varphi"},
       axisE{200, 0, 10, "E (GeV)", "E (GeV)"},
       axisEp{nBinsEp, mEpmin, mEpmax, "E/p", "E_{cluster}/p_{track}"},
       axisdX{nBinsDeltaX, mDeltaXmin, mDeltaXmax, "x_{tr}-x_{clu} (cm)", "x_{tr}-x_{clu} (cm)"},
@@ -169,7 +170,8 @@ struct phosElId {
     mHistManager.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     mHistManager.add("TVXinPHOSCounter", "TVXinPHOSCounter", kTH1F, {axisCounter});
 
-    mHistManager.add("hTrackPtEta", "Track pt vs eta", HistType::kTH2F, {axisPt, axisEta});
+    mHistManager.add("hTrackPtEtaPhi", "Track pt vs eta vs phi", HistType::kTH3F, {axisPt, axisEta, axisPhi});
+    mHistManager.add("hTrackPtEtaPhi_Phos", "Track pt vs eta vs phi on Phos surface", HistType::kTH3F, {axisPt, axisEta, axisPhi});
     mHistManager.add("hTrackDCA", "Track DCA info", HistType::kTH2F, {axisDCATrackXY, axisDCATrackZ});
     mHistManager.add("hTrackVX", "Track vertex coordinate X", HistType::kTH1F, {axisVTrackX});
     mHistManager.add("hTrackVY", "Track vertex coordinate Y", HistType::kTH1F, {axisVTrackY});
@@ -181,7 +183,6 @@ struct phosElId {
 
     mHistManager.add("hCluE_v_mod_v_time", "Cluster energy spectrum (E > 0.3 GeV) vs time per module", HistType::kTH3F, {axisE, axisTime, axisModes});
 
-    mHistManager.add("hCluE_mod_full", "Cluster energy spectrum (no if statements) per module", HistType::kTH2F, {axisE, axisModes});
     mHistManager.add("hCluE_mod_energy_cut", "Cluster energy spectrum (E > 0.3 GeV) per module", HistType::kTH2F, {axisE, axisModes});
     mHistManager.add("hCluE_mod_time_cut", "Cluster energy spectrum (E > 0.3 GeV)(time +-25 ns) per module", HistType::kTH2F, {axisE, axisModes});
     mHistManager.add("hCluE_mod_cell_cut", "Cluster energy spectrum (E > 0.3 GeV)(time +-25 ns)(ncells > 3) per module", HistType::kTH2F, {axisE, axisModes});
@@ -197,7 +198,6 @@ struct phosElId {
     mHistManager.add("hCluE_v_p_2sigma", "Cluster energy vs p within trackmatch 2sigma", HistType::kTH3F, {axisE, axisP, axisModes});
     mHistManager.add("hCluE_v_p_2sigma_disp", "Cluster energy vs p within trackmatch 2sigma | OK dispersion", HistType::kTH3F, {axisE, axisP, axisModes});
 
-    mHistManager.add("hEp_v_p", "E/p ratio vs p", HistType::kTH3F, {axisEp, axisP, axisModes});
     mHistManager.add("hEp_v_p_disp", "E/p ratio vs p | OK dispersion", HistType::kTH3F, {axisEp, axisP, axisModes});
     mHistManager.add("hEp_v_p_1sigma", "E/p ratio vs p within trackmatch 1sigma", HistType::kTH3F, {axisEp, axisP, axisModes});
     mHistManager.add("hEp_v_p_1sigma_disp", "E/p ratio vs p within trackmatch 1sigma | OK dispersion", HistType::kTH3F, {axisEp, axisP, axisModes});
@@ -291,6 +291,8 @@ struct phosElId {
         if (module != clu.mod())
           continue;
         double cluE = clu.e();
+        mHistManager.fill(HIST("hCluE_ncells_mod"), cluE, clu.ncell(), module);
+
         if (cluE < mMinCluE ||
             clu.ncell() < mMinCluNcell ||
             clu.time() > mMaxCluTime || clu.time() < mMinCluTime)
@@ -310,10 +312,8 @@ struct phosElId {
           mHistManager.fill(HIST("hdZpmod_neg"), dZ, trackMom, module);
           mHistManager.fill(HIST("hdXpmod_neg"), dX, trackMom, module);
         }
-        mHistManager.fill(HIST("hCluE_ncells_mod"), cluE, clu.ncell(), module);
 
         mHistManager.fill(HIST("hCluE_v_p"), cluE, trackMom, module);
-        mHistManager.fill(HIST("hEp_v_p"), Ep, trackMom, module);
         if (isDispOK) {
           mHistManager.fill(HIST("hCluE_v_p_disp"), cluE, trackMom, module);
           mHistManager.fill(HIST("hEp_v_p_disp"), Ep, trackMom, module);
@@ -336,7 +336,8 @@ struct phosElId {
         }
       }
 
-      mHistManager.fill(HIST("hTrackPtEta"), track.pt(), track.eta());
+      mHistManager.fill(HIST("hTrackPtEtaPhi"), track.pt(), track.eta(), track.phi() * TMath::RadToDeg());
+      mHistManager.fill(HIST("hTrackPtEtaPhi_Phos"), track.pt(), track.trackEtaEmcal(), track.trackPhiEmcal() * TMath::RadToDeg());
       mHistManager.fill(HIST("hTrackDCA"), track.dcaXY(), track.dcaZ());
       mHistManager.fill(HIST("hTrackPhosProjMod"), trackX, trackZ, module);
     } // end of double loop
@@ -344,7 +345,6 @@ struct phosElId {
     for (const auto& clu : clusters) {
       double cluE = clu.e(), cluTime = clu.time();
       int mod = clu.mod();
-      mHistManager.fill(HIST("hCluE_mod_full"), cluE, mod);
       if (cluE > mMinCluE) {
         mHistManager.fill(HIST("hCluE_mod_energy_cut"), cluE, mod);
         mHistManager.fill(HIST("hCluE_v_mod_v_time"), cluE, cluTime * 1e9, mod);

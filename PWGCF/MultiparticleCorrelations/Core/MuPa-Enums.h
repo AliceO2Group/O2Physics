@@ -58,7 +58,7 @@ enum eRecSim { eRec = 0,
                eRecAndSim_Run1,
                eTest };
 
-enum eBeforeAfter { eBefore = 0,
+enum eBeforeAfter { eBefore = 0, // use this one for cuts
                     eAfter = 1 };
 
 enum eMinMax { eMin = 0,
@@ -93,6 +93,7 @@ enum eEventHistograms {
   eMultFT0M,      // ref. mult from helper task o2-analysis-multiplicity-table
   eMultTPC,       // ref. mult from helper task o2-analysis-multiplicity-table
   eMultNTracksPV, // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultTracklets, // ref. mult from helper task o2-analysis-multiplicity-table, use only for Run 2
   eCentrality,    // default centrality estimator
   eVertex_x,
   eVertex_y,
@@ -102,18 +103,21 @@ enum eEventHistograms {
   eEventHistograms_N
 };
 
-enum eEventHistograms2D {
-  eVertex_z_vs_MultTPC = 0,
-  eVertex_z_vs_NContributors,
-  eEventHistograms2D_N
-};
-
 enum eEventCuts {
-  eTrigger = eEventHistograms_N, // yes, because I do not want to duplicate the same enums from eEventHistograms here
-  eSel7,                         // Event selection decision based on V0A & V0C => use only in Run 2 and Run 1
-  eSel8,                         // Event selection decision based on TVX => use only in Run 3
-  eCentralityEstimator,
-  eSelectedEvents, // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
+  // a) For available event selection bits, check https://github.com/ekryshen/O2Physics/blob/ede841e3d9037919680f34acc1d555dfc6d5df55/Common/CCDB/EventSelectionParams.cxx
+  // b) Some settings are configurable, check: https://github.com/ekryshen/O2Physics/blob/master/Common/TableProducer/eventSelection.cxx#L44
+  eTrigger = eEventHistograms_N, // Do NOT use eTrigger for Run 3. Validated only for Run 2, and it has to be "kINT7" . TBI 20240522 investigate for Run 1
+  eSel7,                         // Event selection decision based on V0A & V0C => use only in Run 2 and Run 1. TBI 20240522 I stil need to validate this one over MC
+  eSel8,                         // Event selection decision based on TVX => use only in Run 3, both for data and MC
+                                 // *) As of 20240410, kNoITSROFrameBorder (only in MC) and kNoTimeFrameBorder event selection cuts are part of Sel8 => see def. of sel8 in Ref. a)
+                                 //    See also email from EK from 20240410
+  eCentralityEstimator,          // the default centrality estimator, set via configurable. All supported centrality estimatos, for QA, etc, are in enum eCentralityEstimators
+  eSelectedEvents,               // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
+  eNoSameBunchPileup,            // reject collisions in case of pileup with another collision in the same foundBC (emails from IA on 20240404 and EK on 20240410)
+  eIsGoodZvtxFT0vsPV,            // small difference between z-vertex from PV and from FT0 (emails from IA on 20240404 and EK on 20240410)
+  eIsVertexITSTPC,               // at least one ITS-TPC track (reject vertices built from ITS-only tracks) (emails from IA on 20240404 and EK on 20240410
+  eIsVertexTOFmatched,           // at least one of vertex contributors is matched to TOF
+  eIsVertexTRDmatched,           // at least one of vertex contributors is matched to TRD
   eEventCuts_N
 };
 
@@ -125,7 +129,7 @@ enum eParticleHistograms {
   eEta,
   eCharge, // Charge: positive: 1, negative: -1
 
-  // from o2::aod::TracksExtra_001:
+  // from o2::aod::TracksExtra_001
   etpcNClsFindable,
   etpcNClsShared,
   etpcNClsFound,
@@ -136,7 +140,7 @@ enum eParticleHistograms {
   etpcFoundOverFindableCls,
   etpcFractionSharedCls,
 
-  // from o2::aod::TracksDCA:
+  // from o2::aod::TracksDCA
   edcaXY,
   edcaZ,
 
@@ -147,7 +151,7 @@ enum eParticleHistograms {
   eParticleHistograms_N
 };
 
-enum eParticleHistograms2D {
+enum eParticleHistograms2D { // All 2D histograms are first implemented in eQAParticleHistograms2D, the ones which I need regularly, are then promoted to this category.
   ePhiPt = 0,
   ePhiEta,
   eParticleHistograms2D_N
@@ -155,13 +159,13 @@ enum eParticleHistograms2D {
 
 enum eParticleCuts {
 
-  // from o2::aod::TrackSelection:
-  etrackCutFlagFb1 = eParticleHistograms_N, // yes, because I do not want to duplicate the same enums from eParticleHistograms here
-  etrackCutFlagFb2,
-  eisQualityTrack,
+  // from o2::aod::TrackSelection
+  etrackCutFlagFb1 = eParticleHistograms_N, // do not use in Run 2 and 1
+  etrackCutFlagFb2,                         // do not use in Run 2 and 1
+  eisQualityTrack,                          // not validated in Run 3, but it can be used in Run 2 and Run 1 (for the latter, it yields to large NUA)
   eisPrimaryTrack,
-  eisInAcceptanceTrack,
-  eisGlobalTrack,
+  eisInAcceptanceTrack, // TBI 20240516 check and document how acceptance window is defined
+  eisGlobalTrack,       // not validated in Run 3, but it can be used in Run 2 and Run 1 (for the latter, it yields to real holes in NUA)
   eParticleCuts_N
 };
 
@@ -209,6 +213,35 @@ enum eCutCounter {
   eAbsolute = 0,
   eSequential,
   eCutCounter_N
+};
+
+enum eQAEventHistograms2D {
+  // Common:
+  eMultTPC_vs_NContributors = 0,
+  eVertex_z_vs_MultTPC,
+  eVertex_z_vs_NContributors,
+  // Run 3:
+  eCentFT0M_vs_CentNTPV,
+  // Run 2 (do not use in Run 1 converted, because there is no centrality information):
+  eCentRun2V0M_vs_CentRun2SPDTracklets,
+  eCentRun2V0M_vs_NContributors,
+  eQAEventHistograms2D_N
+};
+
+enum eQAParticleHistograms2D {
+  edcaXY_vs_Pt,
+  eQAParticleHistograms2D_N
+};
+
+enum eCentralityEstimators {
+  // Run 3:
+  eCentFT0M = 0,
+  eCentFV0A,
+  eCentNTPV,
+  // Run 2:
+  eCentRun2V0M,
+  eCentRun2SPDTracklets,
+  eCentralityEstimators_N
 };
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_

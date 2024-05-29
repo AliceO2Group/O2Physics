@@ -597,9 +597,25 @@ struct HfCorrelatorDsHadrons {
         // prompt and non-prompt division
         isDsPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
         isDecayChan = particle.flagMcDecayChanGen() == decayChannel;
+        std::vector<int> listDaughters{};
+        std::array<int, 3> arrDaughDsPDG = {+kKPlus, -kKPlus, kPiPlus};
+        std::array<int, 3> prongsId;
+        listDaughters.clear();
+        RecoDecay::getDaughters(particle, &listDaughters, arrDaughDsPDG, 2);
+        int counterDaughters = 0;
+        if (listDaughters.size() == 3) {
+          for (const auto& dauIdx : listDaughters) {
+            auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
+            counterDaughters += 1;
+            prongsId[counterDaughters - 1] = daughI.globalIndex();
+          }
+        }
         // Ds Hadron correlation dedicated section
         for (const auto& particleAssoc : mcParticles) {
           if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
+            continue;
+          }
+          if (particleAssoc.globalIndex() == prongsId[0] || particleAssoc.globalIndex() == prongsId[1] || particleAssoc.globalIndex() == prongsId[2]) {
             continue;
           }
           if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {

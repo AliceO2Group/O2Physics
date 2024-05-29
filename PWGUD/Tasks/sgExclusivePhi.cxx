@@ -235,7 +235,7 @@ struct sgExclusivePhi {
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
@@ -275,6 +275,13 @@ struct sgExclusivePhi {
       for (auto trk : tracks) {
         registry.fill(HIST("hSelectionCounter"), 1);
         if (!trk.isPVContributor()) {
+          continue;
+        }
+        if (!(std::abs(trk.dcaZ()) < 2.)) {
+          continue;
+        }
+        double dcaLimit = 0.0105 + 0.035 / pow(trk.pt(), 1.1);
+        if (!(std::abs(trk.dcaXY()) < dcaLimit)) {
           continue;
         }
         registry.fill(HIST("hSelectionCounter"), 2);
@@ -408,6 +415,13 @@ struct sgExclusivePhi {
         registry.fill(HIST("hdEdxKaon5"), t.tpcInnerParam() / t.sign(), dEdx);
 
         if (t.pt() > 0.180) {
+          continue;
+        }
+        if (!(std::abs(t.dcaZ()) < 2.)) {
+          continue;
+        }
+        double dcaLimit = 0.0105 + 0.035 / pow(t.pt(), 1.1);
+        if (!(std::abs(t.dcaXY()) < dcaLimit)) {
           continue;
         }
 
