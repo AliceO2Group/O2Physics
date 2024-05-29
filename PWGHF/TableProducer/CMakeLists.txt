@@ -84,7 +84,7 @@ o2physics_add_dpl_workflow(candidate-creator-xicc
                     SOURCES candidateCreatorXicc.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
-					
+		    
 o2physics_add_dpl_workflow(candidate-creator-omegac-to-omega-pi-with-kfp
                     SOURCES candidateCreatorOmegacToOmegaPiWithKFP.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle
@@ -257,9 +257,8 @@ o2physics_add_dpl_workflow(tree-creator-xicc-to-p-k-pi-pi
 o2physics_add_dpl_workflow(tree-creator-dstar-to-d0-pi
                     SOURCES treeCreatorDstarToD0Pi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-					
-					
+                    COMPONENT_NAME Analysis)					
+		    
 o2physics_add_dpl_workflow(tree-creator-omegac-to-omega-pi-with-kfp
                     SOURCES treeCreatorOmegacToOmegaPiWithKFP.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
