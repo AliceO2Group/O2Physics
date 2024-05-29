@@ -94,7 +94,7 @@ DECLARE_SOA_TABLE(MCLnnCands, "AOD", "MCLNNCANDS",
                   o2::soa::Index<>,
                   lnnrec::CentralityFT0A, lnnrec::CentralityFT0C, lnnrec::CentralityFT0M,
                   lnnrec::XPrimVtx, lnnrec::YPrimVtx, lnnrec::ZPrimVtx,
-
+                  
                   lnnrec::IsMatter,
                   lnnrec::Pt3H, lnnrec::Phi3H, lnnrec::Eta3H,
                   lnnrec::PtPi, lnnrec::PhiPi, lnnrec::EtaPi,
