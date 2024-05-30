@@ -454,6 +454,7 @@ struct QaEfficiency {
   // Custom track cuts for debug purposes
   TrackSelection customTrackCuts;
   struct : ConfigurableGroup {
+    Configurable<bool> tracksIU{"tracksIU", false, "Additional cut for IU tracks"};
     Configurable<int> itsPattern{"itsPattern", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
     Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
     Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
@@ -1125,6 +1126,9 @@ struct QaEfficiency {
     if (globalTrackSelection.value == 6) {
       customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(cfgCustomTrackCuts.itsPattern);
       LOG(info) << "Customizing track cuts:";
+      if (tracksIU.value) {
+      customTrackCuts.SetTrackType(o2::aod::track::TrackTypeEnum::TrackIU); 
+       }
       customTrackCuts.SetRequireITSRefit(cfgCustomTrackCuts.requireITS);
       customTrackCuts.SetRequireTPCRefit(cfgCustomTrackCuts.requireTPC);
       customTrackCuts.SetRequireGoldenChi2(cfgCustomTrackCuts.requireGoldenChi2);
