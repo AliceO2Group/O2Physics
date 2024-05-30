@@ -51,15 +51,15 @@ DECLARE_SOA_TABLE(DDbarRecoInfo, "AOD", "DDBARRECOINFO",
 // definition of columns and tables for D0-Hadron correlation pairs
 namespace hf_correlation_d0_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                  //! DeltaPhi between D0 and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                  //! DeltaEta between D0 and Hadrons
-DECLARE_SOA_COLUMN(PtD, ptD, float);                            //! Transverse momentum of D0
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                  //! Transverse momentum of Hadron
-DECLARE_SOA_COLUMN(MD, mD, float);                              //! Invariant mass of D0
-DECLARE_SOA_COLUMN(MDbar, mDbar, float);                        //! Invariant mass of D0bar
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);            //! Tag for D0,D0bar
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                      //! Pool Bin for the MixedEvent
-DECLARE_SOA_COLUMN(CorrelationStatus, correlationStatus, bool); //! Correlation Status
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                //! DeltaPhi between D0 and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                //! DeltaEta between D0 and Hadrons
+DECLARE_SOA_COLUMN(PtD, ptD, float);                          //! Transverse momentum of D0
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MD, mD, float);                            //! Invariant mass of D0
+DECLARE_SOA_COLUMN(MDbar, mDbar, float);                      //! Invariant mass of D0bar
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);          //! Tag for D0,D0bar
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                    //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool); //! Correlation Status
 
 enum ParticleTypeData {
   D0Only = 1,        // Identified as D0
@@ -87,7 +87,7 @@ DECLARE_SOA_TABLE(DHadronPair, "AOD", "DHADRONPAIR", //! D0-Hadrons pairs Inform
                   aod::hf_correlation_d0_hadron::PtD,
                   aod::hf_correlation_d0_hadron::PtHadron,
                   aod::hf_correlation_d0_hadron::PoolBin,
-                  aod::hf_correlation_d0_hadron::CorrelationStatus);
+                  aod::hf_correlation_d0_hadron::IsAutoCorrelated);
 
 DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO", //! D0-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_d0_hadron::MD,
