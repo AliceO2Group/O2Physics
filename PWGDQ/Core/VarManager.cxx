@@ -318,7 +318,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTwoEvPVcontrib2] = "";
   fgVariableNames[kEnergyCommonZNA] = "ZNA common energy";
   fgVariableUnits[kEnergyCommonZNA] = "";
-  fgVariableNames[kEnergyCommonZNC] = "ZNA common energy";
+  fgVariableNames[kEnergyCommonZNC] = "ZNC common energy";
   fgVariableUnits[kEnergyCommonZNC] = "";
   fgVariableNames[kEnergyCommonZPA] = "ZPA common energy";
   fgVariableUnits[kEnergyCommonZPA] = "";

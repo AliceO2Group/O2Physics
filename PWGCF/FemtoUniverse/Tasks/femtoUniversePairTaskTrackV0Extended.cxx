@@ -390,7 +390,7 @@ struct femtoUniversePairTaskTrackV0Extended {
         continue;
       }
 
-      for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // track cleaning
         if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
           continue;

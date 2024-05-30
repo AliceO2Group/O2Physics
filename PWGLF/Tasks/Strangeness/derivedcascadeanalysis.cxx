@@ -359,65 +359,86 @@ struct derivedCascadeAnalysis {
       histos.fill(HIST("hEventPVcontributorsVsCentralityBefCuts"), coll.centFT0C(), coll.multNTracksPVeta1());
       histos.fill(HIST("hEventGlobalTracksVsCentralityBefCuts"), coll.centFT0C(), coll.multNTracksGlobal());
     }
-
-    if (!sel) {
-      return false;
-    }
-    histos.fill(HIST("hEventSelection"), 1.5 /* collisions  after sel*/);
-    if (TMath::Abs(coll.posZ()) > zVertexCut) {
-      return false;
-    }
-
-    histos.fill(HIST("hEventSelection"), 2.5 /* collisions  after sel pvz sel*/);
-
-    if (coll.centFT0C() > centMax || coll.centFT0C() < centMin) {
-      return false;
-    }
-
-    histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after centrality sel*/);
-
-    if (doSameBunchPileUpEventCut && !coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      return false;
-    }
-    histos.fill(HIST("hEventSelection"), 4.5 /* Not same Bunch pile up */);
-
-    if (doGoodPVFT0EventCut && !coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return false;
-    }
-    histos.fill(HIST("hEventSelection"), 5.5 /* No large vertexZ difference from tracks and FT0*/);
-
-    if (doITSTPCvertexEventCut && !coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      return false;
-    }
-    histos.fill(HIST("hEventSelection"), 6.5 /* At least one ITS-TPC track in the event*/);
-
-    if (doVertexTOFmatch && !coll.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
-      return false;
-    }
-    histos.fill(HIST("hEventSelection"), 7.5 /* At least one of vertex contributors is matched to TOF*/);
-
-    if (doVertexTRDmatch && !coll.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
-      return false;
-    }
-    histos.fill(HIST("hEventSelection"), 8.5 /* At least one of vertex contributors is matched to TRD*/);
-
-    if (doITSFrameBorderCut && !coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      return false;
-    }
-    histos.fill(HIST("hEventSelection"), 9.5 /* Not at ITS ROF border */);
-
-    if (doTFeventCut && !coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      return false;
-    }
-    histos.fill(HIST("hEventSelection"), 10.5 /* Not at TF border */);
-
-    if (doMultiplicityCorrCut) {
-      if (coll.multNTracksGlobal() < (1343.3 * TMath::Exp(-0.0443259 * coll.centFT0C()) - 50) || coll.multNTracksGlobal() > (2098.9 * TMath::Exp(-0.0332444 * coll.centFT0C())))
+    if (isMC) {
+      if (!coll.selection_bit(aod::evsel::kIsTriggerTVX)) {
         return false;
-      if (coll.multNTracksPVeta1() < (3703 * TMath::Exp(-0.0455483 * coll.centFT0C()) - 150) || coll.multNTracksPVeta1() > (4937.33 * TMath::Exp(-0.0372668 * coll.centFT0C()) + 20))
+      }
+      histos.fill(HIST("hEventSelection"), 1.5 /* MB trigger*/);
+
+      if (TMath::Abs(coll.posZ()) > zVertexCut) {
         return false;
+      }
+
+      histos.fill(HIST("hEventSelection"), 2.5 /* collisions  after sel pvz sel*/);
+
+      if (doTFeventCut && !coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 3.5 /* Not at TF border */);
+      if (doITSFrameBorderCut && !coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 4.5 /* Not at ITS ROF border */);
+    } else {
+      if (!sel) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 1.5 /* collisions  after sel*/);
+      if (TMath::Abs(coll.posZ()) > zVertexCut) {
+        return false;
+      }
+
+      histos.fill(HIST("hEventSelection"), 2.5 /* collisions  after sel pvz sel*/);
+
+      if (coll.centFT0C() > centMax || coll.centFT0C() < centMin) {
+        return false;
+      }
+
+      histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after centrality sel*/);
+
+      if (doSameBunchPileUpEventCut && !coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 4.5 /* Not same Bunch pile up */);
+
+      if (doGoodPVFT0EventCut && !coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 5.5 /* No large vertexZ difference from tracks and FT0*/);
+
+      if (doITSTPCvertexEventCut && !coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 6.5 /* At least one ITS-TPC track in the event*/);
+
+      if (doVertexTOFmatch && !coll.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 7.5 /* At least one of vertex contributors is matched to TOF*/);
+
+      if (doVertexTRDmatch && !coll.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 8.5 /* At least one of vertex contributors is matched to TRD*/);
+
+      if (doITSFrameBorderCut && !coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 9.5 /* Not at ITS ROF border */);
+
+      if (doTFeventCut && !coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        return false;
+      }
+      histos.fill(HIST("hEventSelection"), 10.5 /* Not at TF border */);
+
+      if (doMultiplicityCorrCut) {
+        if (coll.multNTracksGlobal() < (1343.3 * TMath::Exp(-0.0443259 * coll.centFT0C()) - 50) || coll.multNTracksGlobal() > (2098.9 * TMath::Exp(-0.0332444 * coll.centFT0C())))
+          return false;
+        if (coll.multNTracksPVeta1() < (3703 * TMath::Exp(-0.0455483 * coll.centFT0C()) - 150) || coll.multNTracksPVeta1() > (4937.33 * TMath::Exp(-0.0372668 * coll.centFT0C()) + 20))
+          return false;
+      }
+      histos.fill(HIST("hEventSelection"), 11.5 /* Remove outlyers */);
     }
-    histos.fill(HIST("hEventSelection"), 11.5 /* Remove outlyers */);
 
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());

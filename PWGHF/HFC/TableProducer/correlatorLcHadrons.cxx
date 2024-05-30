@@ -65,7 +65,7 @@ const double ptLcAxisMin = 0.;
 const double ptLcAxisMax = 36.;
 
 // definition of ME variables
-using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
+using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
 
 using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::LcSelection>>;
 using SelectedTracks = soa::Filtered<aod::TracksWDca>;
@@ -108,7 +108,7 @@ struct HfCorrelatorLcHadronsSelection {
   void processLcSelectionData(aod::Collision const& collision,
                               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&)
   {
-    bool isLcFound = 0;
+    int isLcFound = 0;
     if (selectedLcCandidates.size() > 0) {
       auto selectedLcCandidatesGrouped = selectedLcCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
@@ -127,7 +127,7 @@ struct HfCorrelatorLcHadronsSelection {
   void processLcSelectionMcRec(aod::Collision const& collision,
                                soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&)
   {
-    bool isLcFound = 0;
+    int isLcFound = 0;
     if (selectedLcCandidatesMc.size() > 0) {
       auto selectedLcCandidatesGroupedMc = selectedLcCandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       for (const auto& candidate : selectedLcCandidatesGroupedMc) {
@@ -145,7 +145,7 @@ struct HfCorrelatorLcHadronsSelection {
   void processLcSelectionMcGen(aod::McCollision const&,
                                aod::McParticles const& mcParticles)
   {
-    bool isLcFound = 0;
+    int isLcFound = 0;
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.pdgCode()) != Pdg::kLambdaCPlus) {
         continue;
@@ -172,6 +172,9 @@ struct HfCorrelatorLcHadrons {
 
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying Lc efficiency weights"};
+  Configurable<int> filterFlagLc{"filterFlagLc", true, "Flag for applying Collision Filter with Lc"};
+  Configurable<int> filterFlagLcMc{"filterFlagLcMc", false, "Flag for applying Mc Collision Filter with Lc"};
+  Configurable<int> nEventForMixedEvent{"nEventForMixedEvent", 5, "number of event to be mixed"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 0.0025, "max. DCAxy of tracks"};
@@ -192,10 +195,10 @@ struct HfCorrelatorLcHadrons {
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
 
   // Filters for ME
-  Filter collisionFilter = aod::hf_selection_lc_collision::lcSel == true;
+  Filter collisionFilter = aod::hf_selection_lc_collision::lcSel >= filterFlagLc;
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
   Filter lcFilter = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= 1) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= 1);
-  Filter collisionFilterGen = aod::hf_selection_lc_collision::lcSel == true;
+  Filter collisionFilterGen = aod::hf_selection_lc_collision::lcSel >= filterFlagLcMc;
   Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 4122 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
   Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;
@@ -232,7 +235,7 @@ struct HfCorrelatorLcHadrons {
      {"hCountLcHadronPerEvent", "Lc,Hadron particles - Mc Gen;Number per event;entries", {HistType::kTH1F, {{21, -0.5, 20.5}}}},
      {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
-     {"hMultV0M", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
+     {"hMultT0M", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      {"hZvtx", "z vertex;z vertex;entries", {HistType::kTH1F, {{200, -20., 20.}}}},
      {"hLcPoolBin", "Lc selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}}},
      {"hTracksPoolBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}}}}};
@@ -260,7 +263,7 @@ struct HfCorrelatorLcHadrons {
     if (selectedLcCandidates.size() == 0) {
       return;
     }
-    int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
+    int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     int nTracks = 0;
     if (collision.numContrib() > 1) {
       for (const auto& track : tracks) {
@@ -355,7 +358,7 @@ struct HfCorrelatorLcHadrons {
       } // Hadron Tracks loop
     }   // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
-    registry.fill(HIST("hMultV0M"), collision.multFV0M());
+    registry.fill(HIST("hMultT0M"), collision.multFT0M());
   }
   PROCESS_SWITCH(HfCorrelatorLcHadrons, processData, "Process data", true);
 
@@ -367,7 +370,7 @@ struct HfCorrelatorLcHadrons {
     if (selectedLcCandidatesMc.size() == 0) {
       return;
     }
-    int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
+    int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     int nTracks = 0;
     if (collision.numContrib() > 1) {
       for (const auto& track : tracks) {
@@ -492,7 +495,7 @@ struct HfCorrelatorLcHadrons {
       } // end inner loop (Tracks)
     }   // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
-    registry.fill(HIST("hMultV0M"), collision.multFV0M());
+    registry.fill(HIST("hMultT0M"), collision.multFT0M());
   }
   PROCESS_SWITCH(HfCorrelatorLcHadrons, processMcRec, "Process Mc Reco mode", false);
 
@@ -580,10 +583,10 @@ struct HfCorrelatorLcHadrons {
       return;
     }
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelectedCollisions, SelectedCandidatesData, SelectedTracks, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
+    Pair<SelectedCollisions, SelectedCandidatesData, SelectedTracks, BinningType> pairData{corrBinning, nEventForMixedEvent, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
-      int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
+      int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (!TESTBIT(t1.hfflag(), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           continue;
@@ -618,10 +621,10 @@ struct HfCorrelatorLcHadrons {
                               SelectedTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelectedCollisions, SelectedCandidatesMcRec, SelectedTracks, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
+    Pair<SelectedCollisions, SelectedCandidatesMcRec, SelectedTracks, BinningType> pairMcRec{corrBinning, nEventForMixedEvent, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
-      int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
+      int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (yCandMax >= 0. && std::abs(hfHelper.yLc(t1)) > yCandMax) {
           continue;
@@ -665,7 +668,7 @@ struct HfCorrelatorLcHadrons {
     BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {binsZVtx, binsMultiplicityMc}, true};
 
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
-    Pair<SelectedCollisionsMcGen, SelectedTracksMcGen, SelectedTracksMcGen, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
+    Pair<SelectedCollisionsMcGen, SelectedTracksMcGen, SelectedTracksMcGen, BinningTypeMcGen> pairMcGen{corrBinningMcGen, nEventForMixedEvent, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
