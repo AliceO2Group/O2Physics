@@ -323,9 +323,9 @@ struct AntimatterAbsorptionHMPID {
 
   // Full Tracks
   using TracksCandidates = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra,
-                               aod::TrackSelectionExtension, aod::TracksDCA,
-                               aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                               aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+                                     aod::TrackSelectionExtension, aod::TracksDCA,
+                                     aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                     aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 
   // Process Data
   void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& event,
