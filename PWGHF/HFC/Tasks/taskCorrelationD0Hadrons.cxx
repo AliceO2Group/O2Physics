@@ -230,7 +230,7 @@ struct HfTaskCorrelationD0Hadrons {
       int effBinD = o2::analysis::findBin(binsEfficiency, ptD);
       int ptBinD = o2::analysis::findBin(binsCorrelations, ptD);
       int poolBin = pairEntry.poolBin();
-      bool correlationStatus = pairEntry.correlationStatus();
+      bool isAutoCorrelated = pairEntry.isAutoCorrelated();
 
       // reject entries outside pT ranges of interest
       if (ptBinD < 0 || effBinD < 0) {
@@ -249,12 +249,11 @@ struct HfTaskCorrelationD0Hadrons {
         continue;
       }
       //==============================================================================================================
-
       if (signalStatus == ParticleTypeData::D0Only || (signalStatus == ParticleTypeData::D0D0barBoth)) {
-        registry.fill(HIST("hCorInfoCorrelationState"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massD, correlationStatus, efficiencyWeight);
+        registry.fill(HIST("hCorInfoWithCorrelationState"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massD, isAutoCorrelated, efficiencyWeight);
       }
       if (signalStatus == ParticleTypeData::D0barOnly || (signalStatus == ParticleTypeData::D0D0barBoth)) {
-        registry.fill(HIST("hCorInfoCorrelationState"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massDbar, correlationStatus, efficiencyWeight);
+        registry.fill(HIST("hCorInfoWithCorrelationState"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massDbar, isAutoCorrelated, efficiencyWeight);
       }
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
       if ((massD > signalRegionLeft->at(ptBinD) && massD < signalRegionRight->at(ptBinD)) && ((signalStatus == ParticleTypeData::D0Only) || (signalStatus == ParticleTypeData::D0D0barBoth))) {
