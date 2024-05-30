@@ -134,7 +134,9 @@ o2physics_add_dpl_workflow(nuclei-ebye
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(angular-correlations-in-jets
-    SOURCES AngularCorrelationsInJets.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
+if(FastJet_FOUND)
+    o2physics_add_dpl_workflow(angular-correlations-in-jets
+        SOURCES AngularCorrelationsInJets.cxx
+        PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
+        COMPONENT_NAME Analysis)
+endif()

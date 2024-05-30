@@ -27,6 +27,13 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "fastjet/PseudoJet.hh"
+#include "fastjet/AreaDefinition.hh"
+#include "fastjet/ClusterSequenceArea.hh"
+#include "fastjet/GhostedAreaSpec.hh"
+#include "fastjet/Selector.hh"
+#include "fastjet/tools/Subtractor.hh"
+#include "fastjet/tools/JetMedianBackgroundEstimator.hh"
 
 using namespace o2;
 using namespace o2::framework;
@@ -46,7 +53,10 @@ struct AngularCorrelationsInJets {
     std::vector<double> ptBinning = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
 
 		// AxisSpec specName = {binningInfo, "axisLabel"};
-    AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxis 					= {ptBinning, "#it{p}_{T} [GeV/#it{c}]"};
+		AxisSpec particleTypeAxis = {4,1,5, "[p, ap, d, ad]"};
+		AxisSpec nsigmapTAxis 		= {1000,-50,50, "#it{p}_{T} [GeV/#it{c}]"};
+		AxisSpec nsigmaAxis 			= {1000,-5,5, "n#sigma"};
 
 		// registryName.add("histogramName", "histogramTitle", HistType::Type, {{binningInfo}});
 		
@@ -127,7 +137,7 @@ struct AngularCorrelationsInJets {
 
   //****************************************************************************************************
 
-  void process_jet_reco(aod::Collision const& collision, soa::Join<aod::Tracks,aod::TracksExtra> const& tracks)
+  void process_jet_reco(aod::Collision const& collision, soa::Join<aod::Tracks,aod::TracksExtra, aod::TracksDCA> const& tracks)
   {
     jetReco(collision, tracks);
   }
