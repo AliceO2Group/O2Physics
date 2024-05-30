@@ -322,15 +322,15 @@ struct AntimatterAbsorptionHMPID {
   }
 
   // Full Tracks
-  using FullTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra,
-                               aod::TrackSelectionExtension, aod::TracksDCA,
-                               aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                               aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+  using TracksCandidates = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra,
+                                     aod::TrackSelectionExtension, aod::TracksDCA,
+                                     aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                     aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 
   // Process Data
   void processData(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& event,
                    o2::aod::HMPIDs const& hmpids,
-                   o2::aod::FullTracks const&)
+                   TracksCandidates const&)
   {
     // Event Selection
     registryQC.fill(HIST("number_of_events_data"), 0.5);
@@ -353,7 +353,7 @@ struct AntimatterAbsorptionHMPID {
     for (const auto& hmpid : hmpids) {
 
       // Get Track
-      const auto& track = hmpid.track_as<FullTracks>();
+      const auto& track = hmpid.track_as<TracksCandidates>();
 
       // Track Momentum
       float momentum = track.p();
