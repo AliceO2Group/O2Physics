@@ -59,7 +59,7 @@ std::shared_ptr<TH1> hCentFV0A;
 std::shared_ptr<TH2> hNsigma3HSel;
 std::shared_ptr<TH2> hdEdx3HSel;
 std::shared_ptr<TH2> hdEdxTot;
-std::shared_ptr<TH1> hLnnMassBefSel;
+std::shared_ptr<TH1> hLnnMassSel;
 std::shared_ptr<TH1> hDecayChannel;
 std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
@@ -201,7 +201,7 @@ struct lnnRecoTask {
     hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hdEdxTot = qaRegistry.add<TH2>("hdEdxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
-    hLnnMassSel = qaRegistry.add<TH1>("hLnnMassBefSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.9, 3.8}});
+    hLnnMassSel = qaRegistry.add<TH1>("hLnnMassSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.9, 3.8}});
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
