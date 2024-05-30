@@ -564,7 +564,7 @@ struct strangeness_in_jets {
   }
 
   void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
-                   aod::Cascades const& Cascades, FullTracks const& tracks)
+                   aod::CascDataExt const& Cascades, aod::V0sLinked const& V0linked, FullTracks const& tracks)
   {
     registryQC.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
@@ -751,7 +751,8 @@ struct strangeness_in_jets {
       auto bach = casc.bachelor_as<FullTracks>();
       auto pos = casc.posTrack_as<FullTracks>();
       auto neg = casc.negTrack_as<FullTracks>();
-      const auto& v0 = casc.v0();
+      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
+      auto v0 = v0index.v0Data();
 
       TVector3 cascade_dir(pos.px() + neg.px() + bach.px(), pos.py() + neg.py() + bach.py(), pos.pz() + neg.pz() + bach.pz());
 
