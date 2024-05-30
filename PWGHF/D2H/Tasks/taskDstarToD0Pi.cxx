@@ -199,8 +199,8 @@ struct HfTaskDstarToD0Pi {
       if (TESTBIT(std::abs(candDstarMcRec.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // if MC matching is successful at Reconstruction Level
         // get MC Mother particle
         auto indexMother = RecoDecay::getMother(rowsMcPartilces, candDstarMcRec.prong0_as<aod::TracksWMc>().mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
-        auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother); // What is difference between rawIterator() or iteratorAt() methods?
-        registry.fill(HIST("QA/hPtSkimDstarGenSig"), particleMother.pt());    // generator level pt
+        auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother);  // What is difference between rawIterator() or iteratorAt() methods?
+        registry.fill(HIST("QA/hPtSkimDstarGenSig"), particleMother.pt()); // generator level pt
 
         registry.fill(HIST("QA/hPtVsYSkimDstarRecSig"), ptDstarRecSig, yDstarRecSig); // Skimed at level of trackIndexSkimCreator
         if (candDstarMcRec.isRecoTopol()) {                                           // if Topological selection are passed
