@@ -104,12 +104,10 @@ struct CandidateV0 {
   float mass = -999.f;
   float radius = -999.f;
   float cpa = -999.f;
-  float pxpos = -999.f;
-  float pypos = -999.f;
-  float pzpos = -999.f;
-  float pxneg = -999.f;
-  float pyneg = -999.f;
-  float pzneg = -999.f;
+  uint8_t isFD = 0u;
+  o2::track::TrackParCov trackv0;
+  std::array<float, 3> mompos;
+  std::array<float, 3> momneg;
   float dcav0daugh = -999.f;
   float dcanegpv = -999.f;
   float dcapospv = -999.f;
@@ -151,6 +149,7 @@ struct LFStrangeTreeCreator {
 
   // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
+  ConfigurableAxis massXiAxis{"massXiAxis", {400, o2::constants::physics::MassXiMinus - 0.05f, o2::constants::physics::MassXiMinus + 0.05f}, "binning for the Xi invariant-mass"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -178,6 +177,11 @@ struct LFStrangeTreeCreator {
   Configurable<float> v0setting_radius{"v0setting_radius", 5.f, "v0radius"};
   Configurable<float> v0setting_lifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
   Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
+  Configurable<float> cascsetting_dcabachpv{"cascsetting_dcabachpv", 0.1f, "cascdcabachpv"};
+  Configurable<float> cascsetting_cospa{"cascsetting_cospa", 0.99f, "casc cospa cut"};
+  Configurable<float> cascsetting_dcav0bach{"cascsetting_dcav0bach", 1.0f, "dcav0bach"};
+  Configurable<float> cascsetting_vetoOm{"cascsetting_vetoOm", 0.01f, "vetoOm"};
+  Configurable<float> cascsetting_mXi{"cascsetting_mXi", 0.02f, "mXi"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -186,6 +190,7 @@ struct LFStrangeTreeCreator {
 
   Preslice<TracksFullIU> perCollisionTracksFullIU = o2::aod::track::collisionId;
   Preslice<aod::V0s> perCollisionV0 = o2::aod::v0::collisionId;
+  Preslice<aod::Cascades> perCollisionCasc = o2::aod::cascade::collisionId;
   Preslice<aod::McParticles> perCollisionMcParts = o2::aod::mcparticle::mcCollisionId;
 
   template <class T>
@@ -261,10 +266,11 @@ struct LFStrangeTreeCreator {
 
     // v0 QA
     histos.add<TH3>("QA/massLambda", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
+    histos.add<TH3>("QA/massXi", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(#Lambda + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massXiAxis});
   }
 
   template <class C, class T>
-  void fillRecoEvent(C const& collision, T const& /* tracks */, aod::V0s const& V0s, float const& centrality)
+  void fillRecoEvent(C const& collision, T const& /* tracks */, aod::V0s const& V0s, aod::V0s const& /* V0s_all */, aod::Cascades const& cascades, float const& centrality)
   {
     candidateV0s.clear();
 
@@ -393,12 +399,9 @@ struct LFStrangeTreeCreator {
       candV0.mass = mLambda;
       candV0.radius = radiusV0;
       candV0.cpa = cosPA;
-      candV0.pxpos = momPos[0];
-      candV0.pypos = momPos[1];
-      candV0.pzpos = momPos[2];
-      candV0.pxneg = momNeg[0];
-      candV0.pyneg = momNeg[1];
-      candV0.pzneg = momNeg[2];
+      candV0.trackv0 = fitter.createParentTrackParCov();
+      candV0.mompos = std::array{momPos[0], momPos[1], momPos[2]};
+      candV0.momneg = std::array{momNeg[0], momNeg[1], momNeg[2]};
       candV0.dcav0daugh = dcaV0dau;
       candV0.dcav0pv = dcaV0Pv;
       candV0.dcanegpv = negDcaToPv;
@@ -410,12 +413,69 @@ struct LFStrangeTreeCreator {
       candV0.globalIndexNeg = negTrack.globalIndex();
       candidateV0s.push_back(candV0);
     }
+
+    for (auto& casc : cascades) {
+      auto v0 = casc.template v0_as<aod::V0s>();
+      auto itv0 = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 v0cand){return v0cand.globalIndex == v0.globalIndex();});
+      if (itv0 == candidateV0s.end()) {
+        continue;
+      }
+      auto bachTrack = casc.template bachelor_as<T>();
+      auto bachTrackPar = getTrackPar(bachTrack);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+
+      if (TMath::Abs(dcaInfo[0]) < cascsetting_dcabachpv)
+        continue;
+
+      auto bachelorTrack = getTrackParCov(bachTrack);
+      int nCand = 0;
+      try {
+        nCand = fitter.process(itv0->trackv0, bachelorTrack);
+      } catch (...) {
+        LOG(error) << "Exception caught in DCA fitter process call!";
+        continue;
+      }
+      if (nCand == 0)
+        continue;
+
+      auto v0Track = fitter.getTrack(0);
+      bachelorTrack = fitter.getTrack(1);
+
+      std::array<float, 3> momV0;
+      std::array<float, 3> momBach;
+      std::array<float, 3> momCasc;
+      v0Track.getPxPyPzGlo(momV0);
+      bachelorTrack.getPxPyPzGlo(momBach);
+      momTotXYZ(momCasc, momV0, momBach);
+
+      auto dcacascv0bach = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+      if (dcacascv0bach > cascsetting_dcav0bach)
+        continue;
+
+      std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+      const auto& vtx = fitter.getPCACandidate();
+      double cosPA = RecoDecay::cpa(primVtx, vtx, momCasc);
+      if (cosPA < cascsetting_cospa)
+        continue;
+
+      float mXi = invMass2Body(momCasc, momV0, momBach, o2::constants::physics::MassLambda0, o2::constants::physics::MassPionCharged);
+      float mOm = invMass2Body(momCasc, momV0, momBach, o2::constants::physics::MassLambda0, o2::constants::physics::MassKaonCharged);
+
+      if (std::abs(mOm - o2::constants::physics::MassOmegaMinus) < cascsetting_vetoOm)
+        continue;
+
+      if (std::abs(mXi - o2::constants::physics::MassXiMinus) > cascsetting_mXi)
+        continue;
+
+      histos.fill(HIST("QA/massXi"), centrality, std::hypot(momCasc[0], momCasc[1]), mXi);
+      itv0->isFD = 1u; // Xi
+    }
   }
 
   template <class C, class T>
-  void fillMcEvent(C const& collision, T const& tracks, aod::V0s const& V0s, float const& centrality, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
+  void fillMcEvent(C const& collision, T const& tracks, aod::V0s const& V0s, aod::V0s const& V0s_all, aod::Cascades const& cascades, float const& centrality, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
   {
-    fillRecoEvent<C, T>(collision, tracks, V0s, centrality);
+    fillRecoEvent<C, T>(collision, tracks, V0s, V0s_all, cascades, centrality);
 
     for (auto& candidateV0 : candidateV0s) {
       candidateV0.isreco = true;
@@ -528,7 +588,7 @@ struct LFStrangeTreeCreator {
     }
   }
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults> const& collisions, TracksFullIU const& tracks, aod::V0s const& V0s, aod::BCsWithTimestamps const&)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults> const& collisions, TracksFullIU const& tracks, aod::V0s const& V0s, aod::Cascades const& cascades, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -554,11 +614,14 @@ struct LFStrangeTreeCreator {
 
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      auto CascTable_thisCollision = cascades.sliceBy(perCollisionCasc, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
+      CascTable_thisCollision.bindExternalIndices(&tracks);
+      CascTable_thisCollision.bindExternalIndices(&V0s);
 
       auto multiplicity = collision.multFT0C();
       auto centrality = collision.centFT0C();
-      fillRecoEvent(collision, tracks, V0Table_thisCollision, centrality);
+      fillRecoEvent(collision, tracks, V0Table_thisCollision, V0s, CascTable_thisCollision, centrality);
 
       histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
       histos.fill(HIST("QA/MultVsCent"), centrality, multiplicity);
@@ -576,17 +639,18 @@ struct LFStrangeTreeCreator {
           candidateV0.dcav0daugh,
           candidateV0.cpa,
           candidateV0.tpcnsigmapos,
-          candidateV0.tpcnsigmaneg);
+          candidateV0.tpcnsigmaneg,
+          candidateV0.isFD);
 
         v0TableAP(
           candidateV0.eta,
           candidateV0.len,
-          candidateV0.pxpos,
-          candidateV0.pypos,
-          candidateV0.pzpos,
-          candidateV0.pxneg,
-          candidateV0.pyneg,
-          candidateV0.pzneg,
+          candidateV0.mompos[0],
+          candidateV0.mompos[1],
+          candidateV0.mompos[2],
+          candidateV0.momneg[0],
+          candidateV0.momneg[1],
+          candidateV0.momneg[2],
           candidateV0.radius,
           candidateV0.dcav0pv,
           candidateV0.dcapospv,
@@ -598,7 +662,7 @@ struct LFStrangeTreeCreator {
   }
   PROCESS_SWITCH(LFStrangeTreeCreator, processRun3, "process (Run 3)", false);
 
-  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& mcCollisions, TracksFullIU const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
+  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& mcCollisions, TracksFullIU const& tracks, aod::V0s const& V0s, aod::Cascades const& cascades, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -619,9 +683,12 @@ struct LFStrangeTreeCreator {
 
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      auto CascTable_thisCollision = cascades.sliceBy(perCollisionCasc, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
+      CascTable_thisCollision.bindExternalIndices(&tracks);
+      CascTable_thisCollision.bindExternalIndices(&V0s);
 
-      fillMcEvent(collision, tracks, V0Table_thisCollision, centrality, mcParticles, mcLab);
+      fillMcEvent(collision, tracks, V0Table_thisCollision, V0s, CascTable_thisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
       for (auto& candidateV0 : candidateV0s) {
@@ -648,12 +715,12 @@ struct LFStrangeTreeCreator {
         mcV0TableAP(
           candidateV0.eta,
           candidateV0.len,
-          candidateV0.pxpos,
-          candidateV0.pypos,
-          candidateV0.pzpos,
-          candidateV0.pxneg,
-          candidateV0.pyneg,
-          candidateV0.pzneg,
+          candidateV0.mompos[0],
+          candidateV0.mompos[1],
+          candidateV0.mompos[2],
+          candidateV0.momneg[0],
+          candidateV0.momneg[1],
+          candidateV0.momneg[2],
           candidateV0.radius,
           candidateV0.dcav0pv,
           candidateV0.dcapospv,

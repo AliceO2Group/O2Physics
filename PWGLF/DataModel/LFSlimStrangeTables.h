@@ -46,6 +46,7 @@ DECLARE_SOA_COLUMN(GenLen, genLen, float);
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);
 DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
+DECLARE_SOA_COLUMN(IsFD, isFD, uint8_t);
 } // namespace SlimLambdaTables
 
 DECLARE_SOA_TABLE(LambdaTableML, "AOD", "LAMBDATABLEML",
@@ -60,7 +61,8 @@ DECLARE_SOA_TABLE(LambdaTableML, "AOD", "LAMBDATABLEML",
                   SlimLambdaTables::DcaV0Tracks,
                   SlimLambdaTables::CosPA,
                   SlimLambdaTables::TpcNsigmaPos,
-                  SlimLambdaTables::TpcNsigmaNeg);
+                  SlimLambdaTables::TpcNsigmaNeg,
+                  SlimLambdaTables::IsFD);
 
 DECLARE_SOA_TABLE(McLambdaTableML, "AOD", "MCLAMBDATABLEML",
                   SlimLambdaTables::Pt,
