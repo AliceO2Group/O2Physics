@@ -207,10 +207,10 @@ enum McCollisionRejection {
 
 struct HfEventSelectionMc {
   // event selection parameters (in chronological order of application)
-  bool useSel8Trigger{false}; // Apply the ITS RO frame border cut
+  bool useITSROBorderCut{false};    // Apply the ITS RO frame border cut
   bool useTimeFrameBorderCut{true}; // Apply TF border cut
-  float zPvPosMin{-1000.f}; // Minimum PV posZ (cm)
-  float zPvPosMax{1000.f}; // Maximum PV posZ (cm)
+  float zPvPosMin{-1000.f};         // Minimum PV posZ (cm)
+  float zPvPosMax{1000.f};          // Maximum PV posZ (cm)
 
   /// \brief Function to apply event selections in HF analyses
   /// \param mcCollision is the analysed mc collision
@@ -218,14 +218,12 @@ struct HfEventSelectionMc {
   template <typename TBc, typename TMcColl>
   uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision)
   {
-
     uint8_t rejectionMask{0};
-
     float zPv = mcCollision.posZ();
     auto bc = mcCollision.template bc_as<TBc>();
 
     /// ITS RO frame border cut
-    if (useSel8Trigger && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (useITSROBorderCut && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       SETBIT(rejectionMask, McCollisionRejection::ITSROFrameBorderCut);
     }
     /// time frame border cut

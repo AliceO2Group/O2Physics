@@ -479,7 +479,7 @@ struct HfCandidateCreator3ProngExpressions {
           } else if (option.name.compare("createXic") == 0) {
             createXic = option.defaultValue.get<bool>();
           } else if (option.name.compare("hfEvSel.iseSel8Trigger") == 0) {
-            hfEvSelMc.useSel8Trigger = option.defaultValue.get<bool>();
+            hfEvSelMc.useITSROBorderCut = option.defaultValue.get<bool>();
           } else if (option.name.compare("hfEvSel.useTimeFrameBorderCut") == 0) {
             hfEvSelMc.useTimeFrameBorderCut = option.defaultValue.get<bool>();
           } else if (option.name.compare("hfEvSel.zPvPosMin") == 0) {
@@ -622,12 +622,12 @@ struct HfCandidateCreator3ProngExpressions {
 
       auto mcCollision = particle.mcCollision();
 
-      const auto McParticleRejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
-      if (McParticleRejectionMask != 0) {
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
         rowMcMatchGen(flag, origin, channel);
         continue;
-       }
+      }
 
       // D± → π± K∓ π±
       if (createDplus) {
