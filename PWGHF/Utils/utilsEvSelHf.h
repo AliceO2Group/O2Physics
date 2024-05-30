@@ -194,4 +194,52 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 };
 } // namespace o2::hf_evsel
 
+namespace o2::hf_evsel_mc
+{
+// generated particles rejection types
+enum McCollisionRejection {
+  None = 0,
+  TimeFrameBorderCut,
+  ITSROFrameBorderCut,
+  PositionZ,
+  NMcCollisionRejection
+};
+
+struct HfEventSelectionMc {
+  // event selection parameters (in chronological order of application)
+  bool useSel8Trigger{false}; // Apply the ITS RO frame border cut
+  bool useTimeFrameBorderCut{true}; // Apply TF border cut
+  float zPvPosMin{-1000.f}; // Minimum PV posZ (cm)
+  float zPvPosMax{1000.f}; // Maximum PV posZ (cm)
+
+/// \brief Function to apply event selections in HF analyses
+/// \param mcCollision is the analysed mc collision
+/// \return a bitmask with the event selections not satisfied by the analysed collision
+template <typename TBc, typename TMcColl>
+uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision)
+{
+
+  uint8_t rejectionMask{0};
+
+  float zPv = mcCollision.posZ();
+  auto bc = mcCollision.template bc_as<TBc>();
+
+  /// ITS RO frame border cut
+  if (useSel8Trigger && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    SETBIT(rejectionMask, McCollisionRejection::ITSROFrameBorderCut);
+  }
+  /// time frame border cut
+  if (useTimeFrameBorderCut && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    SETBIT(rejectionMask, McCollisionRejection::TimeFrameBorderCut);
+  }
+  /// primary vertex z
+  if (zPv < zPvPosMin || zPv > zPvPosMax) {
+    SETBIT(rejectionMask, McCollisionRejection::PositionZ);
+  }
+
+  return rejectionMask;
+}
+};
+} // namespace o2::hf_evsel_mc
+
 #endif // PWGHF_UTILS_UTILSEVSELHF_H_

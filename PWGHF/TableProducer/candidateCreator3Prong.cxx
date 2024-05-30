@@ -36,6 +36,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::hf_evsel;
+using namespace o2::hf_evsel_mc;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::hf_centrality;
@@ -453,12 +454,11 @@ struct HfCandidateCreator3ProngExpressions {
   Produces<aod::HfCand3ProngMcRec> rowMcMatchRec;
   Produces<aod::HfCand3ProngMcGen> rowMcMatchGen;
 
+  HfEventSelectionMc hfEvSelMc; // mc event selection
   bool createDplus{false};
   bool createDs{false};
   bool createLc{false};
   bool createXic{false};
-  float zPvPosMax{1000.f};
-  float useTimeFrameBorderCut{false};
 
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
@@ -478,10 +478,14 @@ struct HfCandidateCreator3ProngExpressions {
             createLc = option.defaultValue.get<bool>();
           } else if (option.name.compare("createXic") == 0) {
             createXic = option.defaultValue.get<bool>();
+          } else if (option.name.compare("hfEvSel.iseSel8Trigger") == 0) {
+            hfEvSelMc.useSel8Trigger = option.defaultValue.get<bool>();
+          } else if (option.name.compare("hfEvSel.useTimeFrameBorderCut") == 0) {
+            hfEvSelMc.useTimeFrameBorderCut = option.defaultValue.get<bool>();
+          } else if (option.name.compare("hfEvSel.zPvPosMin") == 0) {
+            hfEvSelMc.zPvPosMin = option.defaultValue.get<float>();
           } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            zPvPosMax = option.defaultValue.get<float>();
-          } else if (option.name.compare("useTimeFrameBorderCut") == 0) {
-            useTimeFrameBorderCut = option.defaultValue.get<bool>();
+            hfEvSelMc.zPvPosMax = option.defaultValue.get<float>();
           }
         }
         break;
@@ -617,19 +621,13 @@ struct HfCandidateCreator3ProngExpressions {
       arrDaughIndex.clear();
 
       auto mcCollision = particle.mcCollision();
-      float zPv = mcCollision.posZ();
-      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
-        rowMcMatchGen(flag, origin, channel);
-        continue;
-      }
 
-      if (useTimeFrameBorderCut) { // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
-        auto bc = mcCollision.bc_as<BCsInfo>();
-        if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-          rowMcMatchGen(flag, origin, channel);
-          continue;
-        }
-      }
+      const auto McParticleRejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      if (McParticleRejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the gen particle
+         rowMcMatchGen(flag, origin, channel);
+         continue;
+       }
 
       // D± → π± K∓ π±
       if (createDplus) {
