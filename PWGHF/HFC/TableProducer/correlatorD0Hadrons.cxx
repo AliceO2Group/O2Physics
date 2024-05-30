@@ -185,7 +185,7 @@ struct HfCorrelatorD0Hadrons {
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<float> ptSoftPionMax{"ptSoftPionMax", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification"};
   Configurable<bool> correlateD0WithLeadingParticle{"correlateD0WithLeadingParticle", false, "Switch for correlation of D0 mesons with leading particle only"};
-  Configurable<bool> setCorrelationState{"setCorrelationState", false, "Set correlation state"};
+  Configurable<bool> storeAutoCorrelationFlag{"storeAutoCorrelationFlag", false, "Store flag that indicates if the track is paired to its D-meson mother instead of skipping it"};
 
   HfHelper hfHelper;
 
@@ -370,7 +370,7 @@ struct HfCorrelatorD0Hadrons {
         // Remove D0 daughters by checking track indices
         bool correlationStatus = false;
         if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
-          if (!setCorrelationState) {
+          if (!storeAutoCorrelationFlag) {
             continue;
           }
           correlationStatus = true;
@@ -538,7 +538,7 @@ struct HfCorrelatorD0Hadrons {
         // Removing D0 daughters by checking track indices
         bool correlationStatus = false;
         if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
-          if (!setCorrelationState) {
+          if (!storeAutoCorrelationFlag) {
             continue;
           }
           correlationStatus = true;
