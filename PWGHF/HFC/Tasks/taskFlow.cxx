@@ -66,8 +66,8 @@ struct HfTaskFlow {
   HfHelper hfHelper;
   SliceCache cache;
 
-  using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
-  using MyTracks = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
+  using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
+  using TracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
   using HfCandidatesSel = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 
   //  Collision filters
@@ -430,12 +430,12 @@ struct HfTaskFlow {
   }
 
   template <typename TTracksTrig, typename TTracksAssoc, typename TLambda>
-  void mixCollisions(MyCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
+  void mixCollisions(FilteredCollisionsWSelMult const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
   {
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::collision::PosZ, decltype(getPartsSize)>;
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<MyCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    Pair<FilteredCollisionsWSelMult, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -468,8 +468,8 @@ struct HfTaskFlow {
   // =====================================
   //    process same event correlations: h-h case
   // =====================================
-  void processSameTpcTpcHH(MyCollisions::iterator const& collision,
-                           MyTracks const& tracks)
+  void processSameTpcTpcHH(FilteredCollisionsWSelMult::iterator const& collision,
+                           TracksWDcaSel const& tracks)
   {
     if (!(isCollisionSelected(collision, true))) {
       return;
@@ -498,8 +498,8 @@ struct HfTaskFlow {
   // =====================================
   //    process same event correlations: HF-h case
   // =====================================
-  void processSameHfHadrons(MyCollisions::iterator const& collision,
-                            MyTracks const& tracks,
+  void processSameHfHadrons(FilteredCollisionsWSelMult::iterator const& collision,
+                            TracksWDcaSel const& tracks,
                             HfCandidatesSel const& candidates)
   {
     if (!(isCollisionSelected(collision, true))) {
@@ -517,8 +517,8 @@ struct HfTaskFlow {
   // =====================================
   //    process same event correlations: h-MFT case
   // =====================================
-  void processSameTpcMftHH(MyCollisions::iterator const& collision,
-                           MyTracks const& tracks,
+  void processSameTpcMftHH(FilteredCollisionsWSelMult::iterator const& collision,
+                           TracksWDcaSel const& tracks,
                            aod::MFTTracks const& mfttracks)
   {
     if (!(isCollisionSelected(collision, true))) {
@@ -536,11 +536,11 @@ struct HfTaskFlow {
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
-  void processMixedTpcTpcHH(MyCollisions const& collisions,
-                            MyTracks const& tracks)
+  void processMixedTpcTpcHH(FilteredCollisionsWSelMult const& collisions,
+                            TracksWDcaSel const& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](MyCollisions::iterator const& col) {
+    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
       auto size = associatedTracks.size();
       return size;
@@ -553,12 +553,12 @@ struct HfTaskFlow {
   // =====================================
   //    process mixed event correlations: h-HF case
   // =====================================
-  void processMixedHfHadrons(MyCollisions const& collisions,
-                             MyTracks const& tracks,
+  void processMixedHfHadrons(FilteredCollisionsWSelMult const& collisions,
+                             TracksWDcaSel const& tracks,
                              HfCandidatesSel const& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](MyCollisions::iterator const& col) {
+    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
       auto size = associatedTracks.size();
       return size;
@@ -571,12 +571,12 @@ struct HfTaskFlow {
   // =====================================
   //    process mixed event correlations: h-MFT case
   // =====================================
-  void processMixedTpcMftHH(MyCollisions const& collisions,
-                            MyTracks const& tracks,
+  void processMixedTpcMftHH(FilteredCollisionsWSelMult const& collisions,
+                            TracksWDcaSel const& tracks,
                             aod::MFTTracks const& mfttracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](MyCollisions::iterator const& col) {
+    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
       auto size = associatedTracks.size();
       return size;
