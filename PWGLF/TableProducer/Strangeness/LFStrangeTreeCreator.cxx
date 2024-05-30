@@ -416,7 +416,7 @@ struct LFStrangeTreeCreator {
 
     for (auto& casc : cascades) {
       auto v0 = casc.template v0_as<aod::V0s>();
-      auto itv0 = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 v0cand){return v0cand.globalIndex == v0.globalIndex();});
+      auto itv0 = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 v0cand) { return v0cand.globalIndex == v0.globalIndex(); });
       if (itv0 == candidateV0s.end()) {
         continue;
       }
