@@ -97,8 +97,8 @@ constexpr static uint32_t gkEventFillMapWithMults = VarManager::ObjTypes::BC | V
 constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult;
 constexpr static uint32_t gkEventMCFillMap = VarManager::ObjTypes::CollisionMC;
-constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
-constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
+constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
@@ -227,7 +227,7 @@ struct TableMakerMC {
     bool enableBarrelHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                                context.mOptions.get<bool>("processBarrelOnly") || context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithCent") || context.mOptions.get<bool>("processBarrelOnlyWithCov") ||
-                               context.mOptions.get<bool>("processBarrelOnlyWithCovWithCentAndMults") ||
+                               context.mOptions.get<bool>("processBarrelOnlyWithCovWithCentAndMults") || context.mOptions.get<bool>("processBarrelOnlyWithCentAndMults") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithMults") || context.mOptions.get<bool>("processAmbiguousBarrelOnly"));
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCent") || context.mOptions.get<bool>("processMuonOnlyWithCov") ||
@@ -1461,7 +1461,7 @@ struct TableMakerMC {
       TString histMCTruthName = fConfigAddMCTruthHistogram.value;
       if (classStr.Contains("MCTruth")) {
         if (fConfigQA) {
-          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "mctruth", histMCTruthName);
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "mctruth_track", histMCTruthName);
         }
       }
     }

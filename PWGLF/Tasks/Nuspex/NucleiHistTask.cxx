@@ -57,7 +57,7 @@ struct NucleiHistTask {
 
   // MC
   HistogramRegistry MC_recon_reg{"MC_particles_reco", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1F> histPDG{TH1F("PDG", "PDG;PDG code", 100, 0.0, 100.0)};
+  OutputObj<TH1F> histPDG{TH1F("PDG", "PDG;PDG code", 20, 0.0, 20.0)};
 
   void init(o2::framework::InitContext&)
   {
@@ -71,6 +71,7 @@ struct NucleiHistTask {
     std::vector<double> ptBinning_diff = {-14.0, -12.0, -10.0, -8.0, -6.0, -5.0, -4.0, -3.6, -3.2, -2.8, -2.4, -2.2, -2.0, -1.8, -1.6, -1.4, -1.3, -1.2, -1.1, -1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
     std::vector<double> etaBinning = {-1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+    std::vector<double> PDGBinning = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
 
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxis_reduced = {ptBinning_short, "#it{p}_{T} (GeV/#it{c})"};
@@ -78,7 +79,7 @@ struct NucleiHistTask {
     AxisSpec centralityAxis = {100, 0.0, 100.0, "VT0C (%)"};
     AxisSpec centralityAxis_extended = {105, 0.0, 105.0, "VT0C (%)"};
     AxisSpec etaAxis = {etaBinning, "#eta"};
-    AxisSpec PDGBINNING = {50, 0.0, 50.0, "PDG code"};
+    AxisSpec PDGBINNING = {PDGBinning, "PDG code"};
 
     // +++++++++++++++++++++ Data ++++++++++++++++++++++++
 
@@ -404,28 +405,26 @@ struct NucleiHistTask {
   Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
   Configurable<float> pTmin{"pTmin", 0.1f, "min pT"};
   Configurable<float> pTmax{"pTmax", 1e+10f, "max pT"};
-
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
   Configurable<float> nsigmacutLow{"nsigmacutLow", -3.0, "Value of the Nsigma cut"};
   Configurable<float> nsigmacutHigh{"nsigmacutHigh", +3.0, "Value of the Nsigma cut"};
   Configurable<float> minCentrality{"minCentrality", 0.0, "min Centrality used"};
-  Configurable<float> maxCentrality{"maxCentrality", 80.0, "max Centrality used"};
+  Configurable<float> maxCentrality{"maxCentrality", 90.0, "max Centrality used"};
   Configurable<bool> enable_Centrality_cut_global{"enable_Centrality_cut_global", true, "use Centrality cut"};
 
   // Replacement for globalTrack filter
-  Configurable<float> minReqClusterITS{"minReqClusterITS", 1.0, "min number of clusters required in ITS"};                            // ITS_nCls
-  Configurable<float> minReqClusterITSib{"minReqClusterITSib", 1.0, "min number of clusters required in ITS inner barrel"};           // ITS_nCls
-  Configurable<float> minTPCnClsFound{"minTPCnClsFound", 0.0f, "min number of crossed rows TPC"};                                     // TPC_nCls_found
-  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};                              // TPC_nCls_crossed_Rows
-  Configurable<float> minRatioCrossedRowsTPC{"minRatioCrossedRowsTPC", 0.8f, "min ratio of crossed rows over findable clusters TPC"}; // TPC_crossed_Rows_over_findable_Cls_min
-  Configurable<float> maxRatioCrossedRowsTPC{"maxRatioCrossedRowsTPC", 1.5f, "max ratio of crossed rows over findable clusters TPC"}; // TPC_crossed_Rows_over_findable_Cls_max
+  Configurable<float> minReqClusterITS{"minReqClusterITS", 1.0, "min number of clusters required in ITS"};
+  Configurable<float> minReqClusterITSib{"minReqClusterITSib", 1.0, "min number of clusters required in ITS inner barrel"};
+  Configurable<float> minTPCnClsFound{"minTPCnClsFound", 0.0f, "min number of crossed rows TPC"};
+  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};
+  Configurable<float> minRatioCrossedRowsTPC{"minRatioCrossedRowsTPC", 0.8f, "min ratio of crossed rows over findable clusters TPC"};
+  Configurable<float> maxRatioCrossedRowsTPC{"maxRatioCrossedRowsTPC", 2.0f, "max ratio of crossed rows over findable clusters TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> maxDCA_XY{"maxDCA_XY", 0.5f, "max DCA to vertex xy"};
   Configurable<float> maxDCA_Z{"maxDCA_Z", 2.0f, "max DCA to vertex z"};
-  Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to required in TRD for track selection. -1 does not require any TRD cluster"};
-
+  Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", -1, "Last cluster to required in TRD for track selection. -1 does not require any TRD cluster"};
   Configurable<bool> event_selection_sel8{"event_selection_sel8", true, "Enable sel8 event selection"};
   Configurable<bool> event_selection_MC_sel8{"event_selection_MC_sel8", true, "Enable sel8 event selection in MC processing"};
 
@@ -509,7 +508,7 @@ struct NucleiHistTask {
       spectra_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
       spectra_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
 
-      if (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z || TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS)
+      if (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z || TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || track.pt() < pTmin || track.pt() > pTmax)
         continue;
 
       spectra_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal());
@@ -1286,13 +1285,70 @@ struct NucleiHistTask {
 
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
-      const auto pdg = Form("%i", particle.pdgCode());
-
       if (!particle.isPhysicalPrimary())
         continue;
 
-      histPDG->Fill(pdg, 1);
-      const float pdgbin = histPDG->GetXaxis()->GetBinCenter(histPDG->GetXaxis()->FindBin(pdg));
+      int pdgbin = 0;
+      switch (particle.pdgCode()) {
+        case +211:
+          histPDG->AddBinContent(1);
+          pdgbin = 0;
+          break;
+        case -211:
+          histPDG->AddBinContent(2);
+          pdgbin = 1;
+          break;
+        case +321:
+          histPDG->AddBinContent(3);
+          pdgbin = 2;
+          break;
+        case -321:
+          histPDG->AddBinContent(4);
+          pdgbin = 3;
+          break;
+        case +2212:
+          histPDG->AddBinContent(5);
+          pdgbin = 4;
+          break;
+        case -2212:
+          histPDG->AddBinContent(6);
+          pdgbin = 5;
+          break;
+        case +1000010020:
+          histPDG->AddBinContent(7);
+          pdgbin = 6;
+          break;
+        case -1000010020:
+          histPDG->AddBinContent(8);
+          pdgbin = 7;
+          break;
+        case +1000010030:
+          histPDG->AddBinContent(9);
+          pdgbin = 8;
+          break;
+        case -1000010030:
+          histPDG->AddBinContent(10);
+          pdgbin = 9;
+          break;
+        case +1000020030:
+          histPDG->AddBinContent(11);
+          pdgbin = 10;
+          break;
+        case -1000020030:
+          histPDG->AddBinContent(12);
+          pdgbin = 11;
+          break;
+        case +1000020040:
+          histPDG->AddBinContent(13);
+          pdgbin = 12;
+          break;
+        case -1000020040:
+          histPDG->AddBinContent(14);
+          pdgbin = 13;
+          break;
+        default:
+          continue;
+      }
 
       TLorentzVector lorentzVector_pion{};
       TLorentzVector lorentzVector_kaon{};
