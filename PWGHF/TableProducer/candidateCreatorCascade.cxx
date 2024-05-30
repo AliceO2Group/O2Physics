@@ -37,6 +37,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::hf_evsel;
+using namespace o2::hf_evsel_mc;
 using namespace o2::hf_trkcandsel;
 using namespace o2::hf_centrality;
 using namespace o2::constants::physics;
@@ -431,9 +432,9 @@ struct HfCandidateCreatorCascadeMc {
   Produces<aod::HfCandCascadeMcRec> rowMcMatchRec;
   Produces<aod::HfCandCascadeMcGen> rowMcMatchGen;
 
+  HfEventSelectionMc hfEvSelMc; // mc event selection
   using MyTracksWMc = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
-
-  float zPvPosMax{1000.f};
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
@@ -442,9 +443,14 @@ struct HfCandidateCreatorCascadeMc {
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-cascade") == 0) {
         for (const auto& option : device.options) {
-          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            zPvPosMax = option.defaultValue.get<float>();
-            break;
+          if (option.name.compare("hfEvSel.useSel8Trigger") == 0) {
+            hfEvSelMc.useItsRoBorderCut = option.defaultValue.get<bool>();
+          } else if (option.name.compare("hfEvSel.useTimeFrameBorderCut") == 0) {
+            hfEvSelMc.useTimeFrameBorderCut = option.defaultValue.get<bool>();
+          } else if (option.name.compare("hfEvSel.zPvPosMin") == 0) {
+            hfEvSelMc.zPvPosMin = option.defaultValue.get<float>();
+          } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
+            hfEvSelMc.zPvPosMax = option.defaultValue.get<float>();
           }
         }
         break;
@@ -454,7 +460,8 @@ struct HfCandidateCreatorCascadeMc {
 
   void processMc(MyTracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 aod::McCollisions const&)
+                 aod::McCollisions const&,
+                 BCsInfo const&)
   {
     int8_t sign = 0;
     int8_t origin = 0;
@@ -503,8 +510,9 @@ struct HfCandidateCreatorCascadeMc {
       origin = 0;
 
       auto mcCollision = particle.mcCollision();
-      float zPv = mcCollision.posZ();
-      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the gen particle
         rowMcMatchGen(sign, origin);
         continue;
       }

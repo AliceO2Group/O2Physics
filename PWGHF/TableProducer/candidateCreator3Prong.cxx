@@ -478,8 +478,8 @@ struct HfCandidateCreator3ProngExpressions {
             createLc = option.defaultValue.get<bool>();
           } else if (option.name.compare("createXic") == 0) {
             createXic = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.iseSel8Trigger") == 0) {
-            hfEvSelMc.useITSROBorderCut = option.defaultValue.get<bool>();
+          } else if (option.name.compare("hfEvSel.useSel8Trigger") == 0) {
+            hfEvSelMc.useItsRoBorderCut = option.defaultValue.get<bool>();
           } else if (option.name.compare("hfEvSel.useTimeFrameBorderCut") == 0) {
             hfEvSelMc.useTimeFrameBorderCut = option.defaultValue.get<bool>();
           } else if (option.name.compare("hfEvSel.zPvPosMin") == 0) {
