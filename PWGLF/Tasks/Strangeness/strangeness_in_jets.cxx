@@ -23,11 +23,9 @@
 #include <vector>
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -46,8 +44,9 @@ using std::array;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
 
-using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::McTrackLabels>;
+using FullTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+
+using MCTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::McTrackLabels>;
 
 struct strangeness_in_jets {
 
@@ -111,6 +110,14 @@ struct strangeness_in_jets {
   Configurable<float> v0cospaMin{"v0cospaMin", 0.99f, "Minimum V0 CosPA"};
   Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f, "Maximum DCA Daughters"};
 
+  // Cascade Parameters
+  Configurable<float> minimumCascRadius{"minimumCascRadius", 0.1f, "Minimum Cascade Radius"};
+  Configurable<float> maximumCascRadius{"maximumCascRadius", 40.0f, "Maximum Cascade Radius"};
+  Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum Cascade CosPA"};
+  Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA bachelor to PV"};
+  Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA V0 to PV"};
+  Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA Daughters"};
+
   void init(InitContext const&)
   {
     // Global Properties and QC
@@ -130,6 +137,18 @@ struct strangeness_in_jets {
     // Histograms (K0s)
     registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"}});
     registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"}});
+      
+    // Histograms (Xi)
+    registryData.add("XiPos_in_jet", "XiPos_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
+    registryData.add("XiPos_in_ue", "XiPos_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
+    registryData.add("XiNeg_in_jet", "XiNeg_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
+    registryData.add("XiNeg_in_ue", "XiNeg_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
+
+    // Histograms (Omega)
+    registryData.add("OmegaPos_in_jet", "OmegaPos_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
+    registryData.add("OmegaPos_in_ue", "OmegaPos_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
+    registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
+    registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
 
     // Histograms (MC)
     registryMC.add("K0s_generated", "K0s_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
@@ -183,8 +202,8 @@ struct strangeness_in_jets {
   }
 
   // Lambda Selections
-  template <typename V, typename T1, typename T2, typename C>
-  bool passedLambdaSelection(const V& v0, const T1& ptrack, const T2& ntrack, const C& collision)
+  template <typename V, typename T1, typename T2>
+  bool passedLambdaSelection(const V& v0, const T1& ptrack, const T2& ntrack)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -240,8 +259,8 @@ struct strangeness_in_jets {
   }
 
   // AntiLambda Selections
-  template <typename V, typename T1, typename T2, typename C>
-  bool passedAntiLambdaSelection(const V& v0, const T1& ptrack, const T2& ntrack, const C& collision)
+  template <typename V, typename T1, typename T2>
+  bool passedAntiLambdaSelection(const V& v0, const T1& ptrack, const T2& ntrack)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -297,8 +316,8 @@ struct strangeness_in_jets {
   }
 
   // K0s Selections
-  template <typename V, typename T1, typename T2, typename C>
-  bool passedK0ShortSelection(const V& v0, const T1& ptrack, const T2& ntrack, const C& collision)
+  template <typename V, typename T1, typename T2>
+  bool passedK0ShortSelection(const V& v0, const T1& ptrack, const T2& ntrack)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -348,6 +367,98 @@ struct strangeness_in_jets {
     // Rapidity Selection
     TLorentzVector lorentzVect;
     lorentzVect.SetXYZM(ptrack.px() + ntrack.px(), ptrack.py() + ntrack.py(), ptrack.pz() + ntrack.pz(), 0.497614);
+    if (lorentzVect.Rapidity() < yMin || lorentzVect.Rapidity() > yMax)
+      return false;
+    return true;
+  }
+
+  // Xi Selections
+  template <typename CascType, typename T1, typename T2, typename T3, typename V0type, typename C>
+  bool passedXiSelection(const CascType& casc, const T1& ptrack, const T2& ntrack, const T3& btrack, const V0type& v0, const C& coll)
+  {
+    if (!passedSingleTrackSelection(ptrack))
+      return false;
+    if (!passedSingleTrackSelection(ntrack))
+      return false;
+    if (!passedSingleTrackSelection(btrack))
+      return false;
+    if (!passedLambdaSelection(v0,ptrack,ntrack))
+      return false;
+
+    //Cascade cuts
+    if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
+      return false;
+    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
+      return false;
+    if (casc.dcabachtopv() < dcabachtopvMin)
+      return false;
+    if (casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()) < dcaV0topvMin)
+      return false;
+    if (casc.dcacascdaughters() > dcaCascDaughtersMax)
+      return false;
+
+    // PID Selection on bachelor
+    if (btrack.tpcNSigmaPi() < nsigmaTPCmin || btrack.tpcNSigmaPi() > nsigmaTPCmax)
+      return false;
+
+    // PID Selections (TOF)
+    if (requireTOF) {
+      if (btrack.tofNSigmaPi() < nsigmaTOFmin || btrack.tofNSigmaPi() > nsigmaTOFmax)
+        return false;
+    }
+
+    // Rapidity Selection
+    TLorentzVector lorentzVect;
+    double pxCasc = ptrack.px() + ntrack.px() + btrack.px();
+    double pyCasc = ptrack.py() + ntrack.py() + btrack.py();
+    double pzCasc = ptrack.pz() + ntrack.pz() + btrack.pz();
+    lorentzVect.SetXYZM(pxCasc, pyCasc, pzCasc, 1.32171);
+    if (lorentzVect.Rapidity() < yMin || lorentzVect.Rapidity() > yMax)
+      return false;
+    return true;
+  }
+
+  // Omega Selections
+  template <typename CascType, typename T1, typename T2, typename T3, typename V0type, typename C>
+  bool passedOmegaSelection(const CascType& casc, const T1& ptrack, const T2& ntrack, const T3& btrack, const V0type& v0, const C& coll)
+  {
+    if (!passedSingleTrackSelection(ptrack))
+      return false;
+    if (!passedSingleTrackSelection(ntrack))
+      return false;
+    if (!passedSingleTrackSelection(btrack))
+      return false;
+    if (!passedLambdaSelection(v0,ptrack,ntrack))
+      return false;
+
+    //Cascade cuts
+    if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
+      return false;
+    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
+      return false;
+    if (casc.dcabachtopv() < dcabachtopvMin)
+      return false;
+    if (casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()) < dcaV0topvMin)
+      return false;
+    if (casc.dcacascdaughters() > dcaCascDaughtersMax)
+      return false;
+
+    // PID Selection on bachelor
+    if (btrack.tpcNSigmaKa() < nsigmaTPCmin || btrack.tpcNSigmaKa() > nsigmaTPCmax)
+      return false;
+
+    // PID Selections (TOF)
+    if (requireTOF) {
+      if (btrack.tofNSigmaKa() < nsigmaTOFmin || btrack.tofNSigmaKa() > nsigmaTOFmax)
+        return false;
+    }
+
+    // Rapidity Selection
+    TLorentzVector lorentzVect;
+    double pxCasc = ptrack.px() + ntrack.px() + btrack.px();
+    double pyCasc = ptrack.py() + ntrack.py() + btrack.py();
+    double pzCasc = ptrack.pz() + ntrack.pz() + btrack.pz();
+    lorentzVect.SetXYZM(pxCasc, pyCasc, pzCasc, 1.6724);
     if (lorentzVect.Rapidity() < yMin || lorentzVect.Rapidity() > yMax)
       return false;
     return true;
@@ -452,7 +563,8 @@ struct strangeness_in_jets {
     return;
   }
 
-  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, FullTracks const& tracks)
+  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
+                   aod::CascDataExt const& Cascades, FullTracks const& tracks)
   {
     registryQC.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
@@ -601,7 +713,7 @@ struct strangeness_in_jets {
       float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
       // K0s
-      if (passedK0ShortSelection(v0, pos, neg, collision)) {
+      if (passedK0ShortSelection(v0, pos, neg)) {
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("K0s_in_jet"), multiplicity, v0.pt(), v0.mK0Short());
         }
@@ -611,7 +723,7 @@ struct strangeness_in_jets {
       }
 
       // Lambda
-      if (passedLambdaSelection(v0, pos, neg, collision)) {
+      if (passedLambdaSelection(v0, pos, neg)) {
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("Lambda_in_jet"), multiplicity, v0.pt(), v0.mLambda());
         }
@@ -622,13 +734,72 @@ struct strangeness_in_jets {
       }
 
       // AntiLambda
-      if (passedAntiLambdaSelection(v0, pos, neg, collision)) {
+      if (passedAntiLambdaSelection(v0, pos, neg)) {
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("AntiLambda_in_jet"), multiplicity, v0.pt(), v0.mAntiLambda());
         }
 
         if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
           registryData.fill(HIST("AntiLambda_in_ue"), multiplicity, v0.pt(), v0.mAntiLambda());
+        }
+      }
+    }
+
+    // Cascades
+    for (auto& casc : Cascades) {
+
+      auto bach = casc.bachelor_as<FullTracks>();
+      auto pos = casc.posTrack_as<FullTracks>();
+      auto neg = casc.negTrack_as<FullTracks>();
+      const auto& v0 = casc.v0();
+
+      TVector3 cascade_dir(pos.px() + neg.px() + bach.px(), pos.py() + neg.py() + bach.py(), pos.pz() + neg.pz() + + bach.pz());
+
+      float deltaEta_jet = cascade_dir.Eta() - jet_axis.Eta();
+      float deltaPhi_jet = GetDeltaPhi(cascade_dir.Phi(), jet_axis.Phi());
+      float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+      float deltaEta_ue1 = cascade_dir.Eta() - ue_axis1.Eta();
+      float deltaPhi_ue1 = GetDeltaPhi(cascade_dir.Phi(), ue_axis1.Phi());
+      float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+      float deltaEta_ue2 = cascade_dir.Eta() - ue_axis2.Eta();
+      float deltaPhi_ue2 = GetDeltaPhi(cascade_dir.Phi(), ue_axis2.Phi());
+      float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+
+      // Xi+
+      if (passedXiSelection(casc, pos, neg, bach, v0, collision) && bach.sign() > 0) {
+        if (deltaR_jet < Rmax) {
+          registryData.fill(HIST("XiPos_in_jet"), multiplicity, casc.pt(), casc.mXi());
+        }
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+          registryData.fill(HIST("XiPos_in_ue"), multiplicity, casc.pt(), casc.mXi());
+        }
+      }
+      // Xi-
+      if (passedXiSelection(casc, pos, neg, bach, v0, collision) && bach.sign() < 0) {
+        if (deltaR_jet < Rmax) {
+          registryData.fill(HIST("XiNeg_in_jet"), multiplicity, casc.pt(), casc.mXi());
+        }
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+          registryData.fill(HIST("XiNeg_in_ue"), multiplicity, casc.pt(), casc.mXi());
+        }
+      }
+
+      // Omega+
+      if (passedOmegaSelection(casc, pos, neg, bach, v0, collision) && bach.sign() > 0) {
+        if (deltaR_jet < Rmax) {
+          registryData.fill(HIST("OmegaPos_in_jet"), multiplicity, casc.pt(), casc.mOmega());
+        }
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+          registryData.fill(HIST("OmegaPos_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+        }
+      }
+      // Omega-
+      if (passedOmegaSelection(casc, pos, neg, bach, v0, collision) && bach.sign() < 0) {
+        if (deltaR_jet < Rmax) {
+          registryData.fill(HIST("OmegaNeg_in_jet"), multiplicity, casc.pt(), casc.mOmega());
+        }
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+          registryData.fill(HIST("OmegaNeg_in_ue"), multiplicity, casc.pt(), casc.mOmega());
         }
       }
     }
@@ -685,26 +856,26 @@ struct strangeness_in_jets {
           continue;
 
         // K0s
-        if (passedK0ShortSelection(v0, pos, neg, collision) && pdg_parent == 310) {
+        if (passedK0ShortSelection(v0, pos, neg) && pdg_parent == 310) {
           registryMC.fill(HIST("K0s_reconstructed_incl"), multiplicity, v0.pt());
         }
-        if (passedLambdaSelection(v0, pos, neg, collision) && pdg_parent == 3122) {
+        if (passedLambdaSelection(v0, pos, neg) && pdg_parent == 3122) {
           registryMC.fill(HIST("Lambda_reconstructed_incl"), multiplicity, v0.pt());
         }
-        if (passedAntiLambdaSelection(v0, pos, neg, collision) && pdg_parent == -3122) {
+        if (passedAntiLambdaSelection(v0, pos, neg) && pdg_parent == -3122) {
           registryMC.fill(HIST("AntiLambda_reconstructed_incl"), multiplicity, v0.pt());
         }
         if (!isPhysPrim)
           continue;
 
         // K0s
-        if (passedK0ShortSelection(v0, pos, neg, collision) && pdg_parent == 310) {
+        if (passedK0ShortSelection(v0, pos, neg) && pdg_parent == 310) {
           registryMC.fill(HIST("K0s_reconstructed"), multiplicity, v0.pt());
         }
-        if (passedLambdaSelection(v0, pos, neg, collision) && pdg_parent == 3122) {
+        if (passedLambdaSelection(v0, pos, neg) && pdg_parent == 3122) {
           registryMC.fill(HIST("Lambda_reconstructed"), multiplicity, v0.pt());
         }
-        if (passedAntiLambdaSelection(v0, pos, neg, collision) && pdg_parent == -3122) {
+        if (passedAntiLambdaSelection(v0, pos, neg) && pdg_parent == -3122) {
           registryMC.fill(HIST("AntiLambda_reconstructed"), multiplicity, v0.pt());
         }
       }
