@@ -55,33 +55,68 @@ struct AngularCorrelationsInJets {
   }
 
 	// Configurable<Type> cfgName{"nameOnHyperloop", value, "Flag shown on hyperloop"};
-	Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT for particles"}
-  Configurable<float> yMin_gen{"yMin_gen", -0.5, "Maximum rapidity (generated)"};
-  Configurable<float> yMax_gen{"yMax_gen", 0.5, "Minimum rapidity (generated)"};
-  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
-  Configurable<float> yMin_reco{"yMin_reco", -0.5, "Maximum rapidity (reconstructed)"};
-  Configurable<float> yMax_reco{"yMax_reco", 0.5, "Minimum rapidity (reconstructed)"};
-  Configurable<float> pTmin_reco{"pTmin_reco", 0.1f, "min pT (reconstructed)"};
-  Configurable<float> pTmax_reco{"pTmax_reco", 1e+10f, "max pT (reconstructed)"};
-  Configurable<float> minReqClusterITS{"minReqClusterITS", 1.0, "min number of clusters required in ITS"};
-  Configurable<float> minReqClusterITSib{"minReqClusterITSib", 1.0, "min number of clusters required in ITS inner barrel"};
-  Configurable<float> minTPCnClsFound{"minTPCnClsFound", 0.0f, "min number of crossed rows TPC"};
-  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};
-  Configurable<float> minRatioCrossedRowsTPC{"minRatioCrossedRowsTPC", 0.8f, "min ratio of crossed rows over findable clusters TPC"};
-  Configurable<float> maxRatioCrossedRowsTPC{"maxRatioCrossedRowsTPC", 1.5f, "max ratio of crossed rows over findable clusters TPC"};
-  Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
-  Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
-  Configurable<float> maxDCA_XY{"maxDCA_XY", 0.5f, "max DCA to vertex xy"};
-  Configurable<float> maxDCA_Z{"maxDCA_Z", 2.0f, "max DCA to vertex z"};
+	Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT for particles"};
+
+	// Preliminary Cuts
+	Configurable<bool> TPCRefit{"TPCRefit", false, "Require TPC refit"};
+	Configurable<bool> fITSRefit{"ITSRefit", false, "Require ITS refit"};
+	Configurable<float> fMinNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"}; 
+	Configurable<float> fMinReqClusterITS{"minReqClusterITS", 2.0, "min number of clusters required in ITS"};
+  Configurable<float> fMinRatioCrossedRowsTPC{"minRatioCrossedRowsTPC", 0.7f, "min ratio of crossed rows over findable clusters TPC"};
+  Configurable<float> fMaxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
+  Configurable<float> fMaxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
+  Configurable<float> fMaxDCA_xy{"maxDCA_xy", 0.5f, "max DCA to vertex xy"};
+  Configurable<float> fMaxDCA_z{"maxDCA_z", 2.4f, "max DCA to vertex z"};
+	Configurable<float> fMaxEta{"maxEta", 0.8, "max pseudorapidity"};
+
+	// Jet Cuts
+	Configurable<float> fJetRadius{"jetRadius", 0.4, "jet radius R"};
+	Configurable<float> fMinJetPt{"minJetPt", 10.0, "minimum total pT to accept jet"};
+	Configurable<float> fMinJetParticlePt{"minJetParticlePt", 0.0, "minimum pT to accept jet particle"};
+	Configurable<float> fMinLeadingPt{"minLeadingPt", 5.0, "minimum pT for leading track"};
+
+	// Proton Cuts
+	Configurable<float> fProtonDCAxy{"protonDCAxy", 0.5, "[proton] DCAxy cut"};
+	Configurable<float> fProtonDCAz{"protonDCAz", 1.0, "[proton] DCAz cut"};
+	Configurable<float> fProtonITSTOFpT{"protonITSTOFswitchpT", 0.7, "[proton] pT for switch between ITS+TPC/TPC+TOF"};
+	Configurable<float> fProtonITSnsig{"protonITSnsigma", 3.0, "[proton] max ITS nsigma"};
+	Configurable<float> fProtonTPCnsigITS{"protonTPCnsigmaIfITS", 5.0, "[proton] max TPC nsigma with ITS"};
+	Configurable<float> fProtonTPCnsigTOF{"protonTPCnsigmaIfTOF", 4.0, "[proton] max TPC nsigma with TOF"};
+	Configurable<float> fProtonTOFnsig{"protonTOFnsigma", 10.0, "[proton] max TOF nsigma"};
+
+	// Antiproton Cuts
+	Configurable<float> fAntiprotonDCAxy{"antiprotonDCAxy", 0.5, "[antiproton] DCAxy cut"};
+	Configurable<float> fAntiprotonDCAz{"antiprotonDCAz", 1.0, "[antiproton] DCAz cut"};
+	Configurable<float> fAntiprotonITSTOFpT{"antiprotonITSTOFswitchpT", 0.7, "[antiproton] pT for switch between ITS+TPC/TPC+TOF"};
+	Configurable<float> fAntiprotonITSnsig{"antiprotonITSnsigma", 3.0, "[antiproton] max ITS nsigma"};
+	Configurable<float> fAntiprotonTPCnsigITS{"antiprotonTPCnsigmaIfITS", 5.0, "[antiproton] max TPC nsigma with ITS"};
+	Configurable<float> fAntiprotonTPCnsigTOF{"antiprotonTPCnsigmaIfTOF", 4.0, "[antiproton] max TPC nsigma with TOF"};
+	Configurable<float> fAntiprotonTOFnsig{"antiprotonTOFnsigma", 10.0, "[antiproton] max TOF nsigma"};
+
+	// Deuteron Cuts
+	Configurable<float> fDeuteronDCAxy{"deuteronDCAxy", 0.5, "[deuteron] DCAxy cut"};
+	Configurable<float> fDeuteronDCAz{"deuteronDCAz", 1.0, "[deuteron] DCAz cut"};
+	Configurable<float> fDeuteronITSTOFpT{"deuteronITSTOFswitchpT", 0.7, "[deuteron] pT for switch between ITS+TPC/TPC+TOF"};
+	Configurable<float> fDeuteronITSnsig{"deuteronITSnsigma", 3.0, "[deuteron] max ITS nsigma"};
+	Configurable<float> fDeuteronTPCnsigITS{"deuteronTPCnsigmaIfITS", 5.0, "[deuteron] max TPC nsigma with ITS"};
+	Configurable<float> fDeuteronTPCnsigTOF{"deuteronTPCnsigmaIfTOF", 4.0, "[deuteron] max TPC nsigma with TOF"};
+	Configurable<float> fDeuteronTOFnsig{"deuteronTOFnsigma", 10.0, "[deuteron] max TOF nsigma"};
+
+	// Antideuteron Cuts
+	Configurable<float> fAntideuteronDCAxy{"antideuteronDCAxy", 0.5, "[antideuteron] DCAxy cut"};
+	Configurable<float> fAntideuteronDCAz{"antideuteronDCAz", 1.0, "[antideuteron] DCAz cut"};
+	Configurable<float> fAntideuteronITSTOFpT{"antideuteronITSTOFswitchpT", 0.7, "[antideuteron] pT for switch between ITS+TPC/TPC+TOF"};
+	Configurable<float> fAntideuteronITSnsig{"antideuteronITSnsigma", 3.0, "[antideuteron] max ITS nsigma"};
+	Configurable<float> fAntideuteronTPCnsigITS{"antideuteronTPCnsigmaIfITS", 5.0, "[antideuteron] max TPC nsigma with ITS"};
+	Configurable<float> fAntideuteronTPCnsigTOF{"antideuteronTPCnsigmaIfTOF", 4.0, "[antideuteron] max TPC nsigma with TOF"};
+	Configurable<float> fAntideuteronTOFnsig{"antideuteronTOFnsigma", 10.0, "[antideuteron] max TOF nsigma"};
+
 
   //****************************************************************************************************
 
   template <typename CollisionType, typename TracksType>
-  void processJetReco(const CollisionType& collision, const TracksType& tracks)
+  void jetReco(const CollisionType& collision, const TracksType& tracks)
   {
-    jetOutputReg.fill(HIST("hNumPartInEvent"), collision.);
-
     for (const auto& track : tracks) {
       if (track.pt()<ptMin)
         continue;
@@ -92,11 +127,11 @@ struct AngularCorrelationsInJets {
 
   //****************************************************************************************************
 
-  void process_jet_eco(aod::Collision const& collision, soa::Join<aod::Tracks,aod::TracksExtra> const& tracks)
+  void process_jet_reco(aod::Collision const& collision, soa::Join<aod::Tracks,aod::TracksExtra> const& tracks)
   {
-    processJetReco(collision, tracks);
+    jetReco(collision, tracks);
   }
-  PROCESS_SWITCH(AngularCorrelationsInJets, processJetReco, "reconstruct jets", true);
+  PROCESS_SWITCH(AngularCorrelationsInJets, process_jet_reco, "reconstruct jets", true);
 };
 
 //****************************************************************************************************
