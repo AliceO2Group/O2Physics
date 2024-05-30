@@ -564,7 +564,7 @@ struct strangeness_in_jets {
   }
 
   void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s,
-                   aod::CascDataExt const& Cascades, FullTracks const& tracks)
+                   aod::Cascades const& Cascades, FullTracks const& tracks)
   {
     registryQC.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
