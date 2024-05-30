@@ -137,7 +137,7 @@ struct strangeness_in_jets {
     // Histograms (K0s)
     registryData.add("K0s_in_jet", "K0s_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"}});
     registryData.add("K0s_in_ue", "K0s_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"}});
-      
+
     // Histograms (Xi)
     registryData.add("XiPos_in_jet", "XiPos_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
     registryData.add("XiPos_in_ue", "XiPos_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"}});
@@ -382,10 +382,10 @@ struct strangeness_in_jets {
       return false;
     if (!passedSingleTrackSelection(btrack))
       return false;
-    if (!passedLambdaSelection(v0,ptrack,ntrack))
+    if (!passedLambdaSelection(v0, ptrack, ntrack))
       return false;
 
-    //Cascade cuts
+    // Cascade cuts
     if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
       return false;
     if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
@@ -428,10 +428,10 @@ struct strangeness_in_jets {
       return false;
     if (!passedSingleTrackSelection(btrack))
       return false;
-    if (!passedLambdaSelection(v0,ptrack,ntrack))
+    if (!passedLambdaSelection(v0, ptrack, ntrack))
       return false;
 
-    //Cascade cuts
+    // Cascade cuts
     if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
       return false;
     if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
@@ -753,7 +753,7 @@ struct strangeness_in_jets {
       auto neg = casc.negTrack_as<FullTracks>();
       const auto& v0 = casc.v0();
 
-      TVector3 cascade_dir(pos.px() + neg.px() + bach.px(), pos.py() + neg.py() + bach.py(), pos.pz() + neg.pz() + + bach.pz());
+      TVector3 cascade_dir(pos.px() + neg.px() + bach.px(), pos.py() + neg.py() + bach.py(), pos.pz() + neg.pz() + bach.pz());
 
       float deltaEta_jet = cascade_dir.Eta() - jet_axis.Eta();
       float deltaPhi_jet = GetDeltaPhi(cascade_dir.Phi(), jet_axis.Phi());
