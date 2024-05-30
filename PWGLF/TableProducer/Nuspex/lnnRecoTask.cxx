@@ -432,7 +432,7 @@ struct lnnRecoTask {
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
           for (auto& negMother : mcTrackNeg.mothers_as<aod::McParticles>()) {
             for (auto& posMother : mcTrackPos.mothers_as<aod::McParticles>()) {
-              if (posMother.globalIndex() != negMother.globalIndex()) {
+              if (posMother.globalIndex() != negMother.globalIndex()) 
                 continue;
                 if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg)))
                   continue;
@@ -462,6 +462,7 @@ struct lnnRecoTask {
       }
     }
   }
+  
 
   void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -627,6 +628,7 @@ struct lnnRecoTask {
     }
   }
   PROCESS_SWITCH(lnnRecoTask, processMC, "MC analysis", false);
+
 };
 
 WorkflowSpec
