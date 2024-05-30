@@ -212,33 +212,33 @@ struct HfEventSelectionMc {
   float zPvPosMin{-1000.f}; // Minimum PV posZ (cm)
   float zPvPosMax{1000.f}; // Maximum PV posZ (cm)
 
-/// \brief Function to apply event selections in HF analyses
-/// \param mcCollision is the analysed mc collision
-/// \return a bitmask with the event selections not satisfied by the analysed collision
-template <typename TBc, typename TMcColl>
-uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision)
-{
+  /// \brief Function to apply event selections in HF analyses
+  /// \param mcCollision is the analysed mc collision
+  /// \return a bitmask with the event selections not satisfied by the analysed collision
+  template <typename TBc, typename TMcColl>
+  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision)
+  {
 
-  uint8_t rejectionMask{0};
+    uint8_t rejectionMask{0};
 
-  float zPv = mcCollision.posZ();
-  auto bc = mcCollision.template bc_as<TBc>();
+    float zPv = mcCollision.posZ();
+    auto bc = mcCollision.template bc_as<TBc>();
 
-  /// ITS RO frame border cut
-  if (useSel8Trigger && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-    SETBIT(rejectionMask, McCollisionRejection::ITSROFrameBorderCut);
+    /// ITS RO frame border cut
+    if (useSel8Trigger && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      SETBIT(rejectionMask, McCollisionRejection::ITSROFrameBorderCut);
+    }
+    /// time frame border cut
+    if (useTimeFrameBorderCut && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      SETBIT(rejectionMask, McCollisionRejection::TimeFrameBorderCut);
+    }
+    /// primary vertex z
+    if (zPv < zPvPosMin || zPv > zPvPosMax) {
+      SETBIT(rejectionMask, McCollisionRejection::PositionZ);
+    }
+
+    return rejectionMask;
   }
-  /// time frame border cut
-  if (useTimeFrameBorderCut && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-    SETBIT(rejectionMask, McCollisionRejection::TimeFrameBorderCut);
-  }
-  /// primary vertex z
-  if (zPv < zPvPosMin || zPv > zPvPosMax) {
-    SETBIT(rejectionMask, McCollisionRejection::PositionZ);
-  }
-
-  return rejectionMask;
-}
 };
 } // namespace o2::hf_evsel_mc
 

@@ -625,8 +625,8 @@ struct HfCandidateCreator3ProngExpressions {
       const auto McParticleRejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
       if (McParticleRejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
-         rowMcMatchGen(flag, origin, channel);
-         continue;
+        rowMcMatchGen(flag, origin, channel);
+        continue;
        }
 
       // D± → π± K∓ π±
