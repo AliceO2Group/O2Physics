@@ -27,7 +27,6 @@
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Framework/runDataProcessing.h"
-#include "CommonConstants/LHCConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -200,28 +199,6 @@ struct tofPidCollisionTimeQa {
     if (!doprocessMC) {
       return;
     }
-<<<<<<< HEAD:DPG/Tasks/AOTTrack/PID/qaPIDTOFEvTime.cxx
-=======
-    const AxisSpec diffAxis{1000, -1000, 1000, "Difference"};
-    histos.add("MC/diff", "", HistType::kTH1F, {diffAxis});
-
-    // pion
-    histos.add("MC/pdg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/pdgNeg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdgNeg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    // kaon
-    histos.add("MC/pdg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/pdgNeg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdgNeg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    // proton
-    histos.add("MC/pdg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/pdgNeg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/prm/pdgNeg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-
->>>>>>> AddMCEventTime:DPG/Tasks/AOTTrack/PID/TOF/qaPIDTOFEvTime.cxx
     histos.add("MC/t", "", HistType::kTH1F, {{1000, -1000, 1000, "MC time"}});
   }
 
