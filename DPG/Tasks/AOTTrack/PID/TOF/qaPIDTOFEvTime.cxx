@@ -432,6 +432,7 @@ struct tofPidCollisionTimeQa {
         continue;
       }
       const auto& collisionMC = collision.mcCollision_as<aod::McCollisions>();
+      histos.fill(HIST("MC/t"), collisionMC.t());
     }
   }
   PROCESS_SWITCH(tofPidCollisionTimeQa, processMC, "Process MC", true);
