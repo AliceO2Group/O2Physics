@@ -82,23 +82,6 @@ struct HfElectronSelectionWithTPCEMcal {
   Configurable<float> tpcNsigmaElectronMin{"tpcNsigmaElectronMin", -0.5f, "min Electron TPCnsigma"};
   Configurable<float> tpcNsigmaElectronMax{"tpcNsigmaElectronMax", 3.0f, "max Electron TPCnsigma"};
 
-  // Track selection cut for Mc Reco
-  Configurable<float> mcRecDcaXYTrackMax{"mcRecDcaXYTrackMax", 0.5f, "MCReco DCA XY cut"};
-  Configurable<float> mcRecDcaZTrackMax{"mcRecDcaZTrackMax", 1.0f, "MCReco DCA Z cut"};
-  Configurable<float> mcRecEtaTrackMax{"mcRecEtaTrackMax", 0.6f, "MCReco Eta range for electron tracks"};
-  Configurable<float> mcRecEtaTrackMin{"mcRecEtaTrackMin", -0.6f, "MCReco Eta range for electron tracks"};
-  Configurable<float> mcRecPtTrackMin{"mcRecPtTrackMin", 3.0f, "McReco Transverse MOmentum range for electron tracks"};
-
-  // EMcal and Dcal selection cut for Mc Reco
-  Configurable<float> mcRecEtaTrackDCalNegativeMax{"mcRecEtaTrackDCalNegativeMax", -0.22f, "MCReco Eta range for electron Dcal tracks"};
-  Configurable<float> mcRecEtaTrackDCalNegativeMin{"mcRecEtaTrackDCalNegativeMin", -0.6f, "MCReco Eta range for electron tracks"};
-  Configurable<float> mcRecEtaTrackDCalPositiveMax{"mcRecEtaTrackDCalPositiveMax", 0.6f, "MCReco Eta range for electron Dcal tracks"};
-  Configurable<float> mcRecEtaTrackDCalPositiveMin{"mcRecEtaTrackDCalPositiveMin", 0.22f, "MCReco Eta range for electron tracks"};
-  Configurable<float> mcRecPhiTrackDCalMax{"mcRecPhiTrackDCalMax", 3.3621f, "McReco Phi range for electron tracks associated Dcal"};
-  Configurable<float> mcRecPhiTrackDCalMin{"mcRecPhiTrackDCalMin", 1.3955f, "McReco Phi range for electron tracks associated Dcal"};
-  Configurable<float> mcRecPhiTrackEMCalMax{"mcRecPhiTrackEMCalMax", 5.708f, "McReco Phi range for electron tracks associated Emcal"};
-  Configurable<float> mcRecPhiTrackEMCalMin{"mcRecPhiTrackEMCalMin", 4.5355f, "McReco Phi range for electron tracks associated Emcal"};
-
   // Track and Cluster matching cut for Mc Reco
   Configurable<float> mcRecDeltaEtaMatchMin{"mcRecDeltaEtaMatchMin", 0.015f, "McReco Eta distance of EMCAL cluster to its closest track"};
   Configurable<float> mcRecDeltaPhiMatchMin{"mcRecDeltaPhiMatchMin", 0.025f, "McReco Phi distance of EMCAL cluster to its closest track"};
