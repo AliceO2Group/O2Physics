@@ -458,7 +458,6 @@ struct lnnRecoTask {
       }
     }
   }
-  
 
   void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -624,7 +623,6 @@ struct lnnRecoTask {
     }
   }
   PROCESS_SWITCH(lnnRecoTask, processMC, "MC analysis", false);
-
 };
 
 WorkflowSpec
