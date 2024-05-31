@@ -35,6 +35,7 @@ struct MultiplicityExtraTable {
 
   // Allow for downscaling of BC table for less space use in derived data
   Configurable<float> bcDownscaleFactor{"bcDownscaleFactor", 2, "Downscale factor for BC table (0: save nothing, 1: save all)"};
+  Configurable<float> minFT0CforBCTable{"minFT0CforBCTable", 25.0f, "Minimum FT0C amplitude to fill BC table to reduce data"};
 
   // needed for downscale
   unsigned int randomSeed = 0;
@@ -162,6 +163,10 @@ struct MultiplicityExtraTable {
       multZEM2 = -999.f;
       multZPA = -999.f;
       multZPC = -999.f;
+    }
+
+    if( multFT0C < minFT0CforBCTable ){
+      return; // skip this event
     }
 
     multBC(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
