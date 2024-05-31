@@ -40,8 +40,8 @@ DECLARE_SOA_COLUMN(TrackTOFNSigmaE, trackTOFNSigmaE, float); //! NSigma electron
 DECLARE_SOA_COLUMN(EmcClusterEnergy, emcclusterE, float);        //! EMCal cluster energy (GeV)
 DECLARE_SOA_COLUMN(EmcClusterEta, emcclusterEta, float);         //! EMCal cluster pseudorapidity
 DECLARE_SOA_COLUMN(EmcClusterPhi, emcclusterPhi, float);         //! EMCal cluster azimuthal angle
-DECLARE_SOA_COLUMN(EmcM02, emcm02, float);                       //! EMCal shower shape long axis
-DECLARE_SOA_COLUMN(EmcM20, emcm20, float);                       //! EMCal shower shape short axis
+DECLARE_SOA_COLUMN(EmcClusterM02, emcclusterm02, float);         //! EMCal shower shape long axis
+DECLARE_SOA_COLUMN(EmcClusterM20, emcclusterm20, float);         //! EMCal shower shape short axis
 DECLARE_SOA_COLUMN(EmcClusterNCells, emcclusterNCells, uint8_t); //! EMCal number of cells in cluster
 DECLARE_SOA_COLUMN(EmcClusterTime, emcclusterTime, float);       //! EMCal cluster time (ns)
 
@@ -66,8 +66,8 @@ DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
                   hf_sel_electron::EmcClusterEnergy,
                   hf_sel_electron::EmcClusterEta,
                   hf_sel_electron::EmcClusterPhi,
-                  hf_sel_electron::EmcM02,
-                  hf_sel_electron::EmcM20,
+                  hf_sel_electron::EmcClusterM02,
+                  hf_sel_electron::EmcClusterM20,
                   hf_sel_electron::EmcClusterNCells,
                   hf_sel_electron::EmcClusterTime,
                   hf_sel_electron::DeltaEtaMatch,
