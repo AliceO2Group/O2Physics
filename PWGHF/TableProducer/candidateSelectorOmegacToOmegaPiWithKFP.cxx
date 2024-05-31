@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file
+/// \file candidateSelectorOmegacToOmegaPiWithKFP.cxx
 /// \brief  Omegac0 → Omega Pi selection task
-/// \author
+/// \author Yunfan Liu <yunfan.liu@cern.ch>
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -22,15 +22,14 @@
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
-#include "PWGHF/Core/HfMlResponseOmegaCToOmegaPi.h"
+#include "PWGHF/Core/HfMlResponseOmegacToOmegaPi.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
-using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis;
-int toCounter = 0;
+
 enum pidInfoStored {
   kPiFromLam = 0,
   kPrFromLam,
@@ -44,12 +43,12 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
   Produces<aod::HfMlSelOmegacToOmegaPi> hfMlToOmegaPiCandidate;
 
   // LF analysis selections
-  Configurable<double> radiusCascMin{"radiusCascMin", 0.6, "Min cascade radius"};
-  Configurable<double> radiusV0Min{"radiusV0Min", 1.2, "Min V0 radius"};
-  Configurable<double> cosPAV0Min{"cosPAV0Min", 0.97, "Min valueCosPA V0"};
-  Configurable<double> cosPACascMin{"cosPACascMin", 0.97, "Min value CosPA cascade"};
-  Configurable<double> dcaCascDauMax{"dcaCascDauMax", 1.0, "Max DCA cascade daughters"};
-  Configurable<double> dcaV0DauMax{"dcaV0DauMax", 1.0, "Max DCA V0 daughters"};
+  Configurable<float> radiusCascMin{"radiusCascMin", 0.6, "Min cascade radius"};
+  Configurable<float> radiusV0Min{"radiusV0Min", 1.2, "Min V0 radius"};
+  Configurable<float> cosPAV0Min{"cosPAV0Min", 0.97, "Min valueCosPA V0"};
+  Configurable<float> cosPACascMin{"cosPACascMin", 0.97, "Min value CosPA cascade"};
+  Configurable<float> dcaCascDauMax{"dcaCascDauMax", 1.0, "Max DCA cascade daughters"};
+  Configurable<float> dcaV0DauMax{"dcaV0DauMax", 1.0, "Max DCA V0 daughters"};
   Configurable<float> dcaBachToPvMin{"dcaBachToPvMin", 0.04, "DCA Bach To PV"};
   Configurable<float> dcaNegToPvMin{"dcaNegToPvMin", 0.06, "DCA Neg To PV"};
   Configurable<float> dcaPosToPvMin{"dcaPosToPvMin", 0.06, "DCA Pos To PV"};
@@ -153,7 +152,6 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
   // using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa, aod::PidTpcTofFullPi, aod::PidTpcTofFullPr, aod::PidTpcTofFullKa>;
   HistogramRegistry registry{"registry"}; // for QA of selections
 
-  OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   void init(InitContext const&)
   {
     selectorPion.setRangePtTpc(ptPiPidTpcMin, ptPiPidTpcMax);
@@ -216,6 +214,8 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
     registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
     registry.add("hSelDcaXYToPvKaFromCasc", "hSelDcaXYToPvKaFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
     registry.add("hMassCascBachMass", "hMassCascBachMass", {HistType::kTH1F, {{3000, 0.0f, 1.0f, "Inv. Mass (GeV/c^{2})"}}});
+    registry.add("hInvMassCharmBaryon", "hInvMassCharmBaryon", {HistType::kTH1F, {{500, 2.2f, 3.1f, "Inv. Mass (GeV/c^{2})"}}});
+
     registry.add("hBDTScoreTest1", "hBDTScoreTest1", {HistType::kTH1F, {{100, 0.0f, 1.0f, "score"}}});
     registry.add("hBDTScoreTest2", "hBDTScoreTest2", {HistType::kTH1F, {{100, 0.0f, 1.0f, " score"}}});
     registry.add("hBDTScoreTest3", "hBDTScoreTest3", {HistType::kTH1F, {{100, 0.0f, 1.0f, " score"}}});
@@ -236,9 +236,6 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
   void process(aod::HfCandOmegaC const& candidates,
                TracksSel const&)
   {
-
-    double massLambdaFromPDG = o2::constants::physics::MassLambda0;
-    double massOmegaFromPDG = o2::constants::physics::MassOmegaMinus;
 
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {
@@ -591,7 +588,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
       double invMassLambda = candidate.invMassLambda();
       double invMassCascade = candidate.invMassCascade();
       double invMassCharmBaryon = candidate.invMassCharmBaryon();
-      if (std::abs(invMassLambda - massLambdaFromPDG) < v0MassWindow) {
+      if (std::abs(invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
         statusInvMassLambda = true;
         registry.fill(HIST("hSelMassLam"), 1);
         if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && resultSelections) {
@@ -601,7 +598,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
         registry.fill(HIST("hSelMassLam"), 0);
       }
 
-      if (std::abs(invMassCascade - massOmegaFromPDG) < cascadeMassWindow) {
+      if (std::abs(invMassCascade - o2::constants::physics::MassOmegaMinus) < cascadeMassWindow) {
         statusInvMassCascade = true;
         registry.fill(HIST("hSelMassCasc"), 1);
         if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && resultSelections) {
@@ -705,7 +702,7 @@ struct HfCandidateSelectorOmegacToOmegaPiWithKfp {
       }
 
       if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && statusInvMassCascade && statusInvMassCharmBaryon && resultSelections) {
-        hInvMassCharmBaryon->Fill(invMassCharmBaryon);
+        registry.fill(HIST("hInvMassCharmBaryon"), invMassCharmBaryon);
       }
     }
   } // end process
