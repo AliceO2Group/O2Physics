@@ -523,6 +523,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Ct, ct, //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 DECLARE_SOA_COLUMN(KfTopolChi2OverNdf, kfTopolChi2OverNdf, float); //! chi2overndf of the KFParticle topological constraint
+// B-hadron mother information
+DECLARE_SOA_COLUMN(PtBhadMotherPart, ptBhadMotherPart, float); //! pt of the first B-hadron mother particle (only in case of non-prompt)
+DECLARE_SOA_COLUMN(PdgBhadMotherPart, pdgBhadMotherPart, int); //! pdg of the first B-hadron mother particle (only in case of non-prompt)
+DECLARE_SOA_COLUMN(IdxBhadMotherPart, idxBhadMotherPart, int); //! index of the first B-hadron mother particle (only in case of non-prompt)
+
 
 // method of secondary-vertex reconstruction
 enum VertexerType { DCAFitter = 0,
@@ -638,12 +643,15 @@ DECLARE_SOA_TABLE(HfCand2ProngKF, "AOD", "HFCAND2PKF",
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand2ProngMcRec, "AOD", "HFCAND2PMCREC", //!
                   hf_cand_2prong::FlagMcMatchRec,
-                  hf_cand_2prong::OriginMcRec);
+                  hf_cand_2prong::OriginMcRec,
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCand2ProngMcGen, "AOD", "HFCAND2PMCGEN", //!
                   hf_cand_2prong::FlagMcMatchGen,
-                  hf_cand_2prong::OriginMcGen);
+                  hf_cand_2prong::OriginMcGen,
+                  hf_cand::IdxBhadMotherPart);
 
 // cascade decay candidate table
 
@@ -1755,12 +1763,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(PVecSoftPi, pVecSoftPi, [](float px, float py, float 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);    //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);    //! generator level
-DECLARE_SOA_COLUMN(PtBhadMotherPart, ptBhadMotherPart, float); //! pt of the first B-hadron mother particle (only in case of non-prompt)
-DECLARE_SOA_COLUMN(PdgBhadMotherPart, pdgBhadMotherPart, int); //! pdg of the first B-hadron mother particle (only in case of non-prompt)
 
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);          //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);          //! particle origin, generator level
-DECLARE_SOA_COLUMN(IdxBhadMotherPart, idxBhadMotherPart, int); //! index of the first B-hadron mother particle (only in case of non-prompt)
 
 enum DecayType {
   DstarToD0Pi = 0,
@@ -1879,14 +1884,14 @@ using HfCandDstar = HfCandDstars::iterator;
 DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
                   hf_cand_dstar::FlagMcMatchRec,
                   hf_cand_dstar::OriginMcRec,
-                  hf_cand_dstar::PtBhadMotherPart,
-                  hf_cand_dstar::PdgBhadMotherPart);
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcGen, "AOD", "HFCANDDSTRMCGEN",
                   hf_cand_dstar::FlagMcMatchGen,
                   hf_cand_dstar::OriginMcGen,
-                  hf_cand_dstar::IdxBhadMotherPart);
+                  hf_cand::IdxBhadMotherPart);
 
 #undef HFCAND_COLUMNS
 
