@@ -9,10 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file
-/// \brief
-/// \author
-/// \author
+/// \file HfMlResponseOmegacToOmegaPi.h
+/// \brief Class to compute the ML response for Ωc0 → Ω∓ π± analysis selections 
+/// \author Yunfan Liu <yunfan.liu@cern.ch>
 
 #ifndef PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPI_H_
 #define PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPI_H_
