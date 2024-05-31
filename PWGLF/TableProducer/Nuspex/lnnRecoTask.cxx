@@ -59,7 +59,6 @@ std::shared_ptr<TH1> hCentFV0A;
 std::shared_ptr<TH2> hNsigma3HSel;
 std::shared_ptr<TH2> hdEdx3HSel;
 std::shared_ptr<TH2> hdEdxTot;
-std::shared_ptr<TH1> hLnnMassSel;
 std::shared_ptr<TH1> hDecayChannel;
 std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
@@ -201,7 +200,6 @@ struct lnnRecoTask {
     hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hdEdxTot = qaRegistry.add<TH2>("hdEdxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
-    hLnnMassSel = qaRegistry.add<TH1>("hLnnMassSel", ";M (GeV/#it{c}^{2}); ", HistType::kTH1D, {{60, 2.9, 3.8}});
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
@@ -324,11 +322,6 @@ struct lnnRecoTask {
       lnnCand.mom3HTPC = lnnCand.isMatter ? posRigidity : negRigidity;
       lnnCand.momPiTPC = !lnnCand.isMatter ? posRigidity : negRigidity;
 
-      int chargeFactor = -1 + 2 * lnnCand.isMatter;
-      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
-      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
-      lnnCandidates.push_back(lnnCand);
-
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
 
@@ -379,8 +372,6 @@ struct lnnRecoTask {
       if (massLNNL > mLNN_HypHI - masswidth && massLNNL < mLNN_HypHI + masswidth) {
         isLNNMass = true;
       }
-      hLnnMassSel->Fill(massLNNL);
-
       if (!isLNNMass) {
         continue;
       }
@@ -415,6 +406,11 @@ struct lnnRecoTask {
       lnnCand.isReco = true;
       lnnCand.posTrackID = posTrack.globalIndex();
       lnnCand.negTrackID = negTrack.globalIndex();
+
+      int chargeFactor = -1 + 2 * lnnCand.isMatter;
+      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
+      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
+      lnnCandidates.push_back(lnnCand);
     }
   }
 
@@ -432,25 +428,25 @@ struct lnnRecoTask {
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
           for (auto& negMother : mcTrackNeg.mothers_as<aod::McParticles>()) {
             for (auto& posMother : mcTrackPos.mothers_as<aod::McParticles>()) {
-              if (posMother.globalIndex() != negMother.globalIndex()) 
+              if (posMother.globalIndex() != negMother.globalIndex())
                 continue;
-                if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg)))
-                  continue;
-                if (std::abs(posMother.pdgCode()) != lnnPdg)
-                  continue;
+              if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg)))
+                continue;
+              if (std::abs(posMother.pdgCode()) != lnnPdg)
+                continue;
 
-                // Checking primary and second vertex with MC simulations
-                std::array<float, 3> posPrimVtx = {posMother.vx(), posMother.vy(), posMother.vz()};
+              // Checking primary and second vertex with MC simulations
+              std::array<float, 3> posPrimVtx = {posMother.vx(), posMother.vy(), posMother.vz()};
 
-                std::array<float, 3> secVtx = {mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
+              std::array<float, 3> secVtx = {mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
 
-                lnnCand.gMom = posMother.pVector();
+              lnnCand.gMom = posMother.pVector();
 
-                lnnCand.gMom3H = mcTrackPos.pdgCode() == h3DauPdg ? mcTrackPos.pVector() : mcTrackNeg.pVector();
+              lnnCand.gMom3H = mcTrackPos.pdgCode() == h3DauPdg ? mcTrackPos.pVector() : mcTrackNeg.pVector();
 
-                for (int i = 0; i < 3; i++) {
-                  lnnCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
-                }
+              for (int i = 0; i < 3; i++) {
+                lnnCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
+              }
               lnnCand.isSignal = true;
               lnnCand.pdgCode = posMother.pdgCode();
               lnnCand.survEvSelection = isGoodCollision[posMother.mcCollisionId()];
