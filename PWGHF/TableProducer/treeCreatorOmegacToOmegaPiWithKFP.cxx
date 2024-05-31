@@ -312,6 +312,7 @@ struct HfTreeCreatorOmegacToOmegaPiWithKfp {
   Produces<o2::aod::HfKFOmegacFulls> rowKFCandidateFull;
   Produces<o2::aod::HfMlKFOmegacFulls> rowMlKFCandidateFull;
   Produces<o2::aod::HfOmegacEvs> rowEv;
+
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
 
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
