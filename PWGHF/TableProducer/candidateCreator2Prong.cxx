@@ -726,7 +726,7 @@ struct HfCandidateCreator2ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        bMotherPt = bHadMother.pt(); 
+        bMotherPt = bHadMother.pt();
         bMotherPdg = bHadMother.pdgCode();
       }
 
