@@ -165,7 +165,7 @@ struct MultiplicityExtraTable {
       multZPC = -999.f;
     }
 
-    if( multFT0C < minFT0CforBCTable ){
+    if (multFT0C < minFT0CforBCTable) {
       return; // skip this event
     }
 
