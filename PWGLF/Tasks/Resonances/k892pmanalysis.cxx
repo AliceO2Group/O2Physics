@@ -104,9 +104,9 @@ struct k892pmanalysis {
     histos.add("QAafter/k0shortmass", "Invariant mass of K0Short", kTH1F, {k0sMassAxis});
     // Multiplicity and accepted events QA
     histos.add("QAbefore/collMult", "Collision multiplicity", HistType::kTH1F, {centAxis});
-    //histos.add("QAbefore/accEvtsMult", "Accepted events vs multiplicity", kTH1F, {centAxis});
-    //histos.add("QAafter/accEvtsMult", "Accepted events vs multiplicity", kTH1F, {centAxis});
-    // DCA QA
+    // histos.add("QAbefore/accEvtsMult", "Accepted events vs multiplicity", kTH1F, {centAxis});
+    // histos.add("QAafter/accEvtsMult", "Accepted events vs multiplicity", kTH1F, {centAxis});
+    //  DCA QA
     histos.add("QAbefore/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QAbefore/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
     // Rapidity QA
