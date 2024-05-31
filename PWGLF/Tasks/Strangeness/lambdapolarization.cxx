@@ -124,6 +124,10 @@ struct lambdapolarization {
   int RefAId;
   int RefBId;
 
+  int QvecDetInd;
+  int QvecRefAInd;
+  int QvecRefBInd;
+
   float centrality;
 
   double angle;
@@ -430,9 +434,9 @@ struct lambdapolarization {
       centrality = collision.centFT0M();
     }
     for (auto i = 2; i < cfgnMods + 2; i++) {
-      int QvecDetInd = 0;
-      int QvecRefAInd = 4;
-      int QvecRefBInd = 5;
+      QvecDetInd = 0;
+      QvecRefAInd = 4;
+      QvecRefBInd = 5;
 
       if (cfgShiftCorrDef) {
         QvecDetInd = DetId * 4 + 3 + (i - 2) * 24;
