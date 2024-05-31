@@ -30,6 +30,9 @@ struct QaSignChargeMC {
   Configurable<int> PDG{"PDG", 2212, "PDG code of the particle of interest"};
   Configurable<bool> absPDG{"absPDG", true, "Check the PDG code in abs. value"};
   Configurable<bool> noFakeHits{"noFakeHits", true, "Check the PDG code in abs. value"};
+  Configurable<bool> selPrimaries{"selPrimaries", true, "Select primaries"};
+  Configurable<int> trdSel{"trdSel", 0, "TRD selection: -1 = no TRD, 0 = all, 1 = TRD only"};
+  Configurable<int> tofSel{"tofSel", 0, "TOF selection: -1 = no TOF, 0 = all, 1 = TOF only"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -77,6 +80,43 @@ struct QaSignChargeMC {
         if (track.mcParticle().pdgCode() != PDG) {
           continue;
         }
+      }
+      if (selPrimaries && !track.mcParticle().isPhysicalPrimary()) {
+        continue;
+      }
+      switch (trdSel) {
+        case 0:
+          break;
+        case -1:
+          if (track.hasTRD()) {
+            continue;
+          }
+          break;
+        case 1:
+          if (!track.hasTRD()) {
+            continue;
+          }
+          break;
+        default:
+          LOG(fatal) << "Invalid TRD selection: " << trdSel.value;
+          break;
+      }
+      switch (tofSel) {
+        case 0:
+          break;
+        case -1:
+          if (track.hasTOF()) {
+            continue;
+          }
+          break;
+        case 1:
+          if (!track.hasTOF()) {
+            continue;
+          }
+          break;
+        default:
+          LOG(fatal) << "Invalid TOF selection: " << tofSel.value;
+          break;
       }
 
       if (noFakeHits) { // Selecting tracks with no fake hits

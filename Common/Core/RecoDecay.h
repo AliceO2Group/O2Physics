@@ -34,15 +34,7 @@
 /// - calculation of topological properties of secondary vertices
 /// - Monte Carlo matching of decays at track and particle level
 
-class RecoDecay
-{
- public:
-  /// Default constructor
-  RecoDecay() = default;
-
-  /// Default destructor
-  ~RecoDecay() = default;
-
+struct RecoDecay {
   // mapping of charm-hadron origin type
   enum OriginType { None = 0,
                     Prompt,
@@ -918,11 +910,13 @@ class RecoDecay
   /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param searchUpToQuark if true tag origin based on charm/beauty quark otherwise on the presence of a b-hadron or c-hadron, with c-hadrons themselves marked as prompt
+  /// \param idxBhadMothers optional vector of b-hadron indices (might be more than one in case of searchUpToQuark in case of beauty resonances)
   /// \return an integer corresponding to the origin (0: none, 1: prompt, 2: nonprompt) as in OriginType
   template <typename T>
   static int getCharmHadronOrigin(const T& particlesMC,
                                   const typename T::iterator& particle,
-                                  const bool searchUpToQuark = false)
+                                  const bool searchUpToQuark = false,
+                                  std::vector<int>* idxBhadMothers = nullptr)
   {
     int stage = 0; // mother tree level (just for debugging)
 
@@ -954,6 +948,13 @@ class RecoDecay
             // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
 
             if (searchUpToQuark) {
+              if (idxBhadMothers) {
+                if (PDGParticleIMother / 100 == 5 || // b mesons
+                    PDGParticleIMother / 1000 == 5)  // b baryons
+                {
+                  idxBhadMothers->push_back(iMother);
+                }
+              }
               if (PDGParticleIMother == 5) { // b quark
                 return OriginType::NonPrompt;
               }
@@ -965,6 +966,9 @@ class RecoDecay
                 (PDGParticleIMother / 100 == 5 || // b mesons
                  PDGParticleIMother / 1000 == 5)  // b baryons
               ) {
+                if (idxBhadMothers) {
+                  idxBhadMothers->push_back(iMother);
+                }
                 return OriginType::NonPrompt;
               }
               if (
@@ -989,5 +993,251 @@ class RecoDecay
     return OriginType::None;
   }
 };
+
+/// Calculations using (pT, η, φ) coordinates, aka (transverse momentum, pseudorapidity, azimuth)
+/// \tparam indexPt  index of pT element
+/// \tparam indexEta  index of η element
+/// \tparam indexPhi  index of φ element
+/// \tparam indexM  index of mass element (optional for (pT, η, φ, m) vectors)
+template <std::size_t indexPt = 0, std::size_t indexEta = 1, std::size_t indexPhi = 2, std::size_t indexM = 3>
+struct RecoDecayPtEtaPhiBase {
+  // Variable-based calculations
+
+  /// Sets a vector from pT, η, φ variables
+  /// \param vecTo  vector to store pT, η, φ elements
+  /// \param ptFrom  variable with pT
+  /// \param etaFrom  variable with η
+  /// \param phiFrom  variable with φ
+  template <typename TVec, typename TPt, typename TEta, typename TPhi>
+  static void setVectorFromVariables(TVec& vecTo, TPt ptFrom, TEta etaFrom, TPhi phiFrom)
+  {
+    vecTo[indexPt] = ptFrom;
+    vecTo[indexEta] = etaFrom;
+    vecTo[indexPhi] = phiFrom;
+  }
+
+  /// px as a function of pT, φ
+  /// \param pt  pT
+  /// \param phi  φ
+  template <typename TPt, typename TPhi>
+  static auto px(TPt pt, TPhi phi)
+  {
+    return pt * std::cos(phi);
+  }
+
+  /// py as a function of pT, φ
+  /// \param pt  pT
+  /// \param phi  φ
+  template <typename TPt, typename TPhi>
+  static auto py(TPt pt, TPhi phi)
+  {
+    return pt * std::sin(phi);
+  }
+
+  /// pz as a function of pT, η
+  /// \param pt  pT
+  /// \param eta  η
+  template <typename TPt, typename TEta>
+  static auto pz(TPt pt, TEta eta)
+  {
+    return pt * std::sinh(eta);
+  }
+
+  /// p as a function of pT, η
+  /// \param pt  pT
+  /// \param eta  η
+  template <typename TPt, typename TEta>
+  static auto p(TPt pt, TEta eta)
+  {
+    return pt * std::cosh(eta);
+  }
+
+  /// Energy as a function of pT, η, mass
+  /// \param pt  pT
+  /// \param eta  η
+  /// \param m  mass
+  template <typename TPt, typename TEta, typename TM>
+  static auto e(TPt pt, TEta eta, TM m)
+  {
+    return RecoDecay::e(p(pt, eta), m);
+  }
+
+  /// Rapidity as a function of pT, η, mass
+  /// \param pt  pT
+  /// \param eta  η
+  /// \param m  mass
+  template <typename TPt, typename TEta, typename TM>
+  static auto y(TPt pt, TEta eta, TM m)
+  {
+    // ln[(E + pz) / √(m^2 + pT^2)]
+    return std::log((e(pt, eta, m) + pz(pt, eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
+  }
+
+  /// Momentum vector in (px, py, pz) coordinates from pT, η, φ variables
+  /// \param pt  pT
+  /// \param eta  η
+  /// \param phi  φ
+  /// \return std::array with px, py, pz elements
+  template <typename TPt, typename TEta, typename TPhi>
+  static auto pVector(TPt pt, TEta eta, TPhi phi)
+  {
+    return std::array{px(pt, phi), py(pt, phi), pz(pt, eta)};
+  }
+
+  // Vector-based calculations
+
+  /// pt
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto pt(const TVec& vec)
+  {
+    return vec[indexPt];
+  }
+
+  /// η
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto eta(const TVec& vec)
+  {
+    return vec[indexEta];
+  }
+
+  /// φ
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto phi(const TVec& vec)
+  {
+    return vec[indexPhi];
+  }
+
+  /// Sets pT, η, φ variables from a vector
+  /// \param vecFrom  vector with pT, η, φ elements
+  /// \param ptTo  variable to store pT
+  /// \param etaTo  variable to store η
+  /// \param phiTo  variable to store φ
+  template <typename TVec, typename TPt, typename TEta, typename TPhi>
+  static void setVariablesFromVector(const TVec& vecFrom, TPt& ptTo, TEta& etaTo, TPhi& phiTo)
+  {
+    ptTo = pt(vecFrom);
+    etaTo = eta(vecFrom);
+    phiTo = phi(vecFrom);
+  }
+
+  /// px as a function of pT, φ
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto px(const TVec& vec)
+  {
+    return px(pt(vec), phi(vec));
+  }
+
+  /// py as a function of pT, φ
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto py(const TVec& vec)
+  {
+    return py(pt(vec), phi(vec));
+  }
+
+  /// pz as a function of pT, η
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto pz(const TVec& vec)
+  {
+    return pz(pt(vec), eta(vec));
+  }
+
+  /// p as a function of pT, η
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto p(const TVec& vec)
+  {
+    return p(pt(vec), eta(vec));
+  }
+
+  /// Energy as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ elements
+  /// \param m  mass
+  template <typename TVec, typename TM>
+  static auto e(const TVec& vec, TM m)
+  {
+    return e(pt(vec), eta(vec), m);
+  }
+
+  /// Rapidity as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ elements
+  /// \param m  mass
+  template <typename TVec, typename TM>
+  static auto y(const TVec& vec, TM m)
+  {
+    return y(pt(vec), eta(vec), m);
+  }
+
+  /// Momentum vector in (px, py, pz) coordinates from a (pT, η, φ) vector
+  /// \param vec  vector with pT, η, φ elements
+  /// \return std::array with px, py, pz elements
+  template <typename TVec>
+  static auto pVector(const TVec& vec)
+  {
+    return std::array{px(vec), py(vec), pz(vec)};
+  }
+
+  // Calculations for (pT, η, φ, m) vectors
+
+  /// Energy as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ, m elements
+  template <typename TVec>
+  static auto e(const TVec& vec)
+  {
+    return e(vec, vec[indexM]);
+  }
+
+  /// Rapidity as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ, m elements
+  /// \param m  mass
+  template <typename TVec>
+  static auto y(const TVec& vec)
+  {
+    return y(vec, vec[indexM]);
+  }
+
+  /// Test consistency of calculations of kinematic quantities
+  /// \param pxIn  px
+  /// \param pyIn  py
+  /// \param pzIn  pz
+  /// \param mIn  mass
+  template <typename T, typename TM>
+  static void test(T pxIn, T pyIn, T pzIn, TM mIn)
+  {
+    std::array<T, 3> vecXYZ{pxIn, pyIn, pzIn};
+    std::array<T, 3> vecXYZ0{0, 0, 0};
+    std::array<T, 3> vecPtEtaPhi;
+    std::array<T, 4> vecPtEtaPhiM;
+    setVectorFromVariables(vecPtEtaPhi, RecoDecay::pt(vecXYZ), RecoDecay::eta(vecXYZ), RecoDecay::phi(vecXYZ));
+    setVectorFromVariables(vecPtEtaPhiM, RecoDecay::pt(vecXYZ), RecoDecay::eta(vecXYZ), RecoDecay::phi(vecXYZ));
+    vecPtEtaPhiM[3] = mIn;
+    auto vecXYZFromVec = pVector(vecPtEtaPhi);
+    auto vecXYZFromVars = pVector(pt(vecPtEtaPhi), eta(vecPtEtaPhi), phi(vecPtEtaPhi));
+    // Test px, py, pz, pt, p, eta, phi, e, y, m
+    printf("RecoDecay test\n");
+    printf("px: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pxIn, vecXYZ[0], vecXYZFromVec[0], vecXYZFromVars[0], px(vecPtEtaPhi), px(vecPtEtaPhiM));
+    printf("py: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pyIn, vecXYZ[1], vecXYZFromVec[1], vecXYZFromVars[1], py(vecPtEtaPhi), py(vecPtEtaPhiM));
+    printf("pz: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pzIn, vecXYZ[2], vecXYZFromVec[2], vecXYZFromVars[2], pz(vecPtEtaPhi), pz(vecPtEtaPhiM));
+    printf("pt: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::pt(vecXYZ), pt(vecPtEtaPhi), pt(vecPtEtaPhiM));
+    printf("p: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::p(vecXYZ), p(vecPtEtaPhi), p(vecPtEtaPhiM));
+    printf("eta: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::eta(vecXYZ), eta(vecPtEtaPhi), eta(vecPtEtaPhiM));
+    printf("phi: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::phi(vecXYZ), phi(vecPtEtaPhi), phi(vecPtEtaPhiM));
+    printf("e: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::e(vecXYZ, mIn), e(vecPtEtaPhi, mIn), e(vecPtEtaPhiM));
+    printf("y: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::y(vecXYZ, mIn), y(vecPtEtaPhi, mIn), y(vecPtEtaPhiM));
+    printf("m: In: %g, XYZ(p, E): %g, XYZ(pVec, E): %g, XYZ(arr): %g, PtEtaPhiM: %g\n",
+           mIn,
+           RecoDecay::m(RecoDecay::p(vecXYZ), RecoDecay::e(vecXYZ, mIn)),
+           RecoDecay::m(vecXYZ, RecoDecay::e(vecXYZ, mIn)),
+           RecoDecay::m(std::array{vecXYZ, vecXYZ0}, std::array{mIn, 0.}),
+           vecPtEtaPhiM[indexM]);
+  }
+};
+
+using RecoDecayPtEtaPhi = RecoDecayPtEtaPhiBase<>; // alias for instance with default parameters
 
 #endif // COMMON_CORE_RECODECAY_H_

@@ -35,7 +35,7 @@ o2physics_add_dpl_workflow(candidate-selector-b0-to-d-pi-reduced
 
 o2physics_add_dpl_workflow(candidate-selector-bplus-to-d0-pi-reduced
                     SOURCES candidateSelectorBplusToD0PiReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 # Data creators

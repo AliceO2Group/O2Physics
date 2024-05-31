@@ -78,11 +78,19 @@ struct qVectorsTable {
   Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<int> cfgnMod{"cfgnMod", 2, "Modulation of interest"};
+  Configurable<int> cfgCorrLevel{"cfgCorrLevel", 4, "calibration step: 0 = no corr, 1 = gain corr, 2 = rectr, 3 = twist, 4 = full"};
 
   Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Users/j/junlee/Qvector/GainEq", "CCDB path for gain equalization constants"};
   Configurable<std::string> cfgQvecCalibPath{"cfgQvecCalibPath", "Analysis/EventPlane/QVecCorrections", "CCDB pasth for Q-vecteor calibration constants"};
 
   ConfigurableAxis cfgaxisFITamp{"cfgaxisFITamp", {1000, 0, 5000}, ""};
+
+  Configurable<bool> cfgUseFT0C{"cfgUseFT0C", false, "Initial value for using FT0C. By default obtained from DataModel."};
+  Configurable<bool> cfgUseFT0A{"cfgUseFT0A", false, "Initial value for using FT0A. By default obtained from DataModel."};
+  Configurable<bool> cfgUseFT0M{"cfgUseFT0M", false, "Initial value for using FT0M. By default obtained from DataModel."};
+  Configurable<bool> cfgUseFV0A{"cfgUseFV0A", false, "Initial value for using FV0A. By default obtained from DataModel."};
+  Configurable<bool> cfgUseBPos{"cfgUseBPos", false, "Initial value for using BPos. By default obtained from DataModel."};
+  Configurable<bool> cfgUseBNeg{"cfgUseBNeg", false, "Initial value for using BNeg. By default obtained from DataModel."};
 
   // Table.
   Produces<aod::Qvectors> qVector;
@@ -114,21 +122,26 @@ struct qVectorsTable {
   TH3F* objQvec = nullptr;
 
   std::unordered_map<string, bool> useDetector = {
-    {"QvectorBNegs", false},
-    {"QvectorBPoss", false},
-    {"QvectorFV0As", false},
-    {"QvectorFT0Ms", false},
-    {"QvectorFT0As", false},
-    {"QvectorFT0Cs", false}};
+    {"QvectorBNegs", cfgUseBNeg},
+    {"QvectorBPoss", cfgUseBPos},
+    {"QvectorFV0As", cfgUseFV0A},
+    {"QvectorFT0Ms", cfgUseFT0M},
+    {"QvectorFT0As", cfgUseFT0A},
+    {"QvectorFT0Cs", cfgUseFT0C}};
 
   void init(InitContext& initContext)
   {
-
     // Check the sub-detector used
     auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       for (auto const& input : device.inputs) {
-        LOGF(info, Form("%s", input.matcher.binding.data()));
+        if (input.matcher.binding == "Qvectors") {
+          for (auto det : useDetector) {
+            useDetector[det.first.data()] = true;
+          }
+          LOGF(info, "Using all detectors.");
+          goto allDetectorsInUse; // Added to break from nested loop if all detectors are in use.
+        }
         for (auto det : useDetector) {
           if (input.matcher.binding == det.first) {
             useDetector[det.first.data()] = true;
@@ -138,6 +151,8 @@ struct qVectorsTable {
       }
     }
 
+  // Exit point in case all detectors are being used.
+  allDetectorsInUse:
     // Setup the access to the CCDB objects of interest.
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdb->setCaching(true);
@@ -198,7 +213,7 @@ struct qVectorsTable {
     fullPath = cfgGainEqPath;
     fullPath += "/FT0";
     auto objft0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
-    if (!objft0Gain) {
+    if (!objft0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 208; i++) {
         FT0RelGainConst.push_back(1.);
       }
@@ -209,7 +224,7 @@ struct qVectorsTable {
     fullPath = cfgGainEqPath;
     fullPath += "/FV0";
     auto objfv0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
-    if (!objfv0Gain) {
+    if (!objfv0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 48; i++) {
         FV0RelGainConst.push_back(1.);
       }
@@ -503,19 +518,20 @@ struct qVectorsTable {
     }
 
     // Fill the columns of the Qvectors table if they are found for a detector.
+    int CorrLevel = cfgCorrLevel == 0 ? 0 : cfgCorrLevel - 1;
     qVector(cent, IsCalibrated, qvecRe, qvecIm, qvecAmp);
     if (useDetector["QvectorFT0Cs"])
-      qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + 3], qvecIm[kFT0C * 4 + 3], sumAmplFT0C);
+      qVectorFT0C(IsCalibrated, qvecRe[kFT0C * 4 + CorrLevel], qvecIm[kFT0C * 4 + CorrLevel], sumAmplFT0C);
     if (useDetector["QvectorFT0As"])
-      qVectorFT0A(IsCalibrated, qvecRe[kFT0A * 4 + 3], qvecIm[kFT0A * 4 + 3], sumAmplFT0A);
+      qVectorFT0A(IsCalibrated, qvecRe[kFT0A * 4 + CorrLevel], qvecIm[kFT0A * 4 + CorrLevel], sumAmplFT0A);
     if (useDetector["QvectorFT0Ms"])
-      qVectorFT0M(IsCalibrated, qvecRe[kFT0M * 4 + 3], qvecIm[kFT0M * 4 + 3], sumAmplFT0M);
+      qVectorFT0M(IsCalibrated, qvecRe[kFT0M * 4 + CorrLevel], qvecIm[kFT0M * 4 + CorrLevel], sumAmplFT0M);
     if (useDetector["QvectorFV0As"])
-      qVectorFV0A(IsCalibrated, qvecRe[kFV0A * 4 + 3], qvecIm[kFV0A * 4 + 3], sumAmplFV0A);
+      qVectorFV0A(IsCalibrated, qvecRe[kFV0A * 4 + CorrLevel], qvecIm[kFV0A * 4 + CorrLevel], sumAmplFV0A);
     if (useDetector["QvectorBPoss"])
-      qVectorBPos(IsCalibrated, qvecRe[kBPos * 4 + 3], qvecIm[kBPos * 4 + 3], nTrkBPos, TrkBPosLabel);
+      qVectorBPos(IsCalibrated, qvecRe[kBPos * 4 + CorrLevel], qvecIm[kBPos * 4 + CorrLevel], nTrkBPos, TrkBPosLabel);
     if (useDetector["QvectorBNegs"])
-      qVectorBNeg(IsCalibrated, qvecRe[kBNeg * 4 + 3], qvecIm[kBNeg * 4 + 3], nTrkBNeg, TrkBNegLabel);
+      qVectorBNeg(IsCalibrated, qvecRe[kBNeg * 4 + CorrLevel], qvecIm[kBNeg * 4 + CorrLevel], nTrkBNeg, TrkBNegLabel);
 
   } // End process.
 };

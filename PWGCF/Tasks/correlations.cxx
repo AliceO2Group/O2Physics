@@ -72,7 +72,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCutMinRadius, float, 0.8f, "Two track cut: radius in m from which two track cuts are applied");
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = OFF and 1 = ON for local efficiency");
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
-
+  O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint8_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {cfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
@@ -107,7 +107,7 @@ struct CorrelationTask {
 
   // Track filters
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
-  Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt);
+  Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ((aod::track::trackType & (uint8_t)cfgTrackBitMask) == (uint8_t)cfgTrackBitMask);
 
   // MC filters
   Filter cfMCCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
@@ -325,7 +325,14 @@ struct CorrelationTask {
         }
       }
 
-      target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
+      if (cfgMassAxis) {
+        if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
+          target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, track1.invMass(), triggerWeight);
+        else
+          LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
+      } else {
+        target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
+      }
 
       for (auto& track2 : tracks2) {
         if constexpr (std::is_same<TTracks1, TTracks2>::value) {

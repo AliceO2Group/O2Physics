@@ -16,6 +16,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
@@ -25,20 +26,16 @@
 #include "Framework/DataTypes.h"
 #include "MathUtils/Utils.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 #include <TString.h>
 #include "TLorentzVector.h"
 using namespace std;
 using namespace o2;
 using namespace o2::aod;
-// using namespace o2::aod::track::v001;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-#define mpion 0.1396
-#define mkaon 0.4937
-#define mproton 0.9383
 struct SGFourPiAnalyzer {
   SGSelector sgSelector;
+  Service<o2::framework::O2DatabasePDG> pdg;
   // Adjusted Gap thresholds
   Configurable<float> FV0_cut{"FV0", 50., "FV0A threshold"};
   Configurable<float> FT0A_cut{"FT0A", 150., "FT0A threshold"};
@@ -54,6 +51,7 @@ struct SGFourPiAnalyzer {
   Configurable<float> tpcNClsFindable_cut{"tpcNClsFindable_cut", 70, "Min tpcNClsFindable"};
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
+  Configurable<float> pt_cut{"pt_cut", 0.1, "Track Pt"};
   HistogramRegistry registry{
     "registry",
     {
@@ -93,6 +91,7 @@ struct SGFourPiAnalyzer {
 
   void process(UDCollisionFull const& collision, udtracksfull const& tracks)
   {
+    const float mpion = pdg->Mass(211);
     TLorentzVector a;
     int gapSide = collision.gapSide();
     if (gapSide < 0 || gapSide > 2)
@@ -102,7 +101,7 @@ struct SGFourPiAnalyzer {
     //  int truegapSide = sgSelector.trueGap(collision);
     // int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
-    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut};
+    std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
     // int truegapSide = sgSelector.trueGap(collision, *FIT_cut, ZDC_cut);
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
     registry.fill(HIST("GapSide"), gapSide);

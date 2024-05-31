@@ -139,7 +139,8 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
 
   ~TOFResoParamsV2() = default;
 
-  void setShiftParameters(std::unordered_map<std::string, float> const& pars)
+  // Momentum shift for charge calibration
+  void setMomentumChargeShiftParameters(std::unordered_map<std::string, float> const& pars)
   {
     if (pars.count("Shift.etaN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
       mEtaN = 0;
@@ -161,7 +162,13 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
       mContent[i] = pars.at(Form("Shift.etaC%i", i));
     }
   }
-  float getShift(float eta) const
+  // To remove
+  void setShiftParameters(std::unordered_map<std::string, float> const& pars)
+  {
+    setMomentumChargeShiftParameters(pars);
+  }
+
+  float getMomentumChargeShift(float eta) const
   {
     if (mEtaN == 0) { // No correction
       // LOG(info) << "TOFResoParamsV2 shift: no correction mEtaN is " << mEtaN;
@@ -171,7 +178,13 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
     // LOG(info) << "TOFResoParamsV2 shift: correction for eta " << eta << " is for index " << etaIndex << " = " << shift;
     return mContent.at(etaIndex);
   }
-  void printShiftParameters() const
+  // To remove
+  float getShift(float eta) const
+  {
+    return getMomentumChargeShift(eta);
+  }
+
+  void printMomentumChargeShiftParameters() const
   {
     LOG(info) << "TOF momentum shift parameters";
     LOG(info) << "etaN: " << mEtaN;
@@ -182,29 +195,35 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
       LOG(info) << "etaC" << i << ": " << mContent[i];
     }
   }
-  void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool pos)
+  // To remove
+  void printShiftParameters() const
+  {
+    printMomentumChargeShiftParameters();
+  }
+
+  void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool positive)
   {
     TFile f(filename.c_str(), "READ");
     if (f.IsOpen()) {
-      if (pos) {
+      if (positive) {
         f.GetObject(objname.c_str(), gPosEtaTimeCorr);
       } else {
         f.GetObject(objname.c_str(), gNegEtaTimeCorr);
       }
       f.Close();
     }
-    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (pos ? "positive" : "negative");
+    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (positive ? "positive" : "negative");
   }
-  void setTimeShiftParameters(TGraph* g, bool pos)
+  void setTimeShiftParameters(TGraph* g, bool positive)
   {
-    if (pos) {
+    if (positive) {
       gPosEtaTimeCorr = g;
     } else {
       gNegEtaTimeCorr = g;
     }
-    LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (pos ? "positive" : "negative");
+    LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (positive ? "positive" : "negative");
   }
-  float getTimeShift(float eta, short sign) const
+  float getTimeShift(float eta, int16_t sign) const
   {
     if (sign > 0) {
       if (!gPosEtaTimeCorr) {
@@ -219,13 +238,16 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
   }
 
  private:
+  // Charge calibration
   int mEtaN = 0; // Number of eta bins, 0 means no correction
   float mEtaStart = 0.f;
   float mEtaStop = 0.f;
   float mInvEtaWidth = 9999.f;
   std::vector<float> mContent;
-  TGraph* gPosEtaTimeCorr = nullptr;
-  TGraph* gNegEtaTimeCorr = nullptr;
+
+  // Time shift for post calibration
+  TGraph* gPosEtaTimeCorr = nullptr; /// Time shift correction for positive tracks
+  TGraph* gNegEtaTimeCorr = nullptr; /// Time shift correction for negative tracks
 };
 
 /// \brief Class to handle the the TOF detector response for the expected time
