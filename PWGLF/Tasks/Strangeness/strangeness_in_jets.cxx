@@ -373,8 +373,8 @@ struct strangeness_in_jets {
   }
 
   // Xi Selections
-  template <typename CascType, typename T1, typename T2, typename T3, typename V0type, typename C>
-  bool passedXiSelection(const CascType& casc, const T1& ptrack, const T2& ntrack, const T3& btrack, const V0type& v0, const C& coll)
+  template <typename CascType, typename T1, typename T2, typename T3, typename C>
+  bool passedXiSelection(const CascType& casc, const T1& ptrack, const T2& ntrack, const T3& btrack, const C& coll)
   {
     if (!passedSingleTrackSelection(ptrack))
       return false;
@@ -382,10 +382,72 @@ struct strangeness_in_jets {
       return false;
     if (!passedSingleTrackSelection(btrack))
       return false;
-    if (!passedLambdaSelection(v0, ptrack, ntrack))
+
+    // Xi+ Selection (Xi+ -> antiL + pi+)
+    if (btrack.sign() > 0) {
+      if (ntrack.pt() < ptMin_V0_proton)
+        return false;
+      if (ntrack.pt() > ptMax_V0_proton)
+        return false;
+      if (ptrack.pt() < ptMin_V0_pion)
+        return false;
+      if (ptrack.pt() > ptMax_V0_pion)
+        return false;
+
+      // PID Selections (TPC)
+      if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+        return false;
+      if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+        return false;
+
+      // PID Selections (TOF)
+      if (requireTOF) {
+        if (ntrack.tofNSigmaPr() < nsigmaTOFmin || ntrack.tofNSigmaPr() > nsigmaTOFmax)
+          return false;
+        if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+          return false;
+      }
+    }
+
+    // Xi- Selection (Xi- -> L + pi-)
+    if (btrack.sign() < 0) {
+      if (ptrack.pt() < ptMin_V0_proton)
+        return false;
+      if (ptrack.pt() > ptMax_V0_proton)
+        return false;
+      if (ntrack.pt() < ptMin_V0_pion)
+        return false;
+      if (ntrack.pt() > ptMax_V0_pion)
+        return false;
+
+      // PID Selections (TPC)
+      if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+        return false;
+      if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+        return false;
+
+      // PID Selections (TOF)
+      if (requireTOF) {
+        if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
+          return false;
+        if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+          return false;
+      }
+    }
+
+    // V0 Selections
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < v0cospaMin)
+      return false;
+    if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
+      return false;
+    if (casc.dcaV0daughters() > dcaV0DaughtersMax)
+      return false;
+    if (casc.dcapostopv() < dcapostoPVmin)
+      return false;
+    if (casc.dcanegtopv() < dcanegtoPVmin)
       return false;
 
-    // Cascade cuts
+    // Cascade Selections
     if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
       return false;
     if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
@@ -409,18 +471,15 @@ struct strangeness_in_jets {
 
     // Rapidity Selection
     TLorentzVector lorentzVect;
-    double pxCasc = ptrack.px() + ntrack.px() + btrack.px();
-    double pyCasc = ptrack.py() + ntrack.py() + btrack.py();
-    double pzCasc = ptrack.pz() + ntrack.pz() + btrack.pz();
-    lorentzVect.SetXYZM(pxCasc, pyCasc, pzCasc, 1.32171);
+    lorentzVect.SetXYZM(casc.px(), casc.py(), casc.pz(), 1.32171);
     if (lorentzVect.Rapidity() < yMin || lorentzVect.Rapidity() > yMax)
       return false;
     return true;
   }
 
   // Omega Selections
-  template <typename CascType, typename T1, typename T2, typename T3, typename V0type, typename C>
-  bool passedOmegaSelection(const CascType& casc, const T1& ptrack, const T2& ntrack, const T3& btrack, const V0type& v0, const C& coll)
+  template <typename CascType, typename T1, typename T2, typename T3, typename C>
+  bool passedOmegaSelection(const CascType& casc, const T1& ptrack, const T2& ntrack, const T3& btrack, const C& coll)
   {
     if (!passedSingleTrackSelection(ptrack))
       return false;
@@ -428,10 +487,72 @@ struct strangeness_in_jets {
       return false;
     if (!passedSingleTrackSelection(btrack))
       return false;
-    if (!passedLambdaSelection(v0, ptrack, ntrack))
+
+    // Omega+ Selection (Omega+ -> antiL + K+)
+    if (btrack.sign() > 0) {
+      if (ntrack.pt() < ptMin_V0_proton)
+        return false;
+      if (ntrack.pt() > ptMax_V0_proton)
+        return false;
+      if (ptrack.pt() < ptMin_V0_pion)
+        return false;
+      if (ptrack.pt() > ptMax_V0_pion)
+        return false;
+
+      // PID Selections (TPC)
+      if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+        return false;
+      if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+        return false;
+
+      // PID Selections (TOF)
+      if (requireTOF) {
+        if (ntrack.tofNSigmaPr() < nsigmaTOFmin || ntrack.tofNSigmaPr() > nsigmaTOFmax)
+          return false;
+        if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+          return false;
+      }
+    }
+
+    // Omega- Selection (Omega- -> L + K-)
+    if (btrack.sign() < 0) {
+      if (ptrack.pt() < ptMin_V0_proton)
+        return false;
+      if (ptrack.pt() > ptMax_V0_proton)
+        return false;
+      if (ntrack.pt() < ptMin_V0_pion)
+        return false;
+      if (ntrack.pt() > ptMax_V0_pion)
+        return false;
+
+      // PID Selections (TPC)
+      if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+        return false;
+      if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+        return false;
+
+      // PID Selections (TOF)
+      if (requireTOF) {
+        if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
+          return false;
+        if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+          return false;
+      }
+    }
+
+    // V0 Selections
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < v0cospaMin)
+      return false;
+    if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
+      return false;
+    if (casc.dcaV0daughters() > dcaV0DaughtersMax)
+      return false;
+    if (casc.dcapostopv() < dcapostoPVmin)
+      return false;
+    if (casc.dcanegtopv() < dcanegtoPVmin)
       return false;
 
-    // Cascade cuts
+    // Cascade Selections
     if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
       return false;
     if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
@@ -455,10 +576,7 @@ struct strangeness_in_jets {
 
     // Rapidity Selection
     TLorentzVector lorentzVect;
-    double pxCasc = ptrack.px() + ntrack.px() + btrack.px();
-    double pyCasc = ptrack.py() + ntrack.py() + btrack.py();
-    double pzCasc = ptrack.pz() + ntrack.pz() + btrack.pz();
-    lorentzVect.SetXYZM(pxCasc, pyCasc, pzCasc, 1.6724);
+    lorentzVect.SetXYZM(casc.px(), casc.py(), casc.pz(), 1.6724);
     if (lorentzVect.Rapidity() < yMin || lorentzVect.Rapidity() > yMax)
       return false;
     return true;
@@ -750,12 +868,7 @@ struct strangeness_in_jets {
       auto bach = casc.bachelor_as<FullTracks>();
       auto pos = casc.posTrack_as<FullTracks>();
       auto neg = casc.negTrack_as<FullTracks>();
-      auto v0index = casc.template v0_as<o2::aod::V0sLinked>();
-      if (!v0index.has_v0Data())
-        continue;
-
-      auto v0 = v0index.v0Data();
-      TVector3 cascade_dir(pos.px() + neg.px() + bach.px(), pos.py() + neg.py() + bach.py(), pos.pz() + neg.pz() + bach.pz());
+      TVector3 cascade_dir(casc.px(), casc.py(), casc.pz());
 
       float deltaEta_jet = cascade_dir.Eta() - jet_axis.Eta();
       float deltaPhi_jet = GetDeltaPhi(cascade_dir.Phi(), jet_axis.Phi());
@@ -768,7 +881,7 @@ struct strangeness_in_jets {
       float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
       // Xi+
-      if (passedXiSelection(casc, pos, neg, bach, v0, collision) && bach.sign() > 0) {
+      if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("XiPos_in_jet"), multiplicity, casc.pt(), casc.mXi());
         }
@@ -777,7 +890,7 @@ struct strangeness_in_jets {
         }
       }
       // Xi-
-      if (passedXiSelection(casc, pos, neg, bach, v0, collision) && bach.sign() < 0) {
+      if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("XiNeg_in_jet"), multiplicity, casc.pt(), casc.mXi());
         }
@@ -787,7 +900,7 @@ struct strangeness_in_jets {
       }
 
       // Omega+
-      if (passedOmegaSelection(casc, pos, neg, bach, v0, collision) && bach.sign() > 0) {
+      if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("OmegaPos_in_jet"), multiplicity, casc.pt(), casc.mOmega());
         }
@@ -796,7 +909,7 @@ struct strangeness_in_jets {
         }
       }
       // Omega-
-      if (passedOmegaSelection(casc, pos, neg, bach, v0, collision) && bach.sign() < 0) {
+      if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("OmegaNeg_in_jet"), multiplicity, casc.pt(), casc.mOmega());
         }
