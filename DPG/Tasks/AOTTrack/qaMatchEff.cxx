@@ -14,14 +14,16 @@
 ///
 /// \author Rosario Turrisi  <rosario.turrisi@pd.infn.it>, INFN-PD
 /// \author Mattia Faggin <mattia.faggin@ts.infn.it>, UniTs & INFN-TS
+/// \author Chunzheng Wang < chunzheng.wang@m.fudan.edu.cn>, Fudan Univ.
 
 //
 //  Internal version number: 6.3
 //
-#include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/MathConstants.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -56,6 +58,17 @@ using std::array;
 using namespace extConfPar;
 using o2::constants::math::PI;
 using o2::constants::math::TwoPI;
+
+using CollisionsEvSel = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
+using CollisionsMCEvSel = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>>;
+using CollisionsEvSelFT0C = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+using CollisionsMCEvSelFT0C = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>>;
+
+using TracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+using TracksIUPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
+using MCTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>;
+
 //
 struct qaMatchEff {
   int lastRunNumber = -1;
@@ -70,22 +83,35 @@ struct qaMatchEff {
   // histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   //
+  // Event selections
+  Configurable<bool> isPbPb{"isPbPb", false, "Boolean to tag if the data is PbPb collisions. If false, it is pp"};
+  Configurable<bool> isEnableEventSelection{"isEnableEventSelection", true, "Boolean to switch the event selection on/off."};
+  // Centrality requirements
+  Configurable<bool> isCentralityRequired{"isCentralityRequired", false, "Boolean to switch the centrality requirement on/off."};
+  Configurable<int> centralityBins{"centralityBins", 20, "Number of centrality bins"};
+  //
   // Track selections
+  Configurable<bool> isUseTPCinnerWallPt{"isUseTPCinnerWallPt", true, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
   Configurable<bool> isUseTrackSelections{"isUseTrackSelections", false, "Boolean to switch the track selections on/off."};
   Configurable<bool> isUseAnalysisTrackSelections{"isUseAnalysisTrackSelections", false, "Boolean to switch if the analysis track selections are used. If true, all the Explicit track cuts are ignored."};
   // analysis track selections changes
-  Configurable<bool> isChangeAnalysisCutEta{"isChangeAnalysisCutEta", false, "Boolean to switch if the analysis eta cut is changed."};
-  Configurable<bool> isChangeAnalysisCutDcaZ{"isChangeAnalysisCutDcaZ", false, "Boolean to switch if the analysis DcaZ cut is changed."};
-  Configurable<bool> isChangeAnalysisCutDcaXY{"isChangeAnalysisCutDcaXY", false, "Boolean to switch if the analysis DcaXY cut is changed."};
-  Configurable<bool> isChangeAnalysisCutNClustersTPC{"isChangeAnalysisCutNClustersTPC", false, "Boolean to switch if the analysis NClustersTPC cut is changed."};
-  Configurable<bool> isChangeAnalysisITSHitmap{"isChangeAnalysisITSHitmap", false, "Boolean to switch if the analysis ITSHitmap is changed."};
-  // kinematics
-  Configurable<float> ptMinCutInnerWallTPC{"ptMinCutInnerWallTPC", 0.1f, "Minimum transverse momentum calculated at the inner wall of TPC (GeV/c)"};
-  Configurable<float> ptMinCut{"ptMinCut", 0.1f, "Minimum transverse momentum (GeV/c)"};
-  Configurable<float> ptMaxCut{"ptMaxCut", 100.f, "Maximum transverse momentum (GeV/c)"};
-  Configurable<float> etaMinCut{"etaMinCut", -2.0f, "Minimum pseudorapidity"};
-  Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
-  Configurable<bool> isUseTPCinnerWallPt{"isUseTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
+  struct : ConfigurableGroup {
+    Configurable<bool> isChangeAnalysisCutEta{"isChangeAnalysisCutEta", false, "Boolean to switch if the analysis eta cut is changed."};
+    Configurable<bool> isChangeAnalysisCutDcaZ{"isChangeAnalysisCutDcaZ", false, "Boolean to switch if the analysis DcaZ cut is changed."};
+    Configurable<bool> isChangeAnalysisCutDcaXY{"isChangeAnalysisCutDcaXY", false, "Boolean to switch if the analysis DcaXY cut is changed."};
+    Configurable<bool> isChangeAnalysisCutNClustersTPC{"isChangeAnalysisCutNClustersTPC", false, "Boolean to switch if the analysis NClustersTPC cut is changed."};
+    Configurable<bool> isChangeAnalysisITSHitmap{"isChangeAnalysisITSHitmap", false, "Boolean to switch if the analysis ITSHitmap is changed."};
+  } customAnaTrkSel;
+  //
+  // Kinematics
+  struct : ConfigurableGroup {
+    Configurable<float> ptMinCutInnerWallTPC{"ptMinCutInnerWallTPC", 0.1f, "Minimum transverse momentum calculated at the inner wall of TPC (GeV/c)"};
+    Configurable<float> ptMinCut{"ptMinCut", 0.1f, "Minimum transverse momentum (GeV/c)"};
+    Configurable<float> ptMaxCut{"ptMaxCut", 100.f, "Maximum transverse momentum (GeV/c)"};
+    Configurable<float> etaMinCut{"etaMinCut", -2.0f, "Minimum pseudorapidity"};
+    Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
+  } kineCuts;
+  //
   // DCA and PID cuts
   Configurable<LabeledArray<float>> dcaMaxCut{"dcaMaxCut", {parTableDCA[0], nParDCA, nParVaDCA, parClassDCA, parNameDCA}, "Track DCA cuts"};
   Configurable<LabeledArray<float>> nSigmaPID{"nSigmaPID", {parTablePID[0], nParPID, nParVaPID, parClassPID, parNamePID}, "PID nSigma cuts TPC and TOF"};
@@ -136,10 +162,12 @@ struct qaMatchEff {
   //
   AxisSpec axisQoPt{qoptBins, -20, 20, "#Q/it{p}_{T} (GeV/#it{c})^{-1}"};
   //
-  AxisSpec axisEta{etaBins, -2.f, 2.f, "#eta"};
+  AxisSpec axisEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "#eta"};
   AxisSpec axisPhi{phiBins, 0.f, TwoPI, "#it{#varphi} (rad)"};
-  AxisSpec axisDEta{etaBins, -2.f, 2.f, "D#eta"};
+  AxisSpec axisDEta{etaBins, kineCuts.etaMinCut, kineCuts.etaMaxCut, "D#eta"};
   AxisSpec axisDPh{phiBins, -PI, PI, "D#it{#varphi} (rad)"};
+  //
+  AxisSpec axisCentrality{centralityBins, 0.0, 100.0, "centrality [%]"};
   //
   // pdg codes vector
   std::vector<int> pdgChoice = {211, 213, 215, 217, 219, 221, 223, 321, 411, 521, 2212, 1114, 2214};
@@ -217,8 +245,8 @@ struct qaMatchEff {
     /// initialize the track selections
     if (isUseTrackSelections) {
       // kinematics
-      cutObject.SetEtaRange(etaMinCut, etaMaxCut);
-      cutObject.SetPtRange(ptMinCut, ptMaxCut);
+      cutObject.SetEtaRange(kineCuts.etaMinCut, kineCuts.etaMaxCut);
+      cutObject.SetPtRange(kineCuts.ptMinCut, kineCuts.ptMaxCut);
       cutObject.SetMaxDcaXY(dcaMaxCut->get("TrVtx", "dcaXY")); /// max for dca implementend by hand in isTrackSelectedKineCuts
       cutObject.SetMaxDcaZ(dcaMaxCut->get("TrVtx", "dcaZ"));   /// max for dca implementend by hand in isTrackSelectedKineCuts
       // TPC
@@ -251,23 +279,23 @@ struct qaMatchEff {
       cutObject = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, 0);
       LOG(info) << "### Analysis track selections set";
       // change the cuts get from the track selection default if requested
-      if (isChangeAnalysisCutEta) {
-        cutObject.SetEtaRange(etaMinCut, etaMaxCut);
-        LOG(info) << "### Changing analysis eta cut to " << etaMinCut << " - " << etaMaxCut;
+      if (customAnaTrkSel.isChangeAnalysisCutEta) {
+        cutObject.SetEtaRange(kineCuts.etaMinCut, kineCuts.etaMaxCut);
+        LOG(info) << "### Changing analysis eta cut to " << kineCuts.etaMinCut << " - " << kineCuts.etaMaxCut;
       }
-      if (isChangeAnalysisCutDcaZ) {
+      if (customAnaTrkSel.isChangeAnalysisCutDcaZ) {
         cutObject.SetMaxDcaZ(dcaMaxCut->get("TrVtx", "dcaZ"));
         LOG(info) << "### Changing analysis DCAZ cut to " << dcaMaxCut->get("TrVtx", "dcaZ");
       }
-      if (isChangeAnalysisCutDcaXY) {
+      if (customAnaTrkSel.isChangeAnalysisCutDcaXY) {
         cutObject.SetMaxDcaXYPtDep([this](float pt) { return dcaMaxCut->get("TrVtx", "dcaXY"); });
         LOG(info) << "### Changing analysis DcaXY cut to " << dcaMaxCut->get("TrVtx", "dcaXY");
       }
-      if (isChangeAnalysisCutNClustersTPC) {
+      if (customAnaTrkSel.isChangeAnalysisCutNClustersTPC) {
         cutObject.SetMinNClustersTPC(tpcNClusterMin);
         LOG(info) << "### Changing analysis NClustersTPC cut to " << tpcNClusterMin;
       }
-      if (isChangeAnalysisITSHitmap) {
+      if (customAnaTrkSel.isChangeAnalysisITSHitmap) {
         std::set<uint8_t> set_customITShitmap; // = {};
         for (int index_ITSlayer = 0; index_ITSlayer < 7; index_ITSlayer++) {
           if ((customITShitmap & (1 << index_ITSlayer)) > 0) {
@@ -762,6 +790,61 @@ struct qaMatchEff {
     // histos.add("data/pthist_tpcits_05", "#it{p}_{T} distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1D, {axisPt}, true);
     // histos.add("data/etahist_tpcits_05", "#eta distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1D, {axisEta}, true);
     // histos.add("data/phihist_tpcits_05", "#phi distribution - data TPC+ITS tag #it{p}_{T}>0.5", kTH1D, {axisPhi}, true);
+
+    // Centrality dependent histos, only for PbPb data
+    if (isPbPb && isCentralityRequired) {
+      // Charged particles
+      // pt, phi, eta TPC tagged
+      histos.add("data/centrality/pthist_tpc_cent", "#it{p}_{T} distribution vs. centrality - data TPC tag", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("data/centrality/etahist_tpc_cent", "#eta distribution vs. centrality - data TPC tag", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("data/centrality/phihist_tpc_cent", "#phi distribution vs. centrality - data TPC tag", kTH2D, {axisPhi, axisCentrality}, true);
+      // pt, phi, eta TPC+ITS tagged
+      histos.add("data/centrality/pthist_tpcits_cent", "#it{p}_{T} distribution vs. centrality - data TPC+ITS tag", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("data/centrality/etahist_tpcits_cent", "#eta distribution vs. centrality - data TPC+ITS tag", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("data/centrality/phihist_tpcits_cent", "#phi distribution vs. centrality - data TPC+ITS tag", kTH2D, {axisPhi, axisCentrality}, true);
+      // pt, phi, eta TOF+TPC tagged
+      histos.add("data/centrality/pthist_toftpc_cent", "#it{p}_{T} distribution vs. centrality - data TOF+TPC tag", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("data/centrality/etahist_toftpc_cent", "#eta distribution vs. centrality - data TOF+TPC tag", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("data/centrality/phihist_toftpc_cent", "#phi distribution vs. centrality - data TOF+TPC tag", kTH2D, {axisPhi, axisCentrality}, true);
+      // pt, phi, eta TOF+TPC+ITS tagged
+      histos.add("data/centrality/pthist_toftpcits_cent", "#it{p}_{T} distribution vs. centrality - data TOF+TPC+ITS tag", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("data/centrality/etahist_toftpcits_cent", "#eta distribution vs. centrality - data TOF+TPC+ITS tag", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("data/centrality/phihist_toftpcits_cent", "#phi distribution vs. centrality - data TOF+TPC+ITS tag", kTH2D, {axisPhi, axisCentrality}, true);
+
+      // PID dependent histos
+      if (isPIDPionRequired) {
+        // pion: PID:TPC/TOF/TPC+TOF pt: TPC
+        histos.add("data/centrality/pthist_tpc_cent_pi_PIDTPC", "#it{p}_{T} distribution - data TPC tag - pions PID w/TPC at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpc_cent_pi_PIDTOF", "#it{p}_{T} distribution - data TPC tag - pions PID w/TOF at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpc_cent_pi_PIDTPCTOF", "#it{p}_{T} distribution - data TPC tag - pions PID TPC+TOF", kTH2D, {axisPt, axisCentrality}, true);
+        // pion: PID:TPC/TOF/TPC+TOF pt: TPC+ITS
+        histos.add("data/centrality/pthist_tpcits_cent_pi_PIDTPC", "#it{p}_{T} distribution - data TPC+ITS tag - pions PID w/TPC at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpcits_cent_pi_PIDTOF", "#it{p}_{T} distribution - data TPC+ITS tag - pions PID w/TOF at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpcits_cent_pi_PIDTPCTOF", "#it{p}_{T} distribution - data TPC+ITS tag - pions PID TPC+TOF", kTH2D, {axisPt, axisCentrality}, true);
+      }
+
+      if (isPIDKaonRequired) {
+        // kaon: PID:TPC/TOF/TPC+TOF pt: TPC
+        histos.add("data/centrality/pthist_tpc_cent_ka_PIDTPC", "#it{p}_{T} distribution - data TPC tag - kaons PID w/TPC at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpc_cent_ka_PIDTOF", "#it{p}_{T} distribution - data TPC tag - kaons PID w/TOF at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpc_cent_ka_PIDTPCTOF", "#it{p}_{T} distribution - data TPC tag - kaons PID TPC+TOF", kTH2D, {axisPt, axisCentrality}, true);
+        // kaon: PID:TPC/TOF/TPC+TOF pt: TPC+ITS
+        histos.add("data/centrality/pthist_tpcits_cent_ka_PIDTPC", "#it{p}_{T} distribution - data TPC+ITS tag - kaons PID w/TPC at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpcits_cent_ka_PIDTOF", "#it{p}_{T} distribution - data TPC+ITS tag - kaons PID w/TOF at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpcits_cent_ka_PIDTPCTOF", "#it{p}_{T} distribution - data TPC+ITS tag - kaons PID TPC+TOF", kTH2D, {axisPt, axisCentrality}, true);
+      }
+
+      if (isPIDProtonRequired) {
+        // proton: PID:TPC/TOF/TPC+TOF pt: TPC
+        histos.add("data/centrality/pthist_tpc_cent_pr_PIDTPC", "#it{p}_{T} distribution - data TPC tag - protons PID w/TPC at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpc_cent_pr_PIDTOF", "#it{p}_{T} distribution - data TPC tag - protons PID w/TOF at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpc_cent_pr_PIDTPCTOF", "#it{p}_{T} distribution - data TPC tag - protons PID TPC+TOF", kTH2D, {axisPt, axisCentrality}, true);
+        // proton: PID:TPC/TOF/TPC+TOF pt: TPC+ITS
+        histos.add("data/centrality/pthist_tpcits_cent_pr_PIDTPC", "#it{p}_{T} distribution - data TPC+ITS tag - protons PID w/TPC at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpcits_cent_pr_PIDTOF", "#it{p}_{T} distribution - data TPC+ITS tag - protons PID w/TOF at least", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("data/centrality/pthist_tpcits_cent_pr_PIDTPCTOF", "#it{p}_{T} distribution - data TPC+ITS tag - protons PID TPC+TOF", kTH2D, {axisPt, axisCentrality}, true);
+      }
+    }
   }
   //
   // Init MC function
@@ -1308,6 +1391,109 @@ struct qaMatchEff {
     histos.add("MC/PID/pdghist_den", "PDG code - when non primary #pi TPC tag", kTH1D, {axisPDG}, true);
     histos.add("MC/PID/pdghist_denits", "PDG code - when non primary #pi ITS tag", kTH1D, {axisPDG}, true);
 
+    // Centrality dependent histos, only for PbPb data
+    if (isPbPb && isCentralityRequired) {
+      // Charged particles
+      // pt, phi, eta TPC tagged
+      histos.add("MC/centrality/pthist_tpc_cent", "#it{p}_{T} distribution vs. centrality - MC TPC tag", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("MC/centrality/etahist_tpc_cent", "#eta distribution vs. centrality - MC TPC tag", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("MC/centrality/phihist_tpc_cent", "#phi distribution vs. centrality - MC TPC tag", kTH2D, {axisPhi, axisCentrality}, true);
+      // pt, phi, eta TPC+ITS tagged
+      histos.add("MC/centrality/pthist_tpcits_cent", "#it{p}_{T} distribution vs. centrality - MC TPC+ITS tag", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("MC/centrality/etahist_tpcits_cent", "#eta distribution vs. centrality - MC TPC+ITS tag", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("MC/centrality/phihist_tpcits_cent", "#phi distribution vs. centrality - MC TPC+ITS tag", kTH2D, {axisPhi, axisCentrality}, true);
+
+      // source: primary/secondary/secondary from material
+      histos.add("MC/centrality/pthist_tpc_prim_cent", "#it{p}_{T} distribution vs. centrality - MC TPC tag - primary", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("MC/centrality/etahist_tpc_prim_cent", "#eta distribution vs. centrality - MC TPC tag - primary", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("MC/centrality/phihist_tpc_prim_cent", "#phi distribution vs. centrality - MC TPC tag - primary", kTH2D, {axisPhi, axisCentrality}, true);
+
+      histos.add("MC/centrality/pthist_tpc_secd_cent", "#it{p}_{T} distribution vs. centrality - MC TPC tag - secondary", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("MC/centrality/etahist_tpc_secd_cent", "#eta distribution vs. centrality - MC TPC tag - secondary", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("MC/centrality/phihist_tpc_secd_cent", "#phi distribution vs. centrality - MC TPC tag - secondary", kTH2D, {axisPhi, axisCentrality}, true);
+
+      histos.add("MC/centrality/pthist_tpc_secm_cent", "#it{p}_{T} distribution vs. centrality - MC TPC tag - secondary from material", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("MC/centrality/etahist_tpc_secm_cent", "#eta distribution vs. centrality - MC TPC tag - secondary from material", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("MC/centrality/phihist_tpc_secm_cent", "#phi distribution vs. centrality - MC TPC tag - secondary from material", kTH2D, {axisPhi, axisCentrality}, true);
+
+      // TPC+ITS
+      histos.add("MC/centrality/pthist_tpcits_prim_cent", "#it{p}_{T} distribution vs. centrality - MC TPC+ITS tag - primary", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("MC/centrality/etahist_tpcits_prim_cent", "#eta distribution vs. centrality - MC TPC+ITS tag - primary", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("MC/centrality/phihist_tpcits_prim_cent", "#phi distribution vs. centrality - MC TPC+ITS tag - primary", kTH2D, {axisPhi, axisCentrality}, true);
+
+      histos.add("MC/centrality/pthist_tpcits_secd_cent", "#it{p}_{T} distribution vs. centrality - MC TPC+ITS tag - secondary", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("MC/centrality/etahist_tpcits_secd_cent", "#eta distribution vs. centrality - MC TPC+ITS tag - secondary", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("MC/centrality/phihist_tpcits_secd_cent", "#phi distribution vs. centrality - MC TPC+ITS tag - secondary", kTH2D, {axisPhi, axisCentrality}, true);
+
+      histos.add("MC/centrality/pthist_tpcits_secm_cent", "#it{p}_{T} distribution vs. centrality - MC TPC+ITS tag - secondary from material", kTH2D, {axisPt, axisCentrality}, true);
+      histos.add("MC/centrality/etahist_tpcits_secm_cent", "#eta distribution vs. centrality - MC TPC+ITS tag - secondary from material", kTH2D, {axisEta, axisCentrality}, true);
+      histos.add("MC/centrality/phihist_tpcits_secm_cent", "#phi distribution vs. centrality - MC TPC+ITS tag - secondary from material", kTH2D, {axisPhi, axisCentrality}, true);
+
+      if (isPIDPionRequired) {
+        // TPC
+        histos.add("MC/centrality/pthist_tpc_pi_cent", "#it{p}_{T} distribution vs. centrality - #pi MC TPC tag", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("MC/centrality/etahist_tpc_pi_cent", "#eta distribution vs. centrality - #pi MC TPC tag", kTH2D, {axisEta, axisCentrality}, true);
+        histos.add("MC/centrality/phihist_tpc_pi_cent", "#phi distribution vs. centrality - #pi MC TPC tag", kTH2D, {axisPhi, axisCentrality}, true);
+        // TPC+ITS
+        histos.add("MC/centrality/pthist_tpcits_pi_cent", "#it{p}_{T} distribution vs. centrality - #pi MC TPC+ITS tag", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("MC/centrality/etahist_tpcits_pi_cent", "#eta distribution vs. centrality - #pi MC TPC+ITS tag", kTH2D, {axisEta, axisCentrality}, true);
+        histos.add("MC/centrality/phihist_tpcits_pi_cent", "#phi distribution vs. centrality - #pi MC TPC+ITS tag", kTH2D, {axisPhi, axisCentrality}, true);
+
+        // source: primary/secondary/secondary from material
+        // TPC
+        histos.add("MC/centrality/pthist_tpc_pi_prim_cent", "#it{p}_{T} distribution vs. centrality - #pi MC TPC tag - primary", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("MC/centrality/etahist_tpc_pi_prim_cent", "#eta distribution vs. centrality - #pi MC TPC tag - primary", kTH2D, {axisEta, axisCentrality}, true);
+        histos.add("MC/centrality/phihist_tpc_pi_prim_cent", "#phi distribution vs. centrality - #pi MC TPC tag - primary", kTH2D, {axisPhi, axisCentrality}, true);
+
+        histos.add("MC/centrality/pthist_tpc_pi_secd_cent", "#it{p}_{T} distribution vs. centrality - #pi MC TPC tag - secondary", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("MC/centrality/etahist_tpc_pi_secd_cent", "#eta distribution vs. centrality - #pi MC TPC tag - secondary", kTH2D, {axisEta, axisCentrality}, true);
+        histos.add("MC/centrality/phihist_tpc_pi_secd_cent", "#phi distribution vs. centrality - #pi MC TPC tag - secondary", kTH2D, {axisPhi, axisCentrality}, true);
+
+        histos.add("MC/centrality/pthist_tpc_pi_secm_cent", "#it{p}_{T} distribution vs. centrality - #pi MC TPC tag - secondary from material", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("MC/centrality/etahist_tpc_pi_secm_cent", "#eta distribution vs. centrality - #pi MC TPC tag - secondary from material", kTH2D, {axisEta, axisCentrality}, true);
+        histos.add("MC/centrality/phihist_tpc_pi_secm_cent", "#phi distribution vs. centrality - #pi MC TPC tag - secondary from material", kTH2D, {axisPhi, axisCentrality}, true);
+        // TPC+ITS
+        histos.add("MC/centrality/pthist_tpcits_pi_prim_cent", "#it{p}_{T} distribution vs. centrality - #pi MC TPC+ITS tag - primary", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("MC/centrality/etahist_tpcits_pi_prim_cent", "#eta distribution vs. centrality - #pi MC TPC+ITS tag - primary", kTH2D, {axisEta, axisCentrality}, true);
+        histos.add("MC/centrality/phihist_tpcits_pi_prim_cent", "#phi distribution vs. centrality - #pi MC TPC+ITS tag - primary", kTH2D, {axisPhi, axisCentrality}, true);
+
+        histos.add("MC/centrality/pthist_tpcits_pi_secd_cent", "#it{p}_{T} distribution vs. centrality - #pi MC TPC+ITS tag - secondary", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("MC/centrality/etahist_tpcits_pi_secd_cent", "#eta distribution vs. centrality - #pi MC TPC+ITS tag - secondary", kTH2D, {axisEta, axisCentrality}, true);
+        histos.add("MC/centrality/phihist_tpcits_pi_secd_cent", "#phi distribution vs. centrality - #pi MC TPC+ITS tag - secondary", kTH2D, {axisPhi, axisCentrality}, true);
+
+        histos.add("MC/centrality/pthist_tpcits_pi_secm_cent", "#it{p}_{T} distribution vs. centrality - #pi MC TPC+ITS tag - secondary from material", kTH2D, {axisPt, axisCentrality}, true);
+        histos.add("MC/centrality/etahist_tpcits_pi_secm_cent", "#eta distribution vs. centrality - #pi MC TPC+ITS tag - secondary from material", kTH2D, {axisEta, axisCentrality}, true);
+        histos.add("MC/centrality/phihist_tpcits_pi_secm_cent", "#phi distribution vs. centrality - #pi MC TPC+ITS tag - secondary from material", kTH2D, {axisPhi, axisCentrality}, true);
+      }
+
+      if (isPIDKaonRequired) { // just need pt
+        // TPC
+        histos.add("MC/centrality/pthist_tpc_ka_cent", "#it{p}_{T} distribution vs. centrality - kaons MC TPC tag", kTH2D, {axisPt, axisCentrality}, true);
+        // TPC+ITS
+        histos.add("MC/centrality/pthist_tpcits_ka_cent", "#it{p}_{T} distribution vs. centrality - kaons MC TPC+ITS tag", kTH2D, {axisPt, axisCentrality}, true);
+
+        // source: primary
+        // TPC
+        histos.add("MC/centrality/pthist_tpc_ka_prim_cent", "#it{p}_{T} distribution vs. centrality - kaons MC TPC tag - primary", kTH2D, {axisPt, axisCentrality}, true);
+        // TPC+ITS
+        histos.add("MC/centrality/pthist_tpcits_ka_prim_cent", "#it{p}_{T} distribution vs. centrality - kaons MC TPC+ITS tag - primary", kTH2D, {axisPt, axisCentrality}, true);
+      }
+
+      if (isPIDProtonRequired) {
+        // proton: pt
+        // TPC
+        histos.add("MC/centrality/pthist_tpc_pr_cent", "#it{p}_{T} distribution vs. centrality - protons MC TPC tag", kTH2D, {axisPt, axisCentrality}, true);
+        // TPC+ITS
+        histos.add("MC/centrality/pthist_tpcits_pr_cent", "#it{p}_{T} distribution vs. centrality - protons MC TPC+ITS tag", kTH2D, {axisPt, axisCentrality}, true);
+
+        // source: primary
+        // TPC
+        histos.add("MC/centrality/pthist_tpc_pr_prim_cent", "#it{p}_{T} distribution vs. centrality - protons MC TPC tag - primary", kTH2D, {axisPt, axisCentrality}, true);
+        // TPC+ITS
+        histos.add("MC/centrality/pthist_tpcits_pr_prim_cent", "#it{p}_{T} distribution vs. centrality - protons MC TPC+ITS tag - primary", kTH2D, {axisPt, axisCentrality}, true);
+      }
+    }
+
   } // end initMC
 
   /// Function calculating the pt at inner wall of TPC
@@ -1328,7 +1514,7 @@ struct qaMatchEff {
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
       return false;
-    if (isUseTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
+    if (isUseTPCinnerWallPt && computePtInParamTPC(track) < kineCuts.ptMinCutInnerWallTPC) {
       return false; // pt selection active only if the required pt is that calculated at the inner wall of TPC
     }
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kEtaRange))
@@ -3102,6 +3288,321 @@ struct qaMatchEff {
     }
   }
 
+  ///////////////////////////////////////////////////////////////////////////////
+  ///   Template function to perform the analysis with different centrality   ///
+  ///////////////////////////////////////////////////////////////////////////////
+  template <bool IS_MC, typename Coll, typename Trks, typename MCParticles>
+  void fillHistogramsCentrality(Coll const& collision, Trks const& tracks, MCParticles const&)
+  {
+
+    if constexpr (IS_MC) {
+      if (!collision.has_mcCollision()) {
+        if (doDebug)
+          LOGF(info, "No MC collision for this collision, skip...");
+        return;
+      }
+    }
+
+    float centrality{-1.f};
+    if (isPbPb) {
+      centrality = collision.centFT0C();
+    } else {
+      if (doDebug)
+        LOGF(warning, "Centrality not defined for pp collision type, return...");
+      return;
+    }
+
+    if (centrality < 0.f || centrality > 100.f) {
+      return;
+    }
+
+    float pt_trk{0.f};
+    // loop over tracks
+    for (auto track : tracks) {
+      // choose if we keep the track according to the TRD presence requirement
+      if ((isTRDThere == 1) && !track.hasTRD() || (isTRDThere == 0) && track.hasTRD()) {
+        continue;
+      }
+
+      if constexpr (IS_MC) {
+        if (!track.has_mcParticle()) {
+          if (doDebug)
+            LOGF(warning, " N. %d track without MC particle, skipping...", countNoMC);
+          continue;
+        }
+      }
+
+      // kinematic cuts
+      if (!isTrackSelectedKineCuts(track)) {
+        continue;
+      }
+
+      // if using TPC inner wall pt, for ITS-TPC matching efficiency studies, slould be used
+      auto pt_reco = track.pt();
+      auto pt_tpcinner = computePtInParamTPC(track);
+      if (isUseTPCinnerWallPt) {
+        pt_trk = pt_tpcinner;
+      } else {
+        pt_trk = pt_reco;
+      }
+
+      const bool trkWTOF = track.hasTOF();
+      const bool trkWTPC = track.hasTPC();
+      const bool trkWITS = track.hasITS();
+
+      // fill histograms
+      if constexpr (IS_MC) {
+        // MC
+        auto mcpart = track.mcParticle();
+        int pdgCode = abs(mcpart.pdgCode());
+
+        bool isPrim = mcpart.isPhysicalPrimary();
+        bool isSecd = mcpart.getProcess() == 4;
+
+        bool isPion = isPIDPionRequired && pdgCode == 211;
+        bool isKaon = isPIDKaonRequired && pdgCode == 321;
+        bool isProton = isPIDProtonRequired && pdgCode == 2212;
+
+        if (trkWTPC && isTrackSelectedTPCCuts(track)) {
+          histos.get<TH2>(HIST("MC/centrality/pthist_tpc_cent"))->Fill(pt_trk, centrality);
+          histos.get<TH2>(HIST("MC/centrality/phihist_tpc_cent"))->Fill(track.phi(), centrality);
+          histos.get<TH2>(HIST("MC/centrality/etahist_tpc_cent"))->Fill(track.eta(), centrality);
+
+          if (isPrim) {
+            histos.get<TH2>(HIST("MC/centrality/pthist_tpc_prim_cent"))->Fill(pt_trk, centrality);
+            histos.get<TH2>(HIST("MC/centrality/phihist_tpc_prim_cent"))->Fill(track.phi(), centrality);
+            histos.get<TH2>(HIST("MC/centrality/etahist_tpc_prim_cent"))->Fill(track.eta(), centrality);
+          } else if (isSecd) {
+            histos.get<TH2>(HIST("MC/centrality/pthist_tpc_secd_cent"))->Fill(pt_trk, centrality);
+            histos.get<TH2>(HIST("MC/centrality/phihist_tpc_secd_cent"))->Fill(track.phi(), centrality);
+            histos.get<TH2>(HIST("MC/centrality/etahist_tpc_secd_cent"))->Fill(track.eta(), centrality);
+          } else {
+            histos.get<TH2>(HIST("MC/centrality/pthist_tpc_secm_cent"))->Fill(pt_trk, centrality);
+            histos.get<TH2>(HIST("MC/centrality/phihist_tpc_secm_cent"))->Fill(track.phi(), centrality);
+            histos.get<TH2>(HIST("MC/centrality/etahist_tpc_secm_cent"))->Fill(track.eta(), centrality);
+          }
+
+          if (isPion) {
+            histos.get<TH2>(HIST("MC/centrality/pthist_tpc_pi_cent"))->Fill(pt_trk, centrality);
+            histos.get<TH2>(HIST("MC/centrality/phihist_tpc_pi_cent"))->Fill(track.phi(), centrality);
+            histos.get<TH2>(HIST("MC/centrality/etahist_tpc_pi_cent"))->Fill(track.eta(), centrality);
+
+            if (isPrim) {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpc_pi_prim_cent"))->Fill(pt_trk, centrality);
+              histos.get<TH2>(HIST("MC/centrality/phihist_tpc_pi_prim_cent"))->Fill(track.phi(), centrality);
+              histos.get<TH2>(HIST("MC/centrality/etahist_tpc_pi_prim_cent"))->Fill(track.eta(), centrality);
+            } else if (isSecd) {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpc_pi_secd_cent"))->Fill(pt_trk, centrality);
+              histos.get<TH2>(HIST("MC/centrality/phihist_tpc_pi_secd_cent"))->Fill(track.phi(), centrality);
+              histos.get<TH2>(HIST("MC/centrality/etahist_tpc_pi_secd_cent"))->Fill(track.eta(), centrality);
+            } else {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpc_pi_secm_cent"))->Fill(pt_trk, centrality);
+              histos.get<TH2>(HIST("MC/centrality/phihist_tpc_pi_secm_cent"))->Fill(track.phi(), centrality);
+              histos.get<TH2>(HIST("MC/centrality/etahist_tpc_pi_secm_cent"))->Fill(track.eta(), centrality);
+            }
+
+          } else if (isKaon) {
+            histos.get<TH2>(HIST("MC/centrality/pthist_tpc_ka_cent"))->Fill(pt_trk, centrality);
+            if (isPrim) {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpc_ka_prim_cent"))->Fill(pt_trk, centrality);
+            }
+          } else if (isProton) {
+            histos.get<TH2>(HIST("MC/centrality/pthist_tpc_pr_cent"))->Fill(pt_trk, centrality);
+            if (isPrim) {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpc_pr_prim_cent"))->Fill(pt_trk, centrality);
+            }
+          }
+
+          if (trkWITS && isTrackSelectedITSCuts(track)) {
+
+            histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_cent"))->Fill(pt_trk, centrality);
+            histos.get<TH2>(HIST("MC/centrality/phihist_tpcits_cent"))->Fill(track.phi(), centrality);
+            histos.get<TH2>(HIST("MC/centrality/etahist_tpcits_cent"))->Fill(track.eta(), centrality);
+
+            if (isPrim) {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_prim_cent"))->Fill(pt_trk, centrality);
+              histos.get<TH2>(HIST("MC/centrality/phihist_tpcits_prim_cent"))->Fill(track.phi(), centrality);
+              histos.get<TH2>(HIST("MC/centrality/etahist_tpcits_prim_cent"))->Fill(track.eta(), centrality);
+            } else if (isSecd) {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_secd_cent"))->Fill(pt_trk, centrality);
+              histos.get<TH2>(HIST("MC/centrality/phihist_tpcits_secd_cent"))->Fill(track.phi(), centrality);
+              histos.get<TH2>(HIST("MC/centrality/etahist_tpcits_secd_cent"))->Fill(track.eta(), centrality);
+            } else {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_secm_cent"))->Fill(pt_trk, centrality);
+              histos.get<TH2>(HIST("MC/centrality/phihist_tpcits_secm_cent"))->Fill(track.phi(), centrality);
+              histos.get<TH2>(HIST("MC/centrality/etahist_tpcits_secm_cent"))->Fill(track.eta(), centrality);
+            }
+
+            if (isPion) {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_pi_cent"))->Fill(pt_trk, centrality);
+              histos.get<TH2>(HIST("MC/centrality/phihist_tpcits_pi_cent"))->Fill(track.phi(), centrality);
+              histos.get<TH2>(HIST("MC/centrality/etahist_tpcits_pi_cent"))->Fill(track.eta(), centrality);
+
+              if (isPrim) {
+                histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_pi_prim_cent"))->Fill(pt_trk, centrality);
+                histos.get<TH2>(HIST("MC/centrality/phihist_tpcits_pi_prim_cent"))->Fill(track.phi(), centrality);
+                histos.get<TH2>(HIST("MC/centrality/etahist_tpcits_pi_prim_cent"))->Fill(track.eta(), centrality);
+              } else if (isSecd) {
+                histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_pi_secd_cent"))->Fill(pt_trk, centrality);
+                histos.get<TH2>(HIST("MC/centrality/phihist_tpcits_pi_secd_cent"))->Fill(track.phi(), centrality);
+                histos.get<TH2>(HIST("MC/centrality/etahist_tpcits_pi_secd_cent"))->Fill(track.eta(), centrality);
+              } else {
+                histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_pi_secm_cent"))->Fill(pt_trk, centrality);
+                histos.get<TH2>(HIST("MC/centrality/phihist_tpcits_pi_secm_cent"))->Fill(track.phi(), centrality);
+                histos.get<TH2>(HIST("MC/centrality/etahist_tpcits_pi_secm_cent"))->Fill(track.eta(), centrality);
+              }
+
+            } else if (isKaon) {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_ka_cent"))->Fill(pt_trk, centrality);
+
+              if (isPrim) {
+                histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_ka_prim_cent"))->Fill(pt_trk, centrality);
+              }
+
+            } else if (isProton) {
+              histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_pr_cent"))->Fill(pt_trk, centrality);
+
+              if (isPrim) {
+                histos.get<TH2>(HIST("MC/centrality/pthist_tpcits_pr_prim_cent"))->Fill(pt_trk, centrality);
+              }
+
+            } // end if PID
+
+          } // end if tracks tag by ITS
+
+        } // end if tracks tag by TPC
+
+      } else {
+        // Data
+
+        float tpcNSigmaPion{-999.f};
+        float tpcNSigmaKaon{-999.f};
+        float tpcNSigmaProton{-999.f};
+        float tofNSigmaPion{-999.f};
+        float tofNSigmaKaon{-999.f};
+        float tofNSigmaProton{-999.f};
+        tpcNSigmaPion = track.tpcNSigmaPi();
+        tpcNSigmaKaon = track.tpcNSigmaKa();
+        tpcNSigmaProton = track.tpcNSigmaPr();
+        tofNSigmaPion = track.tofNSigmaPi();
+        tofNSigmaKaon = track.tofNSigmaKa();
+        tofNSigmaProton = track.tofNSigmaPr();
+
+        // get PID from TPC and TOF
+        bool pionPIDwithTPC = (nSigmaPID->get("TPC", "nSigPionMin") < tpcNSigmaPion && tpcNSigmaPion < nSigmaPID->get("TPC", "nSigPionMax"));
+        bool pionPIDwithTOF = (nSigmaPID->get("TOF", "nSigPionMin") < tofNSigmaPion && tofNSigmaPion < nSigmaPID->get("TOF", "nSigPionMax"));
+        bool kaonPIDwithTPC = (nSigmaPID->get("TPC", "nSigKaonMin") < tpcNSigmaKaon && tpcNSigmaKaon < nSigmaPID->get("TPC", "nSigKaonMax"));
+        bool kaonPIDwithTOF = (nSigmaPID->get("TOF", "nSigKaonMin") < tofNSigmaKaon && tofNSigmaKaon < nSigmaPID->get("TOF", "nSigKaonMax"));
+        bool protonPIDwithTPC = (nSigmaPID->get("TPC", "nSigProtonMin") < tpcNSigmaProton && tpcNSigmaProton < nSigmaPID->get("TPC", "nSigProtonMax"));
+        bool protonPIDwithTOF = (nSigmaPID->get("TOF", "nSigProtonMin") < tofNSigmaProton && tofNSigmaProton < nSigmaPID->get("TOF", "nSigProtonMax"));
+
+        bool isPionTPC = isPIDPionRequired && trkWTPC && pionPIDwithTPC;
+        bool isPionTOF = isPIDPionRequired && trkWTOF && pionPIDwithTOF;
+
+        bool isKaonTPC = isPIDKaonRequired && trkWTPC && kaonPIDwithTPC;
+        bool isKaonTOF = isPIDKaonRequired && trkWTOF && kaonPIDwithTOF;
+
+        bool isProtonTPC = isPIDProtonRequired && trkWTPC && protonPIDwithTPC;
+        bool isProtonTOF = isPIDProtonRequired && trkWTOF && protonPIDwithTOF;
+
+        // ambiguous PID
+        bool isAmbPIDTPC = (isPionTPC && isKaonTPC) || (isPionTPC && isProtonTPC) || (isKaonTPC && isProtonTPC);
+        bool isAmbPIDTOF = (isPionTOF && isKaonTOF) || (isPionTOF && isProtonTOF) || (isKaonTOF && isProtonTOF);
+
+        if (trkWTPC && isTrackSelectedTPCCuts(track)) {
+          // track tag by TPC
+          histos.get<TH2>(HIST("data/centrality/pthist_tpc_cent"))->Fill(pt_trk, centrality);
+          histos.get<TH2>(HIST("data/centrality/phihist_tpc_cent"))->Fill(track.phi(), centrality);
+          histos.get<TH2>(HIST("data/centrality/etahist_tpc_cent"))->Fill(track.eta(), centrality);
+
+          // track tag by TPC + TOF
+          if (trkWTOF) {
+            histos.get<TH2>(HIST("data/centrality/pthist_toftpc_cent"))->Fill(pt_trk, centrality);
+            histos.get<TH2>(HIST("data/centrality/phihist_toftpc_cent"))->Fill(track.phi(), centrality);
+            histos.get<TH2>(HIST("data/centrality/etahist_toftpc_cent"))->Fill(track.eta(), centrality);
+          }
+
+          if (!isAmbPIDTPC) {
+
+            if (isPionTPC) {
+              histos.get<TH2>(HIST("data/centrality/pthist_tpc_cent_pi_PIDTPC"))->Fill(pt_trk, centrality);
+            } else if (isKaonTPC) {
+              histos.get<TH2>(HIST("data/centrality/pthist_tpc_cent_ka_PIDTPC"))->Fill(pt_trk, centrality);
+            } else if (isProtonTPC) {
+              histos.get<TH2>(HIST("data/centrality/pthist_tpc_cent_pr_PIDTPC"))->Fill(pt_trk, centrality);
+            }
+
+            if (isPionTOF) {
+              histos.get<TH2>(HIST("data/centrality/pthist_tpc_cent_pi_PIDTOF"))->Fill(pt_trk, centrality);
+            } else if (isKaonTOF) {
+              histos.get<TH2>(HIST("data/centrality/pthist_tpc_cent_ka_PIDTOF"))->Fill(pt_trk, centrality);
+            } else if (isProtonTOF) {
+              histos.get<TH2>(HIST("data/centrality/pthist_tpc_cent_pr_PIDTOF"))->Fill(pt_trk, centrality);
+            }
+
+            if (!isAmbPIDTOF) {
+              if (isPionTPC && isPionTOF) {
+                histos.get<TH2>(HIST("data/centrality/pthist_tpc_cent_pi_PIDTPCTOF"))->Fill(pt_trk, centrality);
+              } else if (isKaonTPC && isKaonTOF) {
+                histos.get<TH2>(HIST("data/centrality/pthist_tpc_cent_ka_PIDTPCTOF"))->Fill(pt_trk, centrality);
+              } else if (isProtonTPC && isProtonTOF) {
+                histos.get<TH2>(HIST("data/centrality/pthist_tpc_cent_pr_PIDTPCTOF"))->Fill(pt_trk, centrality);
+              }
+            }
+          }
+
+          if (trkWITS && isTrackSelectedITSCuts(track)) {
+            // track tag by TPC + ITS
+            histos.get<TH2>(HIST("data/centrality/pthist_tpcits_cent"))->Fill(pt_trk, centrality);
+            histos.get<TH2>(HIST("data/centrality/phihist_tpcits_cent"))->Fill(track.phi(), centrality);
+            histos.get<TH2>(HIST("data/centrality/etahist_tpcits_cent"))->Fill(track.eta(), centrality);
+
+            if (trkWTOF) {
+              // track tag by TPC + ITS + TOF
+              histos.get<TH2>(HIST("data/centrality/pthist_toftpcits_cent"))->Fill(pt_trk, centrality);
+              histos.get<TH2>(HIST("data/centrality/phihist_toftpcits_cent"))->Fill(track.phi(), centrality);
+              histos.get<TH2>(HIST("data/centrality/etahist_toftpcits_cent"))->Fill(track.eta(), centrality);
+            }
+
+            if (!isAmbPIDTPC) {
+
+              if (isPionTPC) {
+                histos.get<TH2>(HIST("data/centrality/pthist_tpcits_cent_pi_PIDTPC"))->Fill(pt_trk, centrality);
+              } else if (isKaonTPC) {
+                histos.get<TH2>(HIST("data/centrality/pthist_tpcits_cent_ka_PIDTPC"))->Fill(pt_trk, centrality);
+              } else if (isProtonTPC) {
+                histos.get<TH2>(HIST("data/centrality/pthist_tpcits_cent_pr_PIDTPC"))->Fill(pt_trk, centrality);
+              }
+
+              if (isPionTOF) {
+                histos.get<TH2>(HIST("data/centrality/pthist_tpcits_cent_pi_PIDTOF"))->Fill(pt_trk, centrality);
+              } else if (isKaonTOF) {
+                histos.get<TH2>(HIST("data/centrality/pthist_tpcits_cent_ka_PIDTOF"))->Fill(pt_trk, centrality);
+              } else if (isProtonTOF) {
+                histos.get<TH2>(HIST("data/centrality/pthist_tpcits_cent_pr_PIDTOF"))->Fill(pt_trk, centrality);
+              }
+
+              if (!isAmbPIDTOF) {
+                if (isPionTPC && isPionTOF) {
+                  histos.get<TH2>(HIST("data/centrality/pthist_tpcits_cent_pi_PIDTPCTOF"))->Fill(pt_trk, centrality);
+                } else if (isKaonTPC && isKaonTOF) {
+                  histos.get<TH2>(HIST("data/centrality/pthist_tpcits_cent_ka_PIDTPCTOF"))->Fill(pt_trk, centrality);
+                } else if (isProtonTPC && isProtonTOF) {
+                  histos.get<TH2>(HIST("data/centrality/pthist_tpcits_cent_pr_PIDTPCTOF"))->Fill(pt_trk, centrality);
+                }
+              }
+
+            } //  end if not ambiguous PID
+
+          } //  end if track tag by ITS
+
+        } //  end if track tag by TPC
+
+      } //  end if data or MC
+
+    } // end loop on tracks
+  }
+
   /// Function to add histograms for time-based monitoring of matching efficiency (debug purposes)
   /// BEWARE: these hitograms are ok only if looked run-by-run
   void setUpTimeMonitoring(BCsWithTimeStamp const& bcs)
@@ -3160,18 +3661,48 @@ struct qaMatchEff {
   //////////////////////////////////////////////
   ///   Process MC with collision grouping   ///
   //////////////////////////////////////////////
-  void processMC(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  void processMC(CollisionsEvSel::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
+    if (isEnableEventSelection && !collision.sel8()) {
+      if (doDebug)
+        LOGF(info, "Event selection not passed, skipping...");
+      return;
+    }
     fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
     fillGeneralHistos<true>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processMC, "process MC", false);
 
+  /////////////////////////////////////////////////////////////////////////////////
+  ///   Process data with collision grouping and centraliy information joined   ///
+  /////////////////////////////////////////////////////////////////////////////////
+  void processMCPbPbCent(CollisionsMCEvSelFT0C::iterator const& collision, MCTracks const& tracks, aod::McParticles const& mcParticles)
+  {
+    if (isEnableEventSelection && !collision.sel8()) {
+      if (doDebug)
+        LOGF(info, "Event selection not passed, skipping...");
+      return;
+    }
+    if (!isPbPb) {
+      if (doDebug)
+        LOGF(warning, "Centrality not defined for pp collision type, return...");
+      return;
+    }
+    fillHistogramsCentrality<true>(collision, tracks, mcParticles);
+    fillGeneralHistos<true>(collision);
+  }
+  PROCESS_SWITCH(qaMatchEff, processMCPbPbCent, "process MC with centrality info", false);
+
   ////////////////////////////////////////////////////////////
   ///   Process MC with collision grouping and IU tracks   ///
   ////////////////////////////////////////////////////////////
-  void processTrkIUMC(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  void processTrkIUMC(CollisionsMCEvSel::iterator const& collision, MCTracksIU const& tracks, aod::McParticles const& mcParticles)
   {
+    if (isEnableEventSelection && !collision.sel8()) {
+      if (doDebug)
+        LOGF(info, "Event selection not passed, skipping...");
+      return;
+    }
     fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
     fillGeneralHistos<true>(collision);
   }
@@ -3180,7 +3711,7 @@ struct qaMatchEff {
   /////////////////////////////////////////////
   ///   Process MC w/o collision grouping   ///
   /////////////////////////////////////////////
-  void processMCNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
+  void processMCNoColl(MCTracks const& tracks, aod::McParticles const& mcParticles)
   {
     fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
   }
@@ -3189,22 +3720,55 @@ struct qaMatchEff {
   ////////////////////////////////////////////////
   ///   Process data with collision grouping   ///
   ////////////////////////////////////////////////
-  void processData(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks, BCsWithTimeStamp const& bcs)
+  void processData(CollisionsEvSel::iterator const& collision, TracksPID const& tracks, BCsWithTimeStamp const& bcs)
   {
     if (enableMonitorVsTime) {
       // tracks.rawIteratorAt(0).collision().bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
       setUpTimeMonitoring(bcs);
+    }
+    if (isEnableEventSelection && !collision.sel8()) {
+      if (doDebug)
+        LOGF(info, "Event selection not passed, skipping...");
+      return;
     }
     fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
     fillGeneralHistos<false>(collision);
   }
   PROCESS_SWITCH(qaMatchEff, processData, "process data", true);
 
+  /////////////////////////////////////////////////////////////////////////////////
+  ///   Process data with collision grouping and centraliy information joined   ///
+  /////////////////////////////////////////////////////////////////////////////////
+  void processDataPbPbCent(CollisionsEvSelFT0C::iterator const& collision, TracksPID const& tracks, BCsWithTimeStamp const& bcs)
+  {
+    if (enableMonitorVsTime) {
+      setUpTimeMonitoring(bcs);
+    }
+    if (isEnableEventSelection && !collision.sel8()) {
+      if (doDebug)
+        LOGF(info, "Event selection not passed, skipping...");
+      return;
+    }
+    if (!isPbPb) {
+      if (doDebug)
+        LOGF(warning, "Centrality not defined for pp collision type, return...");
+      return;
+    }
+    fillHistogramsCentrality<false>(collision, tracks, tracks);
+    fillGeneralHistos<false>(collision);
+  }
+  PROCESS_SWITCH(qaMatchEff, processDataPbPbCent, "process data with centrality info", false);
+
   /////////////////////////////////////////////////////////////
   ///   Process data with collision grouping and IU tracks  ///
   /////////////////////////////////////////////////////////////
-  void processTrkIUData(soa::Filtered<aod::Collisions>::iterator const& collision, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks)
+  void processTrkIUData(CollisionsEvSel::iterator const& collision, TracksIUPID const& tracks)
   {
+    if (isEnableEventSelection && !collision.sel8()) {
+      if (doDebug)
+        LOGF(info, "Event selection not passed, skipping...");
+      return;
+    }
     fillHistograms<false>(tracks, tracks, tracks); // 2nd and 3rd arguments not used in this case
     fillGeneralHistos<false>(collision);
   }
@@ -3213,15 +3777,14 @@ struct qaMatchEff {
   ///////////////////////////////////////////////
   ///   Process data w/o collision grouping   ///
   ///////////////////////////////////////////////
-  void processDataNoColl(soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks, BCsWithTimeStamp const& bcs)
+  void processDataNoColl(TracksPID const& tracks, BCsWithTimeStamp const& bcs)
   {
     if (enableMonitorVsTime) {
       setUpTimeMonitoring(bcs);
     }
     fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
   }
-  PROCESS_SWITCH(qaMatchEff, processDataNoColl, "process data - no collision grouping", true);
-
+  PROCESS_SWITCH(qaMatchEff, processDataNoColl, "process data - no collision grouping", false);
 }; // end of structure
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
