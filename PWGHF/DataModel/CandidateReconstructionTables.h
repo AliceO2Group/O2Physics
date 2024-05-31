@@ -2074,7 +2074,7 @@ enum DecayType { DecayToOmegaPi = 0,
 } // end of namespace hf_cand_omegac
 
 // declare dedicated Omegac  to omega Pi candidate table
-DECLARE_SOA_TABLE(HfCandOmegaC, "AOD", "HFCANDOMEGAC",
+DECLARE_SOA_TABLE(HfCandOmegac, "AOD", "HFCANDOMEGAC",
                   o2::soa::Index<>,
                   hf_cand_omegac::CollisionId, hf_cand_omegac::XPv, hf_cand_omegac::YPv, hf_cand_omegac::ZPv,
                   hf_cand_omegac::XDecayVtxCharmBaryon, hf_cand_omegac::YDecayVtxCharmBaryon, hf_cand_omegac::ZDecayVtxCharmBaryon,
