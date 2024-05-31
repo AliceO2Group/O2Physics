@@ -249,15 +249,15 @@ struct lambdapolarization {
     if (cfgCentSel < centrality) {
       return 0;
     }
-/*
-    auto multNTracksPV = collision.multNTracksPV();
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
-      return 0;
-    }
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
-      return 0;
-    }
-*/
+    /*
+        auto multNTracksPV = collision.multNTracksPV();
+        if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
+          return 0;
+        }
+        if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
+          return 0;
+        }
+    */
     if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return 0;
     }
@@ -426,20 +426,19 @@ struct lambdapolarization {
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
     if (cfgCentEst == 1) {
       centrality = collision.centFT0C();
-    }
-    else if (cfgCentEst == 2) {
+    } else if (cfgCentEst == 2) {
       centrality = collision.centFT0M();
     }
     for (auto i = 2; i < cfgnMods + 2; i++) {
-    int QvecDetInd = 0;
-    int QvecRefAInd = 4;
-    int QvecRefBInd = 5;
+      int QvecDetInd = 0;
+      int QvecRefAInd = 4;
+      int QvecRefBInd = 5;
 
-    if (cfgShiftCorrDef) {
-      QvecDetInd = DetId * 4 + 3 + (i - 2) * 24;
-      QvecRefAInd = RefAId * 4 + 3 + (i - 2) * 24;
-      QvecRefBInd = RefBId * 4 + 3 + (i - 2) * 24;
-      for (int ishift = 1; ishift <= 10; ishift++) {
+      if (cfgShiftCorrDef) {
+        QvecDetInd = DetId * 4 + 3 + (i - 2) * 24;
+        QvecRefAInd = RefAId * 4 + 3 + (i - 2) * 24;
+        QvecRefBInd = RefBId * 4 + 3 + (i - 2) * 24;
+        for (int ishift = 1; ishift <= 10; ishift++) {
           histos.fill(HIST("ShiftFIT"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(i) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(i)));
           histos.fill(HIST("ShiftFIT"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(i) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(i)));
 
