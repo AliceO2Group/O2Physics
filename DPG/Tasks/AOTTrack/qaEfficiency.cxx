@@ -1126,7 +1126,7 @@ struct QaEfficiency {
     if (globalTrackSelection.value == 6) {
       customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(cfgCustomTrackCuts.itsPattern);
       LOG(info) << "Customizing track cuts:";
-      if (tracksIU.value) {
+      if (cfgCustomTrackCuts.tracksIU.value) {
         customTrackCuts.SetTrackType(o2::aod::track::TrackTypeEnum::TrackIU);
       }
       customTrackCuts.SetRequireITSRefit(cfgCustomTrackCuts.requireITS);
