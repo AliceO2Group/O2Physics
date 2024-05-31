@@ -673,9 +673,13 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       if (device.name.compare("hf-candidate-creator-xic0-omegac0") == 0) {
         for (const auto& option : device.options) {
           if (option.name.compare("hfEvSel.useSel8Trigger") == 0) {
-            hfEvSelMc.useItsRoBorderCut = option.defaultValue.get<bool>();
+            hfEvSelMc.useSel8Trigger = option.defaultValue.get<bool>();
+          } else if (option.name.compare("hfEvSel.useTvxTrigger") == 0) {
+            hfEvSelMc.useTvxTrigger = option.defaultValue.get<bool>();
           } else if (option.name.compare("hfEvSel.useTimeFrameBorderCut") == 0) {
             hfEvSelMc.useTimeFrameBorderCut = option.defaultValue.get<bool>();
+          } else if (option.name.compare("hfEvSel.useItsRofBorderCut") == 0) {
+            hfEvSelMc.useItsRofBorderCut = option.defaultValue.get<bool>();
           } else if (option.name.compare("hfEvSel.zPvPosMin") == 0) {
             hfEvSelMc.zPvPosMin = option.defaultValue.get<float>();
           } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
@@ -894,16 +898,16 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
         if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
-            rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
-          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
-            rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
-          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
-            rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
-          } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
-            rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
-          }
-          continue;
+          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
+          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
+          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
+        } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
+          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
         }
+        continue;
+      }
 
       if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
         //  Xic → Xi pi

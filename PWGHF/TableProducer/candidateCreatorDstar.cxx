@@ -516,9 +516,13 @@ struct HfCandidateCreatorDstarExpressions {
       if (device.name.compare("hf-candidate-creator-dstar") == 0) {
         for (const auto& option : device.options) {
           if (option.name.compare("hfEvSel.useSel8Trigger") == 0) {
-            hfEvSelMc.useItsRoBorderCut = option.defaultValue.get<bool>();
+            hfEvSelMc.useSel8Trigger = option.defaultValue.get<bool>();
+          } else if (option.name.compare("hfEvSel.useTvxTrigger") == 0) {
+            hfEvSelMc.useTvxTrigger = option.defaultValue.get<bool>();
           } else if (option.name.compare("hfEvSel.useTimeFrameBorderCut") == 0) {
             hfEvSelMc.useTimeFrameBorderCut = option.defaultValue.get<bool>();
+          } else if (option.name.compare("hfEvSel.useItsRofBorderCut") == 0) {
+            hfEvSelMc.useItsRofBorderCut = option.defaultValue.get<bool>();
           } else if (option.name.compare("hfEvSel.zPvPosMin") == 0) {
             hfEvSelMc.zPvPosMin = option.defaultValue.get<float>();
           } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {

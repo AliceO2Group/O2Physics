@@ -33,7 +33,9 @@ enum EventRejection {
   None = 0,
   Centrality,
   Trigger,
+  TvxTrigger,
   TimeFrameBorderCut,
+  ItsRofBorderCut,
   IsGoodZvtxFT0vsPV,
   NoSameBunchPileup,
   NumTracksInTimeRange,
@@ -50,7 +52,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
   o2::framework::Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "Apply the sel8 event selection"};
   o2::framework::Configurable<int> triggerClass{"triggerClass", -1, "Trigger class different from sel8 (e.g. kINT7 for Run2) used only if useSel8Trigger is false"};
+  o2::framework::Configurable<bool> useTvxTrigger{"useTvxTrigger", true, "Apply TVX trigger sel"};
   o2::framework::Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "Apply TF border cut"};
+  o2::framework::Configurable<bool> useItsRofBorderCut{"useItsRofBorderCut", true, "Apply ITS ROF border cut"};
   o2::framework::Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "Check consistency between PVz from central barrel with that from FT0 timing"};
   o2::framework::Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "Exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
   o2::framework::Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "Apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
@@ -87,7 +91,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Trigger");
+    hCollisions->GetXaxis()->SetBinLabel(EventRejection::TvxTrigger + 1, "TVX Trigger");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::TimeFrameBorderCut + 1, "TF border");
+    hCollisions->GetXaxis()->SetBinLabel(EventRejection::ItsRofBorderCut + 1, "ITF ROF border");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::IsGoodZvtxFT0vsPV + 1, "PV #it{z} consistency FT0 timing");
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::NoSameBunchPileup + 1, "No same-bunch pile-up"); // POTENTIALLY BAD FOR BEAUTY ANALYSES
     hCollisions->GetXaxis()->SetBinLabel(EventRejection::NumTracksInTimeRange + 1, "Occupancy");
@@ -129,9 +135,17 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       if ((useSel8Trigger && !collision.sel8()) || (!useSel8Trigger && triggerClass > -1 && !collision.alias_bit(triggerClass))) {
         SETBIT(rejectionMask, EventRejection::Trigger);
       }
+      /// TVX trigger selection
+      if (useTvxTrigger && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        SETBIT(rejectionMask, EventRejection::TvxTrigger);
+      }
       /// time frame border cut
       if (useTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
         SETBIT(rejectionMask, EventRejection::TimeFrameBorderCut);
+      }
+      /// ITS rof border cut
+      if (useItsRofBorderCut && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        SETBIT(rejectionMask, EventRejection::ItsRofBorderCut);
       }
       /// PVz consistency tracking - FT0 timing
       if (useIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
@@ -196,9 +210,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
 namespace o2::hf_evsel_mc
 {
-// generated particles rejection types
+// MC collision rejection types
 enum McCollisionRejection {
   None = 0,
+  Trigger,
+  TvxTrigger,
   TimeFrameBorderCut,
   ItsRoFrameBorderCut,
   PositionZ,
@@ -207,28 +223,40 @@ enum McCollisionRejection {
 
 struct HfEventSelectionMc {
   // event selection parameters (in chronological order of application)
-  bool useItsRoBorderCut{false};    // Apply the ITS RO frame border cut
+  bool useSel8Trigger{false};       // Apply the Sel8 selection
+  bool useTvxTrigger{false};        // Apply the TVX trigger
   bool useTimeFrameBorderCut{true}; // Apply TF border cut
+  bool useItsRofBorderCut{false};   // Apply the ITS RO frame border cut
   float zPvPosMin{-1000.f};         // Minimum PV posZ (cm)
   float zPvPosMax{1000.f};          // Maximum PV posZ (cm)
 
-  /// \brief Function to apply event selections in HF analyses
-  /// \param mcCollision is the analysed mc collision
+  /// \brief Function to apply event selections to generated MC collisions
+  /// \param mcCollision MC collision to test against the selection criteria
   /// \return a bitmask with the event selections not satisfied by the analysed collision
   template <typename TBc, typename TMcColl>
-  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision)
+  uint8_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision)
   {
-    uint8_t rejectionMask{0};
+    uint16_t rejectionMask{0};
     float zPv = mcCollision.posZ();
     auto bc = mcCollision.template bc_as<TBc>();
 
-    /// ITS RO frame border cut
-    if (useItsRoBorderCut && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      SETBIT(rejectionMask, McCollisionRejection::ItsRoFrameBorderCut);
+    /// TVX trigger selection
+    if (useSel8Trigger && (!bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)
+                        || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)
+                        || !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      SETBIT(rejectionMask, McCollisionRejection::Trigger);
+    }
+    /// TVX trigger selection
+    if (useTvxTrigger && !bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      SETBIT(rejectionMask, McCollisionRejection::TvxTrigger);
     }
     /// time frame border cut
     if (useTimeFrameBorderCut && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       SETBIT(rejectionMask, McCollisionRejection::TimeFrameBorderCut);
+    }
+    /// ITS RO frame border cut
+    if (useItsRofBorderCut && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      SETBIT(rejectionMask, McCollisionRejection::ItsRoFrameBorderCut);
     }
     /// primary vertex z
     if (zPv < zPvPosMin || zPv > zPvPosMax) {
