@@ -401,7 +401,7 @@ struct tracked_cascade_properties {
         if (hasHitOnITSlayer(track.itsClusterMap(), i))
           nITScls++;
       }
-      averageClusterSize = averageClusterSize/static_cast<double>(nITScls);
+      averageClusterSize = averageClusterSize / static_cast<double>(nITScls);
 
       if (passedXiSelection(casc, ptrack, ntrack, btrack, collision) && casc.mXi() > mMin_xi && casc.mXi() < mMax_xi) {
         if (btrack.sign() > 0) {
