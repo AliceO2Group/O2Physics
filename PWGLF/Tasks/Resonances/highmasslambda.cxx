@@ -279,23 +279,33 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (candidate.p() < 0.6 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
-      return true;
+    if (candidate.hasTOF()) {
+      if (candidate.pt() < 0.8 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 10.0) {
+        return true;
+      }
+      if (candidate.pt() >= 0.8 && candidate.pt() < 3.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
+        return true;
+      }
+      if (candidate.pt() >= 3.0 && candidate.pt() < 4.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
+        return true;
+      }
+      if (candidate.pt() >= 4.0 && candidate.pt() < 5.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.5 && candidate.tofNSigmaPr() < 3.0) {
+        return true;
+      }
+      if (candidate.pt() >= 5.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.0 && candidate.tofNSigmaPr() < 3.0) {
+        return true;
+      }
     }
-    if (candidate.p() >= 0.6 && candidate.p() < 0.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
-      return true;
-    }
-    if (candidate.p() >= 0.8 && candidate.p() < 4.0 && candidate.hasTOF() && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
-      return true;
-    }
-    if (candidate.p() >= 0.8 && candidate.p() < 4.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
-      return true;
-    }
-    if (candidate.p() > 4.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
-      return true;
-    }
-    if (candidate.p() > 4.0 && candidate.hasTOF() && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
-      return true;
+    if (!candidate.hasTOF()) {
+      if (candidate.pt() < 0.7 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+        return true;
+      }
+      if (candidate.pt() >= 0.7 && candidate.pt() < 0.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
+        return true;
+      }
+      if (candidate.pt() >= 0.8 && candidate.tpcNSigmaPr() > -1.0 && candidate.tpcNSigmaPr() < 3.0) {
+        return true;
+      }
     }
     return false;
   }
@@ -303,19 +313,34 @@ struct highmasslambda {
   template <typename T>
   bool selectionPIDNew(const T& candidate)
   {
-    if (candidate.p() < 0.6 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+    if (candidate.pt() < 0.7 && !candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
       return true;
     }
-    if (candidate.p() >= 0.6 && candidate.p() < 1.0 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
+    if (candidate.pt() >= 0.7 && !candidate.hasTOF() && candidate.pt() < 0.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
       return true;
     }
-    if (candidate.p() >= 1.0 && candidate.p() < 4.0 && candidate.hasTOF() && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
+    if (candidate.pt() < 0.8 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 10.0) {
       return true;
     }
-    if (candidate.p() > 4.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
+
+    if (candidate.pt() >= 0.8 && candidate.pt() < 1.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -1.0 && candidate.tpcNSigmaPr() < 3.0) {
       return true;
     }
-    if (candidate.p() > 4.0 && candidate.hasTOF() && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
+    if (candidate.pt() >= 0.8 && candidate.pt() < 3.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
+      return true;
+    }
+
+    if (candidate.pt() >= 3.0 && candidate.pt() < 4.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -2.0 && candidate.tofNSigmaPr() < 3.0) {
+      return true;
+    }
+    if (candidate.pt() >= 4.0 && candidate.pt() < 5.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.5 && candidate.tofNSigmaPr() < 3.0) {
+      return true;
+    }
+
+    if (candidate.p() > 5.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -1.0 && candidate.tpcNSigmaPr() < 3.0) {
+      return true;
+    }
+    if (candidate.pt() >= 5.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.0 && candidate.tofNSigmaPr() < 3.0) {
       return true;
     }
     return false;
