@@ -386,7 +386,7 @@ struct tracked_cascade_properties {
 
       const auto track = trackedCascade.track_as<FullTracks>();
       const auto& casc = trackedCascade.cascade();
-      const auto& v0 = casc.v0();
+      // const auto& v0 = casc.v0();
       const auto& btrack = casc.bachelor_as<FullTracks>();
       // const auto& ptrack = v0.posTrack_as<FullTracks>();
       // const auto& ntrack = v0.negTrack_as<FullTracks>();
