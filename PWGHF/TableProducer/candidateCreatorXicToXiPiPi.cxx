@@ -426,12 +426,12 @@ struct HfCandidateCreatorXic {
       }
       // create KFParticle
       KFParticle kfXi;
-      kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), casc.m(1)); // casc.m(1): 1 for Lambda mass hypothesis
+      kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), casc.mXi());
 
       // create XicPlus as KFParticle object
       KFParticle kfXicPlus;
       const KFParticle* kfDaughtersXicPlus[3] = {&kfPion0, &kfPion1, &kfXi};
-      kfXicPlus.SetConstructMethod(2); // 0: no mass constraint, 2: mass constraint
+      kfXicPlus.SetConstructMethod(0); // 0: no mass constraint, 2: mass constraint
       kfXicPlus.Construct(kfDaughtersXicPlus, 3);
       // topological constraint
       if (constrainXicPlusToPv) {
