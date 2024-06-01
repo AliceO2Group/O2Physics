@@ -388,8 +388,13 @@ struct tracked_cascade_properties {
       const auto& casc = trackedCascade.cascade();
       const auto& v0 = casc.v0();
       const auto& btrack = casc.bachelor_as<FullTracks>();
-      const auto& ptrack = v0.posTrack_as<FullTracks>();
-      const auto& ntrack = v0.negTrack_as<FullTracks>();
+      // const auto& ptrack = v0.posTrack_as<FullTracks>();
+      // const auto& ntrack = v0.negTrack_as<FullTracks>();
+      double dx = trackedCascade.decayX();
+      double dy = trackedCascade.decayY();
+      double r = sqrt(dx * dx + dy * dy);
+      if (r < minimumCascRadius || r > maximumCascRadius)
+        continue;
 
       // Calculate Average Cluster Size
       int nITScls(0);
