@@ -404,25 +404,25 @@ struct tracked_cascade_properties {
       }
       averageClusterSize = averageClusterSize / static_cast<double>(nITScls);
 
-      if (passedXiSelection(casc, ptrack, ntrack, btrack, collision) && trackedCascade.xiMass() > mMin_xi && trackedCascade.xiMass() < mMax_xi) {
+      if (trackedCascade.xiMass() > mMin_xi && trackedCascade.xiMass() < mMax_xi) {
         if (btrack.sign() > 0) {
-          registryData.fill(HIST("xi_pos"), averageClusterSize, trackedCascade.pt(), trackedCascade.eta());
-          registryData.fill(HIST("xi_mass_pos"), trackedCascade.pt(), trackedCascade.xiMass());
+          registryData.fill(HIST("xi_pos"), averageClusterSize, track.pt(), track.eta());
+          registryData.fill(HIST("xi_mass_pos"), track.pt(), trackedCascade.xiMass());
         }
         if (btrack.sign() < 0) {
-          registryData.fill(HIST("xi_neg"), averageClusterSize, trackedCascade.pt(), trackedCascade.eta());
-          registryData.fill(HIST("xi_mass_neg"), trackedCascade.pt(), trackedCascade.xiMass());
+          registryData.fill(HIST("xi_neg"), averageClusterSize, track.pt(), track.eta());
+          registryData.fill(HIST("xi_mass_neg"), track.pt(), trackedCascade.xiMass());
         }
       }
 
-      if (passedOmegaSelection(casc, ptrack, ntrack, btrack, collision) && trackedCascade.omegaMass() > mMin_omega && trackedCascade.omegaMass() < mMax_omega) {
+      if (trackedCascade.omegaMass() > mMin_omega && trackedCascade.omegaMass() < mMax_omega) {
         if (btrack.sign() > 0) {
-          registryData.fill(HIST("omega_pos"), averageClusterSize, trackedCascade.pt(), trackedCascade.eta());
-          registryData.fill(HIST("omega_mass_pos"), trackedCascade.pt(), trackedCascade.omegaMass());
+          registryData.fill(HIST("omega_pos"), averageClusterSize, track.pt(), track.eta());
+          registryData.fill(HIST("omega_mass_pos"), track.pt(), trackedCascade.omegaMass());
         }
         if (btrack.sign() < 0) {
-          registryData.fill(HIST("omega_neg"), averageClusterSize, trackedCascade.pt(), trackedCascade.eta());
-          registryData.fill(HIST("omega_mass_neg"), trackedCascade.pt(), trackedCascade.omegaMass());
+          registryData.fill(HIST("omega_neg"), averageClusterSize, track.pt(), track.eta());
+          registryData.fill(HIST("omega_mass_neg"), track.pt(), trackedCascade.omegaMass());
         }
       }
     }
