@@ -27,38 +27,46 @@ namespace o2::aod::pwgem::photonmeson::utils::nmhistogram
 {
 void addNMHistograms(HistogramRegistry* fRegistry, bool doFlow, bool isMC, const char* pairname = "#gamma#gamma")
 {
+  // !!Don't change pt,eta,y binning. These binnings have to be consistent with binned data at skimming.!!
   std::vector<double> ptbins;
-  for (int i = 0; i < 50; i++) {
-    ptbins.emplace_back(0.1 * (i - 0) + 0.0); // from 0 to 5 GeV/c, every 0.1 GeV/c
+  for (int i = 0; i < 2; i++) {
+    ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.1 GeV/c, every 0.05 GeV/c
   }
-  for (int i = 50; i < 60; i++) {
-    ptbins.emplace_back(0.5 * (i - 50) + 5.0); // from 5 to 10 GeV/c, evety 0.5 GeV/c
+  for (int i = 2; i < 52; i++) {
+    ptbins.emplace_back(0.1 * (i - 2) + 0.1); // from 0.1 to 5 GeV/c, every 0.1 GeV/c
   }
-  for (int i = 60; i < 71; i++) {
-    ptbins.emplace_back(1.0 * (i - 60) + 10.0); // from 10 to 20 GeV/c, evety 1 GeV/c
+  for (int i = 52; i < 62; i++) {
+    ptbins.emplace_back(0.5 * (i - 52) + 5.0); // from 5 to 10 GeV/c, evety 0.5 GeV/c
+  }
+  for (int i = 62; i < 73; i++) {
+    ptbins.emplace_back(1.0 * (i - 62) + 10.0); // from 10 to 20 GeV/c, evety 1 GeV/c
   }
   const AxisSpec axis_pt{ptbins, Form("p_{T,%s} (GeV/c)", pairname)};
 
   const AxisSpec axis_mass{400, 0, 0.8, Form("m_{%s} (GeV/c^{2})", pairname)};
-  const AxisSpec sp2_mass{100, -5, 5, Form("u_{2}^{%s} #upoint Q_{2}", pairname)};
+  const AxisSpec axis_sp2{100, -5, 5, Form("u_{2}^{%s} #upoint Q_{2}", pairname)};
 
   if (isMC) {
-    fRegistry->add("Generated/Pi0/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{2000, 0.0f, 20}});
-    fRegistry->add("Generated/Pi0/hY", "y;rapidity y", kTH1F, {{40, -2.0f, 2.0f}});
-    fRegistry->add("Generated/Pi0/hPhi", "#varphi;#varphi (rad.)", kTH1F, {{180, 0, 2 * M_PI}});
-    fRegistry->add("Generated/Pi0/hPt_Acc", "pT;p_{T} (GeV/c)", kTH1F, {{2000, 0.0f, 20}});          // in pair acceptance
-    fRegistry->add("Generated/Pi0/hY_Acc", "y;rapidity y", kTH1F, {{40, -2.0f, 2.0f}});              // in pair acceptance
-    fRegistry->add("Generated/Pi0/hPhi_Acc", "#varphi;#varphi (rad.)", kTH1F, {{180, 0, 2 * M_PI}}); // in pair acceptance
-    fRegistry->addClone("Generated/Pi0/", "Generated/Eta/");
-
     fRegistry->add("Pair/Pi0/hMggPt_Primary", "rec. true pi0", kTH2F, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Pi0/hMggPt_FromWD", "rec. true pi0 from weak decay", kTH2F, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Eta/hMggPt_Primary", "rec. true eta", kTH2F, {axis_mass, axis_pt}, true);
+
+    const AxisSpec axis_rapidity{{0.0, +0.8, +0.9}, "rapidity |y|"};
+    fRegistry->add("Generated/Pi0/hPt", "pT;p_{T} (GeV/c)", kTH1F, {axis_pt}, true);
+    fRegistry->add("Generated/Pi0/hPtY", "Generated info", kTH2F, {axis_pt, axis_rapidity}, true);
+    fRegistry->addClone("Generated/Pi0/", "Generated/Eta/");
+
+    fRegistry->get<TH1>(HIST("Generated/Pi0/hPt"))->SetXTitle("p_{T} (GeV/c)");
+    fRegistry->get<TH1>(HIST("Generated/Eta/hPt"))->SetXTitle("p_{T} (GeV/c)");
+    fRegistry->get<TH2>(HIST("Generated/Pi0/hPtY"))->SetXTitle("p_{T} (GeV/c)");
+    fRegistry->get<TH2>(HIST("Generated/Pi0/hPtY"))->SetYTitle("rapidity |y|");
+    fRegistry->get<TH2>(HIST("Generated/Eta/hPtY"))->SetXTitle("p_{T} (GeV/c)");
+    fRegistry->get<TH2>(HIST("Generated/Eta/hPtY"))->SetYTitle("rapidity |y|");
   } else {
     if (doFlow) {
       std::string_view sp_names[4] = {"FT0M", "FT0A", "FT0C", "FV0A"};
       for (int i = 0; i < 4; i++) {
-        fRegistry->add(Form("Pair/same/hs_same_SPQ2%s", sp_names[i].data()), "2photon", kTHnSparseF, {axis_mass, axis_pt, sp2_mass}, true);
+        fRegistry->add(Form("Pair/same/hs_same_SPQ2%s", sp_names[i].data()), "2photon", kTHnSparseF, {axis_mass, axis_pt, axis_sp2}, true);
       }
       fRegistry->add("Pair/mix/hMggPt", "2photon", kTH2F, {axis_mass, axis_pt}, true);
     } else {
@@ -92,15 +100,15 @@ void fillPairInfo(HistogramRegistry* fRegistry, TCollision const& collision, TDi
   }
 }
 
-template <typename TDiphoton, typename TMCParitlce, typename TMCParticles>
-void fillTruePairInfo(HistogramRegistry* fRegistry, TDiphoton const& v12, TMCParitlce const& mcparticle, TMCParticles const& mcparticles, const float weight = 1.f)
+template <typename TDiphoton, typename TMCParitlce, typename TMCParticles, typename TMCCollisions>
+void fillTruePairInfo(HistogramRegistry* fRegistry, TDiphoton const& v12, TMCParitlce const& mcparticle, TMCParticles const& mcparticles, TMCCollisions const&, const float weight = 1.f)
 {
   int pdg = abs(mcparticle.pdgCode());
   switch (pdg) {
     case 111: {
       if (mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator()) {
         fRegistry->fill(HIST("Pair/Pi0/hMggPt_Primary"), v12.M(), v12.Pt());
-      } else if (IsFromWD(mcparticle.emmcevent(), mcparticle, mcparticles)) {
+      } else if (IsFromWD(mcparticle.template emmcevent_as<TMCCollisions>(), mcparticle, mcparticles)) {
         fRegistry->fill(HIST("Pair/Pi0/hMggPt_FromWD"), v12.M(), v12.Pt());
       }
       break;
