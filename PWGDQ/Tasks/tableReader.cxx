@@ -969,11 +969,11 @@ struct AnalysisSameEventPairing {
                 Form("PairsBarrelSEPM_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
                 Form("PairsBarrelSEPP_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
                 Form("PairsBarrelSEMM_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName())};
-              if (fConfigAmbiguousHist) {
-                histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
-              } else {
-                histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
-              }
+                if (fConfigAmbiguousHist) {
+                  histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+                } else {
+                  histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+                }
               fTrackHistNames.push_back(names);
             } // end loop (pair cuts)
           }   // end if (pair cuts)
@@ -992,11 +992,11 @@ struct AnalysisSameEventPairing {
             Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())};
-          if (fConfigAmbiguousHist) {
-            histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
-          } else {
-            histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
-          }
+            if (fConfigAmbiguousHist) {
+              histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+            } else {
+              histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+            }
           fMuonHistNames.push_back(names);
 
           TString cutNamesStr = fConfigPairCuts.value;
