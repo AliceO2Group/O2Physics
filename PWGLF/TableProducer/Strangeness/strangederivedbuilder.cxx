@@ -293,9 +293,9 @@ struct strangederivedbuilder {
   void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
   {
     // create collision indices beforehand
-    std::vector<int> V0CollIndices(V0s.size(), -1); // index -1: no collision
-    std::vector<int> CascadeCollIndices(Cascades.size(), -1); // index -1: no collision
-    std::vector<int> KFCascadeCollIndices(KFCascades.size(), -1); // index -1: no collision
+    std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
+    std::vector<int> CascadeCollIndices(Cascades.size(), -1);       // index -1: no collision
+    std::vector<int> KFCascadeCollIndices(KFCascades.size(), -1);   // index -1: no collision
     std::vector<int> TraCascadeCollIndices(TraCascades.size(), -1); // index -1: no collision
 
     for (const auto& collision : collisions) {
@@ -344,13 +344,13 @@ struct strangederivedbuilder {
         }
       }
 
-      for (const auto& v0 : V0Table_thisColl) 
+      for (const auto& v0 : V0Table_thisColl)
         V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
-      for (const auto& casc : CascTable_thisColl) 
+      for (const auto& casc : CascTable_thisColl)
         CascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
-      for (const auto& casc : KFCascTable_thisColl) 
+      for (const auto& casc : KFCascTable_thisColl)
         KFCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
-      for (const auto& casc : TraCascTable_thisColl) 
+      for (const auto& casc : TraCascTable_thisColl)
         TraCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
     }
 
@@ -368,11 +368,11 @@ struct strangederivedbuilder {
   void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
   {
     // create collision indices beforehand
-    std::vector<int> V0CollIndices(V0s.size(), -1); // index -1: no collision
-    std::vector<int> V0MCCollIndices(V0s.size(), -1); // index -1: no collision
-    std::vector<int> CascadeCollIndices(Cascades.size(), -1); // index -1: no collision
-    std::vector<int> CascadeMCCollIndices(Cascades.size(), -1); // index -1: no collision
-    std::vector<int> KFCascadeCollIndices(KFCascades.size(), -1); // index -1: no collision
+    std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
+    std::vector<int> V0MCCollIndices(V0s.size(), -1);               // index -1: no collision
+    std::vector<int> CascadeCollIndices(Cascades.size(), -1);       // index -1: no collision
+    std::vector<int> CascadeMCCollIndices(Cascades.size(), -1);     // index -1: no collision
+    std::vector<int> KFCascadeCollIndices(KFCascades.size(), -1);   // index -1: no collision
     std::vector<int> TraCascadeCollIndices(TraCascades.size(), -1); // index -1: no collision
 
     // ______________________________________________
@@ -432,13 +432,13 @@ struct strangederivedbuilder {
                           collision.trackOccupancyInTimeRange());
         }
       }
-      for (const auto& v0 : V0Table_thisColl) 
+      for (const auto& v0 : V0Table_thisColl)
         V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
-      for (const auto& casc : CascTable_thisColl) 
+      for (const auto& casc : CascTable_thisColl)
         CascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
-      for (const auto& casc : KFCascTable_thisColl) 
+      for (const auto& casc : KFCascTable_thisColl)
         KFCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
-      for (const auto& casc : TraCascTable_thisColl) 
+      for (const auto& casc : TraCascTable_thisColl)
         TraCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
 
       // populate MC collision references
@@ -463,13 +463,13 @@ struct strangederivedbuilder {
         CascadeMCCollIndices[casc.globalIndex()] = indMCColl;
       }
     }
-    
+
     // populate references, including those that might not be assigned
-    for (const auto& v0 : V0s){
+    for (const auto& v0 : V0s) {
       v0collref(V0CollIndices[v0.globalIndex()]);
       v0mccollref(V0MCCollIndices[v0.globalIndex()]);
     }
-    for (const auto& casc : Cascades){
+    for (const auto& casc : Cascades) {
       casccollref(CascadeCollIndices[casc.globalIndex()]);
       cascmccollref(CascadeMCCollIndices[casc.globalIndex()]);
     }
