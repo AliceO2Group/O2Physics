@@ -693,7 +693,6 @@ struct sgExclusivePhi {
             registry.fill(HIST("hClusterSizeOnlyITS3"), averageClusterSize);
           }
 
-
           int clusterSizeKaonBand[7];
           double averageClusterSizeKaonBand = 0.;
           for (int i = 0; i < 7; i++) { // info stored in 4 bits
@@ -729,7 +728,6 @@ struct sgExclusivePhi {
               registry.fill(HIST("KaonBandPHI/hMassPhiIdentifiedKaonAndITSkaon3"), reallyPhi.M());
             }
           }
-
         }
       } // Kaon Band
     }   // double gap
