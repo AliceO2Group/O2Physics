@@ -81,6 +81,7 @@ struct HfCorrelatorDstarHadronsCollisionSelector {
 struct HfCorrelatorDstarHadrons {
   Produces<aod::DstarHadronPair> rowsDstarHadronPair;
   Produces<aod::Dstar> rowsDstar;
+  Produces<aod::Hadron> rowsAssoTrack;
 
   // Dstar candidate related configurable
   Configurable<bool> selectOnlyCollisionWDstar{"selectOnlyCollisionWDstar", true, " select on collisions which have atleast a Dstar candidate"};
@@ -242,6 +243,12 @@ struct HfCorrelatorDstarHadrons {
                     binNumber);
         } // endif
 
+        rowsAssoTrack(assocParticle.phi(),
+                      assocParticle.eta(),
+                      assocParticle.pt(),
+                      binNumber,
+                      collision.globalIndex(),
+                      timestamp);
       } // D-H pair loop
 
     } // collision loop
