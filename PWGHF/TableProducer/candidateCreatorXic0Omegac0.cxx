@@ -54,7 +54,6 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_evsel;
-using namespace o2::hf_evsel_mc;
 
 // Reconstruction of omegac0 and xic0 candidates
 struct HfCandidateCreatorXic0Omegac0 {
@@ -662,7 +661,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   Produces<aod::HfToOmegaKMCRec> rowMCMatchRecToOmegaK;
   Produces<aod::HfToOmegaKMCGen> rowMCMatchGenToOmegaK;
 
-  HfEventSelectionMc hfEvSelMc; // mc event selection
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+  HistogramRegistry registry{"registry"};
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   // inspect for which zPvPosMax cut was set for reconstructed
@@ -671,24 +671,11 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-xic0-omegac0") == 0) {
-        for (const auto& option : device.options) {
-          if (option.name.compare("hfEvSel.useSel8Trigger") == 0) {
-            hfEvSelMc.useSel8Trigger = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.useTvxTrigger") == 0) {
-            hfEvSelMc.useTvxTrigger = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.useTimeFrameBorderCut") == 0) {
-            hfEvSelMc.useTimeFrameBorderCut = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.useItsRofBorderCut") == 0) {
-            hfEvSelMc.useItsRofBorderCut = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.zPvPosMin") == 0) {
-            hfEvSelMc.zPvPosMin = option.defaultValue.get<float>();
-          } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            hfEvSelMc.zPvPosMax = option.defaultValue.get<float>();
-          }
-        }
+        hfEvSelMc.configureFromDevice(device);
         break;
       }
     }
+    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   template <int decayChannel, typename TMyRecoCand>
@@ -895,6 +882,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
       auto mcCollision = particle.mcCollision();
       const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
         if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {

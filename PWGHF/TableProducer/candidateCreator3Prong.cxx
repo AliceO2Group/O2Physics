@@ -36,7 +36,6 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::hf_evsel;
-using namespace o2::hf_evsel_mc;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::hf_centrality;
@@ -454,12 +453,13 @@ struct HfCandidateCreator3ProngExpressions {
   Produces<aod::HfCand3ProngMcRec> rowMcMatchRec;
   Produces<aod::HfCand3ProngMcGen> rowMcMatchGen;
 
-  HfEventSelectionMc hfEvSelMc; // mc event selection
   bool createDplus{false};
   bool createDs{false};
   bool createLc{false};
   bool createXic{false};
 
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+  HistogramRegistry registry{"registry"};
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   void init(InitContext& initContext)
@@ -469,6 +469,7 @@ struct HfCandidateCreator3ProngExpressions {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-3prong") == 0) {
+        hfEvSelMc.configureFromDevice(device);
         for (const auto& option : device.options) {
           if (option.name.compare("createDplus") == 0) {
             createDplus = option.defaultValue.get<bool>();
@@ -478,23 +479,13 @@ struct HfCandidateCreator3ProngExpressions {
             createLc = option.defaultValue.get<bool>();
           } else if (option.name.compare("createXic") == 0) {
             createXic = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.useSel8Trigger") == 0) {
-            hfEvSelMc.useSel8Trigger = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.useTvxTrigger") == 0) {
-            hfEvSelMc.useTvxTrigger = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.useTimeFrameBorderCut") == 0) {
-            hfEvSelMc.useTimeFrameBorderCut = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.useItsRofBorderCut") == 0) {
-            hfEvSelMc.useItsRofBorderCut = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.zPvPosMin") == 0) {
-            hfEvSelMc.zPvPosMin = option.defaultValue.get<float>();
-          } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            hfEvSelMc.zPvPosMax = option.defaultValue.get<float>();
           }
         }
         break;
       }
     }
+
+    hfEvSelMc.addHistograms(registry); // particles monitoring
 
     LOGP(info, "Flags for candidate creation from the reco workflow:");
     LOGP(info, "    --> createDplus = {}", createDplus);
@@ -627,6 +618,7 @@ struct HfCandidateCreator3ProngExpressions {
       auto mcCollision = particle.mcCollision();
 
       const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
         rowMcMatchGen(flag, origin, channel);
