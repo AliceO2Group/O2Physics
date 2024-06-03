@@ -465,10 +465,8 @@ struct Pi0EtaToGammaGamma {
 
   o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int>, std::pair<int, int64_t>, EMTrack>* emh1 = nullptr;
   o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int>, std::pair<int, int64_t>, EMTrack>* emh2 = nullptr;
-  std::map<std::tuple<int, int, int>, std::vector<std::pair<int, int64_t>>> map_mix_bins; // zvtx, centrality, event plane bins -> pair<df index, vector of collisionId>
-  std::map<std::pair<int, int64_t>, std::vector<EMTrack>> map_photons_to_collision;       // pair<df index, collisionId> -> vector of track
-  std::vector<std::pair<int, int>> used_photonIds;                                        // <ndf, trackId>
-  std::vector<std::tuple<int, int, int>> used_dileptonIds;                                // <ndf, trackId>
+  std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
+  std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
 
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2, typename TTracksMatchedWithEMC, typename TTracksMatchedWithPHOS>
   void runPairing(TCollisions const& collisions,
@@ -523,7 +521,7 @@ struct Pi0EtaToGammaGamma {
         epbin = static_cast<int>(ep_bin_edges.size()) - 2;
       }
 
-      std::tuple<int, int, int64_t> key_bin = std::make_tuple(zbin, centbin, epbin);
+      std::tuple<int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin);
       std::pair<int, int64_t> key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
       if constexpr (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) { // same kinds pairing
@@ -609,7 +607,7 @@ struct Pi0EtaToGammaGamma {
             float dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
 
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
-            std::tuple<int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, pos2.trackId(), ele2.trackId());
+            std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.trackId(), ele2.trackId());
             if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
               emh1->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0, 0, 0));
               used_photonIds.emplace_back(pair_tmp_id1);
@@ -670,7 +668,7 @@ struct Pi0EtaToGammaGamma {
             float dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
 
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
-            std::tuple<int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, muplus.trackId(), muminus.trackId());
+            std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), muplus.trackId(), muminus.trackId());
             if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
               emh1->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0, 0, 0));
               used_photonIds.emplace_back(pair_tmp_id1);

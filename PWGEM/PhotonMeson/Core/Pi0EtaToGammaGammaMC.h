@@ -199,12 +199,7 @@ struct Pi0EtaToGammaGammaMC {
     Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
   } emccuts;
 
-  struct : ConfigurableGroup {
-    Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};                 // for PCM and dielectron
-    Configurable<float> minPhi{"minPhi", 0, "minimum azimuthal angle for generated particles"};        // for PCM and dielectron
-    Configurable<float> maxPhi{"maxPhi", 2 * M_PI, "maximum azimuthal angle for generated particles"}; // for PCM and dielectron
-  } mctrackcuts;
-
+  Configurable<float> maxY_gen{"maxY_gen", 0.9, "maximum rapidity for generated particles"}; // for PCM and dielectron
   Configurable<float> maxRgen{"maxRgen", 90.f, "maximum radius for generated particles"};
   Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
 
@@ -477,7 +472,7 @@ struct Pi0EtaToGammaGammaMC {
           auto g2mc = mcparticles.iteratorAt(photonid2);
 
           if constexpr (pairtype == PairType::kPCMPCM) {
-            if (!IsConversionPointInAcceptance(g1mc, maxRgen, mctrackcuts.maxY, margin_z_mc, mcparticles) || !IsConversionPointInAcceptance(g2mc, maxRgen, mctrackcuts.maxY, margin_z_mc, mcparticles)) {
+            if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_gen, margin_z_mc, mcparticles) || !IsConversionPointInAcceptance(g2mc, maxRgen, maxY_gen, margin_z_mc, mcparticles)) {
               continue;
             }
           }
@@ -522,7 +517,7 @@ struct Pi0EtaToGammaGammaMC {
             continue;
           }
           auto g1mc = mcparticles.iteratorAt(photonid1);
-          if (!IsConversionPointInAcceptance(g1mc, maxRgen, mctrackcuts.maxY, margin_z_mc, mcparticles)) {
+          if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_gen, margin_z_mc, mcparticles)) {
             continue;
           }
           ROOT::Math::PtEtaPhiMVector v_gamma(g1.pt(), g1.eta(), g1.phi(), 0.f);
@@ -589,7 +584,7 @@ struct Pi0EtaToGammaGammaMC {
             continue;
           }
           auto g1mc = mcparticles.iteratorAt(photonid1);
-          if (!IsConversionPointInAcceptance(g1mc, maxRgen, mctrackcuts.maxY, margin_z_mc, mcparticles)) {
+          if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY_gen, margin_z_mc, mcparticles)) {
             continue;
           }
           ROOT::Math::PtEtaPhiMVector v_gamma(g1.pt(), g1.eta(), g1.phi(), 0.f);
@@ -670,7 +665,7 @@ struct Pi0EtaToGammaGammaMC {
       hPtY->GetBinXYZ(ibin, xbin, ybin, zbin);
       float pt = hPtY->GetXaxis()->GetBinCenter(xbin);
       float y = hPtY->GetYaxis()->GetBinCenter(ybin);
-      if (y > mctrackcuts.maxY) {
+      if (y > maxY_gen) {
         continue;
       }
 
