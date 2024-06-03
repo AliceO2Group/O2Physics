@@ -683,17 +683,12 @@ struct HfCandidateCreator2ProngExpressions {
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
-    float bMotherPt = -1.;
-    int bMotherPdg = 0;
-    int bMotherIdx = -1;
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : *rowCandidateProng2) {
       flag = 0;
       origin = 0;
-      bMotherPt = -1.;
-      bMotherPdg = 0;
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
       std::vector<int> idxBhadMothers{};
 
@@ -726,24 +721,22 @@ struct HfCandidateCreator2ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        bMotherPt = bHadMother.pt();
-        bMotherPdg = bHadMother.pdgCode();
+        rowMcMatchRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowMcMatchRec(flag, origin, -1.f, 0);
       }
-
-      rowMcMatchRec(flag, origin, bMotherPt, bMotherPdg);
     }
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
-      bMotherIdx = -1;
       std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
       float zPv = mcCollision.posZ();
       if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
-        rowMcMatchGen(flag, origin, bMotherIdx);
+        rowMcMatchGen(flag, origin, -1);
         continue;
       }
 
@@ -771,10 +764,10 @@ struct HfCandidateCreator2ProngExpressions {
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
-        bMotherIdx = idxBhadMothers[0];
+        rowMcMatchGen(flag, origin, idxBhadMothers[0]);
+      } else {
+        rowMcMatchGen(flag, origin, -1);
       }
-
-      rowMcMatchGen(flag, origin, bMotherIdx);
     }
   }
 
