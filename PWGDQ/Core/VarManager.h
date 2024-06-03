@@ -2314,6 +2314,17 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       }
     }
   }
+  if constexpr ((pairType == kDecayToMuMu) && ((fillMap & Muon) > 0 || (fillMap & ReducedMuon) > 0)) {
+    if (fgUsedVars[kQuadDCAabsXY]) {
+      double dca1X = t1.fwdDcaX();
+      double dca1Y = t1.fwdDcaY();
+      double dca1XY = std::sqrt(dca1X * dca1X + dca1Y * dca1Y);
+      double dca2X = t2.fwdDcaX();
+      double dca2Y = t2.fwdDcaY();
+      double dca2XY = std::sqrt(dca2X * dca2X + dca2Y * dca2Y);
+      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2.);
+    }
+  }
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
@@ -2429,6 +2440,17 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   values[kCos2DeltaPhiMu1] = std::cos(2 * (v1.Phi() - v12.Phi()));
   values[kCos2DeltaPhiMu2] = std::cos(2 * (v2.Phi() - v12.Phi()));
 
+  if constexpr (pairType == kDecayToPiPi) {
+    if (fgUsedVars[kQuadDCAabsXY]) {
+      double dca1X = t1.fwdDcaX();
+      double dca1Y = t1.fwdDcaY();
+      double dca1XY = std::sqrt(dca1X * dca1X + dca1Y * dca1Y);
+      double dca2X = t2.fwdDcaX();
+      double dca2Y = t2.fwdDcaY();
+      double dca2XY = std::sqrt(dca2X * dca2X + dca2Y * dca2Y);
+      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2.);
+    }
+  }
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
