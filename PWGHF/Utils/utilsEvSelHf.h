@@ -59,7 +59,7 @@ void setEventRejectionLabels(Histo& hRejection)
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Trigger");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::TvxTrigger + 1, "TVX Trigger");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::TimeFrameBorderCut + 1, "TF border");
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::ItsRofBorderCut + 1, "ITF ROF border");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::ItsRofBorderCut + 1, "ITS ROF border");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::IsGoodZvtxFT0vsPV + 1, "PV #it{z} consistency FT0 timing");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NoSameBunchPileup + 1, "No same-bunch pile-up"); // POTENTIALLY BAD FOR BEAUTY ANALYSES
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NumTracksInTimeRange + 1, "Occupancy");
@@ -102,13 +102,12 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param registry reference to the histogram registry
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
-    hCollisions = registry.add<TH1>(nameHistCollisions, "HF event counter;;entries", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hCollisions = registry.add<TH1>(nameHistCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
     hPosZBeforeEvSel = registry.add<TH1>(nameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
     hPosZAfterEvSel = registry.add<TH1>(nameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
     hPosXAfterEvSel = registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hPosYAfterEvSel = registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
-    hCollisions->SetTitle("HF event counter;;# of accepted collisions");
     setEventRejectionLabels(hCollisions);
   }
 
@@ -234,9 +233,8 @@ struct HfEventSelectionMc {
   /// \param registry reference to the histogram registry
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
-    hParticles = registry.add<TH1>(nameHistParticles, "HF particle counter;;entries", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hParticles = registry.add<TH1>(nameHistParticles, "HF particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
     // Puts labels on the collision monitoring histogram.
-    hParticles->SetTitle("HF particle counter;;# of accepted particles");
     setEventRejectionLabels(hParticles);
   }
 
@@ -269,7 +267,7 @@ struct HfEventSelectionMc {
     float zPv = mcCollision.posZ();
     auto bc = mcCollision.template bc_as<TBc>();
 
-    /// TVX trigger selection
+    /// Sel8 trigger selection
     if (useSel8Trigger && (!bc.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
       SETBIT(rejectionMask, EventRejection::Trigger);
     }
@@ -293,7 +291,7 @@ struct HfEventSelectionMc {
     return rejectionMask;
   }
 
-  /// \brief Fills histograms for monitoring event selections satisfied by the collision.
+  /// \brief Fills histogram for monitoring event selections satisfied by the collision.
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
   void fillHistograms(const uint16_t rejectionMask)
   {
