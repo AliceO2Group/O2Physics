@@ -379,7 +379,8 @@ float getTrackProbability(T const& fResoFuncjet, U const& track, const float& mi
 {
   float probTrack = 0.;
   auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
-  if (-varSignImpXYSig < minSignImpXYSig) varSignImpXYSig = -minSignImpXYSig+0.01; // To avoid overflow for integral
+  if (-varSignImpXYSig < minSignImpXYSig)
+    varSignImpXYSig = -minSignImpXYSig + 0.01; // To avoid overflow for integral
   probTrack = fResoFuncjet->Integral(minSignImpXYSig, -varSignImpXYSig) / fResoFuncjet->Integral(minSignImpXYSig, 0);
 
   return probTrack;

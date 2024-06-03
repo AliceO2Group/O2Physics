@@ -81,45 +81,45 @@ struct JetTaggerHFTask {
   void init(InitContext const&)
   {
     maxOrder = numCount + 1; // 0: untagged, >1 : N ordering
-    
+
     // Set up the resolution function
     resoFuncMatch = resoFuncMatching;
     switch (resoFuncMatch) {
       case 0:
-        vecParamsData = (std::vector<float>) paramsResoFuncData;
-        vecParamsIncJetMC = (std::vector<float>) paramsResoFuncIncJetMC;
+        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsIncJetMC = (std::vector<float>)paramsResoFuncIncJetMC;
         LOG(info) << "defined parameters of resolution function: custom";
         break;
       case 1:
-        vecParamsData = (std::vector<float>) paramsResoFuncData;
-        vecParamsCharmJetMC = (std::vector<float>) paramsResoFuncCharmJetMC;
-        vecParamsBeautyJetMC = (std::vector<float>) paramsResoFuncBeautyJetMC;
-        vecParamsLfJetMC = (std::vector<float>) paramsResoFuncLfJetMC;
+        vecParamsData = (std::vector<float>)paramsResoFuncData;
+        vecParamsCharmJetMC = (std::vector<float>)paramsResoFuncCharmJetMC;
+        vecParamsBeautyJetMC = (std::vector<float>)paramsResoFuncBeautyJetMC;
+        vecParamsLfJetMC = (std::vector<float>)paramsResoFuncLfJetMC;
         useResoFuncFromIncJet = true;
         LOG(info) << "defined parameters of resolution function: custom & use inclusive distribution";
         break;
       case 2: // TODO
-        vecParamsData = (std::vector<float>) paramsResoFuncData;
+        vecParamsData = (std::vector<float>)paramsResoFuncData;
         vecParamsCharmJetMC = {282119.753, -0.065, 0.893, 11.608, 0.945, 8.029, 0.131, 6.244, 0.027};
         vecParamsBeautyJetMC = {74901.583, -0.082, 0.874, 10.332, 0.941, 7.352, 0.097, 6.220, 0.022};
         vecParamsLfJetMC = {1539435.343, -0.061, 0.896, 13.272, 1.034, 5.884, 0.004, 7.843, 0.090};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, MB, LHC23d1k";
         break;
       case 3: // TODO
-        vecParamsData = (std::vector<float>) paramsResoFuncData;
+        vecParamsData = (std::vector<float>)paramsResoFuncData;
         vecParamsIncJetMC = {1908803.027, -0.059, 0.895, 13.467, 1.005, 8.867, 0.098, 6.929, 0.011};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, MB, LHC23d1k & use inclusive distribution";
         useResoFuncFromIncJet = true;
         break;
       case 4: // TODO
-        vecParamsData = (std::vector<float>) paramsResoFuncData;
+        vecParamsData = (std::vector<float>)paramsResoFuncData;
         vecParamsCharmJetMC = {281446.003, -0.063, 0.894, 11.598, 0.943, 8.025, 0.130, 6.227, 0.027};
         vecParamsBeautyJetMC = {74839.065, -0.081, 0.875, 10.314, 0.939, 7.326, 0.101, 6.309, 0.024};
         vecParamsLfJetMC = {1531580.038, -0.062, -0.896, 13.267, 1.034, 5.866, 0.004, 7.836, 0.090};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, LHC23d4";
         break;
       case 5: // TODO
-        vecParamsData = (std::vector<float>) paramsResoFuncData;
+        vecParamsData = (std::vector<float>)paramsResoFuncData;
         vecParamsIncJetMC = {1900387.527, -0.059, 0.895, 13.461, 1.004, 8.860, 0.098, 6.931, 0.011};
         LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, LHC23d4 & use inclusive distribution";
         useResoFuncFromIncJet = true;
@@ -134,7 +134,6 @@ struct JetTaggerHFTask {
     fSignImpXYSigCharmJetMC = jettaggingutilities::setResolutionFunction(vecParamsCharmJetMC);
     fSignImpXYSigBeautyJetMC = jettaggingutilities::setResolutionFunction(vecParamsBeautyJetMC);
     fSignImpXYSigLfJetMC = jettaggingutilities::setResolutionFunction(vecParamsLfJetMC);
-
 
     // Use QA for effectivness of track probability
     if (trackProbQA) {
