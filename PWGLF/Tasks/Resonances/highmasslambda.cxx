@@ -257,22 +257,22 @@ struct highmasslambda {
     if (!isPVContributor && !(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
-    if (candidate.pt() > 0.0 && candidate.pt() < 0.5  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin1) {
+    if (candidate.pt() > 0.0 && candidate.pt() < 0.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin1) {
       return false;
     }
-    if (candidate.pt() > 0.5 && candidate.pt() < 1.0  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin2) {
+    if (candidate.pt() >= 0.5 && candidate.pt() < 1.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin2) {
       return false;
     }
-    if (candidate.pt() > 1.0 && candidate.pt() < 1.5  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin3) {
+    if (candidate.pt() >= 1.0 && candidate.pt() < 1.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin3) {
       return false;
     }
-    if (candidate.pt() > 1.5 && candidate.pt() < 2.0  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin4) {
+    if (candidate.pt() >= 1.5 && candidate.pt() < 2.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin4) {
       return false;
     }
-    if (candidate.pt() > 2.0 && candidate.pt() < 2.5  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin5) {
+    if (candidate.pt() >= 2.0 && candidate.pt() < 2.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin5) {
       return false;
     }
-    if (candidate.pt() > 2.5 && candidate.pt() < 3.0  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin6) {
+    if (candidate.pt() >= 2.5 && candidate.pt() < 3.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin6) {
       return false;
     }
     return true;
