@@ -51,7 +51,8 @@ o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +E
 /// \brief Function to put labels on monitoring histogram
 /// \param hRejection monitoring histogram
 template <typename Histo>
-void setEventRejectionLabels(Histo& hRejection) {
+void setEventRejectionLabels(Histo& hRejection)
+{
   // Puts labels on the collision monitoring histogram.
   hRejection->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality");

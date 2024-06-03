@@ -459,8 +459,8 @@ struct HfCandidateCreator3ProngExpressions {
   bool createXic{false};
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
-  HistogramRegistry registry{"registry"};
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext& initContext)
   {

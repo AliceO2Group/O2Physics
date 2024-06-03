@@ -662,8 +662,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   Produces<aod::HfToOmegaKMCGen> rowMCMatchGenToOmegaK;
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
-  HistogramRegistry registry{"registry"};
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  HistogramRegistry registry{"registry"};
 
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
