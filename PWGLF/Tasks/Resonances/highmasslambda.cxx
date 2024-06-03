@@ -90,7 +90,12 @@ struct highmasslambda {
   Configurable<float> confRapidity{"confRapidity", 0.8, "cut on Rapidity"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.3, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
-  Configurable<float> cfgCutDCAxymin{"cfgCutDCAxymin", 0.001f, "Minimum DCAxy range for tracks"};
+  Configurable<float> cfgCutDCAxymin1{"cfgCutDCAxymin1", 0.005f, "Minimum DCAxy range for tracks pt 0 to 0.5"};
+  Configurable<float> cfgCutDCAxymin2{"cfgCutDCAxymin2", 0.003f, "Minimum DCAxy range for tracks pt 0.5 to 1"};
+  Configurable<float> cfgCutDCAxymin3{"cfgCutDCAxymin3", 0.003f, "Minimum DCAxy range for tracks pt 1.0 to 1.5"};
+  Configurable<float> cfgCutDCAxymin4{"cfgCutDCAxymin4", 0.002f, "Minimum DCAxy range for tracks pt 1.5 to 2.0"};
+  Configurable<float> cfgCutDCAxymin5{"cfgCutDCAxymin5", 0.001f, "Minimum DCAxy range for tracks pt 2.0 to 2.5"};
+  Configurable<float> cfgCutDCAxymin6{"cfgCutDCAxymin6", 0.0003f, "Minimum DCAxy range for tracks pt 2.5 to 3.0"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 0.1f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 1.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 5, "Number of ITS cluster"};
@@ -154,7 +159,7 @@ struct highmasslambda {
   {
     std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 3000.0, 6000.0, 50000.0};
     // std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.02, 0.03, 0.05, 0.1, 0.5, 1.0};
-    std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.01, 0.015, 0.02, 0.04, 1.0};
+    std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.0015, 0.002, 0.003, 0.004, 0.006, 0.008, 0.01, 0.015, 0.02, 0.04, 1.0};
     std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 1.0, 1.5, 100.0};
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
@@ -252,10 +257,22 @@ struct highmasslambda {
     if (!isPVContributor && !(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
-    if (candidate.pt() < 1.0 && TMath::Abs(candidate.dcaXY()) < 0.002) {
+    if (candidate.pt() > 0.0 && candidate.pt() < 0.5  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin1) {
       return false;
     }
-    if (candidate.pt() >= 1.0 && candidate.pt() < 2.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin) {
+    if (candidate.pt() > 0.5 && candidate.pt() < 1.0  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin2) {
+      return false;
+    }
+    if (candidate.pt() > 1.0 && candidate.pt() < 1.5  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin3) {
+      return false;
+    }
+    if (candidate.pt() > 1.5 && candidate.pt() < 2.0  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin4) {
+      return false;
+    }
+    if (candidate.pt() > 2.0 && candidate.pt() < 2.5  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin5) {
+      return false;
+    }
+    if (candidate.pt() > 2.5 && candidate.pt() < 3.0  && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin6) {
       return false;
     }
     return true;
