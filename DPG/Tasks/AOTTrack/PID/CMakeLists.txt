@@ -9,7 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# add_subdirectory(Combined)
-# add_subdirectory(TOF)
+add_subdirectory(Combined)
+add_subdirectory(TOF)
 add_subdirectory(TPC)
-# add_subdirectory(HMPID)
+add_subdirectory(HMPID)
