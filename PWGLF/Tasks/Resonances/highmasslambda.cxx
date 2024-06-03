@@ -96,6 +96,8 @@ struct highmasslambda {
   Configurable<float> cfgCutDCAxymin4{"cfgCutDCAxymin4", 0.002f, "Minimum DCAxy range for tracks pt 1.5 to 2.0"};
   Configurable<float> cfgCutDCAxymin5{"cfgCutDCAxymin5", 0.001f, "Minimum DCAxy range for tracks pt 2.0 to 2.5"};
   Configurable<float> cfgCutDCAxymin6{"cfgCutDCAxymin6", 0.0003f, "Minimum DCAxy range for tracks pt 2.5 to 3.0"};
+  Configurable<float> cfgCutDCAxymin7{"cfgCutDCAxymin7", 0.0003f, "Minimum DCAxy range for tracks pt 3.0 to 4.0"};
+  Configurable<float> cfgCutDCAxymin8{"cfgCutDCAxymin8", 0.0003f, "Minimum DCAxy range for tracks pt 4.0 to 10.0"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 0.1f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 1.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 5, "Number of ITS cluster"};
@@ -273,6 +275,12 @@ struct highmasslambda {
       return false;
     }
     if (candidate.pt() >= 2.5 && candidate.pt() < 3.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin6) {
+      return false;
+    }
+    if (candidate.pt() >= 3.0 && candidate.pt() < 4.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin7) {
+      return false;
+    }
+    if (candidate.pt() >= 4.0 && candidate.pt() < 10.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin8) {
       return false;
     }
     return true;
