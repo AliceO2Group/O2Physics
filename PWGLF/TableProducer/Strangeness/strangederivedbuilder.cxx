@@ -59,7 +59,7 @@ using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::Track
 using FullTracksExtIUTOF = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFEvTime, aod::TOFSignal>;
 using FullCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>;
 
-// simple checkers
+// simple bit checkers
 #define bitset(var, nbit) ((var) |= (1 << (nbit)))
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
