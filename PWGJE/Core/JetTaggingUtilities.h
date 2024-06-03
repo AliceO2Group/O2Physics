@@ -377,8 +377,7 @@ std::unique_ptr<TF1> setResolutionFunction(T const& vecParams)
 template <typename T, typename U>
 float getTrackProbability(T const& fResoFuncjet, U const& track, const float& minSignImpXYSig = -40)
 {
-  float probTrack = 0.
-  auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+  float probTrack = 0. auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
   if (-varSignImpXYSig < minSignImpXYSig)
     varSignImpXYSig = -minSignImpXYSig - 0.01; // To avoid overflow for integral
   probTrack = fResoFuncjet->Integral(minSignImpXYSig, -varSignImpXYSig) / fResoFuncjet->Integral(minSignImpXYSig, 0);
