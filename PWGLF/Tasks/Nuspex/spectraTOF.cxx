@@ -70,6 +70,7 @@ struct tofSpectra {
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
   Configurable<bool> enableTPCTOFHistograms{"enableTPCTOFHistograms", true, "Enables TPC TOF histograms"};
   Configurable<bool> enableDCAxyzHistograms{"enableDCAxyzHistograms", false, "Enables DCAxyz correlation histograms"};
+  Configurable<bool> enableDCAxyphiHistograms{"enableDCAxyphiHistograms", false, "Enables DCAxyphi correlation histograms"};
 
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
   ConfigurableAxis binsEta{"binsEta", {100, -1, 1}, "Binning of the eta axis"};
@@ -486,12 +487,18 @@ struct tofSpectra {
         }
       }
       if (enableDCAxyzHistograms) {
-        histos.add(hdcaxy[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-        histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH3D, {phiAxis, dcaXyAxis, dcaZAxis});
+        if (enableDCAxyphiHistograms) {
+          histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH3D, {phiAxis, dcaXyAxis, dcaZAxis});
+        } else {
+          histos.add(hdcaxy[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+        }
       } else {
-        histos.add(hdcaxy[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-        histos.add(hdcaz[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
-        histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2D, {phiAxis, dcaXyAxis});
+        if (enableDCAxyphiHistograms) {
+          histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2D, {phiAxis, dcaXyAxis});
+        } else {
+          histos.add(hdcaxy[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+          histos.add(hdcaz[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+        }
       }
 
       if (doprocessMC) {
@@ -789,12 +796,16 @@ struct tofSpectra {
         if (track.sign() > 0) {
           histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY(), track.dcaZ());
           if (isInPtRangeForPhi) {
-            histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY(), track.dcaZ());
+            if (enableDCAxyphiHistograms) {
+              histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY(), track.dcaZ());
+            }
           }
         } else {
           histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY(), track.dcaZ());
           if (isInPtRangeForPhi) {
-            histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY(), track.dcaZ());
+            if (enableDCAxyphiHistograms) {
+              histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY(), track.dcaZ());
+            }
           }
         }
       } else {
@@ -802,13 +813,17 @@ struct tofSpectra {
           histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
           histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
           if (isInPtRangeForPhi) {
-            histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
+            if (enableDCAxyphiHistograms) {
+              histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
+            }
           }
         } else {
           histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
           histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
           if (isInPtRangeForPhi) {
-            histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
+            if (enableDCAxyphiHistograms) {
+              histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
+            }
           }
         }
       }
