@@ -581,7 +581,6 @@ struct LFStrangeTreeCreator {
         if (it != candidateV0s.end()) {
           continue;
         } else {
-          LOGF(info, "not found!");
           candidateV0s.emplace_back(candV0);
         }
       }
