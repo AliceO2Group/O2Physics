@@ -46,7 +46,7 @@ using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
 struct AngularCorrelationsInJets {
 
 	// HistogramRegistry registryName{"folderTitle", {}, OutputObjHandlingPolicy::AnalysisObject, <sortHistograms:bool>, <createDir:bool>};
-	HistogramRegistry registryData{"jetOutput", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+	HistogramRegistry registryData{"jetOutput", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 	// OutputObj<Type> histogramName{Type("histogramName", "histogramTitle;Axis", nbins,minbin,maxbin)};
 
 	void init(InitContext&) {
@@ -78,13 +78,16 @@ struct AngularCorrelationsInJets {
 
 		// pT
 		registryData.add("hPtFullEvent", "p_{T} after basic cuts", HistType::kTH1F, {ptAxis});
-		registryData.add("hPtJetParticle", "p_{T} of particles in jets", HistType::kTH1F, {ptAxis});
-		registryData.add("hPtSubtractedJet", "Subtracted jet p_{T}", HistType::kTH1F, {ptAxis});
-		registryData.add("hPtJetProtonDeuteron", "p_{T} of (anti)p, (anti)d", HistType::kTH2F, {particleTypeAxis, ptAxis});
+		registryData.add("hPtJetParticle", "p_{T} of particles in jets", HistType::kTH1D, {ptAxis});
+		registryData.add("hPtSubtractedJet", "Subtracted jet p_{T}", HistType::kTH1D, {ptAxis});
+		registryData.add("hPtJetProtonDeuteron", "p_{T} of (anti)p, (anti)d", HistType::kTH2D, {particleTypeAxis, ptAxis});
 		registryData.add("hPtTotalJet", "p_{T} of entire jet;#it{p}_{T} [GeV/#it{c}]", HistType::kTH1F, {{2000,0,500}});
 		registryData.add("hPtDiff", "pT difference PseudoJet/original track;#it{p}_{T} [GeV/#it{c}]", HistType::kTH1D, {{100,-0.0000005,0.0000005}});
 
 		// nSigma
+		registryData.add("hTPCnsigma", "TPC n#sigma for full event", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
+		registryData.add("hTOFnsigma", "TOF n#sigma for full event", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
+		// registryData.add("hITSnsigma", "ITS n#sigma for full event", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
 		registryData.add("hTPCnsigmaProton", "TPC n#sigma for (anti)proton", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
 		registryData.add("hTOFnsigmaProton", "TOF n#sigma for (anti)proton", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
 		// registryData.add("hITSnsigmaProton", "ITS n#sigma for (anti)proton", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
@@ -102,6 +105,8 @@ struct AngularCorrelationsInJets {
 		registryData.add("hDeltaPhiME", "#Delta#varphi of (anti)p, (anti)d in mixed events", HistType::kTH2D, {particleTypeAxis, angDistPhiAxis});
 		registryData.add("hDeltaPhiEtaSE", "#Delta#varphi vs #Delta#eta of (anti)p, (anti)d in single event", HistType::kTH3D, {particleTypeAxis, angDistPhiAxis, angDistEtaAxis});
 		registryData.add("hDeltaPhiEtaME", "#Delta#varphi vs #Delta#eta of (anti)p, (anti)d in mixed events", HistType::kTH3D, {particleTypeAxis, angDistPhiAxis, angDistEtaAxis});
+
+		registryData.add("hJetConeRadius", "Jet Radius;#it{R}", HistType::kTH1F, {{100,0,1}});
 	}
 
 	// Configurable<Type> cfgName{"nameOnHyperloopAndJson", value, "Flag shown on hyperloop"};
@@ -171,6 +176,7 @@ struct AngularCorrelationsInJets {
 	template <typename CollisionType, typename TracksType>
 	void jetReco(const CollisionType& collision, const TracksType& tracks) { // this turns TracksType into a pointer, no? How then can we access attributes with . instead of ->?
 		registryData.fill(HIST("hNumberOfEvents"), 0);
+		registryData.fill(HIST("hEventProtocol"), 0);
 
 		std::vector<fastjet::PseudoJet> jetInput;
 		std::vector<fastjet::PseudoJet> jets;
@@ -183,12 +189,21 @@ struct AngularCorrelationsInJets {
 
 		for (const auto& track : tracks) {
 			registryData.fill(HIST("hTrackProtocol"), 0);
+			registryData.fill(HIST("hEtaFullEvent"), track.eta());
 			registryData.fill(HIST("hPtFullEvent"), track.pt());
+			registryData.fill(HIST("hDCAxyFullEvent"), track.dcaXY());
+			registryData.fill(HIST("hDCAzFullEvent"), track.dcaZ());
+			registryData.fill(HIST("hTPCnsigma"), track.pt()*track.sign(), track.tpcNSigmaPr());
+			registryData.fill(HIST("hTOFnsigma"), track.pt()*track.sign(), track.tofNSigmaPr());
+			// registryData.fill(HIST("hITSnsigma"), track.pt()*track.sign(), track.itsNSigmaPr());
 
 			fastjet::PseudoJet inputPseudoJet(track.px(), track.py(), track.pz(), track.energy(track.mass())); // is this fine? just TOF for invariant mass?
 			inputPseudoJet.set_user_index(track.globalIndex());
 			jetInput.emplace_back(inputPseudoJet);
 		}
+
+		if (jetInput.size()<2) return;
+		registryData.fill(HIST("hEventProtocol"), 1);
 
 		double ghost_maxrap = 1.0;
 		double ghost_area = 0.005;
@@ -200,17 +215,25 @@ struct AngularCorrelationsInJets {
 		fastjet::ClusterSequenceArea clusterSeq(jetInput, jetDef, areaDef); // or CSActiveArea?
 		jets = sorted_by_pt(clusterSeq.inclusive_jets());
 		if (jets.size() == 0) return;
-		
+		registryData.fill(HIST("hEventProtocol"), 2);
+
 		hardestJet = jets[0];
 
 		if(hardestJet.pt() < fMinJetPt) return;
+		registryData.fill(HIST("hEventProtocol"), 3);
 		if(hardestJet.constituents().size() < 2) return;
+		registryData.fill(HIST("hEventProtocol"), 4);
 		registryData.fill(HIST("hNumberOfJets"), 0);
+		registryData.fill(HIST("hJetRapidity"), hardestJet.rap());
 
 		constituents = hardestJet.constituents();
 
 		for (int i=0; i<(int)constituents.size(); i++) {
 			registryData.fill(HIST("hPtJetParticle"), constituents[i].pt());
+			double DeltaPhi = TVector2::Phi_0_2pi(constituents[i].phi() - hardestJet.phi());
+			double DeltaEta = constituents[i].eta() - hardestJet.eta();
+			double Delta    = TMath::Sqrt(DeltaPhi*DeltaPhi + DeltaEta*DeltaEta);
+			registryData.fill(HIST("hJetConeRadius"), Delta);
 		}
 
 		fastjet::Selector selector = fastjet::SelectorAbsEtaMax(1.0) * (!fastjet::SelectorNHardest(2));
@@ -234,12 +257,13 @@ struct AngularCorrelationsInJets {
 		for (int i=0; i<(int)constituents.size(); i++) {
 			fastjet::PseudoJet pseudoParticle = constituents[i];
         	int id = pseudoParticle.user_index();
-			typename TracksType::iterator jetParticle = tracks.iteratorAt(id);
+			typename TracksType::iterator jetParticle = tracks.iteratorAt(id); // is the global id unique enough?
+
 			double ptDiff = pseudoParticle.pt() - jetParticle.pt();
 			registryData.fill(HIST("hPtDiff"), ptDiff);
+			registryData.fill(HIST("hDCAzJetParticle"), jetParticle.dcaZ());
 			int particleType = 0;
 
-			registryData.fill(HIST("hDCAzJetParticle"), jetParticle.dcaZ());
 			if (jetParticle.pt()<fMinJetParticlePt) continue;
 			if (IsProton(jetParticle) || IsAntiproton(jetParticle)) {// collect (anti)protons in jet
 				registryData.fill(HIST("hTPCnsigmaProton"), jetParticle.pt()*jetParticle.sign(), jetParticle.tpcNSigmaPr());
@@ -247,13 +271,11 @@ struct AngularCorrelationsInJets {
 				// registryData.fill(HIST("hITSnsigmaProton"),track.pt()*track.sign(), track.itsNSigmaPr());
 				if (IsProton(jetParticle)) {
 					particleType = 1;
-					registryData.fill(HIST("hTrackProtocol"), 6.5); // # protons
-					registryData.fill(HIST("hPtJetProtonDeuteron"), particleType, jetParticle.pt());
+					registryData.fill(HIST("hTrackProtocol"), 6); // # protons
 					jetProtons.emplace_back(jetParticle);
 				} else {
 					particleType = 2;
-					registryData.fill(HIST("hTrackProtocol"), 7.5); // # antiprotons
-					registryData.fill(HIST("hPtJetProtonDeuteron"), particleType, jetParticle.pt());
+					registryData.fill(HIST("hTrackProtocol"), 7); // # antiprotons
 					jetAntiprotons.emplace_back(jetParticle);
 				}
 			} else if (IsDeuteron(jetParticle) || IsAntideuteron(jetParticle)) {// collect (anti)deuterons in jet
@@ -262,20 +284,19 @@ struct AngularCorrelationsInJets {
 				// registryData.fill(HIST("hITSnsigmaDeuteron"),track.pt()*track.sign(), track.itsNSigmaDe());
 				if (IsDeuteron(jetParticle)) {
 					particleType = 3;
-					registryData.fill(HIST("hTrackProtocol"), 8.5); // # deuterons
-					registryData.fill(HIST("hPtJetProtonDeuteron"), particleType, jetParticle.pt());
+					registryData.fill(HIST("hTrackProtocol"), 8); // # deuterons
 					jetDeuterons.emplace_back(jetParticle);
 				} else {
 					particleType = 4;
-					registryData.fill(HIST("hTrackProtocol"), 9.5); // # antideuterons
-					registryData.fill(HIST("hPtJetProtonDeuteron"), particleType, jetParticle.pt());
+					registryData.fill(HIST("hTrackProtocol"), 9); // # antideuterons
 					jetAntideuterons.emplace_back(jetParticle);
 				}
 			}
+			registryData.fill(HIST("hPtJetProtonDeuteron"), particleType, jetParticle.pt());
 		} // for (int i=0; i<(int)constituents.size(); i++)
 
 		if ((jetProtons.size()<2) && (jetAntiprotons.size()<2) && (jetDeuterons.size()<2) && (jetAntideuterons.size()<2)) return;
-		registryData.fill(HIST("hEventProtocol"), 5.5);
+		registryData.fill(HIST("hEventProtocol"), 5);
 
 		if (jetProtons.size()>1) {
 			for (int i=0; i<(int)jetProtons.size(); i++) {
