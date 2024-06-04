@@ -23,31 +23,30 @@ namespace o2::aod
 // definition of columns and tables forElectron Selection
 namespace hf_sel_electron
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);          //! CollisionID of Electrons
-DECLARE_SOA_INDEX_COLUMN(Track, track);                  //! Track ID of Electrons
-DECLARE_SOA_COLUMN(TrackEta, tracketa, float);           //!  Track Eta of Electrons
-DECLARE_SOA_COLUMN(TrackPhi, trackphi, float);           //! Track Phi of Electrons
-DECLARE_SOA_COLUMN(TrackPt, trackpt, float);             //! Track Transverse momentum of Electron
-DECLARE_SOA_COLUMN(TrackP, trackp, float);               //!  Track momentum of Electron
-DECLARE_SOA_COLUMN(TrackRapidity, trackrapidity, float); //!  Rapadity of Electron
-DECLARE_SOA_COLUMN(TrackDcaXY, trackdcaXY, float);       //!  dca of Electron in XY direction
-DECLARE_SOA_COLUMN(TrackDcaZ, trackdcaZ, float);         //!  dca of Electron in z direction
-
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);              //! CollisionID of Electrons
+DECLARE_SOA_INDEX_COLUMN(Track, track);                      //! Track ID of Electrons
+DECLARE_SOA_COLUMN(TrackEta, trackEta, float);               //!  Track Eta of Electrons
+DECLARE_SOA_COLUMN(TrackPhi, trackPhi, float);               //! Track Phi of Electrons
+DECLARE_SOA_COLUMN(TrackPt, trackPt, float);                 //! Track Transverse momentum of Electron
+DECLARE_SOA_COLUMN(TrackP, trackP, float);                   //!  Track momentum of Electron
+DECLARE_SOA_COLUMN(TrackRapidity, trackRapidity, float);     //!  Rapadity of Electron
+DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);           //!  dca of Electron in XY direction
+DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);             //!  dca of Electron in z direction
 DECLARE_SOA_COLUMN(TrackTPCNSigmaE, trackTPCNSigmaE, float); //! NSigma electron (TPC PID)
 DECLARE_SOA_COLUMN(TrackTOFNSigmaE, trackTOFNSigmaE, float); //! NSigma electron (TOF PID)
 
 // EMCal cluster values
-DECLARE_SOA_COLUMN(EmcClusterEnergy, emcclusterE, float);        //! EMCal cluster energy (GeV)
-DECLARE_SOA_COLUMN(EmcClusterEta, emcclusterEta, float);         //! EMCal cluster pseudorapidity
-DECLARE_SOA_COLUMN(EmcClusterPhi, emcclusterPhi, float);         //! EMCal cluster azimuthal angle
-DECLARE_SOA_COLUMN(EmcClusterM02, emcclusterm02, float);         //! EMCal shower shape long axis
-DECLARE_SOA_COLUMN(EmcClusterM20, emcclusterm20, float);         //! EMCal shower shape short axis
-DECLARE_SOA_COLUMN(EmcClusterNCells, emcclusterNCells, uint8_t); //! EMCal number of cells in cluster
-DECLARE_SOA_COLUMN(EmcClusterTime, emcclusterTime, float);       //! EMCal cluster time (ns)
+DECLARE_SOA_COLUMN(EmcClusterEnergy, emcClusterE, float);        //! EMCal cluster energy (GeV)
+DECLARE_SOA_COLUMN(EmcClusterEta, emcClusterEta, float);         //! EMCal cluster pseudorapidity
+DECLARE_SOA_COLUMN(EmcClusterPhi, emcClusterPhi, float);         //! EMCal cluster azimuthal angle
+DECLARE_SOA_COLUMN(EmcClusterM02, emcClusterm02, float);         //! EMCal shower shape long axis
+DECLARE_SOA_COLUMN(EmcClusterM20, emcClusterm20, float);         //! EMCal shower shape short axis
+DECLARE_SOA_COLUMN(EmcClusterNCells, emcClusterNCells, uint8_t); //! EMCal number of cells in cluster
+DECLARE_SOA_COLUMN(EmcClusterTime, emcClusterTime, float);       //! EMCal cluster time (ns)
 
 DECLARE_SOA_COLUMN(DeltaEtaMatch, deltaEtaMatch, float); //! dEta  matched track  to calorimeter
 DECLARE_SOA_COLUMN(DeltaPhiMatch, deltaPhiMatch, float); //! dPhi  matched track to calorimeter
-DECLARE_SOA_COLUMN(ISEMcal, isEMcal, bool);
+DECLARE_SOA_COLUMN(ISEmcal, isEmcal, bool);
 
 } // namespace hf_sel_electron
 DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
@@ -72,7 +71,7 @@ DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
                   hf_sel_electron::EmcClusterTime,
                   hf_sel_electron::DeltaEtaMatch,
                   hf_sel_electron::DeltaPhiMatch,
-                  hf_sel_electron::ISEMcal);
+                  hf_sel_electron::ISEmcal);
 
 } // namespace o2::aod
 
