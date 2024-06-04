@@ -2440,7 +2440,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   values[kCos2DeltaPhiMu1] = std::cos(2 * (v1.Phi() - v12.Phi()));
   values[kCos2DeltaPhiMu2] = std::cos(2 * (v2.Phi() - v12.Phi()));
 
-  if constexpr (pairType == kDecayToPiPi) {
+  if constexpr (pairType == kDecayToMuMu) {
     if (fgUsedVars[kQuadDCAabsXY]) {
       double dca1X = t1.fwdDcaX();
       double dca1Y = t1.fwdDcaY();
