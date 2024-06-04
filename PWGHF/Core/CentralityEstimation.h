@@ -8,23 +8,26 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \author Jasper Parkkila (jparkkil@cern.ch)
-/// \since Sep 2024
 
-#ifndef PWGCF_JCORRAN_CORE_JFFLUCANALYSISO2HIST_H_
-#define PWGCF_JCORRAN_CORE_JFFLUCANALYSISO2HIST_H_
+/// \file CentralityEstimation.h
+/// \brief Definitions of centrality estimators
+/// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
-#include "JFFlucAnalysis.h"
-#include "Framework/HistogramRegistry.h"
+#ifndef PWGHF_CORE_CENTRALITYESTIMATION_H_
+#define PWGHF_CORE_CENTRALITYESTIMATION_H_
 
-using namespace o2;
-using namespace o2::framework;
-
-class JFFlucAnalysisO2Hist : public JFFlucAnalysis
+namespace o2::hf_centrality
 {
- public:
-  JFFlucAnalysisO2Hist(HistogramRegistry&, AxisSpec&, AxisSpec&, AxisSpec&, AxisSpec&, const TString&);
-  ~JFFlucAnalysisO2Hist();
+// centrality selection estimators
+enum CentralityEstimator {
+  None = 0,
+  FT0A,
+  FT0C,
+  FT0M,
+  FV0A,
+  NTracksPV,
+  NCentralityEstimators
 };
+} // namespace o2::hf_centrality
 
-#endif // PWGCF_JCORRAN_CORE_JFFLUCANALYSISO2HIST_H_
+#endif // PWGHF_CORE_CENTRALITYESTIMATION_H_

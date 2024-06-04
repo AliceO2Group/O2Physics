@@ -19,9 +19,11 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "Framework/HistogramRegistry.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "TableHelper.h"
+#include "THashList.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -77,6 +79,8 @@ struct CentralityTable {
   Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
   Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
   Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
+  Configurable<bool> fatalizeMultCalibSanity{"fatalizeMultCalibSanity", false, {"Option to do fatalize the sanity check on the multiplicity calibration"}};
+  Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
 
   int mRunNumber;
   struct tagRun2V0MCalibration {
@@ -127,6 +131,22 @@ struct CentralityTable {
         mMCScale(nullptr)
     {
     }
+    bool isSane(bool fatalize = false)
+    {
+      if (!mhMultSelCalib) {
+        return true;
+      }
+      for (int i = 1; i < mhMultSelCalib->GetNbinsX() + 1; i++) {
+        if (mhMultSelCalib->GetXaxis()->GetBinLowEdge(i) > mhMultSelCalib->GetXaxis()->GetBinUpEdge(i)) {
+          if (fatalize) {
+            LOG(fatal) << "Centrality calibration table " << name << " has bins with low edge > up edge";
+          }
+          LOG(warning) << "Centrality calibration table " << name << " has bins with low edge > up edge";
+          return false;
+        }
+      }
+      return true;
+    }
   };
   calibrationInfo FV0AInfo = calibrationInfo("FV0");
   calibrationInfo FT0MInfo = calibrationInfo("FT0");
@@ -136,6 +156,10 @@ struct CentralityTable {
   calibrationInfo NTPVInfo = calibrationInfo("NTracksPV");
   std::vector<int> mEnabledTables; // Vector of enabled tables
   std::array<bool, nTables> isTableEnabled;
+
+  // Debug output
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  OutputObj<THashList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
 
   void init(InitContext& context)
   {
@@ -172,8 +196,10 @@ struct CentralityTable {
     if (mEnabledTables.size() == 0) {
       LOGF(fatal, "No table enabled. Please enable at least one table.");
     }
+    std::sort(mEnabledTables.begin(), mEnabledTables.end());
+
     // Check if FT0 is the only centrality needed
-    if (mEnabledTables.size() == 1 && mEnabledTables[kCentFT0Ms] == true) {
+    if (mEnabledTables.size() == 1 && isTableEnabled[kCentFT0Ms] == true) {
       LOG(info) << "FT0 only mode is enabled";
       doprocessRun3FT0.value = true;
       doprocessRun3.value = false;
@@ -184,6 +210,23 @@ struct CentralityTable {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     mRunNumber = 0;
+    if (!produceHistograms.value) {
+      return;
+    }
+
+    histos.add("FT0M", "FT0M vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0M percentile"}, {1000, 0, 1000, "FT0M mult."}});
+    histos.add("FT0MvsPV", "FT0M vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0M percentile"}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0MMultvsPV", "FT0M vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0M mult."}, {100, 0, 100, "PV mult."}});
+
+    histos.add("FT0C", "FT0C vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0C percentile"}, {1000, 0, 1000, "FT0C mult."}});
+    histos.add("FT0CvsPV", "FT0C vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0C percentile"}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0CMultvsPV", "FT0C vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0C mult."}, {100, 0, 100, "PV mult."}});
+
+    histos.add("FT0A", "FT0A vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0A percentile"}, {1000, 0, 1000, "FT0A mult."}});
+    histos.add("FT0AvsPV", "FT0A vs mult.", HistType::kTH2D, {{105, 0, 105, "FT0A percentile"}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0AMultvsPV", "FT0A vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0A mult."}, {100, 0, 100, "PV mult."}});
+
+    listCalib.setObject(new THashList);
   }
 
   using BCsWithTimestampsAndRun2Infos = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
@@ -408,7 +451,6 @@ struct CentralityTable {
       if (bc.runNumber() != mRunNumber) {
         LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
         TList* callst = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
-
         FV0AInfo.mCalibrationStored = false;
         FT0MInfo.mCalibrationStored = false;
         FT0AInfo.mCalibrationStored = false;
@@ -416,6 +458,9 @@ struct CentralityTable {
         FDDMInfo.mCalibrationStored = false;
         NTPVInfo.mCalibrationStored = false;
         if (callst != nullptr) {
+          if (produceHistograms) {
+            listCalib->Add(callst->Clone(Form("%i", bc.runNumber())));
+          }
           LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           auto getccdb = [callst, bc](struct calibrationInfo& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
             estimator.mhMultSelCalib = reinterpret_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
@@ -433,6 +478,7 @@ struct CentralityTable {
                 }
               }
               estimator.mCalibrationStored = true;
+              estimator.isSane();
             } else {
               LOGF(error, "Calibration information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
             }
@@ -500,6 +546,7 @@ struct CentralityTable {
         }
         LOGF(debug, "%s centrality/multiplicity percentile = %.0f for a zvtx eq %s value %.0f", estimator.name.c_str(), percentile, estimator.name.c_str(), scaledMultiplicity);
         table(percentile);
+        return percentile;
       };
 
       for (auto const& table : mEnabledTables) {
@@ -511,17 +558,32 @@ struct CentralityTable {
             break;
           case kCentFT0Ms:
             if constexpr (enableCentFT0) {
-              populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C());
+              const float perC = populateTable(centFT0M, FT0MInfo, collision.multZeqFT0A() + collision.multZeqFT0C());
+              if (produceHistograms.value) {
+                histos.fill(HIST("FT0M"), perC, collision.multZeqFT0A() + collision.multZeqFT0C());
+                histos.fill(HIST("FT0MvsPV"), perC, collision.multNTracksPV());
+                histos.fill(HIST("FT0MMultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
+              }
             }
             break;
           case kCentFT0As:
             if constexpr (enableCentFT0) {
-              populateTable(centFT0A, FT0AInfo, collision.multZeqFT0A());
+              const float perC = populateTable(centFT0A, FT0AInfo, collision.multZeqFT0A());
+              if (produceHistograms.value) {
+                histos.fill(HIST("FT0A"), perC, collision.multZeqFT0A());
+                histos.fill(HIST("FT0AvsPV"), perC, collision.multNTracksPV());
+                histos.fill(HIST("FT0AMultvsPV"), collision.multZeqFT0A(), collision.multNTracksPV());
+              }
             }
             break;
           case kCentFT0Cs:
             if constexpr (enableCentFT0) {
-              populateTable(centFT0C, FT0CInfo, collision.multZeqFT0C());
+              const float perC = populateTable(centFT0C, FT0CInfo, collision.multZeqFT0C());
+              if (produceHistograms.value) {
+                histos.fill(HIST("FT0C"), perC, collision.multZeqFT0C());
+                histos.fill(HIST("FT0CvsPV"), perC, collision.multNTracksPV());
+                histos.fill(HIST("FT0CMultvsPV"), collision.multZeqFT0C(), collision.multNTracksPV());
+              }
             }
             break;
           case kCentFDDMs:

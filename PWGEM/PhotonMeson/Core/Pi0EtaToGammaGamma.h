@@ -14,8 +14,16 @@
 // This code loops over photons and makes pairs for neutral mesons analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
+#ifndef PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMA_H_
+#define PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMA_H_
+
 #include <cstring>
 #include <iterator>
+#include <string>
+#include <map>
+#include <vector>
+#include <tuple>
+#include <utility>
 
 #include "TString.h"
 #include "Math/Vector4D.h"
@@ -91,14 +99,17 @@ struct Pi0EtaToGammaGamma {
   ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
 
   EMEventCut fEMEventCut;
-  Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
-  Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
-  Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
-  Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
-  Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
-  Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
-  Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
-  Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+  struct : ConfigurableGroup {
+    std::string prefix = "eventcut_group";
+    Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
+    Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
+    Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
+    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
+    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
+    Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
+    Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
+    Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+  } eventcuts;
 
   V0PhotonCut fV0PhotonCut;
   struct : ConfigurableGroup {
@@ -253,14 +264,14 @@ struct Pi0EtaToGammaGamma {
   void DefineEMEventCut()
   {
     fEMEventCut = EMEventCut("fEMEventCut", "fEMEventCut");
-    fEMEventCut.SetRequireSel8(cfgRequireSel8);
-    fEMEventCut.SetRequireFT0AND(cfgRequireFT0AND);
-    fEMEventCut.SetZvtxRange(-cfgZvtxMax, +cfgZvtxMax);
-    fEMEventCut.SetRequireNoTFB(cfgRequireNoTFB);
-    fEMEventCut.SetRequireNoITSROFB(cfgRequireNoITSROFB);
-    fEMEventCut.SetRequireNoSameBunchPileup(cfgRequireNoSameBunchPileup);
-    fEMEventCut.SetRequireVertexITSTPC(cfgRequireVertexITSTPC);
-    fEMEventCut.SetRequireGoodZvtxFT0vsPV(cfgRequireGoodZvtxFT0vsPV);
+    fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
+    fEMEventCut.SetRequireFT0AND(eventcuts.cfgRequireFT0AND);
+    fEMEventCut.SetZvtxRange(-eventcuts.cfgZvtxMax, +eventcuts.cfgZvtxMax);
+    fEMEventCut.SetRequireNoTFB(eventcuts.cfgRequireNoTFB);
+    fEMEventCut.SetRequireNoITSROFB(eventcuts.cfgRequireNoITSROFB);
+    fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
+    fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
+    fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
   }
 
   void DefinePCMCut()
@@ -855,16 +866,4 @@ struct Pi0EtaToGammaGamma {
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processDummy, "Dummy function", true);
 };
-
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"pi0eta-to-gammagamma-pcmpcm"}),
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPCMDalitzEE, MyV0Photons, aod::V0Legs, MyPrimaryElectrons>>(cfgc, TaskName{"pi0eta-to-gammagamma-pcmdalitzee"}),
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPCMDalitzMuMu, MyV0Photons, aod::V0Legs, MyPrimaryMuons>>(cfgc, TaskName{"pi0eta-to-gammagamma-pcmdalitzmumu"}),
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kEMCEMC, MyEMCClusters, aod::SkimEMCMTs>>(cfgc, TaskName{"pi0eta-to-gammagamma-emcemc"}),
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPHOSPHOS, MyPHOSClusters>>(cfgc, TaskName{"pi0eta-to-gammagamma-phosphos"}),
-    // adaptAnalysisTask<Pi0EtaToGammaGamma2<PairType::kPCMEMC, MyV0Photons, aod::V0Legs, MyEMCClusters, aod::SkimEMCMTs>>(cfgc, TaskName{"pi0eta-to-gammagamma-pcmemc"}),
-    // adaptAnalysisTask<Pi0EtaToGammaGamma2<PairType::kPCMPHOS, MyV0Photons, aod::V0Legs, MyPHOSClusters>>(cfgc, TaskName{"pi0eta-to-gammagamma-pcmphos"}),
-  };
-}
+#endif // PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMA_H_

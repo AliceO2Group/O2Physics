@@ -79,6 +79,7 @@ struct phosNbar {
   Configurable<double> mDCAcut{"DCAmax", 0.2, "DCA max cut"};
   Configurable<double> mCPAcut{"CPAmin", 0.96, "CPA min cut"};
   Configurable<uint> mNmix{"nMix", 5, "depth of mixing buffer"};
+  Configurable<bool> mStrictParentCut{"StrictParent", true, "parent with largest Edep or any parent"};
 
   static constexpr double c = 29979245800.; // speed of light in cm/sec
   static constexpr double mNbar = 0.939485; // neutron mass
@@ -130,22 +131,26 @@ struct phosNbar {
   std::array<std::deque<std::vector<nbar>>, mNZbins> mixNbarEvts;
 
   TH2 *hRePP, *hRePM, *hMiPP, *hMiPM;
-  TH3 *hSignalSP, *hSignalSM;
+  TH3 *hSignalSP, *hSignalSM, *hSignalOther;
   TH3 *hRePPDCA, *hRePMDCA, *hMiPPDCA, *hMiPMDCA, *hRePPCPA, *hRePMCPA, *hMiPPCPA, *hMiPMCPA;
 
   /// \brief Create output histograms
   void init(o2::framework::InitContext const&)
   {
-    mHistManager.add("evsel", "event selection", HistType::kTH1F, {{10, 0., 10.}});
+    mHistManager.add("evsel", "event selection", HistType::kTH1F, {{13, 0., 13.}});
     mHistManager.add("vtxZ", "Vertex z distribution", HistType::kTH1F, {{100, -20., 20., "z_{vtx} (cm)", "z_{vtx} (cm)"}});
     mHistManager.add("cluCuts", "Spectrum vs cut", HistType::kTH2F, {{100, 0., 5., "E (GeV)", "E (GeV)"}, {10, 0., 10., "cut"}});
     mHistManager.add("nbarCuts", "Spectrum vs cut", HistType::kTH2F, {{100, 0., 5., "E (GeV)", "E (GeV)"}, {10, 0., 10., "cut"}});
+    mHistManager.add("nbarSigmaCuts", "Spectrum vs cut", HistType::kTH2F, {{100, 0., 5., "E (GeV)", "E (GeV)"}, {10, 0., 10., "cut"}});
     mHistManager.add("trackCuts", "Spectrum vs cut", HistType::kTH2F, {{100, 0., 5., "p_{T} (GeV)", "p_{T} (GeV)"}, {10, 0., 10., "cut"}});
+    mHistManager.add("trackSigmaCuts", "Spectrum vs cut", HistType::kTH2F, {{100, 0., 5., "p_{T} (GeV)", "p_{T} (GeV)"}, {10, 0., 10., "cut"}});
 
     mHistManager.add("cluTime", "Time vs E clu", HistType::kTH2F, {{200, -100.e-9, 100.e-9, "t (s)", "t (s)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
     mHistManager.add("nbarTime", "Time vs E clu nbar", HistType::kTH2F, {{200, -100.e-9, 100.e-9, "t (s)", "t (s)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
+    mHistManager.add("nbarSigmaTime", "Time vs E clu nbar", HistType::kTH2F, {{200, -100.e-9, 100.e-9, "t (s)", "t (s)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
     mHistManager.add("cluRveto", "CPV radius vs E clu", HistType::kTH2F, {{100, 0., 10., "R (sigmas)", "R (sigmas)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
     mHistManager.add("nbarRveto", "CPV radius vs E clu nbar", HistType::kTH2F, {{100, 0., 10., "R (sigmas)", "R (sigmas)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
+    mHistManager.add("nbarSigmaRveto", "CPV radius vs E clu nbar", HistType::kTH2F, {{100, 0., 10., "R (sigmas)", "R (sigmas)"}, {100, 0., 10., "E (GeV)", "E (GeV)"}});
 
     const AxisSpec
       massAxis{500, 1., 1.5},
@@ -159,6 +164,7 @@ struct phosNbar {
     hMiPM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("MiPiM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hSignalSP = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSP", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
     hSignalSM = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSM", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
+    hSignalOther = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalOther", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
 
     hRePPDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiPDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
     hRePMDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiMDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
@@ -183,8 +189,13 @@ struct phosNbar {
     if (!selectEvent<isMC>(collision, mixIndex)) {
       return;
     }
+    // count events
+    int ntr = tracks.size();
+    int nclu = clusters.size();
+    mHistManager.fill(HIST("evsel"), 10. + 2 * (ntr > 0) + (nclu > 0));
+
     selectNbars<isMC>(clusters, mcParticles);
-    selectTracks<isMC>(tracks);
+    selectTracks<isMC>(tracks, mcParticles);
     // Fill Real
     double cpa, m, pt;
     math_utils::Point3D<float> vtxV0;
@@ -231,12 +242,23 @@ struct phosNbar {
               hSignalSP->Fill(m, pt, static_cast<float>(iPIDbit));
             }
           }
-        }
-        if (cp == -3222) { // Sigma-
-          hSignalSM->Fill(m, pt, static_cast<float>(0));
-          for (int iPIDbit = 1; iPIDbit < 5; iPIDbit++) {
-            if (nbar.testPIDBit(iPIDbit)) {
-              hSignalSM->Fill(m, pt, static_cast<float>(iPIDbit));
+        } else {
+          if (cp == -3222) { // Sigma-
+            hSignalSM->Fill(m, pt, static_cast<float>(0));
+            for (int iPIDbit = 1; iPIDbit < 5; iPIDbit++) {
+              if (nbar.testPIDBit(iPIDbit)) {
+                hSignalSM->Fill(m, pt, static_cast<float>(iPIDbit));
+              }
+            }
+          } else {
+            if (cp != 0) {
+              LOG(info) << "Common parent PDG=" << cp;
+              if (cp == -1114 || cp == -2114 || cp == -2214) // Delta
+                hSignalOther->Fill(m, pt, 0.);
+              if (cp == -3114 || cp == -3214 || cp == -3312) // Sigma*, Xi
+                hSignalOther->Fill(m, pt, 1.);
+              if (abs(cp) < 400) // mesons
+                hSignalOther->Fill(m, pt, 2.);
             }
           }
         }
@@ -364,23 +386,33 @@ struct phosNbar {
     // Select clusters produced by nbar and prepare list of nbar candidates
     for (const auto& clu : clusters) {
       bool isNbar = false;
+      bool isNbarSigma = false;
       int label = -1; // if no MC
       if constexpr (isMC) {
         auto mcList = clu.labels(); // const std::vector<int>
-        if (mcList.size() > 0) {
-          label = mcList[0];
+        int nParents = 0;
+        if (mStrictParentCut) {
+          nParents = std::min(1, static_cast<int>(mcList.size()));
+        } else {
+          nParents = mcList.size();
         }
-        int iparent = label;
-        while (iparent > -1) {
-          auto parent = mcParticles->iteratorAt(iparent);
-          if (parent.pdgCode() == -2112) {
-            isNbar = true;
-            break;
+        for (int iParent = 0; iParent < nParents && !isNbar; iParent++) { // Not found nbar parent yiet
+          label = mcList[iParent];
+          int ip = label;
+          while (ip > -1) {
+            auto parent = mcParticles->iteratorAt(ip);
+            if (parent.pdgCode() == -2112) {
+              isNbar = true;
+              break;
+            }
+            if (parent.mothersIds().size() == 0 || abs(parent.pdgCode()) < 22 || abs(parent.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
+              break;
+            }
+            ip = parent.mothersIds()[0];
           }
-          if (parent.mothersIds().size() == 0 || abs(parent.pdgCode()) < 22 || abs(parent.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
-            break;
-          }
-          iparent = parent.mothersIds()[0];
+        }
+        if (isNbar) {
+          isNbarSigma = isSigmaDaughter(label, mcParticles);
         }
       }
 
@@ -388,6 +420,9 @@ struct phosNbar {
       mHistManager.fill(HIST("cluCuts"), clu.e(), 0.);
       if (isNbar) {
         mHistManager.fill(HIST("nbarCuts"), clu.e(), 0.);
+        if (isNbarSigma) {
+          mHistManager.fill(HIST("nbarSigmaCuts"), clu.e(), 0.);
+        }
       }
       if (clu.e() < mMinCluE) {
         continue;
@@ -395,6 +430,9 @@ struct phosNbar {
       mHistManager.fill(HIST("cluCuts"), clu.e(), 1.);
       if (isNbar) {
         mHistManager.fill(HIST("nbarCuts"), clu.e(), 1.);
+        if (isNbarSigma) {
+          mHistManager.fill(HIST("nbarSigmaCuts"), clu.e(), 1.);
+        }
       }
 
       if (clu.time() < mTimeMin || clu.time() > mTimeMax) {
@@ -403,14 +441,23 @@ struct phosNbar {
       mHistManager.fill(HIST("cluCuts"), clu.e(), 2.);
       if (isNbar) {
         mHistManager.fill(HIST("nbarCuts"), clu.e(), 2.);
+        if (isNbarSigma) {
+          mHistManager.fill(HIST("nbarSigmaCuts"), clu.e(), 2.);
+        }
       }
       mHistManager.fill(HIST("cluRveto"), clu.trackdist(), clu.e());
       if (isNbar) {
         mHistManager.fill(HIST("nbarRveto"), clu.trackdist(), clu.e());
+        if (isNbarSigma) {
+          mHistManager.fill(HIST("nbarSigmaRveto"), clu.trackdist(), clu.e());
+        }
       }
       mHistManager.fill(HIST("cluTime"), clu.time(), clu.e());
       if (isNbar) {
         mHistManager.fill(HIST("nbarTime"), clu.time(), clu.e());
+        if (isNbarSigma) {
+          mHistManager.fill(HIST("nbarSigmaTime"), clu.time(), clu.e());
+        }
       }
       // estimate momentum
       float t = clu.time();
@@ -437,6 +484,9 @@ struct phosNbar {
         mHistManager.fill(HIST("cluCuts"), clu.e(), 3.);
         if (isNbar) {
           mHistManager.fill(HIST("nbarCuts"), clu.e(), 3.);
+          if (isNbarSigma) {
+            mHistManager.fill(HIST("nbarSigmaCuts"), clu.e(), 3.);
+          }
         }
       }
       if (clu.ncell() >= mNCellMin) {
@@ -444,6 +494,9 @@ struct phosNbar {
         mHistManager.fill(HIST("cluCuts"), clu.e(), 4.);
         if (isNbar) {
           mHistManager.fill(HIST("nbarCuts"), clu.e(), 4.);
+          if (isNbarSigma) {
+            mHistManager.fill(HIST("nbarSigmaCuts"), clu.e(), 4.);
+          }
         }
       }
       if (clu.trackdist() > mRvetoSigma) // neutrality
@@ -452,6 +505,9 @@ struct phosNbar {
         mHistManager.fill(HIST("cluCuts"), clu.e(), 5.);
         if (isNbar) {
           mHistManager.fill(HIST("nbarCuts"), clu.e(), 5.);
+          if (isNbarSigma) {
+            mHistManager.fill(HIST("nbarSigmaCuts"), clu.e(), 5.);
+          }
         }
       }
       if (clu.m02() > mDispA * clu.m20() + mDispB) {
@@ -459,6 +515,9 @@ struct phosNbar {
         mHistManager.fill(HIST("cluCuts"), clu.e(), 6.);
         if (isNbar) {
           mHistManager.fill(HIST("nbarCuts"), clu.e(), 6.);
+          if (isNbarSigma) {
+            mHistManager.fill(HIST("nbarSigmaCuts"), clu.e(), 6.);
+          }
         }
       }
     }
@@ -466,29 +525,43 @@ struct phosNbar {
 
   //----------------------------------------
   template <bool isMC, typename TTracks>
-  void selectTracks(TTracks const& tracks)
+  void selectTracks(TTracks const& tracks, aod::McParticles const* mcParticles)
   {
     // Select pion tracks to pair with nbar
 
     for (const auto& piontrack : tracks) {
+      int label = -1;
+      bool isSigmaPi = false;
+      if constexpr (isMC) {
+        label = piontrack.mcParticleId();
+        isSigmaPi = isSigmaDaughter(label, mcParticles);
+      }
       mHistManager.fill(HIST("trackCuts"), piontrack.pt(), 0.);
+      if (isSigmaPi) {
+        mHistManager.fill(HIST("trackSigmaCuts"), piontrack.pt(), 0.);
+      }
       if (piontrack.hasITS() == false) {
         continue;
       }
       mHistManager.fill(HIST("trackCuts"), piontrack.pt(), 1.);
+      if (isSigmaPi) {
+        mHistManager.fill(HIST("trackSigmaCuts"), piontrack.pt(), 1.);
+      }
       if (piontrack.hasTPC() == false) {
         continue;
       }
       mHistManager.fill(HIST("trackCuts"), piontrack.pt(), 2.);
-      int label = -1;
-      if constexpr (isMC) {
-        label = piontrack.mcParticleId();
+      if (isSigmaPi) {
+        mHistManager.fill(HIST("trackSigmaCuts"), piontrack.pt(), 2.);
       }
       piEvent.emplace_back(getTrackPar(piontrack), label);
 
       if (std::abs(piontrack.tpcNSigmaPi()) < mPionDeDxCut) {
         piEvent.back().setPIDBit(0);
-        mHistManager.fill(HIST("trackCuts"), piontrack.pt(), 2.);
+        mHistManager.fill(HIST("trackCuts"), piontrack.pt(), 3.);
+        if (isSigmaPi) {
+          mHistManager.fill(HIST("trackSigmaCuts"), piontrack.pt(), 4.);
+        }
       }
       // DCA cut???
     }
@@ -505,7 +578,10 @@ struct phosNbar {
       int iparentN = labNbar;
       while (iparentN > -1) {
         if (iparentPi == iparentN) {
-          return mcParticles->iteratorAt(iparentPi).pdgCode();
+          if (abs(mcParticles->iteratorAt(iparentPi).pdgCode()) > 10000) // string etc
+            return 0;
+          else
+            return mcParticles->iteratorAt(iparentPi).pdgCode();
         }
         auto parentN = mcParticles->iteratorAt(iparentN);
         if (!parentN.has_mothers() || parentN.pdgCode() == 21 || abs(parentN.pdgCode()) < 11 || abs(parentN.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
@@ -757,7 +833,20 @@ struct phosNbar {
     // asymalpha = (pNbar.mag()-pPi.mag())/(pNbar.mag()+pPi.mag());
     return true;
   }
-
+  bool isSigmaDaughter(int label, aod::McParticles const* mcParticles)
+  {
+    while (label > -1) {
+      auto parent = mcParticles->iteratorAt(label);
+      if ((parent.pdgCode() == -3112) || (parent.pdgCode() == -3222)) {
+        return true;
+      }
+      if (!parent.has_mothers() || parent.pdgCode() == 21 || abs(parent.pdgCode()) < 11 || abs(parent.pdgCode()) > 5000) { // no parents, parent not quark/gluon, strings
+        return false;
+      }
+      label = parent.mothersIds()[0];
+    }
+    return false;
+  }
   void processData(SelCollision const& coll,
                    aod::BCsWithTimestamps const&, aod::CaloClusters const& clusters, TrackCandidates const& tracks)
   {

@@ -69,7 +69,8 @@ struct HfTaskMcEfficiencyToXiPi {
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
   using Xic0CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfXicToXiPiMCRec, aod::HfSelToXiPi>;
   using Omegac0CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfOmegacToXiPiMCRec, aod::HfSelToXiPi>;
-  using ParticleInfo = soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>;
+  using ParticleInfoXic0 = soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>;
+  using ParticleInfoOmegac0 = soa::Join<aod::McParticles, aod::HfOmegacToXiPiMCGen>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   HistogramRegistry registry{"registry"};
@@ -381,7 +382,7 @@ struct HfTaskMcEfficiencyToXiPi {
 
   // process functions
   void processXic0(Xic0CandidateInfo const& candidates,
-                   ParticleInfo const& genParticles,
+                   ParticleInfoXic0 const& genParticles,
                    BCsInfo const& bcs,
                    TracksWithSelectionMC const& tracks,
                    aod::McCollisions const& colls)
@@ -391,7 +392,7 @@ struct HfTaskMcEfficiencyToXiPi {
   PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processXic0, "Enable Xic0 efficiency process", true);
 
   void processOmegac0(Omegac0CandidateInfo const& candidates,
-                      ParticleInfo const& genParticles,
+                      ParticleInfoOmegac0 const& genParticles,
                       BCsInfo const& bcs,
                       TracksWithSelectionMC const& tracks,
                       aod::McCollisions const& colls)
