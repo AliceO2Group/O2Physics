@@ -13,7 +13,7 @@
 /// \file   qaEfficiency.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to analyse both data and MC to produce efficiency vs pT, eta and phi.
-///         In MC the efficiency for particles is computed according to the PDG code (sign included and not charge)
+///         In MC the efficiency for particles is computed according to the PDG code (sign included and not charge).
 ///
 
 // O2 includes
