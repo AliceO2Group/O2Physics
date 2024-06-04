@@ -74,7 +74,7 @@ DECLARE_SOA_COLUMN(HfPhi, hfphi, float);
 DECLARE_SOA_COLUMN(HfMass, hfmass, float);
 DECLARE_SOA_COLUMN(HfY, hfy, float);
 DECLARE_SOA_COLUMN(HfMatch, hfmatch, bool);
-DECLARE_SOA_COLUMN(HfPrompt, hfprompt, bool);
+DECLARE_SOA_COLUMN(HfPrompt, hfPrompt, bool);
 } // namespace jet_distance
 DECLARE_SOA_TABLE(JetDistanceTable, "AOD", "JETDISTTABLE",
                   jet_distance::JetHfDist,
@@ -223,8 +223,8 @@ struct HfFragmentationFunctionTask {
 
           // store data in MC detector level table
           mcddistJetTable(axisDistance,
-                          mcdjet.pt(), mcdjet.eta(), mcdjet.phi(),                                                                                                                   // detector level jet
-                          mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt) ? true : false, // detector level D0 candidate
+                          mcdjet.pt(), mcdjet.eta(), mcdjet.phi(),                                                                                                    // detector level jet
+                          mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0 candidate
                           mcdjet.has_matchedJetCand());
         }
       }
@@ -241,8 +241,8 @@ struct HfFragmentationFunctionTask {
 
         // store data in MC detector level table
         mcpdistJetTable(axisDistance,
-                        mcpjet.pt(), mcpjet.eta(), mcpjet.phi(),                                                                                                    // particle level jet
-                        mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt) ? true : false, // particle level D0
+                        mcpjet.pt(), mcpjet.eta(), mcpjet.phi(),                                                                                     // particle level jet
+                        mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt), // particle level D0
                         mcpjet.has_matchedJetCand());
       }
     }
