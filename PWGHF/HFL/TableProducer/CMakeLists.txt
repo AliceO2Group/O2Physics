@@ -10,7 +10,7 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(electron-selection-with-tpc-emcal
-                    SOURCES electronSelectionWithTPCEMcal.cxx
+                    SOURCES electronSelectionWithTpcEmcal.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
