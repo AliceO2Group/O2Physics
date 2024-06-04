@@ -44,6 +44,7 @@ struct k892pmanalysis {
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.0}, "Binning of the pT axis"};
   ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0}, "Binning of the pT axis"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 1., 5., 10., 30., 50., 70., 100., 110.}, "Binning of the centrality axis"};
+  ConfigurableAxis binsEta{"binsEta", {-1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}, "Binning of pseudo-rapidity eta"};
   Configurable<float> cInvMassStart{"cInvMassStart", 0.6, "Invariant mass start"};
   Configurable<float> cInvMassEnd{"cInvMassEnd", 1.5, "Invariant mass end"};
   Configurable<int> cInvMassBins{"cInvMassBins", 900, "Invariant mass binning"};
@@ -88,6 +89,7 @@ struct k892pmanalysis {
   void init(o2::framework::InitContext&)
   {
     AxisSpec centAxis = {binsCent, "V0M (%)"};
+    AxisSpec etaAxis = {binsEta, "#eta"};
     AxisSpec dcaxyAxis = {cDCABins, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
     AxisSpec dcazAxis = {cDCABins, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
     AxisSpec ptAxis = {binsPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -100,10 +102,15 @@ struct k892pmanalysis {
     // Mass QA (quick check)
     histos.add("k892pminvmass", "Invariant mass of charged K*(892)", kTH1F, {invMassAxis});
     histos.add("QAafter/k0shortmass", "Invariant mass of K0Short", kTH1F, {k0sMassAxis});
-    // DCA QA
-    histos.add("QAbefore/collMult", "Collision multiplicity", HistType::kTH1F, {binsCent});
+    // Multiplicity and accepted events QA
+    histos.add("QAbefore/collMult", "Collision multiplicity", HistType::kTH1F, {centAxis});
+    // histos.add("QAbefore/accEvtsMult", "Accepted events vs multiplicity", kTH1F, {centAxis});
+    // histos.add("QAafter/accEvtsMult", "Accepted events vs multiplicity", kTH1F, {centAxis});
+    //  DCA QA
     histos.add("QAbefore/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QAbefore/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
+    // Rapidity QA
+    histos.add("QAbefore/trkEta_pi", "Primary pion track pseudo-rapidity eta", kTH1F, {etaAxis});
     // histos.add("QAbefore/trkDCAz_k0s", "DCAz distribution of k0short track candidates", HistType::kTH1F, {dcazAxis});
     histos.add("QAafter/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QAafter/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
@@ -317,7 +324,7 @@ struct k892pmanalysis {
         lDecayV0.SetXYZM(v0.px(), v0.py(), v0.pz(), massK0);
         lResonance = lDecayDaughter + lDecayV0;
         // Checking whether the mid-rapidity condition is met
-        if (lResonance.Rapidity() > 0.5) {
+        if (abs(lResonance.Rapidity()) > 0.5) {
           continue;
         }
         // Counting how many resonances passed

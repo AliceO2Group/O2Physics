@@ -470,9 +470,9 @@ struct TableMakerMC {
           bool checked = false;
           if constexpr (soa::is_soa_filtered_v<aod::McParticles_001>) {
             auto mctrack_raw = groupedMcTracks.rawIteratorAt(mctrack.globalIndex());
-            checked = sig.CheckSignal(false, mctrack_raw);
+            checked = sig.CheckSignal(true, mctrack_raw);
           } else {
-            checked = sig.CheckSignal(false, mctrack);
+            checked = sig.CheckSignal(true, mctrack);
           }
           if (checked) {
             mcflags |= (uint16_t(1) << i);
@@ -1015,9 +1015,9 @@ struct TableMakerMC {
           bool checked = false;
           if constexpr (soa::is_soa_filtered_v<aod::McParticles_001>) {
             auto mctrack_raw = groupedMcTracks.rawIteratorAt(mctrack.globalIndex());
-            checked = sig.CheckSignal(false, mctrack_raw);
+            checked = sig.CheckSignal(true, mctrack_raw);
           } else {
-            checked = sig.CheckSignal(false, mctrack);
+            checked = sig.CheckSignal(true, mctrack);
           }
           if (checked) {
             mcflags |= (uint16_t(1) << i);
