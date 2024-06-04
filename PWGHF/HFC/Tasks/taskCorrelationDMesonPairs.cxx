@@ -63,8 +63,8 @@ struct HfTaskCorrelationDMesonPairs {
   ConfigurableAxis thnConfigAxisCandType2{"thnConfigAxisCandType2", {4, -0.5, 3.5}, "Cand. 2 Type"};
 
   HistogramRegistry registry{
-    "registry", {}
-  };
+    "registry",
+    {}};
 
   void init(InitContext&)
   {
