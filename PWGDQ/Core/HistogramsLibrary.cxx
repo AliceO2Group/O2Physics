@@ -1076,16 +1076,15 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         }
         int nbins_mD0 = sizeof(mD0_bins) / sizeof(*mD0_bins) - 1;
 
-        double ptD0_bins[26];
+        double ptD0_bins[31];
         for (int i = 0; i <= 16; i++)
           ptD0_bins[i] = 0.125 * i;
+        for (int i = 1; i <= 8; i++)
+          ptD0_bins[16 + i] = 2 + 0.25 * i;
         for (int i = 1; i <= 4; i++)
-          ptD0_bins[16 + i] = 2 + 0.5 * i;
-        for (int i = 1; i <= 2; i++)
-          ptD0_bins[20 + i] = 4 + 1 * i;
-        ptD0_bins[23] = 6;
-        ptD0_bins[24] = 8;
-        ptD0_bins[25] = 20;
+          ptD0_bins[24 + i] = 4 + 1 * i;
+        ptD0_bins[29] = 8;
+        ptD0_bins[30] = 20;
         int nbins_ptD0 = sizeof(ptD0_bins) / sizeof(*ptD0_bins) - 1;
         hm->AddHistogram(histClass, "MassD0region", "", false, nbins_mD0, mD0_bins, VarManager::kMass);
         hm->AddHistogram(histClass, "MassD0region_Pt", "", false, nbins_mD0, mD0_bins, VarManager::kMass, nbins_ptD0, ptD0_bins, VarManager::kPt);
