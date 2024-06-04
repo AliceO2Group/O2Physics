@@ -21,6 +21,7 @@
 #include <map>
 #include <vector>
 
+#include "TF1.h"
 #include "TString.h"
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
@@ -93,6 +94,7 @@ struct Pi0EtaToGammaGammaMC {
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
+  Configurable<std::string> fd_k0s_to_pi0{"fd_k0s_pi0", "1.0", "feed down correction to pi0"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -213,6 +215,7 @@ struct Pi0EtaToGammaGammaMC {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
+  TF1* f1fd_k0s_to_pi0;
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_types[2] = {"before/", "after/"};
   static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
@@ -235,10 +238,16 @@ struct Pi0EtaToGammaGammaMC {
     DefineEMCCut();
     DefinePHOSCut();
 
+    f1fd_k0s_to_pi0 = new TF1("f1fd_k0s_to_pi0", TString(fd_k0s_to_pi0), 0.f, 100.f);
+
     fRegistry.add("Event/hNrecPerMCCollision", "Nrec per mc collision;N_{rec} collisions per MC collision", kTH1F, {{21, -0.5f, 20.5f}}, false);
   }
 
-  ~Pi0EtaToGammaGammaMC() {}
+  ~Pi0EtaToGammaGammaMC()
+  {
+    delete f1fd_k0s_to_pi0;
+    f1fd_k0s_to_pi0 = 0x0;
+  }
 
   void DefineEMEventCut()
   {
@@ -493,10 +502,10 @@ struct Pi0EtaToGammaGammaMC {
 
           if (pi0id > 0) {
             auto pi0mc = mcparticles.iteratorAt(pi0id);
-            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions);
+            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0);
           } else if (etaid > 0) {
             auto etamc = mcparticles.iteratorAt(etaid);
-            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions);
+            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0);
           }
         } // end of pairing loop
       } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
@@ -559,10 +568,10 @@ struct Pi0EtaToGammaGammaMC {
             }
             if (pi0id > 0) {
               auto pi0mc = mcparticles.iteratorAt(pi0id);
-              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, pi0mc, mcparticles, mccollisions);
+              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0);
             } else if (etaid > 0) {
               auto etamc = mcparticles.iteratorAt(etaid);
-              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, etamc, mcparticles, mccollisions);
+              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0);
             }
           } // end of dielectron loop
         }   // end of pcm loop
@@ -626,10 +635,10 @@ struct Pi0EtaToGammaGammaMC {
             }
             if (pi0id > 0) {
               auto pi0mc = mcparticles.iteratorAt(pi0id);
-              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, pi0mc, mcparticles, mccollisions);
+              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0);
             } else if (etaid > 0) {
               auto etamc = mcparticles.iteratorAt(etaid);
-              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, etamc, mcparticles, mccollisions);
+              o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, veeg, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0);
             }
           }    // end of dielectron loop
         }      // end of pcm loop

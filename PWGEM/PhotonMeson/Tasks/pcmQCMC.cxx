@@ -256,7 +256,7 @@ struct PCMQCMC {
                 }
               }
 
-            } else if (IsFromWD(mcphoton.template emmcevent_as<MyMCCollisions>(), mcphoton, mcparticles)) {
+            } else if (IsFromWD(mcphoton.template emmcevent_as<MyMCCollisions>(), mcphoton, mcparticles) > 0) {
               reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_FromWD"))->Fill(v0.pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaPhi_Photon_FromWD"))->Fill(v0.phi(), v0.eta());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hCosPA_Rxy_Photon_FromWD"))->Fill(v0.v0radius(), v0.cospa());

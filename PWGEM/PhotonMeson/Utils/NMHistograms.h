@@ -13,6 +13,7 @@
 /// \author daiki.sekihata@cern.ch
 
 #include <vector>
+#include "TF1.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
@@ -101,15 +102,21 @@ void fillPairInfo(HistogramRegistry* fRegistry, TCollision const& collision, TDi
 }
 
 template <typename TDiphoton, typename TMCParitlce, typename TMCParticles, typename TMCCollisions>
-void fillTruePairInfo(HistogramRegistry* fRegistry, TDiphoton const& v12, TMCParitlce const& mcparticle, TMCParticles const& mcparticles, TMCCollisions const&, const float weight = 1.f)
+void fillTruePairInfo(HistogramRegistry* fRegistry, TDiphoton const& v12, TMCParitlce const& mcparticle, TMCParticles const& mcparticles, TMCCollisions const&, const TF1* f1fd_k0s_to_pi0 = nullptr)
 {
   int pdg = abs(mcparticle.pdgCode());
   switch (pdg) {
     case 111: {
+      int motherid_strhad = IsFromWD(mcparticle.template emmcevent_as<TMCCollisions>(), mcparticle, mcparticles);
       if (mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator()) {
         fRegistry->fill(HIST("Pair/Pi0/hMggPt_Primary"), v12.M(), v12.Pt());
-      } else if (IsFromWD(mcparticle.template emmcevent_as<TMCCollisions>(), mcparticle, mcparticles)) {
-        fRegistry->fill(HIST("Pair/Pi0/hMggPt_FromWD"), v12.M(), v12.Pt());
+      } else if (motherid_strhad > 0) {
+        float weight = 1.f;
+        auto str_had = mcparticles.iteratorAt(motherid_strhad);
+        if (abs(str_had.pdgCode()) == 310 && f1fd_k0s_to_pi0 != nullptr) {
+          weight = f1fd_k0s_to_pi0->Eval(str_had.pt());
+        }
+        fRegistry->fill(HIST("Pair/Pi0/hMggPt_FromWD"), v12.M(), v12.Pt(), weight);
       }
       break;
     }

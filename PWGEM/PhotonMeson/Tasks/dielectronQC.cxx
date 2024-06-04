@@ -383,7 +383,6 @@ struct dielectronQC {
         epbin = static_cast<int>(ep_bin_edges.size()) - 2;
       }
 
-      std::tuple<int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin);
       std::pair<int, int64_t> key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
       std::tuple<int, int, int> tuple_tmp_id1 = std::make_tuple(ndf, collision.globalIndex(), t1.trackId());
