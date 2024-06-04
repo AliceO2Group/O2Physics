@@ -395,7 +395,7 @@ struct HfCandidateSigmac0plusplusMc {
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-3prong") == 0) { // here we assume that the hf-candidate-creator-3prong is in the workflow
         for (const auto& option : device.options) {
-          if (option.name.compare("zPvPosMax") == 0) {
+          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
             zPvPosMax = option.defaultValue.get<float>();
             break;
           }

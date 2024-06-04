@@ -50,6 +50,13 @@ DECLARE_SOA_COLUMN(WeightEff, weightEff, float); //! Non-uniform efficiency weig
 } // namespace jweight
 DECLARE_SOA_TABLE(JWeights, "AOD", "JWEIGHT", jweight::WeightNUA, jweight::WeightEff); //! JFluc table for weights
 
+namespace j2prongweight
+{
+DECLARE_SOA_COLUMN(WeightNUA, weightNUA, float); //! Non-uniform acceptance weight
+DECLARE_SOA_COLUMN(WeightEff, weightEff, float); //! Non-uniform efficiency weight
+} // namespace j2prongweight
+DECLARE_SOA_TABLE(J2ProngWeights, "AOD", "J2PRONGWEIGHT", j2prongweight::WeightNUA, j2prongweight::WeightEff); //! JFluc table for weights, associated with 2Prong particles
+
 } // namespace o2::aod
 
 #endif // PWGCF_JCORRAN_DATAMODEL_JCATALYST_H_
