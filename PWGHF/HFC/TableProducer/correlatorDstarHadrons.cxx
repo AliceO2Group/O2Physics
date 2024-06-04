@@ -83,8 +83,8 @@ struct HfCorrelatorDstarHadrons {
   Produces<aod::Dstar> rowsDstar;
   Produces<aod::Hadron> rowsAssoTrack;
 
-  //Enable separate tables for Dstar and Track for offline Event mixing
-  Configurable<bool> enableSeparateTables{"enableSeparateTables",false,"Enable separate tables for Dstar and Track for offline Event mixing"};
+  // Enable separate tables for Dstar and Track for offline Event mixing
+  Configurable<bool> enableSeparateTables{"enableSeparateTables", false, "Enable separate tables for Dstar and Track for offline Event mixing"};
 
   // Dstar candidate related configurable
   Configurable<bool> selectOnlyCollisionWDstar{"selectOnlyCollisionWDstar", true, " select on collisions which have atleast a Dstar candidate"};
@@ -211,18 +211,18 @@ struct HfCorrelatorDstarHadrons {
                               timestamp,
                               binNumber);
 
-          if(enableSeparateTables==true){
+          if (enableSeparateTables == true) {
             rowsDstar(collision.globalIndex(),
-                    gItriggerParticle,
-                    triggerParticle.phi(),
-                    triggerParticle.eta(),
-                    triggerParticle.pt(),
-                    triggerParticle.invMassDstar(),
-                    triggerParticle.invMassD0(),
-                    timestamp,
-                    binNumber);
+                      gItriggerParticle,
+                      triggerParticle.phi(),
+                      triggerParticle.eta(),
+                      triggerParticle.pt(),
+                      triggerParticle.invMassDstar(),
+                      triggerParticle.invMassD0(),
+                      timestamp,
+                      binNumber);
           }
-          
+
         } else { // Fill AntiDstar candidate
           rowsDstarHadronPair(collision.globalIndex(),
                               gItriggerParticle,
@@ -237,28 +237,28 @@ struct HfCorrelatorDstarHadrons {
                               assocParticle.pt(),
                               timestamp,
                               binNumber);
-          if(enableSeparateTables==true){
+          if (enableSeparateTables == true) {
             rowsDstar(collision.globalIndex(),
-                    gItriggerParticle,
-                    triggerParticle.phi(),
-                    triggerParticle.eta(),
-                    triggerParticle.pt(),
-                    triggerParticle.invMassAntiDstar(),
-                    triggerParticle.invMassD0Bar(),
-                    timestamp,
-                    binNumber);
+                      gItriggerParticle,
+                      triggerParticle.phi(),
+                      triggerParticle.eta(),
+                      triggerParticle.pt(),
+                      triggerParticle.invMassAntiDstar(),
+                      triggerParticle.invMassD0Bar(),
+                      timestamp,
+                      binNumber);
           }
         } // endif
 
-        if(enableSeparateTables==true){
+        if (enableSeparateTables == true) {
           rowsAssoTrack(assocParticle.phi(),
-                      assocParticle.eta(),
-                      assocParticle.pt(),
-                      binNumber,
-                      collision.globalIndex(),
-                      timestamp);
+                        assocParticle.eta(),
+                        assocParticle.pt(),
+                        binNumber,
+                        collision.globalIndex(),
+                        timestamp);
         }
-    
+
       } // D-H pair loop
 
     } // collision loop

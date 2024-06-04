@@ -285,7 +285,7 @@ DECLARE_SOA_TABLE(DstarHadronPair, "AOD", "DSTRHPAIR", // D* Hadrons pairs Infor
                   hf_correlation_dstar_hadron::DeltaEta<hf_correlation_dstar_hadron::EtaDstar, hf_correlation_dstar_hadron::EtaTrack>,
                   hf_correlation_dstar_hadron::DeltaM<hf_correlation_dstar_hadron::MDstar, hf_correlation_dstar_hadron::MD0>);
 
-DECLARE_SOA_TABLE(Dstar,"AOD","DSTAR", // Only Dstar properties
+DECLARE_SOA_TABLE(Dstar, "AOD", "DSTAR", // Only Dstar properties
                   hf_correlation_dstar_hadron::CollisionId,
                   // D* only properties
                   hf_correlation_dstar_hadron::HfCandDstarId,
