@@ -100,6 +100,7 @@ struct tofSpectra {
   Configurable<bool> enableTPCTOFvsEtaHistograms{"enableTPCTOFvsEtaHistograms", false, "choose if produce TPC tof vs Eta"};
   Configurable<bool> includeCentralityMC{"includeCentralityMC", true, "choose if include Centrality to MC"};
   Configurable<bool> tpctofVsMult{"tpctofVsMult", false, "Produce TPC-TOF plots vs multiplicity"};
+  ConfigurableAxis binsImpactParam{"binsImpactParam", {25., 0., 25.}, "Binning for impact parameter"};
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -198,6 +199,7 @@ struct tofSpectra {
     const AxisSpec pAxis{binsPt, "#it{p} (GeV/#it{c})"};
     const AxisSpec ptAxis{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec etaAxis{binsEta, "#eta"};
+    const AxisSpec impParamAxis{binsImpactParam, "Impact parameter"};
 
     histos.add("event/vertexz", "", HistType::kTH1D, {vtxZAxis});
     auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1D, {{20, 0.5, 20.5}});
@@ -240,7 +242,6 @@ struct tofSpectra {
     histos.add("Centrality/FT0C", "FT0C", HistType::kTH1D, {{binsPercentile, "Centrality FT0C"}});
     histos.add("Centrality/FDDM", "FDDM", HistType::kTH1D, {{binsPercentile, "Centrality FDDM"}});
     histos.add("Centrality/NTPV", "NTPV", HistType::kTH1D, {{binsPercentile, "Centrality NTPV"}});
-
     histos.add("Mult/FV0M", "MultFV0M", HistType::kTH1D, {{binsMultiplicity, "MultFV0M"}});
     histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {{binsMultiplicity, "MultFT0M"}});
     histos.add("Mult/FDDM", "MultFDDM", HistType::kTH1D, {{binsMultiplicity, "MultFDDM"}});
@@ -271,6 +272,8 @@ struct tofSpectra {
       histos.add("track/TPC/tpcFractionSharedCls", "fraction of shared TPC clusters;fraction shared clusters TPC", kTH2D, {{100, 0., 1.}, chargeAxis});
       histos.add("track/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH2D, {{60, 0.7, 1.3}, chargeAxis});
       histos.add("track/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH2D, {{100, 0, 10}, chargeAxis});
+      histos.add("Vertex/histGenVtxMC", "MC generated vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
+    histos.add("Centrality/ImpParm", "Centrality", HistType::kTH1F, {{binsPercentile, "Centrality FT0C"}});
 
       histos.addClone("track/ITS/itsNCls", "track/selected/ITS/itsNCls");
       histos.addClone("track/ITS/itsChi2NCl", "track/selected/ITS/itsChi2NCl");
@@ -335,6 +338,12 @@ struct tofSpectra {
       histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
       histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
       histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
+       histos.add("MC/test/pi/pos/prm/pt/den", "generated MC #pi^{+}", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/pi/neg/prm/pt/den", "generated MC #pi^{-}", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/ka/pos/prm/pt/den", "generated MC K^{+}", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/ka/neg/prm/pt/den", "generated MC K^{-}", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/pr/pos/prm/pt/den", "generated MC p", kTHnSparseD, {ptAxis, impParamAxis});
+      histos.add("MC/test/pr/neg/prm/pt/den", "generated MC #bar{p}", kTHnSparseD, {ptAxis, impParamAxis});
       auto hh = histos.add<TH1>("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", kTH1D, {{10, 0.5, 10.5}});
       hh->GetXaxis()->SetBinLabel(1, "Collisions generated");
       hh->GetXaxis()->SetBinLabel(2, "Collisions reconstructed");
@@ -556,7 +565,7 @@ struct tofSpectra {
             histos.add(hdcazprmgoodevs[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
           }
         }
-
+        //histos.add("Data/pos/pt/its_tpc_trd_tof", "pos ITS-TPC-TRD-TOF", kTH1D, {ptAxis});
         // Mismatched info
         histos.add(hpt_mism_its_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
         histos.add(hpt_mism_tpc_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
@@ -1284,7 +1293,7 @@ struct tofSpectra {
     }
   }
 
-  using CollisionCandidateMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFT0Ms>; // RD
+  using CollisionCandidateMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFT0Ms>; // RD
   template <std::size_t i, typename TrackType, typename ParticleType>
   void fillTrackHistograms_MC(TrackType const& track, ParticleType const& mcParticle, CollisionCandidateMC::iterator const& collision)
   {
@@ -1470,7 +1479,49 @@ struct tofSpectra {
       }
     }
   }
+  template <typename McCollisionType, typename McParticlesType>
+  void process_MC_gen(const McCollisionType& mcCollision, const McParticlesType& mcParticles)
+  {
+  histos.fill(HIST("Vertex/histGenVtxMC"), mcCollision.posZ());
+    histos.fill(HIST("Centrality/ImpParm"), mcCollision.impactParameter());
+const float multiplicity = mcCollision.impactParameter();
+    for (const auto& mcParticleGen : mcParticles) {
+      if (!mcParticleGen.isPhysicalPrimary())
+        continue;
+      int pdgCode = mcParticleGen.pdgCode();
+    float pt = mcParticleGen.pt();
+    float absY = std::abs(mcParticleGen.y());
+    
+    // Apply rapidity cut
+    if (absY > trkselOptions.cfgCutY) {
+      continue;
+    }
 
+      // Fill histograms based on particle type
+    switch (pdgCode) {
+      case 2212:
+        histos.fill(HIST("MC/test/pr/pos/prm/pt/den"), pt, multiplicity);
+        break;
+      case -2212:
+        histos.fill(HIST("MC/test/pr/neg/prm/pt/den"), pt, multiplicity);
+        break;
+      case 211:
+        histos.fill(HIST("MC/test/pi/pos/prm/pt/den"), pt, multiplicity);
+        break;
+      case -211:
+        histos.fill(HIST("MC/test/pi/neg/prm/pt/den"), pt, multiplicity);
+        break;
+      case 321:
+        histos.fill(HIST("MC/test/ka/pos/prm/pt/den"), pt, multiplicity);
+        break;
+      case -321:
+        histos.fill(HIST("MC/test/ka/neg/prm/pt/den"), pt, multiplicity);
+        break;
+      default:
+        break;
+    }
+    }
+  }
   template <std::size_t i, typename ParticleType>
   void fillParticleHistograms_MC(CollisionCandidateMC::iterator const& collision, ParticleType const& mcParticle)
   {
@@ -1537,7 +1588,6 @@ struct tofSpectra {
     }
 
     const float multiplicity = getMultiplicity(collision);
-
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
         if (includeCentralityMC) {
@@ -1553,12 +1603,10 @@ struct tofSpectra {
         }
       }
     } else {
-      if (isEventSelected<true, true>(collision)) {
-        if (includeCentralityMC) {
-          histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt(), multiplicity); // RD
-        } else {
-          histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt());
-        }
+      if (includeCentralityMC) {
+        histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt(), multiplicity); // RD
+      } else {
+        histos.fill(HIST(hpt_den_prm[i]), mcParticle.pt());
       }
     }
   }
@@ -1878,7 +1926,6 @@ struct tofSpectra {
           continue;
         }
       }
-
       int nInelPart = 0;
       for (const auto& mcParticle : particlesInCollision) {
         if (mcParticle.isPhysicalPrimary()) {
@@ -1912,6 +1959,12 @@ struct tofSpectra {
     }
   }
   PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
+  
+void processMCgen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    process_MC_gen(mcCollision, mcParticles);
+  }
+  PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", true);
 }; // end of spectra task
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofSpectra>(cfgc)}; }
