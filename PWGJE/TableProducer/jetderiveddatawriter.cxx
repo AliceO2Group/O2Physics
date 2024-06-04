@@ -304,10 +304,9 @@ struct JetDerivedDataWriter {
       }
 
       if (saveD0Table) {
-        const auto d0CollisionsPerCollision = D0Collisions.sliceBy(D0CollisionsPerCollision, collision.globalIndex());
         int32_t collisionD0Index = -1;
-        for (const auto& d0CollisionPerCollision : d0CollisionsPerCollision) { // should only ever be one
-          jethfutilities::fillD0CollisionTable(d0CollisionPerCollision, storedD0CollisionsTable, collisionD0Index);
+        for (const auto& D0Collision : D0Collisions) { // should only ever be one
+          jethfutilities::fillD0CollisionTable(D0Collision, storedD0CollisionsTable, collisionD0Index);
           storedD0CollisionIdsTable(storedJCollisionsTable.lastIndex());
         }
         for (const auto& D0 : D0s) {
@@ -329,10 +328,9 @@ struct JetDerivedDataWriter {
       }
 
       if (saveLcTable) {
-        const auto lcCollisionsPerCollision = LcCollisions.sliceBy(LcCollisionsPerCollision, collision.globalIndex());
         int32_t collisionLcIndex = -1;
-        for (const auto& lcCollisionPerCollision : lcCollisionsPerCollision) { // should only ever be one
-          jethfutilities::fillLcCollisionTable(lcCollisionPerCollision, storedLcCollisionsTable, collisionLcIndex);
+        for (const auto& LcCollision : LcCollisions) { // should only ever be one
+          jethfutilities::fillLcCollisionTable(LcCollision, storedLcCollisionsTable, collisionLcIndex);
           storedLcCollisionIdsTable(storedJCollisionsTable.lastIndex());
         }
         for (const auto& Lc : Lcs) {
