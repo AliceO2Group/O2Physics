@@ -9,7 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Combined)
-add_subdirectory(TOF)
-add_subdirectory(TPC)
-add_subdirectory(HMPID)
+# Combined
+o2physics_add_dpl_workflow(pid-with-v0s-qa
+    SOURCES qaPIDWithV0s.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
