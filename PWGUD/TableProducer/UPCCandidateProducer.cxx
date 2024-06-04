@@ -1499,24 +1499,16 @@ struct UpcCandProducer {
     // storing n-prong matches
     int32_t candID = 0;
 
-
- std::cout << " Size of the bcsMatchedTrIdsGlobal: " << bcsMatchedTrIdsGlobal.size() << std::endl;
- int counter = 0;
  for (auto& pair : bcsMatchedTrIdsGlobal) { // candidates with MFT 
-      std::cout << " Inside the loop " << counter << std::endl;
       auto globalBC = static_cast<int64_t>(pair.first);
       const auto& fwdTrackIDs = pair.second; 
       int32_t nMFTs = fwdTrackIDs.size();
-      std::cout << counter << " globalBC=  " << globalBC << " , size=    " << fwdTrackIDs.size() << "   nMFTs = " << nMFTs << "   nFTOs=   " << nFT0s << std::endl;
-      counter++;
       if (nMFTs > fNFwdProngs) // too many tracks
         continue;
       std::vector<int64_t> trkCandIDs{};
 
       if (nMFTs == fNFwdProngs) {
-        std::cout << " Before inserting the tracks " << std::endl;
         trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
-        std::cout << "Found MFT tracks: " << trkCandIDs.size() << std::endl;
       }
       uint64_t closestBcMCH = 0;
       upchelpers::FITInfo fitInfo{};
@@ -1573,40 +1565,30 @@ struct UpcCandProducer {
       uint16_t numContrib = fNFwdProngs;
       int8_t netCharge = 0;
       float RgtrwTOF = 0.;
-      std::cout << "The size of the trkCandIDs is: " << trkCandIDs.size() << std::endl;
       for (auto id : trkCandIDs) {
-        std::cout << " Loop over the trkCandIDs starts now" << std::endl;
         auto tr = fwdTracks.iteratorAt(id);
         netCharge += tr.sign();
         selTrackIdsGlobal.push_back(id);
       }
       // store used tracks
-      std::cout << " Filling the fwd tracks " << std::endl;
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
-      std::cout << " Filling event candidates " << std::endl;
       eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
-      std::cout << " Filling event candidates sels " << std::endl;
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      std::cout << " Filling event candidates sels fwd" << std::endl;
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,
                              relBCsT0A,
                              amplitudesV0A,
                              relBCsV0A);
-      std::cout << " candID: " << candID << std::endl;
       candID++;
       trkCandIDs.clear();
-      std::cout << "tracks cleaned" << std::endl;
     }
-
-    //fillFwdClusters(selTrackIdsGlobal, fwdTrkClusters);
-
+    
     selTrackIdsGlobal.clear();
     ambFwdTrBCs.clear();
     bcsMatchedTrIdsMID.clear();
