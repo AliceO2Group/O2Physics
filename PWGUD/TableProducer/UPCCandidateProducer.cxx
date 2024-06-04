@@ -1746,8 +1746,8 @@ struct UpcCandProducer {
   PROCESS_SWITCH(UpcCandProducer, processCentral, "Produce candidates in central region", false);
   PROCESS_SWITCH(UpcCandProducer, processSemiFwdMC, "Produce candidates in semiforward/forward region with MC information", false);
   PROCESS_SWITCH(UpcCandProducer, processCentralMC, "Produce candidates in central region with MC information", false);
-  PROCESS_SWITCH(UpcCandProducer, processForward, "Produce caniddates in forward region", false);
-  PROCESS_SWITCH(UpcCandProducer, processForwardGlobal, "Produce caniddates in forward region with MFT", true);
+  PROCESS_SWITCH(UpcCandProducer, processForward, "Produce candidates in forward region", false);
+  PROCESS_SWITCH(UpcCandProducer, processForwardGlobal, "Produce candidates in forward region with MFT", true);
   PROCESS_SWITCH(UpcCandProducer, processForwardMC, "Produce caniddates in forward region with MC information", false);
 };
 
