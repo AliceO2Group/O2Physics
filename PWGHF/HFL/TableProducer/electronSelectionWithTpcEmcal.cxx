@@ -34,11 +34,10 @@
 #include "PWGHF/HFL/DataModel/ElectronSelectionTable.h"
 
 using namespace o2;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-
-auto massEl = o2::constants::physics::MassElectron;
 
 struct HfElectronSelectionWithTpcEmcal {
 
@@ -48,7 +47,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<bool> fillEmcClusterInfo{"fillEmcClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
 
   // Event Selection
-  Configurable<float> maxPvPosZ{"maxPvPosZ", 10., "apply z-vertex cut with value in cm"};
+  Configurable<float> zPvPosMax{"zPvPosMax", 10., "Maximum z of the primary vertex (cm)"};
   Configurable<bool> isRun3{"isRun3", true, "Data is from Run3 or Run2"};
 
   // Track selection
@@ -96,16 +95,16 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> mcRecTpcNsigmaElectronMin{"mcRecTpcNsigmaElectronMin", -0.5f, "MC Reco min Electron TPCnsigma"};
   Configurable<float> mcRecTpcNsigmaElectronMax{"mcRecTpcNsigmaElectronMax", 3.0f, "MC Reco max Electron TPCnsigma"};
 
-  using CollisionTables = o2::soa::Filtered<o2::soa::Join<aod::Collisions, aod::Mults, aod::EvSels>>;
-  using CollisionTable = CollisionTables::iterator;
-  using TrackTables = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::pidTPCFullEl, o2::aod::pidTOFFullEl, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>;
+  using TableCollisions = o2::soa::Filtered<o2::soa::Join<aod::Collisions, aod::Mults, aod::EvSels>>;
+  using TableCollision = TableCollisions::iterator;
+  using TableTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::pidTPCFullEl, o2::aod::pidTOFFullEl, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension>;
 
-  using McCollisionTable = o2::soa::Filtered<o2::soa::Join<CollisionTables, aod::McCollisionLabels>>;
-  using McCollisionTables = McCollisionTable::iterator;
-  using McTrackTables = soa::Join<TrackTables, aod::McTrackLabels>;
-  using McEmcalTable = soa::Join<o2::aod::EMCALClusters, aod::EMCALMCClusters>;
+  using McTableCollisions = o2::soa::Filtered<o2::soa::Join<TableCollisions, aod::McCollisionLabels>>;
+  using McTableCollision = McTableCollisions::iterator;
+  using McTableTracks = soa::Join<TableTracks, aod::McTrackLabels>;
+  using McTableEmcals = soa::Join<o2::aod::EMCALClusters, aod::EMCALMCClusters>;
 
-  Filter CollisionFilter = nabs(aod::collision::posZ) < maxPvPosZ && aod::collision::numContrib > (uint16_t)1;
+  Filter CollisionFilter = nabs(aod::collision::posZ) < zPvPosMax && aod::collision::numContrib > (uint16_t)1;
   PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
 
   HistogramConfigSpec hEmcClusterInfoSpec{HistType::kTHnSparseD, {{300, 0.0, 30.0}, {100, -0.9, 0.9}, {200, 0, 6.3}, {50, 0, 50}, {1800, -900, 900}}};
@@ -226,7 +225,7 @@ struct HfElectronSelectionWithTpcEmcal {
       float eop = -999;
       bool isEMcal = false;
 
-      float trackRapidity = track.rapidity(massEl);
+      float trackRapidity = track.rapidity(MassElectron);
 
       for (const auto& ematchTrack : tracksofcluster) {
 
@@ -307,23 +306,23 @@ struct HfElectronSelectionWithTpcEmcal {
   }
 
   ///  Electron selection - for real data and data-like analysis
-  void processData(CollisionTable const& collision,
+  void processData(TableCollision const& collision,
+                   TableTracks const& tracks,
                    aod::EMCALClusters const& emcClusters,
-                   o2::aod::EMCALMatchedTracks const& matchedTracks,
-                   TrackTables const& tracks)
+                   o2::aod::EMCALMatchedTracks const& matchedTracks)
   {
     fillElectronTrack<false>(collision, tracks, emcClusters, matchedTracks, 0);
   }
   PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", true);
 
   ///  Electron selection - for MC reco-level analysis
-  void processMcRec(McCollisionTables const& mccollision,
-                    McTrackTables const& mctracks,
-                    McEmcalTable const& mcemcClusters,
+  void processMcRec(McTableCollision const& mcCollision,
+                    McTableTracks const& mcTracks,
+                    McTableEmcals const& mcEmcClusters,
                     o2::aod::EMCALMatchedTracks const& matchedTracks,
-                    aod::McParticles const& particlesMC)
+                    aod::McParticles const& mcParticles)
   {
-    fillElectronTrack<true>(mccollision, mctracks, mcemcClusters, matchedTracks, particlesMC);
+    fillElectronTrack<true>(mcCollision, mcTracks, mcEmcClusters, matchedTracks, mcParticles);
   }
   PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcRec, "Process MC Reco mode", false);
 };
