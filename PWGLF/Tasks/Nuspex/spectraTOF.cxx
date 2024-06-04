@@ -1491,7 +1491,6 @@ const float multiplicity = mcCollision.impactParameter();
       int pdgCode = mcParticleGen.pdgCode();
     float pt = mcParticleGen.pt();
     float absY = std::abs(mcParticleGen.y());
-    
     // Apply rapidity cut
     if (absY > trkselOptions.cfgCutY) {
       continue;
@@ -1959,7 +1958,6 @@ const float multiplicity = mcCollision.impactParameter();
     }
   }
   PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
-  
 void processMCgen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     process_MC_gen(mcCollision, mcParticles);
