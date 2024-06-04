@@ -76,7 +76,7 @@ struct FwdTrackPropagation {
       propmuon.setParameters(proptrack.getParameters());
       propmuon.setZ(proptrack.getZ());
       propmuon.setCovariances(proptrack.getCovariances());
-    } else if (static_cast<int>(muon.trackType()) < 2){
+    } else if (static_cast<int>(muon.trackType()) < 2) {
       double centerMFT[3] = {0, 0, -61.4};
       o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
       auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
@@ -86,10 +86,9 @@ struct FwdTrackPropagation {
       propmuon.setParameters(fwdtrack.getParameters());
       propmuon.setZ(fwdtrack.getZ());
       propmuon.setCovariances(fwdtrack.getCovariances());
-    } 
+    }
     return propmuon;
   }
-
 
   void process(o2::aod::BCs const& bcs, ForwardTracks const& fwdTracks, o2::aod::Collisions const& cols)
   {
@@ -122,7 +121,7 @@ struct FwdTrackPropagation {
           vtxCov[0] = col.covXX();
           vtxCov[1] = col.covYY();
         }
-        auto pft = propagateFwdToVtx(t, vtx, vtxCov); 
+        auto pft = propagateFwdToVtx(t, vtx, vtxCov);
         propFwdTracks(t.collisionId(), t.trackType(),
                       pft.getX(), pft.getY(), pft.getZ(), pft.getPhi(), pft.getTgl(), pft.getInvQPt(),
                       pft.getEta(), pft.getPt(), pft.getP(),

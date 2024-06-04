@@ -157,7 +157,7 @@ struct UpcCandProducer {
       histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelpDCA, 1);
     if (fwdSelectors[upchelpers::kFwdSelChi2])
       histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelChi2, 1);
-    bool pass = fwdSelectors[upchelpers::kFwdSelPt] &&  
+    bool pass = fwdSelectors[upchelpers::kFwdSelPt] &&
                 fwdSelectors[upchelpers::kFwdSelEta] &&
                 fwdSelectors[upchelpers::kFwdSelRabs] &&
                 fwdSelectors[upchelpers::kFwdSelpDCA] &&
@@ -1222,20 +1222,16 @@ struct UpcCandProducer {
                          bcs, collisions,
                          fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
-
     collectForwardTracks(bcsMatchedTrIdsMCH,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack,
                          bcs, collisions,
                          fwdTracks, ambFwdTracks, ambFwdTrBCs);
-
-                        
 
     std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
 
     std::sort(bcsMatchedTrIdsMCH.begin(), bcsMatchedTrIdsMCH.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
-
 
     std::map<uint64_t, int32_t> mapGlobalBcWithT0A{};
     for (const auto& ft0 : ft0s) {
@@ -1289,7 +1285,7 @@ struct UpcCandProducer {
     // storing n-prong matches
     int32_t candID = 0;
 
-    for (auto& pair : bcsMatchedTrIdsMID) { // candidates without MFT 
+    for (auto& pair : bcsMatchedTrIdsMID) { // candidates without MFT
       auto globalBC = static_cast<int64_t>(pair.first);
       const auto& fwdTrackIDs = pair.second; // only MID-matched tracks at the moment
       int32_t nMIDs = fwdTrackIDs.size();
@@ -1401,16 +1397,16 @@ struct UpcCandProducer {
     mapGlobalBcWithV0A.clear();
   }
 
-    void createCandidatesFwdGlobal(ForwardTracks const& fwdTracks,
-                           o2::aod::FwdTrkCls const& fwdTrkClusters,
-                           o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                           o2::aod::BCs const& bcs,
-                           o2::aod::Collisions const& collisions,
-                           o2::aod::FT0s const& ft0s,
-                           o2::aod::FDDs const& /*fdds*/,
-                           o2::aod::FV0As const& fv0as,
-                           o2::aod::Zdcs const& zdcs,
-                           const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
+  void createCandidatesFwdGlobal(ForwardTracks const& fwdTracks,
+                                 o2::aod::FwdTrkCls const& fwdTrkClusters,
+                                 o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                                 o2::aod::BCs const& bcs,
+                                 o2::aod::Collisions const& collisions,
+                                 o2::aod::FT0s const& ft0s,
+                                 o2::aod::FDDs const& /*fdds*/,
+                                 o2::aod::FV0As const& fv0as,
+                                 o2::aod::Zdcs const& zdcs,
+                                 const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
   {
     // pairs of global BCs and vectors of matched track IDs:
     std::vector<BCTracksPair> bcsMatchedTrIdsMID;
@@ -1426,18 +1422,15 @@ struct UpcCandProducer {
                          bcs, collisions,
                          fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
-
     collectForwardTracks(bcsMatchedTrIdsMCH,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack,
                          bcs, collisions,
                          fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
-
     collectForwardTracks(bcsMatchedTrIdsGlobal,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack,
                          bcs, collisions,
                          fwdTracks, ambFwdTracks, ambFwdTrBCs);
-                        
 
     std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
@@ -1445,7 +1438,7 @@ struct UpcCandProducer {
     std::sort(bcsMatchedTrIdsMCH.begin(), bcsMatchedTrIdsMCH.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
 
-   std::sort(bcsMatchedTrIdsGlobal.begin(), bcsMatchedTrIdsGlobal.end(),
+    std::sort(bcsMatchedTrIdsGlobal.begin(), bcsMatchedTrIdsGlobal.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
 
     std::map<uint64_t, int32_t> mapGlobalBcWithT0A{};
@@ -1499,9 +1492,9 @@ struct UpcCandProducer {
     // storing n-prong matches
     int32_t candID = 0;
 
- for (auto& pair : bcsMatchedTrIdsGlobal) { // candidates with MFT 
+    for (auto& pair : bcsMatchedTrIdsGlobal) { // candidates with MFT
       auto globalBC = static_cast<int64_t>(pair.first);
-      const auto& fwdTrackIDs = pair.second; 
+      const auto& fwdTrackIDs = pair.second;
       int32_t nMFTs = fwdTrackIDs.size();
       if (nMFTs > fNFwdProngs) // too many tracks
         continue;
@@ -1730,23 +1723,23 @@ struct UpcCandProducer {
     fNewPartIDs.clear();
   }
 
-    // create candidates for forward region including MFT 
+  // create candidates for forward region including MFT
   // forward: n fwd tracks
   void processForwardGlobal(ForwardTracks const& fwdTracks,
-                      o2::aod::FwdTrkCls const& fwdTrkClusters,
-                      o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                      o2::aod::BCs const& bcs,
-                      o2::aod::Collisions const& collisions,
-                      o2::aod::FT0s const& ft0s,
-                      o2::aod::FDDs const& fdds,
-                      o2::aod::FV0As const& fv0as,
-                      o2::aod::Zdcs const& zdcs)
+                            o2::aod::FwdTrkCls const& fwdTrkClusters,
+                            o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                            o2::aod::BCs const& bcs,
+                            o2::aod::Collisions const& collisions,
+                            o2::aod::FT0s const& ft0s,
+                            o2::aod::FDDs const& fdds,
+                            o2::aod::FV0As const& fv0as,
+                            o2::aod::Zdcs const& zdcs)
   {
     fDoMC = false;
     createCandidatesFwdGlobal(fwdTracks, fwdTrkClusters, ambFwdTracks,
-                        bcs, collisions,
-                        ft0s, fdds, fv0as, zdcs,
-                        (o2::aod::McFwdTrackLabels*)nullptr);
+                              bcs, collisions,
+                              ft0s, fdds, fv0as, zdcs,
+                              (o2::aod::McFwdTrackLabels*)nullptr);
   }
 
   PROCESS_SWITCH(UpcCandProducer, processSemiFwd, "Produce candidates in semiforward/forward region", false);
@@ -1756,7 +1749,6 @@ struct UpcCandProducer {
   PROCESS_SWITCH(UpcCandProducer, processForward, "Produce caniddates in forward region", false);
   PROCESS_SWITCH(UpcCandProducer, processForwardGlobal, "Produce caniddates in forward region with MFT", true);
   PROCESS_SWITCH(UpcCandProducer, processForwardMC, "Produce caniddates in forward region with MC information", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
