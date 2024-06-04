@@ -1363,7 +1363,6 @@ struct tofSpectra {
     } else {
     multiplicity = collision.centFT0C();
     }
-    
     //************************************RD**************************************************
 
     if (mcParticle.pdgCode() != PDGs[i]) {
@@ -1788,7 +1787,6 @@ const float multiplicity = mcCollision.impactParameter();
         }
         break;
     }
-    
     if (mcParticle.pdgCode() != PDGs[i]) {
       return;
     }
