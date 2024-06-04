@@ -364,7 +364,7 @@ struct UpcCandProducer {
         mchmidChi2 = -999.;                                                                                                     // no MID match
       }
       udFwdTracks(candID, track.px(), track.py(), track.pz(), track.sign(), globalBC, trTime, track.trackTimeRes());
-      udFwdTracksExtra(track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), mchmidChi2, 
+      udFwdTracksExtra(track.nClusters(), track.pDca(), track.rAtAbsorberEnd(), track.chi2(), mchmidChi2,
                        track.mchBitMap(), track.midBitMap(), track.midBoards());
       // fill MC labels and masks if needed
       if (fDoMC) {
@@ -1588,7 +1588,7 @@ struct UpcCandProducer {
       candID++;
       trkCandIDs.clear();
     }
-    
+
     selTrackIdsGlobal.clear();
     ambFwdTrBCs.clear();
     bcsMatchedTrIdsMID.clear();
