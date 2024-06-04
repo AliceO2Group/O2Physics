@@ -23,52 +23,52 @@ namespace o2::aod
 // definition of columns and tables forElectron Selection
 namespace hf_sel_electron
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);              //! CollisionID of Electrons
-DECLARE_SOA_INDEX_COLUMN(Track, track);                      //! Track ID of Electrons
-DECLARE_SOA_COLUMN(TrackEta, trackEta, float);               //!  Track Eta of Electrons
-DECLARE_SOA_COLUMN(TrackPhi, trackPhi, float);               //! Track Phi of Electrons
-DECLARE_SOA_COLUMN(TrackPt, trackPt, float);                 //! Track Transverse momentum of Electron
-DECLARE_SOA_COLUMN(TrackP, trackP, float);                   //!  Track momentum of Electron
-DECLARE_SOA_COLUMN(TrackRapidity, trackRapidity, float);     //!  Rapadity of Electron
-DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);           //!  dca of Electron in XY direction
-DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);             //!  dca of Electron in z direction
-DECLARE_SOA_COLUMN(TrackTPCNSigmaE, trackTPCNSigmaE, float); //! NSigma electron (TPC PID)
-DECLARE_SOA_COLUMN(TrackTOFNSigmaE, trackTOFNSigmaE, float); //! NSigma electron (TOF PID)
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                //! collisioniD of the  electron track
+DECLARE_SOA_INDEX_COLUMN(Track, track);                        //! trackid of of the electron track
+DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);                 //! pseudorapidity of the electron track
+DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);                 //! azimuth of the electron track
+DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);                   //! transverse momentum of the electron track
+DECLARE_SOA_COLUMN(PTrack, pTrack, float);                     //! momentum of the electron track
+DECLARE_SOA_COLUMN(RapidityTrack, rapadityTrack, float);       //! rapidity of the electron track
+DECLARE_SOA_COLUMN(DcaXYTrack, dcaXYtrack, float);             //! dca of  the electron in XY direction
+DECLARE_SOA_COLUMN(DcaZTrack, dcaZtrack, float);               //! dca of the electron in z direction
+DECLARE_SOA_COLUMN(TPCNSigmaElTrack, tpcNSigmaElTrack, float); //! tpcNSigma of the electron track(TPC PID)
+DECLARE_SOA_COLUMN(TOFNSigmaElTrack, tofNSigmaElTrack, float); //! tofNSigma of the electron track(TOF PID)
 
 // EMCal cluster values
-DECLARE_SOA_COLUMN(EmcClusterEnergy, emcClusterE, float);        //! EMCal cluster energy (GeV)
-DECLARE_SOA_COLUMN(EmcClusterEta, emcClusterEta, float);         //! EMCal cluster pseudorapidity
-DECLARE_SOA_COLUMN(EmcClusterPhi, emcClusterPhi, float);         //! EMCal cluster azimuthal angle
-DECLARE_SOA_COLUMN(EmcClusterM02, emcClusterm02, float);         //! EMCal shower shape long axis
-DECLARE_SOA_COLUMN(EmcClusterM20, emcClusterm20, float);         //! EMCal shower shape short axis
-DECLARE_SOA_COLUMN(EmcClusterNCells, emcClusterNCells, uint8_t); //! EMCal number of cells in cluster
-DECLARE_SOA_COLUMN(EmcClusterTime, emcClusterTime, float);       //! EMCal cluster time (ns)
+DECLARE_SOA_COLUMN(EnergyEmcCluster, energyEmcCluster, float);   //! energy(GeV)of the EMCal cluster
+DECLARE_SOA_COLUMN(EtaEmcCluster, etaEmcCluster, float);         //! pseudorapidity of the EMCal cluster
+DECLARE_SOA_COLUMN(PhiEmcCluster, phiEmcCluster, float);         //! azimuth of the EMCal cluster
+DECLARE_SOA_COLUMN(M02EmcCluster, m02EmcCluster, float);         //! shower shape long axis of the EMCal cluster
+DECLARE_SOA_COLUMN(M20EmcCluster, m20EmcCluster, float);         //! shower shape short axis of the EMCal cluster
+DECLARE_SOA_COLUMN(NCellsEmcCluster, ncellsEmcCluster, uint8_t); //! number of cells of the EMCal cluster
+DECLARE_SOA_COLUMN(TimeEmcCluster, timeEmcCluster, float);       //! cluster time(ns) of the  EMCal cluster
 
-DECLARE_SOA_COLUMN(DeltaEtaMatch, deltaEtaMatch, float); //! dEta  matched track  to calorimeter
-DECLARE_SOA_COLUMN(DeltaPhiMatch, deltaPhiMatch, float); //! dPhi  matched track to calorimeter
-DECLARE_SOA_COLUMN(ISEmcal, isEmcal, bool);
+DECLARE_SOA_COLUMN(DeltaEtaMatch, deltaEtaMatch, float); //! dEta  matched track  to  EMCal cluster
+DECLARE_SOA_COLUMN(DeltaPhiMatch, deltaPhiMatch, float); //! dPhi  matched track to  EMCal cluster
+DECLARE_SOA_COLUMN(ISEmcal, isEmcal, bool);              //! electron information with Emcal
 
 } // namespace hf_sel_electron
 DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
                   o2::soa::Index<>,
                   hf_sel_electron::CollisionId,
                   hf_sel_electron::TrackId,
-                  hf_sel_electron::TrackEta,
-                  hf_sel_electron::TrackPhi,
-                  hf_sel_electron::TrackPt,
-                  hf_sel_electron::TrackP,
-                  hf_sel_electron::TrackRapidity,
-                  hf_sel_electron::TrackDcaXY,
-                  hf_sel_electron::TrackDcaZ,
-                  hf_sel_electron::TrackTPCNSigmaE,
-                  hf_sel_electron::TrackTOFNSigmaE,
-                  hf_sel_electron::EmcClusterEnergy,
-                  hf_sel_electron::EmcClusterEta,
-                  hf_sel_electron::EmcClusterPhi,
-                  hf_sel_electron::EmcClusterM02,
-                  hf_sel_electron::EmcClusterM20,
-                  hf_sel_electron::EmcClusterNCells,
-                  hf_sel_electron::EmcClusterTime,
+                  hf_sel_electron::EtaTrack,
+                  hf_sel_electron::PhiTrack,
+                  hf_sel_electron::PtTrack,
+                  hf_sel_electron::PTrack,
+                  hf_sel_electron::RapidityTrack,
+                  hf_sel_electron::DcaXYTrack,
+                  hf_sel_electron::DcaZTrack,
+                  hf_sel_electron::TPCNSigmaElTrack,
+                  hf_sel_electron::TOFNSigmaElTrack,
+                  hf_sel_electron::EnergyEmcCluster,
+                  hf_sel_electron::EtaEmcCluster,
+                  hf_sel_electron::PhiEmcCluster,
+                  hf_sel_electron::M02EmcCluster,
+                  hf_sel_electron::M20EmcCluster,
+                  hf_sel_electron::NCellsEmcCluster,
+                  hf_sel_electron::TimeEmcCluster,
                   hf_sel_electron::DeltaEtaMatch,
                   hf_sel_electron::DeltaPhiMatch,
                   hf_sel_electron::ISEmcal);
