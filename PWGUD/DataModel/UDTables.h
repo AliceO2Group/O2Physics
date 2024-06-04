@@ -369,43 +369,6 @@ DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
 using UDFwdTrack = UDFwdTracks::iterator;
 using UDFwdTrackExtra = UDFwdTracksExtra::iterator;
 
-// MFT-MCH-MID tracks
-namespace udglobalfwdtrack
-{
-DECLARE_SOA_INDEX_COLUMN(UDCollision, udCollision);    //!
-DECLARE_SOA_COLUMN(Px, px, float);                     //!
-DECLARE_SOA_COLUMN(Py, py, float);                     //!
-DECLARE_SOA_COLUMN(Pz, pz, float);                     //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
-DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);      //!
-DECLARE_SOA_COLUMN(TrackTime, trackTime, double);      //!
-DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float); //! time resolution
-
-DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh1, midBoardCh1, //!
-                           [](uint32_t midBoards) -> int { return static_cast<int>(midBoards & 0xFF); });
-DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh2, midBoardCh2, //!
-                           [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 8) & 0xFF); });
-DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh3, midBoardCh3, //!
-                           [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 16) & 0xFF); });
-DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
-                           [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });
-} // namespace udglobalfwdtrack
-
-// Global muon track kinematics
-DECLARE_SOA_TABLE(UDGlobalFwdTracks, "AOD", "UDGLFWDTRACK",
-                  o2::soa::Index<>,
-                  udglobalfwdtrack::UDCollisionId,
-                  udglobalfwdtrack::Px,
-                  udglobalfwdtrack::Py,
-                  udglobalfwdtrack::Pz,
-                  udglobalfwdtrack::Sign,
-                  udglobalfwdtrack::GlobalBC,
-                  udglobalfwdtrack::TrackTime,
-                  udglobalfwdtrack::TrackTimeRes);
-
-
-using UDGlobalFwdTrack = UDGlobalFwdTracks::iterator;
-
 DECLARE_SOA_TABLE(UDFwdTracksProp, "AOD", "UDFWDTRACKPROP",
                   o2::soa::Index<>, fwdtrack::CollisionId, fwdtrack::TrackType,
                   fwdtrack::X, fwdtrack::Y, fwdtrack::Z, fwdtrack::Phi, fwdtrack::Tgl,
