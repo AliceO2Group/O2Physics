@@ -216,10 +216,9 @@ struct HfCorrelatorDstarHadrons {
                             assocParticle.eta(),
                             assocParticle.pt(),
                             timestamp,
-                            binNumber)
+                            binNumber);
 
-          if (enableSeparateTables)
-        {
+        if (enableSeparateTables) {
           rowsDstar(collision.globalIndex(),
                     gItriggerParticle,
                     triggerParticle.phi(),
