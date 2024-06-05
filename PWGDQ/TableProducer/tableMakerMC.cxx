@@ -1253,7 +1253,7 @@ struct TableMakerMC {
           auto mctrack = muon.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<TMuonFillMap>(muon);
           // recalculte DCA and pDca for global muon tracks
-          VarManager::FillTrackCollision<TMuonFillMap>(matchMCH, collision);
+          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
           if (fPropMuon) {
             VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
           }
