@@ -22,10 +22,12 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
+using namespace o2::analysis;
 
 enum pidInfoStored {
   kPiFromLam = 0,
@@ -50,6 +52,7 @@ struct HfCandidateSelectorToOmegaPi {
   Configurable<float> dcaPosToPvMin{"dcaPosToPvMin", 0.06, "DCA Pos To PV"};
   Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};
   Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
+  Configurable<bool> applyTrkSelLf{"applyTrkSelLf", true, "Apply track selection for LF daughters"};
 
   // limit charm baryon invariant mass spectrum
   Configurable<double> invMassCharmBaryonMin{"invMassCharmBaryonMin", 2.3, "Lower limit invariant mass spectrum charm baryon"}; // 2.4 Omegac0 only
@@ -116,8 +119,10 @@ struct HfCandidateSelectorToOmegaPi {
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement"};
   Configurable<int> nTpcCrossedRowsMin{"nTpcCrossedRowsMin", 70, "Minimum number of TPC crossed rows requirement"};
   Configurable<double> tpcCrossedRowsOverFindableClustersRatioMin{"tpcCrossedRowsOverFindableClustersRatioMin", 0.8, "Minimum ratio TPC crossed rows over findable clusters requirement"};
+  Configurable<float> tpcChi2PerClusterMax{"tpcChi2PerClusterMax", 4, "Maximum value of chi2 fit over TPC clusters"};
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- charm baryon"};
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
+  Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
@@ -176,17 +181,11 @@ struct HfCandidateSelectorToOmegaPi {
     registry.add("hSelDCAZCasc", "hSelDCAZCasc;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelPtKaFromCasc", "hSelPtKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelPtPiFromCharm", "hSelPtPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelNClsTPCPiFromCharm", "hSelNClsTPCPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelNClsTPCPiFromLam", "hSelNClsTPCPiFromLam;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelNClsTPCPrFromLam", "hSelNClsTPCPrFromLam;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelNClsTPCKaFromCasc", "hSelNClsTPCKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelNCrossRowsTPCPiFromCharm", "hSelNCrossRowsTPCPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelNCrossRowsTPCPiFromLam", "hSelNCrossRowsTPCPiFromLam;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelNCrossRowsTPCPrFromLam", "hSelNCrossRowsTPCPrFromLam;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelNCrossRowsTPCKaFromCasc", "hSelNCrossRowsTPCKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelCrossRowsOverFindClsTPCAllTracks", "hSelCrossRowsOverFindClsTPCAllTracks;status;entries", {HistType::kTH1F, {{10, 0., 10.}}});
-    registry.add("hSelNClsITSPiFromCharm", "hSelNClsITSPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
-    registry.add("hSelNClsITSInnerPiFromCharm", "hSelNClsITSInnerPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelTPCQualityPiFromCharm", "hSelTPCQualityPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelTPCQualityPiFromLam", "hSelTPCQualityPiFromLam;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelTPCQualityPrFromLam", "hSelTPCQualityPrFromLam;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelTPCQualityKaFromCasc", "hSelTPCQualityKaFromCasc;status;entries", {HistType::kTH1F, {axisSel}});
+    registry.add("hSelITSQualityPiFromCharm", "hSelITSQualityPiFromCharm;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelMassLam", "hSelMassLam;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1F, {axisSel}});
@@ -362,95 +361,39 @@ struct HfCandidateSelectorToOmegaPi {
       }
 
       //  TPC clusters selections
-      if (trackPiFromCharm.tpcNClsFound() < nClustersTpcMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelNClsTPCPiFromCharm"), 0);
-      } else {
-        registry.fill(HIST("hSelNClsTPCPiFromCharm"), 1);
+      if (applyTrkSelLf) {
+        if (!isSelectedTrackTpcQuality(trackPiFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
+          resultSelections = false;
+          registry.fill(HIST("hSelTPCQualityPiFromLam"), 0);
+        } else {
+          registry.fill(HIST("hSelTPCQualityPiFromLam"), 1);
+        }
+        if (!isSelectedTrackTpcQuality(trackPrFromLam, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
+          resultSelections = false;
+          registry.fill(HIST("hSelTPCQualityPrFromLam"), 0);
+        } else {
+          registry.fill(HIST("hSelTPCQualityPrFromLam"), 1);
+        }
+        if (!isSelectedTrackTpcQuality(trackKaFromCasc, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
+          resultSelections = false;
+          registry.fill(HIST("hSelTPCQualityKaFromCasc"), 0);
+        } else {
+          registry.fill(HIST("hSelTPCQualityKaFromCasc"), 1);
+        }
       }
-      if (trackPiFromLam.tpcNClsFound() < nClustersTpcMin) {
+      if (!isSelectedTrackTpcQuality(trackPiFromCharm, nClustersTpcMin, nTpcCrossedRowsMin, tpcCrossedRowsOverFindableClustersRatioMin, tpcChi2PerClusterMax)) {
         resultSelections = false;
-        registry.fill(HIST("hSelNClsTPCPiFromLam"), 0);
+        registry.fill(HIST("hSelTPCQualityPiFromCharm"), 0);
       } else {
-        registry.fill(HIST("hSelNClsTPCPiFromLam"), 1);
-      }
-      if (trackPrFromLam.tpcNClsFound() < nClustersTpcMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelNClsTPCPrFromLam"), 0);
-      } else {
-        registry.fill(HIST("hSelNClsTPCPrFromLam"), 1);
-      }
-      if (trackKaFromCasc.tpcNClsFound() < nClustersTpcMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelNClsTPCKaFromCasc"), 0);
-      } else {
-        registry.fill(HIST("hSelNClsTPCKaFromCasc"), 1);
-      }
-
-      // TPC crossed rows selection
-      if (trackPiFromCharm.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelNCrossRowsTPCPiFromCharm"), 0);
-      } else {
-        registry.fill(HIST("hSelNCrossRowsTPCPiFromCharm"), 1);
-      }
-      if (trackPiFromLam.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelNCrossRowsTPCPiFromLam"), 0);
-      } else {
-        registry.fill(HIST("hSelNCrossRowsTPCPiFromLam"), 1);
-      }
-      if (trackPrFromLam.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelNCrossRowsTPCPrFromLam"), 0);
-      } else {
-        registry.fill(HIST("hSelNCrossRowsTPCPrFromLam"), 1);
-      }
-      if (trackKaFromCasc.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelNCrossRowsTPCKaFromCasc"), 0);
-      } else {
-        registry.fill(HIST("hSelNCrossRowsTPCKaFromCasc"), 1);
-      }
-
-      // further TPC selection
-      if (trackPiFromCharm.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 0);
-      } else {
-        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 1);
-      }
-      if (trackKaFromCasc.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 2);
-      } else {
-        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 3);
-      }
-      if (trackPiFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 4);
-      } else {
-        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 5);
-      }
-      if (trackPrFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 6);
-      } else {
-        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 7);
+        registry.fill(HIST("hSelTPCQualityPiFromCharm"), 1);
       }
 
       //  ITS clusters selection
-      if (trackPiFromCharm.itsNCls() < nClustersItsMin) {
+      if (!isSelectedTrackItsQuality(trackPiFromCharm, nClustersItsMin, itsChi2PerClusterMax) || trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
         resultSelections = false;
-        registry.fill(HIST("hSelNClsITSPiFromCharm"), 0);
+        registry.fill(HIST("hSelITSQualityPiFromCharm"), 0);
       } else {
-        registry.fill(HIST("hSelNClsITSPiFromCharm"), 1);
-      }
-      if (trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
-        resultSelections = false;
-        registry.fill(HIST("hSelNClsITSInnerPiFromCharm"), 0);
-      } else {
-        registry.fill(HIST("hSelNClsITSInnerPiFromCharm"), 1);
+        registry.fill(HIST("hSelITSQualityPiFromCharm"), 1);
       }
 
       // track-level PID selection

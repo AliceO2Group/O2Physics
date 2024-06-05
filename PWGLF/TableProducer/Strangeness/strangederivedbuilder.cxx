@@ -59,7 +59,7 @@ using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::Track
 using FullTracksExtIUTOF = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFEvTime, aod::TOFSignal>;
 using FullCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>;
 
-// simple checkers
+// simple bit checkers
 #define bitset(var, nbit) ((var) |= (1 << (nbit)))
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
@@ -281,7 +281,8 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -291,6 +292,12 @@ struct strangederivedbuilder {
 
   void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
   {
+    // create collision indices beforehand
+    std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
+    std::vector<int> CascadeCollIndices(Cascades.size(), -1);       // index -1: no collision
+    std::vector<int> KFCascadeCollIndices(KFCascades.size(), -1);   // index -1: no collision
+    std::vector<int> TraCascadeCollIndices(TraCascades.size(), -1); // index -1: no collision
+
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
 
@@ -332,22 +339,42 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
-      for (int i = 0; i < V0Table_thisColl.size(); i++)
-        v0collref(strangeColl.lastIndex());
-      for (int i = 0; i < CascTable_thisColl.size(); i++)
-        casccollref(strangeColl.lastIndex());
-      for (int i = 0; i < KFCascTable_thisColl.size(); i++)
-        kfcasccollref(strangeColl.lastIndex());
-      for (int i = 0; i < TraCascTable_thisColl.size(); i++)
-        tracasccollref(strangeColl.lastIndex());
+
+      for (const auto& v0 : V0Table_thisColl)
+        V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : CascTable_thisColl)
+        CascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : KFCascTable_thisColl)
+        KFCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : TraCascTable_thisColl)
+        TraCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
     }
+
+    // populate references, including those that might not be assigned
+    for (const auto& v0 : V0s)
+      v0collref(V0CollIndices[v0.globalIndex()]);
+    for (const auto& casc : Cascades)
+      casccollref(CascadeCollIndices[casc.globalIndex()]);
+    for (const auto& casc : KFCascades)
+      kfcasccollref(KFCascadeCollIndices[casc.globalIndex()]);
+    for (const auto& casc : KFCascades)
+      tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
   }
 
   void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
   {
+    // create collision indices beforehand
+    std::vector<int> V0CollIndices(V0s.size(), -1);                 // index -1: no collision
+    std::vector<int> V0MCCollIndices(V0s.size(), -1);               // index -1: no collision
+    std::vector<int> CascadeCollIndices(Cascades.size(), -1);       // index -1: no collision
+    std::vector<int> CascadeMCCollIndices(Cascades.size(), -1);     // index -1: no collision
+    std::vector<int> KFCascadeCollIndices(KFCascades.size(), -1);   // index -1: no collision
+    std::vector<int> TraCascadeCollIndices(TraCascades.size(), -1); // index -1: no collision
+
     // ______________________________________________
     // fill all MC collisions, correlate via index later on
     for (const auto& mccollision : mcCollisions) {
@@ -401,36 +428,55 @@ struct strangederivedbuilder {
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
                           collision.multZEM2() * static_cast<float>(fillRawZDC),
                           collision.multZPA() * static_cast<float>(fillRawZDC),
-                          collision.multZPC() * static_cast<float>(fillRawZDC));
+                          collision.multZPC() * static_cast<float>(fillRawZDC),
+                          collision.trackOccupancyInTimeRange());
         }
       }
-      for (int i = 0; i < V0Table_thisColl.size(); i++)
-        v0collref(strangeColl.lastIndex());
-      for (int i = 0; i < CascTable_thisColl.size(); i++)
-        casccollref(strangeColl.lastIndex());
-      for (int i = 0; i < KFCascTable_thisColl.size(); i++)
-        kfcasccollref(strangeColl.lastIndex());
-      for (int i = 0; i < TraCascTable_thisColl.size(); i++)
-        tracasccollref(strangeColl.lastIndex());
+      for (const auto& v0 : V0Table_thisColl)
+        V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : CascTable_thisColl)
+        CascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : KFCascTable_thisColl)
+        KFCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
+      for (const auto& casc : TraCascTable_thisColl)
+        TraCascadeCollIndices[casc.globalIndex()] = strangeColl.lastIndex();
 
       // populate MC collision references
       for (const auto& v0 : V0Table_thisColl) {
         uint32_t indMCColl = -1;
         if (v0.has_mcParticle()) {
           auto mcParticle = v0.mcParticle();
-          indMCColl = mcParticle.mcCollisionId();
+          if (mcParticle.has_mcCollision()) {
+            indMCColl = mcParticle.mcCollisionId();
+          }
         }
-        v0mccollref(indMCColl);
+        V0MCCollIndices[v0.globalIndex()] = indMCColl;
       }
       for (const auto& casc : CascTable_thisColl) {
         uint32_t indMCColl = -1;
         if (casc.has_mcParticle()) {
           auto mcParticle = casc.mcParticle();
-          indMCColl = mcParticle.mcCollisionId();
+          if (mcParticle.has_mcCollision()) {
+            indMCColl = mcParticle.mcCollisionId();
+          }
         }
-        cascmccollref(indMCColl);
+        CascadeMCCollIndices[casc.globalIndex()] = indMCColl;
       }
     }
+
+    // populate references, including those that might not be assigned
+    for (const auto& v0 : V0s) {
+      v0collref(V0CollIndices[v0.globalIndex()]);
+      v0mccollref(V0MCCollIndices[v0.globalIndex()]);
+    }
+    for (const auto& casc : Cascades) {
+      casccollref(CascadeCollIndices[casc.globalIndex()]);
+      cascmccollref(CascadeMCCollIndices[casc.globalIndex()]);
+    }
+    for (const auto& casc : KFCascades)
+      kfcasccollref(KFCascadeCollIndices[casc.globalIndex()]);
+    for (const auto& casc : KFCascades)
+      tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
   }
 
   void processTrackExtrasV0sOnly(aod::V0Datas const& V0s, TracksWithExtra const& tracksExtra)

@@ -61,20 +61,6 @@ using TracksPidTinyPi = soa::Join<aod::pidTPCPi, aod::pidTOFPi>;
 using TracksPidTinyKa = soa::Join<aod::pidTPCKa, aod::pidTOFKa>;
 using TracksPidTinyPr = soa::Join<aod::pidTPCPr, aod::pidTOFPr>;
 
-namespace hf_collision_centrality
-{
-// centrality selection estimators
-enum CentralityEstimator {
-  None = 0,
-  FT0A,
-  FT0C,
-  FT0M,
-  FV0A,
-  NTracksPV,
-  NCentralityEstimators
-};
-} // namespace hf_collision_centrality
-
 // namespace pid_tpc_tof_utils
 // {
 // /// Function to combine TPC and TOF NSigma (for ML purposes)
@@ -537,6 +523,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(Ct, ct, //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, //!
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 DECLARE_SOA_COLUMN(KfTopolChi2OverNdf, kfTopolChi2OverNdf, float); //! chi2overndf of the KFParticle topological constraint
+// B-hadron mother information
+DECLARE_SOA_COLUMN(PtBhadMotherPart, ptBhadMotherPart, float); //! pt of the first B-hadron mother particle (only in case of non-prompt)
+DECLARE_SOA_COLUMN(PdgBhadMotherPart, pdgBhadMotherPart, int); //! pdg of the first B-hadron mother particle (only in case of non-prompt)
+DECLARE_SOA_COLUMN(IdxBhadMotherPart, idxBhadMotherPart, int); //! index of the first B-hadron mother particle (only in case of non-prompt)
 
 // method of secondary-vertex reconstruction
 enum VertexerType { DCAFitter = 0,
@@ -652,12 +642,15 @@ DECLARE_SOA_TABLE(HfCand2ProngKF, "AOD", "HFCAND2PKF",
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand2ProngMcRec, "AOD", "HFCAND2PMCREC", //!
                   hf_cand_2prong::FlagMcMatchRec,
-                  hf_cand_2prong::OriginMcRec);
+                  hf_cand_2prong::OriginMcRec,
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCand2ProngMcGen, "AOD", "HFCAND2PMCGEN", //!
                   hf_cand_2prong::FlagMcMatchGen,
-                  hf_cand_2prong::OriginMcGen);
+                  hf_cand_2prong::OriginMcGen,
+                  hf_cand::IdxBhadMotherPart);
 
 // cascade decay candidate table
 
@@ -748,12 +741,15 @@ using HfCandCascade = HfCandCascExt;
 // table with results of reconstruction level MC matching for Cascade
 DECLARE_SOA_TABLE(HfCandCascadeMcRec, "AOD", "HFCANDCASCMCREC", //!
                   hf_cand_casc::FlagMcMatchRec,
-                  hf_cand_casc::OriginMcRec);
+                  hf_cand_casc::OriginMcRec,
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandCascadeMcGen, "AOD", "HFCANDCASCMCGEN", //!
                   hf_cand_casc::FlagMcMatchGen,
-                  hf_cand_casc::OriginMcGen);
+                  hf_cand_casc::OriginMcGen,
+                  hf_cand::IdxBhadMotherPart);
 
 // specific BPlus candidate properties
 namespace hf_cand_bplus
@@ -922,13 +918,16 @@ DECLARE_SOA_TABLE(HfCand3ProngMcRec, "AOD", "HFCAND3PMCREC", //!
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_3prong::IsCandidateSwapped,
-                  hf_cand_3prong::FlagMcDecayChanRec);
+                  hf_cand_3prong::FlagMcDecayChanRec,
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCand3ProngMcGen, "AOD", "HFCAND3PMCGEN", //!
                   hf_cand_3prong::FlagMcMatchGen,
                   hf_cand_3prong::OriginMcGen,
-                  hf_cand_3prong::FlagMcDecayChanGen);
+                  hf_cand_3prong::FlagMcDecayChanGen,
+                  hf_cand::IdxBhadMotherPart);
 
 namespace hf_cand_casc_lf
 {
@@ -1279,39 +1278,47 @@ DECLARE_SOA_TABLE(HfXicToXiPiMCRec, "AOD", "HFXICXIPIMCREC", //!
                   hf_cand_xic0_omegac0::DebugMcRec,
                   hf_cand_xic0_omegac0::OriginRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart,
                   o2::soa::Marker<1>);
 DECLARE_SOA_TABLE(HfOmegacToXiPiMCRec, "AOD", "HFOMCXIPIMCREC", //!
                   hf_cand_xic0_omegac0::FlagMcMatchRec,
                   hf_cand_xic0_omegac0::DebugMcRec,
                   hf_cand_xic0_omegac0::OriginRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart,
                   o2::soa::Marker<2>);
 DECLARE_SOA_TABLE(HfToOmegaPiMCRec, "AOD", "HFTOOMEPIMCREC", //!
                   hf_cand_xic0_omegac0::FlagMcMatchRec,
                   hf_cand_xic0_omegac0::DebugMcRec,
                   hf_cand_xic0_omegac0::OriginRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart,
                   o2::soa::Marker<3>);
 DECLARE_SOA_TABLE(HfToOmegaKMCRec, "AOD", "HFTOOMEKMCREC", //!
                   hf_cand_xic0_omegac0::FlagMcMatchRec,
                   hf_cand_xic0_omegac0::DebugMcRec,
                   hf_cand_xic0_omegac0::OriginRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart,
                   o2::soa::Marker<4>);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfXicToXiPiMCGen, "AOD", "HFXICXIPIMCGEN", //!
                   hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, o2::soa::Marker<1>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, hf_cand::IdxBhadMotherPart, o2::soa::Marker<1>);
 DECLARE_SOA_TABLE(HfOmegacToXiPiMCGen, "AOD", "HFOMECXIPIMCGEN", //!
                   hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, o2::soa::Marker<2>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, hf_cand::IdxBhadMotherPart, o2::soa::Marker<2>);
 DECLARE_SOA_TABLE(HfToOmegaPiMCGen, "AOD", "HFTOOMEPIMCGEN", //!
                   hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, o2::soa::Marker<3>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, hf_cand::IdxBhadMotherPart, o2::soa::Marker<3>);
 DECLARE_SOA_TABLE(HfToOmegaKMCGen, "AOD", "HFTOOMEKMCGEN", //!
                   hf_cand_xic0_omegac0::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, o2::soa::Marker<4>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::EtaCharmBaryonGen, hf_cand_xic0_omegac0::OriginGen, hf_cand::IdxBhadMotherPart, o2::soa::Marker<4>);
 
 // specific chic candidate properties
 namespace hf_cand_chic
@@ -1655,12 +1662,15 @@ using HfCandSc = HfCandScExt;
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandScMcRec, "AOD", "HFCANDSCMCREC", //!
                   hf_cand_sigmac::FlagMcMatchRec,
-                  hf_cand_sigmac::OriginMcRec);
+                  hf_cand_sigmac::OriginMcRec,
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart);
 
 // table with results of generation level MC matching
 DECLARE_SOA_TABLE(HfCandScMcGen, "AOD", "HFCANDSCMCGEN", //!
                   hf_cand_sigmac::FlagMcMatchGen,
-                  hf_cand_sigmac::OriginMcGen);
+                  hf_cand_sigmac::OriginMcGen,
+                  hf_cand::IdxBhadMotherPart);
 
 /// D*± → D0(bar) π±
 namespace hf_cand_dstar
@@ -1739,8 +1749,12 @@ DECLARE_SOA_INDEX_COLUMN_FULL(ProngPi, prongPi, int, Tracks, ""); //! soft-pion 
 
 // soft pion prong
 DECLARE_SOA_COLUMN(ImpParamSoftPi, impParamSoftPi, float);
+DECLARE_SOA_COLUMN(ImpParamZSoftPi, impParamZSoftPi, float);
 DECLARE_SOA_COLUMN(ErrorImpParamSoftPi, errorImpParamSoftPi, float);
+DECLARE_SOA_COLUMN(ErrorImpParamZSoftPi, errorImpParamZSoftPi, float);
 DECLARE_SOA_DYNAMIC_COLUMN(NormalisedImpParamSoftPi, normalisedImpParamSoftPi,
+                           [](float dca, float err) -> float { return dca / err; });
+DECLARE_SOA_DYNAMIC_COLUMN(NormalisedImpParamZSoftPi, normalisedImpParamZSoftPi,
                            [](float dca, float err) -> float { return dca / err; });
 DECLARE_SOA_COLUMN(PxSoftPi, pxSoftPi, float);
 DECLARE_SOA_COLUMN(PySoftPi, pySoftPi, float);
@@ -1765,12 +1779,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(PVecSoftPi, pVecSoftPi, [](float px, float py, float 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);    //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);    //! generator level
-DECLARE_SOA_COLUMN(PtBhadMotherPart, ptBhadMotherPart, float); //! pt of the first B-hadron mother particle (only in case of non-prompt)
-DECLARE_SOA_COLUMN(PdgBhadMotherPart, pdgBhadMotherPart, int); //! pdg of the first B-hadron mother particle (only in case of non-prompt)
 
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);          //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);          //! particle origin, generator level
-DECLARE_SOA_COLUMN(IdxBhadMotherPart, idxBhadMotherPart, int); //! index of the first B-hadron mother particle (only in case of non-prompt)
 
 enum DecayType {
   DstarToD0Pi = 0,
@@ -1796,13 +1807,17 @@ DECLARE_SOA_TABLE(HfD0FromDstarBase, "AOD", "HFD0FRMDSTR",
                   hf_cand_dstar::DecayLengthXYNormalisedD0<collision::PosX, collision::PosY, hf_cand_dstar::XSecondaryVertexD0, hf_cand_dstar::YSecondaryVertexD0, hf_cand_dstar::ErrorDecayLengthXYD0>,
                   /* prong 0 */ hf_cand::ImpactParameterNormalised0<hf_cand::ImpactParameter0, hf_cand::ErrorImpactParameter0>,
                   /* prong 1 */ hf_cand::ImpactParameterNormalised1<hf_cand::ImpactParameter1, hf_cand::ErrorImpactParameter1>,
+                  /* prong 0 */ hf_cand::ImpactParameterZNormalised0<hf_cand::ImpactParameterZ0, hf_cand::ErrorImpactParameterZ0>,
+                  /* prong 1 */ hf_cand::ImpactParameterZNormalised1<hf_cand::ImpactParameterZ1, hf_cand::ErrorImpactParameterZ1>,
 
                   // HFCAND_COLUMNS,
                   // 2-prong specific columns
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
+                  hf_cand::ImpactParameterZ0, hf_cand::ImpactParameterZ1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
+                  hf_cand::ErrorImpactParameterZ0, hf_cand::ErrorImpactParameterZ1,
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id,
                   hf_track_index::HFflag,
                   /* dynamic columns */
@@ -1841,7 +1856,8 @@ DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFCANDDSTRBASE",
                   // Softpi
                   hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi, hf_cand_dstar::PzSoftPi,
                   hf_cand_dstar::SignSoftPi,
-                  hf_cand_dstar::ImpParamSoftPi, hf_cand_dstar::ErrorImpParamSoftPi,
+                  hf_cand_dstar::ImpParamSoftPi, hf_cand_dstar::ImpParamZSoftPi,
+                  hf_cand_dstar::ErrorImpParamSoftPi, hf_cand_dstar::ErrorImpParamZSoftPi,
                   // Two pronges of D0
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
@@ -1850,6 +1866,7 @@ DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFCANDDSTRBASE",
                   hf_cand_dstar::PtSoftPi<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi>,
                   hf_cand_dstar::PVecSoftPi<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi, hf_cand_dstar::PzSoftPi>,
                   hf_cand_dstar::NormalisedImpParamSoftPi<hf_cand_dstar::ImpParamSoftPi, hf_cand_dstar::ErrorImpParamSoftPi>,
+                  hf_cand_dstar::NormalisedImpParamZSoftPi<hf_cand_dstar::ImpParamZSoftPi, hf_cand_dstar::ErrorImpParamZSoftPi>,
                   hf_cand::Pt<hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar>,
                   hf_cand::P<hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar, hf_cand_dstar::PzDstar>,
                   hf_cand::PVector<hf_cand_dstar::PxDstar, hf_cand_dstar::PyDstar, hf_cand_dstar::PzDstar>,
@@ -1883,14 +1900,14 @@ using HfCandDstar = HfCandDstars::iterator;
 DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
                   hf_cand_dstar::FlagMcMatchRec,
                   hf_cand_dstar::OriginMcRec,
-                  hf_cand_dstar::PtBhadMotherPart,
-                  hf_cand_dstar::PdgBhadMotherPart);
+                  hf_cand::PtBhadMotherPart,
+                  hf_cand::PdgBhadMotherPart);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcGen, "AOD", "HFCANDDSTRMCGEN",
                   hf_cand_dstar::FlagMcMatchGen,
                   hf_cand_dstar::OriginMcGen,
-                  hf_cand_dstar::IdxBhadMotherPart);
+                  hf_cand::IdxBhadMotherPart);
 
 #undef HFCAND_COLUMNS
 

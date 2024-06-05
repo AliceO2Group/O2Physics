@@ -123,3 +123,13 @@ o2physics_add_dpl_workflow(hadronnucleicorrelation
     SOURCES hadronnucleicorrelation.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-efficiency-hist
+    SOURCES NucleiEfficiencyTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nuclei-ebye
+    SOURCES nucleiEbye.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

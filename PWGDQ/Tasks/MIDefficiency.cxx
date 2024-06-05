@@ -23,6 +23,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/CallbackService.h"
+#include "Framework/ASoAHelpers.h"
 
 // O2 physics classes
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
@@ -52,6 +53,7 @@ struct midEfficiency {
   Configurable<int> nBinsLocal{"nBinsLocal", 936, "N bins in local board counts histo"};
   Configurable<int> nBinsRPC{"nBinsRPC", 72, "N bins in RPC counts histo"};
   Configurable<int> nBinsPlane{"nBinsPlane", 4, "N bins in plane counts histo"};
+  Configurable<int> nBinsTrackType{"nBinsTrackType", 5, "N bins in track type debug histo"};
   Configurable<bool> createRootFile{"createRootFile", false, "if true it creates the mid-reco.root file for debug purposes"};
 
   // Vector of MID tracks to pass to the efficiency calculator
@@ -61,7 +63,10 @@ struct midEfficiency {
   // MID mapping for LB calculation
   o2::mid::Mapping mapping;
 
-  void init(o2::framework::InitContext const&)
+  // Filter only for MCH-MID tracks
+  Filter muonTrackType = aod::fwdtrack::trackType == uint8_t(3);
+
+  void init(o2::framework::InitContext const& ic)
   {
 
     LOGF(debug, "Initialization starting");
@@ -70,6 +75,7 @@ struct midEfficiency {
     const AxisSpec axisLocalBoards{nBinsLocal, 0.5, 936.5, "Local board"};
     const AxisSpec axisRPCs{nBinsRPC, -0.5, 71.5, "RPC"};
     const AxisSpec axisPlanes{nBinsPlane, -0.5, 3.5, "Plane"};
+    const AxisSpec axisTrackType{nBinsTrackType, -0.5, 4.5, "Muon track type"};
 
     LOGF(debug, "Creating histograms");
 
@@ -89,6 +95,8 @@ struct midEfficiency {
     histos.add("nFiredNBPperPlane", "nFiredNBPperPlane", kTH1F, {axisPlanes});
     histos.add("nFiredBothperPlane", "nFiredBothperPlane", kTH1F, {axisPlanes});
     histos.add("nTotperPlane", "nTotperPlane", kTH1F, {axisPlanes});
+    // Track type for debug only
+    histos.add("hTrackType", "hTrackType", kTH1F, {axisTrackType});
 
   } // end of init
 
@@ -98,10 +106,11 @@ struct midEfficiency {
     LOGF(debug, "Calling process function");
 
     // Loop over all forward tracks
-    // LOGP(info, "collision index = {} ,  nTracks = {}", event.globalIndex(), muons.size());
     for (auto& track : muons) {
 
       LOGF(debug, "Processing a track");
+
+      histos.fill(HIST("hTrackType"), track.trackType());
 
       trk.setEfficiencyWord(track.midBoards());
 
@@ -168,7 +177,7 @@ struct midEfficiency {
 
   } // end of runMidEffCounters
 
-  void processMidEffCounter(aod::ReducedEvents::iterator const& event, MyMuonTracks const& muons)
+  void processMidEffCounter(aod::ReducedEvents::iterator const& event, soa::Filtered<MyMuonTracks> const& muons)
   {
     runMidEffCounters(event, muons); // call efficiency calculator function
   }

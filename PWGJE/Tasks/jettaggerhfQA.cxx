@@ -517,17 +517,26 @@ struct JetTaggerHFQA {
       std::sort(vecSignImpZSigTC.begin(), vecSignImpZSigTC.end(), sortImp);
       std::sort(vecSignImpXYZSigTC.begin(), vecSignImpXYZSigTC.end(), sortImp);
 
-      if (vecSignImpXYSigTC.empty() || vecSignImpZSigTC.empty() || vecSignImpXYZSigTC.empty())
+      if (vecSignImpXYSigTC.empty())
         continue;
       for (int order = 1; order <= numOrder; order++) {
         if (fillIPxy && order < vecSignImpXYSigTC.size()) {
-          registry.fill(HIST("h3_sign_impact_parameter_xy_significance_tc_flavour"), vecSignImpXYSigTC[order][0], order, jetflavour);
+          registry.fill(HIST("h3_sign_impact_parameter_xy_significance_tc_flavour"), vecSignImpXYSigTC[order - 1][0], order, jetflavour);
         }
-        if (fillIPz && order < vecSignImpZSigTC.size()) {
-          registry.fill(HIST("h3_sign_impact_parameter_z_significance_tc_flavour"), vecSignImpZSigTC[order][0], order, jetflavour);
+      }
+      if (vecSignImpZSigTC.empty())
+        continue;
+      for (int order = 1; order <= numOrder; order++) {
+        if (fillIPxy && order < vecSignImpZSigTC.size()) {
+          registry.fill(HIST("h3_sign_impact_parameter_z_significance_tc_flavour"), vecSignImpZSigTC[order - 1][0], order, jetflavour);
         }
-        if (fillIPxyz && order < vecSignImpXYZSigTC.size()) {
-          registry.fill(HIST("h3_sign_impact_parameter_xyz_significance_tc_flavour"), vecSignImpXYZSigTC[order][0], order, jetflavour);
+      }
+
+      if (vecSignImpXYZSigTC.empty())
+        continue;
+      for (int order = 1; order <= numOrder; order++) {
+        if (fillIPxy && order < vecSignImpXYZSigTC.size()) {
+          registry.fill(HIST("h3_sign_impact_parameter_xyz_significance_tc_flavour"), vecSignImpXYZSigTC[order - 1][0], order, jetflavour);
         }
       }
     }

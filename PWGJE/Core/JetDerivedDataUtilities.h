@@ -359,9 +359,9 @@ uint8_t setTrackSelectionBit(T const& track)
   if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrack);
   }
-  if ((track.passedGoldenChi2()) &&
+  if ((track.passedGoldenChi2() && track.passedDCAxy()) &&
       (track.passedITSNCls() && track.passedITSChi2NDF() && track.passedITSHits()) &&
-      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAxy() && track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
+      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
     SETBIT(bit, JTrackSel::uniformTrack);
   }
 
@@ -381,6 +381,12 @@ template <typename T>
 float trackEnergy(T const& track, float mass = mPion)
 {
   return std::sqrt((track.p() * track.p()) + (mass * mass));
+}
+
+template <typename T>
+bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
+{
+  return abs(track.dcaZ()) < dcaZmax;
 }
 
 } // namespace jetderiveddatautilities
