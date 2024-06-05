@@ -3485,7 +3485,7 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
   constexpr float beamEne = 5.36 * 0.5;
   constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
   constexpr float y[4] = {-1.75, -1.75, 1.75, 1.75};
-  //constexpr float alpha = 0.395; // WARNING: Run 2 coorection, to be checked 
+  // constexpr float alpha = 0.395; // WARNING: Run 2 coorection, to be checked
   constexpr float alpha = 1.;
   float numXZNC = 0., numYZNC = 0., denZNC = 0.;
   float numXZNA = 0., numYZNA = 0., denZNA = 0.;
@@ -3506,7 +3506,7 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
   }
 
   if (denZNC != 0.) {
-    float nSpecnC = zncCommon / beamEne; // WARNING: Run 2 coorection, to be checked
+    float nSpecnC = zncCommon / beamEne;                  // WARNING: Run 2 coorection, to be checked
     float cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789); // WARNING: Run 2 coorection, to be checked
     cZNC = 1.;
     values[kQ1ZNCX] = cZNC * numXZNC / denZNC;
@@ -3516,7 +3516,7 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
   }
 
   if (denZNA != 0.) {
-    float nSpecnA = znaCommon / beamEne; // WARNING: Run 2 coorection, to be checked
+    float nSpecnA = znaCommon / beamEne;                  // WARNING: Run 2 coorection, to be checked
     float cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789); // WARNING: Run 2 coorection, to be checked
     cZNA = 1.;
     values[kQ1ZNAX] = cZNA * numXZNA / denZNA;
@@ -3530,8 +3530,7 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
     values[kQ1ZNACYY] = values[kQ1ZNAY] * values[kQ1ZNCY];
     values[kQ1ZNACYX] = values[kQ1ZNAY] * values[kQ1ZNCX];
     values[kQ1ZNACXY] = values[kQ1ZNAX] * values[kQ1ZNCY];
-  }
-  else {
+  } else {
     values[kQ1ZNACXX] = values[kQ1ZNACYY] = values[kQ1ZNACYX] = values[kQ1ZNACXY] = 999.;
   }
 }

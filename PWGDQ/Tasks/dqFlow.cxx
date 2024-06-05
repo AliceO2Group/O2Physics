@@ -309,7 +309,7 @@ struct DQEventQvector {
 
     fGFW->Clear();
     float centrality;
-    //auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    // auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     auto bc = collision.template bc_as<MyBcs>();
     // Load weights from CCDB
     loadCorrections(bc.timestamp());
@@ -467,7 +467,7 @@ struct DQEventQvector {
       }
       auto zdc = bc.zdc();
       VarManager::FillSpectatorPlane(zdc);
-      
+
       if ((tracks1.size() > 0) && (VarManager::fgValues[VarManager::kMultA] * VarManager::fgValues[VarManager::kMultB] * VarManager::fgValues[VarManager::kMultC] != 0.0)) {
         if (fConfigQA) {
           fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
