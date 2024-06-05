@@ -798,8 +798,15 @@ class VarManager : public TObject
   }
 
   // Setup the 3 prong DCAFitterN
-  static void SetupThreeProngDCAFitter()
+  static void SetupThreeProngDCAFitter(float magField, bool propagateToPCA, float maxR, float maxDZIni, float minParamChange, float minRelChi2Change, bool useAbsDCA)
   {
+    fgFitterThreeProngBarrel.setBz(magField);
+    fgFitterThreeProngBarrel.setPropagateToPCA(propagateToPCA);
+    fgFitterThreeProngBarrel.setMaxR(maxR);
+    fgFitterThreeProngBarrel.setMinParamChange(minParamChange);
+    fgFitterThreeProngBarrel.setMinRelChi2Change(minRelChi2Change);
+    fgFitterThreeProngBarrel.setUseAbsDCA(useAbsDCA);
+    cout << "!!! fgFitterThreeProngBarrel bz = " << fgFitterThreeProngBarrel.getBz() << endl;
     fgUsedKF = false;
   }
 
@@ -2356,8 +2363,8 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
   }
 
   if (pairType == kTripleCandidateToKPiPi) {
-    float m1 = o2::constants::physics::MassKMinus;
-    float m2 = o2::constants::physics::MassPiPlus;
+    float m1 = o2::constants::physics::MassKaonCharged;
+    float m2 = o2::constants::physics::MassPionCharged;
 
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
@@ -2372,8 +2379,8 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
 
   if (pairType == kTripleCandidateToPKPi) {
     float m1 = o2::constants::physics::MassProton;
-    float m2 = o2::constants::physics::MassKMinus;
-    float m3 = o2::constants::physics::MassPiPlus;
+    float m2 = o2::constants::physics::MassKaonCharged;
+    float m3 = o2::constants::physics::MassPionCharged;
 
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
@@ -2695,6 +2702,16 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       trk0KF = KFParticle(kfpTrack0, -13 * t1.sign());
       KFPTrack kfpTrack1 = createKFPFwdTrackFromFwdTrack(t2);
       trk1KF = KFParticle(kfpTrack1, -13 * t2.sign());
+
+      KFGeoTwoProng.SetConstructMethod(2);
+      KFGeoTwoProng.AddDaughter(trk0KF);
+      KFGeoTwoProng.AddDaughter(trk1KF);
+
+    } else if constexpr ((pairType == kDecayToKPi) && trackHasCov) {
+      KFPTrack kfpTrack0 = createKFPTrackFromTrack(t1);
+      trk0KF = KFParticle(kfpTrack0, 321 * t1.sign());
+      KFPTrack kfpTrack1 = createKFPTrackFromTrack(t2);
+      trk1KF = KFParticle(kfpTrack1, 211 * t2.sign());
 
       KFGeoTwoProng.SetConstructMethod(2);
       KFGeoTwoProng.AddDaughter(trk0KF);
