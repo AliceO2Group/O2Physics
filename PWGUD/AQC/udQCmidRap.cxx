@@ -223,7 +223,7 @@ struct UDQCmid {
             registry.get<TH1>(HIST("DG/hMassAll"))->Fill(ivm.M());
         }
       } // coll
-    } // dgcand
+    }   // dgcand
 
     // loop over all tracks
     float rgtrwTOF = 0.;
@@ -322,7 +322,7 @@ struct UDQCmid {
           if (track.hasTOF()) {
             registry.get<TH2>(HIST("DG/dEdxTOF"))->Fill(track.p() / track.sign(), track.beta());
           } // fill TOF
-        } // pv contributor
+        }   // pv contributor
       }
     } // Inavariant mass after FIT
 
@@ -489,7 +489,7 @@ struct UDQCmid {
           // update #PV contributors in collisions with empty FT0 && FV0&& FDCC
           registry.get<TH1>(HIST("fpPVC2"))->Fill(collision.numContrib(), 1.);
         } // fdd
-      } // fvo
+      }   // fvo
 
     } // ft0
   }
