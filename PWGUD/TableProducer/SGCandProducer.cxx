@@ -86,6 +86,7 @@ struct SGCandProducer {
                          fwdtrack.rAtAbsorberEnd(),
                          fwdtrack.chi2(),
                          fwdtrack.chi2MatchMCHMID(),
+                         fwdtrack.chi2MatchMCHMFT(),
                          fwdtrack.mchBitMap(),
                          fwdtrack.midBitMap(),
                          fwdtrack.midBoards());
