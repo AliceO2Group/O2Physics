@@ -18,13 +18,14 @@
 class EMTrack
 {
  public:
-  EMTrack(int collisionId, int trackId, float pt, float eta, float phi, int8_t charge, float dca_3d)
+  EMTrack(int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge, float dca_3d)
   {
     fCollisionId = collisionId;
     fTrackId = trackId;
     fPt = pt;
     fEta = eta;
     fPhi = phi;
+    fMass = mass;
     fCharge = charge;
     fDCA3D = dca_3d;
   }
@@ -36,6 +37,7 @@ class EMTrack
   float pt() const { return fPt; }
   float eta() const { return fEta; }
   float phi() const { return fPhi; }
+  float mass() const { return fMass; }
   int8_t sign() const { return fCharge; }
   float dca3DinSigma() const { return fDCA3D; }
   float px() const { return fPt * std::cos(fPhi); }
@@ -48,6 +50,7 @@ class EMTrack
   float fPt;
   float fEta;
   float fPhi;
+  float fMass;
   int8_t fCharge;
   float fDCA3D;
 };

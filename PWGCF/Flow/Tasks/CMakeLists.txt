@@ -16,10 +16,14 @@ o2physics_add_dpl_workflow(flow-pt-efficiency
 
 o2physics_add_dpl_workflow(flow-pbpb-task
                     SOURCES FlowPbPbTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(flow-gfw-pbpb
                     SOURCES FlowGFWPbPb.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
+                    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(flow-zdc-task
+                    SOURCES FlowZDCtask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)

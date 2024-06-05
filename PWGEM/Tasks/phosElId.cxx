@@ -171,6 +171,7 @@ struct phosElId {
     mHistManager.add("TVXinPHOSCounter", "TVXinPHOSCounter", kTH1F, {axisCounter});
 
     mHistManager.add("hTrackPtEtaPhi", "Track pt vs eta vs phi", HistType::kTH3F, {axisPt, axisEta, axisPhi});
+    mHistManager.add("hTrackPtEtaPhi_Phos", "Track pt vs eta vs phi on Phos surface", HistType::kTH3F, {axisPt, axisEta, axisPhi});
     mHistManager.add("hTrackDCA", "Track DCA info", HistType::kTH2F, {axisDCATrackXY, axisDCATrackZ});
     mHistManager.add("hTrackVX", "Track vertex coordinate X", HistType::kTH1F, {axisVTrackX});
     mHistManager.add("hTrackVY", "Track vertex coordinate Y", HistType::kTH1F, {axisVTrackY});
@@ -335,7 +336,8 @@ struct phosElId {
         }
       }
 
-      mHistManager.fill(HIST("hTrackPtEtaPhi"), track.pt(), track.eta(), track.trackPhiEmcal() * TMath::RadToDeg());
+      mHistManager.fill(HIST("hTrackPtEtaPhi"), track.pt(), track.eta(), track.phi() * TMath::RadToDeg());
+      mHistManager.fill(HIST("hTrackPtEtaPhi_Phos"), track.pt(), track.trackEtaEmcal(), track.trackPhiEmcal() * TMath::RadToDeg());
       mHistManager.fill(HIST("hTrackDCA"), track.dcaXY(), track.dcaZ());
       mHistManager.fill(HIST("hTrackPhosProjMod"), trackX, trackZ, module);
     } // end of double loop

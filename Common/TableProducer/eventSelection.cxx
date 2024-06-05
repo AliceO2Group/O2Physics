@@ -424,6 +424,7 @@ struct EventSelectionTask {
   Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
   Configurable<float> maxDiffZvtxFT0vsPV{"maxDiffZvtxFT0vsPV", 1., "maximum difference (in cm) between z-vertex from FT0 and PV"};
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
+  Configurable<float> confTimeIntervalForOccupancyCalculation{"TimeIntervalForOccupancyCalculation", 100, "Time interval for TPC occupancy calculation, us"};
   Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -431,6 +432,9 @@ struct EventSelectionTask {
 
   int lastRun = -1;                                          // last run number (needed to access ccdb only if run!=lastRun)
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
+
+  int64_t bcSOR = -1;     // global bc of the start of the first orbit
+  int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
 
   int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
   {
@@ -531,7 +535,7 @@ struct EventSelectionTask {
       }
     }
 
-    evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC);
+    evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0);
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
@@ -545,6 +549,26 @@ struct EventSelectionTask {
       int64_t ts = bcs.iteratorAt(0).timestamp();
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       bcPatternB = grplhcif->getBunchFilling().getBCPattern();
+
+      //
+      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+      // access orbit-reset timestamp
+      auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
+      int64_t tsOrbitReset = (*ctpx)[0]; // us
+      // access TF duration, start-of-run timestamp from ECS GRP
+      std::map<std::string, std::string> metadata;
+      metadata["runNumber"] = Form("%d", run);
+      auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
+      uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
+      int64_t tsSOR = grpecs->getTimeStart();         // ms
+      // calculate SOR orbit
+      int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+      // adjust to the nearest TF edge
+      orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + par->fTimeFrameOrbitShift;
+      // first bc of the first orbit (should coincide with TF start)
+      bcSOR = orbitSOR * o2::constants::lhc::LHCMaxBunches;
+      // duration of TF in bcs
+      nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
     }
 
     // create maps from globalBC to bc index for TVX or FT0-OR fired bcs
@@ -575,7 +599,7 @@ struct EventSelectionTask {
         int32_t foundFV0 = bc.foundFV0Id();
         int32_t foundFDD = bc.foundFDDId();
         int32_t foundZDC = bc.foundZDCId();
-        evsel(bc.alias_raw(), bc.selection_raw(), kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC);
+        evsel(bc.alias_raw(), bc.selection_raw(), kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0);
       }
       return;
     }
@@ -585,6 +609,15 @@ struct EventSelectionTask {
     std::vector<bool> vIsVertexTOFmatched(cols.size(), 0); // at least one of vertex contributors is matched to TOF
     std::vector<bool> vIsVertexTRDmatched(cols.size(), 0); // at least one of vertex contributors is matched to TRD
     std::vector<int> vCollisionsPerBc(bcs.size(), 0);      // counter of collisions per found bc for pileup checks
+
+    // for the occupancy study
+    std::vector<int64_t> vFoundGlobalBC(cols.size(), 0);                                 // global BCs for collisions
+    std::vector<int> vTracksITS567perColl(cols.size(), 0);                               // counter of tracks per found bc for occupancy studies
+    std::vector<bool> vIsFullInfoForOccupancy(cols.size(), 0);                           // info for occupancy in +/- windows is available (i.e. a given coll is not too close to the TF borders)
+    const double timeWinOccupancyCalcNS = confTimeIntervalForOccupancyCalculation * 1e3; // ns, corresponds to the typical TPC drift time
+    // const double timeWinOccupancyExclusionRangeNS = confExclusionIntervalForOccupancyCalculation * 1e3; // ns
+    const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
+
     // loop to find nearest bc with FT0 entry -> foundBC index
     for (auto& col : cols) {
       auto bc = col.bc_as<BCsWithBcSelsRun3>();
@@ -593,6 +626,7 @@ struct EventSelectionTask {
       int64_t deltaBC = std::ceil(col.collisionTimeRes() / bcNS * 4);
 
       // count tracks of different types
+      int nITS567cls = 0;
       int nITSTPCtracks = 0;
       int nTOFtracks = 0;
       int nTRDtracks = 0;
@@ -614,6 +648,8 @@ struct EventSelectionTask {
         } else if (track.hasTRD()) {
           timeFromTRDtracks += track.trackTime();
         }
+        if (track.itsNCls() >= 5)
+          nITS567cls++;
       }
       LOGP(debug, "nContrib={} nITSTPCtracks={} nTOFtracks={} nTRDtracks={} nTRDnotTOFtracks={}", col.numContrib(), nITSTPCtracks, nTOFtracks, nTRDtracks, nTRDnotTOFtracks);
 
@@ -649,6 +685,74 @@ struct EventSelectionTask {
       vIsVertexTOFmatched[colIndex] = nTOFtracks > 0;
       vIsVertexTRDmatched[colIndex] = nTRDtracks > 0;
       vCollisionsPerBc[foundBC]++;
+      vTracksITS567perColl[colIndex] = nITS567cls;
+      vFoundGlobalBC[colIndex] = bc.globalBC();
+
+      // check that this collision has full information inside the time window (taking into account TF borders)
+      int64_t bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
+      vIsFullInfoForOccupancy[colIndex] = ((bcInTF - 300) * bcNS > timeWinOccupancyCalcNS) && ((nBCsPerTF - 4000 - bcInTF) * bcNS > timeWinOccupancyCalcNS) ? true : false;
+    }
+
+    // save indices of collisions in time range for occupancy calculation
+    std::vector<std::vector<int>> vCollsInTimeWin;
+    for (auto& col : cols) {
+      int32_t colIndex = col.globalIndex();
+      std::vector<int> vAssocToThisCol;
+
+      // protection against the TF borders
+      if (!vIsFullInfoForOccupancy[colIndex]) {
+        vCollsInTimeWin.push_back(vAssocToThisCol);
+        continue;
+      }
+      int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
+      int64_t TFid = (foundGlobalBC - bcSOR) / nBCsPerTF;
+
+      // find all collisions in time window before the current one (start with the current collision)
+      int32_t minColIndex = colIndex;
+      while (minColIndex >= 0) {
+        int64_t thisBC = vFoundGlobalBC[minColIndex];
+        // check if this is still the same TF
+        int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
+        if (thisTFid != TFid)
+          break;
+
+        // check if we are within the chosen time range
+        if ((foundGlobalBC - thisBC) * bcNS > timeWinOccupancyCalcNS)
+          break;
+        vAssocToThisCol.push_back(minColIndex);
+        minColIndex--;
+      }
+      // find all collisions in time window after the current one
+      int32_t maxColIndex = colIndex + 1;
+      while (maxColIndex < cols.size()) {
+        int64_t thisBC = vFoundGlobalBC[maxColIndex];
+        int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
+        if (thisTFid != TFid)
+          break;
+        if ((thisBC - foundGlobalBC) * bcNS > timeWinOccupancyCalcNS)
+          break;
+        vAssocToThisCol.push_back(maxColIndex);
+        maxColIndex++;
+      }
+      vCollsInTimeWin.push_back(vAssocToThisCol);
+    }
+
+    // perform the occupancy calculation in the pre-defined time window
+    std::vector<int> vNumTracksITS567inTimeWin(cols.size(), 0); // counter of tracks per found bc for occupancy studies
+    for (auto& col : cols) {
+      int32_t colIndex = col.globalIndex();
+      // protection against TF borders
+      if (!vIsFullInfoForOccupancy[colIndex]) {
+        vNumTracksITS567inTimeWin[colIndex] = -1; // occupancy in undefined (too close to TF borders)
+        continue;
+      }
+      std::vector<int> vAssocToThisCol = vCollsInTimeWin[colIndex];
+      int nITS567tracksInTimeWindow = 0;
+      for (int iCol = 0; iCol < vAssocToThisCol.size(); iCol++) {
+        int thisColIndex = vAssocToThisCol[iCol];
+        nITS567tracksInTimeWindow += vTracksITS567perColl[thisColIndex];
+      }
+      vNumTracksITS567inTimeWin[colIndex] = nITS567tracksInTimeWindow - vTracksITS567perColl[colIndex]; // current collision is subtracted
     }
 
     for (auto& col : cols) {
@@ -691,9 +795,12 @@ struct EventSelectionTask {
         histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
       }
 
-      evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC);
+      int nTracksITS567inTimeWin = vNumTracksITS567inTimeWin[colIndex];
+
+      evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, nTracksITS567inTimeWin);
     }
   }
+
   PROCESS_SWITCH(EventSelectionTask, processRun3, "Process Run3 event selection", false);
 };
 

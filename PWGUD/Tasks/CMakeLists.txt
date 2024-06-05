@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(sg-pid-spectra
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sg-incl-jpsi
+                           SOURCES sgInclJpsi.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(sg-excl-universe
                            SOURCES sgExcUniverse.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
@@ -113,7 +118,6 @@ o2physics_add_dpl_workflow(polarisation-rho
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 
-
 o2physics_add_dpl_workflow(upc-jpsi-corr
                            SOURCES upcJpsiCentralBarrelCorr.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
@@ -131,6 +135,11 @@ o2physics_add_dpl_workflow(upc-photonuclear-jmg
 
 o2physics_add_dpl_workflow(exclusive-two-protons
                            SOURCES exclusiveTwoProtons.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(exclusive-two-protons-sg
+                           SOURCES exclusiveTwoProtonsSG.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
 

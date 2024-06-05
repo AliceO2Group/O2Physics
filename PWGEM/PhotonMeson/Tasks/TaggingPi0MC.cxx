@@ -380,7 +380,7 @@ struct TaggingPi0MC {
               continue;
             }
             reinterpret_cast<TH1F*>(list_pcm->FindObject(cut1.GetName())->FindObject("hPt_v0photon_Pi0_Primary"))->Fill(g1.pt());
-          } else if (IsFromWD(mcpi01.emmcevent(), mcpi01, mcparticles)) {
+          } else if (IsFromWD(mcpi01.emmcevent(), mcpi01, mcparticles) > 0) {
             reinterpret_cast<TH1F*>(list_pcm->FindObject(cut1.GetName())->FindObject("hPt_v0photon_Pi0_FromWD"))->Fill(g1.pt());
           } else {
             reinterpret_cast<TH1F*>(list_pcm->FindObject(cut1.GetName())->FindObject("hPt_v0photon_Pi0_hs"))->Fill(g1.pt());

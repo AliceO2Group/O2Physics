@@ -50,7 +50,7 @@ class FemtoUniverseDetaDphiStar
   /// Destructor
   virtual ~FemtoUniverseDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaphistarcutmin, float ldeltaphistarcutmax, float ldeltaetacutmin, float ldeltaetacutmax, float lchosenradii, bool lplotForEveryRadii)
+  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaphistarcutmin, float ldeltaphistarcutmax, float ldeltaetacutmin, float ldeltaetacutmax, float lchosenradii, bool lplotForEveryRadii, float lPhiMassMin = 1.014, float lPhiMassMax = 1.026)
   {
     ChosenRadii = lchosenradii;
     CutDeltaPhiStarMax = ldeltaphistarcutmax;
@@ -60,6 +60,8 @@ class FemtoUniverseDetaDphiStar
     plotForEveryRadii = lplotForEveryRadii;
     mHistogramRegistry = registry;
     mHistogramRegistryQA = registryQA;
+    CutPhiInvMassLow = lPhiMassMin;
+    CutPhiInvMassHigh = lPhiMassMax;
 
     if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
       std::string dirName = static_cast<std::string>(dirNames[0]);
@@ -277,7 +279,7 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if ((fabs(dphiAvg) < CutDeltaPhiStarMax) && (fabs(deta) < CutDeltaEtaMax)) {
+        if ((dphiAvg > CutDeltaPhiStarMin) && (dphiAvg < CutDeltaPhiStarMax) && (deta > CutDeltaEtaMin) && (deta < CutDeltaEtaMax)) {
           pass = true; // pair is close
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {
@@ -319,8 +321,22 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
+        // REMOVING THE "RING" -- CALCULATING THE INVARIANT MASS
+        TLorentzVector part1Vec;
+        TLorentzVector part2Vec;
+        float mMassOne = TDatabasePDG::Instance()->GetParticle(321)->Mass();
+        float mMassTwo = TDatabasePDG::Instance()->GetParticle(321)->Mass();
+        part1Vec.SetPtEtaPhiM(part1.pt(), part1.eta(), part1.phi(), mMassOne);
+        part2Vec.SetPtEtaPhiM(daughter.pt(), daughter.eta(), daughter.phi(), mMassTwo);
+        TLorentzVector sumVec(part1Vec);
+        sumVec += part2Vec;
+        float phiM = sumVec.M();
+
+        // APPLYING THE CUTS
         if ((dphiAvg > CutDeltaPhiStarMin) && (dphiAvg < CutDeltaPhiStarMax) && (deta > CutDeltaEtaMin) && (deta < CutDeltaEtaMax)) {
           pass = true; // pair is close
+        } else if ((phiM > CutPhiInvMassLow) && (phiM < CutPhiInvMassHigh)) {
+          pass = true; // pair comes from Phi meson decay
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {
             histdetadpisame[i][1]->Fill(deta, dphiAvg);
@@ -371,6 +387,8 @@ class FemtoUniverseDetaDphiStar
   float CutDeltaEtaMin;
   float magfield;
   bool plotForEveryRadii = false;
+  float CutPhiInvMassLow;
+  float CutPhiInvMassHigh;
 
   std::array<std::array<std::shared_ptr<TH2>, 2>, 2> histdetadpisame{};
   std::array<std::array<std::shared_ptr<TH2>, 2>, 2> histdetadpimixed{};
