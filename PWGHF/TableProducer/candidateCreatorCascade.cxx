@@ -505,7 +505,7 @@ struct HfCandidateCreatorCascadeMc {
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
-        rowMcMatchGen(sign, origin);
+        rowMcMatchGen(sign, origin, -1);
         continue;
       }
 
