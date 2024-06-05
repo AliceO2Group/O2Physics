@@ -738,7 +738,7 @@ struct HfCandidateCreator2ProngExpressions {
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
-        rowMcMatchGen(flag, origin);
+        rowMcMatchGen(flag, origin, -1);
         continue;
       }
 
