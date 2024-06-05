@@ -14,6 +14,8 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <chrono>
+#include <string>
 
 #include "TLorentzVector.h"
 #include "TRandom3.h"
@@ -62,7 +64,6 @@ using namespace o2::soa;
 using namespace o2::constants::physics;
 
 struct lambdapolarization {
-
   //  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
@@ -176,13 +177,13 @@ struct lambdapolarization {
     AxisSpec basisAxis = {6, 0, 6, "basis"};
 
     for (auto i = 2; i < cfgnMods + 2; i++) {
-      histos.add(Form("h_lambda_cos_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
-      histos.add(Form("h_alambda_cos_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
-      histos.add(Form("h_lambda_cos2_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
-      histos.add(Form("h_alambda_cos2_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
+      histos.add(Form("psi%d/h_lambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
+      histos.add(Form("psi%d/h_alambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
+      histos.add(Form("psi%d/h_lambda_cos2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
+      histos.add(Form("psi%d/h_alambda_cos2", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
 
-      histos.add(Form("h_lambda_cossin_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
-      histos.add(Form("h_alambda_cossin_psi%d", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_lambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_alambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
     }
 
     if (cfgQAv0) {
@@ -193,25 +194,29 @@ struct lambdapolarization {
       histos.add("QA/nsigma_tpc_pt_mpr", "", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA/nsigma_tpc_pt_mpi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
 
-      histos.add("QA/EP_Det", "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
-      histos.add("QA/EP_RefA", "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
-      histos.add("QA/EP_RefB", "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
+      for (auto i = 2; i < cfgnMods + 2; i++) {
+        histos.add(Form("psi%d/QA/EP_Det",i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
+        histos.add(Form("psi%d/QA/EP_RefA",i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
+        histos.add(Form("psi%d/QA/EP_RefB",i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
 
-      histos.add("QA/EPRes_Det_RefA", "", {HistType::kTH2F, {centQaAxis, cosAxis}});
-      histos.add("QA/EPRes_Det_RefB", "", {HistType::kTH2F, {centQaAxis, cosAxis}});
-      histos.add("QA/EPRes_RefA_RefB", "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+        histos.add(Form("psi%d/QA/EPRes_Det_RefA",i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+        histos.add(Form("psi%d/QA/EPRes_Det_RefB",i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+        histos.add(Form("psi%d/QA/EPRes_RefA_RefB",i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
 
-      histos.add("QA/EP_FT0C_shifted", "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
-      histos.add("QA/EP_FT0A_shifted", "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
-      histos.add("QA/EP_FV0A_shifted", "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
+        histos.add(Form("QA/EP_FT0C_shifted_psi%d",i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
+        histos.add(Form("QA/EP_FT0A_shifted_psi%d",i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
+        histos.add(Form("QA/EP_FV0A_shifted_psi%d",i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
 
-      histos.add("QA/EPRes_FT0C_FT0A_shifted", "", {HistType::kTH2F, {centQaAxis, cosAxis}});
-      histos.add("QA/EPRes_FT0C_FV0A_shifted", "", {HistType::kTH2F, {centQaAxis, cosAxis}});
-      histos.add("QA/EPRes_FT0A_FV0A_shifted", "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+        histos.add(Form("QA/EPRes_FT0C_FT0A_shifted_psi%d",i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+        histos.add(Form("QA/EPRes_FT0C_FV0A_shifted_psi%d",i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+        histos.add(Form("QA/EPRes_FT0A_FV0A_shifted_psi%d",i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+      }
     }
 
     if (cfgShiftCorrDef) {
-      histos.add("ShiftFIT", "ShiftFIT", kTProfile3D, {centQaAxis, basisAxis, shiftAxis});
+      for (auto i = 2; i < cfgnMods + 2; i++) {
+        histos.add(Form("psi%d/ShiftFIT",i), "", kTProfile3D, {centQaAxis, basisAxis, shiftAxis});
+      }
     }
 
     DetId = GetDetId(cfgQvecDetName);
@@ -318,6 +323,78 @@ struct lambdapolarization {
     return true;
   }
 
+  template <typename TCollision>
+  void FillShiftCorrection(TCollision const& collision, int nmode)
+  {
+    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * 24;
+    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * 24;
+    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * 24;
+    for (int ishift = 1; ishift <= 10; ishift++) {
+      if (nmode == 2) {
+        histos.fill(HIST("psi2/ShiftFIT"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode)));
+        histos.fill(HIST("psi2/ShiftFIT"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode)));
+
+        histos.fill(HIST("psi2/ShiftFIT"), centrality, 2.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode)));
+        histos.fill(HIST("psi2/ShiftFIT"), centrality, 3.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode)));
+
+        histos.fill(HIST("psi2/ShiftFIT"), centrality, 4.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode)));
+        histos.fill(HIST("psi2/ShiftFIT"), centrality, 5.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode)));
+      } else if(nmode == 3) {
+        histos.fill(HIST("psi3/ShiftFIT"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode)));
+        histos.fill(HIST("psi3/ShiftFIT"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode)));
+      
+        histos.fill(HIST("psi3/ShiftFIT"), centrality, 2.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode))); 
+        histos.fill(HIST("psi3/ShiftFIT"), centrality, 3.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode)));
+    
+        histos.fill(HIST("psi3/ShiftFIT"), centrality, 4.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode)));
+        histos.fill(HIST("psi3/ShiftFIT"), centrality, 5.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode)));
+      } else if(nmode == 4) {
+        histos.fill(HIST("psi4/ShiftFIT"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode)));
+        histos.fill(HIST("psi4/ShiftFIT"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode)));
+      
+        histos.fill(HIST("psi4/ShiftFIT"), centrality, 2.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode))); 
+        histos.fill(HIST("psi4/ShiftFIT"), centrality, 3.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode)));
+    
+        histos.fill(HIST("psi4/ShiftFIT"), centrality, 4.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode)));
+        histos.fill(HIST("psi4/ShiftFIT"), centrality, 5.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode)));
+      }
+    }
+  }
+
+  template <typename TCollision>
+  void FillEPQA(TCollision const& collision, int nmode)
+  {
+    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * 24;
+    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * 24;
+    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * 24;
+
+    if (nmode == 2) {
+      histos.fill(HIST("psi2/QA/EP_Det"), centrality, TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode));
+      histos.fill(HIST("psi2/QA/EP_RefA"), centrality, TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode));
+      histos.fill(HIST("psi2/QA/EP_RefB"), centrality, TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode));
+
+      histos.fill(HIST("psi2/QA/EPRes_Det_RefA"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) - TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd])));
+      histos.fill(HIST("psi2/QA/EPRes_Det_RefB"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) - TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd])));
+      histos.fill(HIST("psi2/QA/EPRes_RefA_RefB"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) - TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd])));
+    } else if (nmode == 3) {
+      histos.fill(HIST("psi3/QA/EP_Det"), centrality, TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode));
+      histos.fill(HIST("psi3/QA/EP_RefA"), centrality, TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode));
+      histos.fill(HIST("psi3/QA/EP_RefB"), centrality, TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode));
+
+      histos.fill(HIST("psi3/QA/EPRes_Det_RefA"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) - TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd])));
+      histos.fill(HIST("psi3/QA/EPRes_Det_RefB"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) - TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd])));
+      histos.fill(HIST("psi3/QA/EPRes_RefA_RefB"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) - TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd])));
+    } else if (nmode == 4) {
+      histos.fill(HIST("psi4/QA/EP_Det"), centrality, TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode));
+      histos.fill(HIST("psi4/QA/EP_RefA"), centrality, TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode));
+      histos.fill(HIST("psi4/QA/EP_RefB"), centrality, TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode));
+
+      histos.fill(HIST("psi4/QA/EPRes_Det_RefA"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) - TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd])));
+      histos.fill(HIST("psi4/QA/EPRes_Det_RefB"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) - TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd])));
+      histos.fill(HIST("psi4/QA/EPRes_RefA_RefB"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) - TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd])));
+    }
+  }
+
   template <typename TCollision, typename V0>
   void FillHistograms(TCollision const& collision, V0 const& V0s, int nmode)
   {
@@ -331,7 +408,7 @@ struct lambdapolarization {
       double nTPCSigmaNegPr = negtrack.tpcNSigmaPr();
       double nTPCSigmaPosPi = postrack.tpcNSigmaPi();
 
-      if (cfgQAv0) {
+      if (cfgQAv0 && nmode==2) {
         histos.fill(HIST("QA/nsigma_tpc_pt_ppr"), postrack.pt(), nTPCSigmaPosPr);
         histos.fill(HIST("QA/nsigma_tpc_pt_ppi"), postrack.pt(), nTPCSigmaPosPi);
 
@@ -396,25 +473,36 @@ struct lambdapolarization {
 
       if (nmode == 2) { ////////////
         if (LambdaTag) {
-          histos.fill(HIST("h_lambda_cos_psi2"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("h_lambda_cos2_psi2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("h_lambda_cossin_psi2"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi2/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
+          histos.fill(HIST("psi2/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
+          histos.fill(HIST("psi2/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
         }
         if (aLambdaTag) {
-          histos.fill(HIST("h_alambda_cos_psi2"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("h_alambda_cos2_psi2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("h_alambda_cossin_psi2"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi2/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
+          histos.fill(HIST("psi2/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
+          histos.fill(HIST("psi2/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
         }
       } else if (nmode == 3) {
         if (LambdaTag) {
-          histos.fill(HIST("h_lambda_cos_psi3"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("h_lambda_cos2_psi3"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("h_lambda_cossin_psi3"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi3/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
+          histos.fill(HIST("psi3/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
+          histos.fill(HIST("psi3/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
         }
         if (aLambdaTag) {
-          histos.fill(HIST("h_alambda_cos_psi3"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("h_alambda_cos2_psi3"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("h_alambda_cossin_psi3"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi3/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
+          histos.fill(HIST("psi3/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
+          histos.fill(HIST("psi3/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+        }
+      } else if (nmode == 4) {
+        if (LambdaTag) {
+          histos.fill(HIST("psi4/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
+          histos.fill(HIST("psi4/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
+          histos.fill(HIST("psi4/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+        }
+        if (aLambdaTag) {
+          histos.fill(HIST("psi4/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
+          histos.fill(HIST("psi4/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
+          histos.fill(HIST("psi4/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
         }
       } ////////// FIXME: not possible to get histograms using nmode
     }
@@ -424,34 +512,22 @@ struct lambdapolarization {
                    TrackCandidates const& tracks, aod::V0Datas const& V0s,
                    aod::BCs const&)
   {
-    if (!eventSelected(collision)) {
-      return;
-    }
-    histos.fill(HIST("QA/CentDist"), centrality, 1.0);
     if (cfgCentEst == 1) {
       centrality = collision.centFT0C();
     } else if (cfgCentEst == 2) {
       centrality = collision.centFT0M();
     }
-    for (auto i = 2; i < cfgnMods + 2; i++) {
+    if (!eventSelected(collision)) {
+      return;
+    }
+    histos.fill(HIST("QA/CentDist"), centrality, 1.0);
+    for (int i = 2; i < cfgnMods + 2; i++) {
       QvecDetInd = 0;
       QvecRefAInd = 4;
       QvecRefBInd = 5;
 
       if (cfgShiftCorrDef) {
-        QvecDetInd = DetId * 4 + 3 + (i - 2) * 24;
-        QvecRefAInd = RefAId * 4 + 3 + (i - 2) * 24;
-        QvecRefBInd = RefBId * 4 + 3 + (i - 2) * 24;
-        for (int ishift = 1; ishift <= 10; ishift++) {
-          histos.fill(HIST("ShiftFIT"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(i) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(i)));
-          histos.fill(HIST("ShiftFIT"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(i) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(i)));
-
-          histos.fill(HIST("ShiftFIT"), centrality, 2.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(i) * TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(i)));
-          histos.fill(HIST("ShiftFIT"), centrality, 3.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(i) * TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(i)));
-
-          histos.fill(HIST("ShiftFIT"), centrality, 4.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(i) * TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(i)));
-          histos.fill(HIST("ShiftFIT"), centrality, 5.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(i) * TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(i)));
-        } // FIXME: need to fill different histograms for different harmonic
+        FillShiftCorrection(collision, i);
       }
       if (cfgShiftCorr) {
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -462,13 +538,7 @@ struct lambdapolarization {
         }
       } // FIXME: need to call different histograms for different harmonic
       if (cfgQAv0) {
-        histos.fill(HIST("QA/EP_Det"), centrality, TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(i));
-        histos.fill(HIST("QA/EP_RefA"), centrality, TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(i));
-        histos.fill(HIST("QA/EP_RefB"), centrality, TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(i));
-
-        histos.fill(HIST("QA/EPRes_Det_RefA"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) - TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd])));
-        histos.fill(HIST("QA/EPRes_Det_RefB"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) - TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd])));
-        histos.fill(HIST("QA/EPRes_RefA_RefB"), centrality, TMath::Cos(TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) - TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd])));
+        FillEPQA(collision, i);
       }
       FillHistograms(collision, V0s, i);
     } // FIXME: need to fill different histograms for different harmonic
