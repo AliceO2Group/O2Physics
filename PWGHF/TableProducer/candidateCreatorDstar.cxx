@@ -577,7 +577,7 @@ struct HfCandidateCreatorDstarExpressions {
       } else {
         rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
       }
-      rowsMcMatchRecD0(flagD0, originD0);
+      rowsMcMatchRecD0(flagD0, originD0, -1.f, 0);
     }
 
     // Match generated particles.
@@ -595,7 +595,7 @@ struct HfCandidateCreatorDstarExpressions {
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
         rowsMcMatchGenDstar(flagDstar, originDstar, -1);
-        rowsMcMatchGenD0(flagD0, originD0);
+        rowsMcMatchGenD0(flagD0, originD0, -1);
         continue;
       }
 
@@ -621,7 +621,7 @@ struct HfCandidateCreatorDstarExpressions {
       } else {
         rowsMcMatchGenDstar(flagDstar, originDstar, -1);
       }
-      rowsMcMatchGenD0(flagD0, originD0);
+      rowsMcMatchGenD0(flagD0, originD0, -1.);
     }
   }
   PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMc, "Process MC", false);

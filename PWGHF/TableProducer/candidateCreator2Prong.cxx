@@ -686,10 +686,10 @@ struct HfCandidateCreator2ProngExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : *rowCandidateProng2) {
-
       flag = 0;
       origin = 0;
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
+      std::vector<int> idxBhadMothers{};
 
       // D0(bar) → π± K∓
       indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
@@ -716,18 +716,24 @@ struct HfCandidateCreator2ProngExpressions {
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
-      rowMcMatchRec(flag, origin);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowMcMatchRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowMcMatchRec(flag, origin, -1.f, 0);
+      }
     }
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
+      std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
+
       const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
@@ -757,10 +763,13 @@ struct HfCandidateCreator2ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
-      rowMcMatchGen(flag, origin);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        rowMcMatchGen(flag, origin, idxBhadMothers[0]);
+      } else {
+        rowMcMatchGen(flag, origin, -1);
+      }
     }
   }
 

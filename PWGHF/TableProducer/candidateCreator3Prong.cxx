@@ -524,6 +524,7 @@ struct HfCandidateCreator3ProngExpressions {
       swapping = 0;
       channel = 0;
       arrDaughIndex.clear();
+      std::vector<int> idxBhadMothers{};
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>(), candidate.prong2_as<aod::TracksWMc>()};
 
       // D± → π± K∓ π±
@@ -602,10 +603,14 @@ struct HfCandidateCreator3ProngExpressions {
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
-      rowMcMatchRec(flag, origin, swapping, channel);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowMcMatchRec(flag, origin, swapping, channel, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0);
+      }
     }
 
     // Match generated particles.
@@ -614,6 +619,7 @@ struct HfCandidateCreator3ProngExpressions {
       origin = 0;
       channel = 0;
       arrDaughIndex.clear();
+      std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
 
@@ -693,10 +699,13 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
-      rowMcMatchGen(flag, origin, channel);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
+      } else {
+        rowMcMatchGen(flag, origin, channel, -1);
+      }
     }
   }
 

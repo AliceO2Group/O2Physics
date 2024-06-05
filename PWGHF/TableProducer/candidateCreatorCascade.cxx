@@ -464,8 +464,8 @@ struct HfCandidateCreatorCascadeMc {
     // Match reconstructed candidates.
     rowCandidateCasc->bindExternalIndices(&tracks);
     for (const auto& candidate : *rowCandidateCasc) {
-
       origin = 0;
+      std::vector<int> idxBhadMothers{};
 
       const auto& bach = candidate.prong0_as<MyTracksWMc>();
       const auto& trackV0DaughPos = candidate.posTrack_as<MyTracksWMc>();
@@ -474,12 +474,6 @@ struct HfCandidateCreatorCascadeMc {
       auto arrayDaughtersV0 = std::array{trackV0DaughPos, trackV0DaughNeg};
       auto arrayDaughtersLc = std::array{bach, trackV0DaughPos, trackV0DaughNeg};
 
-      // First we check the K0s
-      LOG(debug) << "\n";
-      LOG(debug) << "Checking MC for candidate!";
-      LOG(debug) << "Looking for K0s";
-
-      // if (isLc) {
       RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
       if (sign != 0) { // we have already positively checked the K0s
         // then we check the Lc
@@ -489,18 +483,24 @@ struct HfCandidateCreatorCascadeMc {
       // Check whether the particle is non-prompt (from a b quark).
       if (sign != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
-      rowMcMatchRec(sign, origin);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowMcMatchRec(sign, origin, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowMcMatchRec(sign, origin, -1.f, 0);
+      }
     }
     //}
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
       origin = 0;
+      std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
+
       const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
       hfEvSelMc.fillHistograms(rejectionMask);
       if (rejectionMask != 0) {
@@ -533,9 +533,13 @@ struct HfCandidateCreatorCascadeMc {
       }
       // Check whether the particle is non-prompt (from a b quark).
       if (sign != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-      rowMcMatchGen(sign, origin);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        rowMcMatchGen(sign, origin, idxBhadMothers[0]);
+      } else {
+        rowMcMatchGen(sign, origin, -1);
+      }
     }
   }
 
