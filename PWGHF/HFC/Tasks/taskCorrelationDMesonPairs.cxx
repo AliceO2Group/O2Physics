@@ -53,10 +53,10 @@ enum D0Type {
 
 struct HfTaskCorrelationDMesonPairs {
   // Configurables to set sparse axes
-  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMassCand1", {200, 1.6, 2.1}, "Inv-mass bins"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPtCand1", {25, 0., 24.}, "pT bins"};
-  ConfigurableAxis thnConfigAxisY{"thnConfigAxisYCand1", {10, -1, 1}, "Rapidity bins"};
-  ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType1", {4, -0.5, 3.5}, "Candidate Type"};
+  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {200, 1.6, 2.1}, "Inv-mass bins"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {25, 0., 24.}, "pT bins"};
+  ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {10, -1, 1}, "Rapidity bins"};
+  ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType", {4, -0.5, 3.5}, "Candidate Type"};
 
   HistogramRegistry registry{
     "registry",
