@@ -60,6 +60,8 @@ using namespace o2::aod;
 using namespace o2::analysis;
 
 // Declarations of various short names
+using MyBcs = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
+
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
 using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
@@ -295,7 +297,7 @@ struct DQEventQvector {
 
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void runFillQvector(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracks1)
+  void runFillQvector(TEvent const& collision, MyBcs const&, TTracks const& tracks1, aod::Zdcs const&)
   {
     // Fill the event properties within the VarManager
     VarManager::ResetValues(0, VarManager::kNVars);
@@ -307,7 +309,8 @@ struct DQEventQvector {
 
     fGFW->Clear();
     float centrality;
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    //auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<MyBcs>();
     // Load weights from CCDB
     loadCorrections(bc.timestamp());
     constexpr bool eventHasCentRun2 = ((TEventFillMap & VarManager::ObjTypes::CollisionCentRun2) > 0);
@@ -458,6 +461,13 @@ struct DQEventQvector {
 
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0) {
       VarManager::FillQVectorFromCentralFW(collision);
+
+      if (!bc.has_zdc()) {
+        return;
+      }
+      auto zdc = bc.zdc();
+      VarManager::FillSpectatorPlane(zdc);
+      
       if ((tracks1.size() > 0) && (VarManager::fgValues[VarManager::kMultA] * VarManager::fgValues[VarManager::kMultB] * VarManager::fgValues[VarManager::kMultC] != 0.0)) {
         if (fConfigQA) {
           fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
@@ -474,21 +484,21 @@ struct DQEventQvector {
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 2
-  void processBarrelQvectorRun2(MyEventsWithCent::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processBarrelQvectorRun2(MyEventsWithCent::iterator const& collisions, MyBcs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks, aod::Zdcs const& zdcs)
   {
-    runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMap, gkTrackFillMap>(collisions, bcs, tracks, zdcs);
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
-  void processBarrelQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processBarrelQvector(MyEventsWithCentRun3::iterator const& collisions, MyBcs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks, aod::Zdcs const& zdcs)
   {
-    runFillQvector<gkEventFillMapRun3, gkTrackFillMap>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMapRun3, gkTrackFillMap>(collisions, bcs, tracks, zdcs);
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
-  void processAllQvector(MyEventsWithCentQvectRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processAllQvector(MyEventsWithCentQvectRun3::iterator const& collisions, MyBcs const& bcs, soa::Filtered<MyBarrelTracks> const& tracks, aod::Zdcs const& zdcs)
   {
-    runFillQvector<gkEventFillMapRun3Qvect, gkTrackFillMap>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMapRun3Qvect, gkTrackFillMap>(collisions, bcs, tracks, zdcs);
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
@@ -498,9 +508,9 @@ struct DQEventQvector {
   }
 
   // Process to fill Q vector using forward tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
-  void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<aod::MFTTracks> const& tracks)
+  void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, MyBcs const& bcs, soa::Filtered<aod::MFTTracks> const& tracks, aod::Zdcs const& zdcs)
   {
-    runFillQvector<gkEventFillMapRun3, 0u>(collisions, bcs, tracks);
+    runFillQvector<gkEventFillMapRun3, 0u>(collisions, bcs, tracks, zdcs);
   }
 
   // TODO: dummy function for the case when no process function is enabled

@@ -228,6 +228,14 @@ class VarManager : public TObject
     kMCEventTime,
     kMCEventWeight,
     kMCEventImpParam,
+    kQ1ZNAX,
+    kQ1ZNAY,
+    kQ1ZNCX,
+    kQ1ZNCY,
+    kQ1ZNACXX,
+    kQ1ZNACYY,
+    kQ1ZNACYX,
+    kQ1ZNACXY,
     kQ1X0A, // q-vector (e.g. from TPC) with x component (harmonic 1 and power 0), sub-event A
     kQ1Y0A, // q-vector (e.g. from TPC) with y component (harmonic 1 and power 0), sub-event A
     kQ1X0B,
@@ -876,6 +884,8 @@ class VarManager : public TObject
   static void FillQVectorFromGFW(C const& collision, A const& compA11, A const& compB11, A const& compC11, A const& compA21, A const& compB21, A const& compC21, A const& compA31, A const& compB31, A const& compC31, A const& compA41, A const& compB41, A const& compC41, A const& compA23, A const& compA42, float S10A = 1.0, float S10B = 1.0, float S10C = 1.0, float S11A = 1.0, float S11B = 1.0, float S11C = 1.0, float S12A = 1.0, float S13A = 1.0, float S14A = 1.0, float S21A = 1.0, float S22A = 1.0, float S31A = 1.0, float S41A = 1.0, float* values = nullptr);
   template <typename C>
   static void FillQVectorFromCentralFW(C const& collision, float* values = nullptr);
+  template <typename C>
+  static void FillSpectatorPlane(C const& collision, float* values = nullptr);
   template <uint32_t fillMap, int pairType, typename T1, typename T2>
   static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int candidateType, typename T1, typename T2, typename T3>
@@ -3450,6 +3460,80 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kR2EP_FT0MTPCNEG] = std::cos(2 * getDeltaPsiInRange(epFT0m, epBNegs, 2));
   values[kR2EP_FV0ATPCPOS] = std::cos(2 * getDeltaPsiInRange(epFV0a, epBPoss, 2));
   values[kR2EP_FV0ATPCNEG] = std::cos(2 * getDeltaPsiInRange(epFV0a, epBNegs, 2));
+}
+
+template <typename C>
+void VarManager::FillSpectatorPlane(C const& collision, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  auto zncEnergy = collision.energySectorZNC();
+  auto znaEnergy = collision.energySectorZNA();
+  for (int i = 0; i < 4; i++) { // avoid std::numeric_limits<float>::infinity() in the table
+    if (zncEnergy[i] < -1.e12) {
+      zncEnergy[i] = -1.f;
+    }
+    if (znaEnergy[i] < -1.e12) {
+      znaEnergy[i] = -1.f;
+    }
+  }
+  float znaCommon = collision.energyCommonZNA() < 0 ? -1.f : collision.energyCommonZNA();
+  float zncCommon = collision.energyCommonZNC() < 0 ? -1.f : collision.energyCommonZNC();
+
+  constexpr float beamEne = 5.36 * 0.5;
+  constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
+  constexpr float y[4] = {-1.75, -1.75, 1.75, 1.75};
+  //constexpr float alpha = 0.395; // WARNING: Run 2 coorection, to be checked 
+  constexpr float alpha = 1.;
+  float numXZNC = 0., numYZNC = 0., denZNC = 0.;
+  float numXZNA = 0., numYZNA = 0., denZNA = 0.;
+
+  for (int i = 0; i < 4; i++) {
+    if (zncEnergy[i] > 0.) {
+      float wZNC = std::pow(zncEnergy[i], alpha);
+      numXZNC -= x[i] * wZNC;
+      numYZNC += y[i] * wZNC;
+      denZNC += wZNC;
+    }
+    if (znaEnergy[i] > 0.) {
+      float wZNA = std::pow(znaEnergy[i], alpha);
+      numXZNA += x[i] * wZNA;
+      numYZNA += y[i] * wZNA;
+      denZNA += wZNA;
+    }
+  }
+
+  if (denZNC != 0.) {
+    float nSpecnC = zncCommon / beamEne; // WARNING: Run 2 coorection, to be checked
+    float cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789); // WARNING: Run 2 coorection, to be checked
+    cZNC = 1.;
+    values[kQ1ZNCX] = cZNC * numXZNC / denZNC;
+    values[kQ1ZNCY] = cZNC * numYZNC / denZNC;
+  } else {
+    values[kQ1ZNCX] = values[kQ1ZNCY] = 999.;
+  }
+
+  if (denZNA != 0.) {
+    float nSpecnA = znaCommon / beamEne; // WARNING: Run 2 coorection, to be checked
+    float cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789); // WARNING: Run 2 coorection, to be checked
+    cZNA = 1.;
+    values[kQ1ZNAX] = cZNA * numXZNA / denZNA;
+    values[kQ1ZNAY] = cZNA * numYZNA / denZNA;
+  } else {
+    values[kQ1ZNAX] = values[kQ1ZNAY] = 999.;
+  }
+
+  if (denZNA != 0. && denZNC != 0.) {
+    values[kQ1ZNACXX] = values[kQ1ZNAX] * values[kQ1ZNCX];
+    values[kQ1ZNACYY] = values[kQ1ZNAY] * values[kQ1ZNCY];
+    values[kQ1ZNACYX] = values[kQ1ZNAY] * values[kQ1ZNCX];
+    values[kQ1ZNACXY] = values[kQ1ZNAX] * values[kQ1ZNCY];
+  }
+  else {
+    values[kQ1ZNACXX] = values[kQ1ZNACYY] = values[kQ1ZNACYX] = values[kQ1ZNACXY] = 999.;
+  }
 }
 
 template <uint32_t fillMap, int pairType, typename T1, typename T2>
