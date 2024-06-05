@@ -28,12 +28,10 @@ using namespace o2::framework::expressions;
 using std::array;
 using namespace std;
 
-
 #define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 #define bitcheck(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
-
-//修改部分
+// 修改部分
 
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 using std::array;
@@ -41,10 +39,7 @@ using std::array;
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using dauMCTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackMCIds, aod::DauTrackTPCPIDs>;
 using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
-using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0MCCollRefs,aod::V0Datas>;
-
-
-
+using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0MCMothers, aod::V0MCCollRefs, aod::V0Datas>;
 
 // STEP 0
 // Starting point: loop over all V0s and fill invariant mass histogram
@@ -61,14 +56,12 @@ struct strangeness_tutorial {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  //master analysis switches
+  // master analysis switches
   Configurable<bool> analyseK0Short{"analyseK0Short", true, "process K0Short-like candidates"};
   Configurable<bool> analyseLambda{"analyseLambda", true, "process Lambda-like candidates"};
   Configurable<bool> analyseAntiLambda{"analyseAntiLambda", true, "process AntiLambda-like candidates"};
 
-
-
-  //Selection criteria:acceptance
+  // Selection criteria:acceptance
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
   Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
 
@@ -88,25 +81,21 @@ struct strangeness_tutorial {
 
   Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|, AP cut. Negative: no cut"};
 
-
-  //Track quality
+  // Track quality
   Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
   Configurable<int> minITSclusters{"minITSclusters", -1, "minimum ITS clusters"};
   Configurable<bool> skipTPConly{"skipTPConly", false, "skip V0s comprised of at least one TPC only prong"};
   Configurable<bool> requirePosITSonly{"requirePosITSonly", false, "require that positive track is ITSonly (overrides TPC quality)"};
   Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
 
-
-  //PID
+  // PID
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
 
-  
-  //for MC
+  // for MC
   static constexpr float defaultLifetimeCuts[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
   Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", false, "check collision association"};
-
 
   // Configurable parameters for PID selection
   Configurable<float> NSigmaTPCPion{"NSigmaTPCPion", 5, "NSigmaTPCPion"};
@@ -132,9 +121,9 @@ struct strangeness_tutorial {
                               selLambdaArmenteros,
                               selAntiLambdaArmenteros,
                               selPosGoodTPCTrack, // at least min # TPC rows
-                              selNegGoodTPCTrack,// at least min # TPC rows
+                              selNegGoodTPCTrack, // at least min # TPC rows
                               selPosItsOnly,
-                              selNegItsOnly,  
+                              selNegItsOnly,
                               selPosGoodITSTrack,
                               selNegGoodITSTrack,
                               selConsiderK0Short,    // for mc tagging
@@ -157,14 +146,11 @@ struct strangeness_tutorial {
   uint64_t maskLambdaSpecific;
   uint64_t maskAntiLambdaSpecific;
 
-  
   uint64_t maskSelectionK0Short;
   uint64_t maskSelectionLambda;
   uint64_t maskSelectionAntiLambda;
 
   uint64_t secondaryMaskSelectionLambda;
-
-
 
   void init(InitContext const&)
   {
@@ -175,14 +161,12 @@ struct strangeness_tutorial {
     maskTopoNoDCAPosToPV = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
     maskTopoNoCosPA = (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selDCAV0Dau) | (uint64_t(1) << selRadiusMax);
     maskTopoNoDCAV0Dau = (uint64_t(1) << selCosPA) | (uint64_t(1) << selRadius) | (uint64_t(1) << selDCANegToPV) | (uint64_t(1) << selDCAPosToPV) | (uint64_t(1) << selRadiusMax);
-    
-    maskK0ShortSpecific = (uint64_t(1) << selK0ShortRapidity) | (uint64_t(1) << selK0ShortCTau) | (uint64_t(1) << selK0ShortArmenteros) |(uint64_t(1) << selConsiderK0Short);
-    maskLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau)| (uint64_t(1) << selConsiderLambda) ;
+
+    maskK0ShortSpecific = (uint64_t(1) << selK0ShortRapidity) | (uint64_t(1) << selK0ShortCTau) | (uint64_t(1) << selK0ShortArmenteros) | (uint64_t(1) << selConsiderK0Short);
+    maskLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderLambda);
     maskAntiLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderAntiLambda);
 
     // ask for specific TPC/TOF PID selections
-    
-
 
     // Axes
     AxisSpec K0ShortMassAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
@@ -210,15 +194,14 @@ struct strangeness_tutorial {
     rKzeroShort.add("hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
     rKzeroShort.add("hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
 
-    
-    rLambda.add("hEventSelection", "hEventSelection", {HistType::kTH1F, {{6,-0.5f,+5.5f}}});
+    rLambda.add("hEventSelection", "hEventSelection", {HistType::kTH1F, {{6, -0.5f, +5.5f}}});
     rLambda.add("hLambda", "hLambda", {HistType::kTH1F, {LambdaMassAxis}});
     rLambda.add("hMassLambdaSelected", "hMassLambdaSelected", {HistType::kTH1F, {LambdaMassAxis}});
     rLambda.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
     rLambda.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}});
     rLambda.add("hNSigmaPosProtonFromLambdas", "hNSigmaPosProtonFromLambdas", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
     rLambda.add("hNSigmaNegPionFromLambdas", "hNSigmaNegPionFromLambdas", {HistType::kTH2F, {{100, -5.f, 5.f}, {ptAxis}}});
-    
+
     rLambda.add("hPosDCAToPV", "hPosDCAToPV", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     rLambda.add("hNegDCAToPV", "hNegDCAToPV", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     rLambda.add("hPostpcCrossedRows", "hPostpcCrossedRows", {HistType::kTH1F, {{100, 0.f, 160.f}}});
@@ -229,21 +212,20 @@ struct strangeness_tutorial {
     rLambda.add("hCentrality", "hCentrality", {HistType::kTH1F, {{100, 0.f, 100.f}}});
     rLambda.add("hposativeeta", "hposativeeta", {HistType::kTH1F, {{100, -1.f, 1.f}}});
     rLambda.add("hnegativeeta", "hnegativeeta", {HistType::kTH1F, {{100, -1.f, 1.f}}});
-     
+
     rLambda.add("h2dArmenterosAll", "h2dArmenterosAll", kTH2F, {axisAPAlpha, axisAPQt});
 
     rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
-    //rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
-    //rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
+    // rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
+    // rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
     rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kIsVertexITSTPC");
     rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
-    //rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
-    //rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
+    // rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
+    // rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
     rLambda.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "kNoSameBunchPileup");
 
-    
     histos.add("hPosDCAToPV", "hPosDCAToPV", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     histos.add("hNegDCAToPV", "hNegDCAToPV", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     histos.add("hDCADaughters", "hDCADaughters", {HistType::kTH1F, {{1000, 0.0f, 2.2f}}});
@@ -255,7 +237,7 @@ struct strangeness_tutorial {
     histos.add("hNegtpcCrossedRows", "hNegtpcCrossedRows", {HistType::kTH1F, {{100, 0.f, 160.f}}});
     histos.add("hMassLambda", "hMassLambda", kTH1F, {axisLambdaMass});
     histos.add("hMassAntiLambda", "hMassAntiLambda", kTH1F, {axisLambdaMass});
-    histos.add("hKs0", "hKs0", kTH1F, {{200,0.45f,0.55f}});
+    histos.add("hKs0", "hKs0", kTH1F, {{200, 0.45f, 0.55f}});
     histos.add("h3dMassLambda", "h3dMassLambda", kTH2F, {axisPt, axisLambdaMass});
     histos.add("hpositiveeta", "hpositiveeta", {HistType::kTH1F, {{100, -1.f, 1.f}}});
     histos.add("hnegativeeta", "hnegativeeta", {HistType::kTH1F, {{100, -1.f, 1.f}}});
@@ -267,11 +249,11 @@ struct strangeness_tutorial {
     histos.add("h2dArmenterosAntiLambda", "h2dArmenterosAntiLambda", kTH2F, {axisAPAlpha, axisAPQt});
     histos.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
 
-    //histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
+    // histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
 
     // ask for specific TPC/TOF PID selections
     maskTrackProperties = 0;
-    
+
     if (requirePosITSonly) {
       maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosItsOnly) | (uint64_t(1) << selPosGoodITSTrack);
     } else {
@@ -281,10 +263,8 @@ struct strangeness_tutorial {
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDPositivePion);
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDPositiveProton);
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDPositivePion);
-
       }
       // TOF PID
-     
     }
     if (requireNegITSonly) {
       maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegItsOnly) | (uint64_t(1) << selNegGoodITSTrack);
@@ -292,24 +272,22 @@ struct strangeness_tutorial {
       maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegGoodTPCTrack) | (uint64_t(1) << selNegGoodITSTrack);
       // TPC signal is available: ask for negative track PID
       if (TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
-       maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDNegativePion);
-       maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDNegativePion);
-       maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDNegativeProton);
-
+        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDNegativePion);
+        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDNegativePion);
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDNegativeProton);
       }
       // TOF PID
     }
-    //Primary particle selection,central to analysis
+    // Primary particle selection,central to analysis
     maskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific | (uint64_t(1) << selPhysPrimK0Short);
-    maskSelectionLambda = maskTopological | maskTrackProperties| maskLambdaSpecific | (uint64_t(1) << selLambdaArmenteros) | (uint64_t(1) << selPhysPrimLambda) ;
+    maskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific | (uint64_t(1) << selLambdaArmenteros) | (uint64_t(1) << selPhysPrimLambda);
     maskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific | (uint64_t(1) << selAntiLambdaArmenteros) | (uint64_t(1) << selPhysPrimAntiLambda);
-
-  
   }
 
   template <typename TV0, typename TCollision>
 
-  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision, float rapidityLambda, float rapidityK0Short,float /*pT*/){
+  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision, float rapidityLambda, float rapidityK0Short, float /*pT*/)
+  {
     uint64_t bitMap = 0;
     // Base topological variables
     if (v0.v0radius() > v0setting_radius)
@@ -325,21 +303,17 @@ struct strangeness_tutorial {
     if (v0.dcaV0daughters() < v0setting_dcav0dau)
       bitset(bitMap, selDCAV0Dau);
 
-      //rapidity
+    // rapidity
     if (TMath::Abs(rapidityLambda) < rapidityCut)
       bitset(bitMap, selLambdaRapidity);
     if (TMath::Abs(rapidityK0Short) < rapidityCut)
       bitset(bitMap, selK0ShortRapidity);
 
-
-
     const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>();
     const auto& negDaughterTrack = v0.template negTrack_as<DaughterTracks>();
 
-    //const auto& posDaughterTrack = v0.template posTrackExtra_as<DaughterTracks>();
-    //const auto& negDaughterTrack = v0.template negTrackExtra_as<DaughterTracks>();
-
-
+    // const auto& posDaughterTrack = v0.template posTrackExtra_as<DaughterTracks>();
+    // const auto& negDaughterTrack = v0.template negTrackExtra_as<DaughterTracks>();
 
     // TPC quality flags
     if ((posDaughterTrack.tpcNClsCrossedRows()) > minTPCrows)
@@ -347,8 +321,7 @@ struct strangeness_tutorial {
     if (negDaughterTrack.tpcNClsCrossedRows() > minTPCrows)
       bitset(bitMap, selNegGoodTPCTrack);
 
-
-    //TPC PID
+    // TPC PID
     if (fabs(posDaughterTrack.tpcNSigmaPi()) < TpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDPositivePion);
     if (fabs(posDaughterTrack.tpcNSigmaPr()) < TpcPidNsigmaCut)
@@ -358,7 +331,7 @@ struct strangeness_tutorial {
     if (fabs(negDaughterTrack.tpcNSigmaPr()) < TpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDNegativeProton);
 
-    //ITS quality flags
+    // ITS quality flags
     if (posDaughterTrack.itsNCls() >= minITSclusters)
       bitset(bitMap, selPosGoodITSTrack);
     if (negDaughterTrack.itsNCls() >= minITSclusters)
@@ -371,14 +344,14 @@ struct strangeness_tutorial {
       bitset(bitMap, selK0ShortCTau);
 
     // armenteros
-    
+
     if (v0.qtarm() * armPodCut < TMath::Abs(v0.alpha()) || armPodCut < 1e-4)
       bitset(bitMap, selLambdaArmenteros);
     if (v0.qtarm() * armPodCut < TMath::Abs(v0.alpha()) || armPodCut < 1e-4)
       bitset(bitMap, selAntiLambdaArmenteros);
     if (v0.qtarm() * armPodCut > TMath::Abs(v0.alpha()) || armPodCut < 1e-4)
       bitset(bitMap, selK0ShortArmenteros);
-      
+
     return bitMap;
   }
   template <typename TV0>
@@ -406,31 +379,26 @@ struct strangeness_tutorial {
     return bitMap;
   }
 
-
-
-
-
-
-
   bool verifyMask(uint64_t bitmap, uint64_t mask)
   {
     return (bitmap & mask) == mask;
   }
 
   template <typename TV0>
-  void analyseCandidate(TV0 v0, float pt, uint64_t selMap){
+  void analyseCandidate(TV0 v0, float pt, uint64_t selMap)
+  {
     const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>();
     const auto& negDaughterTrack = v0.template negTrack_as<DaughterTracks>();
 
-    //const auto& posDaughterTrack = v0.template posTrackExtra_as<DaughterTracks>();
-    //const auto& negDaughterTrack = v0.template negTrackExtra_as<DaughterTracks>();
+    // const auto& posDaughterTrack = v0.template posTrackExtra_as<DaughterTracks>();
+    // const auto& negDaughterTrack = v0.template negTrackExtra_as<DaughterTracks>();
 
-    //bool Lambdaselection = verifyMask(selMap, maskSelectionLambda);
+    // bool Lambdaselection = verifyMask(selMap, maskSelectionLambda);
 
-    if(verifyMask(selMap, maskSelectionLambda) && analyseLambda){
+    if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
       histos.fill(HIST("hMassLambda"), v0.mLambda());
-      //histos.fill(HIST("hKs0"), v0.mK0Short());
-      histos.fill(HIST("h3dMassLambda"),pt, v0.mLambda());
+      // histos.fill(HIST("hKs0"), v0.mK0Short());
+      histos.fill(HIST("h3dMassLambda"), pt, v0.mLambda());
 
       histos.fill(HIST("hPosDCAToPV"), v0.dcapostopv());
       histos.fill(HIST("hNegDCAToPV"), v0.dcanegtopv());
@@ -439,7 +407,7 @@ struct strangeness_tutorial {
       histos.fill(HIST("hV0Radius"), v0.v0radius());
       histos.fill(HIST("h2dPositiveITSvsTPCpts"), posDaughterTrack.tpcNClsCrossedRows(), posDaughterTrack.itsNCls());
       histos.fill(HIST("h2dNegativeITSvsTPCpts"), negDaughterTrack.tpcNClsCrossedRows(), negDaughterTrack.itsNCls());
-      
+
       histos.fill(HIST("hPostpcCrossedRows"), posDaughterTrack.tpcNClsCrossedRows());
       histos.fill(HIST("hNegtpcCrossedRows"), negDaughterTrack.tpcNClsCrossedRows());
 
@@ -450,46 +418,42 @@ struct strangeness_tutorial {
       histos.fill(HIST("h2dArmenterosAll"), v0.alpha(), v0.qtarm());
       histos.fill(HIST("h2dArmenterosLambda"), v0.alpha(), v0.qtarm());
     }
-    if(verifyMask(selMap,maskSelectionAntiLambda) && analyseAntiLambda){
+    if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
       histos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
       histos.fill(HIST("h2dArmenterosAntiLambda"), v0.alpha(), v0.qtarm());
     }
 
-    if(verifyMask(selMap,maskSelectionK0Short) && analyseK0Short){
+    if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
       histos.fill(HIST("hKs0"), v0.mK0Short());
       histos.fill(HIST("h2dArmenterosKshort"), v0.alpha(), v0.qtarm());
     }
-    
-
   }
 
   template <typename TV0>
   void analyseCollisionAssociation(TV0 /*v0*/, float pt, int mcNch, bool correctAssociation, uint64_t selMap)
   // analyse collision association
   {
-  
   }
 
   template <typename TCollision>
-  bool AcceptEvent(TCollision const& collision){
-     rLambda.fill(HIST("hEventSelection"), 0. /* all collisions */);
+  bool AcceptEvent(TCollision const& collision)
+  {
+    rLambda.fill(HIST("hEventSelection"), 0. /* all collisions */);
     // Fill the event counter
     ////////////////////////////////Event selection///////////////////////////
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-     // Event selection if required
+    // Event selection if required
     if (!collision.sel8()) {
-        return false;
-      }
+      return false;
+    }
     rLambda.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
 
     // Z vertex selection
     if (std::abs(collision.posZ()) >= 10.f) {
-      return false ;
+      return false;
     }
     histos.fill(HIST("hVertexZRec"), collision.posZ());
     rLambda.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
-
-    
 
     // kIsVertexITSTPC selection
     if (!collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
@@ -510,16 +474,12 @@ struct strangeness_tutorial {
     rLambda.fill(HIST("hEventSelection"), 5);
 
     return true;
-
   }
-
-
-
 
   // Defining filters for events (event selection)
   // Processed events will be already fulfilling the event selection requirements
-  //Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  //Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
+  // Filter eventFilter = (o2::aod::evsel::sel8 == true);
+  // Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
 
   // Filters on V0s
   // Cannot filter on dynamic columns, so we cut on DCA to PV and DCA between daughters only
@@ -529,29 +489,22 @@ struct strangeness_tutorial {
                         aod::v0data::dcaV0daughters < v0setting_dcav0dau);
  */
   // Defining the type of the daughter tracks
-  using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi,o2::aod::pidTPCPr,o2::aod::StoredTracksExtra_001>;
+  using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, o2::aod::pidTPCPr, o2::aod::StoredTracksExtra_001>;
 
   using Collisionstable = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels>::iterator;
-  //soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator
-  //soa::Filtered<soa::Join<aod::Collisions
-  //aod::V0Datas const& V0s,
-  //DaughterTracks
-  //dauTracks
-  //aod::CentFT0Cs
-  void process( soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+  // soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator
+  // soa::Filtered<soa::Join<aod::Collisions
+  // aod::V0Datas const& V0s,
+  // DaughterTracks
+  // dauTracks
+  // aod::CentFT0Cs
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                aod::V0Datas const& V0s,
                DaughterTracks const&)
   {
     if (!AcceptEvent(collision)) {
       return;
     }
-
-
-
-
-    
-    
-
 
     /*
     if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
@@ -563,15 +516,9 @@ struct strangeness_tutorial {
       return;
     }
     */
-    
 
-
-    
-    
-    
-
-    //float centrality = collision.centFT0C();
-    //histos.fill(HIST("hEventCentrality"), centrality);
+    // float centrality = collision.centFT0C();
+    // histos.fill(HIST("hEventCentrality"), centrality);
 
     /*
     if (!collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
@@ -599,11 +546,11 @@ struct strangeness_tutorial {
     }
     rLambda.fill(HIST("hEventSelection"), 9 );
   */
- ////////////////////////////////Event selection///////////////////////////
+    ////////////////////////////////Event selection///////////////////////////
 
     // perform main analysis
     for (const auto& v0 : V0s) {
-      if (std::abs(v0.negativeeta()) > daughterEtaCut || std::abs(v0.positiveeta()) > daughterEtaCut){
+      if (std::abs(v0.negativeeta()) > daughterEtaCut || std::abs(v0.positiveeta()) > daughterEtaCut) {
         continue;
       }
       rLambda.fill(HIST("h2dArmenterosAll"), v0.alpha(), v0.qtarm());
@@ -612,17 +559,16 @@ struct strangeness_tutorial {
       selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
       selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
 
-      //selMap = selMap |   (uint64_t(1) << selPhysPrimLambda) ;
+      // selMap = selMap |   (uint64_t(1) << selPhysPrimLambda) ;
 
       analyseCandidate(v0, v0.pt(), selMap);
 
-
-      //const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
-      //const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
+      // const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
+      // const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
 
       rKzeroShort.fill(HIST("hMassK0Short"), v0.mK0Short());
       rLambda.fill(HIST("hLambda"), v0.mLambda());
-      
+
       // Cut on dynamic columns
       /*
       if (v0.v0cosPA() < v0setting_cospa)
@@ -645,7 +591,7 @@ struct strangeness_tutorial {
       if (v0.dcaV0daughters() > v0setting_dcav0dau){
         continue;
       }
-      
+
 
       rKzeroShort.fill(HIST("hMassK0ShortSelected"), v0.mK0Short());
       rKzeroShort.fill(HIST("hDCAV0Daughters"), v0.dcaV0daughters());
@@ -669,20 +615,19 @@ struct strangeness_tutorial {
       rLambda.fill(HIST("hNSigmaPosProtonFromLambdas"), posDaughterTrack.tpcNSigmaPr(), posDaughterTrack.tpcInnerParam());
       rLambda.fill(HIST("hNSigmaNegPionFromLambdas"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
       */
-      
-    
     }
   }
-  //soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels>::iterator
-  //soa::Join<aod::Collisions, aod::EvSels>::iterator
-  //v0MCCandidates
-  //soa::Join<o2::aod::V0MCCores,o2::aod::V0MCMothers,aod::V0Datas>
-  
+  // soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels>::iterator
+  // soa::Join<aod::Collisions, aod::EvSels>::iterator
+  // v0MCCandidates
+  // soa::Join<o2::aod::V0MCCores,o2::aod::V0MCMothers,aod::V0Datas>
+
   void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-   soa::Join<o2::aod::V0MCDatas,aod::V0Datas> const& fullV0s,DaughterTracks const&){
+                         soa::Join<o2::aod::V0MCDatas, aod::V0Datas> const& fullV0s, DaughterTracks const&)
+  {
     if (!collision.sel8()) {
-        return;
-      }
+      return;
+    }
     if (std::abs(collision.posZ()) >= 20.f) {
       return;
     }
@@ -692,17 +637,16 @@ struct strangeness_tutorial {
     if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
-    for(auto& v0 : fullV0s){
-      if (std::abs(v0.negativeeta()) > daughterEtaCut || std::abs(v0.positiveeta()) > daughterEtaCut){
+    for (auto& v0 : fullV0s) {
+      if (std::abs(v0.negativeeta()) > daughterEtaCut || std::abs(v0.positiveeta()) > daughterEtaCut) {
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
       }
       float ptmc = RecoDecay::sqrtSumOfSquares(v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC());
       float ymc = 1e-3;
 
-      if (v0.pdgCode() == 310){
+      if (v0.pdgCode() == 310) {
         ymc = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-      }
-      else if (TMath::Abs(v0.pdgCode()) == 3122){
+      } else if (TMath::Abs(v0.pdgCode()) == 3122) {
         ymc = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassLambda);
       }
 
@@ -714,14 +658,12 @@ struct strangeness_tutorial {
         selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
       }
 
-      analyseCandidate(v0, ptmc,selMap);
-      
-      
+      analyseCandidate(v0, ptmc, selMap);
     }
   }
 
-  //PROCESS_SWITCH(strangeness_tutorial , process, "process as if real data", false);
-  //PROCESS_SWITCH(strangeness_tutorial, processMonteCarlo, "process as if MC", true);
+  // PROCESS_SWITCH(strangeness_tutorial , process, "process as if real data", false);
+  // PROCESS_SWITCH(strangeness_tutorial, processMonteCarlo, "process as if MC", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
