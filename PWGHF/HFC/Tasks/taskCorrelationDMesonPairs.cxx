@@ -53,14 +53,10 @@ enum D0Type {
 
 struct HfTaskCorrelationDMesonPairs {
   // Configurables to set sparse axes
-  ConfigurableAxis thnConfigAxisInvMassCand1{"thnConfigAxisInvMassCand1", {200, 1.6, 2.1}, "Cand. 1 Inv-mass bins"};
-  ConfigurableAxis thnConfigAxisInvMassCand2{"thnConfigAxisInvMassCand2", {200, 1.6, 2.1}, "Cand. 2 Inv-mass bins"};
-  ConfigurableAxis thnConfigAxisPtCand1{"thnConfigAxisPtCand1", {25, 0., 24.}, "Cand. 1 pT bins"};
-  ConfigurableAxis thnConfigAxisPtCand2{"thnConfigAxisPtCand2", {25, 0., 24.}, "Cand. 2 pT bins"};
-  ConfigurableAxis thnConfigAxisYCand1{"thnConfigAxisYCand1", {10, -1, 1}, "Cand. 1 rapidity bins"};
-  ConfigurableAxis thnConfigAxisYCand2{"thnConfigAxisYCand2", {10, -1, 1}, "Cand. 2 rapidity bins"};
-  ConfigurableAxis thnConfigAxisCandType1{"thnConfigAxisCandType1", {4, -0.5, 3.5}, "Cand. 1 Type"};
-  ConfigurableAxis thnConfigAxisCandType2{"thnConfigAxisCandType2", {4, -0.5, 3.5}, "Cand. 2 Type"};
+  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMassCand1", {200, 1.6, 2.1}, "Inv-mass bins"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPtCand1", {25, 0., 24.}, "pT bins"};
+  ConfigurableAxis thnConfigAxisY{"thnConfigAxisYCand1", {10, -1, 1}, "Rapidity bins"};
+  ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType1", {4, -0.5, 3.5}, "Candidate Type"};
 
   HistogramRegistry registry{
     "registry",
@@ -68,14 +64,14 @@ struct HfTaskCorrelationDMesonPairs {
 
   void init(InitContext&)
   {
-    const AxisSpec thnAxisInvMassCand1{thnConfigAxisInvMassCand1, "inv. mass D_{1} (GeV/#it{c}^{2})"};
-    const AxisSpec thnAxisInvMassCand2{thnConfigAxisInvMassCand2, "inv. mass D_{2} (GeV/#it{c}^{2})"};
-    const AxisSpec thnAxisPtCand1{thnConfigAxisPtCand1, "#it{p}_{T}^{D_{1}} (GeV/#it{c})"};
-    const AxisSpec thnAxisPtCand2{thnConfigAxisPtCand2, "#it{p}_{T}^{D_{2}} (GeV/#it{c})"};
-    const AxisSpec thnAxisYCand1{thnConfigAxisYCand1, "#it{y} D_{1}"};
-    const AxisSpec thnAxisYCand2{thnConfigAxisYCand2, "#it{y} D_{2}"};
-    const AxisSpec thnAxisCandType1{thnConfigAxisCandType1, "Type D_{1}"};
-    const AxisSpec thnAxisCandType2{thnConfigAxisCandType2, "Type D_{2}"};
+    const AxisSpec thnAxisInvMassCand1{thnConfigAxisInvMass, "inv. mass D_{1} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisInvMassCand2{thnConfigAxisInvMass, "inv. mass D_{2} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPtCand1{thnConfigAxisPt, "#it{p}_{T}^{D_{1}} (GeV/#it{c})"};
+    const AxisSpec thnAxisPtCand2{thnConfigAxisPt, "#it{p}_{T}^{D_{2}} (GeV/#it{c})"};
+    const AxisSpec thnAxisYCand1{thnConfigAxisY, "#it{y} D_{1}"};
+    const AxisSpec thnAxisYCand2{thnConfigAxisY, "#it{y} D_{2}"};
+    const AxisSpec thnAxisCandType1{thnConfigAxisCandType, "Type D_{1}"};
+    const AxisSpec thnAxisCandType2{thnConfigAxisCandType, "Type D_{2}"};
 
     registry.add("hMass2DCorrelationPairsLS", "hMass2DCorrelationPairsLS", HistType::kTHnSparseD, {thnAxisInvMassCand1, thnAxisInvMassCand2, thnAxisPtCand1, thnAxisPtCand2, thnAxisYCand1, thnAxisYCand2, thnAxisCandType1, thnAxisCandType2});
     registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLS"))->Sumw2();
