@@ -75,14 +75,9 @@ bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection, pdgDatabase 
   }
 }
 
-
-
 template <typename pdgDatabase>
 struct ParticleCounter {
-  // Service<o2::framework::O2DatabasePDG> mPdgDatabase;
-  // ParticleCounter(pdgDatabase& pdgDB) { mPdgDatabase = &pdgDB; }
   bool mSelectPrimaries = true;
-
   pdgDatabase* mPdgDatabase;
 
   template <float etamin, float etamax>
@@ -96,9 +91,6 @@ struct ParticleCounter {
       if (mSelectPrimaries && !particle.isPhysicalPrimary()) {
         continue;
       }
-      // if ((particle.vx() * particle.vx() + particle.vy() * particle.vy()) > maxProdRadius * maxProdRadius) {
-      //   return false;
-      // }
 
       // has pdg
       TParticlePDG* p = mPdgDatabase->get()->GetParticle(particle.pdgCode());
