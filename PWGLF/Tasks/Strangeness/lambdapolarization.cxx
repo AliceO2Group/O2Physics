@@ -136,7 +136,10 @@ struct lambdapolarization {
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  TProfile3D* shiftprofile;
+  std::vector<TProfile3D*> shiftprofile;
+
+  std::string fullCCDBShiftCorrPath;
+
 
   template <typename T>
   int GetDetId(const T& name)
@@ -457,12 +460,12 @@ struct lambdapolarization {
         auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 24], collision.qvecRe()[3 + 4 + (nmode - 2) * 24]) / static_cast<float>(nmode);
         auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 24], collision.qvecRe()[3 + 12 + (nmode - 2) * 24]) / static_cast<float>(nmode);
         for (int ishift = 1; ishift <= 10; ishift++) {
-          auto coeffshiftxFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 0.5, ishift - 0.5));
-          auto coeffshiftyFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 1.5, ishift - 0.5));
-          auto coeffshiftxFT0A = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 2.5, ishift - 0.5));
-          auto coeffshiftyFT0A = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 3.5, ishift - 0.5));
-          auto coeffshiftxFV0A = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 4.5, ishift - 0.5));
-          auto coeffshiftyFV0A = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 5.5, ishift - 0.5));
+          auto coeffshiftxFT0C = shiftprofile.at(nmode)->GetBinContent(shiftprofile.at(nmode)->FindBin(centrality, 0.5, ishift - 0.5));
+          auto coeffshiftyFT0C = shiftprofile.at(nmode)->GetBinContent(shiftprofile.at(nmode)->FindBin(centrality, 1.5, ishift - 0.5));
+          auto coeffshiftxFT0A = shiftprofile.at(nmode)->GetBinContent(shiftprofile.at(nmode)->FindBin(centrality, 2.5, ishift - 0.5));
+          auto coeffshiftyFT0A = shiftprofile.at(nmode)->GetBinContent(shiftprofile.at(nmode)->FindBin(centrality, 3.5, ishift - 0.5));
+          auto coeffshiftxFV0A = shiftprofile.at(nmode)->GetBinContent(shiftprofile.at(nmode)->FindBin(centrality, 4.5, ishift - 0.5));
+          auto coeffshiftyFV0A = shiftprofile.at(nmode)->GetBinContent(shiftprofile.at(nmode)->FindBin(centrality, 5.5, ishift - 0.5));
 
           deltapsiFT0C += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFT0C) + coeffshiftyFT0C * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFT0C)));
           deltapsiFT0A += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0A * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFT0A) + coeffshiftyFT0A * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFT0A)));
@@ -521,6 +524,20 @@ struct lambdapolarization {
       return;
     }
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
+    if (cfgShiftCorr) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
+      if (currentRunNumber != lastRunNumber) {
+        shiftprofile.clear();
+        for (int i = 2; i < cfgnMods + 2; i++) {
+          fullCCDBShiftCorrPath = cfgShiftPath;
+          fullCCDBShiftCorrPath += "/v";
+          fullCCDBShiftCorrPath += std::to_string(i);
+          shiftprofile.push_back(ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPath, bc.timestamp()));
+        }
+        lastRunNumber = currentRunNumber;
+      }
+    }
     for (int i = 2; i < cfgnMods + 2; i++) {
       QvecDetInd = 0;
       QvecRefAInd = 4;
@@ -529,14 +546,6 @@ struct lambdapolarization {
       if (cfgShiftCorrDef) {
         FillShiftCorrection(collision, i);
       }
-      if (cfgShiftCorr) {
-        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-        currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
-        if (currentRunNumber != lastRunNumber) {
-          shiftprofile = ccdb->getForTimeStamp<TProfile3D>(cfgShiftPath.value, bc.timestamp());
-          lastRunNumber = currentRunNumber;
-        }
-      } // FIXME: need to call different histograms for different harmonic
       if (cfgQAv0) {
         FillEPQA(collision, i);
       }
