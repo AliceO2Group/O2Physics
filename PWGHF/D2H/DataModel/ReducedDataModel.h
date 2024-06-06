@@ -422,7 +422,7 @@ DECLARE_SOA_TABLE(HfCandBpConfigs, "AOD", "HFCANDBPCONFIG", //! Table with confi
 // Charm resonances analysis
 namespace hf_reso_cand_reduced
 {
-DECLARE_SOA_COLUMN(InvMass, invMass, float);                     //! Invariant mass in GeV/c2
+DECLARE_SOA_COLUMN(InvMass, invMass, float); //! Invariant mass in GeV/c2
 DECLARE_SOA_COLUMN(Pt, pt, float);           //! Pt of Resonance candidate in GeV/c
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);           //! Pt of D daughter in GeV/c
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);           //! Pt of V0 daughter in GeV/c
@@ -435,7 +435,7 @@ DECLARE_SOA_COLUMN(MlScoreNonpromptProng0, mlScoreNonpromptProng0, float); //! N
 
 namespace hf_reso_3_prong
 {
-DECLARE_SOA_COLUMN(DType, dType, int8_t);    //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
+DECLARE_SOA_COLUMN(DType, dType, int8_t); //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pxProng0, float pxProng1, float pxProng2) -> float { return 1.f * pxProng0 + 1.f * pxProng1 + 1.f * pxProng2; });
@@ -486,14 +486,14 @@ DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate 
                   hf_track_index_reduced::HfRedCollisionId,
                   // Static
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
-                  hf_cand::PxProng0,hf_cand::PyProng0,hf_cand::PzProng0,
-                  hf_cand::PxProng1,hf_cand::PyProng1,hf_cand::PzProng1,
-                  hf_reso_2_prong::Cpa,     
+                  hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
+                  hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
+                  hf_reso_2_prong::Cpa,
                   hf_reso_2_prong::Dca,
                   hf_reso_2_prong::V0Type,
-                  //Dynamic
+                  // Dynamic
                   hf_reso_2_prong::Px<hf_cand::PxProng0, hf_cand::PxProng1>,
-                  hf_reso_2_prong::Py<hf_cand::PyProng0, hf_cand::PyProng1>, 
+                  hf_reso_2_prong::Py<hf_cand::PyProng0, hf_cand::PyProng1>,
                   hf_reso_2_prong::Pz<hf_cand::PzProng0, hf_cand::PzProng1>,
                   hf_reso_2_prong::InvMassK0s<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_reso_2_prong::InvMassLambda<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -512,14 +512,14 @@ DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
                   hf_reso_3_prong::DType,
-                  //Dynamic
+                  // Dynamic
                   hf_reso_3_prong::Px<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PxProng2>,
-                  hf_reso_3_prong::Py<hf_cand::PyProng0, hf_cand::PyProng1, hf_cand::PyProng2>, 
+                  hf_reso_3_prong::Py<hf_cand::PyProng0, hf_cand::PyProng1, hf_cand::PyProng2>,
                   hf_reso_3_prong::Pz<hf_cand::PzProng0, hf_cand::PzProng1, hf_cand::PzProng2>,
                   hf_reso_3_prong::InvMassDplus<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
                   hf_reso_3_prong::InvMassDstar<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_reso_3_prong::InvMassAntiDstar<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_reso_3_prong::Pt<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PxProng2, hf_cand::PyProng0, hf_cand::PyProng1,hf_cand::PyProng2>);
+                  hf_reso_3_prong::Pt<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PxProng2, hf_cand::PyProng0, hf_cand::PyProng1, hf_cand::PyProng2>);
 
 DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Resonance candidate information for resonances reduced workflow
                   o2::soa::Index<>,
