@@ -112,7 +112,7 @@ struct HfDataCreatorCharmHadPiReduced {
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "flag to enable MC checks on decay type"};
 
   HfHelper hfHelper;
-  o2::hf_evsel::HfEventSelection hfEvSel;        // event selection and monitoring
+  o2::hf_evsel::HfEventSelection hfEvSel; // event selection and monitoring
 
   // CCDB service
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -814,7 +814,7 @@ struct HfDataCreatorCharmHadPiReduced {
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   // PROCESS FUNCTIONS FOR DATA
 
-  void processDplusPiData(soa::Join<aod::Collisions, aod::EvSels>  const& collisions,
+  void processDplusPiData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                           CandsDplusFiltered const& candsC,
                           aod::TrackAssoc const& trackIndices,
                           TracksPidWithSel const& tracks,
@@ -826,28 +826,32 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    int zvtxColl {0};
-    int sel8Coll {0};
-    int zvtxAndSel8Coll {0};
-    int allSelColl {0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) sel8Coll++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ)) zvtxColl++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) ) zvtxAndSel8Coll++;
-      if (rejectionMask == 0) allSelColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        sel8Coll++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
+        zvtxColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        zvtxAndSel8Coll++;
+      if (rejectionMask == 0)
+        allSelColl++;
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<false, false, DecayChannel::B0ToDminusPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, bcs);
     }
     // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl );
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processDplusPiData, "Process DplusPi without MC info and without ML info", true);
 
-  void processDplusPiDataWithMl(soa::Join<aod::Collisions, aod::EvSels>  const& collisions,
+  void processDplusPiDataWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                 CandsDplusFilteredWithMl const& candsC,
                                 aod::TrackAssoc const& trackIndices,
                                 TracksPidWithSel const& tracks,
@@ -859,28 +863,32 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    int zvtxColl {0};
-    int sel8Coll {0};
-    int zvtxAndSel8Coll {0};
-    int allSelColl {0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) sel8Coll++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ)) zvtxColl++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) ) zvtxAndSel8Coll++;
-      if (rejectionMask == 0) allSelColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        sel8Coll++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
+        zvtxColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        zvtxAndSel8Coll++;
+      if (rejectionMask == 0)
+        allSelColl++;
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<false, true, DecayChannel::B0ToDminusPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, bcs);
     }
     // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl );
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processDplusPiDataWithMl, "Process DplusPi without MC info and with ML info", false);
 
-  void processD0PiData(soa::Join<aod::Collisions, aod::EvSels>  const& collisions,
+  void processD0PiData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                        CandsD0Filtered const& candsC,
                        aod::TrackAssoc const& trackIndices,
                        TracksPidWithSel const& tracks,
@@ -892,28 +900,32 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    int zvtxColl {0};
-    int sel8Coll {0};
-    int zvtxAndSel8Coll {0};
-    int allSelColl {0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) sel8Coll++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ)) zvtxColl++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) ) zvtxAndSel8Coll++;
-      if (rejectionMask == 0) allSelColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        sel8Coll++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
+        zvtxColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        zvtxAndSel8Coll++;
+      if (rejectionMask == 0)
+        allSelColl++;
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<false, false, DecayChannel::BplusToD0barPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, bcs);
     }
     // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl );
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processD0PiData, "Process D0Pi without MC info and without ML info", false);
 
-  void processD0PiDataWithMl(soa::Join<aod::Collisions, aod::EvSels>  const& collisions,
+  void processD0PiDataWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                              CandsD0FilteredWithMl const& candsC,
                              aod::TrackAssoc const& trackIndices,
                              TracksPidWithSel const& tracks,
@@ -925,31 +937,35 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    int zvtxColl {0};
-    int sel8Coll {0};
-    int zvtxAndSel8Coll {0};
-    int allSelColl {0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) sel8Coll++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ)) zvtxColl++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) ) zvtxAndSel8Coll++;
-      if (rejectionMask == 0) allSelColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        sel8Coll++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
+        zvtxColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        zvtxAndSel8Coll++;
+      if (rejectionMask == 0)
+        allSelColl++;
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<false, true, DecayChannel::BplusToD0barPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, bcs);
     }
     // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl );
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processD0PiDataWithMl, "Process D0Pi without MC info and with ML info", false);
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   // PROCESS FUNCTIONS FOR MC
 
-  void processDplusPiMc(soa::Join<aod::Collisions, aod::EvSels>  const& collisions,
+  void processDplusPiMc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                         CandsDplusFiltered const& candsC,
                         aod::TrackAssoc const& trackIndices,
                         TracksPidWithSelAndMc const& tracks,
@@ -962,29 +978,33 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    int zvtxColl {0};
-    int sel8Coll {0};
-    int zvtxAndSel8Coll {0};
-    int allSelColl {0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) sel8Coll++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ)) zvtxColl++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) ) zvtxAndSel8Coll++;
-      if (rejectionMask == 0) allSelColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        sel8Coll++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
+        zvtxColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        zvtxAndSel8Coll++;
+      if (rejectionMask == 0)
+        allSelColl++;
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<true, false, DecayChannel::B0ToDminusPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, bcs);
     }
     // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl );
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl);
     runMcGen<DecayChannel::B0ToDminusPi>(particlesMc);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processDplusPiMc, "Process DplusPi with MC info and without ML info", false);
 
-  void processDplusPiMcWithMl(soa::Join<aod::Collisions, aod::EvSels>  const& collisions,
+  void processDplusPiMcWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                               CandsDplusFilteredWithMl const& candsC,
                               aod::TrackAssoc const& trackIndices,
                               TracksPidWithSelAndMc const& tracks,
@@ -997,29 +1017,33 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    int zvtxColl {0};
-    int sel8Coll {0};
-    int zvtxAndSel8Coll {0};
-    int allSelColl {0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) sel8Coll++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ)) zvtxColl++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) ) zvtxAndSel8Coll++;
-      if (rejectionMask == 0) allSelColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        sel8Coll++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
+        zvtxColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        zvtxAndSel8Coll++;
+      if (rejectionMask == 0)
+        allSelColl++;
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<true, true, DecayChannel::B0ToDminusPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, bcs);
     }
     // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl );
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl);
     runMcGen<DecayChannel::B0ToDminusPi>(particlesMc);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processDplusPiMcWithMl, "Process DplusPi with MC info and with ML info", false);
 
-  void processD0PiMc(soa::Join<aod::Collisions, aod::EvSels>  const& collisions,
+  void processD0PiMc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                      CandsD0Filtered const& candsC,
                      aod::TrackAssoc const& trackIndices,
                      TracksPidWithSelAndMc const& tracks,
@@ -1032,29 +1056,33 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    int zvtxColl {0};
-    int sel8Coll {0};
-    int zvtxAndSel8Coll {0};
-    int allSelColl {0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) sel8Coll++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ)) zvtxColl++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) ) zvtxAndSel8Coll++;
-      if (rejectionMask == 0) allSelColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        sel8Coll++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
+        zvtxColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        zvtxAndSel8Coll++;
+      if (rejectionMask == 0)
+        allSelColl++;
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<true, false, DecayChannel::BplusToD0barPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, bcs);
     }
     // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl );
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl);
     runMcGen<DecayChannel::BplusToD0barPi>(particlesMc);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processD0PiMc, "Process D0Pi with MC info and without ML info", false);
 
-  void processD0PiMcWithMl(soa::Join<aod::Collisions, aod::EvSels>  const& collisions,
+  void processD0PiMcWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                            CandsD0FilteredWithMl const& candsC,
                            aod::TrackAssoc const& trackIndices,
                            TracksPidWithSelAndMc const& tracks,
@@ -1067,24 +1095,28 @@ struct HfDataCreatorCharmHadPiReduced {
       isHfCandBhadConfigFilled = true;
     }
 
-    int zvtxColl {0};
-    int sel8Coll {0};
-    int zvtxAndSel8Coll {0};
-    int allSelColl {0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) sel8Coll++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ)) zvtxColl++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) ) zvtxAndSel8Coll++;
-      if (rejectionMask == 0) allSelColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        sel8Coll++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
+        zvtxColl++;
+      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+        zvtxAndSel8Coll++;
+      if (rejectionMask == 0)
+        allSelColl++;
       auto thisCollId = collision.globalIndex();
       auto candsCThisColl = candsC.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       runDataCreation<true, true, DecayChannel::BplusToD0barPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, bcs);
     }
     // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl );
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl);
     runMcGen<DecayChannel::BplusToD0barPi>(particlesMc);
   }
   PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processD0PiMcWithMl, "Process D0Pi with MC info and with ML info", false);

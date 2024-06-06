@@ -135,11 +135,13 @@ struct HfCandidateCreatorCharmResoReduced {
     // slection on D candidate mass
     if (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::XcToDplusLambda || channel == DecayChannel::LambdaDminus) {
       massD = massDplus;
-      invMassD = candD.invMassDplus(); 
+      invMassD = candD.invMassDplus();
     } else if (channel == DecayChannel::Ds1ToDstarK0s) {
       massD = massDstar - massD0;
-      if (candD.dType()>0) invMassD = candD.invMassDstar();
-      else invMassD = candD.invMassAntiDstar();
+      if (candD.dType() > 0)
+        invMassD = candD.invMassDstar();
+      else
+        invMassD = candD.invMassAntiDstar();
     }
     if (std::fabs(invMassD - massD) > invMassWindowD) {
       return false;
@@ -201,9 +203,12 @@ struct HfCandidateCreatorCharmResoReduced {
         registry.fill(HIST("hSelections"), 1 + Selections::DSel);
       }
       float invMassD{0.};
-      if (std::abs(candD.dType()) == 1) invMassD = candD.invMassDplus(); 
-      if (candD.dType() == 2) invMassD = candD.invMassDstar(); 
-      if (candD.dType() == -2) invMassD = candD.invMassAntiDstar(); 
+      if (std::abs(candD.dType()) == 1)
+        invMassD = candD.invMassDplus();
+      if (candD.dType() == 2)
+        invMassD = candD.invMassDstar();
+      if (candD.dType() == -2)
+        invMassD = candD.invMassAntiDstar();
       std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
       float ptD = RecoDecay::pt(pVecD);
       ;
