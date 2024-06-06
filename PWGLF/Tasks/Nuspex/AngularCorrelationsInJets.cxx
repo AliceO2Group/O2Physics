@@ -174,7 +174,7 @@ struct AngularCorrelationsInJets {
 	//****************************************************************************************************
 
 	template <typename CollisionType, typename TracksType>
-	void jetReco(const CollisionType& collision, const TracksType& tracks) { // this turns TracksType into a pointer, no? How then can we access attributes with . instead of ->?
+	void angCorrData(const CollisionType& collision, const TracksType& tracks) { // this turns TracksType into a pointer, no? How then can we access attributes with . instead of ->?
 		registryData.fill(HIST("hNumberOfEvents"), 0);
 		registryData.fill(HIST("hEventProtocol"), 0);
 
@@ -232,11 +232,11 @@ struct AngularCorrelationsInJets {
 			registryData.fill(HIST("hPtJetParticle"), constituents[i].pt());
 			double DeltaPhi = TVector2::Phi_0_2pi(constituents[i].phi() - hardestJet.phi());
 			double DeltaEta = constituents[i].eta() - hardestJet.eta();
-			double Delta    = TMath::Sqrt(DeltaPhi*DeltaPhi + DeltaEta*DeltaEta);
+			double Delta    = TMath::Sqrt(DeltaPhi*DeltaPhi + DeltaEta*DeltaEta);  // need 1/pT^2?
 			registryData.fill(HIST("hJetConeRadius"), Delta);
 		}
 
-		fastjet::Selector selector = fastjet::SelectorAbsEtaMax(1.0) * (!fastjet::SelectorNHardest(2));
+		fastjet::Selector selector = fastjet::SelectorAbsEtaMax(1.0) * (!fastjet::SelectorNHardest(2)); // fix!
 		fastjet::JetMedianBackgroundEstimator bkgEst(selector, jetDefBkg, areaDefBkg);
 		fastjet::Subtractor subtractor(&bkgEst);
 		subtractor.set_use_rho_m(true);
@@ -461,7 +461,7 @@ struct AngularCorrelationsInJets {
 		switch (particleType) {
 			case 1:
 				if (fTrackBufferProton.size() == 0) return;
-				for (int i=0; i<(int)fTrackBufferProton.size(); i++) { // can I do this even if the trackbuffer isn't even full yet?
+				for (int i=0; i<(int)fTrackBufferProton.size(); i++) { // can I do this even if the track buffer isn't even full yet?
 					double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferProton[i].phi());
 					double DeltaEta = TMath::Abs(track.eta() - fTrackBufferProton[i].eta());
 					registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
@@ -504,11 +504,11 @@ struct AngularCorrelationsInJets {
 
 	Filter prelimTrackCuts = (/* aod::track::TPCrefit == fTPCRefit && aod::track::ITSrefit == fITSRefit && */aod::track::itsChi2NCl<fMaxChi2ITS && aod::track::tpcChi2NCl<fMaxChi2TPC && nabs(aod::track::dcaXY) < fMaxDCAxy && nabs(aod::track::dcaZ) < fMaxDCAz && nabs(aod::track::eta) < fMaxEta);
 
-  void process_jet_reco(aod::Collision const& collision, soa::Filtered<FullTracks> const& tracks)
+  void process_ang_corr_data(aod::Collision const& collision, soa::Filtered<FullTracks> const& tracks)
   {
-    jetReco(collision, tracks);
+    angCorrData(collision, tracks);
   }
-  PROCESS_SWITCH(AngularCorrelationsInJets, process_jet_reco, "reconstruct jets", true);
+  PROCESS_SWITCH(AngularCorrelationsInJets, process_ang_corr_data, "ang correlations in reco'ed jets", true);
 };
 
 //****************************************************************************************************
