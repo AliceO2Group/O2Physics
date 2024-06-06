@@ -1193,19 +1193,19 @@ struct strangeness_in_jets {
           continue;
 
         // Xi+
-        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdg_parent == -3312) {
+        if (passedXiSelection(casc, pos, neg, bach, collision) && pdg_parent == -3312) {
           registryMC.fill(HIST("XiPos_reconstructed"), multiplicity, casc.pt());
         }
         // Xi-
-        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdg_parent == 3312) {
+        if (passedXiSelection(casc, pos, neg, bach, collision) && pdg_parent == 3312) {
           registryMC.fill(HIST("XiNeg_reconstructed"), multiplicity, casc.pt());
         }
         // Omega+
-        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && pdg_parent == -3334) {
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdg_parent == -3334) {
           registryMC.fill(HIST("OmegaPos_reconstructed"), multiplicity, casc.pt());
         }
         // Omega-
-        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && pdg_parent == 3334) {
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdg_parent == 3334) {
           registryMC.fill(HIST("OmegaNeg_reconstructed"), multiplicity, casc.pt());
         }
       }
