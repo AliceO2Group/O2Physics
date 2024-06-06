@@ -39,10 +39,10 @@ namespace hf_reduced_collision
 DECLARE_SOA_COLUMN(Bz, bz, float); //! Magnetic field in z-direction
 // keep track of the number of studied events (for normalization purposes)
 DECLARE_SOA_COLUMN(OriginalCollisionCount, originalCollisionCount, int); //! Size of COLLISION table processed
-DECLARE_SOA_COLUMN(ZvtxSelectedCollisionCount, zvtxSelectedCollisionCount, int); //! Number of COLLISIONS with |zvtx| < zvtxMax
-DECLARE_SOA_COLUMN(TriggerSelectedCollisionCount, triggerSelectedCollisionCount, int); //! Number of COLLISIONS with sel8
+DECLARE_SOA_COLUMN(ZvtxSelectedCollisionCount, zvtxSelectedCollisionCount, int);                     //! Number of COLLISIONS with |zvtx| < zvtxMax
+DECLARE_SOA_COLUMN(TriggerSelectedCollisionCount, triggerSelectedCollisionCount, int);               //! Number of COLLISIONS with sel8
 DECLARE_SOA_COLUMN(ZvtxAndTriggerSelectedCollisionCount, zvtxAndTriggerSelectedCollisionCount, int); //! Number of COLLISIONS with |zvtx| < zvtxMax and sel8
-DECLARE_SOA_COLUMN(AllSelectionsCollisionCount, allSelectionsCollisionCount, int); //! Number of COLLISIONS that passed all selections
+DECLARE_SOA_COLUMN(AllSelectionsCollisionCount, allSelectionsCollisionCount, int);                   //! Number of COLLISIONS that passed all selections
 } // namespace hf_reduced_collision
 
 DECLARE_SOA_TABLE(HfRedCollisions, "AOD", "HFREDCOLLISION", //! Table with collision for reduced workflow
@@ -437,30 +437,30 @@ DECLARE_SOA_COLUMN(MlScoreNonpromptProng0, mlScoreNonpromptProng0, float); //! N
 } // namespace hf_reso_cand_reduced
 namespace hf_reso_3_prong
 {
-DECLARE_SOA_COLUMN(PxProng0, pxProng0, float);                              
+DECLARE_SOA_COLUMN(PxProng0, pxProng0, float);
 DECLARE_SOA_COLUMN(PyProng0, pyProng0, float);
 DECLARE_SOA_COLUMN(PzProng0, pzProng0, float);
-DECLARE_SOA_COLUMN(PxProng1, pxProng1, float);                              
+DECLARE_SOA_COLUMN(PxProng1, pxProng1, float);
 DECLARE_SOA_COLUMN(PyProng1, pyProng1, float);
 DECLARE_SOA_COLUMN(PzProng1, pzProng1, float);
-DECLARE_SOA_COLUMN(PxProng2, pxProng2, float);                              
+DECLARE_SOA_COLUMN(PxProng2, pxProng2, float);
 DECLARE_SOA_COLUMN(PyProng2, pyProng2, float);
 DECLARE_SOA_COLUMN(PzProng2, pzProng2, float);
-DECLARE_SOA_COLUMN(DType, dType, int8_t);    //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
+DECLARE_SOA_COLUMN(DType, dType, int8_t); //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
-                           [](float pxProng0, float pxProng1, float pxProng2) -> float {return 1.f * pxProng0 + 1.f * pxProng1 + 1.f * pxProng2; });
+                           [](float pxProng0, float pxProng1, float pxProng2) -> float { return 1.f * pxProng0 + 1.f * pxProng1 + 1.f * pxProng2; });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
-                           [](float pyProng0, float pyProng1, float pyProng2) -> float {return 1.f * pyProng0 + 1.f * pyProng1 + 1.f * pyProng2; });
+                           [](float pyProng0, float pyProng1, float pyProng2) -> float { return 1.f * pyProng0 + 1.f * pyProng1 + 1.f * pyProng2; });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
-                           [](float pzProng0, float pzProng1, float pzProng2) -> float {return 1.f * pzProng0 + 1.f * pzProng1 + 1.f * pzProng2; });
+                           [](float pzProng0, float pzProng1, float pzProng2) -> float { return 1.f * pzProng0 + 1.f * pzProng1 + 1.f * pzProng2; });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
-                           [](float pxProng0, float pxProng1, float pxProng2, float pyProng0, float pyProng1, float pyProng2) -> float {return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1 + 1.f * pxProng2), (1.f * pyProng0 + 1.f * pyProng1 + 1.f * pyProng2)); });
+                           [](float pxProng0, float pxProng1, float pxProng2, float pyProng0, float pyProng1, float pyProng2) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1 + 1.f * pxProng2), (1.f * pyProng0 + 1.f * pyProng1 + 1.f * pyProng2)); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassDplus, invMassDplus,
                            [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}, std::array{px2, py2, pz2}}, std::array{constants::physics::MassPiPlus, constants::physics::MassKPlus, constants::physics::MassPiPlus}); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassDstar, invMassDstar,
                            [](float pxSoftPi, float pySoftPi, float pzSoftPi, float pxProng0, float pyProng0, float pzProng0, float pxProng1, float pyProng1, float pzProng1)
-                             -> float { return RecoDecay::m(std::array{std::array{pxSoftPi, pySoftPi, pzSoftPi}, std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassPiPlus, constants::physics::MassKPlus}) - RecoDecay::m(std::array{std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassKPlus}) ; });
+                             -> float { return RecoDecay::m(std::array{std::array{pxSoftPi, pySoftPi, pzSoftPi}, std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassPiPlus, constants::physics::MassKPlus}) - RecoDecay::m(std::array{std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassKPlus}); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassAntiDstar, invMassAntiDstar,
                            [](float pxSoftPi, float pySoftPi, float pzSoftPi, float pxProng0, float pyProng0, float pzProng0, float pxProng1, float pyProng1, float pzProng1)
                              -> float { return RecoDecay::m(std::array{std::array{pxSoftPi, pySoftPi, pzSoftPi}, std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{constants::physics::MassPiPlus, constants::physics::MassKPlus, constants::physics::MassPiPlus}) - RecoDecay::m(std::array{std::array{pxProng0, pyProng0, pzProng0}, std::array{pxProng1, pyProng1, pzProng1}}, std::array{constants::physics::MassKPlus, constants::physics::MassPiPlus}); });
@@ -468,24 +468,24 @@ DECLARE_SOA_DYNAMIC_COLUMN(InvMassAntiDstar, invMassAntiDstar,
 
 namespace hf_reso_2_prong
 {
-DECLARE_SOA_COLUMN(PxProng0, pxProng0, float);                              
+DECLARE_SOA_COLUMN(PxProng0, pxProng0, float);
 DECLARE_SOA_COLUMN(PyProng0, pyProng0, float);
 DECLARE_SOA_COLUMN(PzProng0, pzProng0, float);
-DECLARE_SOA_COLUMN(PxProng1, pxProng1, float);                              
+DECLARE_SOA_COLUMN(PxProng1, pxProng1, float);
 DECLARE_SOA_COLUMN(PyProng1, pyProng1, float);
 DECLARE_SOA_COLUMN(PzProng1, pzProng1, float);
 DECLARE_SOA_COLUMN(Cpa, cpa, float);         //! Cosine of Pointing Angle of V0 candidate
 DECLARE_SOA_COLUMN(Dca, dca, float);         //! DCA of V0 candidate
 DECLARE_SOA_COLUMN(Radius, radius, float);   //! Radius of V0 candidate
 DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! Bitmap with mass hypothesis of the V0
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
-                           [](float pxProng0, float pxProng1) -> float {return 1.f * pxProng0 + 1.f * pxProng1; });
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,           //!
+                           [](float pxProng0, float pxProng1) -> float { return 1.f * pxProng0 + 1.f * pxProng1; });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
-                           [](float pyProng0, float pyProng1) -> float {return 1.f * pyProng0 + 1.f * pyProng1; });
+                           [](float pyProng0, float pyProng1) -> float { return 1.f * pyProng0 + 1.f * pyProng1; });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
-                           [](float pzProng0, float pzProng1) -> float {return 1.f * pzProng0 + 1.f * pzProng1; });
+                           [](float pzProng0, float pzProng1) -> float { return 1.f * pzProng0 + 1.f * pzProng1; });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
-                           [](float pxProng0, float pxProng1, float pyProng0, float pyProng1) -> float {return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1), (1.f * pyProng0 + 1.f * pyProng1)); });
+                           [](float pxProng0, float pxProng1, float pyProng0, float pyProng1) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1), (1.f * pyProng0 + 1.f * pyProng1)); });
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, //! V0 decay radius (2D, centered at zero)
                            [](float x, float y) -> float { return RecoDecay::sqrtSumOfSquares(x, y); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassLambda, invMassLambda, //! mass under lambda hypothesis
@@ -498,19 +498,19 @@ DECLARE_SOA_DYNAMIC_COLUMN(InvMassK0s, invMassK0s, //! mass under K0short hypoth
 
 DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate information for resonances reduced workflow
                   o2::soa::Index<>,
-                  //Indices
+                  // Indices
                   hf_track_index_reduced::Prong0Id, hf_track_index_reduced::Prong1Id,
                   hf_track_index_reduced::HfRedCollisionId,
-                  //Static
+                  // Static
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
                   hf_reso_2_prong::PxProng0, hf_reso_2_prong::PyProng0, hf_reso_2_prong::PzProng0,
                   hf_reso_2_prong::PxProng1, hf_reso_2_prong::PyProng1, hf_reso_2_prong::PzProng1,
-                  hf_reso_2_prong::Cpa,     
+                  hf_reso_2_prong::Cpa,
                   hf_reso_2_prong::Dca,
                   hf_reso_2_prong::V0Type,
-                  //Dynamic
+                  // Dynamic
                   hf_reso_2_prong::Px<hf_reso_2_prong::PxProng0, hf_reso_2_prong::PxProng1>,
-                  hf_reso_2_prong::Py<hf_reso_2_prong::PyProng0, hf_reso_2_prong::PyProng1>, 
+                  hf_reso_2_prong::Py<hf_reso_2_prong::PyProng0, hf_reso_2_prong::PyProng1>,
                   hf_reso_2_prong::Pz<hf_reso_2_prong::PzProng0, hf_reso_2_prong::PzProng1>,
                   hf_reso_2_prong::InvMassK0s<hf_reso_2_prong::PxProng0, hf_reso_2_prong::PyProng0, hf_reso_2_prong::PzProng0, hf_reso_2_prong::PxProng1, hf_reso_2_prong::PyProng1, hf_reso_2_prong::PzProng1>,
                   hf_reso_2_prong::InvMassLambda<hf_reso_2_prong::PxProng0, hf_reso_2_prong::PyProng0, hf_reso_2_prong::PzProng0, hf_reso_2_prong::PxProng1, hf_reso_2_prong::PyProng1, hf_reso_2_prong::PzProng1>,
@@ -520,23 +520,23 @@ DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate 
 
 DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong candidate information for resonances reduced workflow
                   o2::soa::Index<>,
-                  //Indices
+                  // Indices
                   hf_track_index_reduced::Prong0Id, hf_track_index_reduced::Prong1Id, hf_track_index_reduced::Prong2Id,
                   hf_track_index_reduced::HfRedCollisionId,
-                  //Static
+                  // Static
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
                   hf_reso_3_prong::PxProng0, hf_reso_3_prong::PyProng0, hf_reso_3_prong::PzProng0,
                   hf_reso_3_prong::PxProng1, hf_reso_3_prong::PyProng1, hf_reso_3_prong::PzProng1,
                   hf_reso_3_prong::PxProng2, hf_reso_3_prong::PyProng2, hf_reso_3_prong::PzProng2,
                   hf_reso_3_prong::DType,
-                  //Dynamic
+                  // Dynamic
                   hf_reso_3_prong::Px<hf_reso_3_prong::PxProng0, hf_reso_3_prong::PxProng1, hf_reso_3_prong::PxProng2>,
-                  hf_reso_3_prong::Py<hf_reso_3_prong::PyProng0, hf_reso_3_prong::PyProng1, hf_reso_3_prong::PyProng2>, 
+                  hf_reso_3_prong::Py<hf_reso_3_prong::PyProng0, hf_reso_3_prong::PyProng1, hf_reso_3_prong::PyProng2>,
                   hf_reso_3_prong::Pz<hf_reso_3_prong::PzProng0, hf_reso_3_prong::PzProng1, hf_reso_3_prong::PzProng2>,
                   hf_reso_3_prong::InvMassDplus<hf_reso_3_prong::PxProng0, hf_reso_3_prong::PyProng0, hf_reso_3_prong::PzProng0, hf_reso_3_prong::PxProng1, hf_reso_3_prong::PyProng1, hf_reso_3_prong::PzProng1, hf_reso_3_prong::PxProng2, hf_reso_3_prong::PyProng2, hf_reso_3_prong::PzProng2>,
                   hf_reso_3_prong::InvMassDstar<hf_reso_3_prong::PxProng2, hf_reso_3_prong::PyProng2, hf_reso_3_prong::PzProng2, hf_reso_3_prong::PxProng0, hf_reso_3_prong::PyProng0, hf_reso_3_prong::PzProng0, hf_reso_3_prong::PxProng1, hf_reso_3_prong::PyProng1, hf_reso_3_prong::PzProng1>,
                   hf_reso_3_prong::InvMassAntiDstar<hf_reso_3_prong::PxProng2, hf_reso_3_prong::PyProng2, hf_reso_3_prong::PzProng2, hf_reso_3_prong::PxProng0, hf_reso_3_prong::PyProng0, hf_reso_3_prong::PzProng0, hf_reso_3_prong::PxProng1, hf_reso_3_prong::PyProng1, hf_reso_3_prong::PzProng1>,
-                  hf_reso_3_prong::Pt<hf_reso_3_prong::PxProng0, hf_reso_3_prong::PxProng1, hf_reso_3_prong::PxProng2, hf_reso_3_prong::PyProng0, hf_reso_3_prong::PyProng1,hf_reso_3_prong::PyProng2>);
+                  hf_reso_3_prong::Pt<hf_reso_3_prong::PxProng0, hf_reso_3_prong::PxProng1, hf_reso_3_prong::PxProng2, hf_reso_3_prong::PyProng0, hf_reso_3_prong::PyProng1, hf_reso_3_prong::PyProng2>);
 
 DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Resonance candidate information for resonances reduced workflow
                   o2::soa::Index<>,
