@@ -153,8 +153,6 @@ struct ParticleCounter {
   float countITSIB(const aod::McParticles& mcParticles) { return countMultInAcceptance<-2.f, 2.f>(mcParticles); }
 };
 
-
-
 } // namespace pwglf
 } // namespace o2
 
