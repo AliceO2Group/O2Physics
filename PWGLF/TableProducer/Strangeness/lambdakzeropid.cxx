@@ -106,7 +106,7 @@ struct lambdakzeropid {
   Configurable<std::string> nSigmaPath{"nSigmaPath", "Users/d/ddobrigk/stratof", "Path of information for n-sigma calculation"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 
-  // manual 
+  // manual
   Configurable<int> manualRunNumber{"manualRunNumber", 544122, "manual run number if no collisions saved"};
   Configurable<uint64_t> manualTimeStamp{"manualTimeStamp", 1696549226920, "manual time stamp if no collisions saved"};
 
@@ -593,11 +593,11 @@ struct lambdakzeropid {
   void processStandardData(aod::Collisions const& collisions, V0OriginalDatas const& V0s, TracksWithAllExtras const&, aod::BCsWithTimestamps const& /*bcs*/)
   {
     // Fire up CCDB with first collision in record. If no collisions, bypass
-    if(collisions.size()>0){
+    if (collisions.size() > 0) {
       auto collision = collisions.begin();
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc.runNumber(), bc.timestamp());
-    }else{
+    } else {
       initCCDB(manualRunNumber, manualTimeStamp);
     }
 
@@ -621,10 +621,10 @@ struct lambdakzeropid {
   void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, V0DerivedDatas const& V0s, dauTracks const&)
   {
     // Fire up CCDB with first collision in record. If no collisions, bypass
-    if(collisions.size()>0){
+    if (collisions.size() > 0) {
       auto collision = collisions.begin();
       initCCDB(collision.runNumber(), collision.timestamp());
-    }else{
+    } else {
       initCCDB(manualRunNumber, manualTimeStamp);
     }
 
