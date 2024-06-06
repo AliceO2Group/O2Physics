@@ -87,18 +87,18 @@ struct AngularCorrelationsInJets {
 		// nSigma
 		registryData.add("hTPCnsigma", "TPC n#sigma for full event", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
 		registryData.add("hTOFnsigma", "TOF n#sigma for full event", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
-		// registryData.add("hITSnsigma", "ITS n#sigma for full event", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
 		registryData.add("hTPCnsigmaProton", "TPC n#sigma for (anti)proton", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
 		registryData.add("hTOFnsigmaProton", "TOF n#sigma for (anti)proton", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
-		// registryData.add("hITSnsigmaProton", "ITS n#sigma for (anti)proton", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
 		registryData.add("hTPCnsigmaDeuteron", "TPC n#sigma for (anti)deuteron", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
 		registryData.add("hTOFnsigmaDeuteron", "TOF n#sigma for (anti)deuteron", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
-		// registryData.add("hITSnsigmaDeuteron", "ITS n#sigma for (anti)deuteron", HistType::kTH2F, {nsigmapTAxis, nsigmaAxis});
 
 		// DCA
-		registryData.add("hDCAxyFullEvent", "DCA_{xy} of full event", HistType::kTH1F, {dcaxyAxis});
-		registryData.add("hDCAzFullEvent", "DCA_{z} of full event", HistType::kTH1F, {dcazAxis});
-		registryData.add("hDCAzJetParticle", "DCA_{z} of jet particles", HistType::kTH1F, {dcazAxis});
+		registryData.add("hDCAxyFullJet", "DCA_{xy} of full jet", HistType::kTH2F, {ptAxis, dcaxyAxis});
+		registryData.add("hDCAzFullJet", "DCA_{z} of full jet", HistType::kTH2F, {ptAxis, dcazAxis});
+		registryData.add("hDCAzJetProton", "DCA_{z} of protons after TPC cut", HistType::kTH2F, {ptAxis, dcazAxis});
+		registryData.add("hDCAzJetAntiproton", "DCA_{z} of antiprotons after TPC cut", HistType::kTH2F, {ptAxis, dcazAxis});
+		registryData.add("hDCAzJetDeuteron", "DCA_{z} of deuterons after TPC cut", HistType::kTH2F, {ptAxis, dcazAxis});
+		registryData.add("hDCAzJetAntideuteron", "DCA_{z} of antideuterons after TPC cut", HistType::kTH2F, {ptAxis, dcazAxis});
 
 		// Angular Distributions
 		registryData.add("hDeltaPhiSE", "#Delta#varphi of (anti)p, (anti)d in single event", HistType::kTH2D, {particleTypeAxis, angDistPhiAxis});
@@ -112,7 +112,6 @@ struct AngularCorrelationsInJets {
 	// Configurable<Type> cfgName{"nameOnHyperloopAndJson", value, "Flag shown on hyperloop"};
 	// Preliminary Cuts
 	// Configurable<int> fTPCRefit{"TPCRefit", 0, "Require TPC refit"};
-	// Configurable<int> fITSRefit{"ITSRefit", 0, "Require ITS refit"};
 	Configurable<float> fMinNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};
 	Configurable<float> fMinReqClusterITS{"minReqClusterITS", 2.0, "min number of clusters required in ITS"};
 	Configurable<float> fMinRatioCrossedRowsTPC{"minRatioCrossedRowsTPC", 0.7f, "min ratio of crossed rows over findable clusters TPC"};
@@ -131,38 +130,38 @@ struct AngularCorrelationsInJets {
 	// Proton Cuts
 	Configurable<float> fProtonDCAxy{"protonDCAxy", 0.5, "[proton] DCAxy cut"};
 	Configurable<float> fProtonDCAz{"protonDCAz", 1.0, "[proton] DCAz cut"};
-	Configurable<float> fProtonITSTOFpT{"protonITSTOFswitchpT", 0.7, "[proton] pT for switch between ITS+TPC/TPC+TOF"};
-	Configurable<float> fProtonITSnsig{"protonITSnsigma", 3.0, "[proton] max ITS nsigma"};
-	Configurable<float> fProtonTPCnsigITS{"protonTPCnsigmaIfITS", 5.0, "[proton] max TPC nsigma with ITS"};
-	Configurable<float> fProtonTPCnsigTOF{"protonTPCnsigmaIfTOF", 4.0, "[proton] max TPC nsigma with TOF"};
-	Configurable<float> fProtonTOFnsig{"protonTOFnsigma", 10.0, "[proton] max TOF nsigma"};
+	Configurable<float> fProtonTPCTOFpT{"protonTPCTOFswitchpT", 0.7, "[proton] pT for switch in TPC/TOF nsigma"};
+	Configurable<float> fProtonTPCnsigLow{"protonTPCnsigmapTLow", 5.0, "[proton] max TPC nsigma with low pT"};
+	Configurable<float> fProtonTPCnsigHigh{"protonTPCnsigmapTHigh", 4.0, "[proton] max TPC nsigma with high pT"};
+	Configurable<float> fProtonTOFnsigLow{"protonTOFnsigmapTLow", 10.0, "[proton] max TOF nsigma with low pT"};
+	Configurable<float> fProtonTOFnsigHigh{"protonTOFnsigmapTHigh", 10.0, "[proton] max TOF nsigma with high pT"};
 
 	// Antiproton Cuts
 	Configurable<float> fAntiprotonDCAxy{"antiprotonDCAxy", 0.5, "[antiproton] DCAxy cut"};
 	Configurable<float> fAntiprotonDCAz{"antiprotonDCAz", 1.0, "[antiproton] DCAz cut"};
-	Configurable<float> fAntiprotonITSTOFpT{"antiprotonITSTOFswitchpT", 0.7, "[antiproton] pT for switch between ITS+TPC/TPC+TOF"};
-	Configurable<float> fAntiprotonITSnsig{"antiprotonITSnsigma", 3.0, "[antiproton] max ITS nsigma"};
-	Configurable<float> fAntiprotonTPCnsigITS{"antiprotonTPCnsigmaIfITS", 5.0, "[antiproton] max TPC nsigma with ITS"};
-	Configurable<float> fAntiprotonTPCnsigTOF{"antiprotonTPCnsigmaIfTOF", 4.0, "[antiproton] max TPC nsigma with TOF"};
-	Configurable<float> fAntiprotonTOFnsig{"antiprotonTOFnsigma", 10.0, "[antiproton] max TOF nsigma"};
+	Configurable<float> fAntiprotonTPCTOFpT{"antiprotonTPCTOFswitchpT", 0.7, "[antiproton] pT for switch in TPC/TOF nsigma"};
+	Configurable<float> fAntiprotonTPCnsigLow{"antiprotonTPCnsigmapTLow", 5.0, "[antiproton] max TPC nsigma with low pT"};
+	Configurable<float> fAntiprotonTPCnsigHigh{"antiprotonTPCnsigmapTHigh", 4.0, "[antiproton] max TPC nsigma with high pT"};
+	Configurable<float> fAntiprotonTOFnsigLow{"antiprotonTOFnsigmapTLow", 10.0, "[antiproton] max TOF nsigma with low pT"};
+	Configurable<float> fAntiprotonTOFnsigHigh{"antiprotonTOFnsigmapTHigh", 10.0, "[antiproton] max TOF nsigma with high pT"};
 
 	// Deuteron Cuts
 	Configurable<float> fDeuteronDCAxy{"deuteronDCAxy", 0.5, "[deuteron] DCAxy cut"};
 	Configurable<float> fDeuteronDCAz{"deuteronDCAz", 1.0, "[deuteron] DCAz cut"};
-	Configurable<float> fDeuteronITSTOFpT{"deuteronITSTOFswitchpT", 0.7, "[deuteron] pT for switch between ITS+TPC/TPC+TOF"};
-	Configurable<float> fDeuteronITSnsig{"deuteronITSnsigma", 3.0, "[deuteron] max ITS nsigma"};
-	Configurable<float> fDeuteronTPCnsigITS{"deuteronTPCnsigmaIfITS", 5.0, "[deuteron] max TPC nsigma with ITS"};
-	Configurable<float> fDeuteronTPCnsigTOF{"deuteronTPCnsigmaIfTOF", 4.0, "[deuteron] max TPC nsigma with TOF"};
-	Configurable<float> fDeuteronTOFnsig{"deuteronTOFnsigma", 10.0, "[deuteron] max TOF nsigma"};
+	Configurable<float> fDeuteronTPCTOFpT{"deuteronTPCTOFswitchpT", 0.7, "[deuteron] pT for switch in TPC/TOF nsigma"};
+	Configurable<float> fDeuteronTPCnsigLow{"deuteronTPCnsigmapTLow", 5.0, "[deuteron] max TPC nsigma with low pT"};
+	Configurable<float> fDeuteronTPCnsigHigh{"deuteronTPCnsigmapTHigh", 4.0, "[deuteron] max TPC nsigma with high pT"};
+	Configurable<float> fDeuteronTOFnsigLow{"deuteronTOFnsigmapTLow", 10.0, "[deuteron] max TOF nsigma with low pT"};
+	Configurable<float> fDeuteronTOFnsigHigh{"deuteronTOFnsigmapTHigh", 10.0, "[deuteron] max TOF nsigma with high pT"};
 
 	// Antideuteron Cuts
 	Configurable<float> fAntideuteronDCAxy{"antideuteronDCAxy", 0.5, "[antideuteron] DCAxy cut"};
 	Configurable<float> fAntideuteronDCAz{"antideuteronDCAz", 1.0, "[antideuteron] DCAz cut"};
-	Configurable<float> fAntideuteronITSTOFpT{"antideuteronITSTOFswitchpT", 0.7, "[antideuteron] pT for switch between ITS+TPC/TPC+TOF"};
-	Configurable<float> fAntideuteronITSnsig{"antideuteronITSnsigma", 3.0, "[antideuteron] max ITS nsigma"};
-	Configurable<float> fAntideuteronTPCnsigITS{"antideuteronTPCnsigmaIfITS", 5.0, "[antideuteron] max TPC nsigma with ITS"};
-	Configurable<float> fAntideuteronTPCnsigTOF{"antideuteronTPCnsigmaIfTOF", 4.0, "[antideuteron] max TPC nsigma with TOF"};
-	Configurable<float> fAntideuteronTOFnsig{"antideuteronTOFnsigma", 10.0, "[antideuteron] max TOF nsigma"};
+	Configurable<float> fAntideuteronTPCTOFpT{"antideuteronTPCTOFswitchpT", 0.7, "[antideuteron] pT for switch in TPC/TOF nsigma"};
+	Configurable<float> fAntideuteronTPCnsigLow{"antideuteronTPCnsigmapTLow", 5.0, "[antideuteron] max TPC nsigma with low pT"};
+	Configurable<float> fAntideuteronTPCnsigHigh{"antideuteronTPCnsigmapTHigh", 4.0, "[antideuteron] max TPC nsigma with high pT"};
+	Configurable<float> fAntideuteronTOFnsigLow{"antideuteronTOFnsigmapTLow", 10.0, "[antideuteron] max TOF nsigma with low pT"};
+	Configurable<float> fAntideuteronTOFnsigHigh{"antideuteronTOFnsigmapTHigh", 10.0, "[antideuteron] max TOF nsigma with high pT"};
 
 	Configurable<int> fTrackBufferSize{"trackBufferSize", 2000, "Number of mixed-event tracks being stored"};
 
@@ -191,11 +190,6 @@ struct AngularCorrelationsInJets {
 			registryData.fill(HIST("hTrackProtocol"), 0);
 			registryData.fill(HIST("hEtaFullEvent"), track.eta());
 			registryData.fill(HIST("hPtFullEvent"), track.pt());
-			registryData.fill(HIST("hDCAxyFullEvent"), track.dcaXY());
-			registryData.fill(HIST("hDCAzFullEvent"), track.dcaZ());
-			registryData.fill(HIST("hTPCnsigma"), track.pt()*track.sign(), track.tpcNSigmaPr());
-			registryData.fill(HIST("hTOFnsigma"), track.pt()*track.sign(), track.tofNSigmaPr());
-			// registryData.fill(HIST("hITSnsigma"), track.pt()*track.sign(), track.itsNSigmaPr());
 
 			fastjet::PseudoJet inputPseudoJet(track.px(), track.py(), track.pz(), track.energy(track.mass())); // is this fine? just TOF for invariant mass?
 			inputPseudoJet.set_user_index(track.globalIndex());
@@ -224,6 +218,7 @@ struct AngularCorrelationsInJets {
 		if(hardestJet.constituents().size() < 2) return;
 		registryData.fill(HIST("hEventProtocol"), 4);
 		registryData.fill(HIST("hNumberOfJets"), 0);
+		registryData.fill(HIST("hPtTotalJet"), hardestJet.pt());
 		registryData.fill(HIST("hJetRapidity"), hardestJet.rap());
 
 		constituents = hardestJet.constituents();
@@ -232,7 +227,7 @@ struct AngularCorrelationsInJets {
 			registryData.fill(HIST("hPtJetParticle"), constituents[i].pt());
 			double DeltaPhi = TVector2::Phi_0_2pi(constituents[i].phi() - hardestJet.phi());
 			double DeltaEta = constituents[i].eta() - hardestJet.eta();
-			double Delta    = TMath::Sqrt(DeltaPhi*DeltaPhi + DeltaEta*DeltaEta);  // need 1/pT^2?
+			double Delta    = TMath::Sqrt(DeltaPhi*DeltaPhi + DeltaEta*DeltaEta)/(constituents[i].pt()*constituents[i].pt());  // need 1/pT^2?
 			registryData.fill(HIST("hJetConeRadius"), Delta);
 		}
 
@@ -257,18 +252,20 @@ struct AngularCorrelationsInJets {
 		for (int i=0; i<(int)constituents.size(); i++) {
 			fastjet::PseudoJet pseudoParticle = constituents[i];
         	int id = pseudoParticle.user_index();
-			typename TracksType::iterator jetParticle = tracks.iteratorAt(id); // is the global id unique enough?
+			typename TracksType::iterator jetParticle = tracks.iteratorAt(id);
+			registryData.fill(HIST("hDCAxyFullJet"), jetParticle.pt()*jetParticle.sign(), jetParticle.dcaXY());
+			registryData.fill(HIST("hDCAzFullJet"), jetParticle.pt()*jetParticle.sign(), jetParticle.dcaZ());
+			registryData.fill(HIST("hTPCnsigma"), jetParticle.pt()*jetParticle.sign(), jetParticle.tpcNSigmaPr());
+			registryData.fill(HIST("hTOFnsigma"), jetParticle.pt()*jetParticle.sign(), jetParticle.tofNSigmaPr());
 
 			double ptDiff = pseudoParticle.pt() - jetParticle.pt();
 			registryData.fill(HIST("hPtDiff"), ptDiff);
-			registryData.fill(HIST("hDCAzJetParticle"), jetParticle.dcaZ());
 			int particleType = 0;
 
 			if (jetParticle.pt()<fMinJetParticlePt) continue;
 			if (IsProton(jetParticle) || IsAntiproton(jetParticle)) {// collect (anti)protons in jet
 				registryData.fill(HIST("hTPCnsigmaProton"), jetParticle.pt()*jetParticle.sign(), jetParticle.tpcNSigmaPr());
 				registryData.fill(HIST("hTOFnsigmaProton"), jetParticle.pt()*jetParticle.sign(), jetParticle.tofNSigmaPr());
-				// registryData.fill(HIST("hITSnsigmaProton"),track.pt()*track.sign(), track.itsNSigmaPr());
 				if (IsProton(jetParticle)) {
 					particleType = 1;
 					registryData.fill(HIST("hTrackProtocol"), 6); // # protons
@@ -281,7 +278,6 @@ struct AngularCorrelationsInJets {
 			} else if (IsDeuteron(jetParticle) || IsAntideuteron(jetParticle)) {// collect (anti)deuterons in jet
 				registryData.fill(HIST("hTPCnsigmaDeuteron"), jetParticle.pt()*jetParticle.sign(), jetParticle.tpcNSigmaDe());
 				registryData.fill(HIST("hTOFnsigmaDeuteron"), jetParticle.pt()*jetParticle.sign(), jetParticle.tofNSigmaDe());
-				// registryData.fill(HIST("hITSnsigmaDeuteron"),track.pt()*track.sign(), track.itsNSigmaDe());
 				if (IsDeuteron(jetParticle)) {
 					particleType = 3;
 					registryData.fill(HIST("hTrackProtocol"), 8); // # deuterons
@@ -365,11 +361,16 @@ struct AngularCorrelationsInJets {
 		bool isProton = false;
 		if (track.sign()<0) return isProton;
 
-		if (TMath::Abs(track.dcaXY()) > fProtonDCAxy) return isProton;
-		if (TMath::Abs(track.dcaZ()) > fProtonDCAz)   return isProton;
+		if (track.pt()<fProtonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr())<fProtonTPCnsigLow) isProton = true;
+		if (track.pt()>fProtonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr())<fProtonTPCnsigHigh) isProton = true;
 
-		if (track.pt()<fProtonITSTOFpT/*  && TMath::Abs(track.itsNSigmaPr())<fProtonITSnsig */ && TMath::Abs(track.tpcNSigmaPr())<fProtonTPCnsigITS) isProton = true;
-		if (track.pt()>fProtonITSTOFpT && TMath::Abs(track.tpcNSigmaPr())<fProtonTPCnsigTOF && TMath::Abs(track.tofNSigmaPr())<fProtonTOFnsig) isProton = true;
+		registryData.fill(HIST("hDCAzJetProton"), track.pt()*track.sign(), track.dcaZ());
+
+		if (TMath::Abs(track.dcaXY()) > fProtonDCAxy) return false;
+		if (TMath::Abs(track.dcaZ()) > fProtonDCAz)   return false;
+
+		if (track.pt()<fProtonTPCTOFpT && TMath::Abs(track.tofNSigmaPr())<fProtonTOFnsigLow) isProton = true;
+		if (track.pt()>fProtonTPCTOFpT && TMath::Abs(track.tofNSigmaPr())<fProtonTOFnsigHigh) isProton = true;
 
 		return isProton;
 	}
@@ -379,11 +380,17 @@ struct AngularCorrelationsInJets {
 		bool isAntiproton = false;
 		if (track.sign()<0) return isAntiproton;
 
-		if (TMath::Abs(track.dcaXY()) > fAntiprotonDCAxy) return isAntiproton;
-		if (TMath::Abs(track.dcaZ()) > fAntiprotonDCAz)   return isAntiproton;
+		if (track.pt()<fAntiprotonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr())<fAntiprotonTPCnsigLow) isAntiproton = true;
+		if (track.pt()>fAntiprotonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr())<fAntiprotonTPCnsigHigh) isAntiproton = true;
 
-		if (track.pt()<fAntiprotonITSTOFpT/*  && TMath::Abs(track.itsNSigmaPr())<fAntiprotonITSnsig */ && TMath::Abs(track.tpcNSigmaPr())<fAntiprotonTPCnsigITS) isAntiproton = true;
-		if (track.pt()>fAntiprotonITSTOFpT && TMath::Abs(track.tpcNSigmaPr())<fAntiprotonTPCnsigTOF && TMath::Abs(track.tofNSigmaPr())<fAntiprotonTOFnsig) isAntiproton = true;
+		registryData.fill(HIST("hDCAzJetAntiproton"), track.pt()*track.sign(), track.dcaZ());
+
+		if (TMath::Abs(track.dcaXY()) > fAntiprotonDCAxy) return false;
+		if (TMath::Abs(track.dcaZ()) > fAntiprotonDCAz)   return false;
+
+		if (track.pt()<fAntiprotonTPCTOFpT && TMath::Abs(track.tofNSigmaPr())<fAntiprotonTOFnsigLow) isAntiproton = true;
+		if (track.pt()>fAntiprotonTPCTOFpT && TMath::Abs(track.tofNSigmaPr())<fAntiprotonTOFnsigHigh) isAntiproton = true;
+
 
 		return isAntiproton;
 	}
@@ -393,11 +400,16 @@ struct AngularCorrelationsInJets {
 		bool isDeuteron = false;
 		if (track.sign()<0) return isDeuteron;
 
-		if (TMath::Abs(track.dcaXY()) > fDeuteronDCAxy) return isDeuteron;
-		if (TMath::Abs(track.dcaZ()) > fDeuteronDCAz)   return isDeuteron;
+		if (track.pt()<fDeuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe())<fDeuteronTPCnsigLow) isDeuteron = true;
+		if (track.pt()>fDeuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe())<fDeuteronTPCnsigHigh) isDeuteron = true;
 
-		if (track.pt()<fDeuteronITSTOFpT/*  && TMath::Abs(track.itsNSigmaPr())<fDeuteronITSnsig */ && TMath::Abs(track.tpcNSigmaDe())<fDeuteronTPCnsigITS) isDeuteron = true;
-		if (track.pt()>fDeuteronITSTOFpT && TMath::Abs(track.tpcNSigmaPr())<fDeuteronTPCnsigTOF && TMath::Abs(track.tofNSigmaDe())<fDeuteronTOFnsig) isDeuteron = true;
+		registryData.fill(HIST("hDCAzJetDeuteron"), track.pt()*track.sign(), track.dcaZ());
+
+		if (TMath::Abs(track.dcaXY()) > fDeuteronDCAxy) return false;
+		if (TMath::Abs(track.dcaZ()) > fDeuteronDCAz)   return false;
+
+		if (track.pt()<fDeuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe())<fDeuteronTOFnsigLow) isDeuteron = true;
+		if (track.pt()>fDeuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe())<fDeuteronTOFnsigHigh) isDeuteron = true;
 
 		return isDeuteron;
 	}
@@ -407,11 +419,16 @@ struct AngularCorrelationsInJets {
 		bool isAntideuteron = false;
 		if (track.sign()<0) return isAntideuteron;
 
-		if (TMath::Abs(track.dcaXY()) > fAntideuteronDCAxy) return isAntideuteron;
-		if (TMath::Abs(track.dcaZ()) > fAntideuteronDCAz)   return isAntideuteron;
+		if (track.pt()<fAntideuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe())<fAntideuteronTPCnsigLow) isAntideuteron = true;
+		if (track.pt()>fAntideuteronTPCTOFpT && TMath::Abs(track.tpcNSigmaDe())<fAntideuteronTPCnsigHigh) isAntideuteron = true;
 
-		if (track.pt()<fAntideuteronITSTOFpT/*  && TMath::Abs(track.itsNSigmaDe())<fAntideuteronITSnsig */ && TMath::Abs(track.tpcNSigmaDe())<fAntideuteronTPCnsigITS) isAntideuteron = true;
-		if (track.pt()>fAntideuteronITSTOFpT && TMath::Abs(track.tpcNSigmaDe())<fAntideuteronTPCnsigTOF && TMath::Abs(track.tofNSigmaDe())<fAntideuteronTOFnsig) isAntideuteron = true;
+		registryData.fill(HIST("hDCAzJetAntideuteron"), track.pt()*track.sign(), track.dcaZ());
+
+		if (TMath::Abs(track.dcaXY()) > fAntideuteronDCAxy) return false;
+		if (TMath::Abs(track.dcaZ()) > fAntideuteronDCAz)   return false;
+
+		if (track.pt()<fAntideuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe())<fAntideuteronTOFnsigLow) isAntideuteron = true;
+		if (track.pt()>fAntideuteronTPCTOFpT && TMath::Abs(track.tofNSigmaDe())<fAntideuteronTOFnsigHigh) isAntideuteron = true;
 
 		return isAntideuteron;
 	}
@@ -502,7 +519,7 @@ struct AngularCorrelationsInJets {
 
   //****************************************************************************************************
 
-	Filter prelimTrackCuts = (/* aod::track::TPCrefit == fTPCRefit && aod::track::ITSrefit == fITSRefit && */aod::track::itsChi2NCl<fMaxChi2ITS && aod::track::tpcChi2NCl<fMaxChi2TPC && nabs(aod::track::dcaXY) < fMaxDCAxy && nabs(aod::track::dcaZ) < fMaxDCAz && nabs(aod::track::eta) < fMaxEta);
+	Filter prelimTrackCuts = (/* aod::track::TPCrefit == fTPCRefit && */aod::track::itsChi2NCl<fMaxChi2ITS && aod::track::tpcChi2NCl<fMaxChi2TPC && nabs(aod::track::dcaXY) < fMaxDCAxy && nabs(aod::track::dcaZ) < fMaxDCAz && nabs(aod::track::eta) < fMaxEta);
 
   void process_ang_corr_data(aod::Collision const& collision, soa::Filtered<FullTracks> const& tracks)
   {
