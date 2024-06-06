@@ -142,19 +142,16 @@ struct DalitzEEQC {
     std::vector<double> ptbins;
     std::vector<double> massbins;
 
-    for (int i = 0; i < 110; i++) {
-      massbins.emplace_back(0.01 * (i - 0) + 0.0); // every 0.01 GeV/c2 from 0.0 to 1.1 GeV/c2
+    for (int i = 0; i < 51; i++) {
+      massbins.emplace_back(0.01 * (i - 0) + 0.0); // every 0.01 GeV/c2 from 0.0 to 0.5 GeV/c2
     }
     const AxisSpec axis_mass{massbins, "m_{ee} (GeV/c^{2})"};
 
-    for (int i = 0; i < 10; i++) {
-      ptbins.emplace_back(0.01 * (i - 0) + 0.0); // every 0.01 GeV/c from 0.0 to 0.1 GeV/c
+    for (int i = 0; i < 50; i++) {
+      ptbins.emplace_back(0.1 * (i - 0) + 0.0); // every 0.1 GeV/c from 0.0 to 5.0 GeV/c
     }
-    for (int i = 10; i < 59; i++) {
-      ptbins.emplace_back(0.1 * (i - 10) + 0.1); // every 0.1 GeV/c from 0.0 to 5.0 GeV/c
-    }
-    for (int i = 59; i < 70; i++) {
-      ptbins.emplace_back(0.5 * (i - 59) + 5.0); // every 0.5 GeV/c from 5.0 to 10 GeV/c
+    for (int i = 50; i < 61; i++) {
+      ptbins.emplace_back(0.5 * (i - 50) + 5.0); // every 0.5 GeV/c from 5.0 to 10 GeV/c
     }
     const AxisSpec axis_pt{ptbins, "p_{T,ee} (GeV/c)"};
 
