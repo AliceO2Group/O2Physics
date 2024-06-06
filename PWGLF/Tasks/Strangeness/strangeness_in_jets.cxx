@@ -27,6 +27,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -117,6 +118,7 @@ struct strangeness_in_jets {
   Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA bachelor to PV"};
   Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA V0 to PV"};
   Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA Daughters"};
+  Configurable<std::vector<int>> debug{"debug", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "debug"};
 
   void init(InitContext const&)
   {
@@ -683,6 +685,9 @@ struct strangeness_in_jets {
 
   void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::V0sLinked const& V0linked, FullTracks const& tracks)
   {
+    // Debug Array
+    auto debug_level = static_cast<std::vector<int>>(debug);
+
     registryQC.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
       return;
@@ -714,6 +719,9 @@ struct strangeness_in_jets {
     if (ptMax < ptLeadingMin)
       return;
     registryQC.fill(HIST("number_of_events_data"), 3.5);
+
+    if (debug_level[0] == 1)
+      return;
 
     auto const& leading_track = tracks.iteratorAt(leading_ID);
     TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
@@ -786,6 +794,9 @@ struct strangeness_in_jets {
 
     } while (exit == 0);
 
+    if (debug_level[1] == 1)
+      return;
+
     // Jet Axis
     TVector3 jet_axis(p_leading.X(), p_leading.Y(), p_leading.Z());
 
@@ -807,13 +818,22 @@ struct strangeness_in_jets {
       return;
     registryQC.fill(HIST("number_of_events_data"), 5.5);
 
+    if (debug_level[2] == 1)
+      return;
+
     // Event multiplicity
     float multiplicity = collision.centFT0M();
+
+    if (debug_level[3] == 1)
+      return;
 
     for (auto& v0 : fullV0s) {
 
       const auto& pos = v0.posTrack_as<FullTracks>();
       const auto& neg = v0.negTrack_as<FullTracks>();
+
+      if (debug_level[4] == 1)
+        return;
 
       TVector3 v0dir(pos.px() + neg.px(), pos.py() + neg.py(), pos.pz() + neg.pz());
 
@@ -831,6 +851,9 @@ struct strangeness_in_jets {
 
       // K0s
       if (passedK0ShortSelection(v0, pos, neg)) {
+        if (debug_level[5] == 1)
+          return;
+
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("K0s_in_jet"), multiplicity, v0.pt(), v0.mK0Short());
         }
@@ -841,6 +864,9 @@ struct strangeness_in_jets {
 
       // Lambda
       if (passedLambdaSelection(v0, pos, neg)) {
+        if (debug_level[6] == 1)
+          return;
+
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("Lambda_in_jet"), multiplicity, v0.pt(), v0.mLambda());
         }
@@ -852,6 +878,9 @@ struct strangeness_in_jets {
 
       // AntiLambda
       if (passedAntiLambdaSelection(v0, pos, neg)) {
+        if (debug_level[7] == 1)
+          return;
+
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("AntiLambda_in_jet"), multiplicity, v0.pt(), v0.mAntiLambda());
         }
@@ -862,12 +891,19 @@ struct strangeness_in_jets {
       }
     }
 
+    if (debug_level[8] == 1)
+      return;
+
     // Cascades
     for (auto& casc : Cascades) {
 
       auto bach = casc.bachelor_as<FullTracks>();
       auto pos = casc.posTrack_as<FullTracks>();
       auto neg = casc.negTrack_as<FullTracks>();
+
+      if (debug_level[9] == 1)
+        return;
+
       TVector3 cascade_dir(casc.px(), casc.py(), casc.pz());
 
       float deltaEta_jet = cascade_dir.Eta() - jet_axis.Eta();
@@ -882,6 +918,9 @@ struct strangeness_in_jets {
 
       // Xi+
       if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+        if (debug_level[10] == 1)
+          return;
+
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("XiPos_in_jet"), multiplicity, casc.pt(), casc.mXi());
         }
@@ -891,6 +930,9 @@ struct strangeness_in_jets {
       }
       // Xi-
       if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+        if (debug_level[11] == 1)
+          return;
+
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("XiNeg_in_jet"), multiplicity, casc.pt(), casc.mXi());
         }
@@ -901,6 +943,9 @@ struct strangeness_in_jets {
 
       // Omega+
       if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+        if (debug_level[12] == 1)
+          return;
+
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("OmegaPos_in_jet"), multiplicity, casc.pt(), casc.mOmega());
         }
@@ -910,6 +955,9 @@ struct strangeness_in_jets {
       }
       // Omega-
       if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+        if (debug_level[13] == 1)
+          return;
+
         if (deltaR_jet < Rmax) {
           registryData.fill(HIST("OmegaNeg_in_jet"), multiplicity, casc.pt(), casc.mOmega());
         }
@@ -1004,17 +1052,17 @@ struct strangeness_in_jets {
 
         // K0s
         if (mcParticle.pdgCode() == 310) {
-          registryMC.fill(HIST("K0s_Generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("K0s_generated"), multiplicity, mcParticle.pt());
           registryMC.fill(HIST("K0s_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
         }
         // Lambda
         if (mcParticle.pdgCode() == 3122) {
-          registryMC.fill(HIST("Lambda_Generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("Lambda_generated"), multiplicity, mcParticle.pt());
           registryMC.fill(HIST("Lambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
         }
         // AntiLambda
         if (mcParticle.pdgCode() == -3122) {
-          registryMC.fill(HIST("AntiLambda_Generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("AntiLambda_generated"), multiplicity, mcParticle.pt());
           registryMC.fill(HIST("AntiLambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
         }
       }

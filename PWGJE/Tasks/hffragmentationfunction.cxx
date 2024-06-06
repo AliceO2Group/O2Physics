@@ -74,6 +74,7 @@ DECLARE_SOA_COLUMN(HfPhi, hfphi, float);
 DECLARE_SOA_COLUMN(HfMass, hfmass, float);
 DECLARE_SOA_COLUMN(HfY, hfy, float);
 DECLARE_SOA_COLUMN(HfMatch, hfmatch, bool);
+DECLARE_SOA_COLUMN(HfPrompt, hfPrompt, bool);
 } // namespace jet_distance
 DECLARE_SOA_TABLE(JetDistanceTable, "AOD", "JETDISTTABLE",
                   jet_distance::JetHfDist,
@@ -94,6 +95,7 @@ DECLARE_SOA_TABLE(MCPJetDistanceTable, "AOD", "MCPJETDISTTABLE",
                   jet_distance::HfEta,
                   jet_distance::HfPhi,
                   jet_distance::HfY,
+                  jet_distance::HfPrompt,
                   jet_distance::HfMatch);
 DECLARE_SOA_TABLE(MCDJetDistanceTable, "AOD", "MCDJETDISTTABLE",
                   jet_distance::JetHfDist,
@@ -105,6 +107,7 @@ DECLARE_SOA_TABLE(MCDJetDistanceTable, "AOD", "MCDJETDISTTABLE",
                   jet_distance::HfPhi,
                   jet_distance::HfMass,
                   jet_distance::HfY,
+                  jet_distance::HfPrompt,
                   jet_distance::HfMatch);
 } // namespace o2::aod
 
@@ -219,7 +222,10 @@ struct HfFragmentationFunctionTask {
           axisDistance = RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi()));
 
           // store data in MC detector level table
-          mcddistJetTable(axisDistance, mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), mcdjet.has_matchedJetCand());
+          mcddistJetTable(axisDistance,
+                          mcdjet.pt(), mcdjet.eta(), mcdjet.phi(),                                                                                                    // detector level jet
+                          mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0 candidate
+                          mcdjet.has_matchedJetCand());
         }
       }
 
@@ -234,7 +240,10 @@ struct HfFragmentationFunctionTask {
         axisDistance = RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi()));
 
         // store data in MC detector level table
-        mcpdistJetTable(axisDistance, mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), mcpjet.has_matchedJetCand());
+        mcpdistJetTable(axisDistance,
+                        mcpjet.pt(), mcpjet.eta(), mcpjet.phi(),                                                                                     // particle level jet
+                        mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt), // particle level D0
+                        mcpjet.has_matchedJetCand());
       }
     }
   }
