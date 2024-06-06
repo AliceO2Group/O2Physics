@@ -1154,9 +1154,9 @@ struct strangeness_in_jets {
 
       // Cascades
       for (auto& casc : casc_per_coll) {
-        auto bach = casc.bachelor_as<mcTracks>();
-        auto pos = casc.posTrack_as<mcTracks>();
-        auto neg = casc.negTrack_as<mcTracks>();
+        auto bach = casc.template bachelor_as<aod::McTrackLabels>();
+        auto neg = casc.template negTrack_as<aod::McTrackLabels>();
+        auto pos = casc.template posTrack_as<aod::McTrackLabels>();
 
         if (!bach.has_mcParticle())
           continue;
