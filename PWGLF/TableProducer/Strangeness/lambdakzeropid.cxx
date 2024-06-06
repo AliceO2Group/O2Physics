@@ -632,7 +632,7 @@ struct lambdakzeropid {
       // for storing whatever is the relevant quantity for the PV
       o2::dataformats::VertexBase primaryVertex;
       if (V0.has_straCollision()) {
-        auto const& collision = V0.straCollision();
+        auto const& collision = V0.straCollision_as<soa::Join<aod::StraCollisions, aod::StraStamps>();
         primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
         // cov: won't be used anyways, all fine
         primaryVertex.setCov(1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6);
