@@ -169,11 +169,15 @@ struct HfDataCreatorCharmResoReduced {
   void checkEvSel(Coll collision, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& allSelColl)
   {
     float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) sel8Coll++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ)) zvtxColl++;
-      if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) ) zvtxAndSel8Coll++;
-      if (rejectionMask == 0) allSelColl++;     
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
+    if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+      sel8Coll++;
+    if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
+      zvtxColl++;
+    if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+      zvtxAndSel8Coll++;
+    if (rejectionMask == 0)
+      allSelColl++;
   }
 
   /// Basic selection of V0 candidates
@@ -407,9 +411,7 @@ struct HfDataCreatorCharmResoReduced {
     hfReducedCollision(collision.posX(), collision.posY(), collision.posZ());
   } // run data creation
 
-  
-
-  void processDplusV0(soa::Join<aod::Collisions, aod::EvSels>  const& collisions,
+  void processDplusV0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       CandsDplusFiltered const& candsDplus,
                       aod::TrackAssoc const&,
                       aod::V0Datas const& V0s,
@@ -491,8 +493,8 @@ struct HfDataCreatorCharmResoReduced {
     int zvtxAndSel8Coll{0};
     int allSelColl{0};
     for (const auto& collision : collisions) {
-           checkEvSel<true, o2::hf_centrality::CentralityEstimator::None>(collision, zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl);
-  
+      checkEvSel<true, o2::hf_centrality::CentralityEstimator::None>(collision, zvtxColl, sel8Coll, zvtxAndSel8Coll, allSelColl);
+
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
