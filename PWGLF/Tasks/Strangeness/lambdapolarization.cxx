@@ -140,7 +140,6 @@ struct lambdapolarization {
 
   std::string fullCCDBShiftCorrPath;
 
-
   template <typename T>
   int GetDetId(const T& name)
   {
@@ -406,12 +405,12 @@ struct lambdapolarization {
       auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 24], collision.qvecRe()[3 + 4 + (nmode - 2) * 24]) / static_cast<float>(nmode);
       auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 24], collision.qvecRe()[3 + 12 + (nmode - 2) * 24]) / static_cast<float>(nmode);
       for (int ishift = 1; ishift <= 10; ishift++) {
-        auto coeffshiftxFT0C = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 0.5, ishift - 0.5));
-        auto coeffshiftyFT0C = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 1.5, ishift - 0.5));
-        auto coeffshiftxFT0A = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 2.5, ishift - 0.5));
-        auto coeffshiftyFT0A = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 3.5, ishift - 0.5));
-        auto coeffshiftxFV0A = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 4.5, ishift - 0.5));
-        auto coeffshiftyFV0A = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 5.5, ishift - 0.5));
+        auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 0.5, ishift - 0.5));
+        auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 1.5, ishift - 0.5));
+        auto coeffshiftxFT0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 2.5, ishift - 0.5));
+        auto coeffshiftyFT0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 3.5, ishift - 0.5));
+        auto coeffshiftxFV0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 4.5, ishift - 0.5));
+        auto coeffshiftyFV0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 5.5, ishift - 0.5));
 
         deltapsiFT0C += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFT0C) + coeffshiftyFT0C * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFT0C)));
         deltapsiFT0A += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0A * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFT0A) + coeffshiftyFT0A * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFT0A)));
@@ -507,12 +506,12 @@ struct lambdapolarization {
         auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 24], collision.qvecRe()[3 + 4 + (nmode - 2) * 24]) / static_cast<float>(nmode);
         auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 24], collision.qvecRe()[3 + 12 + (nmode - 2) * 24]) / static_cast<float>(nmode);
         for (int ishift = 1; ishift <= 10; ishift++) {
-          auto coeffshiftxFT0C = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 0.5, ishift - 0.5));
-          auto coeffshiftyFT0C = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 1.5, ishift - 0.5));
-          auto coeffshiftxFT0A = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 2.5, ishift - 0.5));
-          auto coeffshiftyFT0A = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 3.5, ishift - 0.5));
-          auto coeffshiftxFV0A = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 4.5, ishift - 0.5));
-          auto coeffshiftyFV0A = shiftprofile.at(nmode-2)->GetBinContent(shiftprofile.at(nmode-2)->FindBin(centrality, 5.5, ishift - 0.5));
+          auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 0.5, ishift - 0.5));
+          auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 1.5, ishift - 0.5));
+          auto coeffshiftxFT0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 2.5, ishift - 0.5));
+          auto coeffshiftyFT0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 3.5, ishift - 0.5));
+          auto coeffshiftxFV0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 4.5, ishift - 0.5));
+          auto coeffshiftyFV0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 5.5, ishift - 0.5));
 
           deltapsiFT0C += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFT0C) + coeffshiftyFT0C * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFT0C)));
           deltapsiFT0A += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0A * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFT0A) + coeffshiftyFT0A * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFT0A)));
