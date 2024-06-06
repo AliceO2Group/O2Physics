@@ -666,12 +666,7 @@ struct TableMaker {
         VarManager::FillTrack<TMuonFillMap>(muon);
 
         // recalculte pDca for global muon tracks
-        if (static_cast<int>(muon.trackType()) < 2) {
-          auto const& matchMCH = muon.template matchMCHTrack_as<TMuons>();
-          VarManager::FillTrackCollision<TMuonFillMap>(matchMCH, collision);
-        } else if (static_cast<int>(muon.trackType()) > 2) {
-          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
-        }
+        VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
 
         if (fPropMuon) {
           VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
@@ -1037,12 +1032,7 @@ struct TableMaker {
         VarManager::FillTrack<TMuonFillMap>(muon);
 
         // recalculte pDca for global muon tracks
-        if (static_cast<int>(muon.trackType()) < 2) {
-          auto const& matchMCH = tracksMuon.rawIteratorAt(static_cast<int>(muon.matchMCHTrackId()));
-          VarManager::FillTrackCollision<TMuonFillMap>(matchMCH, collision);
-        } else if (static_cast<int>(muon.trackType()) > 2) {
-          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
-        }
+        VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
 
         if (fPropMuon) {
           VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
@@ -1545,7 +1535,7 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
@@ -1554,7 +1544,7 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMapWithCent, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMapWithCent, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
@@ -1563,7 +1553,7 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMapWithMult, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMapWithMult, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
