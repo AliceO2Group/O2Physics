@@ -37,6 +37,45 @@ double particle_mass(int PDGcode)
     return TDatabasePDG::Instance()->GetParticle(PDGcode)->Mass();
 }
 
+// for the variable binning in 3D DCA histos in the PairMC task
+inline std::unique_ptr<double[]> calc_const_bins(const int& N, const float& xmin, const float& xmax) // needed only to calculate bins along X axis for DCA histos (even if the bin width is constant have to use an array since want to have variable bins in Y and Z)
+{
+  auto bins = std::make_unique<double[]>(N + 1);
+
+  float wbin = (xmax - xmin) / N;
+  bins[0] = xmin;
+
+  for (int i = 1; i < N + 1; i++) {
+    bins[i] = bins[i - 1] + wbin;
+  }
+
+  return bins;
+}
+
+// for the variable binning in 3D DCA histos in the PairMC task
+inline std::unique_ptr<double[]> calc_var_bins(const int& N, const float& xmax, const int& scale)
+{
+  auto bins = std::make_unique<double[]>(N);
+
+  float q = std::pow(scale, 1.0 / (0.5 * N)); // q -- common ratio of the geometric progression, estimated through the requested scaling of w_bin
+
+  float winit = xmax * (1 - q) / (1 - scale); // initial w_bin is estimated through sum of the bin width (sum of N elements in geometric progression) that must be equal to xmax
+
+  float bin_edge = 0.5 * winit;
+  bins[0.5 * N - 1] = -bin_edge; // first bin edge left to the center (i.e. 0)
+  bins[0.5 * N] = bin_edge;      // first bin edge right to the center (i.e. 0)
+  bins[0] = -xmax;
+  bins[N - 1] = xmax;
+
+  for (int i = 1; i < 0.5 * N - 1; i++) {
+    bin_edge += winit * pow(q, i);
+    bins[0.5 * N - 1 - i] = -bin_edge;
+    bins[0.5 * N + i] = bin_edge;
+  }
+
+  return bins;
+}
+
 namespace o2::aod::singletrackselector
 {
 template <typename Type>
