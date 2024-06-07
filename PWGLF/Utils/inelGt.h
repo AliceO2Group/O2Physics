@@ -74,6 +74,18 @@ bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection, pdgDatabase 
     return false;
   }
 }
+  
+template <typename TMcParticles, typename pdgDatabase>
+bool isINELgt0mc(TMcParticles particles, pdgDatabase pdgDB)
+{
+  return isINELgtNmc<TMcParticles, pdgDatabase>(particles, 0, pdgDB);
+}
+
+template <typename TMcParticles, typename pdgDatabase>
+bool isINELgt1mc(TMcParticles particles, pdgDatabase pdgDB)
+{
+  return isINELgtNmc<TMcParticles, pdgDatabase>(particles, 1, pdgDB);
+}
 
 template <typename pdgDatabase>
 struct ParticleCounter {
