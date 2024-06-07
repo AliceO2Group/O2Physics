@@ -29,7 +29,7 @@ template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, t
 void checkEvSel(Coll const& collision, o2::hf_evsel::HfEventSelection& hfEvSel, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& allSelColl)
 {
   float centrality{-1.f};
-  const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
+  const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<useEvSel, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
   if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
     sel8Coll++;
   if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
