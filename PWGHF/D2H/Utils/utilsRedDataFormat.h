@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file utilsEvSelHf.h
+/// \file utilsRedDataFormat.h
 /// \brief Event selection utilities for reduced data format analyses
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, UniTO Turin
 
