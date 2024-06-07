@@ -33,7 +33,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/Utils/mcParticle.h"
 
 using namespace o2;
 using namespace o2::framework;
