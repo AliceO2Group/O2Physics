@@ -948,7 +948,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         if (flag != 0) {
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
         }
-        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0){
+        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
           rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, idxBhadMothers[0]);
         } else {
           rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, -1);
