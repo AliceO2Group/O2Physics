@@ -106,7 +106,7 @@ struct HfDataCreatorCharmResoReduced {
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   HfHelper hfHelper;
-  
+
   bool isHfCandResoConfigFilled = false;
 
   using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;

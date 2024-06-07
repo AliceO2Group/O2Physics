@@ -19,29 +19,28 @@
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
-
 namespace o2::hf_evsel
 {
-    HfEventSelection hfEvSel;
+HfEventSelection hfEvSel;
 
-    /// Helper function to count collisions at different event selection stages
-    /// \tparam useEvSel use information from the EvSel table
-    /// \tparam centEstimator centrality estimator
-    /// \param collision collision to test against the selection criteria
-    template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
-    void checkEvSel(Coll const& collision, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& allSelColl)
-    {
-    float centrality{-1.f};
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
-    if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
-        sel8Coll++;
-    if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
-        zvtxColl++;
-    if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
-        zvtxAndSel8Coll++;
-    if (rejectionMask == 0)
-        allSelColl++;
-    }
+/// Helper function to count collisions at different event selection stages
+/// \tparam useEvSel use information from the EvSel table
+/// \tparam centEstimator centrality estimator
+/// \param collision collision to test against the selection criteria
+template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
+void checkEvSel(Coll const& collision, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& allSelColl)
+{
+  float centrality{-1.f};
+  const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
+  if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+    sel8Coll++;
+  if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ))
+    zvtxColl++;
+  if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger))
+    zvtxAndSel8Coll++;
+  if (rejectionMask == 0)
+    allSelColl++;
 }
+} // namespace o2::hf_evsel
 
 #endif // PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_
