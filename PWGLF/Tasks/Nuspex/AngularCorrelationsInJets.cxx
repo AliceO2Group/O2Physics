@@ -221,7 +221,7 @@ struct AngularCorrelationsInJets {
 
     constituents = hardestJet.constituents();
 
-    for (int i = 0; i < static_cast<int> constituents.size(); i++) {
+    for (int i = 0; i < constituents.size(); i++) {
       registryData.fill(HIST("hPtJetParticle"), constituents[i].pt());
       double DeltaPhi = TVector2::Phi_0_2pi(constituents[i].phi() - hardestJet.phi());
       double DeltaEta = constituents[i].eta() - hardestJet.eta();
@@ -237,7 +237,7 @@ struct AngularCorrelationsInJets {
 
     subtractedJet = subtractor(hardestJet);
     if (subtractedJet.has_constituents()) {
-      for (int i = 0; i < static_cast<int> subtractedJet.constituents().size(); i++) {
+      for (int i = 0; i < subtractedJet.constituents().size(); i++) {
         registryData.fill(HIST("hPtSubtractedJet"), subtractedJet.constituents()[i].pt());
       }
     }
@@ -247,7 +247,7 @@ struct AngularCorrelationsInJets {
     std::vector<typename TracksType::iterator> jetDeuterons;
     std::vector<typename TracksType::iterator> jetAntideuterons;
 
-    for (int i = 0; i < static_cast<int> constituents.size(); i++) {
+    for (int i = 0; i < constituents.size(); i++) {
       fastjet::PseudoJet pseudoParticle = constituents[i];
       int id = pseudoParticle.user_index();
       typename TracksType::iterator jetParticle = tracks.iteratorAt(id);
@@ -295,8 +295,8 @@ struct AngularCorrelationsInJets {
     registryData.fill(HIST("hEventProtocol"), 5);
 
     if (jetProtons.size() > 1) {
-      for (int i = 0; i < static_cast<int> jetProtons.size(); i++) {
-        for (int j = i + 1; j < static_cast<int> jetProtons.size(); j++) {
+      for (int i = 0; i < jetProtons.size(); i++) {
+        for (int j = i + 1; j < jetProtons.size(); j++) {
           double DeltaPhi = TVector2::Phi_0_2pi(jetProtons[i].phi() - jetProtons[j].phi());
           double DeltaEta = TMath::Abs(jetProtons[i].eta() - jetProtons[j].eta());
           if (DeltaPhi > (1.5 * TMath::Pi())) {
@@ -310,8 +310,8 @@ struct AngularCorrelationsInJets {
       }
     }
     if (jetAntiprotons.size() > 1) {
-      for (int i = 0; i < static_cast<int> jetAntiprotons.size(); i++) {
-        for (int j = i + 1; j < static_cast<int> jetAntiprotons.size(); j++) {
+      for (int i = 0; i < jetAntiprotons.size(); i++) {
+        for (int j = i + 1; j < jetAntiprotons.size(); j++) {
           double DeltaPhi = TVector2::Phi_0_2pi(jetAntiprotons[i].phi() - jetAntiprotons[j].phi());
           double DeltaEta = TMath::Abs(jetAntiprotons[i].eta() - jetAntiprotons[j].eta());
           if (DeltaPhi > (1.5 * TMath::Pi())) {
@@ -325,8 +325,8 @@ struct AngularCorrelationsInJets {
       }
     }
     if (jetDeuterons.size() > 1) {
-      for (int i = 0; i < static_cast<int> jetDeuterons.size(); i++) {
-        for (int j = i + 1; j < static_cast<int> jetDeuterons.size(); j++) {
+      for (int i = 0; i < jetDeuterons.size(); i++) {
+        for (int j = i + 1; j < jetDeuterons.size(); j++) {
           double DeltaPhi = TVector2::Phi_0_2pi(jetDeuterons[i].phi() - jetDeuterons[j].phi());
           double DeltaEta = TMath::Abs(jetDeuterons[i].eta() - jetDeuterons[j].eta());
           if (DeltaPhi > (1.5 * TMath::Pi())) {
@@ -340,8 +340,8 @@ struct AngularCorrelationsInJets {
       }
     }
     if (jetAntideuterons.size() > 1) {
-      for (int i = 0; i < static_cast<int> jetAntideuterons.size(); i++) {
-        for (int j = i + 1; j < static_cast<int> jetAntideuterons.size(); j++) {
+      for (int i = 0; i < jetAntideuterons.size(); i++) {
+        for (int j = i + 1; j < jetAntideuterons.size(); j++) {
           double DeltaPhi = TVector2::Phi_0_2pi(jetAntideuterons[i].phi() - jetAntideuterons[j].phi());
           double DeltaEta = TMath::Abs(jetAntideuterons[i].eta() - jetAntideuterons[j].eta());
           if (DeltaPhi > (1.5 * TMath::Pi())) {
@@ -512,7 +512,7 @@ struct AngularCorrelationsInJets {
       case 1:
         if (fTrackBufferProton.size() == 0)
           return;
-        for (int i = 0; i < static_cast<int> fTrackBufferProton.size(); i++) { // can I do this even if the track buffer isn't even full yet?
+        for (int i = 0; i < fTrackBufferProton.size(); i++) { // can I do this even if the track buffer isn't even full yet?
           double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferProton[i].phi());
           double DeltaEta = TMath::Abs(track.eta() - fTrackBufferProton[i].eta());
           registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
@@ -522,7 +522,7 @@ struct AngularCorrelationsInJets {
       case 2:
         if (fTrackBufferAntiproton.size() == 0)
           return;
-        for (int i = 0; i < static_cast<int> fTrackBufferAntiproton.size(); i++) {
+        for (int i = 0; i < fTrackBufferAntiproton.size(); i++) {
           double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferAntiproton[i].phi());
           double DeltaEta = TMath::Abs(track.eta() - fTrackBufferAntiproton[i].eta());
           registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
@@ -532,7 +532,7 @@ struct AngularCorrelationsInJets {
       case 3:
         if (fTrackBufferDeuteron.size() == 0)
           return;
-        for (int i = 0; i < static_cast<int> fTrackBufferDeuteron.size(); i++) {
+        for (int i = 0; i < fTrackBufferDeuteron.size(); i++) {
           double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferDeuteron[i].phi());
           double DeltaEta = TMath::Abs(track.eta() - fTrackBufferDeuteron[i].eta());
           registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
@@ -542,7 +542,7 @@ struct AngularCorrelationsInJets {
       case 4:
         if (fTrackBufferAntideuteron.size() == 0)
           return;
-        for (int i = 0; i < static_cast<int> fTrackBufferAntideuteron.size(); i++) {
+        for (int i = 0; i < fTrackBufferAntideuteron.size(); i++) {
           double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferAntideuteron[i].phi());
           double DeltaEta = TMath::Abs(track.eta() - fTrackBufferAntideuteron[i].eta());
           registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
