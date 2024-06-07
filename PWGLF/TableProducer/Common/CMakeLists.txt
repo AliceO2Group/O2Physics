@@ -9,12 +9,18 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(strangenessqc
-    SOURCES strangenessQC.cxx
+# General purpose
+o2physics_add_dpl_workflow(epvector
+    SOURCES epvector.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tpcpid
+    SOURCES lfTPCPID.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(flow-qc
-    SOURCES flowQC.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(zdcsp
+    SOURCES zdcSP.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
