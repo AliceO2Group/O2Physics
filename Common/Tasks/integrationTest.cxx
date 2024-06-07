@@ -13,6 +13,7 @@
 // Integration tester for quick and dirty cross checks that
 // the framework is working reasonably
 //
+// Includes further QA if option enabled
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -43,6 +44,13 @@ struct integrationTest {
   Configurable<int> MaxNTrack2D{"MaxNTrack2D", 200, "NTrack max"};
   Configurable<int> nBinsCollisions{"nBinsCollisions", 50, "number of bins in collision histo"};
   Configurable<bool> do2DNTrackCorr{"do2DNTrackCorr", true, "Do 2D Ntrack correlation plots"};
+
+  Configurable<bool> doBasicQA{"doBasicQA", true, "Do basic QA"};
+  ConfigurableAxis axisHasDetector{"axisHasDetector", {16, -0.5f, 15.5f}, ""};
+  ConfigurableAxis axisEta{"axisEta", {200, -2.0f, 2.0f}, ""};
+  ConfigurableAxis axisPhi{"axisPhi", {200, 0.0f, +2*TMath::Pi()}, ""};
+  ConfigurableAxis axisNclu{"axisNclu", {10, -0.5f, 9.5f}, ""};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
 
   enum kTable { kBC = 0,
                 kCollision,
@@ -126,6 +134,7 @@ struct integrationTest {
     histos.add<TH1>("hTracks", "hTracks", HistType::kTH1F, {axisTracks});
     histos.add<TH1>("hTracksITS", "hTracksITS", HistType::kTH1F, {axisTracks});
     histos.add<TH1>("hTracksTPC", "hTracksTPC", HistType::kTH1F, {axisTracks});
+    histos.add<TH1>("hTracksNoTPCOnly", "hTracksNoTPCOnly", HistType::kTH1F, {axisTracks});
     histos.add<TH1>("hTracksTRD", "hTracksTRD", HistType::kTH1F, {axisTracks});
     histos.add<TH1>("hTracksTOF", "hTracksTOF", HistType::kTH1F, {axisTracks});
     histos.add<TH1>("hMFTTracks", "hMFTTracks", HistType::kTH1F, {axisTracks});
@@ -133,12 +142,29 @@ struct integrationTest {
 
     histos.add<TH1>("hV0s", "hV0s", HistType::kTH1F, {axisTracks});
     histos.add<TH1>("hCascades", "hCascades", HistType::kTH1F, {axisTracks});
+    histos.add<TH1>("hHasDetector", "hHasDetector", HistType::kTH1F, {axisHasDetector});
 
     if (do2DNTrackCorr) {
       histos.add<TH2>("hTOFvsTRD", "hTOFvsTRD", HistType::kTH2F, {axisTracks2Dtrd, axisTracks2Dtof});
       histos.add<TH2>("hTOFvsTPC", "hTOFvsTPC", HistType::kTH2F, {axisTracks2Dtpc, axisTracks2Dtof});
       histos.add<TH2>("hTRDvsTPC", "hTRDvsTPC", HistType::kTH2F, {axisTracks2Dtpc, axisTracks2Dtrd});
       histos.add<TH2>("hITSvsTPC", "hITSvsTPC", HistType::kTH2F, {axisTracks2Dtpc, axisTracks2Dits});
+    }
+
+    // pT histograms
+    histos.add<TH1>("hPt", "hPt", HistType::kTH1F, {axisPt});
+    histos.add<TH1>("hPtITS", "hPtITS", HistType::kTH1F, {axisPt});
+    histos.add<TH1>("hPtTPC", "hPtTPC", HistType::kTH1F, {axisPt});
+    histos.add<TH1>("hPtNoTPCOnly", "hPtNoTPCOnly", HistType::kTH1F, {axisPt});
+    histos.add<TH1>("hPtTOF", "hPtTOF", HistType::kTH1F, {axisPt});
+    histos.add<TH1>("hPtTRD", "hPtTRD", HistType::kTH1F, {axisPt});
+
+    if (doBasicQA) {
+      // general QA
+      histos.add<TH2>("h2dPhiVsEtaAll", "h2dPhiVsEtaAll", HistType::kTH2F, {axisEta, axisPhi});
+      histos.add<TH2>("h2dPhiVsEtaNoTPCOnly", "h2dPhiVsEtaNoTPCOnly", HistType::kTH2F, {axisEta, axisPhi});
+      histos.add<TH1>("hNCluAll", "hNCluAll", HistType::kTH1F, {axisNclu});
+      histos.add<TH1>("hNCluNoTPCOnly", "hNCluNoTPCOnly", HistType::kTH1F, {axisNclu});
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -207,22 +233,50 @@ struct integrationTest {
 
   void processCollisions(aod::Collision const&, FullTracksIU const& tracks, aod::V0s const& v0s, aod::Cascades const& cascades)
   {
-    Int_t lHasITS = 0, lHasTPC = 0, lHasTRD = 0, lHasTOF = 0;
+    Int_t lHasITS = 0, lHasTPC = 0, lHasTRD = 0, lHasTOF = 0, lNotTPCOnly = 0;
     for (auto& track : tracks) {
-      if (!track.isPVContributor())
-        continue;
-      if (track.hasITS())
+      // TPC only bool 
+      bool isTPConly = track.hasTPC() && !track.hasTOF() && !track.hasTRD() && !track.hasITS();
+      histos.fill(HIST("hPt"), track.pt());
+      if (track.hasITS()){
         lHasITS++;
-      if (track.hasTPC())
+        histos.fill(HIST("hPtITS"), track.pt());
+      }
+      if (track.hasTPC()){
         lHasTPC++;
-      if (track.hasTRD())
+        histos.fill(HIST("hPtTPC"), track.pt());
+      }
+      if (!isTPConly){
+        lNotTPCOnly++;
+        histos.fill(HIST("hPtNoTPCOnly"), track.pt());
+      }
+      if (track.hasTRD()){
         lHasTRD++;
-      if (track.hasTOF())
+        histos.fill(HIST("hPtTRD"), track.pt());
+      }
+      if (track.hasTOF()){
         lHasTOF++;
+        histos.fill(HIST("hPtTOF"), track.pt());
+      }
+
+      if(doBasicQA){
+        histos.fill(HIST("hNCluAll"), track.itsNCls());
+        histos.fill(HIST("h2dPhiVsEtaAll"), track.eta(), track.phi());
+        
+        if(!isTPConly){ 
+          histos.fill(HIST("hNCluNoTPCOnly"), track.itsNCls());
+          histos.fill(HIST("h2dPhiVsEtaNoTPCOnly"), track.eta(), track.phi());
+        }
+
+        // encode particle has??? properties here
+        uint8_t encodedHasInfo = (track.hasITS() << 0) | (track.hasTPC() << 1) | (track.hasTRD() << 2) | (track.hasTOF() << 3);
+        histos.fill(HIST("hHasDetector"), encodedHasInfo);
+      }
     }
     histos.fill(HIST("hTracks"), tracks.size());
     histos.fill(HIST("hTracksITS"), lHasITS);
     histos.fill(HIST("hTracksTPC"), lHasTPC);
+    histos.fill(HIST("hTracksNoTPCOnly"), lNotTPCOnly);
     histos.fill(HIST("hTracksTRD"), lHasTRD);
     histos.fill(HIST("hTracksTOF"), lHasTOF);
     if (do2DNTrackCorr) {
