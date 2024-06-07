@@ -251,7 +251,7 @@ struct HfDataCreatorCharmHadPiReduced {
   /// \tparam centEstimator centrality estimator
   /// \param collision collision to test against the selection criteria
   template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
-  void checkEvSel(Coll collision, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& allSelColl)
+  void checkEvSel(Coll const& collision, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& allSelColl)
   {
     float centrality{-1.f};
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None>(collision, centrality);
