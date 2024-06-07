@@ -24,6 +24,7 @@
 // #include "Common/DataModel/Multiplicity.h"
 
 #include <vector>
+#include <memory>
 #include "TLorentzVector.h"
 #include "TVector3.h"
 #include "TDatabasePDG.h"

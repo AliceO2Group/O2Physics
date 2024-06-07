@@ -146,7 +146,7 @@ struct FemtoCorrelationsMC {
     int N = _dcaBinning.value[0]; // number of bins -- must be odd otherwise will be increased by 1
     if (N % 2 != 1)
       N += 1;
-    auto var_bins = calc_var_bins(N + 1, _dcaBinning.value[1], (int)_dcaBinning.value[2]);
+    auto var_bins = calc_var_bins(N + 1, _dcaBinning.value[1], static_cast<int>(_dcaBinning.value[2]));
     auto const_bins = calc_const_bins(100, 0., 5.0);
 
     for (unsigned int i = 0; i < _centBins.value.size() - 1; i++) {
