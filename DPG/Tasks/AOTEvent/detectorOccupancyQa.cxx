@@ -37,7 +37,7 @@ using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 struct DetectorOccupancyQaTask {
   // configurables for study of occupancy in time windows
   Configurable<float> confTimeIntervalForOccupancyCalculation{"TimeIntervalForOccupancyCalculation", 100, "Time interval for TPC occupancy calculation, us"};
-  Configurable<float> confOccupancyHistCoeffNtracks{"HistCoeffNtracks", 1., "Coefficient for max nTracks in occupancy histos"};
+  Configurable<float> confOccupancyHistCoeffNtracksForOccupancy{"HistCoeffNtracksForOccupancy", 1., "Coefficient for max nTracks in occupancy histos"};
   Configurable<float> confOccupancyHistCoeffNbins2D{"HistCoeffNbins2D", 1., "Coefficient for nBins in occupancy 2D histos"};
   Configurable<float> confOccupancyHistCoeffNbins3D{"HistCoeffNbins3D", 1., "Coefficient for nBins in occupancy 3D histos"};
   Configurable<float> confCoeffMaxNtracksThisEvent{"CoeffMaxNtracksThisEvent", 1., "Coefficient for max nTracks or FT0 ampl in histos in a given event"};
@@ -81,7 +81,7 @@ struct DetectorOccupancyQaTask {
     ccdb->setLocalObjectValidityChecking();
 
     // histograms for occupancy-in-time-window study
-    double kMaxOccup = confOccupancyHistCoeffNtracks;
+    double kMaxOccup = confOccupancyHistCoeffNtracksForOccupancy;
     double kMaxThisEv = confCoeffMaxNtracksThisEvent;
 
     int nMax1D = kMaxThisEv * 8000;
