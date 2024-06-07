@@ -35,7 +35,6 @@
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
 
 using namespace o2;
