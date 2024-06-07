@@ -85,7 +85,7 @@ struct highmasslambda {
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
   // proton track cut
-  Configurable<bool> ispTdifferentialDCA{"ispTdifferentialDCA", false, "is pT differential DCA"};
+  Configurable<bool> ispTdifferentialDCA{"ispTdifferentialDCA", true, "is pT differential DCA"};
   Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
   Configurable<bool> rejectPID{"rejectPID", true, "Reject PID"};
   Configurable<float> confMinRot{"confMinRot", 5.0 * TMath::Pi() / 6.0, "Minimum of rotation"};
@@ -166,6 +166,7 @@ struct highmasslambda {
     // std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.02, 0.03, 0.05, 0.1, 0.5, 1.0};
     std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.0015, 0.002, 0.003, 0.004, 0.006, 0.008, 0.01, 0.015, 0.02, 0.04, 1.0};
     std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 1.0, 1.5, 2.0, 3.0, 100.0};
+    std::vector<double> ptLambdaBinning = {2.0, 3.0, 4.0, 5.0, 8.0, 16.0};
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -212,38 +213,38 @@ struct highmasslambda {
     histos.add("hPsiTPCL", "PsiTPCL", kTH2F, {centAxis, phiAxis});
     if (fillDefault) {
       if (fillDecayLength) {
-        histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis});
-        histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis});
-        histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis});
+        histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
+        histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
+        histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
       }
-      histos.add("hSparseV2SASameEvent_V2_new", "hSparseV2SASameEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis});
-      histos.add("hSparseV2SAMixedEvent_V2_new", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis});
-      histos.add("hSparseV2SASameEventRotational_V2_new", "hSparseV2SASameEventRotational_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis});
+      histos.add("hSparseV2SASameEvent_V2_new", "hSparseV2SASameEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
+      histos.add("hSparseV2SAMixedEvent_V2_new", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
+      histos.add("hSparseV2SASameEventRotational_V2_new", "hSparseV2SASameEventRotational_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
     }
     if (fillOccupancy) {
       if (fillDecayLength) {
-        histos.add("hSparseV2SASameEvent_V2_occupancy", "hSparseV2SASameEvent_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
-        histos.add("hSparseV2SASameEventRotational_V2_occupancy", "hSparseV2SASameEventRotational_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
-        histos.add("hSparseV2SAMixedEvent_V2_occupancy", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
+        histos.add("hSparseV2SASameEvent_V2_occupancy", "hSparseV2SASameEvent_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
+        histos.add("hSparseV2SASameEventRotational_V2_occupancy", "hSparseV2SASameEventRotational_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
+        histos.add("hSparseV2SAMixedEvent_V2_occupancy", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
       }
-      histos.add("hSparseV2SASameEvent_V2_new_occupancy", "hSparseV2SASameEvent_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
-      histos.add("hSparseV2SASameEventRotational_V2_new_occupancy", "hSparseV2SASameEventRotational_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
-      histos.add("hSparseV2SAMixedEvent_V2_new_occupancy", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
+      histos.add("hSparseV2SASameEvent_V2_new_occupancy", "hSparseV2SASameEvent_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
+      histos.add("hSparseV2SASameEventRotational_V2_new_occupancy", "hSparseV2SASameEventRotational_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
+      histos.add("hSparseV2SAMixedEvent_V2_new_occupancy", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis, occupancyAxis});
     }
     if (fillPolarization) {
-      histos.add("hSparseV2SASameEventplus_SA", "hSparseV2SASameEventplus_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEventplus_SA_A0", "hSparseV2SASameEventplus_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEventplus_SA_azimuth", "hSparseV2SASameEventplus_SA_azimuth", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisCentrality});
-      histos.add("hSparseV2SASameEventminus_SA", "hSparseV2SASameEventminus_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEventminus_SA_A0", "hSparseV2SASameEventminus_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEventminus_SA_azimuth", "hSparseV2SASameEventminus_SA_azimuth", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisCentrality});
+      histos.add("hSparseV2SASameEventplus_SA", "hSparseV2SASameEventplus_SA", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEventplus_SA_A0", "hSparseV2SASameEventplus_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEventplus_SA_azimuth", "hSparseV2SASameEventplus_SA_azimuth", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisCentrality});
+      histos.add("hSparseV2SASameEventminus_SA", "hSparseV2SASameEventminus_SA", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEventminus_SA_A0", "hSparseV2SASameEventminus_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEventminus_SA_azimuth", "hSparseV2SASameEventminus_SA_azimuth", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisCentrality});
 
-      histos.add("hSparseV2SAMixedEventplus_SA", "hSparseV2SAMixedEventplus_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SAMixedEventplus_SA_A0", "hSparseV2SAMixedEventplus_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SAMixedEventplus_SA_azimuth", "hSparseV2SAMixedEventplus_SA_azimuth", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisCentrality});
-      histos.add("hSparseV2SAMixedEventminus_SA", "hSparseV2SAMixedEventminus_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SAMixedEventminus_SA_A0", "hSparseV2SAMixedEventminus_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SAMixedEventminus_SA_azimuth", "hSparseV2SAMixedEventminus_SA_azimuth", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEventplus_SA", "hSparseV2SAMixedEventplus_SA", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEventplus_SA_A0", "hSparseV2SAMixedEventplus_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEventplus_SA_azimuth", "hSparseV2SAMixedEventplus_SA_azimuth", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEventminus_SA", "hSparseV2SAMixedEventminus_SA", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEventminus_SA_A0", "hSparseV2SAMixedEventminus_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEventminus_SA_azimuth", "hSparseV2SAMixedEventminus_SA_azimuth", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisCentrality});
     }
 
     // histogram for resolution
@@ -336,7 +337,7 @@ struct highmasslambda {
       if (candidate.pt() >= 4.0 && candidate.pt() < 5.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.5 && candidate.tofNSigmaPr() < 3.0) {
         return true;
       }
-      if (candidate.pt() >= 5.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.0 && candidate.tofNSigmaPr() < 3.0) {
+      if (candidate.pt() >= 5.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.5 && candidate.tofNSigmaPr() < 3.0) {
         return true;
       }
     }
@@ -347,7 +348,7 @@ struct highmasslambda {
       if (candidate.pt() >= 0.7 && candidate.pt() < 0.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 3.0) {
         return true;
       }
-      if (candidate.pt() >= 0.8 && candidate.tpcNSigmaPr() > -1.0 && candidate.tpcNSigmaPr() < 3.0) {
+      if (candidate.pt() >= 0.8 && candidate.tpcNSigmaPr() > -1.5 && candidate.tpcNSigmaPr() < 3.0) {
         return true;
       }
     }
@@ -367,7 +368,7 @@ struct highmasslambda {
       return true;
     }
 
-    if (candidate.pt() >= 0.8 && candidate.pt() < 1.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -1.0 && candidate.tpcNSigmaPr() < 3.0) {
+    if (candidate.pt() >= 0.8 && candidate.pt() < 1.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -1.5 && candidate.tpcNSigmaPr() < 3.0) {
       return true;
     }
     if (candidate.pt() >= 0.8 && candidate.pt() < 3.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && TMath::Abs(candidate.tofNSigmaPr()) < 3.0) {
@@ -380,11 +381,10 @@ struct highmasslambda {
     if (candidate.pt() >= 4.0 && candidate.pt() < 5.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.5 && candidate.tofNSigmaPr() < 3.0) {
       return true;
     }
-
-    if (candidate.p() > 5.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -1.0 && candidate.tpcNSigmaPr() < 3.0) {
+    if (candidate.p() >= 5.0 && !candidate.hasTOF() && candidate.tpcNSigmaPr() > -1.5 && candidate.tpcNSigmaPr() < 3.0) {
       return true;
     }
-    if (candidate.pt() >= 5.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.0 && candidate.tofNSigmaPr() < 3.0) {
+    if (candidate.pt() >= 5.0 && candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0 && candidate.tofNSigmaPr() > -1.5 && candidate.tofNSigmaPr() < 3.0) {
       return true;
     }
     return false;
