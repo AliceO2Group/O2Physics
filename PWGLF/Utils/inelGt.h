@@ -74,7 +74,7 @@ bool isINELgtNmc(TMcParticles particles, int nChToSatisfySelection, pdgDatabase 
     return false;
   }
 }
-  
+
 template <typename TMcParticles, typename pdgDatabase>
 bool isINELgt0mc(TMcParticles particles, pdgDatabase pdgDB)
 {
