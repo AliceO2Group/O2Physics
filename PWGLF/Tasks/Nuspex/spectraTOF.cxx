@@ -70,6 +70,7 @@ struct tofSpectra {
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
   Configurable<bool> enableTPCTOFHistograms{"enableTPCTOFHistograms", true, "Enables TPC TOF histograms"};
   Configurable<bool> enableDCAxyzHistograms{"enableDCAxyzHistograms", false, "Enables DCAxyz correlation histograms"};
+  Configurable<bool> enableDCAxyphiHistograms{"enableDCAxyphiHistograms", false, "Enables DCAxyphi correlation histograms"};
 
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
   ConfigurableAxis binsEta{"binsEta", {100, -1, 1}, "Binning of the eta axis"};
@@ -80,7 +81,9 @@ struct tofSpectra {
   ConfigurableAxis binsDca{"binsDca", {VARIABLE_WIDTH, -3.0, -2.95, -2.9, -2.85, -2.8, -2.75, -2.7, -2.65, -2.6, -2.55, -2.5, -2.45, -2.4, -2.35, -2.3, -2.25, -2.2, -2.15, -2.1, -2.05, -2.0, -1.975, -1.95, -1.925, -1.9, -1.875, -1.85, -1.825, -1.8, -1.775, -1.75, -1.725, -1.7, -1.675, -1.65, -1.625, -1.6, -1.575, -1.55, -1.525, -1.5, -1.475, -1.45, -1.425, -1.4, -1.375, -1.35, -1.325, -1.3, -1.275, -1.25, -1.225, -1.2, -1.175, -1.15, -1.125, -1.1, -1.075, -1.05, -1.025, -1.0, -0.99, -0.98, -0.97, -0.96, -0.95, -0.94, -0.93, -0.92, -0.91, -0.9, -0.89, -0.88, -0.87, -0.86, -0.85, -0.84, -0.83, -0.82, -0.81, -0.8, -0.79, -0.78, -0.77, -0.76, -0.75, -0.74, -0.73, -0.72, -0.71, -0.7, -0.69, -0.68, -0.67, -0.66, -0.65, -0.64, -0.63, -0.62, -0.61, -0.6, -0.59, -0.58, -0.57, -0.56, -0.55, -0.54, -0.53, -0.52, -0.51, -0.5, -0.49, -0.48, -0.47, -0.46, -0.45, -0.44, -0.43, -0.42, -0.41, -0.4, -0.396, -0.392, -0.388, -0.384, -0.38, -0.376, -0.372, -0.368, -0.364, -0.36, -0.356, -0.352, -0.348, -0.344, -0.34, -0.336, -0.332, -0.328, -0.324, -0.32, -0.316, -0.312, -0.308, -0.304, -0.3, -0.296, -0.292, -0.288, -0.284, -0.28, -0.276, -0.272, -0.268, -0.264, -0.26, -0.256, -0.252, -0.248, -0.244, -0.24, -0.236, -0.232, -0.228, -0.224, -0.22, -0.216, -0.212, -0.208, -0.204, -0.2, -0.198, -0.196, -0.194, -0.192, -0.19, -0.188, -0.186, -0.184, -0.182, -0.18, -0.178, -0.176, -0.174, -0.172, -0.17, -0.168, -0.166, -0.164, -0.162, -0.16, -0.158, -0.156, -0.154, -0.152, -0.15, -0.148, -0.146, -0.144, -0.142, -0.14, -0.138, -0.136, -0.134, -0.132, -0.13, -0.128, -0.126, -0.124, -0.122, -0.12, -0.118, -0.116, -0.114, -0.112, -0.11, -0.108, -0.106, -0.104, -0.102, -0.1, -0.099, -0.098, -0.097, -0.096, -0.095, -0.094, -0.093, -0.092, -0.091, -0.09, -0.089, -0.088, -0.087, -0.086, -0.085, -0.084, -0.083, -0.082, -0.081, -0.08, -0.079, -0.078, -0.077, -0.076, -0.075, -0.074, -0.073, -0.072, -0.071, -0.07, -0.069, -0.068, -0.067, -0.066, -0.065, -0.064, -0.063, -0.062, -0.061, -0.06, -0.059, -0.058, -0.057, -0.056, -0.055, -0.054, -0.053, -0.052, -0.051, -0.05, -0.049, -0.048, -0.047, -0.046, -0.045, -0.044, -0.043, -0.042, -0.041, -0.04, -0.039, -0.038, -0.037, -0.036, -0.035, -0.034, -0.033, -0.032, -0.031, -0.03, -0.029, -0.028, -0.027, -0.026, -0.025, -0.024, -0.023, -0.022, -0.021, -0.02, -0.019, -0.018, -0.017, -0.016, -0.015, -0.014, -0.013, -0.012, -0.011, -0.01, -0.009, -0.008, -0.007, -0.006, -0.005, -0.004, -0.003, -0.002, -0.001, -0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02, 0.021, 0.022, 0.023, 0.024, 0.025, 0.026, 0.027, 0.028, 0.029, 0.03, 0.031, 0.032, 0.033, 0.034, 0.035, 0.036, 0.037, 0.038, 0.039, 0.04, 0.041, 0.042, 0.043, 0.044, 0.045, 0.046, 0.047, 0.048, 0.049, 0.05, 0.051, 0.052, 0.053, 0.054, 0.055, 0.056, 0.057, 0.058, 0.059, 0.06, 0.061, 0.062, 0.063, 0.064, 0.065, 0.066, 0.067, 0.068, 0.069, 0.07, 0.071, 0.072, 0.073, 0.074, 0.075, 0.076, 0.077, 0.078, 0.079, 0.08, 0.081, 0.082, 0.083, 0.084, 0.085, 0.086, 0.087, 0.088, 0.089, 0.09, 0.091, 0.092, 0.093, 0.094, 0.095, 0.096, 0.097, 0.098, 0.099, 0.1, 0.102, 0.104, 0.106, 0.108, 0.11, 0.112, 0.114, 0.116, 0.118, 0.12, 0.122, 0.124, 0.126, 0.128, 0.13, 0.132, 0.134, 0.136, 0.138, 0.14, 0.142, 0.144, 0.146, 0.148, 0.15, 0.152, 0.154, 0.156, 0.158, 0.16, 0.162, 0.164, 0.166, 0.168, 0.17, 0.172, 0.174, 0.176, 0.178, 0.18, 0.182, 0.184, 0.186, 0.188, 0.19, 0.192, 0.194, 0.196, 0.198, 0.2, 0.204, 0.208, 0.212, 0.216, 0.22, 0.224, 0.228, 0.232, 0.236, 0.24, 0.244, 0.248, 0.252, 0.256, 0.26, 0.264, 0.268, 0.272, 0.276, 0.28, 0.284, 0.288, 0.292, 0.296, 0.3, 0.304, 0.308, 0.312, 0.316, 0.32, 0.324, 0.328, 0.332, 0.336, 0.34, 0.344, 0.348, 0.352, 0.356, 0.36, 0.364, 0.368, 0.372, 0.376, 0.38, 0.384, 0.388, 0.392, 0.396, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.0, 1.025, 1.05, 1.075, 1.1, 1.125, 1.15, 1.175, 1.2, 1.225, 1.25, 1.275, 1.3, 1.325, 1.35, 1.375, 1.4, 1.425, 1.45, 1.475, 1.5, 1.525, 1.55, 1.575, 1.6, 1.625, 1.65, 1.675, 1.7, 1.725, 1.75, 1.775, 1.8, 1.825, 1.85, 1.875, 1.9, 1.925, 1.95, 1.975, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0}, "Binning of DCA xy and z axis"};
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {100, 0, 100}, "Binning for multiplicity"};
   ConfigurableAxis binsPercentile{"binsPercentile", {100, 0, 100}, "Binning for percentiles"};
+  ConfigurableAxis binsImpactParam{"binsImpactParam", {2500, 0, 25}, "Binning for impact parameter"};
   Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "Flag to use a multiplicity estimator: 0 no multiplicity, 1 MultFV0M, 2 MultFT0M, 3 MultFDDM, 4 MultTracklets, 5 MultTPC, 6 MultNTracksPV, 7 MultNTracksPVeta1, 8 CentralityFT0C, 9 CentralityFT0M, 10 CentralityFV0A"};
+
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
   Configurable<bool> kaonIsPvContrib{"kaonIsPvContrib", false, "Flag to ckeck if kaon tracks are from pv"};
@@ -100,7 +103,6 @@ struct tofSpectra {
   Configurable<bool> enableTPCTOFvsEtaHistograms{"enableTPCTOFvsEtaHistograms", false, "choose if produce TPC tof vs Eta"};
   Configurable<bool> includeCentralityMC{"includeCentralityMC", true, "choose if include Centrality to MC"};
   Configurable<bool> tpctofVsMult{"tpctofVsMult", false, "Produce TPC-TOF plots vs multiplicity"};
-  ConfigurableAxis binsImpactParam{"binsImpactParam", {2500, 0, 25}, "Binning for impact parameter"};
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -242,6 +244,7 @@ struct tofSpectra {
     histos.add("Centrality/FT0C", "FT0C", HistType::kTH1D, {{binsPercentile, "Centrality FT0C"}});
     histos.add("Centrality/FDDM", "FDDM", HistType::kTH1D, {{binsPercentile, "Centrality FDDM"}});
     histos.add("Centrality/NTPV", "NTPV", HistType::kTH1D, {{binsPercentile, "Centrality NTPV"}});
+
     histos.add("Mult/FV0M", "MultFV0M", HistType::kTH1D, {{binsMultiplicity, "MultFV0M"}});
     histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {{binsMultiplicity, "MultFT0M"}});
     histos.add("Mult/FDDM", "MultFDDM", HistType::kTH1D, {{binsMultiplicity, "MultFDDM"}});
@@ -273,7 +276,7 @@ struct tofSpectra {
       histos.add("track/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH2D, {{60, 0.7, 1.3}, chargeAxis});
       histos.add("track/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH2D, {{100, 0, 10}, chargeAxis});
       histos.add("Vertex/histGenVtxMC", "MC generated vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
-      histos.add("Centrality/ImpParm", "Centrality", HistType::kTH1F, {{binsPercentile, "Centrality FT0C"}});
+      histos.add("Centrality/ImpParm", "Centrality", HistType::kTH1F, {impParamAxis});
 
       histos.addClone("track/ITS/itsNCls", "track/selected/ITS/itsNCls");
       histos.addClone("track/ITS/itsChi2NCl", "track/selected/ITS/itsChi2NCl");
@@ -338,12 +341,14 @@ struct tofSpectra {
       histos.add("MC/fake/neg", "Fake negative tracks", kTH1D, {ptAxis});
       histos.add("MC/no_collision/pos", "No collision pos track", kTH1D, {ptAxis});
       histos.add("MC/no_collision/neg", "No collision neg track", kTH1D, {ptAxis});
-      histos.add("MC/test/pi/pos/prm/pt/den", "generated MC #pi^{+}", kTHnSparseD, {ptAxis, impParamAxis});
-      histos.add("MC/test/pi/neg/prm/pt/den", "generated MC #pi^{-}", kTHnSparseD, {ptAxis, impParamAxis});
-      histos.add("MC/test/ka/pos/prm/pt/den", "generated MC K^{+}", kTHnSparseD, {ptAxis, impParamAxis});
-      histos.add("MC/test/ka/neg/prm/pt/den", "generated MC K^{-}", kTHnSparseD, {ptAxis, impParamAxis});
-      histos.add("MC/test/pr/pos/prm/pt/den", "generated MC p", kTHnSparseD, {ptAxis, impParamAxis});
-      histos.add("MC/test/pr/neg/prm/pt/den", "generated MC #bar{p}", kTHnSparseD, {ptAxis, impParamAxis});
+      if (doprocessMCgen) {
+        histos.add("MC/test/pi/pos/prm/pt/den", "generated MC #pi^{+}", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/test/pi/neg/prm/pt/den", "generated MC #pi^{-}", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/test/ka/pos/prm/pt/den", "generated MC K^{+}", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/test/ka/neg/prm/pt/den", "generated MC K^{-}", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/test/pr/pos/prm/pt/den", "generated MC p", kTHnSparseD, {ptAxis, impParamAxis});
+        histos.add("MC/test/pr/neg/prm/pt/den", "generated MC #bar{p}", kTHnSparseD, {ptAxis, impParamAxis});
+      }
       auto hh = histos.add<TH1>("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", kTH1D, {{10, 0.5, 10.5}});
       hh->GetXaxis()->SetBinLabel(1, "Collisions generated");
       hh->GetXaxis()->SetBinLabel(2, "Collisions reconstructed");
@@ -495,12 +500,18 @@ struct tofSpectra {
         }
       }
       if (enableDCAxyzHistograms) {
-        histos.add(hdcaxy[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+        if (enableDCAxyphiHistograms) {
         histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH3D, {phiAxis, dcaXyAxis, dcaZAxis});
+        } else {
+          histos.add(hdcaxy[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+        }
+      } else {
+        if (enableDCAxyphiHistograms) {
+          histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2D, {phiAxis, dcaXyAxis});
       } else {
         histos.add(hdcaxy[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
         histos.add(hdcaz[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
-        histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2D, {phiAxis, dcaXyAxis});
+        }
       }
 
       if (doprocessMC) {
@@ -565,8 +576,8 @@ struct tofSpectra {
             histos.add(hdcazprmgoodevs[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
           }
         }
-        // histos.add("Data/pos/pt/its_tpc_trd_tof", "pos ITS-TPC-TRD-TOF", kTH1D, {ptAxis});
-        //  Mismatched info
+
+        // Mismatched info
         histos.add(hpt_mism_its_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
         histos.add(hpt_mism_tpc_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
         histos.add(hpt_mism_trd_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
@@ -798,29 +809,37 @@ struct tofSpectra {
         if (track.sign() > 0) {
           histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY(), track.dcaZ());
           if (isInPtRangeForPhi) {
+            if (enableDCAxyphiHistograms) {
             histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY(), track.dcaZ());
+          }
           }
         } else {
           histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY(), track.dcaZ());
           if (isInPtRangeForPhi) {
+            if (enableDCAxyphiHistograms) {
             histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY(), track.dcaZ());
           }
+        }
         }
       } else {
         if (track.sign() > 0) {
           histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
           histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
           if (isInPtRangeForPhi) {
+            if (enableDCAxyphiHistograms) {
             histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
+          }
           }
         } else {
           histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
           histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
           if (isInPtRangeForPhi) {
+            if (enableDCAxyphiHistograms) {
             histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
           }
         }
       }
+    }
     }
     if (!passesDCAxyCut(track)) {
       return;
@@ -1356,12 +1375,10 @@ struct tofSpectra {
     }
 
     //************************************RD**************************************************
-    auto mcCollision = collision.mcCollision();
-    auto multiplicity = 0.;
+    const auto& mcCollision = collision.mcCollision();
+    float multiplicity = getMultiplicity(collision);
     if (includeCentralityMC) {
       multiplicity = mcCollision.impactParameter();
-    } else {
-      multiplicity = collision.centFT0C();
     }
     //************************************RD**************************************************
 
@@ -1485,48 +1502,7 @@ struct tofSpectra {
       }
     }
   }
-  template <typename McCollisionType, typename McParticlesType>
-  void process_MC_gen(const McCollisionType& mcCollision, const McParticlesType& mcParticles)
-  {
-    histos.fill(HIST("Vertex/histGenVtxMC"), mcCollision.posZ());
-    histos.fill(HIST("Centrality/ImpParm"), mcCollision.impactParameter());
-    const float multiplicity = mcCollision.impactParameter();
-    for (const auto& mcParticleGen : mcParticles) {
-      if (!mcParticleGen.isPhysicalPrimary())
-        continue;
-      int pdgCode = mcParticleGen.pdgCode();
-      float pt = mcParticleGen.pt();
-      float absY = std::abs(mcParticleGen.y());
-      // Apply rapidity cut
-      if (absY > trkselOptions.cfgCutY) {
-        continue;
-      }
 
-      // Fill histograms based on particle type
-      switch (pdgCode) {
-        case 2212:
-          histos.fill(HIST("MC/test/pr/pos/prm/pt/den"), pt, multiplicity);
-          break;
-        case -2212:
-          histos.fill(HIST("MC/test/pr/neg/prm/pt/den"), pt, multiplicity);
-          break;
-        case 211:
-          histos.fill(HIST("MC/test/pi/pos/prm/pt/den"), pt, multiplicity);
-          break;
-        case -211:
-          histos.fill(HIST("MC/test/pi/neg/prm/pt/den"), pt, multiplicity);
-          break;
-        case 321:
-          histos.fill(HIST("MC/test/ka/pos/prm/pt/den"), pt, multiplicity);
-          break;
-        case -321:
-          histos.fill(HIST("MC/test/ka/neg/prm/pt/den"), pt, multiplicity);
-          break;
-        default:
-          break;
-      }
-    }
-  }
   template <std::size_t i, typename ParticleType>
   void fillParticleHistograms_MC(CollisionCandidateMC::iterator const& collision, ParticleType const& mcParticle)
   {
@@ -1787,6 +1763,7 @@ struct tofSpectra {
         }
         break;
     }
+
     if (mcParticle.pdgCode() != PDGs[i]) {
       return;
     }
@@ -1930,6 +1907,7 @@ struct tofSpectra {
           continue;
         }
       }
+
       int nInelPart = 0;
       for (const auto& mcParticle : particlesInCollision) {
         if (mcParticle.isPhysicalPrimary()) {
@@ -1963,11 +1941,50 @@ struct tofSpectra {
     }
   }
   PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
+
   void processMCgen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    process_MC_gen(mcCollision, mcParticles);
+    histos.fill(HIST("Vertex/histGenVtxMC"), mcCollision.posZ());
+    histos.fill(HIST("Centrality/ImpParm"), mcCollision.impactParameter());
+    const float multiplicity = mcCollision.impactParameter();
+    for (const auto& mcParticleGen : mcParticles) {
+      if (!mcParticleGen.isPhysicalPrimary())
+        continue;
+      int pdgCode = mcParticleGen.pdgCode();
+      float pt = mcParticleGen.pt();
+      float absY = std::abs(mcParticleGen.y());
+      // Apply rapidity cut
+      if (absY > trkselOptions.cfgCutY) {
+        continue;
+      }
+
+      // Fill histograms based on particle type
+      switch (pdgCode) {
+        case 2212:
+          histos.fill(HIST("MC/test/pr/pos/prm/pt/den"), pt, multiplicity);
+          break;
+        case -2212:
+          histos.fill(HIST("MC/test/pr/neg/prm/pt/den"), pt, multiplicity);
+          break;
+        case 211:
+          histos.fill(HIST("MC/test/pi/pos/prm/pt/den"), pt, multiplicity);
+          break;
+        case -211:
+          histos.fill(HIST("MC/test/pi/neg/prm/pt/den"), pt, multiplicity);
+          break;
+        case 321:
+          histos.fill(HIST("MC/test/ka/pos/prm/pt/den"), pt, multiplicity);
+          break;
+        case -321:
+          histos.fill(HIST("MC/test/ka/neg/prm/pt/den"), pt, multiplicity);
+          break;
+        default:
+          break;
+      }
+    }
   }
-  PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", true);
+  PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", false);
+
 }; // end of spectra task
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofSpectra>(cfgc)}; }
