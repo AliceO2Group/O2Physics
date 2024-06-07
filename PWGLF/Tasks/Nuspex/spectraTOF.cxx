@@ -819,7 +819,7 @@ struct tofSpectra {
             if (enableDCAxyphiHistograms) {
               histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY(), track.dcaZ());
             }
-        }
+          }
         }
       } else {
         if (track.sign() > 0) {
