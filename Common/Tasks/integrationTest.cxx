@@ -48,7 +48,7 @@ struct integrationTest {
   Configurable<bool> doBasicQA{"doBasicQA", true, "Do basic QA"};
   ConfigurableAxis axisHasDetector{"axisHasDetector", {16, -0.5f, 15.5f}, ""};
   ConfigurableAxis axisEta{"axisEta", {200, -2.0f, 2.0f}, ""};
-  ConfigurableAxis axisPhi{"axisPhi", {200, 0.0f, +2*TMath::Pi()}, ""};
+  ConfigurableAxis axisPhi{"axisPhi", {200, 0.0f, +2 * TMath::Pi()}, ""};
   ConfigurableAxis axisNclu{"axisNclu", {10, -0.5f, 9.5f}, ""};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
 
@@ -235,35 +235,35 @@ struct integrationTest {
   {
     Int_t lHasITS = 0, lHasTPC = 0, lHasTRD = 0, lHasTOF = 0, lNotTPCOnly = 0;
     for (auto& track : tracks) {
-      // TPC only bool 
+      // TPC only bool
       bool isTPConly = track.hasTPC() && !track.hasTOF() && !track.hasTRD() && !track.hasITS();
       histos.fill(HIST("hPt"), track.pt());
-      if (track.hasITS()){
+      if (track.hasITS()) {
         lHasITS++;
         histos.fill(HIST("hPtITS"), track.pt());
       }
-      if (track.hasTPC()){
+      if (track.hasTPC()) {
         lHasTPC++;
         histos.fill(HIST("hPtTPC"), track.pt());
       }
-      if (!isTPConly){
+      if (!isTPConly) {
         lNotTPCOnly++;
         histos.fill(HIST("hPtNoTPCOnly"), track.pt());
       }
-      if (track.hasTRD()){
+      if (track.hasTRD()) {
         lHasTRD++;
         histos.fill(HIST("hPtTRD"), track.pt());
       }
-      if (track.hasTOF()){
+      if (track.hasTOF()) {
         lHasTOF++;
         histos.fill(HIST("hPtTOF"), track.pt());
       }
 
-      if(doBasicQA){
+      if (doBasicQA) {
         histos.fill(HIST("hNCluAll"), track.itsNCls());
         histos.fill(HIST("h2dPhiVsEtaAll"), track.eta(), track.phi());
-        
-        if(!isTPConly){ 
+
+        if (!isTPConly) {
           histos.fill(HIST("hNCluNoTPCOnly"), track.itsNCls());
           histos.fill(HIST("h2dPhiVsEtaNoTPCOnly"), track.eta(), track.phi());
         }
