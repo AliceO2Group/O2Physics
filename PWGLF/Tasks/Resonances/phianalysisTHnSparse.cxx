@@ -188,7 +188,7 @@ struct phianalysisTHnSparse {
 
       registry.add("QATrack/unlikepm/TPCPID/h2TracknSigma", "", kTH2F, {{120, -6, 6}, {120, -6, 6}});
 
-      registry.add("QAMC/hInvMass", "", kTH1F, {invAxis});
+      registry.add("QAMC/hInvMassTrueFalse", "", kTH1F, {invAxis});
 
       // Mixing QA
       registry.add("QAMixing/s4Mult_Vz", "", kTHnSparseF, {axisMultiplicityMixing, axisMultiplicityMixing, axisVertexMixing, axisVertexMixing});
@@ -451,7 +451,7 @@ struct phianalysisTHnSparse {
 
           if (n > 0) {
             if (QA)
-              registry.fill(HIST("QAMC/hInvMass"), mother.Mag());
+              registry.fill(HIST("QAMC/hInvMassTrueFalse"), mother.Mag());
             continue;
           }
 
