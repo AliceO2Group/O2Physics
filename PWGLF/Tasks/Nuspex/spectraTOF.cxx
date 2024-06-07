@@ -853,7 +853,6 @@ struct tofSpectra {
         }
       }
     }
-    }
     if (!passesDCAxyCut(track)) {
       return;
     }
