@@ -212,14 +212,14 @@ struct AnalysisEventSelection {
       uint64_t sor = std::atol(fHeader["SOR"].c_str());
       uint64_t eor = std::atol(fHeader["EOR"].c_str());
       LOGP(debug, "=========================== SOR / EOR is {} / {}", sor, eor);
-      //cout << "=========================== SOR / EOR is " << sor << " / " << eor << endl;
+      // cout << "=========================== SOR / EOR is " << sor << " / " << eor << endl;
       auto alppar = fCCDB->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", events.begin().timestamp());
       EventSelectionParams* par = fCCDB->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", events.begin().timestamp());
       int itsROFrameStartBorderMargin = fConfigITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : fConfigITSROFrameStartBorderMargin;
       int itsROFrameEndBorderMargin = fConfigITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : fConfigITSROFrameEndBorderMargin;
       VarManager::SetITSROFBorderselection(alppar->roFrameBiasInBC, alppar->roFrameLengthInBC, itsROFrameStartBorderMargin, itsROFrameEndBorderMargin);
       LOGP(debug, "==============++++++++++++========== roBias / roLength / start / end :: {} / {} / {} / {}", alppar->roFrameBiasInBC, alppar->roFrameLengthInBC, itsROFrameStartBorderMargin, itsROFrameEndBorderMargin);
-      //cout << "==============++++++++++++========== roBias / roLength / start / end :: " << alppar->roFrameBiasInBC << " / " << alppar->roFrameLengthInBC << " / " << itsROFrameStartBorderMargin << " / " << itsROFrameEndBorderMargin << endl;
+      // cout << "==============++++++++++++========== roBias / roLength / start / end :: " << alppar->roFrameBiasInBC << " / " << alppar->roFrameLengthInBC << " / " << itsROFrameStartBorderMargin << " / " << itsROFrameEndBorderMargin << endl;
       fCurrentRun = events.begin().runNumber();
     }
 
