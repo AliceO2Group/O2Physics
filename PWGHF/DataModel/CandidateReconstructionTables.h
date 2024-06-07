@@ -1355,6 +1355,7 @@ DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(OriginGen, originGen, int8_t);
 // mapping of decay types
 enum DecayType { XicToXiPiPi=0,
+                 XicToXiResPiToXiPiPi,
                  NDecayType };
 } // end of namespace hf_cand_xictoxipipi
 
