@@ -65,7 +65,7 @@ const char* estimatorNames[nEstimators] = {"FT0A",
                                            "ZPC"};
 
 std::array<std::array<std::shared_ptr<TH2>, o2::pwglf::PIDExtended::NIDsTot>, nEstimators> hpt;
-std::array <std::array<std::shared_ptr<TH1>, o2::pwglf::PIDExtended::NIDsTot>, nEstimators> hyield;
+std::array<std::array<std::shared_ptr<TH1>, o2::pwglf::PIDExtended::NIDsTot>, nEstimators> hyield;
 
 struct mcParticlePrediction {
 
