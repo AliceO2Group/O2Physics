@@ -501,16 +501,16 @@ struct tofSpectra {
       }
       if (enableDCAxyzHistograms) {
         if (enableDCAxyphiHistograms) {
-        histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH3D, {phiAxis, dcaXyAxis, dcaZAxis});
+          histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH3D, {phiAxis, dcaXyAxis, dcaZAxis});
         } else {
           histos.add(hdcaxy[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
         }
       } else {
         if (enableDCAxyphiHistograms) {
           histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2D, {phiAxis, dcaXyAxis});
-      } else {
-        histos.add(hdcaxy[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-        histos.add(hdcaz[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+        } else {
+          histos.add(hdcaxy[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+          histos.add(hdcaz[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
         }
       }
 
@@ -810,15 +810,15 @@ struct tofSpectra {
           histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY(), track.dcaZ());
           if (isInPtRangeForPhi) {
             if (enableDCAxyphiHistograms) {
-            histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY(), track.dcaZ());
-          }
+              histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY(), track.dcaZ());
+            }
           }
         } else {
           histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY(), track.dcaZ());
           if (isInPtRangeForPhi) {
             if (enableDCAxyphiHistograms) {
-            histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY(), track.dcaZ());
-          }
+              histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY(), track.dcaZ());
+            }
         }
         }
       } else {
@@ -827,16 +827,16 @@ struct tofSpectra {
           histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
           if (isInPtRangeForPhi) {
             if (enableDCAxyphiHistograms) {
-            histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
-          }
+              histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
+            }
           }
         } else {
           histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
           histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
           if (isInPtRangeForPhi) {
             if (enableDCAxyphiHistograms) {
-            histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
-          }
+              histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
+            }
         }
       }
     }
