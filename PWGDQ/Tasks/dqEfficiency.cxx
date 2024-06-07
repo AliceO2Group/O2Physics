@@ -505,6 +505,7 @@ struct AnalysisSameEventPairing {
   Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> fConfigAmbiguousHist{"cfgAmbiHist", false, "Enable Ambiguous histograms for time association studies"};
   Configurable<bool> fUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
   Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
   Configurable<bool> fCorrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
@@ -607,7 +608,11 @@ struct AnalysisSameEventPairing {
             Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())};
-          histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          if (fConfigAmbiguousHist) {
+            histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+          } else {
+            histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          }
           fMuonHistNames.push_back(names);
           std::vector<TString> mcSigClasses;
           if (!sigNamesStr.IsNull()) {
@@ -833,16 +838,28 @@ struct AnalysisSameEventPairing {
         if (twoTrackFilter & (uint8_t(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+            if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
+              fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
+            }
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
               if (mcDecision & (uint32_t(1) << isig)) {
                 fHistMan->FillHistClass(histNamesMCmatched[icut][isig].Data(), VarManager::fgValues);
+                if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNamesMCmatched[icut][isig].Data()), VarManager::fgValues);
+                }
               }
             }
           } else {
             if (t1.sign() > 0) {
               fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+              if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][1].Data()), VarManager::fgValues);
+              }
             } else {
               fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+              if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][2].Data()), VarManager::fgValues);
+              }
             }
           }
         }

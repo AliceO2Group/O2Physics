@@ -584,6 +584,7 @@ struct AnalysisEventMixing {
   Configurable<std::string> fConfigAddEventMixingHistogram{"cfgAddEventMixingHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> fConfigAmbiguousHist{"cfgAmbiHist", false, "Enable Ambiguous histograms for time association studies"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -643,7 +644,11 @@ struct AnalysisEventMixing {
             Form("PairsMuonMEPM_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonMEPP_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonMEMM_%s", objArray->At(icut)->GetName())};
-          histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          if (fConfigAmbiguousHist) {
+            histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+          } else {
+            histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          }
           fMuonHistNames.push_back(names);
           fTwoMuonFilterMask |= (uint32_t(1) << icut);
         }
@@ -721,11 +726,20 @@ struct AnalysisEventMixing {
           if (twoTrackFilter & (uint32_t(1) << icut)) {
             if (track1.sign() * track2.sign() < 0) {
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+              if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
+              }
             } else {
               if (track1.sign() > 0) {
                 fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+                if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][1].Data()), VarManager::fgValues);
+                }
               } else {
                 fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                if (fConfigAmbiguousHist && !(track1.isAmbiguous() || track2.isAmbiguous())) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][2].Data()), VarManager::fgValues);
+                }
               }
             }
           } // end if (filter bits)
@@ -1612,13 +1626,13 @@ struct AnalysisDileptonHadron {
         if (fConfigUseKFVertexing) {
           VarManager::SetupThreeProngKFParticle(mMagField);
         } else {
-          VarManager::SetupThreeProngDCAFitter(); // TODO: get these parameters from Configurables
+          VarManager::SetupThreeProngDCAFitter(mMagField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
         }
       } else {
         if (fConfigUseKFVertexing) {
           VarManager::SetupThreeProngKFParticle(fConfigMagField.value);
         } else {
-          VarManager::SetupThreeProngDCAFitter(); // TODO: get these parameters from Configurables
+          VarManager::SetupThreeProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
         }
       }
       fCurrentRun = event.runNumber();

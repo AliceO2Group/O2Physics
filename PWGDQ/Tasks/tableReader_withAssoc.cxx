@@ -1760,7 +1760,7 @@ struct AnalysisAsymmetricPairing {
         if (fConfigUseKFVertexing.value) {
           VarManager::SetupThreeProngKFParticle(magField);
         } else {
-          VarManager::SetupThreeProngDCAFitter();
+          VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
         }
       } else {
         if (fConfigUseKFVertexing.value) {
@@ -1774,7 +1774,7 @@ struct AnalysisAsymmetricPairing {
         if (fConfigUseKFVertexing.value) {
           VarManager::SetupThreeProngKFParticle(fConfigMagField.value);
         } else {
-          VarManager::SetupThreeProngDCAFitter();
+          VarManager::SetupThreeProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigUseAbsDCA.value);
         }
       } else {
         if (fConfigUseKFVertexing.value) {
@@ -2287,13 +2287,13 @@ struct AnalysisDileptonTrack {
       if (fConfigUseKFVertexing.value) {
         VarManager::SetupThreeProngKFParticle(magField);
       } else {
-        VarManager::SetupThreeProngDCAFitter(); // TODO: get these parameters from Configurables
+        VarManager::SetupThreeProngDCAFitter(magField, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
       }
     } else {
       if (fConfigUseKFVertexing.value) {
         VarManager::SetupThreeProngKFParticle(fConfigMagField.value);
       } else {
-        VarManager::SetupThreeProngDCAFitter(); // TODO: get these parameters from Configurables
+        VarManager::SetupThreeProngDCAFitter(fConfigMagField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
       }
     }
   }
