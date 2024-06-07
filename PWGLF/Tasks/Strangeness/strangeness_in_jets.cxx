@@ -123,10 +123,13 @@ struct strangeness_in_jets {
   Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA Daughters"};
 
   // Debug
-  Configurable<std::vector<int>> debug{"debug", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "debug"};
+  Configurable<std::vector<int>> debug{"debug", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "debug"};
 
   void init(InitContext const&)
   {
+    // Debug Array
+    std::vector<int> debug_level = debug;
+
     // Global Properties and QC
     registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{15, 0, 15, "Event Cuts"}});
     registryQC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{15, 0, 15, "Event Cuts"}});
@@ -741,9 +744,6 @@ struct strangeness_in_jets {
 
   void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::V0sLinked const& V0linked, FullTracks const& tracks)
   {
-    // Debug Array
-    auto debug_level = static_cast<std::vector<int>>(debug);
-
     registryQC.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
       return;
@@ -776,7 +776,7 @@ struct strangeness_in_jets {
       return;
     registryQC.fill(HIST("number_of_events_data"), 3.5);
 
-    if (debug_level[0] == 1)
+    if (debug_level.at(0) == 1)
       return;
 
     auto const& leading_track = tracks.iteratorAt(leading_ID);
@@ -850,7 +850,7 @@ struct strangeness_in_jets {
 
     } while (exit == 0);
 
-    if (debug_level[1] == 1)
+    if (debug_level.at(1) == 1)
       return;
 
     // Jet Axis
@@ -874,13 +874,13 @@ struct strangeness_in_jets {
       return;
     registryQC.fill(HIST("number_of_events_data"), 5.5);
 
-    if (debug_level[2] == 1)
+    if (debug_level.at(2) == 1)
       return;
 
     // Event multiplicity
     float multiplicity = collision.centFT0M();
 
-    if (debug_level[3] == 1)
+    if (debug_level.at(3) == 1)
       return;
 
     for (auto& v0 : fullV0s) {
@@ -888,7 +888,7 @@ struct strangeness_in_jets {
       const auto& pos = v0.posTrack_as<FullTracks>();
       const auto& neg = v0.negTrack_as<FullTracks>();
 
-      if (debug_level[4] == 1)
+      if (debug_level.at(4) == 1)
         return;
 
       TVector3 v0dir(pos.px() + neg.px(), pos.py() + neg.py(), pos.pz() + neg.pz());
@@ -907,7 +907,7 @@ struct strangeness_in_jets {
 
       // K0s
       if (passedK0ShortSelection(v0, pos, neg)) {
-        if (debug_level[5] == 1)
+        if (debug_level.at(5) == 1)
           return;
 
         if (deltaR_jet < Rmax) {
@@ -920,7 +920,7 @@ struct strangeness_in_jets {
 
       // Lambda
       if (passedLambdaSelection(v0, pos, neg)) {
-        if (debug_level[6] == 1)
+        if (debug_level.at(6) == 1)
           return;
 
         if (deltaR_jet < Rmax) {
@@ -934,7 +934,7 @@ struct strangeness_in_jets {
 
       // AntiLambda
       if (passedAntiLambdaSelection(v0, pos, neg)) {
-        if (debug_level[7] == 1)
+        if (debug_level.at(7) == 1)
           return;
 
         if (deltaR_jet < Rmax) {
@@ -947,7 +947,7 @@ struct strangeness_in_jets {
       }
     }
 
-    if (debug_level[8] == 1)
+    if (debug_level.at(8) == 1)
       return;
 
     // Cascades
@@ -957,7 +957,7 @@ struct strangeness_in_jets {
       auto pos = casc.posTrack_as<FullTracks>();
       auto neg = casc.negTrack_as<FullTracks>();
 
-      if (debug_level[9] == 1)
+      if (debug_level.at(9) == 1)
         return;
 
       TVector3 cascade_dir(casc.px(), casc.py(), casc.pz());
@@ -974,7 +974,7 @@ struct strangeness_in_jets {
 
       // Xi+
       if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
-        if (debug_level[10] == 1)
+        if (debug_level.at(10) == 1)
           return;
 
         if (deltaR_jet < Rmax) {
@@ -986,7 +986,7 @@ struct strangeness_in_jets {
       }
       // Xi-
       if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
-        if (debug_level[11] == 1)
+        if (debug_level.at(11) == 1)
           return;
 
         if (deltaR_jet < Rmax) {
@@ -999,7 +999,7 @@ struct strangeness_in_jets {
 
       // Omega+
       if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
-        if (debug_level[12] == 1)
+        if (debug_level.at(12) == 1)
           return;
 
         if (deltaR_jet < Rmax) {
@@ -1011,7 +1011,7 @@ struct strangeness_in_jets {
       }
       // Omega-
       if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
-        if (debug_level[13] == 1)
+        if (debug_level.at(13) == 1)
           return;
 
         if (deltaR_jet < Rmax) {
