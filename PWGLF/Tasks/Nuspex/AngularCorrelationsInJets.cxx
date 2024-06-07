@@ -45,15 +45,10 @@ using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
 
 struct AngularCorrelationsInJets {
 
-  // HistogramRegistry registryName{"folderTitle", {}, OutputObjHandlingPolicy::AnalysisObject, <sortHistograms:bool>, <createDir:bool>};
   HistogramRegistry registryData{"jetOutput", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  // OutputObj<Type> histogramName{Type("histogramName", "histogramTitle;Axis", nbins,minbin,maxbin)};
 
   void init(InitContext&)
   {
-
-    // std::vector<double> ptBinning = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
-
     // AxisSpec specName = {binningInfo, "axisLabel"};
     AxisSpec ptAxis = {1000, 0, 100, "#it{p}_{T} [GeV/#it{c}]"};
     AxisSpec particleTypeAxis = {4, 1, 5, "[p, ap, d, ad]"};
@@ -63,8 +58,6 @@ struct AngularCorrelationsInJets {
     AxisSpec dcaxyAxis = {200, -2, 2, "DCA_{xy} [cm]"};
     AxisSpec angDistPhiAxis = {1000, -2, 5, "#Delta#varphi"};
     AxisSpec angDistEtaAxis = {1000, -2, 2, "#Delta#eta"};
-
-    // registryName.add("histogramName", "histogramTitle", HistType::Type, {{binningInfo}});
 
     // Counters
     registryData.add("hNumberOfEvents", "Number of events", HistType::kTH1I, {{1, 0, 1}});
@@ -110,7 +103,6 @@ struct AngularCorrelationsInJets {
     registryData.add("hJetConeRadius", "Jet Radius;#it{R}", HistType::kTH1F, {{100, 0, 1}});
   }
 
-  // Configurable<Type> cfgName{"nameOnHyperloopAndJson", value, "Flag shown on hyperloop"};
   // Preliminary Cuts
   // Configurable<int> fTPCRefit{"TPCRefit", 0, "Require TPC refit"};
   Configurable<float> fMinNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};
@@ -175,7 +167,7 @@ struct AngularCorrelationsInJets {
 
   template <typename CollisionType, typename TracksType>
   void angCorrData(const CollisionType& collision, const TracksType& tracks)
-  { // this turns TracksType into a pointer, no? How then can we access attributes with . instead of ->?
+  {
     registryData.fill(HIST("hNumberOfEvents"), 0);
     registryData.fill(HIST("hEventProtocol"), 0);
 
@@ -229,7 +221,7 @@ struct AngularCorrelationsInJets {
 
     constituents = hardestJet.constituents();
 
-    for (int i = 0; i < (int)constituents.size(); i++) {
+    for (int i = 0; i < static_cast<int>constituents.size(); i++) {
       registryData.fill(HIST("hPtJetParticle"), constituents[i].pt());
       double DeltaPhi = TVector2::Phi_0_2pi(constituents[i].phi() - hardestJet.phi());
       double DeltaEta = constituents[i].eta() - hardestJet.eta();
@@ -245,7 +237,7 @@ struct AngularCorrelationsInJets {
 
     subtractedJet = subtractor(hardestJet);
     if (subtractedJet.has_constituents()) {
-      for (int i = 0; i < (int)subtractedJet.constituents().size(); i++) {
+      for (int i = 0; i < static_cast<int>subtractedJet.constituents().size(); i++) {
         registryData.fill(HIST("hPtSubtractedJet"), subtractedJet.constituents()[i].pt());
       }
     }
@@ -255,7 +247,7 @@ struct AngularCorrelationsInJets {
     std::vector<typename TracksType::iterator> jetDeuterons;
     std::vector<typename TracksType::iterator> jetAntideuterons;
 
-    for (int i = 0; i < (int)constituents.size(); i++) {
+    for (int i = 0; i < static_cast<int>constituents.size(); i++) {
       fastjet::PseudoJet pseudoParticle = constituents[i];
       int id = pseudoParticle.user_index();
       typename TracksType::iterator jetParticle = tracks.iteratorAt(id);
@@ -303,8 +295,8 @@ struct AngularCorrelationsInJets {
     registryData.fill(HIST("hEventProtocol"), 5);
 
     if (jetProtons.size() > 1) {
-      for (int i = 0; i < (int)jetProtons.size(); i++) {
-        for (int j = i + 1; j < (int)jetProtons.size(); j++) {
+      for (int i = 0; i < static_cast<int>jetProtons.size(); i++) {
+        for (int j = i + 1; j < static_cast<int>jetProtons.size(); j++) {
           double DeltaPhi = TVector2::Phi_0_2pi(jetProtons[i].phi() - jetProtons[j].phi());
           double DeltaEta = TMath::Abs(jetProtons[i].eta() - jetProtons[j].eta());
           if (DeltaPhi > (1.5 * TMath::Pi())) {
@@ -318,8 +310,8 @@ struct AngularCorrelationsInJets {
       }
     }
     if (jetAntiprotons.size() > 1) {
-      for (int i = 0; i < (int)jetAntiprotons.size(); i++) {
-        for (int j = i + 1; j < (int)jetAntiprotons.size(); j++) {
+      for (int i = 0; i < static_cast<int>jetAntiprotons.size(); i++) {
+        for (int j = i + 1; j < static_cast<int>jetAntiprotons.size(); j++) {
           double DeltaPhi = TVector2::Phi_0_2pi(jetAntiprotons[i].phi() - jetAntiprotons[j].phi());
           double DeltaEta = TMath::Abs(jetAntiprotons[i].eta() - jetAntiprotons[j].eta());
           if (DeltaPhi > (1.5 * TMath::Pi())) {
@@ -333,8 +325,8 @@ struct AngularCorrelationsInJets {
       }
     }
     if (jetDeuterons.size() > 1) {
-      for (int i = 0; i < (int)jetDeuterons.size(); i++) {
-        for (int j = i + 1; j < (int)jetDeuterons.size(); j++) {
+      for (int i = 0; i < static_cast<int>jetDeuterons.size(); i++) {
+        for (int j = i + 1; j < static_cast<int>jetDeuterons.size(); j++) {
           double DeltaPhi = TVector2::Phi_0_2pi(jetDeuterons[i].phi() - jetDeuterons[j].phi());
           double DeltaEta = TMath::Abs(jetDeuterons[i].eta() - jetDeuterons[j].eta());
           if (DeltaPhi > (1.5 * TMath::Pi())) {
@@ -348,8 +340,8 @@ struct AngularCorrelationsInJets {
       }
     }
     if (jetAntideuterons.size() > 1) {
-      for (int i = 0; i < (int)jetAntideuterons.size(); i++) {
-        for (int j = i + 1; j < (int)jetAntideuterons.size(); j++) {
+      for (int i = 0; i < static_cast<int>jetAntideuterons.size(); i++) {
+        for (int j = i + 1; j < static_cast<int>jetAntideuterons.size(); j++) {
           double DeltaPhi = TVector2::Phi_0_2pi(jetAntideuterons[i].phi() - jetAntideuterons[j].phi());
           double DeltaEta = TMath::Abs(jetAntideuterons[i].eta() - jetAntideuterons[j].eta());
           if (DeltaPhi > (1.5 * TMath::Pi())) {
@@ -477,34 +469,34 @@ struct AngularCorrelationsInJets {
   {
     switch (particleType) {
       case 1:
-        if ((int)fTrackBufferProton.size() == fTrackBufferSize) {
+        if (static_cast<int>fTrackBufferProton.size() == fTrackBufferSize) {
           fTrackBufferProton.insert(fTrackBufferProton.begin(), track);
           fTrackBufferProton.resize(fTrackBufferSize);
-        } else if ((int)fTrackBufferProton.size() < fTrackBufferSize) {
+        } else if (static_cast<int>fTrackBufferProton.size() < fTrackBufferSize) {
           fTrackBufferProton.emplace_back(track);
         }
         break;
       case 2:
-        if ((int)fTrackBufferAntiproton.size() == fTrackBufferSize) {
+        if (static_cast<int>fTrackBufferAntiproton.size() == fTrackBufferSize) {
           fTrackBufferAntiproton.insert(fTrackBufferAntiproton.begin(), track);
           fTrackBufferAntiproton.resize(fTrackBufferSize);
-        } else if ((int)fTrackBufferAntiproton.size() < fTrackBufferSize) {
+        } else if (static_cast<int>fTrackBufferAntiproton.size() < fTrackBufferSize) {
           fTrackBufferAntiproton.emplace_back(track);
         }
         break;
       case 3:
-        if ((int)fTrackBufferDeuteron.size() == fTrackBufferSize) {
+        if (static_cast<int>fTrackBufferDeuteron.size() == fTrackBufferSize) {
           fTrackBufferDeuteron.insert(fTrackBufferDeuteron.begin(), track);
           fTrackBufferDeuteron.resize(fTrackBufferSize);
-        } else if ((int)fTrackBufferDeuteron.size() < fTrackBufferSize) {
+        } else if (static_cast<int>fTrackBufferDeuteron.size() < fTrackBufferSize) {
           fTrackBufferDeuteron.emplace_back(track);
         }
         break;
       case 4:
-        if ((int)fTrackBufferAntideuteron.size() == fTrackBufferSize) {
+        if (static_cast<int>fTrackBufferAntideuteron.size() == fTrackBufferSize) {
           fTrackBufferAntideuteron.insert(fTrackBufferAntideuteron.begin(), track);
           fTrackBufferAntideuteron.resize(fTrackBufferSize);
-        } else if ((int)fTrackBufferAntideuteron.size() < fTrackBufferSize) {
+        } else if (static_cast<int>fTrackBufferAntideuteron.size() < fTrackBufferSize) {
           fTrackBufferAntideuteron.emplace_back(track);
         }
         break;
@@ -520,7 +512,7 @@ struct AngularCorrelationsInJets {
       case 1:
         if (fTrackBufferProton.size() == 0)
           return;
-        for (int i = 0; i < (int)fTrackBufferProton.size(); i++) { // can I do this even if the track buffer isn't even full yet?
+        for (int i = 0; i < static_cast<int>fTrackBufferProton.size(); i++) { // can I do this even if the track buffer isn't even full yet?
           double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferProton[i].phi());
           double DeltaEta = TMath::Abs(track.eta() - fTrackBufferProton[i].eta());
           registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
@@ -530,7 +522,7 @@ struct AngularCorrelationsInJets {
       case 2:
         if (fTrackBufferAntiproton.size() == 0)
           return;
-        for (int i = 0; i < (int)fTrackBufferAntiproton.size(); i++) {
+        for (int i = 0; i < static_cast<int>fTrackBufferAntiproton.size(); i++) {
           double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferAntiproton[i].phi());
           double DeltaEta = TMath::Abs(track.eta() - fTrackBufferAntiproton[i].eta());
           registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
@@ -540,7 +532,7 @@ struct AngularCorrelationsInJets {
       case 3:
         if (fTrackBufferDeuteron.size() == 0)
           return;
-        for (int i = 0; i < (int)fTrackBufferDeuteron.size(); i++) {
+        for (int i = 0; i < static_cast<int>fTrackBufferDeuteron.size(); i++) {
           double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferDeuteron[i].phi());
           double DeltaEta = TMath::Abs(track.eta() - fTrackBufferDeuteron[i].eta());
           registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
@@ -550,7 +542,7 @@ struct AngularCorrelationsInJets {
       case 4:
         if (fTrackBufferAntideuteron.size() == 0)
           return;
-        for (int i = 0; i < (int)fTrackBufferAntideuteron.size(); i++) {
+        for (int i = 0; i < static_cast<int>fTrackBufferAntideuteron.size(); i++) {
           double DeltaPhi = TVector2::Phi_0_2pi(track.phi() - fTrackBufferAntideuteron[i].phi());
           double DeltaEta = TMath::Abs(track.eta() - fTrackBufferAntideuteron[i].eta());
           registryData.fill(HIST("hDeltaPhiME"), particleType, DeltaPhi);
