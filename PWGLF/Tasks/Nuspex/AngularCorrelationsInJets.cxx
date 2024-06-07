@@ -469,34 +469,34 @@ struct AngularCorrelationsInJets {
   {
     switch (particleType) {
       case 1:
-        if (static_cast<int> fTrackBufferProton.size() == fTrackBufferSize) {
+        if (fTrackBufferProton.size() == fTrackBufferSize) {
           fTrackBufferProton.insert(fTrackBufferProton.begin(), track);
           fTrackBufferProton.resize(fTrackBufferSize);
-        } else if (static_cast<int> fTrackBufferProton.size() < fTrackBufferSize) {
+        } else if (fTrackBufferProton.size() < fTrackBufferSize) {
           fTrackBufferProton.emplace_back(track);
         }
         break;
       case 2:
-        if (static_cast<int> fTrackBufferAntiproton.size() == fTrackBufferSize) {
+        if (fTrackBufferAntiproton.size() == fTrackBufferSize) {
           fTrackBufferAntiproton.insert(fTrackBufferAntiproton.begin(), track);
           fTrackBufferAntiproton.resize(fTrackBufferSize);
-        } else if (static_cast<int> fTrackBufferAntiproton.size() < fTrackBufferSize) {
+        } else if (fTrackBufferAntiproton.size() < fTrackBufferSize) {
           fTrackBufferAntiproton.emplace_back(track);
         }
         break;
       case 3:
-        if (static_cast<int> fTrackBufferDeuteron.size() == fTrackBufferSize) {
+        if (fTrackBufferDeuteron.size() == fTrackBufferSize) {
           fTrackBufferDeuteron.insert(fTrackBufferDeuteron.begin(), track);
           fTrackBufferDeuteron.resize(fTrackBufferSize);
-        } else if (static_cast<int> fTrackBufferDeuteron.size() < fTrackBufferSize) {
+        } else if (fTrackBufferDeuteron.size() < fTrackBufferSize) {
           fTrackBufferDeuteron.emplace_back(track);
         }
         break;
       case 4:
-        if (static_cast<int> fTrackBufferAntideuteron.size() == fTrackBufferSize) {
+        if (fTrackBufferAntideuteron.size() == fTrackBufferSize) {
           fTrackBufferAntideuteron.insert(fTrackBufferAntideuteron.begin(), track);
           fTrackBufferAntideuteron.resize(fTrackBufferSize);
-        } else if (static_cast<int> fTrackBufferAntideuteron.size() < fTrackBufferSize) {
+        } else if (fTrackBufferAntideuteron.size() < fTrackBufferSize) {
           fTrackBufferAntideuteron.emplace_back(track);
         }
         break;
