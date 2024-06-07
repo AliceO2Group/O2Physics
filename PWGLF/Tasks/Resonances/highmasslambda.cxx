@@ -75,7 +75,7 @@ struct highmasslambda {
 
   // fill output
   Configurable<bool> additionalEvSel{"additionalEvSel", true, "additionalEvSel"};
-  Configurable<bool> fillDefault{"fillDefault", true, "fill Occupancy"};
+  Configurable<bool> fillDefault{"fillDefault", false, "fill Occupancy"};
   Configurable<bool> fillOccupancy{"fillOccupancy", true, "fill Occupancy"};
   Configurable<bool> fillDecayLength{"fillDecayLength", false, "fill decay length"};
   Configurable<bool> fillPolarization{"fillPolarization", false, "fill polarization"};
@@ -85,8 +85,11 @@ struct highmasslambda {
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
   // proton track cut
+  Configurable<bool> ispTdifferentialDCA{"ispTdifferentialDCA", false, "is pT differential DCA"};
   Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
   Configurable<bool> rejectPID{"rejectPID", true, "Reject PID"};
+  Configurable<float> confMinRot{"confMinRot", 5.0 * TMath::Pi() / 6.0, "Minimum of rotation"};
+  Configurable<float> confMaxRot{"confMaxRot", 7.0 * TMath::Pi() / 6.0, "Maximum of rotation"};
   Configurable<float> confRapidity{"confRapidity", 0.8, "cut on Rapidity"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.3, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
@@ -162,7 +165,7 @@ struct highmasslambda {
     std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 3000.0, 6000.0, 50000.0};
     // std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.02, 0.03, 0.05, 0.1, 0.5, 1.0};
     std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.0015, 0.002, 0.003, 0.004, 0.006, 0.008, 0.01, 0.015, 0.02, 0.04, 1.0};
-    std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 1.0, 1.5, 100.0};
+    std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 1.0, 1.5, 2.0, 3.0, 100.0};
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -195,6 +198,7 @@ struct highmasslambda {
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
     histos.add("hOccupancy", "Occupancy", kTH1F, {{5000, 0.0, 50000.0}});
+    histos.add("hRotation", "hRotation", kTH1F, {{360, 0.0, 2.0 * TMath::Pi()}});
     histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{1000, -0.5f, 0.5f}});
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{1000, -0.5f, 0.5f}});
@@ -259,29 +263,44 @@ struct highmasslambda {
     if (!isPVContributor && !(candidate.isGlobalTrackWoDCA() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
-    if (candidate.pt() > 0.0 && candidate.pt() < 0.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin1) {
-      return false;
+
+    if (ispTdifferentialDCA) {
+      if (candidate.pt() > 0.0 && candidate.pt() < 0.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin1) {
+        return false;
+      }
+      if (candidate.pt() >= 0.5 && candidate.pt() < 1.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin2) {
+        return false;
+      }
+      if (candidate.pt() >= 1.0 && candidate.pt() < 1.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin3) {
+        return false;
+      }
+      if (candidate.pt() >= 1.5 && candidate.pt() < 2.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin4) {
+        return false;
+      }
+      if (candidate.pt() >= 2.0 && candidate.pt() < 2.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin5) {
+        return false;
+      }
+      if (candidate.pt() >= 2.5 && candidate.pt() < 3.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin6) {
+        return false;
+      }
+      if (candidate.pt() >= 3.0 && candidate.pt() < 4.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin7) {
+        return false;
+      }
+      if (candidate.pt() >= 4.0 && candidate.pt() < 10.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin8) {
+        return false;
+      }
     }
-    if (candidate.pt() >= 0.5 && candidate.pt() < 1.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin2) {
-      return false;
-    }
-    if (candidate.pt() >= 1.0 && candidate.pt() < 1.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin3) {
-      return false;
-    }
-    if (candidate.pt() >= 1.5 && candidate.pt() < 2.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin4) {
-      return false;
-    }
-    if (candidate.pt() >= 2.0 && candidate.pt() < 2.5 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin5) {
-      return false;
-    }
-    if (candidate.pt() >= 2.5 && candidate.pt() < 3.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin6) {
-      return false;
-    }
-    if (candidate.pt() >= 3.0 && candidate.pt() < 4.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin7) {
-      return false;
-    }
-    if (candidate.pt() >= 4.0 && candidate.pt() < 10.0 && TMath::Abs(candidate.dcaXY()) < cfgCutDCAxymin8) {
-      return false;
+
+    if (!ispTdifferentialDCA) {
+      if (candidate.pt() > 0.0 && candidate.pt() < 0.5 && TMath::Abs(candidate.dcaXY()) < 0.004) {
+        return false;
+      }
+      if (candidate.pt() >= 0.5 && candidate.pt() < 1.0 && TMath::Abs(candidate.dcaXY()) < 0.003) {
+        return false;
+      }
+      if (candidate.pt() >= 1.0 && candidate.pt() < 2.0 && TMath::Abs(candidate.dcaXY()) < 0.002) {
+        return false;
+      }
     }
     return true;
   }
@@ -599,10 +618,15 @@ struct highmasslambda {
           histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, std::abs(track1.dcaXY()), Proton.Pt(), occupancy);
         }
         if (fillRotation) {
-          for (int nrotbkg = 1; nrotbkg <= nBkgRotations; nrotbkg++) {
-            auto anglestep = nrotbkg * (TMath::Pi() / nBkgRotations);
-            auto rotProtonPx = track1.px() * std::cos(anglestep) - track1.py() * std::sin(anglestep);
-            auto rotProtonPy = track1.px() * std::sin(anglestep) + track1.py() * std::cos(anglestep);
+          for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
+            auto anglestart = confMinRot;
+            auto angleend = confMaxRot;
+            // auto anglestep = nrotbkg * (TMath::Pi() / nBkgRotations);
+            auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
+            auto rotangle = anglestart + nrotbkg * anglestep;
+            histos.fill(HIST("hRotation"), rotangle);
+            auto rotProtonPx = track1.px() * std::cos(rotangle) - track1.py() * std::sin(rotangle);
+            auto rotProtonPy = track1.px() * std::sin(rotangle) + track1.py() * std::cos(rotangle);
             ProtonRot = ROOT::Math::PxPyPzMVector(rotProtonPx, rotProtonPy, track1.pz(), massPr);
             LambdacRot = ProtonRot + Kshort;
             auto phiminuspsiRot = GetPhiInRange(LambdacRot.Phi() - psiFT0C);
