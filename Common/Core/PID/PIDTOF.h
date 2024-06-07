@@ -250,6 +250,136 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
   TGraph* gNegEtaTimeCorr = nullptr; /// Time shift correction for negative tracks
 };
 
+/// \brief Next implementation class to store TOF response parameters for exp. times
+class TOFResoParamsV3 : public o2::tof::Parameters<13>
+{
+ public:
+  TOFResoParamsV3() : Parameters(std::array<std::string, 13>{"TrkRes.Pi.P0", "TrkRes.Pi.P1", "TrkRes.Pi.P2", "TrkRes.Pi.P3", "time_resolution",
+                                                             "TrkRes.Ka.P0", "TrkRes.Ka.P1", "TrkRes.Ka.P2", "TrkRes.Ka.P3",
+                                                             "TrkRes.Pr.P0", "TrkRes.Pr.P1", "TrkRes.Pr.P2", "TrkRes.Pr.P3"},
+                                 "TOFResoParamsV3")
+  {
+    setParameters(std::array<float, 13>{0.008, 0.008, 0.002, 40.0, 60.0,
+                                        0.008, 0.008, 0.002, 40.0,
+                                        0.008, 0.008, 0.002, 40.0});
+  } // Default constructor with default parameters
+
+  ~TOFResoParamsV3() = default;
+
+  // Momentum shift for charge calibration
+  void setMomentumChargeShiftParameters(std::unordered_map<std::string, float> const& pars)
+  {
+    if (pars.count("Shift.etaN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
+      mEtaN = 0;
+      return;
+    }
+    mEtaN = static_cast<int>(pars.at("Shift.etaN"));
+    if (mEtaN <= 0) {
+      LOG(fatal) << "TOFResoParamsV3 shift: etaN must be positive";
+    }
+    mEtaStart = pars.at("Shift.etaStart");
+    mEtaStop = pars.at("Shift.etaStop");
+    if (mEtaStart >= mEtaStop) {
+      LOG(fatal) << "TOFResoParamsV3 shift: etaStart must be smaller than etaStop";
+    }
+    mInvEtaWidth = 1.f / ((mEtaStop - mEtaStart) / mEtaN);
+    mContent.clear();
+    mContent.resize(mEtaN);
+    for (int i = 0; i < mEtaN; ++i) {
+      mContent[i] = pars.at(Form("Shift.etaC%i", i));
+    }
+  }
+
+  float getMomentumChargeShift(float eta) const
+  {
+    if (mEtaN == 0) { // No correction
+      // LOG(info) << "TOFResoParamsV3 shift: no correction mEtaN is " << mEtaN;
+      return 0.f;
+    }
+    const int& etaIndex = (eta <= mEtaStart) ? 0 : (eta >= mEtaStop ? (mEtaN - 1) : (eta - mEtaStart) * mInvEtaWidth);
+    // LOG(info) << "TOFResoParamsV3 shift: correction for eta " << eta << " is for index " << etaIndex << " = " << shift;
+    return mContent.at(etaIndex);
+  }
+
+  void printMomentumChargeShiftParameters() const
+  {
+    LOG(info) << "TOF momentum shift parameters";
+    LOG(info) << "etaN: " << mEtaN;
+    LOG(info) << "etaStart: " << mEtaStart;
+    LOG(info) << "etaStop: " << mEtaStop;
+    LOG(info) << "content size " << mContent.size();
+    for (int i = 0; i < mEtaN; ++i) {
+      LOG(info) << "etaC" << i << ": " << mContent[i];
+    }
+  }
+
+  // Time shift for post calibration
+  void setTimeShiftParameters(std::unordered_map<std::string, float> const& pars, bool positive)
+  {
+    std::string baseOpt = positive ? "TimeShift.Pos." : "TimeShift.Neg.";
+
+    if (pars.count(baseOpt + "GetN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
+      return;
+    }
+    const int nPoints = static_cast<int>(pars.at(baseOpt + "GetN"));
+    if (nPoints <= 0) {
+      LOG(fatal) << "TOFResoParamsV3 shift: time must be positive";
+    }
+    TGraph graph;
+    for (int i = 0; i < nPoints; ++i) {
+      graph.AddPoint(pars.at(Form("TimeShift.eta%i", i)), pars.at(Form("TimeShift.cor%i", i)));
+    }
+    setTimeShiftParameters(&graph, positive);
+  }
+  void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool positive)
+  {
+    TFile f(filename.c_str(), "READ");
+    if (f.IsOpen()) {
+      if (positive) {
+        f.GetObject(objname.c_str(), gPosEtaTimeCorr);
+      } else {
+        f.GetObject(objname.c_str(), gNegEtaTimeCorr);
+      }
+      f.Close();
+    }
+    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (positive ? "positive" : "negative");
+  }
+  void setTimeShiftParameters(TGraph* g, bool positive)
+  {
+    if (positive) {
+      gPosEtaTimeCorr = g;
+    } else {
+      gNegEtaTimeCorr = g;
+    }
+    LOG(info) << "Set the Time Shift parameters from object " << g->GetName() << " " << g->GetTitle() << " for " << (positive ? "positive" : "negative");
+  }
+  float getTimeShift(float eta, int16_t sign) const
+  {
+    if (sign > 0) {
+      if (!gPosEtaTimeCorr) {
+        return 0.f;
+      }
+      return gPosEtaTimeCorr->Eval(eta);
+    }
+    if (!gNegEtaTimeCorr) {
+      return 0.f;
+    }
+    return gNegEtaTimeCorr->Eval(eta);
+  }
+
+ private:
+  // Charge calibration
+  int mEtaN = 0; // Number of eta bins, 0 means no correction
+  float mEtaStart = 0.f;
+  float mEtaStop = 0.f;
+  float mInvEtaWidth = 9999.f;
+  std::vector<float> mContent;
+
+  // Time shift for post calibration
+  TGraph* gPosEtaTimeCorr = nullptr; /// Time shift correction for positive tracks
+  TGraph* gNegEtaTimeCorr = nullptr; /// Time shift correction for negative tracks
+};
+
 /// \brief Class to handle the the TOF detector response for the expected time
 template <typename TrackType, o2::track::PID::ID id>
 class ExpTimes
@@ -289,6 +419,21 @@ class ExpTimes
     }
     LOG(debug) << "TOF exp. mom. " << track.tofExpMom() << " shifted = " << track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta()));
     return ComputeExpectedTime(track.tofExpMom() / (1.f + track.sign() * parameters.getShift(track.eta())), track.length()) + parameters.getTimeShift(track.eta(), track.sign());
+  }
+
+  /// Gets the expected signal of the track of interest under the PID assumption corrected for shifts in expected momentum
+  /// \param parameters Parameters to correct for the momentum shift
+  /// \param track Track of interest
+  static float GetCorrectedExpectedSignal(const TOFResoParamsV3& parameters, const TrackType& track)
+  {
+    if (!track.hasTOF()) {
+      return defaultReturnValue;
+    }
+    if (track.trackType() == o2::aod::track::Run2Track) {
+      return ComputeExpectedTime(track.tofExpMom() * kCSPEDDInv / (1.f + track.sign() * parameters.getMomentumChargeShift(track.eta())), track.length());
+    }
+    LOG(debug) << "TOF exp. mom. " << track.tofExpMom() << " shifted = " << track.tofExpMom() / (1.f + track.sign() * parameters.getMomentumChargeShift(track.eta()));
+    return ComputeExpectedTime(track.tofExpMom() / (1.f + track.sign() * parameters.getMomentumChargeShift(track.eta())), track.length()) + parameters.getTimeShift(track.eta(), track.sign());
   }
 
   /// Gets the expected resolution of the t-texp-t0
