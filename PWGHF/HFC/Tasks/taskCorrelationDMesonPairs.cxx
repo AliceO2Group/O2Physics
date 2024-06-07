@@ -51,60 +51,37 @@ enum D0Type {
 };
 } // namespace
 
-// string definitions, used for histogram axis labels
-const char stringCorrelationPairs[193] = "D meson pair candidates 2D;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};type1;type2;";
-const char stringCorrelationPairsFinerBinning[207] = "D meson pair candidates 2D Finer Binning;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};type1;type2;";
-
-// definition of vectors for standard ptbin and invariant mass configurables
-const int nPtBinsCorrelations = 8;
-const double ptBinsCorrelations[nPtBinsCorrelations + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
-auto vecPtBinsCorrelations = std::vector<double>{ptBinsCorrelations, ptBinsCorrelations + nPtBinsCorrelations + 1};
-
 struct HfTaskCorrelationDMesonPairs {
-  // Enable histograms with finer pT and y binning
-  Configurable<bool> enableFinerBinning{"enableFinerBinning", false, "Enable histograms with finer pT and y binning"};
-  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecPtBinsCorrelations}, "pT bin limits for correlation plots"};
-
-  // HistoTypes
-  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}, {10, -1, 1}, {10, -1, 1}, {4, -0.5, 3.5}, {4, -0.5, 3.5}}}; // note: axes 3 and 4 (the pT) are updated in the init();
-  HistogramConfigSpec hTHnMass2DCorrPairsFinerBinning{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {60, 1., 6.}, {60, 1., 6.}, {160, -0.8, 0.8}, {160, -0.8, 0.8}, {4, -0.5, 3.5}, {4, -0.5, 3.5}}};
+  // Configurables to set sparse axes
+  ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {200, 1.6, 2.1}, "Inv-mass bins"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {25, 0., 24.}, "pT bins"};
+  ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {10, -1, 1}, "Rapidity bins"};
+  ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType", {4, -0.5, 3.5}, "Candidate Type"};
 
   HistogramRegistry registry{
     "registry",
-    {{"hMass2DCorrelationPairsLS", stringCorrelationPairs, hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsOS", stringCorrelationPairs, hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsLSMcGen", stringCorrelationPairs, hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsOSMcGen", stringCorrelationPairs, hTHnMass2DCorrPairs}}};
+    {}};
 
   void init(InitContext&)
   {
-    // redefinition of pT axes for THnSparse holding correlation entries
-    int nBinspTaxis = binsPtCorrelations->size() - 1;
-    const double* valuespTaxis = binsPtCorrelations->data();
+    const AxisSpec thnAxisInvMassCand1{thnConfigAxisInvMass, "inv. mass D_{1} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisInvMassCand2{thnConfigAxisInvMass, "inv. mass D_{2} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPtCand1{thnConfigAxisPt, "#it{p}_{T}^{D_{1}} (GeV/#it{c})"};
+    const AxisSpec thnAxisPtCand2{thnConfigAxisPt, "#it{p}_{T}^{D_{2}} (GeV/#it{c})"};
+    const AxisSpec thnAxisYCand1{thnConfigAxisY, "#it{y} D_{1}"};
+    const AxisSpec thnAxisYCand2{thnConfigAxisY, "#it{y} D_{2}"};
+    const AxisSpec thnAxisCandType1{thnConfigAxisCandType, "Type D_{1}"};
+    const AxisSpec thnAxisCandType2{thnConfigAxisCandType, "Type D_{2}"};
 
-    if (enableFinerBinning) {
-      registry.add("hMass2DCorrelationPairsLSFinerBinning", stringCorrelationPairsFinerBinning, hTHnMass2DCorrPairsFinerBinning);
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLSFinerBinning"))->Sumw2();
-      registry.add("hMass2DCorrelationPairsOSFinerBinning", stringCorrelationPairsFinerBinning, hTHnMass2DCorrPairsFinerBinning);
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOSFinerBinning"))->Sumw2();
+    registry.add("hMass2DCorrelationPairsLS", "hMass2DCorrelationPairsLS", HistType::kTHnSparseD, {thnAxisInvMassCand1, thnAxisInvMassCand2, thnAxisPtCand1, thnAxisPtCand2, thnAxisYCand1, thnAxisYCand2, thnAxisCandType1, thnAxisCandType2});
+    registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLS"))->Sumw2();
+    registry.add("hMass2DCorrelationPairsOS", "hMass2DCorrelationPairsOS", HistType::kTHnSparseD, {thnAxisInvMassCand1, thnAxisInvMassCand2, thnAxisPtCand1, thnAxisPtCand2, thnAxisYCand1, thnAxisYCand2, thnAxisCandType1, thnAxisCandType2});
+    registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOS"))->Sumw2();
 
-      registry.add("hMass2DCorrelationPairsLSMcGenFinerBinning", stringCorrelationPairsFinerBinning, hTHnMass2DCorrPairsFinerBinning);
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLSMcGenFinerBinning"))->Sumw2();
-      registry.add("hMass2DCorrelationPairsOSMcGenFinerBinning", stringCorrelationPairsFinerBinning, hTHnMass2DCorrPairsFinerBinning);
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOSMcGenFinerBinning"))->Sumw2();
-    }
-
-    for (int i = 2; i <= 3; i++) {
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLS"))->GetAxis(i)->Set(nBinspTaxis, valuespTaxis);
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLS"))->Sumw2();
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOS"))->GetAxis(i)->Set(nBinspTaxis, valuespTaxis);
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOS"))->Sumw2();
-
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLSMcGen"))->GetAxis(i)->Set(nBinspTaxis, valuespTaxis);
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLSMcGen"))->Sumw2();
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOSMcGen"))->GetAxis(i)->Set(nBinspTaxis, valuespTaxis);
-      registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOSMcGen"))->Sumw2();
-    }
+    registry.add("hMass2DCorrelationPairsLSMcGen", "hMass2DCorrelationPairsLSMcGen", HistType::kTHnSparseD, {thnAxisInvMassCand1, thnAxisInvMassCand2, thnAxisPtCand1, thnAxisPtCand2, thnAxisYCand1, thnAxisYCand2, thnAxisCandType1, thnAxisCandType2});
+    registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLSMcGen"))->Sumw2();
+    registry.add("hMass2DCorrelationPairsOSMcGen", "hMass2DCorrelationPairsOSMcGen", HistType::kTHnSparseD, {thnAxisInvMassCand1, thnAxisInvMassCand2, thnAxisPtCand1, thnAxisPtCand2, thnAxisYCand1, thnAxisYCand2, thnAxisCandType1, thnAxisCandType2});
+    registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOSMcGen"))->Sumw2();
   }
 
   uint getD0Type(uint const& candidateType)
@@ -139,28 +116,16 @@ struct HfTaskCorrelationDMesonPairs {
 
       if (TESTBIT(pairType, DD)) {
         registry.fill(HIST("hMass2DCorrelationPairsLS"), massDCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
-        if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsLSFinerBinning"), massDCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
-        }
       }
       if (TESTBIT(pairType, DbarDbar)) {
         registry.fill(HIST("hMass2DCorrelationPairsLS"), massDbarCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
-        if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsLSFinerBinning"), massDbarCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
-        }
       }
 
       if (TESTBIT(pairType, DDbar)) {
         registry.fill(HIST("hMass2DCorrelationPairsOS"), massDCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
-        if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsOSFinerBinning"), massDCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
-        }
       }
       if (TESTBIT(pairType, DbarD)) {
         registry.fill(HIST("hMass2DCorrelationPairsOS"), massDbarCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
-        if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsOSFinerBinning"), massDbarCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
-        }
       }
     }
   }
@@ -184,27 +149,15 @@ struct HfTaskCorrelationDMesonPairs {
 
       if (TESTBIT(pairType, DD)) {
         registry.fill(HIST("hMass2DCorrelationPairsLSMcGen"), massDParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
-        if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsLSMcGenFinerBinning"), massDParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
-        }
       }
       if (TESTBIT(pairType, DbarDbar)) {
         registry.fill(HIST("hMass2DCorrelationPairsLSMcGen"), massDbarParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
-        if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsLSMcGenFinerBinning"), massDbarParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
-        }
       }
       if (TESTBIT(pairType, DDbar)) {
         registry.fill(HIST("hMass2DCorrelationPairsOSMcGen"), massDParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
-        if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsOSMcGenFinerBinning"), massDParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
-        }
       }
       if (TESTBIT(pairType, DbarD)) {
         registry.fill(HIST("hMass2DCorrelationPairsOSMcGen"), massDbarParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
-        if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsOSMcGenFinerBinning"), massDbarParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
-        }
       }
     }
   }

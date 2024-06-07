@@ -1252,13 +1252,8 @@ struct TableMakerMC {
           }
           auto mctrack = muon.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<TMuonFillMap>(muon);
-          // recalculte pDca for global muon tracks
-          if (static_cast<int>(muon.trackType()) < 2) {
-            auto const& matchMCH = tracksMuon.rawIteratorAt(static_cast<int>(muon.matchMCHTrackId()));
-            VarManager::FillTrackCollision<TMuonFillMap>(matchMCH, collision);
-          } else if (static_cast<int>(muon.trackType()) > 2) {
-            VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
-          }
+          // recalculte DCA and pDca for global muon tracks
+          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
           if (fPropMuon) {
             VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
           }
@@ -1604,28 +1599,28 @@ struct TableMakerMC {
                                  soa::Filtered<MyMuonsColl> const& tracksMuon,
                                  aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
-    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMap>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
+    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
   }
 
   void processAssociatedMuonOnlyWithCov(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
                                         soa::Filtered<MyMuonsCollWithCov> const& tracksMuon,
                                         aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
-    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
+    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
   }
 
   void processAssociatedMuonOnlyWithCovAndCent(MyEventsWithCent const& collisions, aod::BCsWithTimestamps const& bcs,
                                                soa::Filtered<MyMuonsCollWithCov> const& tracksMuon,
                                                aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
-    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
+    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
   }
 
   void processAssociatedMuonOnlyWithCovAndMults(MyEventsWithCentAndMults const& collisions, aod::BCsWithTimestamps const& bcs,
                                                 soa::Filtered<MyMuonsCollWithCov> const& tracksMuon,
                                                 aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
-    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
+    fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, fwdtrackIndices);
   }
   // Produce muon tables only for ambiguous tracks studies --------------------------------------------------------------------------------------
   void processAmbiguousMuonOnly(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
