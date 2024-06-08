@@ -130,8 +130,7 @@ struct mcParticlePrediction {
     }
   }
 
-  template <float etamin, float etamax>
-  int countInAcceptance(const aod::McParticles& mcParticles)
+  int countInAcceptance(const aod::McParticles& mcParticles, const float etamin, const float etamax)
   {
     static_assert(etamin < etamax, "etamin must be smaller than etamax");
     int counter = 0;
@@ -143,13 +142,13 @@ struct mcParticlePrediction {
     return counter;
   }
 
-  int countFT0A(const aod::McParticles& mcParticles) { return countInAcceptance<3.5f, 4.9f>(mcParticles); }
-  int countFT0C(const aod::McParticles& mcParticles) { return countInAcceptance<-3.3f, -2.1f>(mcParticles); }
-  int countFV0A(const aod::McParticles& mcParticles) { return countInAcceptance<2.2f, 5.1f>(mcParticles); }
-  int countFDDA(const aod::McParticles& mcParticles) { return countInAcceptance<4.9f, 6.3f>(mcParticles); }
-  int countFDDC(const aod::McParticles& mcParticles) { return countInAcceptance<-7.f, -4.9f>(mcParticles); }
-  int countZNA(const aod::McParticles& mcParticles) { return countInAcceptance<8.8f, 100.f>(mcParticles); }
-  int countZNC(const aod::McParticles& mcParticles) { return countInAcceptance<-100.f, -8.8f>(mcParticles); }
+  int countFT0A(const aod::McParticles& mcParticles) { return countInAcceptance(mcParticles, 3.5f, 4.9f); }
+  int countFT0C(const aod::McParticles& mcParticles) { return countInAcceptance(mcParticles, -3.3f, -2.1f); }
+  int countFV0A(const aod::McParticles& mcParticles) { return countInAcceptance(mcParticles, 2.2f, 5.1f); }
+  int countFDDA(const aod::McParticles& mcParticles) { return countInAcceptance(mcParticles, 4.9f, 6.3f); }
+  int countFDDC(const aod::McParticles& mcParticles) { return countInAcceptance(mcParticles, -7.f, -4.9f); }
+  int countZNA(const aod::McParticles& mcParticles) { return countInAcceptance(mcParticles, 8.8f, 100.f); }
+  int countZNC(const aod::McParticles& mcParticles) { return countInAcceptance(mcParticles, -100.f, -8.8f); }
 
   void process(aod::McCollision const& mcCollision,
                aod::McParticles const& mcParticles)
