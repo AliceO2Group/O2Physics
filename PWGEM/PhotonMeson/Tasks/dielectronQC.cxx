@@ -207,15 +207,13 @@ struct dielectronQC {
     }
     const AxisSpec axis_dca{dcabins, "DCA_{ee}^{3D} (#sigma)"};
 
-    auto hs_uls = fRegistry.add<THnSparse>("Pair/same/hs_uls", "hs pair", kTHnSparseF, {axis_mass, axis_pt, axis_dca}, true);
-    fRegistry.addClone("Pair/same/hs_uls", "Pair/same/hs_lspp");
-    fRegistry.addClone("Pair/same/hs_uls", "Pair/same/hs_lsmm");
-
-    fRegistry.add("Pair/same/hMvsPhiV_uls", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, false);
-    fRegistry.addClone("Pair/same/hMvsPhiV_uls", "Pair/same/hMvsPhiV_lspp");
-    fRegistry.addClone("Pair/same/hMvsPhiV_uls", "Pair/same/hMvsPhiV_lsmm");
+    fRegistry.add("Pair/same/uls/hs", "hs pair", kTHnSparseF, {axis_mass, axis_pt, axis_dca}, true);
+    fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
+    fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
+    fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
     fRegistry.addClone("Pair/same/", "Pair/mix/");
 
+    // for track info
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
     fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
@@ -352,14 +350,14 @@ struct dielectronQC {
     float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
 
     if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_uls"), v12.M(), v12.Pt(), dca_ee_3d);
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hMvsPhiV_uls"), phiv, v12.M());
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hMvsPhiV"), phiv, v12.M());
     } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_lspp"), v12.M(), v12.Pt(), dca_ee_3d);
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hMvsPhiV_lspp"), phiv, v12.M());
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hMvsPhiV"), phiv, v12.M());
     } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hs_lsmm"), v12.M(), v12.Pt(), dca_ee_3d);
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("hMvsPhiV_lsmm"), phiv, v12.M());
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), dca_ee_3d);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hMvsPhiV"), phiv, v12.M());
     }
 
     // store tracks for event mixing without double counting
