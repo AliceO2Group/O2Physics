@@ -44,10 +44,10 @@ const int FDDC = 5;
 const int FDDAC = 6;
 const int ZNA = 7;
 const int ZNC = 8;
-const int ZEM1 = 9;
-const int ZEM2 = 10;
-const int ZPA = 11;
-const int ZPC = 12;
+// const int ZEM1 = 9;
+// const int ZEM2 = 10;
+// const int ZPA = 11;
+// const int ZPC = 12;
 const int nEstimators = 13;
 
 const char* estimatorNames[nEstimators] = {"FT0A",
