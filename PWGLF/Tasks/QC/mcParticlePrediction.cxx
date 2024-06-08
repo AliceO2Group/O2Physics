@@ -132,7 +132,7 @@ struct mcParticlePrediction {
 
   int countInAcceptance(const aod::McParticles& mcParticles, const float etamin, const float etamax)
   {
-    static_assert(etamin < etamax, "etamin must be smaller than etamax");
+    // static_assert(etamin < etamax, "etamin must be smaller than etamax");
     int counter = 0;
     for (const auto& particle : mcParticles) {
       if (particle.eta() > etamin && particle.eta() < etamax) {
