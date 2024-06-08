@@ -603,5 +603,5 @@ struct dielectronQC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<dielectronQC>(cfgc, TaskName{"dielecton-qc"})};
+    adaptAnalysisTask<dielectronQC>(cfgc, TaskName{"dielectron-qc"})};
 }
