@@ -31,7 +31,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-/// Bs analysis task
+/// Xic analysis task
 struct HfTaskXicToXiPiPi {
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
@@ -207,7 +207,7 @@ struct HfTaskXicToXiPiPi {
     } // candidate loop
   }   // process
 
-  /// Bs MC analysis and fill histograms
+  /// MC analysis and fill histograms
   void processMc(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi, aod::HfCandXicMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                  aod::TracksWMc const&)
@@ -323,7 +323,7 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hYGen"), yParticle, ptParticle);
         registry.fill(HIST("hEtaGen"), particle.eta(), ptParticle);
 
-        // reject Bs daughters that are not in geometrical acceptance
+        // reject Xic daughters that are not in geometrical acceptance
         if (!isProngInAcceptance(etaProngs[0], ptProngs[0]) || !isProngInAcceptance(etaProngs[1], ptProngs[1]) || !isProngInAcceptance(etaProngs[2], ptProngs[2])) {
           continue;
         }

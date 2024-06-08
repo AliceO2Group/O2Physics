@@ -14,9 +14,6 @@
 ///
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, CERN
 
-// include directives (C++, external, ROOT, O2, O2Physics, PWG-non-HF, PWGHF)
-// using directives
-
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
