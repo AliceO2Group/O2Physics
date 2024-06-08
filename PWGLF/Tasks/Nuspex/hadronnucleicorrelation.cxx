@@ -390,6 +390,14 @@ struct hadronnucleicorrelation {
       QA.add("QA/Pt_AntiPr", "Selected antiprotons; p_{T} (GeV/c)", {HistType::kTH1F, {{100, 0.f, 10.f, "p_{T} (GeV/c)"}}});
 
       if (!isMC) {
+        if (debug) {
+          QA.add("QA/hnSigmaTPCVsPt_Pr_Debug", "n#sigma TPC vs p_{T} for p hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+          QA.add("QA/hnSigmaTPCVsPt_De_Debug", "n#sigma TPC vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+          QA.add("QA/hnSigmaTPCVsPt_APrDe_Debug", "n#sigma TPC vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+          QA.add("QA/hnSigmaTOFVsPt_Pr_Debug", "n#sigma TOF vs p_{T} for p hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+          QA.add("QA/hnSigmaTOFVsPt_De_Debug", "n#sigma TOF vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+          QA.add("QA/hnSigmaTOFVsPt_APrDe_Debug", "n#sigma TOF vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+        }
         QA.add("QA/hEtaPr", Form("#eta ditribution for p"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
         QA.add("QA/hPhiPr", Form("#phi ditribution for p"), {HistType::kTH1F, {{100, 0.f, 2 * TMath::Pi(), "#phi"}}});
         QA.add("QA/hEtaAntiPr", Form("#eta ditribution for #bar{p}"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
@@ -422,12 +430,6 @@ struct hadronnucleicorrelation {
         QA.add("QA/hnSigmaTOFVsEta_Pr", Form("n#sigma TOF vs #eta p; #eta; n#sigma TOF"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
         QA.add("QA/hnSigmaTOFVsEta_AntiPr", Form("n#sigma TOF vs #eta #bar{p}; #eta; n#sigma TOF"), {HistType::kTH2F, {{100, -1.f, +1.f}, AxisNSigma}});
       }
-    }
-
-    if (debug) {
-      QA.add("QA/hnSigmaTPCVsPt_Pr_Debug", "n#sigma TPC vs p_{T} for p hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPt_De_Debug", "n#sigma TPC vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
-      QA.add("QA/hnSigmaTPCVsPt_APrDe_Debug", "n#sigma TPC vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
     }
 
     if (isMC) {
@@ -526,6 +528,8 @@ struct hadronnucleicorrelation {
                   if (debug && abs(deltaEta) < threta && abs(deltaPhi) < thrphi) {
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_Debug"), it1->pt(), it1->tpcNSigmaPr());
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_Debug"), -1.f * it2->pt(), it2->tpcNSigmaPr());
+                    QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_Debug"), it1->pt(), it1->tofNSigmaPr());
+                    QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_Debug"), -1.f * it2->pt(), it2->tofNSigmaPr());
                   }
                 }
                 if constexpr (doMC) {
@@ -574,6 +578,8 @@ struct hadronnucleicorrelation {
                   if (debug && abs(deltaEta) < threta && abs(deltaPhi) < thrphi) {
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_De_Debug"), -1.f * it1->pt(), it1->tpcNSigmaDe());
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_APrDe_Debug"), -1.f * it2->pt(), it2->tpcNSigmaPr());
+                    QA.fill(HIST("QA/hnSigmaTOFVsPt_De_Debug"), -1.f * it1->pt(), it1->tofNSigmaDe());
+                    QA.fill(HIST("QA/hnSigmaTOFVsPt_APrDe_Debug"), -1.f * it2->pt(), it2->tofNSigmaPr());
                   }
                 }
                 if constexpr (doMC) {
