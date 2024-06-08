@@ -334,16 +334,16 @@ struct findableStudy {
 
         // encode conditions of tracks
         uint8_t positiveTrackCode = ((uint8_t(pTrack.hasTPC()) << hasTPC) |
-                                    (uint8_t(pTrack.hasITSTracker()) << hasITSTracker) |
-                                    (uint8_t(pTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                    (uint8_t(pTrack.hasTRD()) << hasTRD) |
-                                    (uint8_t(pTrack.hasTOF()) << hasTOF));
+                                     (uint8_t(pTrack.hasITSTracker()) << hasITSTracker) |
+                                     (uint8_t(pTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                     (uint8_t(pTrack.hasTRD()) << hasTRD) |
+                                     (uint8_t(pTrack.hasTOF()) << hasTOF));
 
         uint8_t negativeTrackCode = ((uint8_t(nTrack.hasTPC()) << hasTPC) |
-                                    (uint8_t(nTrack.hasITSTracker()) << hasITSTracker) |
-                                    (uint8_t(nTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                    (uint8_t(nTrack.hasTRD()) << hasTRD) |
-                                    (uint8_t(nTrack.hasTOF()) << hasTOF));
+                                     (uint8_t(nTrack.hasITSTracker()) << hasITSTracker) |
+                                     (uint8_t(nTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                     (uint8_t(nTrack.hasTRD()) << hasTRD) |
+                                     (uint8_t(nTrack.hasTOF()) << hasTOF));
 
         if (pTrackOK && nTrackOK && ptmc > 1.0 && ptmc < 1.1) {
           // this particular V0 reco entry has been acceptably tracked. Do bookkeeping
@@ -437,8 +437,7 @@ struct findableStudy {
           if (validTrackProperties && validThisSpecies && topoDcaV0DauOK)
             histos.fill(HIST("h2dPtVsCentrality_DcaV0Dau"), centrality, ptmc);
         }
-      }
-      else{
+      } else {
         continue;
       }
     }
