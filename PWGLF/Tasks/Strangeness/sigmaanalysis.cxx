@@ -366,3 +366,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigmaanalysis>(cfgc)};
 }
+
