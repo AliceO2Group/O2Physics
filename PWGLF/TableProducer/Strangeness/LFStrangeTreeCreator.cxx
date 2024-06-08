@@ -520,7 +520,6 @@ struct LFStrangeTreeCreator {
               candidateV0.pdgcodemother = pdgCodeMother;
               candidateV0.geneta = posMother.eta();
               candidateV0.mcIndex = posMother.globalIndex();
-
             }
           }
         }
