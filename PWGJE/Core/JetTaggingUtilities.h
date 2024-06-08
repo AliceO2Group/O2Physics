@@ -368,20 +368,20 @@ std::unique_ptr<TF1> setResolutionFunction(T const& vecParams)
  *
  * @param fResoFuncjet The resolution function for the jet, used to model the distribution of impact
  *                     parameter significances for tracks associated with the jet.
- * @param collision The collision event data, providing context for calculating geometric signs.
- * @param jet The specific jet being analyzed.
  * @param track The track for which the probability is being calculated.
  * @param minSignImpXYSig The minimum significance of the impact parameter in the XY plane, used as
- *                        the lower limit for integration of the resolution function. Defaults to -10.
+ *                        the lower limit for integration of the resolution function. Defaults to -40.
  * @return The calculated probability of the track being associated with the jet, based on its
  *         impact parameter significance.
  */
-template <typename T, typename U, typename V, typename W>
-float getTrackProbability(T const& fResoFuncjet, U const& collision, V const& jet, W const& track, const float& minSignImpXYSig = -10)
+template <typename T, typename U>
+float getTrackProbability(T const& fResoFuncjet, U const& track, const float& minSignImpXYSig = -40)
 {
-  float probTrack = 0.;
-  auto varSignImpXYSig = getGeoSign(collision, jet, track) * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
-  probTrack = fResoFuncjet->Integral(minSignImpXYSig, -1 * TMath::Abs(varSignImpXYSig)) / fResoFuncjet->Integral(minSignImpXYSig, 0);
+  float probTrack = 0;
+  auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+  if (-varSignImpXYSig < minSignImpXYSig)
+    varSignImpXYSig = -minSignImpXYSig - 0.01; // To avoid overflow for integral
+  probTrack = fResoFuncjet->Integral(minSignImpXYSig, -varSignImpXYSig) / fResoFuncjet->Integral(minSignImpXYSig, 0);
 
   return probTrack;
 }
@@ -417,7 +417,7 @@ float getJetProbability(T const& fResoFuncjet, U const& collision, V const& jet,
   for (auto& jtrack : jet.template tracks_as<W>()) {
     auto track = jtrack.template track_as<X>();
 
-    float probTrack = getTrackProbability(fResoFuncjet, collision, jet, track, minSignImpXYSig);
+    float probTrack = getTrackProbability(fResoFuncjet, track, minSignImpXYSig);
 
     auto geoSign = getGeoSign(collision, jet, track);
     if (geoSign > 0) { // only take positive sign track for JP calculation

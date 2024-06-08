@@ -435,20 +435,20 @@ struct TableMakerMC {
 
       event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0 && (TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
-        eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+        eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                       collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                       collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
                       collision.centFT0C());
       } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
-        eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+        eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                       collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                       collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
                       -1);
       } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
-        eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+        eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                       -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, collision.centFT0C());
       } else {
-        eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+        eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
       }
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       // make an entry for this MC event only if it was not already added to the table
@@ -470,9 +470,9 @@ struct TableMakerMC {
           bool checked = false;
           if constexpr (soa::is_soa_filtered_v<aod::McParticles_001>) {
             auto mctrack_raw = groupedMcTracks.rawIteratorAt(mctrack.globalIndex());
-            checked = sig.CheckSignal(false, mctrack_raw);
+            checked = sig.CheckSignal(true, mctrack_raw);
           } else {
-            checked = sig.CheckSignal(false, mctrack);
+            checked = sig.CheckSignal(true, mctrack);
           }
           if (checked) {
             mcflags |= (uint16_t(1) << i);
@@ -1015,9 +1015,9 @@ struct TableMakerMC {
           bool checked = false;
           if constexpr (soa::is_soa_filtered_v<aod::McParticles_001>) {
             auto mctrack_raw = groupedMcTracks.rawIteratorAt(mctrack.globalIndex());
-            checked = sig.CheckSignal(false, mctrack_raw);
+            checked = sig.CheckSignal(true, mctrack_raw);
           } else {
-            checked = sig.CheckSignal(false, mctrack);
+            checked = sig.CheckSignal(true, mctrack);
           }
           if (checked) {
             mcflags |= (uint16_t(1) << i);
@@ -1252,13 +1252,8 @@ struct TableMakerMC {
           }
           auto mctrack = muon.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<TMuonFillMap>(muon);
-          // recalculte pDca for global muon tracks
-          if (static_cast<int>(muon.trackType()) < 2) {
-            auto const& matchMCH = tracksMuon.rawIteratorAt(static_cast<int>(muon.matchMCHTrackId()));
-            VarManager::FillTrackCollision<TMuonFillMap>(matchMCH, collision);
-          } else if (static_cast<int>(muon.trackType()) > 2) {
-            VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
-          }
+          // recalculte DCA and pDca for global muon tracks
+          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
           if (fPropMuon) {
             VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
           }
