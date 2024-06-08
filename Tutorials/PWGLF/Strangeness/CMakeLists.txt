@@ -34,3 +34,13 @@ o2physics_add_dpl_workflow(strangeness-step4
                   SOURCES strangeness_step4.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(strangeness-mytask-1
+                  SOURCES strangenessMyTaskOne.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+
+
+
+
