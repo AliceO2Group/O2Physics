@@ -285,6 +285,9 @@ struct DalitzEEQC {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+    if (abs(v12.Rapidity()) > maxY) {
+      return false;
+    }
     float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
 
     if (t1.sign() * t2.sign() < 0) { // ULS
