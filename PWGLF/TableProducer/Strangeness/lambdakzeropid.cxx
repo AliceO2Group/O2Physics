@@ -470,14 +470,14 @@ struct lambdakzeropid {
       // calculate and pack properties for QA purposes
       int posProperties = 0;
       if (lengthPositive > 0)
-        posProperties = posProperties | (int(1) << kLength);
+        posProperties = posProperties | (static_cast<int>(1) << kLength);
       if (pTra.hasTOF())
-        posProperties = posProperties | (int(1) << kHasTOF);
+        posProperties = posProperties | (static_cast<int>(1) << kHasTOF);
       int negProperties = 0;
       if (lengthNegative > 0)
-        negProperties = negProperties | (int(1) << kLength);
+        negProperties = negProperties | (static_cast<int>(1) << kLength);
       if (nTra.hasTOF())
-        negProperties = negProperties | (int(1) << kHasTOF);
+        negProperties = negProperties | (static_cast<int>(1) << kHasTOF);
 
       histos.fill(HIST("h2dPositiveTOFProperties"), v0.pt(), posProperties);
       histos.fill(HIST("h2dNegativeTOFProperties"), v0.pt(), negProperties);
