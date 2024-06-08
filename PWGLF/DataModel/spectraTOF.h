@@ -19,6 +19,8 @@
 #ifndef PWGLF_DATAMODEL_SPECTRATOF_H_
 #define PWGLF_DATAMODEL_SPECTRATOF_H_
 
+#include <memory>
+
 // O2 includes
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
