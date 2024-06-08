@@ -516,11 +516,7 @@ struct tofSpectra {
         histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH3D, {phiAxis, dcaXyAxis, dcaZAxis});
       }
       if (enableDCAxyzHistograms) {
-        if (i < Np) {
-          hDcaXYZ[i] = histos.add<TH3>(Form("dca/pos/%s", pN[i]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-        } else {
-          hDcaXYZ[i] = histos.add<TH3>(Form("dca/neg/%s", pN[i]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-        }
+        hDcaXYZ[i] = histos.add<TH3>(Form("dca/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
       } else {
         histos.add(hdcaxy[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
         histos.add(hdcaz[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
@@ -570,15 +566,9 @@ struct tofSpectra {
         histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
         histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH1D, {ptAxis});
         if (enableDCAxyzHistograms) {
-          if (i < Np) {
-            hDcaXYZPrm[i] = histos.add<TH3>(Form("dcaprm/pos/%s", pN[i]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-            hDcaXYZStr[i] = histos.add<TH3>(Form("dcastr/pos/%s", pN[i]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-            hDcaXYZMat[i] = histos.add<TH3>(Form("dcamat/pos/%s", pN[i]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-          } else {
-            hDcaXYZPrm[i] = histos.add<TH3>(Form("dcaprm/neg/%s", pN[i]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-            hDcaXYZStr[i] = histos.add<TH3>(Form("dcastr/neg/%s", pN[i]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-            hDcaXYZMat[i] = histos.add<TH3>(Form("dcamat/neg/%s", pN[i]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-          }
+          hDcaXYZPrm[i] = histos.add<TH3>(Form("dcaprm/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+          hDcaXYZStr[i] = histos.add<TH3>(Form("dcastr/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+          hDcaXYZMat[i] = histos.add<TH3>(Form("dcamat/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
           if (enableDcaGoodEvents) {
             histos.add(hdcaxyprmgoodevs[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
           }
@@ -755,7 +745,7 @@ struct tofSpectra {
           histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ(), track.eta());      // RD
         } else {                                                                                                                 // RD
           histos.fill(HIST(hnsigmatof[id + Np]), track.pt(), nsigmaTOF, multiplicity, track.dcaXY(), track.dcaZ(), track.eta()); // RD
-        }                                                                                                                        // RD
+        } // RD
       } else {
         if (track.sign() > 0) {
           histos.fill(HIST(hnsigmatof[id]), track.pt(), nsigmaTOF, multiplicity);
