@@ -77,7 +77,7 @@ struct dielectronQC {
   struct : ConfigurableGroup {
     std::string prefix = "dileptoncut_group";
     Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
-    Configurable<float> cfg_max_mass{"cfg_max_mass", 0.5, "max mass"};
+    Configurable<float> cfg_max_mass{"cfg_max_mass", 1e+10, "max mass"};
     Configurable<float> cfg_min_pair_dca3d{"cfg_min_pair_dca3d", 0.0, "min pair dca3d in sigma"};
     Configurable<float> cfg_max_pair_dca3d{"cfg_max_pair_dca3d", 1e+10, "max pair dca3d in sigma"};
     Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
@@ -142,8 +142,8 @@ struct dielectronQC {
     ep_bin_edges = std::vector<float>(ConfEPBins.value.begin(), ConfEPBins.value.end());
     ep_bin_edges.erase(ep_bin_edges.begin());
 
-    emh_pos = new o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int>, std::pair<int, int64_t>, EMTrack>(ndepth);
-    emh_ele = new o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int>, std::pair<int, int64_t>, EMTrack>(ndepth);
+    emh_pos = new o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int>, std::pair<int, int>, EMTrack>(ndepth);
+    emh_ele = new o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int>, std::pair<int, int>, EMTrack>(ndepth);
 
     DefineEMEventCut();
     DefineDileptonCut();
@@ -317,7 +317,8 @@ struct dielectronQC {
   template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2>
   bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2)
   {
-    if (t1.trackId() == t2.trackId()) { // this is protection against pairing identical 2 tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
+    if (t1.trackId() == t2.trackId()) { // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
+      // LOGF(info, "event id = %d , same track is found. t1.trackId() = %d, t1.collisionId() = %d, t1.pt() = %f, t1.eta() = %f, t1.phi() = %f, t2.trackId() = %d, t2.collisionId() = %d, t2.pt() = %f, t2.eta() = %f, t2.phi() = %f", ev_id, t1.trackId(), t1.collisionId(), t1.pt(), t1.eta(), t1.phi(), t2.trackId(), t2.collisionId(),  t2.pt(), t2.eta(), t2.phi());
       return false;
     }
 
@@ -340,6 +341,10 @@ struct dielectronQC {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+    if (abs(v12.Rapidity()) > maxY) {
+      return false;
+    }
 
     float dca_t1_3d = t1.dca3DinSigma();
     float dca_t2_3d = t2.dca3DinSigma();
@@ -383,34 +388,34 @@ struct dielectronQC {
         epbin = static_cast<int>(ep_bin_edges.size()) - 2;
       }
 
-      std::pair<int, int64_t> key_df_collision = std::make_pair(ndf, collision.globalIndex());
+      std::pair<int, int> key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
-      std::tuple<int, int, int> tuple_tmp_id1 = std::make_tuple(ndf, collision.globalIndex(), t1.trackId());
-      std::tuple<int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), t2.trackId());
+      std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, t1.globalIndex());
+      std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, t2.globalIndex());
 
       if (t1.sign() > 0) {
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), tuple_tmp_id1) == used_trackIds.end()) {
+        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id1) == used_trackIds.end()) {
           emh_pos->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron, t1.sign(), t1.dca3DinSigma()));
-          used_trackIds.emplace_back(tuple_tmp_id1);
+          used_trackIds.emplace_back(pair_tmp_id1);
           fillTrackInfo(t1);
         }
       } else {
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), tuple_tmp_id1) == used_trackIds.end()) {
+        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id1) == used_trackIds.end()) {
           emh_ele->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron, t1.sign(), t1.dca3DinSigma()));
-          used_trackIds.emplace_back(tuple_tmp_id1);
+          used_trackIds.emplace_back(pair_tmp_id1);
           fillTrackInfo(t1);
         }
       }
       if (t2.sign() > 0) {
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), tuple_tmp_id2) == used_trackIds.end()) {
+        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id2) == used_trackIds.end()) {
           emh_pos->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron, t2.sign(), t2.dca3DinSigma()));
-          used_trackIds.emplace_back(tuple_tmp_id2);
+          used_trackIds.emplace_back(pair_tmp_id2);
           fillTrackInfo(t2);
         }
       } else {
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), tuple_tmp_id2) == used_trackIds.end()) {
+        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id2) == used_trackIds.end()) {
           emh_ele->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron, t2.sign(), t2.dca3DinSigma()));
-          used_trackIds.emplace_back(tuple_tmp_id2);
+          used_trackIds.emplace_back(pair_tmp_id2);
           fillTrackInfo(t2);
         }
       }
@@ -451,8 +456,8 @@ struct dielectronQC {
     fRegistry.fill(HIST("Track/hTOFNsigmaPr"), track.tpcInnerParam(), track.tofNSigmaPr());
   }
 
-  o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int>, std::pair<int, int64_t>, EMTrack>* emh_pos = nullptr;
-  o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int>, std::pair<int, int64_t>, EMTrack>* emh_ele = nullptr;
+  o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int>, std::pair<int, int>, EMTrack>* emh_pos = nullptr;
+  o2::aod::pwgem::photonmeson::utils::EventMixingHandler<std::tuple<int, int, int>, std::pair<int, int>, EMTrack>* emh_ele = nullptr;
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -465,7 +470,7 @@ struct dielectronQC {
   Partition<FilteredMyTracks> posTracks = o2::aod::emprimaryelectron::sign > int8_t(0);
   Partition<FilteredMyTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0);
 
-  std::vector<std::tuple<int, int, int>> used_trackIds;
+  std::vector<std::pair<int, int>> used_trackIds;
   int ndf = 0;
   void processQC(FilteredMyCollisions const& collisions, FilteredMyTracks const& tracks)
   {
@@ -485,7 +490,7 @@ struct dielectronQC {
 
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
-      // LOGF(info, "centrality = %f , posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", centralities[cfgCentEstimator], posTracks_per_coll.size(), negTracks_per_coll.size());
+      // LOGF(info, "collision.globalIndex() = %d , collision.posZ() = %f , collision.numContrib() = %d, centrality = %f , posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", collision.globalIndex(), collision.posZ(), collision.numContrib(), centralities[cfgCentEstimator], posTracks_per_coll.size(), negTracks_per_coll.size());
 
       int nuls = 0, nlspp = 0, nlsmm = 0;
       for (auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
@@ -536,18 +541,18 @@ struct dielectronQC {
       }
 
       std::tuple<int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin);
-      std::pair<int, int64_t> key_df_collision = std::make_pair(ndf, collision.globalIndex());
+      std::pair<int, int> key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
       // make a vector of selected photons in this collision.
       auto selected_posTracks_in_this_event = emh_pos->GetTracksPerCollision(key_df_collision);
       auto selected_negTracks_in_this_event = emh_ele->GetTracksPerCollision(key_df_collision);
-      // LOGF(info, "N selected tracks in current event (%d, %d), npos = %d , nele = %d", ndf, collision.globalIndex(), selected_posTracks_in_this_event.size(), selected_negTracks_in_this_event.size());
+      // LOGF(info, "N selected tracks in current event (%d, %d), zvtx = %f, centrality = %f , npos = %d , nele = %d, nuls = %d , nlspp = %d, nlsmm = %d", ndf, collision.globalIndex(), collision.posZ(), centralities[cfgCentEstimator], selected_posTracks_in_this_event.size(), selected_negTracks_in_this_event.size(), nuls, nlspp, nlsmm);
 
       auto collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/ele does not matter.
 
       for (auto& mix_dfId_collisionId : collisionIds_in_mixing_pool) {
         int mix_dfId = mix_dfId_collisionId.first;
-        int64_t mix_collisionId = mix_dfId_collisionId.second;
+        int mix_collisionId = mix_dfId_collisionId.second;
 
         if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
           continue;
