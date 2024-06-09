@@ -20,7 +20,6 @@
 #include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Utils/utilsAnalysis.h" // findBin function
-#include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -32,7 +31,6 @@ using namespace o2::analysis;
 
 struct HfCandidateSelectorXicToXiPiPi {
   Produces<aod::HfSelXicToXiPiPi> hfSelXicToXiPiPiCandidate;
-  Produces<aod::HfMlXicToXiPiPi> hfMlXicToXiPiPiCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
@@ -60,17 +58,6 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
   Configurable<double> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
   Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
-  // ML inference
-  Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
-  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
-  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
-
-  o2::analysis::HfMlResponse<float> hfMlResponse;
-  std::vector<float> outputMl = {};
-
-  o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
@@ -113,17 +100,6 @@ struct HfCandidateSelectorXicToXiPiPi {
       }
     }
 
-    if (applyMl) {
-      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-      if (loadModelsFromCCDB) {
-        ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-      } else {
-        hfMlResponse.setModelPathsLocal(onnxFileNames);
-      }
-      hfMlResponse.init();
-      outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
-    }
   }
 
   /// Conjugate-independent topological cuts
@@ -201,10 +177,10 @@ struct HfCandidateSelectorXicToXiPiPi {
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6 = bool>
   bool selectionPid(const T1& pidTrackPi0, const T2& pidTrackPi1, const T3& pidTrackPr, const T4& pidTrackPiLam, const T5& pidTrackPiXi, const T6& acceptPIDNotApplicable)
   {
-    if (!acceptPIDNotApplicable && pidTrackPi0 != TrackSelectorPID::Accepted && pidTrackPi1 != TrackSelectorPID::Accepted && pidTrackPr != TrackSelectorPID::Accepted && pidTrackPiLam != TrackSelectorPID::Accepted && pidTrackPiXi == TrackSelectorPID::Rejected) {
+    if (!acceptPIDNotApplicable && (pidTrackPi0 != TrackSelectorPID::Accepted || pidTrackPi1 != TrackSelectorPID::Accepted || pidTrackPr != TrackSelectorPID::Accepted || pidTrackPiLam != TrackSelectorPID::Accepted || pidTrackPiXi != TrackSelectorPID::Accepted)) {
       return false;
     }
-    if (acceptPIDNotApplicable && pidTrackPi0 == TrackSelectorPID::Rejected && pidTrackPi1 == TrackSelectorPID::Rejected && pidTrackPr == TrackSelectorPID::Rejected && pidTrackPiLam == TrackSelectorPID::Rejected && pidTrackPiXi == TrackSelectorPID::Rejected) {
+    if (acceptPIDNotApplicable && (pidTrackPi0 == TrackSelectorPID::Rejected || pidTrackPi1 == TrackSelectorPID::Rejected || pidTrackPr == TrackSelectorPID::Rejected || pidTrackPiLam == TrackSelectorPID::Rejected || pidTrackPiXi == TrackSelectorPID::Rejected)) {
       return false;
     }
     return true;
@@ -220,9 +196,6 @@ struct HfCandidateSelectorXicToXiPiPi {
       // check if flagged as Ξc± → Ξ∓ π± π± 
       if (!TESTBIT(hfCandXic.hfflag(), hf_cand_xictoxipipi::DecayType::XicToXiPiPi)) {
         hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
-        if (applyMl) {
-          hfMlXicToXiPiPiCandidate(outputMl);
-        }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCandXic);
         }
@@ -236,9 +209,6 @@ struct HfCandidateSelectorXicToXiPiPi {
       // topological cuts
       if (!selectionTopol(hfCandXic)) {
         hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
-        if (applyMl) {
-          hfMlXicToXiPiPiCandidate(outputMl);
-        }
         continue;
       }
       SETBIT(statusXicToXiPiPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusXicToXiPiPi = 3
@@ -268,31 +238,11 @@ struct HfCandidateSelectorXicToXiPiPi {
         int pidTrackPiXi = selectorPion.statusTpcAndTof(trackPiFromXi);
         if (!selectionPid(pidTrackPi0, pidTrackPi1, pidTrackPr, pidTrackPiLam, pidTrackPiXi, acceptPIDNotApplicable.value)) {
           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
-          if (applyMl) {
-            hfMlXicToXiPiPiCandidate(outputMl);
-          }
           continue;
         }
         SETBIT(statusXicToXiPiPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusXicToXiPiPi = 7
         if (activateQA) {
           registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoPID, ptCandXic);
-        }
-      }
-
-      // ML selections
-      if (applyMl) {
-        std::vector<float> inputFeatures{};
-
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandXic, outputMl);
-        hfMlXicToXiPiPiCandidate(outputMl);
-
-        if (!isSelectedMl) {
-          hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
-          continue;
-        }
-        SETBIT(statusXicToXiPiPi, aod::SelectionStep::RecoMl);
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoMl, ptCandXic);
         }
       }
 
