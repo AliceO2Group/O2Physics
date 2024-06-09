@@ -53,6 +53,10 @@ struct dielectronQCMC {
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
 
+  ConfigurableAxis ConfMeeBins{"ConfMeeBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00}, "mee bins for output histograms"};
+  ConfigurableAxis ConfPteeBins{"ConfPteeBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.80, 2.90, 3.00, 3.10, 3.20, 3.30, 3.40, 3.50, 3.60, 3.70, 3.80, 3.90, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.50, 6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50, 10.00}, "pTee bins for output histograms"};
+  ConfigurableAxis ConfDCAeeBins{"ConfDCAeeBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCAee bins for output histograms"};
+
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
@@ -135,45 +139,9 @@ struct dielectronQCMC {
     // event info
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry, cfgDoFlow);
 
-    std::vector<double> ptbins;
-    std::vector<double> massbins;
-    std::vector<double> dcabins;
-
-    for (int i = 0; i < 110; i++) {
-      massbins.emplace_back(0.01 * (i - 0) + 0.0); // every 0.01 GeV/c2 from 0.0 to 1.1 GeV/c2
-    }
-    for (int i = 110; i < 126; i++) {
-      massbins.emplace_back(0.1 * (i - 110) + 1.1); // every 0.1 GeV/c2 from 1.1 to 2.7 GeV/c2
-    }
-    for (int i = 126; i < 136; i++) {
-      massbins.emplace_back(0.05 * (i - 126) + 2.7); // every 0.05 GeV/c2 from 2.7 to 3.2 GeV/c2
-    }
-    for (int i = 136; i < 145; i++) {
-      massbins.emplace_back(0.1 * (i - 136) + 3.2); // every 0.1 GeV/c2 from 3.2 to 4.0 GeV/c2
-    }
-    const AxisSpec axis_mass{massbins, "m_{ee} (GeV/c^{2})"};
-
-    for (int i = 0; i < 10; i++) {
-      ptbins.emplace_back(0.01 * (i - 0) + 0.0); // every 0.01 GeV/c from 0.0 to 0.1 GeV/c
-    }
-    for (int i = 10; i < 59; i++) {
-      ptbins.emplace_back(0.1 * (i - 10) + 0.1); // every 0.1 GeV/c from 0.0 to 5.0 GeV/c
-    }
-    for (int i = 59; i < 70; i++) {
-      ptbins.emplace_back(0.5 * (i - 59) + 5.0); // every 0.5 GeV/c from 5.0 to 10 GeV/c
-    }
-    const AxisSpec axis_pt{ptbins, "p_{T,ee} (GeV/c)"};
-
-    for (int i = 0; i < 20; i++) {
-      dcabins.emplace_back(0.1 * i); // every 0.1 sigma from 0.0 to 2.0 sigma
-    }
-    for (int i = 20; i < 27; i++) {
-      dcabins.emplace_back(0.5 * (i - 20) + 2.0); // every 0.5 sigma from 2.0 to 5.0 sigma
-    }
-    for (int i = 27; i < 33; i++) {
-      dcabins.emplace_back(1.0 * (i - 27) + 5.0); // every 1.0 sigma from 5.0 to 10.0 sigma
-    }
-    const AxisSpec axis_dca{dcabins, "DCA_{ee}^{3D} (#sigma)"};
+    const AxisSpec axis_mass{ConfMeeBins, "m_{ee} (GeV/c^{2})"};
+    const AxisSpec axis_pt{ConfPteeBins, "p_{T,ee} (GeV/c)"};
+    const AxisSpec axis_dca{ConfDCAeeBins, "DCA_{ee}^{3D} (#sigma)"};
 
     // generated info
     fRegistry.add("Generated/sm/Pi0/hMvsPt", "m_{ee} vs. p_{T,ee} ULS", kTH2F, {axis_mass, axis_pt}, true);
