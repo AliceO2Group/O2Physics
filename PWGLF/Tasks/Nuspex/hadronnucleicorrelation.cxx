@@ -57,9 +57,6 @@ struct hadronnucleicorrelation {
   Configurable<bool> mcCorrelation{"mcCorrelation", false, "true: build the correlation function only for SE"};
   Configurable<bool> disable_pantip{"disable_pantip", false, "disable_pantip"};
   Configurable<bool> docorrection{"docorrection", false, "do efficiency correction"};
-  Configurable<bool> debugphi{"debugphi", false, "analysis in phi regions"};
-  Configurable<bool> debugeta{"debugeta", false, "analysis in eta regions"};
-  Configurable<bool> debug{"debug", false, "analysis debug"};
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
   Configurable<std::string> fCorrectionHisto{"fCorrectionHisto", "", "Correction histogram"};
@@ -136,24 +133,6 @@ struct hadronnucleicorrelation {
   std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_PrAntiPr_ME;
   std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_AntiDeAntiPr_SE;
   std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_AntiDeAntiPr_ME;
-
-  // Debug by doing the analysis in eta/phi regions
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_EtaDiff_PrAntiPr_SE;
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_EtaDiff_PrAntiPr_ME;
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_EtaDiff_AntiDeAntiPr_SE;
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_EtaDiff_AntiDeAntiPr_ME;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_EtaDiff_PrAntiPr_SE;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_EtaDiff_PrAntiPr_ME;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_EtaDiff_AntiDeAntiPr_SE;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_EtaDiff_AntiDeAntiPr_ME;
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_PhiDiff_PrAntiPr_SE;
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_PhiDiff_PrAntiPr_ME;
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_PhiDiff_AntiDeAntiPr_SE;
-  std::vector<std::shared_ptr<TH3>> hEtaPhi_PhiDiff_AntiDeAntiPr_ME;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_PhiDiff_PrAntiPr_SE;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_PhiDiff_PrAntiPr_ME;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_PhiDiff_AntiDeAntiPr_SE;
-  std::vector<std::shared_ptr<TH3>> hCorrEtaPhi_PhiDiff_AntiDeAntiPr_ME;
 
   std::vector<std::shared_ptr<TH3>> hEtaPhiRec_AntiDeAntiPr_SE;
   std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiDeAntiPr_SE;
@@ -242,9 +221,9 @@ struct hadronnucleicorrelation {
         hEtaPhiRec_PrAntiPr_ME.push_back(std::move(htempMERec_PrAntiPr));
         hEtaPhiGen_PrAntiPr_ME.push_back(std::move(htempMEGen_PrAntiPr));
 
-        auto htempPIDSERec_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiRec_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+        auto htempPIDSERec_AntiDeAntiPr = registry.add<TH3>(Form("hPIDEtaPhiRec_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
                                                             Form("Rec #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptBinnedAxis}});
-        auto htempPIDSEGen_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+        auto htempPIDSEGen_AntiDeAntiPr = registry.add<TH3>(Form("hPIDEtaPhiGen_AntiDeAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
                                                             Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, ptBinnedAxis}});
         hPIDEtaPhiRec_AntiDeAntiPr_SE.push_back(std::move(htempPIDSERec_AntiDeAntiPr));
         hPIDEtaPhiGen_AntiDeAntiPr_SE.push_back(std::move(htempPIDSEGen_AntiDeAntiPr));
@@ -311,65 +290,6 @@ struct hadronnucleicorrelation {
         hCorrEtaPhi_AntiDeAntiPr_SE.push_back(std::move(hCorrtempSE_AntiDeAntiPr));
         hCorrEtaPhi_AntiDeAntiPr_ME.push_back(std::move(hCorrtempME_AntiDeAntiPr));
       }
-
-      if (debugeta) {
-        for (int i = 0; i < nBinseta; i++) {
-          if (!disable_pantip) {
-            auto htemp_EtaDiff_SE_PrAntiPr = registry.add<TH3>(Form("hEtaPhi_EtaDiff_PrAntiPr_SE_eta%02.0f%02.0f", etaBins.value.at(i) * 10, etaBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f< #eta pr <%.1f)", etaBins.value.at(i), etaBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, etaBinnedAxis}});
-            auto htemp_EtaDiff_ME_PrAntiPr = registry.add<TH3>(Form("hEtaPhi_EtaDiff_PrAntiPr_ME_eta%02.0f%02.0f", etaBins.value.at(i) * 10, etaBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f< #eta pr <%.1f)", etaBins.value.at(i), etaBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, etaBinnedAxis}});
-
-            hEtaPhi_EtaDiff_PrAntiPr_SE.push_back(std::move(htemp_EtaDiff_SE_PrAntiPr));
-            hEtaPhi_EtaDiff_PrAntiPr_ME.push_back(std::move(htemp_EtaDiff_ME_PrAntiPr));
-          }
-
-          auto htemp_EtaDiff_SE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_EtaDiff_AntiDeAntiPr_SE_eta%02.0f%02.0f", etaBins.value.at(i) * 10, etaBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f< #eta #bar{d} <%.1f)", etaBins.value.at(i), etaBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, etaBinnedAxis}});
-          auto htemp_EtaDiff_ME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_EtaDiff_AntiDeAntiPr_ME_eta%02.0f%02.0f", etaBins.value.at(i) * 10, etaBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f< #eta #bar{d} <%.1f)", etaBins.value.at(i), etaBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, etaBinnedAxis}});
-          hEtaPhi_EtaDiff_AntiDeAntiPr_SE.push_back(std::move(htemp_EtaDiff_SE_AntiDeAntiPr));
-          hEtaPhi_EtaDiff_AntiDeAntiPr_ME.push_back(std::move(htemp_EtaDiff_ME_AntiDeAntiPr));
-
-          if (!disable_pantip) {
-            auto hCorrtemp_EtaDiff_SE_PrAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_EtaDiff_PrAntiPr_SE_eta%02.0f%02.0f", etaBins.value.at(i) * 10, etaBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f< #eta pr <%.1f)", etaBins.value.at(i), etaBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, etaBinnedAxis}});
-            auto hCorrtemp_EtaDiff_ME_PrAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_EtaDiff_PrAntiPr_ME_eta%02.0f%02.0f", etaBins.value.at(i) * 10, etaBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f< #eta pr <%.1f)", etaBins.value.at(i), etaBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, etaBinnedAxis}});
-
-            hCorrEtaPhi_EtaDiff_PrAntiPr_SE.push_back(std::move(hCorrtemp_EtaDiff_SE_PrAntiPr));
-            hCorrEtaPhi_EtaDiff_PrAntiPr_ME.push_back(std::move(hCorrtemp_EtaDiff_ME_PrAntiPr));
-          }
-
-          auto hCorrtemp_EtaDiff_SE_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_EtaDiff_AntiDeAntiPr_SE_eta%02.0f%02.0f", etaBins.value.at(i) * 10, etaBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f< #eta #bar{d} <%.1f)", etaBins.value.at(i), etaBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, etaBinnedAxis}});
-          auto hCorrtemp_EtaDiff_ME_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_EtaDiff_AntiDeAntiPr_ME_eta%02.0f%02.0f", etaBins.value.at(i) * 10, etaBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f< #eta #bar{d} <%.1f)", etaBins.value.at(i), etaBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, etaBinnedAxis}});
-          hCorrEtaPhi_EtaDiff_AntiDeAntiPr_SE.push_back(std::move(hCorrtemp_EtaDiff_SE_AntiDeAntiPr));
-          hCorrEtaPhi_EtaDiff_AntiDeAntiPr_ME.push_back(std::move(hCorrtemp_EtaDiff_ME_AntiDeAntiPr));
-        }
-      }
-      if (debugphi) {
-        for (int i = 0; i < nBinseta; i++) {
-          if (!disable_pantip) {
-            auto htemp_PhiDiff_SE_PrAntiPr = registry.add<TH3>(Form("hEtaPhi_PhiDiff_PrAntiPr_SE_phi%02.0f%02.0f", phiBins.value.at(i) * 10, phiBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f< #phi pr <%.1f)", phiBins.value.at(i), phiBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, phiBinnedAxis}});
-            auto htemp_PhiDiff_ME_PrAntiPr = registry.add<TH3>(Form("hEtaPhi_PhiDiff_PrAntiPr_ME_phi%02.0f%02.0f", phiBins.value.at(i) * 10, phiBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f< #phi pr <%.1f)", phiBins.value.at(i), phiBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, phiBinnedAxis}});
-
-            hEtaPhi_PhiDiff_PrAntiPr_SE.push_back(std::move(htemp_PhiDiff_SE_PrAntiPr));
-            hEtaPhi_PhiDiff_PrAntiPr_ME.push_back(std::move(htemp_PhiDiff_ME_PrAntiPr));
-          }
-
-          auto htemp_PhiDiff_SE_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_PhiDiff_AntiDeAntiPr_SE_phi%02.0f%02.0f", phiBins.value.at(i) * 10, phiBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f< #phi #bar{d} <%.1f)", phiBins.value.at(i), phiBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, phiBinnedAxis}});
-          auto htemp_PhiDiff_ME_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhi_PhiDiff_AntiDeAntiPr_ME_phi%02.0f%02.0f", phiBins.value.at(i) * 10, phiBins.value.at(i + 1) * 10), Form("Raw #Delta#eta#Delta#phi (%.1f< #phi #bar{d} <%.1f)", phiBins.value.at(i), phiBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, phiBinnedAxis}});
-          hEtaPhi_PhiDiff_AntiDeAntiPr_SE.push_back(std::move(htemp_PhiDiff_SE_AntiDeAntiPr));
-          hEtaPhi_PhiDiff_AntiDeAntiPr_ME.push_back(std::move(htemp_PhiDiff_ME_AntiDeAntiPr));
-
-          if (!disable_pantip) {
-            auto hCorrtemp_PhiDiff_SE_PrAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_PhiDiff_PrAntiPr_SE_phi%02.0f%02.0f", phiBins.value.at(i) * 10, phiBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f< #phi pr <%.1f)", phiBins.value.at(i), phiBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, phiBinnedAxis}});
-            auto hCorrtemp_PhiDiff_ME_PrAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_PhiDiff_PrAntiPr_ME_phi%02.0f%02.0f", phiBins.value.at(i) * 10, phiBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f< #phi pr <%.1f)", phiBins.value.at(i), phiBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, phiBinnedAxis}});
-
-            hCorrEtaPhi_PhiDiff_PrAntiPr_SE.push_back(std::move(hCorrtemp_PhiDiff_SE_PrAntiPr));
-            hCorrEtaPhi_PhiDiff_PrAntiPr_ME.push_back(std::move(hCorrtemp_PhiDiff_ME_PrAntiPr));
-          }
-
-          auto hCorrtemp_PhiDiff_SE_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_PhiDiff_AntiDeAntiPr_SE_phi%02.0f%02.0f", phiBins.value.at(i) * 10, phiBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f< #phi #bar{d} <%.1f)", phiBins.value.at(i), phiBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, phiBinnedAxis}});
-          auto hCorrtemp_PhiDiff_ME_AntiDeAntiPr = registry.add<TH3>(Form("hCorrEtaPhi_PhiDiff_AntiDeAntiPr_ME_phi%02.0f%02.0f", phiBins.value.at(i) * 10, phiBins.value.at(i + 1) * 10), Form("#Delta#eta#Delta#phi (%.1f< #phi #bar{d} <%.1f)", phiBins.value.at(i), phiBins.value.at(i + 1)), {HistType::kTH3F, {etaAxis, phiAxis, phiBinnedAxis}});
-          hCorrEtaPhi_PhiDiff_AntiDeAntiPr_SE.push_back(std::move(hCorrtemp_PhiDiff_SE_AntiDeAntiPr));
-          hCorrEtaPhi_PhiDiff_AntiDeAntiPr_ME.push_back(std::move(hCorrtemp_PhiDiff_ME_AntiDeAntiPr));
-        }
-      }
     }
 
     if (doQA) {
@@ -390,14 +310,12 @@ struct hadronnucleicorrelation {
       QA.add("QA/Pt_AntiPr", "Selected antiprotons; p_{T} (GeV/c)", {HistType::kTH1F, {{100, 0.f, 10.f, "p_{T} (GeV/c)"}}});
 
       if (!isMC) {
-        if (debug) {
-          QA.add("QA/hnSigmaTPCVsPt_Pr_Debug", "n#sigma TPC vs p_{T} for p hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
-          QA.add("QA/hnSigmaTPCVsPt_De_Debug", "n#sigma TPC vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
-          QA.add("QA/hnSigmaTPCVsPt_APrDe_Debug", "n#sigma TPC vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
-          QA.add("QA/hnSigmaTOFVsPt_Pr_Debug", "n#sigma TOF vs p_{T} for p hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
-          QA.add("QA/hnSigmaTOFVsPt_De_Debug", "n#sigma TOF vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
-          QA.add("QA/hnSigmaTOFVsPt_APrDe_Debug", "n#sigma TOF vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
-        }
+        QA.add("QA/hnSigmaTPCVsPt_Pr_Debug", "n#sigma TPC vs p_{T} for p hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsPt_De_Debug", "n#sigma TPC vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+        QA.add("QA/hnSigmaTPCVsPt_APrDe_Debug", "n#sigma TPC vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+        QA.add("QA/hnSigmaTOFVsPt_Pr_Debug", "n#sigma TOF vs p_{T} for p hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+        QA.add("QA/hnSigmaTOFVsPt_De_Debug", "n#sigma TOF vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
+        QA.add("QA/hnSigmaTOFVsPt_APrDe_Debug", "n#sigma TOF vs p_{T} for d hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2F, {pTAxis, AxisNSigma}});
         QA.add("QA/hEtaPr", Form("#eta ditribution for p"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
         QA.add("QA/hPhiPr", Form("#phi ditribution for p"), {HistType::kTH1F, {{100, 0.f, 2 * TMath::Pi(), "#phi"}}});
         QA.add("QA/hEtaAntiPr", Form("#eta ditribution for #bar{p}"), {HistType::kTH1F, {{200, -1.f, 1.f, "#eta"}}});
@@ -525,7 +443,7 @@ struct hadronnucleicorrelation {
                   hEtaPhi_PrAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt());
                   hCorrEtaPhi_PrAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt(), 1. / (pcorr * antipcorr));
 
-                  if (debug && abs(deltaEta) < threta && abs(deltaPhi) < thrphi) {
+                  if (doQA && abs(deltaEta) < threta && abs(deltaPhi) < thrphi) {
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_Debug"), it1->pt(), it1->tpcNSigmaPr());
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_Debug"), -1.f * it2->pt(), it2->tpcNSigmaPr());
                     QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_Debug"), it1->pt(), it1->tofNSigmaPr());
@@ -575,7 +493,7 @@ struct hadronnucleicorrelation {
                   hEtaPhi_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt());
                   hCorrEtaPhi_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt(), 1. / (antipcorr * antidcorr));
 
-                  if (debug && abs(deltaEta) < threta && abs(deltaPhi) < thrphi) {
+                  if (doQA && abs(deltaEta) < threta && abs(deltaPhi) < thrphi) {
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_De_Debug"), -1.f * it1->pt(), it1->tpcNSigmaDe());
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_APrDe_Debug"), -1.f * it2->pt(), it2->tpcNSigmaPr());
                     QA.fill(HIST("QA/hnSigmaTOFVsPt_De_Debug"), -1.f * it1->pt(), it1->tofNSigmaDe());
@@ -595,92 +513,6 @@ struct hadronnucleicorrelation {
             }
           }
         } // nBinspT loop
-
-        if (debugeta) {
-          for (int k = 0; k < nBinseta; k++) {
-
-            if (!isDe && !disable_pantip) {
-              if (it1->eta() > etaBins.value.at(k) && it1->eta() <= etaBins.value.at(k + 1)) {
-                if (it1->pt() < debug_ptthrp && it2->pt() < debug_ptthrp) {
-
-                  if (docorrection) {
-                    pcorr = hEffpTEta_proton->Interpolate(it1->pt(), it1->eta());
-                    antipcorr = hEffpTEta_antiproton->Interpolate(it2->pt(), it2->eta());
-                  }
-
-                  if (ME) {
-                    hEtaPhi_EtaDiff_PrAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->eta());
-                    hCorrEtaPhi_EtaDiff_PrAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->eta(), 1. / (pcorr * antipcorr));
-                  } else {
-                    hEtaPhi_EtaDiff_PrAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->eta());
-                    hCorrEtaPhi_EtaDiff_PrAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->eta(), 1. / (pcorr * antipcorr));
-                  }
-                }
-              }
-            } else {
-              if (it1->eta() > etaBins.value.at(k) && it1->eta() <= etaBins.value.at(k + 1)) {
-                if (it1->pt() < debug_ptthrd && it2->pt() < debug_ptthrp) {
-
-                  if (docorrection) {
-                    antipcorr = hEffpTEta_antiproton->Interpolate(it2->pt(), it2->eta());
-                    antidcorr = hEffpTEta_antideuteron->Interpolate(it1->pt(), it1->eta());
-                  }
-
-                  if (ME) {
-                    hEtaPhi_EtaDiff_AntiDeAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->eta());
-                    hCorrEtaPhi_EtaDiff_AntiDeAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->eta(), 1. / (antipcorr * antidcorr));
-                  } else {
-                    hEtaPhi_EtaDiff_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->eta());
-                    hCorrEtaPhi_EtaDiff_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->eta(), 1. / (antipcorr * antidcorr));
-                  } // SE
-                }
-              }
-            }
-          } // netaBins loop
-        }   // debug eta
-
-        if (debugphi) {
-          for (int k = 0; k < nBinsphi; k++) {
-
-            if (!isDe && !disable_pantip) {
-              if (it1->phi() > phiBins.value.at(k) && it1->phi() <= phiBins.value.at(k + 1)) {
-                if (it1->pt() < debug_ptthrp && it2->pt() < debug_ptthrp) {
-
-                  if (docorrection) {
-                    pcorr = hEffpTEta_proton->Interpolate(it1->pt(), it1->eta());
-                    antipcorr = hEffpTEta_antiproton->Interpolate(it2->pt(), it2->eta());
-                  }
-
-                  if (ME) {
-                    hEtaPhi_PhiDiff_PrAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->phi());
-                    hCorrEtaPhi_PhiDiff_PrAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->phi(), 1. / (pcorr * antipcorr));
-                  } else {
-                    hEtaPhi_PhiDiff_PrAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->phi());
-                    hCorrEtaPhi_PhiDiff_PrAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->phi(), 1. / (pcorr * antipcorr));
-                  }
-                }
-              }
-            } else {
-              if (it1->phi() > phiBins.value.at(k) && it1->phi() <= phiBins.value.at(k + 1)) {
-                if (it1->pt() < debug_ptthrd && it2->pt() < debug_ptthrp) {
-
-                  if (docorrection) {
-                    antipcorr = hEffpTEta_antiproton->Interpolate(it2->pt(), it2->eta());
-                    antidcorr = hEffpTEta_antideuteron->Interpolate(it1->pt(), it1->eta());
-                  }
-
-                  if (ME) {
-                    hEtaPhi_PhiDiff_AntiDeAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->phi());
-                    hCorrEtaPhi_PhiDiff_AntiDeAntiPr_ME[k]->Fill(deltaEta, deltaPhi, it2->phi(), 1. / (antipcorr * antidcorr));
-                  } else {
-                    hEtaPhi_PhiDiff_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->phi());
-                    hCorrEtaPhi_PhiDiff_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->phi(), 1. / (antipcorr * antidcorr));
-                  } // SE
-                }
-              }
-            }
-          } // nphiBins loop
-        }   // debug phi
       }
     }
   }
