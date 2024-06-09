@@ -82,7 +82,9 @@ struct phiInJets {
   Configurable<int> cfgnTOFPID{"cfgnTOFPID", 4, "nTOF PID"};
   Configurable<float> cfgjetPtMin{"cfgjetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> cfgjetR{"cfgjetR", 0.4, "jet resolution parameter"};
+  Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0, "V_z cut selection"};  
   Configurable<int> cDebugLevel{"cDebugLevel", 0, "Resolution of Debug"};
+  Configurable<bool> cfgBR{"cfgBR", false, "Forces Gen. Charged BR Only"};    
   // CONFIG DONE
   /////////////////////////////////////////  //INIT
 
@@ -106,10 +108,15 @@ struct phiInJets {
     JEhistos.add("ptJEHistogramPhi_JetTrigger", "ptJEHistogramPhi_JetTrigger", kTH1F, {PtAxis});
     JEhistos.add("minvJEHistogramPhi", "minvJEHistogramPhi", kTH1F, {MinvAxis});
 
+    JEhistos.add("Resp_Matrix", "Resp_Matrix", HistType::kTHnSparseD , {PtAxis,axisPt,PtAxis,axisPt});//REC(Phi,Jet), GEN(Phi,Jet)
+    JEhistos.add("Resp_Matrix_MATCHED", "Resp_Matrix_MATCHED", HistType::kTHnSparseD , {PtAxis,axisPt,PtAxis,axisPt});//REC(Phi,Jet), GEN(Phi,Jet)    
+    
     JEhistos.add("ptGeneratedPion", "ptGeneratedPion", kTH1F, {PtAxis});
     JEhistos.add("ptGeneratedKaon", "ptGeneratedKaon", kTH1F, {PtAxis});
     JEhistos.add("ptGeneratedProton", "ptGeneratedProton", kTH1F, {PtAxis});
     JEhistos.add("ptGeneratedPhi", "ptGeneratedPhi", kTH1F, {PtAxis});
+    JEhistos.add("ptGeneratedPhi_ALLBR", "ptGeneratedPhi_ALLBR", kTH1F, {PtAxis});
+
     JEhistos.add("ptGeneratedPhi_JetTrigger", "ptGeneratedPhi_JetTrigger", kTH1F, {PtAxis});
 
     JEhistos.add("mGeneratedPhi", "mGeneratedPhi", kTH1F, {MinvAxis});
@@ -420,7 +427,7 @@ struct phiInJets {
     }
     JEhistos.fill(HIST("nEvents"), 0.5);
 
-    if (fabs(collision.posZ()) > 10)
+    if (fabs(collision.posZ()) > cfgVtxCut)
       return;
     if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
       return;
@@ -488,7 +495,7 @@ struct phiInJets {
     }
 
     JEhistos.fill(HIST("nEvents_MCRec"), 0.5);
-    if (fabs(collision.posZ()) > 10)
+    if (fabs(collision.posZ()) > cfgVtxCut)
       return;
     if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
       return;
@@ -661,7 +668,7 @@ struct phiInJets {
         return;
     }
 
-    if (fabs(collision.posZ()) > 10) // bad vertex
+    if (fabs(collision.posZ()) > cfgVtxCut) // bad vertex
       return;
     bool INELgt0 = false;
     for (const auto& mcParticle : mcParticles) {
@@ -694,8 +701,8 @@ struct phiInJets {
       JEhistos.fill(HIST("nEvents_MCGen"), 2.5);
 
     // Check pikp and phi
-    for (const auto& mcParticle : mcParticles) {
-      if (mcParticle.isPhysicalPrimary() && fabs(mcParticle.eta()) <= cfgtrkMaxEta) { // watch out for context!!!
+    for (const auto& mcParticle : mcParticles) {      
+      if (mcParticle.isPhysicalPrimary() && fabs(mcParticle.eta()) <= cfgtrkMaxEta) { // watch out for context!!!	
         if (abs(mcParticle.pdgCode()) == 211)
           JEhistos.fill(HIST("ptGeneratedPion"), mcParticle.pt());
         if (abs(mcParticle.pdgCode()) == 321)
@@ -707,8 +714,20 @@ struct phiInJets {
         TLorentzVector lResonance;
         lResonance.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
         if (abs(mcParticle.pdgCode()) == 333) {
-          JEhistos.fill(HIST("ptGeneratedPhi"), mcParticle.pt());
+	  JEhistos.fill(HIST("ptGeneratedPhi_ALLBR"), mcParticle.pt());
+	  
+	  bool skip =false;
+	  //First we check for Forced BR
+	  if(mcParticle.has_daughters())
+	    for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>()) 
+	      if(fabs(dgth.pdgCode())!= 321)
+		skip=true;
+
+	  if(skip && cfgBR)
+	    continue;
+	  JEhistos.fill(HIST("ptGeneratedPhi"), mcParticle.pt());
           JEhistos.fill(HIST("mGeneratedPhi"), lResonance.M());
+	  
           ////////////////////////////Implementation of phi finding
 
           TLorentzVector lResonance;
@@ -783,7 +802,7 @@ struct phiInJets {
 
     JEhistos.fill(HIST("nEvents_MCGen_MATCHED"), 0.5);
 
-    if (fabs(collision.posZ()) > 10)
+    if (fabs(collision.posZ()) > cfgVtxCut)
       return;
 
     if (recocolls.size() <= 0) // not reconstructed
@@ -844,7 +863,15 @@ struct phiInJets {
         continue;
 
       if (fabs(mcParticle.pdgCode()) == 333) {
+	bool skip =false;
+	//First we check for Forced BR
+	if(mcParticle.has_daughters())
+	  for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>()) 
+	    if(fabs(dgth.pdgCode())!= 321)
+	      skip=true;
 
+	if(skip && cfgBR)
+	  continue;	
         TLorentzVector lResonance;
         lResonance.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
         bool jetFlag = false;
@@ -861,7 +888,7 @@ struct phiInJets {
           if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
             JEhistos.fill(HIST("hMCTrue_hUSS_INSIDE_1D_2_3"), lResonance.M());
           JEhistos.fill(HIST("hMCTrue_hUSS_INSIDE"), 1.0, lResonance.Pt(), lResonance.M());
-
+	 
         } else if (!jetFlag && mcp_pt.size() > 0) {
           JEhistos.fill(HIST("hMCTrue_hUSS_OUTSIDE_TRIG_1D"), lResonance.M());
 
@@ -903,7 +930,7 @@ struct phiInJets {
     }
     JEhistos.fill(HIST("nEvents_MCRec_MATCHED"), 0.5);
 
-    if (fabs(collision.posZ()) > 10)
+    if (fabs(collision.posZ()) > cfgVtxCut)
       return;
     if (!jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8))
       return;
@@ -951,7 +978,6 @@ struct phiInJets {
     if (hasJets)
       JEhistos.fill(HIST("nEvents_MCRec_MATCHED"), 2.5);
 
-    //    for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
     for (const auto& track1 : tracks) {
       auto trk1 = track1.track_as<myCompleteTracks>();
       for (const auto& track2 : tracks) {
@@ -977,16 +1003,20 @@ struct phiInJets {
 
             std::vector<int> mothers1{};
             std::vector<int> mothers1PDG{};
+	    std::vector<int> mothers1Pt{};
             for (auto& part1_mom : part1.mothers_as<aod::McParticles>()) {
               mothers1.push_back(part1_mom.globalIndex());
               mothers1PDG.push_back(part1_mom.pdgCode());
+	      mothers1Pt.push_back(part1_mom.pt());
             }
 
             std::vector<int> mothers2{};
             std::vector<int> mothers2PDG{};
+	    std::vector<int> mothers2Pt{};
             for (auto& part2_mom : part2.mothers_as<aod::McParticles>()) {
               mothers2.push_back(part2_mom.globalIndex());
               mothers2PDG.push_back(part2_mom.pdgCode());
+	      mothers2Pt.push_back(part2_mom.pt());
             }
             if (mothers1PDG[0] != 333)
               continue; // mother not phi
@@ -1010,9 +1040,21 @@ struct phiInJets {
               double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
               if (R < cfgjetR)
                 jetFlag = true;
+	      
+	      if(jetFlag){ //Fill Resp. Matrix
+		if(cDebugLevel > 0 ){
+		  std::cout<<"******************************************"<<std::endl;
+		  std::cout<<"Rec. Phi Pt: "<<lResonance.Pt()<<std::endl;
+		  std::cout<<"Rec. Jet Pt: "<<mcd_pt[i]<<std::endl;
+		  std::cout<<"Gen. Phi Pt: "<<mothers1Pt[0]<<std::endl;
+		  std::cout<<"Gen. Jet Pt: "<<mcp_pt[i]<<std::endl;
+		  std::cout<<"******************************************"<<std::endl;
+		}
+		JEhistos.fill(HIST("Resp_Matrix_MATCHED"), lResonance.Pt(), mcd_pt[i], mothers1Pt[0], mcp_pt[i]);
+	      }
             }
 
-            if (jetFlag) {
+            if (jetFlag) {	      	      
               JEhistos.fill(HIST("hMCRec_hUSS_INSIDE_1D"), lResonance.M());
               if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
                 JEhistos.fill(HIST("hMCRec_hUSS_INSIDE_1D_2_3"), lResonance.M());
