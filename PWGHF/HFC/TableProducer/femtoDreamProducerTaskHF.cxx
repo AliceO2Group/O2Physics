@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoDreamProducerTask.cxx
+/// \file femtodreamproducertaskHF.cxx
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 
@@ -55,7 +55,7 @@ using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFull
 using FemtoHFTrack = FemtoHFTracks::iterator;
 } // namespace o2::aod
 
-struct femtoDreamProducerTask {
+struct femtodreamproducertaskHF {
 
   Produces<aod::FDCollisions> outputCollision;
   Produces<aod::FDHfCand> rowCandCharmHad;
@@ -437,7 +437,6 @@ struct femtoDreamProducerTask {
                 // Row for MC candidate charm hadron (if constexpr isMC)
                 if constexpr (isMC) {
                     rowCandMCCharmHad(
-                        isMcCandidateSignal,
                         candidate.flagMcMatchRec(),
                         candidate.originMcRec());
                 }
@@ -471,7 +470,7 @@ struct femtoDreamProducerTask {
   {
     fillCharmHadronTable<false, false>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processDataCharmHad,
+  PROCESS_SWITCH(femtodreamproducertaskHF, processDataCharmHad,
                  "Provide experimental data for charm hadron femto", false);
 
   void
@@ -482,7 +481,7 @@ struct femtoDreamProducerTask {
 
     fillCharmHadronTable<false, true>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processDataCharmHadWithML,
+  PROCESS_SWITCH(femtodreamproducertaskHF, processDataCharmHadWithML,
                  "Provide experimental data for charm hadron femto with ml", false);
 
   void processMCCharmHad(aod::FemtoFullCollisionMC const& col,
@@ -492,7 +491,7 @@ struct femtoDreamProducerTask {
   {
     fillCharmHadronTable<true, false>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processMCCharmHad, "Provide MC for charm hadron", false);
+  PROCESS_SWITCH(femtodreamproducertaskHF, processMCCharmHad, "Provide MC for charm hadron", false);
 
   void processMCCharmHadWithML(aod::FemtoFullCollisionMC const& col,
                                soa::Join<aod::FemtoHFTracks, aod::McTrackLabels> const& tracks,
@@ -501,18 +500,18 @@ struct femtoDreamProducerTask {
   {
     fillCharmHadronTable<true, true>(col, tracks, candidates);
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processMCCharmHadWithML, "Provide MC for charm hadron with ml", false);
+  PROCESS_SWITCH(femtodreamproducertaskHF, processMCCharmHadWithML, "Provide MC for charm hadron with ml", false);
   void processMCCharmHadGen(
     soa::Join<aod::FemtoHFTracks, aod::McTrackLabels> const& tracks,
     GeneratedMC const& particles)
   {
     fillCharmHadMCGen(tracks, particles);
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processMCCharmHadGen, "Provide MC Generated charm hadron", false);
+  PROCESS_SWITCH(femtodreamproducertaskHF, processMCCharmHadGen, "Provide MC Generated charm hadron", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<femtoDreamProducerTask>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<femtodreamproducertaskHF>(cfgc)};
   return workflow;
 }
