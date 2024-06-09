@@ -34,6 +34,13 @@ namespace femtoDream
 /// \brief Class to check particles for the close pair rejection.
 /// \tparam partOne Type of particle 1 (Track/V0/Cascade/...)
 /// \tparam partTwo Type of particle 2 (Track/V0/Cascade/...)
+
+enum ProngCharmHadron {
+  prong0 = 0,
+  prong1 = 1,
+  prong2 = 2
+};
+
 template <o2::aod::femtodreamparticle::ParticleType partOne, o2::aod::femtodreamparticle::ParticleType partTwo>
 class FemtoDreamDetaDphiStar
 {
@@ -269,7 +276,7 @@ class FemtoDreamDetaDphiStar
       return pass;
     } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
       // check if provided particles are in agreement with the class instantiation
-      if (part2.candidateSelFlag() < 1) {
+      if (part2.candidateSelFlag() < o2::aod::fdhf::lcToPKPi) {
         LOG(fatal) << "FemtoDreamDetaDphiStar: passed arguments don't agree with FemtoDreamDetaDphiStar instantiation! Please provide Charm Hadron candidates.";
         return false;
       }
@@ -281,21 +288,21 @@ class FemtoDreamDetaDphiStar
         bool sameCharge = false;
 
         switch (i) {
-          case 0:
+          case prong0:
             deta = part1.eta() - part2.prong0Eta();
             dphi_AT_PV = part1.phi() - part2.prong0Phi();
             dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 0>(part2, radiiTPC);
             dphiAvg = AveragePhiStar<true>(part1, part2, 0, &sameCharge);
             histdetadpi[0][0]->Fill(deta, dphiAvg);
             break;
-          case 1:
+          case prong1:
             deta = part1.eta() - part2.prong1Eta();
             dphi_AT_PV = part1.phi() - part2.prong1Phi();
             dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 1>(part2, radiiTPC);
             dphiAvg = AveragePhiStar<true>(part1, part2, 1, &sameCharge);
             histdetadpi[1][0]->Fill(deta, dphiAvg);
             break;
-          case 2:
+          case prong2:
             deta = part1.eta() - part2.prong2Eta();
             dphi_AT_PV = part1.phi() - part2.prong2Phi();
             dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 2>(part2, radiiTPC);
@@ -464,17 +471,17 @@ class FemtoDreamDetaDphiStar
     float pt = -999.;
     float phi0 = -999.;
     switch (prong) {
-      case 0:
+      case prong0:
         pt = part.prong0Pt();
         phi0 = part.prong0Phi();
         charge = part.charge();
         break;
-      case 1:
+      case prong1:
         pt = part.prong1Pt();
         phi0 = part.prong1Phi();
         charge = -part.charge();
         break;
-      case 2:
+      case prong2:
         pt = part.prong2Pt();
         phi0 = part.prong2Phi();
         charge = part.charge();
