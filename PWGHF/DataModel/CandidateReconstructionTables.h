@@ -1337,15 +1337,18 @@ DECLARE_SOA_COLUMN(ZDecayVtxXi, zDecayVtxXi, float);
 DECLARE_SOA_COLUMN(XDecayVtxLambda, xDecayVtxLambda, float);
 DECLARE_SOA_COLUMN(YDecayVtxLambda, yDecayVtxLambda, float);
 DECLARE_SOA_COLUMN(ZDecayVtxLambda, zDecayVtxLambda, float);
-DECLARE_SOA_COLUMN(DcaPi0Pi1, dcaPi0Pi1, float);
-DECLARE_SOA_COLUMN(DcaPi0Xi, dcaPi0Xi, float);
-DECLARE_SOA_COLUMN(DcaPi1Xi, dcaPi1Xi, float);
 DECLARE_SOA_COLUMN(CosPaXi, cosPaXi, float);
 DECLARE_SOA_COLUMN(CosPaXYXi, cosPaXYXi, float);
 DECLARE_SOA_COLUMN(CosPaLambda, cosPaLambda, float);
 DECLARE_SOA_COLUMN(CosPaXYLambda, cosPaXYLambda, float);
-DECLARE_SOA_COLUMN(InvMassXic, invMassXic, double);
-DECLARE_SOA_COLUMN(Sign, sign, double);
+DECLARE_SOA_COLUMN(InvMassXic, invMassXic, float);
+DECLARE_SOA_COLUMN(Sign, sign, float);
+DECLARE_SOA_COLUMN(InvMassXiPi0, invMassXiPi0, float);
+DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
+// KF specific columns
+DECLARE_SOA_COLUMN(DcaPi0Pi1, dcaPi0Pi1, float);
+DECLARE_SOA_COLUMN(DcaPi0Xi, dcaPi0Xi, float);
+DECLARE_SOA_COLUMN(DcaPi1Xi, dcaPi1Xi, float);
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
@@ -1381,6 +1384,7 @@ DECLARE_SOA_TABLE(HfCandXicBase, "AOD", "HFCANDXICBASE",
                   hf_cand_xictoxipipi::XDecayVtxXi, hf_cand_xictoxipipi::YDecayVtxXi, hf_cand_xictoxipipi::ZDecayVtxXi,
                   hf_cand_xictoxipipi::XDecayVtxLambda, hf_cand_xictoxipipi::YDecayVtxLambda, hf_cand_xictoxipipi::ZDecayVtxLambda,
                   hf_cand_xictoxipipi::CosPaXi, hf_cand_xictoxipipi::CosPaXYXi, hf_cand_xictoxipipi::CosPaLambda, hf_cand_xictoxipipi::CosPaXYLambda,
+                  hf_cand_xictoxipipi::InvMassXiPi0, hf_cand_xictoxipipi::InvMassXiPi1,
                   /* dynamic columns */
                   hf_cand::RSecondaryVertex<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
                   hf_cand::DecayLength<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex>,
@@ -1415,7 +1419,7 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCandXicExt, HfCandXicBase, "HFCANDXICEXT",
 using HfCandXic = HfCandXicExt;
 
 DECLARE_SOA_TABLE(HfCandXicKF, "AOD", "HFCANDXICKF",
-                  cascdata::KFV0Chi2, cascdata::KFCascadeChi2,
+                  cascdata::KFCascadeChi2, cascdata::KFV0Chi2, 
                   hf_cand_xictoxipipi::DcaPi0Pi1, hf_cand_xictoxipipi::DcaPi0Xi, hf_cand_xictoxipipi::DcaPi1Xi);
 
 // table with results of reconstruction level MC matching
