@@ -234,6 +234,9 @@ struct sigmaanalysis {
   bool processSigmaCandidate(TV0Object const& cand)
   {
     if (fUseMLSel){
+      if ((cand.gammaBDTScore()==-1) || (cand.lambdaBDTScore()==-1) || (cand.antilambdaBDTScore()==-1)){
+        LOGF(fatal, "ML Score is not available! Please, enable gamma and lambda selection with ML in sigmabuilder!");
+      }
       // Gamma selection:
       if (cand.gammaBDTScore() <= Gamma_MLThreshold)
         return false;
@@ -248,53 +251,52 @@ struct sigmaanalysis {
     }
     
     else{
-      
-        if (TMath::Abs(cand.photonMass()) > PhotonMaxMass)
-          return false;
-        if ((TMath::Abs(cand.photonPosEta()) > PhotonDauPseudoRap) || (TMath::Abs(cand.photonNegEta()) > PhotonDauPseudoRap))
-          return false;
-        if ((cand.photonPosPt() < PhotondauMinPt) || (cand.photonNegPt() < PhotondauMinPt))
-          return false;
-        if ((cand.photonDCAPosPV() > Photondcadautopv) || ( cand.photonDCANegPV() > Photondcadautopv))
-          return false;
-        if (cand.photonDCADau() > Photondcav0dau)
-          return false;
-        if ((cand.photonPosTPCCrossedRows() < PhotonTPCCrossedRows) || (cand.photonPosTPCCrossedRows() < PhotonTPCCrossedRows))
-          return false;
-        if ((cand.photonPosTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigma() > PhotonMaxTPCNSigmas))
-          return false;
-        if ((cand.photonNegTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigma() > PhotonMaxTPCNSigmas))
-          return false;
-        if ((cand.photonPt() < PhotonMinPt) || (cand.photonPt() > PhotonMaxPt))
-          return false;
-        if (TMath::Abs(cand.photonEta()) < PhotonPseudoRap)
-          return false;
-        if ((cand.photonRadius() < PhotonMinRadius) || (cand.photonRadius() > PhotonMaxRadius))
-          return false;
-        if (TMath::Abs(cand.photonZconv()) > PhotonMaxZ)
-          return false;
-        if (cand.photonQt() > PhotonMaxqt)
-          return false;
-        if (TMath::Abs(cand.photonAlpha()) > PhotonMaxalpha)
-          return false;
-        if (cand.photonCosPA() < Photonv0cospa)
-          return false;
+      if (TMath::Abs(cand.photonMass()) > PhotonMaxMass)
+        return false;
+      if ((TMath::Abs(cand.photonPosEta()) > PhotonDauPseudoRap) || (TMath::Abs(cand.photonNegEta()) > PhotonDauPseudoRap))
+        return false;
+      if ((cand.photonPosPt() < PhotondauMinPt) || (cand.photonNegPt() < PhotondauMinPt))
+        return false;
+      if ((cand.photonDCAPosPV() > Photondcadautopv) || ( cand.photonDCANegPV() > Photondcadautopv))
+        return false;
+      if (cand.photonDCADau() > Photondcav0dau)
+        return false;
+      if ((cand.photonPosTPCCrossedRows() < PhotonTPCCrossedRows) || (cand.photonPosTPCCrossedRows() < PhotonTPCCrossedRows))
+        return false;
+      if ((cand.photonPosTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigma() > PhotonMaxTPCNSigmas))
+        return false;
+      if ((cand.photonNegTPCNSigma() < PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigma() > PhotonMaxTPCNSigmas))
+        return false;
+      if ((cand.photonPt() < PhotonMinPt) || (cand.photonPt() > PhotonMaxPt))
+        return false;
+      if (TMath::Abs(cand.photonEta()) < PhotonPseudoRap)
+        return false;
+      if ((cand.photonRadius() < PhotonMinRadius) || (cand.photonRadius() > PhotonMaxRadius))
+        return false;
+      if (TMath::Abs(cand.photonZconv()) > PhotonMaxZ)
+        return false;
+      if (cand.photonQt() > PhotonMaxqt)
+        return false;
+      if (TMath::Abs(cand.photonAlpha()) > PhotonMaxalpha)
+        return false;
+      if (cand.photonCosPA() < Photonv0cospa)
+        return false;
 
-        // Lambda selection
-        if (TMath::Abs(cand.lambdaMass() - 1.115683) > LambdaWindow)
-          return false;
-        if ((cand.lambdaDCAPosPV() < Lambdadcapostopv) || (cand.lambdaDCANegPV() < Lambdadcanegtopv))
-          return false;
-        if ((cand.lambdaRadius() < LambdaMinv0radius) || (cand.lambdaRadius() > LambdaMaxv0radius))
-          return false;
-        if (cand.lambdaDCADau() > Lambdadcav0dau)
-          return false;
-        if ((cand.lambdaQt() < LambdaMinqt) || (cand.lambdaQt() > LambdaMaxqt))
-          return false;
-        if (TMath::Abs(cand.lambdaAlpha()) > PhotonMaxalpha)
-          return false;
-        if (cand.lambdaCosPA() < Lambdav0cospa)
-          return false;
+      // Lambda selection
+      if (TMath::Abs(cand.lambdaMass() - 1.115683) > LambdaWindow)
+        return false;
+      if ((cand.lambdaDCAPosPV() < Lambdadcapostopv) || (cand.lambdaDCANegPV() < Lambdadcanegtopv))
+        return false;
+      if ((cand.lambdaRadius() < LambdaMinv0radius) || (cand.lambdaRadius() > LambdaMaxv0radius))
+        return false;
+      if (cand.lambdaDCADau() > Lambdadcav0dau)
+        return false;
+      if ((cand.lambdaQt() < LambdaMinqt) || (cand.lambdaQt() > LambdaMaxqt))
+        return false;
+      if (TMath::Abs(cand.lambdaAlpha()) > PhotonMaxalpha)
+        return false;
+      if (cand.lambdaCosPA() < Lambdav0cospa)
+        return false;
     }
 
   return true;
