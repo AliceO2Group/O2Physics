@@ -90,6 +90,8 @@ DECLARE_SOA_COLUMN(CpaXYLam, cpaXYLam, float);
 DECLARE_SOA_COLUMN(DcaPi0Pi1, dcaPi0Pi1, float);
 DECLARE_SOA_COLUMN(DcaPi0Xi, dcaPi0Xi, float);
 DECLARE_SOA_COLUMN(DcaPi1Xi, dcaPi1Xi, float);
+DECLARE_SOA_COLUMN(InvMassXiPi0, invMassXiPi0, float);
+DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
 // PID daughters
 DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                                 //! TPC Nsigma separation for prong1 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                                 //! TOF Nsigma separation for prong1 with pion mass hypothesis
@@ -230,6 +232,8 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::CpaXYXi,
                   full::CpaLam,
                   full::CpaXYLam,
+                  full::InvMassXiPi0,
+                  full::InvMassXiPi1,
                   hf_cand_xictoxipipi::FlagMcMatchRec);
 
 DECLARE_SOA_TABLE(HfCandXicFullKfs, "AOD", "HFCANDXICFULLKF",
@@ -285,6 +289,8 @@ DECLARE_SOA_TABLE(HfCandXicFullKfs, "AOD", "HFCANDXICFULLKF",
                   full::CpaXYXi,
                   full::CpaLam,
                   full::CpaXYLam,
+                  full::InvMassXiPi0,
+                  full::InvMassXiPi1,
                   full::Chi2XiVtx,
                   full::Chi2LamVtx,
                   full::DcaPi0Pi1,
@@ -335,10 +341,10 @@ struct HfTreeCreatorXicToXiPiPi {
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic;
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
-  Partition<SelectedCandidatesKfMc> recSigKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) == (int8_t)BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
-  Partition<SelectedCandidatesKfMc> recBgKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) != (int8_t)BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) != int8_t(0);
+  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) == int8_t(0);
+  Partition<SelectedCandidatesKfMc> recSigKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec) != int8_t(0);
+  Partition<SelectedCandidatesKfMc> recBgKf = nabs(aod::hf_cand_xictoxipipi::flagMcMatchRec)  == int8_t(0);
 
   void init(InitContext const&)
   {
@@ -457,6 +463,8 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.cosPaXYXi(),
           candidate.cosPaLambda(),
           candidate.cosPaXYLambda(),
+          candidate.invMassXiPi0(),
+          candidate.invMassXiPi1(),
           flagMc);
       }
     } else {
@@ -556,6 +564,8 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.cosPaXYXi(),
           candidate.cosPaLambda(),
           candidate.cosPaXYLambda(),
+          candidate.invMassXiPi0(),
+          candidate.invMassXiPi1(),
           candidate.kfCascadeChi2(),
           candidate.kfV0Chi2(),
           candidate.dcaPi0Pi1(),
