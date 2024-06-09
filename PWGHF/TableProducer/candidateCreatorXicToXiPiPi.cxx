@@ -337,7 +337,7 @@ struct HfCandidateCreatorXic {
                        massXiPi0, massXiPi1);
     } // loop over track triplets
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic, processXicplusWithDcaFitter, "Run candidate creator with DCAFitter.", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic, processXicplusWithDcaFitter, "Run candidate creator with DCAFitter.", true);
 
   void processXicplusWithKFParticleFromDerivedData(aod::Collisions const&,
                                                    aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
@@ -526,7 +526,7 @@ struct HfCandidateCreatorXic {
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi);
     } // loop over track triplets
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic, processXicplusWithKFParticleFromDerivedData, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", true);
+  PROCESS_SWITCH(HfCandidateCreatorXic, processXicplusWithKFParticleFromDerivedData, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", false);
 
   void processXicplusWithKFParticle(SelectedCollisions const& collisions,
                                     SelectedHfTrackAssoc const& trackIndices,
