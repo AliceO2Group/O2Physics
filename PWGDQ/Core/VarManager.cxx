@@ -258,6 +258,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCentVZERO] = "%";
   fgVariableNames[kCentFT0C] = "Centrality FT0C";
   fgVariableUnits[kCentFT0C] = "%";
+  fgVariableNames[kTrackOccupancyITS] = "Track Occupancy ITS";
+  fgVariableUnits[kTrackOccupancyITS] = "";
   fgVariableNames[kMultTPC] = "Multiplicity TPC";
   fgVariableUnits[kMultTPC] = "";
   fgVariableNames[kMultFV0A] = "Multiplicity FV0A";

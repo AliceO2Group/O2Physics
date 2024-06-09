@@ -239,6 +239,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "energyCommonZNA_energyCommonZNC", "Common ZNA energy vs common ZNC energy", false, 1050, -10.0, 200.0, VarManager::kEnergyCommonZNA, 1050, -10.0, 200.0, VarManager::kEnergyCommonZNC);
       hm->AddHistogram(histClass, "energyCommonZNA_energyCommonZNC_lowRange", "Common ZNA energy vs common ZNC energy", false, 220, -2.0, 20.0, VarManager::kEnergyCommonZNA, 220, -2.0, 20.0, VarManager::kEnergyCommonZNC);
     }
+
+    if (subGroupStr.Contains("occupancy")) {
+      hm->AddHistogram(histClass, "TrackOccupancyITS", "Occupancy estimated with ITS tracks", false, 250, 0.0, 25000.0, VarManager::kTrackOccupancyITS);
+    }
+
   } // end "event"
 
   if (!groupStr.CompareTo("two-collisions")) {

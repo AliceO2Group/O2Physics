@@ -174,6 +174,7 @@ class VarManager : public TObject
     kTimestamp,
     kCollisionTime,
     kCollisionTimeRes,
+    kTrackOccupancyITS,
     kBC,
     kBCOrbit,
     kIsPhysicsSelection,
@@ -1280,6 +1281,8 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxChi2] = event.chi2();
     values[kCollisionTime] = event.collisionTime();
     values[kCollisionTimeRes] = event.collisionTimeRes();
+    values[kTrackOccupancyITS] = event.trackOccupancyInTimeRange();
+
   }
 
   if constexpr ((fillMap & CollisionCentRun2) > 0) {
@@ -1343,6 +1346,7 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     values[kCollisionTime] = event.collisionTime();
     values[kCollisionTimeRes] = event.collisionTimeRes();
+
   }
 
   if constexpr ((fillMap & ReducedEventExtended) > 0) {
@@ -1351,6 +1355,9 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kTimestamp] = event.timestamp();
     values[kCentVZERO] = event.centRun2V0M();
     values[kCentFT0C] = event.centFT0C();
+    values[kTrackOccupancyITS] = event.trackOccupancyInTimeRange();
+
+
     if (fgUsedVars[kIsNoITSROFBorderRecomputed]) {
       uint16_t bcInITSROF = (event.globalBC() + 3564 - fgITSROFbias) % fgITSROFlength;
       values[kIsNoITSROFBorderRecomputed] = bcInITSROF > fgITSROFBorderMarginLow && bcInITSROF < fgITSROFlength - fgITSROFBorderMarginHigh ? 1.0 : 0.0;

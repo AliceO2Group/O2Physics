@@ -554,7 +554,7 @@ struct TableMaker {
         centFT0C = collision.centFT0C();
       }
       eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
-                    multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C);
+                    multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C, collision.trackOccupancyInTimeRange());
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       zdc(energyCommonZNA, energyCommonZNC, energyCommonZPA, energyCommonZPC, timeZNA, timeZNC, timeZPA, timeZPC);
 
