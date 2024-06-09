@@ -80,8 +80,7 @@ class FemtoDreamPairCleaner
         LOG(fatal) << "FemtoDreamPairCleaner: passed arguments don't agree with FemtoDreamPairCleaner instantiation! Please provide second argument Charm candidate.";
         return false;
       }
-      // const auto& posChild = particles.iteratorAt(part2.index() - 2);
-      // const auto& negChild = particles.iteratorAt(part2.index() - 1);
+
       if (part1.trackId() != part2.prong0Id() && part1.trackId() != part2.prong1Id() && part1.trackId() != part2.prong2Id()) {
         return true;
       }
