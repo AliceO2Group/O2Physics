@@ -67,6 +67,8 @@ struct femtoUniversePairTaskTrackV0Extended {
   ConfigurableAxis ConfV0TempFitVarpTBins{"ConfV0TempFitVarpTBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
   Configurable<int> ConfV0Type1{"ConfV0Type1", 0, "select one of the V0s (lambda = 0, anti-lambda = 1, k0 = 2) for v0-v0 and Track-v0 combination"};
   Configurable<int> ConfV0Type2{"ConfV0Type2", 0, "select one of the V0s (lambda = 0, anti-lambda = 1, k0 = 2) for v0-v0 combination"};
+  Configurable<float> ConfV0InvMassLowLimit{"ConfV0InvV0MassLowLimit", 1.10, "Lower limit of the V0 invariant mass"};
+  Configurable<float> ConfV0InvMassUpLimit{"ConfV0InvV0MassUpLimit", 1.13, "Upper limit of the V0 invariant mass"};
   ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
   Configurable<float> ConfHPtPart2{"ConfHPtPart2", 4.0f, "higher limit for pt of particle 2"};
@@ -101,8 +103,6 @@ struct femtoUniversePairTaskTrackV0Extended {
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
@@ -142,6 +142,14 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
   }
 
+  bool invMLambda(float invMassLambda, float invMassAntiLambda)
+  {
+    if ((invMassLambda < ConfV0InvMassLowLimit || invMassLambda > ConfV0InvMassUpLimit) && (invMassAntiLambda < ConfV0InvMassLowLimit || invMassAntiLambda > ConfV0InvMassUpLimit)) {
+      return false;
+    }
+    return true;
+  }
+
   bool IsNSigmaTPC(float nsigmaTPCParticle)
   {
     if (TMath::Abs(nsigmaTPCParticle) < ConfNsigmaTPCParticle) {
@@ -178,16 +186,16 @@ struct femtoUniversePairTaskTrackV0Extended {
     qaRegistry.add("Tracks_neg/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
     trackHistoPartOnePos.init(&qaRegistry, ConfTrkTempFitVarpTBins, ConfTrkTempFitVarBins, ConfIsMC, ConfTrkPDGCodePartOne);
     trackHistoPartOneNeg.init(&qaRegistry, ConfTrkTempFitVarpTBins, ConfTrkTempFitVarBins, ConfIsMC, ConfTrkPDGCodePartOne);
-    trackHistoPartTwo.init(&qaRegistry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfIsMC, ConfV0PDGCodePartTwo);
-    posChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false);
-    negChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false);
+    trackHistoPartTwo.init(&qaRegistry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfIsMC, ConfV0PDGCodePartTwo, true);
+    posChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true);
+    negChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true);
 
-    trackHistoV0Type1.init(&qaRegistry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfIsMC, ConfV0PDGCodePartTwo, false, "V0Type1");
-    posChildV0Type1.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false, false, "posChildV0Type1");
-    negChildV0Type1.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false, false, "negChildV0Type1");
-    trackHistoV0Type2.init(&qaRegistry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfIsMC, ConfV0PDGCodePartTwo, false, "V0Type2");
-    posChildV0Type2.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false, false, "posChildV0Type2");
-    negChildV0Type2.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false, false, "negChildV0Type2");
+    trackHistoV0Type1.init(&qaRegistry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfIsMC, ConfV0PDGCodePartTwo, true, "V0Type1");
+    posChildV0Type1.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true, "posChildV0Type1");
+    negChildV0Type1.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true, "negChildV0Type1");
+    trackHistoV0Type2.init(&qaRegistry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfIsMC, ConfV0PDGCodePartTwo, true, "V0Type2");
+    posChildV0Type2.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true, "posChildV0Type2");
+    negChildV0Type2.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true, "negChildV0Type2");
 
     sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, ConfIsMC, ConfUse3D);
     sameEventCont.setPDGCodes(ConfTrkPDGCodePartOne, ConfV0PDGCodePartTwo);
@@ -214,15 +222,17 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event
     for (auto& part : groupPartsTwo) {
+      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+        continue;
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
       /// Daughters that do not pass this condition are not selected
       if (!IsParticleTPC(posChild, V0ChildTable[ConfV0Type1][0]) || !IsParticleTPC(negChild, V0ChildTable[ConfV0Type1][1]))
         continue;
 
-      trackHistoPartTwo.fillQA<false, false>(part);
-      posChildHistos.fillQA<false, false>(posChild);
-      negChildHistos.fillQA<false, false>(negChild);
+      trackHistoPartTwo.fillQA<false, true>(part);
+      posChildHistos.fillQA<false, true>(posChild);
+      negChildHistos.fillQA<false, true>(negChild);
     }
 
     for (auto& part : groupPartsOne) {
@@ -245,6 +255,9 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      // Lambda invariant mass cut
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+        continue;
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
@@ -282,25 +295,33 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Histogramming same event
     for (auto& part : groupPartsTwo) {
+      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+        continue;
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
 
       /// Check daughters of first V0 particle
       if (IsParticleTPC(posChild, V0ChildTable[ConfV0Type1][0]) && IsParticleTPC(negChild, V0ChildTable[ConfV0Type1][1])) {
-        trackHistoV0Type1.fillQABase<false, false>(part, HIST("V0Type1"));
-        posChildV0Type1.fillQABase<false, false>(posChild, HIST("posChildV0Type1"));
-        negChildV0Type1.fillQABase<false, false>(negChild, HIST("negChildV0Type1"));
+        trackHistoV0Type1.fillQABase<false, true>(part, HIST("V0Type1"));
+        posChildV0Type1.fillQABase<false, true>(posChild, HIST("posChildV0Type1"));
+        negChildV0Type1.fillQABase<false, true>(negChild, HIST("negChildV0Type1"));
       }
       /// Check daughters of second V0 particle
       if (IsParticleTPC(posChild, V0ChildTable[ConfV0Type2][0]) && IsParticleTPC(negChild, V0ChildTable[ConfV0Type2][1])) {
-        trackHistoV0Type2.fillQABase<false, false>(part, HIST("V0Type2"));
-        posChildV0Type2.fillQABase<false, false>(posChild, HIST("posChildV0Type2"));
-        negChildV0Type2.fillQABase<false, false>(negChild, HIST("negChildV0Type2"));
+        trackHistoV0Type2.fillQABase<false, true>(part, HIST("V0Type2"));
+        posChildV0Type2.fillQABase<false, true>(posChild, HIST("posChildV0Type2"));
+        negChildV0Type2.fillQABase<false, true>(negChild, HIST("negChildV0Type2"));
       }
     }
 
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+      // Lambda invariant mass cut for p1
+      if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+        continue;
+      // Lambda invariant mass cut for p2
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+        continue;
       // track cleaning
       if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
         continue;
@@ -348,6 +369,9 @@ struct femtoUniversePairTaskTrackV0Extended {
       }
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // Lambda invariant mass cut
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+          continue;
         // track cleaning
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
@@ -393,6 +417,12 @@ struct femtoUniversePairTaskTrackV0Extended {
       }
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // Lambda invariant mass cut for p1
+        if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+          continue;
+        // Lambda invariant mass cut for p2
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+          continue;
         // track cleaning
         if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
           continue;

@@ -144,7 +144,10 @@ struct sgExclusivePhi {
     registry.add("hClusterSizeAllTracks", "ClusterSizeAllTracks;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
     registry.add("hClusterSizeMomentumCut", "ClusterSizeMomentumCut;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
     registry.add("hClusterSizeOnlyIdentifiedKaons", "ClusterSizeOnlyIdentifiedKaons;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
+    registry.add("hClusterSizeOnlyIdentifiedKaons2", "ClusterSizeOnlyIdentifiedKaons;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
     registry.add("hClusterSizeOnlyITS", "ClusterSizeOnlyITS;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
+    registry.add("hClusterSizeOnlyITS2", "ClusterSizeOnlyITS;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
+    registry.add("hClusterSizeOnlyITS3", "ClusterSizeOnlyITS;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
     registry.add("hEta1", "#eta_{#ka};#it{#eta_{trk}}, GeV/c;", kTH1F, {{100, -2., 2.}});
     registry.add("hEta2", "#eta_{#ka};#it{#eta_{trk}}, GeV/c;", kTH1F, {{100, -2., 2.}});
     registry.add("hPtPhi", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
@@ -181,8 +184,14 @@ struct sgExclusivePhi {
     registry.add("KaonBandPHI/hMassPhiIdentifiedKaons", "Raw Inv.M;#it{M_{KK}} (GeV/c^{2});", kTH1F, {{400, 0., 4.}});
     registry.add("KaonBandPHI/hPtPhiIdentifiedKaons", "Pt;#it{p_{t}} (GeV/c);", kTH1F, {{400, 0., 4.}});
     registry.add("KaonBandPHI/hMassPtPhiIdentifiedKaonAndITSkaon", "Raw Inv.M;#it{m_{KK}} (GeV/c^{2});Pt;#it{p_{t}}, GeV/c;", kTH2F, {{400, 0., 4.}, {400, 0., 4.}});
+    registry.add("KaonBandPHI/hMassPtPhiIdentifiedKaonAndITSkaon2", "Raw Inv.M;#it{m_{KK}} (GeV/c^{2});Pt;#it{p_{t}}, GeV/c;", kTH2F, {{400, 0., 4.}, {400, 0., 4.}});
+    registry.add("KaonBandPHI/hMassPtPhiIdentifiedKaonAndITSkaon3", "Raw Inv.M;#it{m_{KK}} (GeV/c^{2});Pt;#it{p_{t}}, GeV/c;", kTH2F, {{400, 0., 4.}, {400, 0., 4.}});
     registry.add("KaonBandPHI/hMassPhiIdentifiedKaonAndITSkaon", "Raw Inv.M;#it{m_{KK}} (GeV/c^{2});", kTH1F, {{400, 0., 4.}});
+    registry.add("KaonBandPHI/hMassPhiIdentifiedKaonAndITSkaon2", "Raw Inv.M;#it{m_{KK}} (GeV/c^{2});", kTH1F, {{400, 0., 4.}});
+    registry.add("KaonBandPHI/hMassPhiIdentifiedKaonAndITSkaon3", "Raw Inv.M;#it{m_{KK}} (GeV/c^{2});", kTH1F, {{400, 0., 4.}});
     registry.add("KaonBandPHI/hPtPhiIdentifiedKaonAndITSkaon", "Pt;#it{p_{t}} (GeV/c);", kTH1F, {{400, 0., 4.}});
+    registry.add("KaonBandPHI/hPtPhiIdentifiedKaonAndITSkaon2", "Pt;#it{p_{t}} (GeV/c);", kTH1F, {{400, 0., 4.}});
+    registry.add("KaonBandPHI/hPtPhiIdentifiedKaonAndITSkaon3", "Pt;#it{p_{t}} (GeV/c);", kTH1F, {{400, 0., 4.}});
 
     registry.add("PHI/hMassLike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{400, 0., 4.}});
     registry.add("PHI/hMassUnlike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{400, 0., 4.}});
@@ -235,7 +244,7 @@ struct sgExclusivePhi {
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
   //__________________________________________________________________________
   // Main process
@@ -275,6 +284,13 @@ struct sgExclusivePhi {
       for (auto trk : tracks) {
         registry.fill(HIST("hSelectionCounter"), 1);
         if (!trk.isPVContributor()) {
+          continue;
+        }
+        if (!(std::abs(trk.dcaZ()) < 2.)) {
+          continue;
+        }
+        double dcaLimit = 0.0105 + 0.035 / pow(trk.pt(), 1.1);
+        if (!(std::abs(trk.dcaXY()) < dcaLimit)) {
           continue;
         }
         registry.fill(HIST("hSelectionCounter"), 2);
@@ -374,6 +390,8 @@ struct sgExclusivePhi {
       std::vector<TLorentzVector> allTracksAreKaonsWrongMomentum;
       std::vector<TLorentzVector> allTracksAreKaonsBandPID;
       std::vector<TLorentzVector> allTracksAreITSonlyAndFourITSclusters;
+      std::vector<int> booleanAvgClusterSizePerTrackKaonBand;
+      std::vector<int> booleanAvgClusterSizePerTrackITSonly;
 
       int counter = 0;
       for (auto t : tracks) {
@@ -408,6 +426,13 @@ struct sgExclusivePhi {
         registry.fill(HIST("hdEdxKaon5"), t.tpcInnerParam() / t.sign(), dEdx);
 
         if (t.pt() > 0.180) {
+          continue;
+        }
+        if (!(std::abs(t.dcaZ()) < 2.)) {
+          continue;
+        }
+        double dcaLimit = 0.0105 + 0.035 / pow(t.pt(), 1.1);
+        if (!(std::abs(t.dcaXY()) < dcaLimit)) {
           continue;
         }
 
@@ -450,6 +475,11 @@ struct sgExclusivePhi {
           onlyKaonBandPID.push_back(t);
           registry.fill(HIST("hdEdxKaon7"), t.tpcInnerParam() / t.sign(), dEdx);
           registry.fill(HIST("hClusterSizeOnlyIdentifiedKaons"), averageClusterSize);
+          if (averageClusterSize > 5.5) {
+            booleanAvgClusterSizePerTrackKaonBand.push_back(1);
+          } else {
+            booleanAvgClusterSizePerTrackKaonBand.push_back(2);
+          }
         }
 
         if (NFindable < 1 && t.itsNCls() < 7) {
@@ -458,6 +488,12 @@ struct sgExclusivePhi {
           onlyITS.push_back(t);
           registry.fill(HIST("hdEdxKaon8"), t.tpcInnerParam() / t.sign(), dEdx);
           registry.fill(HIST("hSelectionCounter2"), 6);
+          registry.fill(HIST("hClusterSizeOnlyITS2"), averageClusterSize);
+          if (averageClusterSize > 5.5) {
+            booleanAvgClusterSizePerTrackITSonly.push_back(1);
+          } else {
+            booleanAvgClusterSizePerTrackITSonly.push_back(2);
+          }
         }
 
       } // track loop
@@ -466,7 +502,8 @@ struct sgExclusivePhi {
       // Creating phis and saving all the information
       // in the case that there are ONLY 2 PV
 
-      if ((collision.posZ() < -10) || (collision.posZ() > 10)) {
+      // if ((collision.posZ() < -10) || (collision.posZ() > 10)) {
+      if (fabs(collision.posZ()) < 10.) {
         if (allTracksAreKaons.size() == 2) {
           registry.fill(HIST("hSelectionCounter2"), 7);
           for (auto kaon : allTracksAreKaons) {
@@ -512,11 +549,11 @@ struct sgExclusivePhi {
               registry.fill(HIST("PHI/hCostheta_Phi"), phiPhi, costhetaPhi);
               registry.fill(HIST("PHI/hUnlikePt"), phiWithoutPID.Pt());
               registry.fill(HIST("PHI/hMassUnlike"), phiWithoutPID.M());
-              if (phiWithoutPID.Pt() < 0.2) {
+              if (phiWithoutPID.Pt() < 0.1) {
                 registry.fill(HIST("hSelectionCounter2"), 9);
                 registry.fill(HIST("PHI/hCoherentPhiWithoutPID"), phiWithoutPID.M());
               }
-              if (phiWithoutPID.Pt() > 0.2) {
+              if (phiWithoutPID.Pt() > 0.1) {
                 registry.fill(HIST("hSelectionCounter2"), 10);
                 registry.fill(HIST("PHI/hInCoherentPhiWithoutPID"), phiWithoutPID.M());
               }
@@ -652,6 +689,20 @@ struct sgExclusivePhi {
           }
           averageClusterSize /= 7.;
           registry.fill(HIST("hClusterSizeOnlyITS"), averageClusterSize);
+          if (booleanAvgClusterSizePerTrackITSonly.size() == 1 && booleanAvgClusterSizePerTrackITSonly[0] == 1) {
+            registry.fill(HIST("hClusterSizeOnlyITS3"), averageClusterSize);
+          }
+
+          int clusterSizeKaonBand[7];
+          double averageClusterSizeKaonBand = 0.;
+          for (int i = 0; i < 7; i++) { // info stored in 4 bits
+            clusterSizeKaonBand[i] = (((1 << 4) - 1) & (onlyKaonBandPID[0].itsClusterSizes() >> 4 * i));
+            averageClusterSizeKaonBand += static_cast<double>(clusterSizeKaonBand[i]);
+          }
+          averageClusterSizeKaonBand /= 7.;
+          if (booleanAvgClusterSizePerTrackKaonBand.size() == 1 && booleanAvgClusterSizePerTrackKaonBand[0] == 1) {
+            registry.fill(HIST("hClusterSizeOnlyIdentifiedKaons2"), averageClusterSizeKaonBand);
+          }
 
           TLorentzVector reallyPhi;
           reallyPhi += allTracksAreKaonsBandPID[0];
@@ -660,6 +711,22 @@ struct sgExclusivePhi {
           registry.fill(HIST("KaonBandPHI/hPtPhiIdentifiedKaonAndITSkaon"), reallyPhi.Pt());
           if (reallyPhi.Pt() < 0.2) {
             registry.fill(HIST("KaonBandPHI/hMassPhiIdentifiedKaonAndITSkaon"), reallyPhi.M());
+          }
+
+          if (booleanAvgClusterSizePerTrackKaonBand.size() == 1 && booleanAvgClusterSizePerTrackKaonBand[0] == 1) {
+            registry.fill(HIST("KaonBandPHI/hMassPtPhiIdentifiedKaonAndITSkaon2"), reallyPhi.M(), reallyPhi.Pt());
+            registry.fill(HIST("KaonBandPHI/hPtPhiIdentifiedKaonAndITSkaon2"), reallyPhi.Pt());
+            if (reallyPhi.Pt() < 0.2) {
+              registry.fill(HIST("KaonBandPHI/hMassPhiIdentifiedKaonAndITSkaon2"), reallyPhi.M());
+            }
+          }
+
+          if (booleanAvgClusterSizePerTrackKaonBand.size() == 1 && booleanAvgClusterSizePerTrackITSonly.size() == 1 && booleanAvgClusterSizePerTrackKaonBand[0] == 1 && booleanAvgClusterSizePerTrackITSonly[0] == 1) {
+            registry.fill(HIST("KaonBandPHI/hMassPtPhiIdentifiedKaonAndITSkaon3"), reallyPhi.M(), reallyPhi.Pt());
+            registry.fill(HIST("KaonBandPHI/hPtPhiIdentifiedKaonAndITSkaon3"), reallyPhi.Pt());
+            if (reallyPhi.Pt() < 0.2) {
+              registry.fill(HIST("KaonBandPHI/hMassPhiIdentifiedKaonAndITSkaon3"), reallyPhi.M());
+            }
           }
         }
       } // Kaon Band

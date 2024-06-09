@@ -721,7 +721,7 @@ struct PhotonHBT {
 
   PROCESS_SWITCH(PhotonHBT, processPCMPCM, "pairing PCM-PCM", false);
   PROCESS_SWITCH(PhotonHBT, processPCMDalitzEE, "pairing PCM-DalitzEE", false);
-  //  PROCESS_SWITCH(PhotonHBT, processDalitzEEDalitzEE, "pairing DalitzEE-DalitzEE", false);
+  PROCESS_SWITCH(PhotonHBT, processDalitzEEDalitzEE, "pairing DalitzEE-DalitzEE", false);
   PROCESS_SWITCH(PhotonHBT, processPHOSPHOS, "pairing PHOS-PHOS", false);
   PROCESS_SWITCH(PhotonHBT, processPCMPHOS, "pairing PCM-PHOS", false);
   PROCESS_SWITCH(PhotonHBT, processDummy, "Dummy function", true);

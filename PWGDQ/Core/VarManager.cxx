@@ -30,6 +30,10 @@ std::vector<int> VarManager::fgRunList = {0};
 float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
 float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
 float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
+int VarManager::fgITSROFbias = 0;
+int VarManager::fgITSROFlength = 100;
+int VarManager::fgITSROFBorderMarginLow = 0;
+int VarManager::fgITSROFBorderMarginHigh = 0;
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
@@ -314,7 +318,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTwoEvPVcontrib2] = "";
   fgVariableNames[kEnergyCommonZNA] = "ZNA common energy";
   fgVariableUnits[kEnergyCommonZNA] = "";
-  fgVariableNames[kEnergyCommonZNC] = "ZNA common energy";
+  fgVariableNames[kEnergyCommonZNC] = "ZNC common energy";
   fgVariableUnits[kEnergyCommonZNC] = "";
   fgVariableNames[kEnergyCommonZPA] = "ZPA common energy";
   fgVariableUnits[kEnergyCommonZPA] = "";
@@ -583,6 +587,22 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kKFCosPA] = "";
   fgVariableNames[kKFNContributorsPV] = "Real Number of Trks to PV";
   fgVariableUnits[kKFNContributorsPV] = "";
+  fgVariableNames[kQ1ZNAX] = "Q_{1,x}^{ZNA} ";
+  fgVariableUnits[kQ1ZNAX] = "";
+  fgVariableNames[kQ1ZNAY] = "Q_{1,y}^{ZNA} ";
+  fgVariableUnits[kQ1ZNAY] = "";
+  fgVariableNames[kQ1ZNCX] = "Q_{1,x}^{ZNC} ";
+  fgVariableUnits[kQ1ZNCX] = "";
+  fgVariableNames[kQ1ZNCY] = "Q_{1,y}^{ZNC} ";
+  fgVariableUnits[kQ1ZNCY] = "";
+  fgVariableNames[kQ1ZNACXX] = "Q_{1,x}^{ZNC} #dot Q_{1,x}^{ZNA} ";
+  fgVariableUnits[kQ1ZNACXX] = "";
+  fgVariableNames[kQ1ZNACYY] = "Q_{1,y}^{ZNC} #dot Q_{1,y}^{ZNA} ";
+  fgVariableUnits[kQ1ZNACYY] = "";
+  fgVariableNames[kQ1ZNACYX] = "Q_{1,y}^{ZNC} #dot Q_{1,x}^{ZNA} ";
+  fgVariableUnits[kQ1ZNACYX] = "";
+  fgVariableNames[kQ1ZNACXY] = "Q_{1,x}^{ZNC} #dot Q_{1,y}^{ZNA} ";
+  fgVariableUnits[kQ1ZNACXY] = "";
   fgVariableNames[kQ1X0A] = "Q_{1,x}^{A} ";
   fgVariableUnits[kQ1X0A] = "";
   fgVariableNames[kQ1Y0A] = "Q_{1,y}^{A} ";
@@ -749,6 +769,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairMass] = "GeV/c2";
   fgVariableNames[kPairMassDau] = "mass dilepton";
   fgVariableUnits[kPairMassDau] = "GeV/c2";
+  fgVariableNames[kDeltaMass] = "mass - dilepton mass";
+  fgVariableUnits[kDeltaMass] = "GeV/c2";
   fgVariableNames[kMassDau] = "mass HF";
   fgVariableUnits[kMassDau] = "GeV/c2";
   fgVariableNames[kPairPt] = "p_{T}";

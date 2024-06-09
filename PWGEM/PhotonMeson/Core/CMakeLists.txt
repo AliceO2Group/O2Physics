@@ -18,7 +18,7 @@ o2physics_add_library(PWGEMPhotonMesonCore
                         PairCut.cxx
                         CutsLibrary.cxx
                         HistogramsLibrary.cxx
-               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore)
 
 o2physics_target_root_dictionary(PWGEMPhotonMesonCore
               HEADERS   EMEventCut.h

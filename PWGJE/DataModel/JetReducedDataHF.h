@@ -42,6 +42,20 @@ DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
 } // namespace d0collisioncounter
 
+DECLARE_SOA_TABLE(JD0CollisionIds, "AOD", "JD0COLLID",
+                  jd0indices::JCollisionId);
+
+DECLARE_SOA_TABLE(StoredJD0CollisionIds, "AOD1", "JD0COLLID",
+                  jd0indices::JCollisionId,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JD0McCollisionIds, "AOD", "JD0MCCOLLID",
+                  jd0indices::JMcCollisionId);
+
+DECLARE_SOA_TABLE(StoredJD0McCollisionIds, "AOD1", "JD0MCCOLLID",
+                  jd0indices::JMcCollisionId,
+                  o2::soa::Marker<1>);
+
 DECLARE_SOA_TABLE(JD0Ids, "AOD", "JD0ID",
                   jd0indices::JCollisionId,
                   jd0indices::Prong0Id,
@@ -83,6 +97,20 @@ DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
 } // namespace lccollisioncounter
+
+DECLARE_SOA_TABLE(JLcCollisionIds, "AOD", "JLCCOLLID",
+                  jlcindices::JCollisionId);
+
+DECLARE_SOA_TABLE(StoredJLcCollisionIds, "AOD1", "JLCCOLLID",
+                  jlcindices::JCollisionId,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JLcMcCollisionIds, "AOD", "JLCMCCOLLID",
+                  jlcindices::JMcCollisionId);
+
+DECLARE_SOA_TABLE(StoredJLcMcCollisionIds, "AOD1", "JLCMCCOLLID",
+                  jlcindices::JMcCollisionId,
+                  o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(JLcIds, "AOD", "JLCID",
                   jlcindices::JCollisionId,

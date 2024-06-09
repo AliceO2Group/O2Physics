@@ -43,8 +43,7 @@ struct HfTaskMcEfficiencyToXiPi {
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement for pion <-- charm baryon"};
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pion <- charm baryon"};
 
-  Configurable<bool> matchOmegac{"matchOmegac", false, "Do MC studies for Omegac0"};
-  Configurable<bool> matchXic{"matchXic", true, "Do MC studies for Xic0"};
+  Configurable<bool> rejGenTFAndITSROFBorders{"rejGenTFAndITSROFBorders", true, "Reject generated particles coming from bc close to TF and ITSROF borders"};
 
   ConfigurableAxis axisPt{"axisPt", {200, 0, 20}, "pT axis"};
   ConfigurableAxis axisMass{"axisMass", {900, 2.1, 3}, "m_inv axis"};
@@ -68,13 +67,22 @@ struct HfTaskMcEfficiencyToXiPi {
                        kNTrackableSteps };
 
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
-  using CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfToXiPiMCRec, aod::HfSelToXiPi>;
-  using ParticleInfo = soa::Join<aod::McParticles, aod::HfToXiPiMCGen>;
+  using Xic0CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfXicToXiPiMCRec, aod::HfSelToXiPi>;
+  using Omegac0CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfOmegacToXiPiMCRec, aod::HfSelToXiPi>;
+  using ParticleInfoXic0 = soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>;
+  using ParticleInfoOmegac0 = soa::Join<aod::McParticles, aod::HfOmegacToXiPiMCGen>;
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
+    if (!doprocessOmegac0 && !doprocessXic0) {
+      LOGF(fatal, "Neither processOmegac0 nor processXic0 enabled, please choose one!");
+    } else if (doprocessOmegac0 && doprocessXic0) {
+      LOGF(fatal, "Both processOmegac0 and processXic0 enabled, please choose ONLY one!");
+    }
+
     auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
     hCandidates->GetAxis(1)->SetTitle("#it{m}_{inv} (GeV/#it{c}^{2})");
@@ -112,9 +120,9 @@ struct HfTaskMcEfficiencyToXiPi {
 
     int decayFlag = 0;
     if (pdgCode == Pdg::kXiC0) {
-      decayFlag = 1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi;
+      decayFlag = 1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi;
     } else if (pdgCode == Pdg::kOmegaC0) {
-      decayFlag = 1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi;
+      decayFlag = 1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi;
     } else {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
     }
@@ -157,7 +165,7 @@ struct HfTaskMcEfficiencyToXiPi {
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
   // genParticles -> join aod::McParticles and candidateCreator McGen tables
   template <typename T1, typename T2>
-  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisionLabels const&, int pdgCode)
+  void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisions const&, BCsInfo const&, int pdgCode)
   {
     // fill hCandidates histogram
     candidateRecLoop(candidates, pdgCode);
@@ -193,16 +201,25 @@ struct HfTaskMcEfficiencyToXiPi {
     int decayFlagGen = 0;
 
     if (pdgCode == Pdg::kXiC0) {
-      decayFlagGen = 1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi;
+      decayFlagGen = 1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi;
       mass = MassXiC0;
     } else if (pdgCode == Pdg::kOmegaC0) {
-      decayFlagGen = 1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi;
+      decayFlagGen = 1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi;
       mass = MassOmegaC0;
     } else {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
     }
 
     for (const auto& mcParticle : genParticles) {
+
+      // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
+      if (rejGenTFAndITSROFBorders) {
+        auto coll = mcParticle.template mcCollision_as<aod::McCollisions>();
+        auto bc = coll.template bc_as<BCsInfo>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          continue;
+        }
+      }
 
       // check if I am treating the desired charm baryon
       if (std::abs(mcParticle.pdgCode()) != pdgCode) {
@@ -364,21 +381,25 @@ struct HfTaskMcEfficiencyToXiPi {
   }   // close candidateMcLoop
 
   // process functions
-  void process(CandidateInfo const& candidates,
-               ParticleInfo const& genParticles,
-               TracksWithSelectionMC const& tracks,
-               aod::McCollisionLabels const& colls)
+  void processXic0(Xic0CandidateInfo const& candidates,
+                   ParticleInfoXic0 const& genParticles,
+                   BCsInfo const& bcs,
+                   TracksWithSelectionMC const& tracks,
+                   aod::McCollisions const& colls)
   {
-    if (matchXic && matchOmegac) {
-      LOGP(fatal, "Can't match Omegac0 and Xic0 at the same time, please choose one");
-    } else if (!matchXic && !matchOmegac) {
-      LOGP(fatal, "Please match either Omegac0 or Xic0");
-    } else if (matchXic) {
-      candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kXiC0);
-    } else if (matchOmegac) {
-      candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kOmegaC0);
-    }
+    candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kXiC0);
   }
+  PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processXic0, "Enable Xic0 efficiency process", true);
+
+  void processOmegac0(Omegac0CandidateInfo const& candidates,
+                      ParticleInfoOmegac0 const& genParticles,
+                      BCsInfo const& bcs,
+                      TracksWithSelectionMC const& tracks,
+                      aod::McCollisions const& colls)
+  {
+    candidateFullLoop(candidates, genParticles, tracks, colls, bcs, Pdg::kOmegaC0);
+  }
+  PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processOmegac0, "Enable Omegac0 efficiency process", false);
 
 }; // close struct
 

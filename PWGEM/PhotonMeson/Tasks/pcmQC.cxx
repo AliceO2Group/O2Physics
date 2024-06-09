@@ -187,8 +187,11 @@ struct PCMQC {
     fV0PhotonCut.SetChi2PerClusterTPC(0.0, cfg_max_chi2tpc);
     fV0PhotonCut.SetTPCNsigmaElRange(cfg_min_TPCNsigmaEl, cfg_max_TPCNsigmaEl);
     fV0PhotonCut.SetChi2PerClusterITS(-1e+10, cfg_max_chi2its);
-    fV0PhotonCut.SetNClustersITS(2, 4);
-    fV0PhotonCut.SetNClustersITS(0, 7);
+    if (cfg_reject_v0_on_itsib) {
+      fV0PhotonCut.SetNClustersITS(2, 4);
+    } else {
+      fV0PhotonCut.SetNClustersITS(0, 7);
+    }
     fV0PhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
     fV0PhotonCut.SetIsWithinBeamPipe(cfg_require_v0_with_correct_xz);
 
@@ -302,11 +305,12 @@ struct PCMQC {
   }
 
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
-  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
-  void processQC(MyCollisions const&, MyV0Photons const& v0photons, aod::V0Legs const&)
+  void processQC(FilteredMyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const&)
   {
-    for (auto& collision : grouped_collisions) {
+    for (auto& collision : collisions) {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;

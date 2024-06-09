@@ -49,6 +49,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -75,6 +76,9 @@ struct lambdakzeropid {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  // mean vertex position to be used if no collision associated
+  o2::dataformats::MeanVertexObject* mVtx = nullptr;
+
   // For manual sliceBy
   Preslice<V0OriginalDatas> perCollisionOriginal = o2::aod::v0data::collisionId;
   ;
@@ -100,6 +104,11 @@ struct lambdakzeropid {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> nSigmaPath{"nSigmaPath", "Users/d/ddobrigk/stratof", "Path of information for n-sigma calculation"};
+  Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+
+  // manual
+  Configurable<int> manualRunNumber{"manualRunNumber", 544122, "manual run number if no collisions saved"};
+  Configurable<uint64_t> manualTimeStamp{"manualTimeStamp", 1696549226920, "manual time stamp if no collisions saved"};
 
   ConfigurableAxis axisEta{"axisEta", {20, -1.0f, +1.0f}, "#eta"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
@@ -318,10 +327,9 @@ struct lambdakzeropid {
     }
   }
 
-  template <typename TInformationClass>
-  void initCCDB(TInformationClass const& infoObject)
+  void initCCDB(int runNumber, uint64_t timeStamp)
   {
-    if (mRunNumber == infoObject.runNumber()) {
+    if (mRunNumber == runNumber) {
       return;
     }
 
@@ -333,11 +341,12 @@ struct lambdakzeropid {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mRunNumber = infoObject.runNumber();
+      mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, timeStamp);
+      mRunNumber = runNumber;
       return;
     }
 
-    auto run3grp_timestamp = infoObject.timestamp();
+    auto run3grp_timestamp = timeStamp;
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
@@ -353,12 +362,13 @@ struct lambdakzeropid {
       o2::base::Propagator::initFieldFromGRP(grpmag);
       // Fetch magnetic field from ccdb for current collision
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, timeStamp);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
 
     // if TOF Nsigma desired
     if (doNSigmas) {
-      nSigmaCalibObjects = ccdb->getForTimeStamp<TList>(nSigmaPath, infoObject.timestamp());
+      nSigmaCalibObjects = ccdb->getForTimeStamp<TList>(nSigmaPath, timeStamp);
       if (nSigmaCalibObjects) {
         LOGF(info, "loaded TList with this many objects: %i", nSigmaCalibObjects->GetEntries());
 
@@ -393,7 +403,7 @@ struct lambdakzeropid {
         }
       }
     }
-    mRunNumber = infoObject.runNumber();
+    mRunNumber = runNumber;
   }
 
   float velocity(float lMomentum, float lMass)
@@ -409,7 +419,7 @@ struct lambdakzeropid {
   void processV0Candidate(TCollision const& collision, TV0 const& v0, TTrack const& pTra, TTrack const& nTra)
   {
     // time of V0 segment
-    float lengthV0 = std::hypot(v0.x() - collision.posX(), v0.y() - collision.posY(), v0.z() - collision.posZ());
+    float lengthV0 = std::hypot(v0.x() - collision.getX(), v0.y() - collision.getY(), v0.z() - collision.getZ());
     float velocityK0Short = velocity(v0.p(), o2::constants::physics::MassKaonNeutral);
     float velocityLambda = velocity(v0.p(), o2::constants::physics::MassLambda);
     float timeK0Short = lengthV0 / velocityK0Short; // in picoseconds
@@ -460,14 +470,14 @@ struct lambdakzeropid {
       // calculate and pack properties for QA purposes
       int posProperties = 0;
       if (lengthPositive > 0)
-        posProperties = posProperties | (int(1) << kLength);
+        posProperties = posProperties | (static_cast<int>(1) << kLength);
       if (pTra.hasTOF())
-        posProperties = posProperties | (int(1) << kHasTOF);
+        posProperties = posProperties | (static_cast<int>(1) << kHasTOF);
       int negProperties = 0;
       if (lengthNegative > 0)
-        negProperties = negProperties | (int(1) << kLength);
+        negProperties = negProperties | (static_cast<int>(1) << kLength);
       if (nTra.hasTOF())
-        negProperties = negProperties | (int(1) << kHasTOF);
+        negProperties = negProperties | (static_cast<int>(1) << kHasTOF);
 
       histos.fill(HIST("h2dPositiveTOFProperties"), v0.pt(), posProperties);
       histos.fill(HIST("h2dNegativeTOFProperties"), v0.pt(), negProperties);
@@ -582,43 +592,57 @@ struct lambdakzeropid {
 
   void processStandardData(aod::Collisions const& collisions, V0OriginalDatas const& V0s, TracksWithAllExtras const&, aod::BCsWithTimestamps const& /*bcs*/)
   {
-    auto collision = collisions.begin();
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    // Fire up CCDB - based on standard collisions
-    initCCDB(bc);
-    for (const auto& collision : collisions) {
-      // Do analysis with collision-grouped V0s, retain full collision information
-      const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionOriginal, collIdx);
-      histos.fill(HIST("hCandidateCounter"), V0Table_thisCollision.size());
-      // V0 table sliced
-      for (auto const& v0 : V0Table_thisCollision) {
-        // de-reference interlinks by hand for derived data
-        auto pTra = v0.posTrack_as<TracksWithAllExtras>();
-        auto nTra = v0.negTrack_as<TracksWithAllExtras>();
+    // Fire up CCDB with first collision in record. If no collisions, bypass
+    if (collisions.size() > 0) {
+      auto collision = collisions.begin();
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc.runNumber(), bc.timestamp());
+    } else {
+      initCCDB(manualRunNumber, manualTimeStamp);
+    }
 
-        processV0Candidate(collision, v0, pTra, nTra);
+    for (const auto& V0 : V0s) {
+      // for storing whatever is the relevant quantity for the PV
+      o2::dataformats::VertexBase primaryVertex;
+      if (V0.has_collision()) {
+        auto const& collision = V0.collision();
+        primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        primaryVertex.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+      } else {
+        primaryVertex.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
       }
+
+      auto pTra = V0.posTrack_as<TracksWithAllExtras>();
+      auto nTra = V0.negTrack_as<TracksWithAllExtras>();
+      processV0Candidate(primaryVertex, V0, pTra, nTra);
     }
   }
 
   void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, V0DerivedDatas const& V0s, dauTracks const&)
   {
-    for (const auto& collision : collisions) {
-      // Fire up CCDB - based on StraCollisions for derived analysis
-      initCCDB(collision);
-      // Do analysis with collision-grouped V0s, retain full collision information
-      const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionDerived, collIdx);
-      histos.fill(HIST("hCandidateCounter"), V0Table_thisCollision.size());
-      // V0 table sliced
-      for (auto const& v0 : V0Table_thisCollision) {
-        // de-reference interlinks by hand for derived data
-        auto pTra = v0.posTrackExtra_as<dauTracks>();
-        auto nTra = v0.negTrackExtra_as<dauTracks>();
+    // Fire up CCDB with first collision in record. If no collisions, bypass
+    if (collisions.size() > 0) {
+      auto collision = collisions.begin();
+      initCCDB(collision.runNumber(), collision.timestamp());
+    } else {
+      initCCDB(manualRunNumber, manualTimeStamp);
+    }
 
-        processV0Candidate(collision, v0, pTra, nTra);
+    for (const auto& V0 : V0s) {
+      // for storing whatever is the relevant quantity for the PV
+      o2::dataformats::VertexBase primaryVertex;
+      if (V0.has_straCollision()) {
+        auto const& collision = V0.straCollision_as<soa::Join<aod::StraCollisions, aod::StraStamps>>();
+        primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        // cov: won't be used anyways, all fine
+        primaryVertex.setCov(1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6);
+      } else {
+        primaryVertex.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
       }
+
+      auto pTra = V0.posTrackExtra_as<dauTracks>();
+      auto nTra = V0.negTrackExtra_as<dauTracks>();
+      processV0Candidate(primaryVertex, V0, pTra, nTra);
     }
   }
 
