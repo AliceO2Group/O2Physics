@@ -248,8 +248,7 @@ struct sigmaanalysis {
       // AntiLambda selection:
       if (cand.antilambdaBDTScore() <= AntiLambda_MLThreshold)
         return false;
-    }
-    else {
+    } else {
       if (TMath::Abs(cand.photonMass()) > PhotonMaxMass)
         return false;
       if ((TMath::Abs(cand.photonPosEta()) > PhotonDauPseudoRap) || (TMath::Abs(cand.photonNegEta()) > PhotonDauPseudoRap))
