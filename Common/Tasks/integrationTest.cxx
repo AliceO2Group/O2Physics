@@ -196,32 +196,32 @@ struct integrationTest {
     aod::McMFTTrackLabels const& mcmfttracklabels,
     aod::McFwdTrackLabels const& mcfwdtracklabels)
   {
-    histos.fill(HIST("hTableSizes"), (float)kBC + 0.5f, bcs.size());
-    histos.fill(HIST("hTableSizes"), (float)kCollision + 0.5f, collisions.size());
-    histos.fill(HIST("hTableSizes"), (float)kTrack + 0.5f, tracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kTrackCov + 0.5f, trackcovs.size());
-    histos.fill(HIST("hTableSizes"), (float)kTrackExtra + 0.5f, trackextras.size());
-    histos.fill(HIST("hTableSizes"), (float)kMftTrack + 0.5f, mfttracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kFwdTrack + 0.5f, fwdtracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kFwdTrackCov + 0.5f, fwdtrackcovs.size());
-    histos.fill(HIST("hTableSizes"), (float)kAmbiguousTrack + 0.5f, ambitracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kAmbiguousMftTrack + 0.5f, ambimfttracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kAmbiguousFwdTrack + 0.5f, ambifwdtracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kV0 + 0.5f, v0s.size());
-    histos.fill(HIST("hTableSizes"), (float)kCascade + 0.5f, cascades.size());
-    histos.fill(HIST("hTableSizes"), (float)kCalo + 0.5f, calos.size());
-    histos.fill(HIST("hTableSizes"), (float)kCaloTrigger + 0.5f, calotriggers.size());
-    histos.fill(HIST("hTableSizes"), (float)kFDD + 0.5f, fdds.size());
-    histos.fill(HIST("hTableSizes"), (float)kFT0 + 0.5f, ft0s.size());
-    histos.fill(HIST("hTableSizes"), (float)kV0A + 0.5f, fv0as.size());
-    histos.fill(HIST("hTableSizes"), (float)kZDC + 0.5f, zdcs.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcCollision + 0.5f, mccollisions.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcCollisionLabel + 0.5f, mccollisionlabels.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcParticle + 0.5f, mcparticles.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcTrackLabel + 0.5f, mctracklabels.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcMftTrackLabel + 0.5f, mcmfttracklabels.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcFwdTrackLabel + 0.5f, mcfwdtracklabels.size());
-    histos.fill(HIST("hTableSizes"), (float)kFrameCounter + 0.5f);
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kBC) + 0.5f, bcs.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kCollision) + 0.5f, collisions.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kTrack) + 0.5f, tracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kTrackCov) + 0.5f, trackcovs.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kTrackExtra) + 0.5f, trackextras.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMftTrack) + 0.5f, mfttracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kFwdTrack) + 0.5f, fwdtracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kFwdTrackCov) + 0.5f, fwdtrackcovs.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kAmbiguousTrack) + 0.5f, ambitracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kAmbiguousMftTrack) + 0.5f, ambimfttracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kAmbiguousFwdTrack) + 0.5f, ambifwdtracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kV0) + 0.5f, v0s.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kCascade) + 0.5f, cascades.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kCalo) + 0.5f, calos.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kCaloTrigger) + 0.5f, calotriggers.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kFDD) + 0.5f, fdds.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kFT0) + 0.5f, ft0s.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kV0A) + 0.5f, fv0as.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kZDC) + 0.5f, zdcs.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcCollision) + 0.5f, mccollisions.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcCollisionLabel) + 0.5f, mccollisionlabels.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcParticle) + 0.5f, mcparticles.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcTrackLabel) + 0.5f, mctracklabels.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcMftTrackLabel) + 0.5f, mcmfttracklabels.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcFwdTrackLabel) + 0.5f, mcfwdtracklabels.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kFrameCounter) + 0.5f);
   }
   PROCESS_SWITCH(integrationTest, processDataModel, "Check data model", true);
 
