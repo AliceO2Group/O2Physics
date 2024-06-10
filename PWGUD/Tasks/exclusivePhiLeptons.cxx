@@ -37,7 +37,7 @@ struct ExclusivePhiLeptons {
   Configurable<float> gap_Side{"gap", 2, "gap selection"};
   Configurable<float> pid2d_cut{"PID2D", 2., "PID cut in 2D"};
   Configurable<float> pid_cut{"PID", 2., "PID cut in 1D"};
-  Configurable<int> electronsInTOF{"eTOF", 2., "electrons in TOF"};
+  Configurable<int> electronsInTOF{"eTOF", 2, "electrons in TOF"};
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
