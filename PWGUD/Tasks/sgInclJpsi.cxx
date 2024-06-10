@@ -382,7 +382,7 @@ struct SGInclJpsi {
             registry.fill(HIST("sss_Ntr_ee_invm_3"), tracks.size(), v01.M(), -1);
             registry.fill(HIST("sss_ee_pt_invm_3"), v01.Pt(), v01.M(), -1);
           }
-      }
+        }
       }
     }
   }
