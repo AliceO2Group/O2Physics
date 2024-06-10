@@ -309,9 +309,9 @@ struct mcParticlePrediction {
 
       TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
-        if (abs(p->Charge()) > 1e-3)
+        if (abs(p->Charge()) > 1e-3) {
           histos.fill(HIST("particles/eta/charged"), particle.eta());
-        else {
+        } else {
           histos.fill(HIST("particles/eta/neutral"), particle.eta());
         }
       }
