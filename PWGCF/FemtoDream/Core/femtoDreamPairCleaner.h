@@ -76,7 +76,7 @@ class FemtoDreamPairCleaner
       return false;
     } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
       /// Track-CharmHadron combination
-      if (part2.candidateSelFlag() < 1) {
+      if (part2.candidateSelFlag() < o2::aod::fdhf::lcToPKPi) {
         LOG(fatal) << "FemtoDreamPairCleaner: passed arguments don't agree with FemtoDreamPairCleaner instantiation! Please provide second argument Charm candidate.";
         return false;
       }
