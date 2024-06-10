@@ -68,8 +68,8 @@ struct sigmaanalysis {
   // Configurable<bool> analyseAntiSigma{"analyseAntiSigma", false, "process AntiSigma-like candidates"};
 
   // Analysis strategy:
-  Configurable<bool> fUseMLSel{"fUseMLSel", true, "Flag to use ML selection. If False, the standard selection is applied."}; 
-  Configurable<bool> fProcessMonteCarlo{"fProcessMonteCarlo", false, "Flag to process MC data."}; 
+  Configurable<bool> fUseMLSel{"fUseMLSel", true, "Flag to use ML selection. If False, the standard selection is applied."};
+  Configurable<bool> fProcessMonteCarlo{"fProcessMonteCarlo", false, "Flag to process MC data."};
 
   // For ML Selection
   Configurable<float> Gamma_MLThreshold{"Gamma_MLThreshold", 0.1, "Decision Threshold value to select gammas"};
@@ -94,8 +94,8 @@ struct sigmaanalysis {
   Configurable<float> PhotonDauPseudoRap{"PhotonDauPseudoRap", 0.9, "Max pseudorapidity of daughter tracks"};
   Configurable<float> PhotondauMinPt{"PhotondauMinPt", 0.05, "Min daughter pT (GeV/c)"};
   Configurable<float> Photondcadautopv{"Photondcadautopv", 0.05, "Min DCA daughter To PV (cm)"};
-  Configurable<float> Photondcav0dau{"Photondcav0dau", 1.5, "Max DCA V0 Daughters (cm)"};  
-  Configurable<float> PhotonTPCCrossedRows{"PhotonTPCCrossedRows", 30, "Min daughter TPC Crossed Rows"};  
+  Configurable<float> Photondcav0dau{"Photondcav0dau", 1.5, "Max DCA V0 Daughters (cm)"};
+  Configurable<float> PhotonTPCCrossedRows{"PhotonTPCCrossedRows", 30, "Min daughter TPC Crossed Rows"};
   Configurable<float> PhotonMinTPCNSigmas{"PhotonMinTPCNSigmas", -6, "Min TPC NSigmas for daughters"};
   Configurable<float> PhotonMaxTPCNSigmas{"PhotonMaxTPCNSigmas", 7, "Max TPC NSigmas for daughters"};
   Configurable<float> PhotonMinPt{"PhotonMinPt", 0.02, "Min photon pT (GeV/c)"};
@@ -120,7 +120,7 @@ struct sigmaanalysis {
   // Invariant Mass
   ConfigurableAxis axisSigmaMass{"axisSigmaMass", {200, 1.16f, 1.23f}, "M_{#Sigma^{0}} (GeV/c^{2})"};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, "M_{#Lambda} (GeV/c^{2})"};
-  ConfigurableAxis axisPhotonMass{"axisPhotonMass", {200, -0.1f, 0.1f}, "M_{#Gamma}"};  
+  ConfigurableAxis axisPhotonMass{"axisPhotonMass", {200, -0.1f, 0.1f}, "M_{#Gamma}"};
 
   // AP plot axes
   ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
@@ -144,7 +144,7 @@ struct sigmaanalysis {
     // Event counter
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {axisCentrality});
 
-    // For Signal Extraction 
+    // For Signal Extraction
     histos.add("h3dMassSigma0", "h3dMassSigma0", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
     histos.add("h3dMassAntiSigma0", "h3dMassAntiSigma0", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
 
@@ -212,7 +212,7 @@ struct sigmaanalysis {
       // Event counter
       histos.add("hMCEventCentrality", "hMCEventCentrality", kTH1F, {axisCentrality});
 
-      // For Signal Extraction 
+      // For Signal Extraction
       histos.add("h3dMCMassSigma0", "h3dMCMassSigma0", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
 
       histos.add("GeneralQA/h2dMCArmenterosAll", "h2dMCArmenterosAll", {HistType::kTH2F, {axisAPAlpha, axisAPQt}});
@@ -233,8 +233,8 @@ struct sigmaanalysis {
   template <typename TV0Object>
   bool processSigmaCandidate(TV0Object const& cand)
   {
-    if (fUseMLSel){
-      if ((cand.gammaBDTScore()==-1) || (cand.lambdaBDTScore()==-1) || (cand.antilambdaBDTScore()==-1)){
+    if (fUseMLSel) {
+      if ((cand.gammaBDTScore() == -1) || (cand.lambdaBDTScore() == -1) || (cand.antilambdaBDTScore() == -1)) {
         LOGF(fatal, "ML Score is not available! Please, enable gamma and lambda selection with ML in sigmabuilder!");
       }
       // Gamma selection:
@@ -249,15 +249,15 @@ struct sigmaanalysis {
       if (cand.antilambdaBDTScore() <= AntiLambda_MLThreshold)
         return false;
     }
-    
-    else{
+
+    else {
       if (TMath::Abs(cand.photonMass()) > PhotonMaxMass)
         return false;
       if ((TMath::Abs(cand.photonPosEta()) > PhotonDauPseudoRap) || (TMath::Abs(cand.photonNegEta()) > PhotonDauPseudoRap))
         return false;
       if ((cand.photonPosPt() < PhotondauMinPt) || (cand.photonNegPt() < PhotondauMinPt))
         return false;
-      if ((cand.photonDCAPosPV() > Photondcadautopv) || ( cand.photonDCANegPV() > Photondcadautopv))
+      if ((cand.photonDCAPosPV() > Photondcadautopv) || (cand.photonDCANegPV() > Photondcadautopv))
         return false;
       if (cand.photonDCADau() > Photondcav0dau)
         return false;
@@ -299,7 +299,7 @@ struct sigmaanalysis {
         return false;
     }
 
-  return true;
+    return true;
   }
 
   // This process function cross-checks index correctness
@@ -315,51 +315,51 @@ struct sigmaanalysis {
   void processMonteCarlo(aod::Sigma0Collision const& coll, V0MCSigmas const& v0s)
   {
     histos.fill(HIST("hMCEventCentrality"), coll.centFT0C());
-    for (auto& sigma : v0s) {    // selecting Sigma0-like candidates
-        if (sigma.isSigma()){
-          histos.fill(HIST("GeneralQA/h2dMCArmenterosAll"), sigma.photonAlpha(), sigma.photonQt());
-          histos.fill(HIST("GeneralQA/h2dMCArmenterosAll"), sigma.lambdaAlpha(), sigma.lambdaQt());
-          
-          if (!processSigmaCandidate(sigma))
-            continue;
+    for (auto& sigma : v0s) { // selecting Sigma0-like candidates
+      if (sigma.isSigma()) {
+        histos.fill(HIST("GeneralQA/h2dMCArmenterosAll"), sigma.photonAlpha(), sigma.photonQt());
+        histos.fill(HIST("GeneralQA/h2dMCArmenterosAll"), sigma.lambdaAlpha(), sigma.lambdaQt());
 
-          histos.fill(HIST("GeneralQA/h2dMCArmenterosSelected"), sigma.photonAlpha(), sigma.photonQt());
-          histos.fill(HIST("GeneralQA/h2dMCArmenterosSelected"), sigma.lambdaAlpha(), sigma.lambdaQt());
-          
-          histos.fill(HIST("Sigma0/hMCMassSigma0"), sigma.sigmaMass());
-          histos.fill(HIST("Sigma0/hMCPtSigma0"), sigma.sigmapT());
-
-          histos.fill(HIST("h3dMCMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
-        }
-      }
-  }
-  
-  void processRealData(aod::Sigma0Collision const& coll, V0Sigmas const& v0s)
-  {
-    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-    for (auto& sigma : v0s) {    // selecting Sigma0-like candidates
-        histos.fill(HIST("GeneralQA/h2dArmenterosAll"), sigma.photonAlpha(), sigma.photonQt());
-        histos.fill(HIST("GeneralQA/h2dArmenterosAll"), sigma.lambdaAlpha(), sigma.lambdaQt());
-
-        nSigmaCandidates++;
-        if (nSigmaCandidates % 50000 == 0) {
-          LOG(info) << "Sigma0 Candidates processed: " << nSigmaCandidates;
-        }
         if (!processSigmaCandidate(sigma))
           continue;
 
-        histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), sigma.photonAlpha(), sigma.photonQt());
-        histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), sigma.lambdaAlpha(), sigma.lambdaQt());
-        
-        histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
-        histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
-        histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
+        histos.fill(HIST("GeneralQA/h2dMCArmenterosSelected"), sigma.photonAlpha(), sigma.photonQt());
+        histos.fill(HIST("GeneralQA/h2dMCArmenterosSelected"), sigma.lambdaAlpha(), sigma.lambdaQt());
 
-        histos.fill(HIST("h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
+        histos.fill(HIST("Sigma0/hMCMassSigma0"), sigma.sigmaMass());
+        histos.fill(HIST("Sigma0/hMCPtSigma0"), sigma.sigmapT());
+
+        histos.fill(HIST("h3dMCMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
       }
+    }
   }
 
-  //PROCESS_SWITCH(sigmaanalysis, processCounterQA, "Check standard counter correctness", true);
+  void processRealData(aod::Sigma0Collision const& coll, V0Sigmas const& v0s)
+  {
+    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+    for (auto& sigma : v0s) { // selecting Sigma0-like candidates
+      histos.fill(HIST("GeneralQA/h2dArmenterosAll"), sigma.photonAlpha(), sigma.photonQt());
+      histos.fill(HIST("GeneralQA/h2dArmenterosAll"), sigma.lambdaAlpha(), sigma.lambdaQt());
+
+      nSigmaCandidates++;
+      if (nSigmaCandidates % 50000 == 0) {
+        LOG(info) << "Sigma0 Candidates processed: " << nSigmaCandidates;
+      }
+      if (!processSigmaCandidate(sigma))
+        continue;
+
+      histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), sigma.photonAlpha(), sigma.photonQt());
+      histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), sigma.lambdaAlpha(), sigma.lambdaQt());
+
+      histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
+      histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
+      histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
+
+      histos.fill(HIST("h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
+    }
+  }
+
+  // PROCESS_SWITCH(sigmaanalysis, processCounterQA, "Check standard counter correctness", true);
   PROCESS_SWITCH(sigmaanalysis, processMonteCarlo, "Do Monte-Carlo-based analysis", true);
   PROCESS_SWITCH(sigmaanalysis, processRealData, "Do real data analysis", true);
 };
@@ -368,4 +368,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigmaanalysis>(cfgc)};
 }
-

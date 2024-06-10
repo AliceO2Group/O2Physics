@@ -39,7 +39,7 @@ namespace v0SigmaCandidate
 //______________________________________________________
 // REGULAR COLUMNS FOR INDEXING
 // FOR DERIVED
-DECLARE_SOA_INDEX_COLUMN(Sigma0Collision, sigma0Collision);                                        //!
+DECLARE_SOA_INDEX_COLUMN(Sigma0Collision, sigma0Collision); //!
 } // namespace v0SigmaCandidate
 
 // for real data
@@ -77,10 +77,10 @@ DECLARE_SOA_COLUMN(PhotonDCAPosPV, photonDCAPosPV, float);
 DECLARE_SOA_COLUMN(PhotonZconv, photonZconv, float);
 DECLARE_SOA_COLUMN(PhotonEta, photonEta, float);
 DECLARE_SOA_COLUMN(PhotonY, photonY, float);
-DECLARE_SOA_COLUMN(PhotonPosTPCNSigma, photonPosTPCNSigma, float); 
-DECLARE_SOA_COLUMN(PhotonNegTPCNSigma, photonNegTPCNSigma, float); 
-DECLARE_SOA_COLUMN(PhotonPosTPCCrossedRows, photonPosTPCCrossedRows, uint8_t); 
-DECLARE_SOA_COLUMN(PhotonNegTPCCrossedRows, photonNegTPCCrossedRows, uint8_t); 
+DECLARE_SOA_COLUMN(PhotonPosTPCNSigma, photonPosTPCNSigma, float);
+DECLARE_SOA_COLUMN(PhotonNegTPCNSigma, photonNegTPCNSigma, float);
+DECLARE_SOA_COLUMN(PhotonPosTPCCrossedRows, photonPosTPCCrossedRows, uint8_t);
+DECLARE_SOA_COLUMN(PhotonNegTPCCrossedRows, photonNegTPCCrossedRows, uint8_t);
 DECLARE_SOA_COLUMN(PhotonPosPt, photonPosPt, float);
 DECLARE_SOA_COLUMN(PhotonNegPt, photonNegPt, float);
 DECLARE_SOA_COLUMN(PhotonPosEta, photonPosEta, float);
@@ -88,11 +88,11 @@ DECLARE_SOA_COLUMN(PhotonNegEta, photonNegEta, float);
 DECLARE_SOA_COLUMN(PhotonPosY, photonPosY, float);
 DECLARE_SOA_COLUMN(PhotonNegY, photonNegY, float);
 DECLARE_SOA_COLUMN(PhotonPsiPair, photonPsiPair, float);
-DECLARE_SOA_COLUMN(PhotonPosITSCls, photonPosITSCls, int); 
-DECLARE_SOA_COLUMN(PhotonNegITSCls, photonNegITSCls, int); 
-DECLARE_SOA_COLUMN(PhotonPosITSClSize, photonPosITSClSize, uint32_t); 
-DECLARE_SOA_COLUMN(PhotonNegITSClSize, photonNegITSClSize, uint32_t); 
-DECLARE_SOA_COLUMN(PhotonV0Type, photonV0Type, uint8_t); 
+DECLARE_SOA_COLUMN(PhotonPosITSCls, photonPosITSCls, int);
+DECLARE_SOA_COLUMN(PhotonNegITSCls, photonNegITSCls, int);
+DECLARE_SOA_COLUMN(PhotonPosITSClSize, photonPosITSClSize, uint32_t);
+DECLARE_SOA_COLUMN(PhotonNegITSClSize, photonNegITSClSize, uint32_t);
+DECLARE_SOA_COLUMN(PhotonV0Type, photonV0Type, uint8_t);
 DECLARE_SOA_COLUMN(GammaBDTScore, gammaBDTScore, float);
 
 } // namespace v0SigmaPhotonExtras
@@ -167,38 +167,38 @@ DECLARE_SOA_COLUMN(AntiLambdaBDTScore, antilambdaBDTScore, float);
 } // namespace v0SigmaLambdaExtras
 
 DECLARE_SOA_TABLE(V0SigmaLambdaExtras, "AOD", "V0SIGMALAMBDA",
-                v0SigmaLambdaExtras::LambdaPt,
-                v0SigmaLambdaExtras::LambdaMass,
-                v0SigmaLambdaExtras::LambdaQt,
-                v0SigmaLambdaExtras::LambdaAlpha,
-                v0SigmaLambdaExtras::LambdaRadius,
-                v0SigmaLambdaExtras::LambdaCosPA,
-                v0SigmaLambdaExtras::LambdaDCADau,
-                v0SigmaLambdaExtras::LambdaDCANegPV,
-                v0SigmaLambdaExtras::LambdaDCAPosPV,
-                v0SigmaLambdaExtras::LambdaEta, 
-                v0SigmaLambdaExtras::LambdaY, 
-                v0SigmaLambdaExtras::LambdaPosPrTPCNSigma, 
-                v0SigmaLambdaExtras::LambdaPosPiTPCNSigma, 
-                v0SigmaLambdaExtras::LambdaNegPrTPCNSigma, 
-                v0SigmaLambdaExtras::LambdaNegPiTPCNSigma, 
-                v0SigmaLambdaExtras::LambdaPosTPCCrossedRows, 
-                v0SigmaLambdaExtras::LambdaNegTPCCrossedRows, 
-                v0SigmaLambdaExtras::LambdaPosPt, 
-                v0SigmaLambdaExtras::LambdaNegPt, 
-                v0SigmaLambdaExtras::LambdaPosEta, 
-                v0SigmaLambdaExtras::LambdaNegEta, 
-                v0SigmaLambdaExtras::LambdaPosPrY, 
-                v0SigmaLambdaExtras::LambdaPosPiY, 
-                v0SigmaLambdaExtras::LambdaNegPrY, 
-                v0SigmaLambdaExtras::LambdaNegPiY, 
-                v0SigmaLambdaExtras::LambdaPosITSCls, 
-                v0SigmaLambdaExtras::LambdaNegITSCls, 
-                v0SigmaLambdaExtras::LambdaPosITSClSize, 
-                v0SigmaLambdaExtras::LambdaNegITSClSize, 
-                v0SigmaLambdaExtras::LambdaV0Type,
-                v0SigmaLambdaExtras::LambdaBDTScore,
-                v0SigmaLambdaExtras::AntiLambdaBDTScore);
+                  v0SigmaLambdaExtras::LambdaPt,
+                  v0SigmaLambdaExtras::LambdaMass,
+                  v0SigmaLambdaExtras::LambdaQt,
+                  v0SigmaLambdaExtras::LambdaAlpha,
+                  v0SigmaLambdaExtras::LambdaRadius,
+                  v0SigmaLambdaExtras::LambdaCosPA,
+                  v0SigmaLambdaExtras::LambdaDCADau,
+                  v0SigmaLambdaExtras::LambdaDCANegPV,
+                  v0SigmaLambdaExtras::LambdaDCAPosPV,
+                  v0SigmaLambdaExtras::LambdaEta,
+                  v0SigmaLambdaExtras::LambdaY,
+                  v0SigmaLambdaExtras::LambdaPosPrTPCNSigma,
+                  v0SigmaLambdaExtras::LambdaPosPiTPCNSigma,
+                  v0SigmaLambdaExtras::LambdaNegPrTPCNSigma,
+                  v0SigmaLambdaExtras::LambdaNegPiTPCNSigma,
+                  v0SigmaLambdaExtras::LambdaPosTPCCrossedRows,
+                  v0SigmaLambdaExtras::LambdaNegTPCCrossedRows,
+                  v0SigmaLambdaExtras::LambdaPosPt,
+                  v0SigmaLambdaExtras::LambdaNegPt,
+                  v0SigmaLambdaExtras::LambdaPosEta,
+                  v0SigmaLambdaExtras::LambdaNegEta,
+                  v0SigmaLambdaExtras::LambdaPosPrY,
+                  v0SigmaLambdaExtras::LambdaPosPiY,
+                  v0SigmaLambdaExtras::LambdaNegPrY,
+                  v0SigmaLambdaExtras::LambdaNegPiY,
+                  v0SigmaLambdaExtras::LambdaPosITSCls,
+                  v0SigmaLambdaExtras::LambdaNegITSCls,
+                  v0SigmaLambdaExtras::LambdaPosITSClSize,
+                  v0SigmaLambdaExtras::LambdaNegITSClSize,
+                  v0SigmaLambdaExtras::LambdaV0Type,
+                  v0SigmaLambdaExtras::LambdaBDTScore,
+                  v0SigmaLambdaExtras::AntiLambdaBDTScore);
 
 // for MC data
 namespace v0SigmaMCCandidate
