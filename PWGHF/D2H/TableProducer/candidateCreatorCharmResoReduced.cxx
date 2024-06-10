@@ -76,8 +76,8 @@ struct HfCandidateCreatorCharmResoReduced {
   using reducedDWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
 
   // Partition of V0 candidates based on v0Type
-  Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_cand_reduced::v0Type == (uint8_t)1 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)3 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)5;
-  Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_cand_reduced::v0Type == (uint8_t)2 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)4;
+  Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_2_prong::v0Type == (uint8_t)1 || aod::hf_reso_2_prong::v0Type == (uint8_t)3 || aod::hf_reso_2_prong::v0Type == (uint8_t)5;
+  Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_2_prong::v0Type == (uint8_t)2 || aod::hf_reso_2_prong::v0Type == (uint8_t)4;
 
   Preslice<aod::HfRedVzeros> candsV0PerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
   Preslice<aod::HfRed3PrNoTrks> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
@@ -131,13 +131,19 @@ struct HfCandidateCreatorCharmResoReduced {
   bool isDSelected(DRedTable const& candD)
   {
     float massD{0.};
+    float invMassD{0.};
     // slection on D candidate mass
     if (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::XcToDplusLambda || channel == DecayChannel::LambdaDminus) {
       massD = massDplus;
+      invMassD = candD.invMassDplus();
     } else if (channel == DecayChannel::Ds1ToDstarK0s) {
       massD = massDstar - massD0;
+      if (candD.dType() > 0)
+        invMassD = candD.invMassDstar();
+      else
+        invMassD = candD.invMassAntiDstar();
     }
-    if (std::fabs(candD.invMass() - massD) > invMassWindowD) {
+    if (std::fabs(invMassD - massD) > invMassWindowD) {
       return false;
     }
     return true;
@@ -196,8 +202,14 @@ struct HfCandidateCreatorCharmResoReduced {
       if (activateQA) {
         registry.fill(HIST("hSelections"), 1 + Selections::DSel);
       }
-      float invMassD = candD.invMass();
-      std::array<float, 3> pVecD = candD.pVector();
+      float invMassD{0.};
+      if (std::abs(candD.dType()) == 1)
+        invMassD = candD.invMassDplus();
+      if (candD.dType() == 2)
+        invMassD = candD.invMassDstar();
+      if (candD.dType() == -2)
+        invMassD = candD.invMassAntiDstar();
+      std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
       float ptD = RecoDecay::pt(pVecD);
       ;
       // loop on V0 candidates
@@ -212,7 +224,7 @@ struct HfCandidateCreatorCharmResoReduced {
         }
         float invMassReso{0.};
         float invMassV0{0.};
-        std::array<float, 3> pVecV0 = candV0.pVector();
+        std::array<float, 3> pVecV0 = {candV0.px(), candV0.py(), candV0.pz()};
         float ptV0 = RecoDecay::pt(pVecV0);
         float ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0, pVecD));
         switch (channel) {
@@ -257,7 +269,7 @@ struct HfCandidateCreatorCharmResoReduced {
                          ptV0,
                          candV0.cpa(),
                          candV0.dca(),
-                         candV0.radius());
+                         candV0.v0radius());
         if constexpr (fillMl) {
           mlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
         }

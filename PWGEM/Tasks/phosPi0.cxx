@@ -440,6 +440,122 @@ struct phosPi0 {
       }
     }
   }
+  void processBC(aod::BCs::iterator const& bc,
+                 aod::CaloAmbiguousClusters const& clusters)
+  {
+    bool isSelected = true;
+    mixedEventBin = 0;
+
+    mHistManager.fill(HIST("eventsCol"), 0.);
+    double vtxZ = 0; // no vtx info
+    int mult = 1.;   // multiplicity TODO!!!
+    mixedEventBin = findMixedEventBin(vtxZ, mult);
+
+    if (!isSelected) {
+      return;
+    }
+
+    // Fill invariant mass distributions
+    mCurEvent.clear();
+    for (const auto& clu : clusters) {
+      // Fill QC histos
+      if (mFillQC) {
+        mHistManager.fill(HIST("hM02Clu"), clu.e(), clu.m02());
+        mHistManager.fill(HIST("hM20Clu"), clu.e(), clu.m20());
+        mHistManager.fill(HIST("hNcellClu"), clu.e(), clu.ncell(), clu.mod());
+        mHistManager.fill(HIST("cluETime"), clu.e(), clu.time(), clu.mod());
+      }
+      if (clu.e() < mMinCluE ||
+          clu.ncell() < mMinCluNcell ||
+          clu.time() > mMaxCluTime || clu.time() < mMinCluTime ||
+          clu.m02() < mMinM02) {
+        continue;
+      }
+      if (mFillQC) {
+        mHistManager.fill(HIST("cluSp"), clu.e(), clu.mod());
+        if (clu.e() > mOccE) {
+          mHistManager.fill(HIST("cluOcc"), clu.x(), clu.z(), clu.mod());
+          if (clu.trackdist() > 2.) {
+            mHistManager.fill(HIST("cluCPVOcc"), clu.x(), clu.z(), clu.mod());
+            mHistManager.fill(HIST("cluSpCPV"), clu.e(), clu.mod());
+            if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
+              mHistManager.fill(HIST("cluBothOcc"), clu.x(), clu.z(), clu.mod());
+              mHistManager.fill(HIST("cluSpBoth"), clu.e(), clu.mod());
+            }
+          }
+          if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
+            mHistManager.fill(HIST("cluDispOcc"), clu.x(), clu.z(), clu.mod());
+            mHistManager.fill(HIST("cluSpDisp"), clu.e(), clu.mod());
+          }
+        }
+      }
+
+      int mcLabel = -1;
+      photon ph1(clu.px(), clu.py(), clu.pz(), clu.e(), clu.mod(), TestLambda(clu.e(), clu.m02(), clu.m20()), clu.trackdist() > mCPVCut, mcLabel);
+      // Mix with other photons added to stack
+      for (auto ph2 : mCurEvent) {
+        double m = pow(ph1.e + ph2.e, 2) - pow(ph1.px + ph2.px, 2) -
+                   pow(ph1.py + ph2.py, 2) - pow(ph1.pz + ph2.pz, 2);
+        if (m > 0) {
+          m = sqrt(m);
+        }
+        double pt = sqrt(pow(ph1.px + ph2.px, 2) +
+                         pow(ph1.py + ph2.py, 2));
+        int modComb = ModuleCombination(ph1.mod, ph2.mod);
+        hReMod->Fill(m, pt, modComb);
+        hReAll->Fill(m, pt);
+
+        if (ph1.isCPVOK() && ph2.isCPVOK()) {
+          hReCPV->Fill(m, pt);
+        }
+        if (ph1.isDispOK() && ph2.isDispOK()) {
+          hReDisp->Fill(m, pt);
+          if (ph1.isCPVOK() && ph2.isCPVOK()) {
+            hReBoth->Fill(m, pt);
+          }
+        }
+      }
+
+      // Add photon to stack
+      mCurEvent.emplace_back(ph1);
+    }
+
+    // Mixed
+    for (auto ph1 : mCurEvent) {
+      for (auto mixEvent : mMixedEvents[mixedEventBin]) {
+        for (auto ph2 : mixEvent) {
+          double m = pow(ph1.e + ph2.e, 2) - pow(ph1.px + ph2.px, 2) -
+                     pow(ph1.py + ph2.py, 2) - pow(ph1.pz + ph2.pz, 2);
+          if (m > 0) {
+            m = sqrt(m);
+          }
+          double pt = sqrt(pow(ph1.px + ph2.px, 2) +
+                           pow(ph1.py + ph2.py, 2));
+          int modComb = ModuleCombination(ph1.mod, ph2.mod);
+          hMiMod->Fill(m, pt, modComb);
+          hMiAll->Fill(m, pt);
+          if (ph1.isCPVOK() && ph2.isCPVOK()) {
+            hMiCPV->Fill(m, pt);
+          }
+          if (ph1.isDispOK() && ph2.isDispOK()) {
+            hMiDisp->Fill(m, pt);
+            if (ph1.isCPVOK() && ph2.isCPVOK()) {
+              hMiBoth->Fill(m, pt);
+            }
+          }
+        }
+      }
+    }
+
+    // Fill events to store and remove oldest to keep buffer size
+    if (mCurEvent.size() > 0) {
+      mMixedEvents[mixedEventBin].emplace_back(mCurEvent);
+      if (mMixedEvents[mixedEventBin].size() > static_cast<size_t>(mNMixedEvents)) {
+        mMixedEvents[mixedEventBin].pop_front();
+      }
+    }
+  }
+  PROCESS_SWITCH(phosPi0, processBC, "process data BC", false);
 
   //_____________________________________________________________________________
   int ModuleCombination(int m1, int m2)

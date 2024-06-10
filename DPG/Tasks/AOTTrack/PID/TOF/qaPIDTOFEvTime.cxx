@@ -27,6 +27,7 @@
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Framework/runDataProcessing.h"
+#include "CommonConstants/LHCConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -199,6 +200,25 @@ struct tofPidCollisionTimeQa {
     if (!doprocessMC) {
       return;
     }
+    const AxisSpec diffAxis{1000, -1000, 1000, "Difference"};
+    histos.add("MC/diff", "", HistType::kTH1F, {diffAxis});
+
+    // pion
+    histos.add("MC/pdg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    histos.add("MC/pdgNeg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    histos.add("MC/prm/pdg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    histos.add("MC/prm/pdgNeg211/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    // kaon
+    histos.add("MC/pdg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    histos.add("MC/pdgNeg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    histos.add("MC/prm/pdg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    histos.add("MC/prm/pdgNeg321/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    // proton
+    histos.add("MC/pdg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    histos.add("MC/pdgNeg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    histos.add("MC/prm/pdg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+    histos.add("MC/prm/pdgNeg2212/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
+
     histos.add("MC/t", "", HistType::kTH1F, {{1000, -1000, 1000, "MC time"}});
   }
 
@@ -432,7 +452,60 @@ struct tofPidCollisionTimeQa {
         continue;
       }
       const auto& collisionMC = collision.mcCollision_as<aod::McCollisions>();
-      histos.fill(HIST("MC/t"), collisionMC.t());
+      // timeInBCNS + bc2ns();
+      const auto& mcBC = collisionMC.bc();
+      // bc* o2::constants::lhc::LHCBunchSpacingNS + orbit* o2::constants::lhc::LHCOrbitNS;
+      // int64_t(mcBC.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3))
+      const int64_t bcMCtime = static_cast<int64_t>((collisionMC.t() + 2.f) / o2::constants::lhc::LHCBunchSpacingNS);
+      const float eventtimeMC = collisionMC.t() - bcMCtime * o2::constants::lhc::LHCBunchSpacingNS;
+      LOG(info) << mcBC.globalBC() - bcMCtime << " MC collision time: " << eventtimeMC << " collision time: " << collision.collisionTime() << " TOF event time: " << t.tofEvTime();
+      histos.fill(HIST("MC/t"), eventtimeMC);
+      histos.fill(HIST("MC/diff"), eventtimeMC - t.tofEvTime());
+      if (!t.has_mcParticle()) {
+        continue;
+      }
+      const auto& particle = t.mcParticle();
+      LOG(info) << "Track " << particle.vt() << " vs " << eventtimeMC;
+      switch (particle.pdgCode()) {
+        case 211:
+          histos.fill(HIST("MC/pdg211/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          if (particle.isPhysicalPrimary()) {
+            histos.fill(HIST("MC/prm/pdg211/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          }
+          break;
+        case -211:
+          histos.fill(HIST("MC/pdgNeg211/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          if (particle.isPhysicalPrimary()) {
+            histos.fill(HIST("MC/prm/pdgNeg211/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          }
+          break;
+        case 321:
+          histos.fill(HIST("MC/pdg321/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          if (particle.isPhysicalPrimary()) {
+            histos.fill(HIST("MC/prm/pdg321/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          }
+          break;
+        case -321:
+          histos.fill(HIST("MC/pdgNeg321/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          if (particle.isPhysicalPrimary()) {
+            histos.fill(HIST("MC/prm/pdgNeg321/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          }
+          break;
+        case 2212:
+          histos.fill(HIST("MC/pdg2212/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          if (particle.isPhysicalPrimary()) {
+            histos.fill(HIST("MC/prm/pdg2212/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          }
+          break;
+        case -2212:
+          histos.fill(HIST("MC/pdgNeg2212/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          if (particle.isPhysicalPrimary()) {
+            histos.fill(HIST("MC/prm/pdgNeg2212/particleDiff"), particle.pt(), collisionMC.t() - particle.vt());
+          }
+          break;
+        default:
+          break;
+      }
     }
   }
   PROCESS_SWITCH(tofPidCollisionTimeQa, processMC, "Process MC", true);
