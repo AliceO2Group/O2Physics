@@ -307,7 +307,7 @@ struct ExclusivePhiLeptons {
         }
       }
 
-      if (sigmaTotal > pid2d_cut*pid2d_cut) {
+      if (sigmaTotal > pid2d_cut * pid2d_cut) {
         return;
       }
       if (onlyElectronTracksTOF.size() == 1) {
