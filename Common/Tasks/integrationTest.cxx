@@ -128,43 +128,43 @@ struct integrationTest {
       hs->GetXaxis()->SetBinLabel(ii + 1, lTableNames[ii].Data());
 
     // Histograms with related indices: per BC
-    histos.add<TH1>("hCollisionsPerBC", "hCollisionsPerBC", HistType::kTH1F, {axisCollisions});
+    histos.add<TH1>("hCollisionsPerBC", "hCollisionsPerBC", HistType::kTH1D, {axisCollisions});
 
     // Histograms with related indices: per collision
-    histos.add<TH1>("hTracks", "hTracks", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hTracksITS", "hTracksITS", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hTracksTPC", "hTracksTPC", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hTracksNoTPCOnly", "hTracksNoTPCOnly", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hTracksTRD", "hTracksTRD", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hTracksTOF", "hTracksTOF", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hMFTTracks", "hMFTTracks", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hFWDTracks", "hFWDTracks", HistType::kTH1F, {axisTracks});
+    histos.add<TH1>("hTracks", "hTracks", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hTracksITS", "hTracksITS", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hTracksTPC", "hTracksTPC", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hTracksNoTPCOnly", "hTracksNoTPCOnly", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hTracksTRD", "hTracksTRD", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hTracksTOF", "hTracksTOF", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hMFTTracks", "hMFTTracks", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hFWDTracks", "hFWDTracks", HistType::kTH1D, {axisTracks});
 
-    histos.add<TH1>("hV0s", "hV0s", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hCascades", "hCascades", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hHasDetector", "hHasDetector", HistType::kTH1F, {axisHasDetector});
+    histos.add<TH1>("hV0s", "hV0s", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hCascades", "hCascades", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hHasDetector", "hHasDetector", HistType::kTH1D, {axisHasDetector});
 
     if (do2DNTrackCorr) {
-      histos.add<TH2>("hTOFvsTRD", "hTOFvsTRD", HistType::kTH2F, {axisTracks2Dtrd, axisTracks2Dtof});
-      histos.add<TH2>("hTOFvsTPC", "hTOFvsTPC", HistType::kTH2F, {axisTracks2Dtpc, axisTracks2Dtof});
-      histos.add<TH2>("hTRDvsTPC", "hTRDvsTPC", HistType::kTH2F, {axisTracks2Dtpc, axisTracks2Dtrd});
-      histos.add<TH2>("hITSvsTPC", "hITSvsTPC", HistType::kTH2F, {axisTracks2Dtpc, axisTracks2Dits});
+      histos.add<TH2>("hTOFvsTRD", "hTOFvsTRD", HistType::kTH2D, {axisTracks2Dtrd, axisTracks2Dtof});
+      histos.add<TH2>("hTOFvsTPC", "hTOFvsTPC", HistType::kTH2D, {axisTracks2Dtpc, axisTracks2Dtof});
+      histos.add<TH2>("hTRDvsTPC", "hTRDvsTPC", HistType::kTH2D, {axisTracks2Dtpc, axisTracks2Dtrd});
+      histos.add<TH2>("hITSvsTPC", "hITSvsTPC", HistType::kTH2D, {axisTracks2Dtpc, axisTracks2Dits});
     }
 
     // pT histograms
-    histos.add<TH1>("hPt", "hPt", HistType::kTH1F, {axisPt});
-    histos.add<TH1>("hPtITS", "hPtITS", HistType::kTH1F, {axisPt});
-    histos.add<TH1>("hPtTPC", "hPtTPC", HistType::kTH1F, {axisPt});
-    histos.add<TH1>("hPtNoTPCOnly", "hPtNoTPCOnly", HistType::kTH1F, {axisPt});
-    histos.add<TH1>("hPtTOF", "hPtTOF", HistType::kTH1F, {axisPt});
-    histos.add<TH1>("hPtTRD", "hPtTRD", HistType::kTH1F, {axisPt});
+    histos.add<TH1>("hPt", "hPt", HistType::kTH1D, {axisPt});
+    histos.add<TH1>("hPtITS", "hPtITS", HistType::kTH1D, {axisPt});
+    histos.add<TH1>("hPtTPC", "hPtTPC", HistType::kTH1D, {axisPt});
+    histos.add<TH1>("hPtNoTPCOnly", "hPtNoTPCOnly", HistType::kTH1D, {axisPt});
+    histos.add<TH1>("hPtTOF", "hPtTOF", HistType::kTH1D, {axisPt});
+    histos.add<TH1>("hPtTRD", "hPtTRD", HistType::kTH1D, {axisPt});
 
     if (doBasicQA) {
       // general QA
-      histos.add<TH2>("h2dPhiVsEtaAll", "h2dPhiVsEtaAll", HistType::kTH2F, {axisEta, axisPhi});
-      histos.add<TH2>("h2dPhiVsEtaNoTPCOnly", "h2dPhiVsEtaNoTPCOnly", HistType::kTH2F, {axisEta, axisPhi});
-      histos.add<TH1>("hNCluAll", "hNCluAll", HistType::kTH1F, {axisNclu});
-      histos.add<TH1>("hNCluNoTPCOnly", "hNCluNoTPCOnly", HistType::kTH1F, {axisNclu});
+      histos.add<TH2>("h2dPhiVsEtaAll", "h2dPhiVsEtaAll", HistType::kTH2D, {axisEta, axisPhi});
+      histos.add<TH2>("h2dPhiVsEtaNoTPCOnly", "h2dPhiVsEtaNoTPCOnly", HistType::kTH2D, {axisEta, axisPhi});
+      histos.add<TH1>("hNCluAll", "hNCluAll", HistType::kTH2D, {axisNclu});
+      histos.add<TH1>("hNCluNoTPCOnly", "hNCluNoTPCOnly", HistType::kTH2D, {axisNclu});
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
