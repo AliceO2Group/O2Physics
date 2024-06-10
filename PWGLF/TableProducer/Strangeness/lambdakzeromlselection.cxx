@@ -78,7 +78,7 @@ struct lambdakzeromlselection {
   Produces<aod::V0GammaMLScores> gammaMLSelections;   // optionally aggregate information from ML output for posterior analysis (derived data)
   Produces<aod::V0LambdaMLScores> lambdaMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
   Produces<aod::V0AntiLambdaMLScores> antiLambdaMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
-  Produces<aod::V0K0ShortMLScores> kzeroShortMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
+  Produces<aod::V0K0ShortMLScores> kzeroShortMLSelections;    // optionally aggregate information from ML output for posterior analysis (derived data)
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -97,7 +97,7 @@ struct lambdakzeromlselection {
   //// Order: Z, V0radius, PA, DCApostopv, DCAnegtopv, DCAV0daughters, DCAv0topv, PsiPair
   Configurable<std::vector<int>> Topo_SelMap{"Topo_SelMap", std::vector<int>{0, 1, 1, 1, 1, 1, 1, 0}, "Mask to select basic topological features for ML Inference"};
 
-  //// Casting 
+  //// Casting
   std::vector<int> CastKine_SelMap, CastTopo_SelMap, Feature_SelMask;
 
   // CCDB configuration
@@ -177,7 +177,7 @@ struct lambdakzeromlselection {
       if (PredictKZeroShort)
         kzeroshort_bdt.initModel(BDTLocalPathKZeroShort.value, enableOptimizations.value);
     }
-    
+
     /// Here the Configurables are passed to std::vectors
     CastKine_SelMap = (std::vector<int>)Kine_SelMap;
     CastTopo_SelMap = (std::vector<int>)Topo_SelMap;
@@ -189,47 +189,48 @@ struct lambdakzeromlselection {
     LOG(info) << "Feature_SelMask size: " << Feature_SelMask.size();
   }
 
-  template<typename T, typename U>
-  std::vector<float> extractSelectedElements(const std::vector<T>& base_features, const std::vector<U>& Sel_mask) {
+  template <typename T, typename U>
+  std::vector<float> extractSelectedElements(const std::vector<T>& base_features, const std::vector<U>& Sel_mask)
+  {
     std::vector<float> selected_elements;
     for (size_t i = 0; i < Sel_mask.size(); ++i) {
-        if (Sel_mask[i]>=1) { // If the mask value is true, select the corresponding element
-            selected_elements.push_back(base_features[i]);
-        }
+      if (Sel_mask[i] >= 1) { // If the mask value is true, select the corresponding element
+        selected_elements.push_back(base_features[i]);
+      }
     }
     return selected_elements;
-}
+  }
 
   // Process candidate and store properties in object
   template <typename TV0Object, typename T>
   void processCandidate(TV0Object const& cand, const std::vector<T>& Feature_SelMask)
   {
     // Select features
-    std::vector<float> base_features{cand.mLambda(), cand.mAntiLambda(), 
-                                     cand.mGamma(), cand.mK0Short(), 
-                                     cand.pt(), static_cast<float>(cand.qtarm()), cand.alpha(), 
+    std::vector<float> base_features{cand.mLambda(), cand.mAntiLambda(),
+                                     cand.mGamma(), cand.mK0Short(),
+                                     cand.pt(), static_cast<float>(cand.qtarm()), cand.alpha(),
                                      cand.positiveeta(), cand.negativeeta(), cand.eta(),
-                                     cand.z(), cand.v0radius(), static_cast<float>(TMath::ACos(cand.v0cosPA())), 
-                                     cand.dcapostopv(), cand.dcanegtopv(), cand.dcaV0daughters(), 
+                                     cand.z(), cand.v0radius(), static_cast<float>(TMath::ACos(cand.v0cosPA())),
+                                     cand.dcapostopv(), cand.dcanegtopv(), cand.dcaV0daughters(),
                                      cand.dcav0topv(), cand.psipair()};
 
     // Apply mask to select features
     std::vector<float> inputFeatures = extractSelectedElements(base_features, Feature_SelMask);
 
     // calculate classifier output
-    if (PredictLambda){
+    if (PredictLambda) {
       float* LambdaProbability = lambda_bdt.evalModel(inputFeatures);
       lambdaMLSelections(LambdaProbability[1]);
     }
-    if (PredictGamma){
+    if (PredictGamma) {
       float* GammaProbability = gamma_bdt.evalModel(inputFeatures);
       gammaMLSelections(GammaProbability[1]);
     }
-    if (PredictAntiLambda){
+    if (PredictAntiLambda) {
       float* AntiLambdaProbability = antilambda_bdt.evalModel(inputFeatures);
       antiLambdaMLSelections(AntiLambdaProbability[1]);
     }
-    if (PredictKZeroShort){
+    if (PredictKZeroShort) {
       float* KZeroShortProbability = kzeroshort_bdt.evalModel(inputFeatures);
       kzeroShortMLSelections(KZeroShortProbability[1]);
     }
@@ -266,4 +267,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<lambdakzeromlselection>(cfgc)};
 }
-

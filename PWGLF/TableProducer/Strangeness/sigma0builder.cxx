@@ -64,12 +64,12 @@ using V0StandardDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0E
 struct sigma0builder {
   SliceCache cache;
 
-  Produces<aod::Sigma0Collision> v0sigma0Coll;        // characterises collisions
-  Produces<aod::V0Sigma0CollRefs> v0Sigma0CollRefs;        // characterises collisions
+  Produces<aod::Sigma0Collision> v0sigma0Coll;      // characterises collisions
+  Produces<aod::V0Sigma0CollRefs> v0Sigma0CollRefs; // characterises collisions
   Produces<aod::V0SigmaCandidates> v0Sigmas;     // save sigma0 candidates for analysis
-  Produces<aod::V0SigmaPhotonExtras> v0SigmaPhotonExtras;     // save sigma0 candidates for analysis
-  Produces<aod::V0SigmaLambdaExtras> v0SigmaLambdaExtras;     // save sigma0 candidates for analysis
-  Produces<aod::V0SigmaMCCandidates> v0MCSigmas; 
+  Produces<aod::V0SigmaPhotonExtras> v0SigmaPhotonExtras; // save sigma0 candidates for analysis
+  Produces<aod::V0SigmaLambdaExtras> v0SigmaLambdaExtras; // save sigma0 candidates for analysis
+  Produces<aod::V0SigmaMCCandidates> v0MCSigmas;
 
   // For manual sliceBy
   Preslice<V0DerivedMCDatas> perCollisionMCDerived = o2::aod::v0data::straCollisionId;
@@ -97,11 +97,11 @@ struct sigma0builder {
   //// Photon criteria:
   Configurable<float> PhotonDauPseudoRap{"PhotonDauPseudoRap", 1.0, "Max pseudorapidity of daughter tracks"};
   Configurable<float> Photondcadautopv{"Photondcadautopv", 0.01, "Min DCA daughter To PV (cm)"};
-  Configurable<float> Photondcav0dau{"Photondcav0dau", 3.0, "Max DCA V0 Daughters (cm)"};  
+  Configurable<float> Photondcav0dau{"Photondcav0dau", 3.0, "Max DCA V0 Daughters (cm)"};
   Configurable<float> PhotonMinRadius{"PhotonMinRadius", 0.5, "Min photon conversion radius (cm)"};
   Configurable<float> PhotonMaxRadius{"PhotonMaxRadius", 250, "Max photon conversion radius (cm)"};
   Configurable<float> PhotonMaxMass{"PhotonMaxMass", 0.2, "Max photon mass (GeV/c^{2})"};
-  
+
   //// Sigma0 criteria:
   Configurable<float> Sigma0Window{"Sigma0Window", 0.04, "Mass window around expected (in GeV/c2)"};
 
@@ -130,35 +130,35 @@ struct sigma0builder {
     float GammaBDTScore = -1;
     float LambdaBDTScore = -1;
     float AntiLambdaBDTScore = -1;
-    
-    if ((lambda.v0Type()==0) || (gamma.v0Type()==0))
+
+    if ((lambda.v0Type() == 0) || (gamma.v0Type() == 0))
       return false;
 
-    if constexpr (requires { gamma.gammaBDTScore(); } && 
-                  requires { lambda.lambdaBDTScore(); } && 
-                  requires { lambda.antiLambdaBDTScore(); }){
+    if constexpr (
+      requires { gamma.gammaBDTScore(); } &&
+      requires { lambda.lambdaBDTScore(); } &&
+      requires { lambda.antiLambdaBDTScore(); }) {
 
-        LOGF(info, "X-check: ML Selection is on!");
-        // Gamma selection:
-        if (gamma.gammaBDTScore() <= Gamma_MLThreshold)
-          return false;
+      LOGF(info, "X-check: ML Selection is on!");
+      // Gamma selection:
+      if (gamma.gammaBDTScore() <= Gamma_MLThreshold)
+        return false;
 
-        // Lambda and AntiLambda selection
-        if ((lambda.lambdaBDTScore() <= Lambda_MLThreshold) && (lambda.antiLambdaBDTScore() <= AntiLambda_MLThreshold))
-            return false;
-        
-        GammaBDTScore = gamma.gammaBDTScore();
-        LambdaBDTScore = lambda.lambdaBDTScore();
-        AntiLambdaBDTScore = lambda.antiLambdaBDTScore();  
-    }
-    else{
+      // Lambda and AntiLambda selection
+      if ((lambda.lambdaBDTScore() <= Lambda_MLThreshold) && (lambda.antiLambdaBDTScore() <= AntiLambda_MLThreshold))
+        return false;
+
+      GammaBDTScore = gamma.gammaBDTScore();
+      LambdaBDTScore = lambda.lambdaBDTScore();
+      AntiLambdaBDTScore = lambda.antiLambdaBDTScore();
+    } else {
       // Standard selection
       // Gamma basic selection criteria:
       if (TMath::Abs(gamma.mGamma()) > PhotonMaxMass)
         return false;
       if ((TMath::Abs(gamma.negativeeta()) > PhotonDauPseudoRap) || (TMath::Abs(gamma.positiveeta()) > PhotonDauPseudoRap))
         return false;
-      if ((gamma.dcapostopv() > Photondcadautopv) || ( gamma.dcanegtopv() > Photondcadautopv))
+      if ((gamma.dcapostopv() > Photondcadautopv) || (gamma.dcanegtopv() > Photondcadautopv))
         return false;
       if (gamma.dcaV0daughters() > Photondcav0dau)
         return false;
@@ -187,7 +187,7 @@ struct sigma0builder {
     sigmaCandidate.Rapidity = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
 
     if (TMath::Abs(sigmaCandidate.mass - 1.192642) > Sigma0Window)
-        return false;
+      return false;
 
     // Sigma related
     float fSigmapT = sigmaCandidate.pT;
@@ -221,7 +221,7 @@ struct sigma0builder {
     float fPhotonNegEta = gamma.negativeeta();
     float fPhotonPosY = RecoDecay::y(std::array{gamma.pxpos(), gamma.pypos(), gamma.pzpos()}, o2::constants::physics::MassElectron);
     float fPhotonNegY = RecoDecay::y(std::array{gamma.pxneg(), gamma.pyneg(), gamma.pzneg()}, o2::constants::physics::MassElectron);
-    float fPhotonPsiPair = gamma.psipair(); 
+    float fPhotonPsiPair = gamma.psipair();
     int fPhotonPosITSCls = posTrackGamma.itsNCls();
     int fPhotonNegITSCls = negTrackGamma.itsNCls();
     uint32_t fPhotonPosITSClSize = posTrackGamma.itsClusterSizes();
@@ -265,21 +265,20 @@ struct sigma0builder {
 
     // Filling TTree for ML analysis
     v0Sigmas(fSigmapT, fSigmaMass, fSigmaRap);
-    
+
     v0SigmaPhotonExtras(fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha, fPhotonRadius,
                         fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV, fPhotonZconv,
-                        fPhotonEta, fPhotonY,fPhotonPosTPCNSigma, fPhotonNegTPCNSigma, fPhotonPosTPCCrossedRows,
+                        fPhotonEta, fPhotonY, fPhotonPosTPCNSigma, fPhotonNegTPCNSigma, fPhotonPosTPCCrossedRows,
                         fPhotonNegTPCCrossedRows, fPhotonPosPt, fPhotonNegPt, fPhotonPosEta,
                         fPhotonNegEta, fPhotonPosY, fPhotonNegY, fPhotonPsiPair,
                         fPhotonPosITSCls, fPhotonNegITSCls, fPhotonPosITSClSize, fPhotonNegITSClSize,
                         fPhotonV0Type, GammaBDTScore);
-            
-            
-    v0SigmaLambdaExtras(fLambdaPt,fLambdaMass,fLambdaQt, fLambdaAlpha,
+
+    v0SigmaLambdaExtras(fLambdaPt, fLambdaMass, fLambdaQt, fLambdaAlpha,
                         fLambdaRadius, fLambdaCosPA, fLambdaDCADau, fLambdaDCANegPV,
                         fLambdaDCAPosPV, fLambdaEta, fLambdaY, fLambdaPosPrTPCNSigma,
                         fLambdaPosPiTPCNSigma, fLambdaNegPrTPCNSigma, fLambdaNegPiTPCNSigma, fLambdaPosTPCCrossedRows,
-                        fLambdaNegTPCCrossedRows, fLambdaPosPt, fLambdaNegPt,fLambdaPosEta,
+                        fLambdaNegTPCCrossedRows, fLambdaPosPt, fLambdaNegPt, fLambdaPosEta,
                         fLambdaNegEta, fLambdaPosPrY, fLambdaPosPiY, fLambdaNegPrY, fLambdaNegPiY,
                         fLambdaPosITSCls, fLambdaNegITSCls, fLambdaPosITSClSize, fLambdaNegITSClSize,
                         fLambdaV0Type, LambdaBDTScore, AntiLambdaBDTScore);
@@ -301,9 +300,9 @@ struct sigma0builder {
             continue;
 
           bool fIsSigma = false;
-          if ((gamma.pdgCode()==22) && (gamma.pdgCodeMother()==3212) && (lambda.pdgCode()==3122) && (lambda.pdgCodeMother()==3212) && (gamma.motherMCPartId() == lambda.motherMCPartId()))
+          if ((gamma.pdgCode() == 22) && (gamma.pdgCodeMother() == 3212) && (lambda.pdgCode() == 3122) && (lambda.pdgCodeMother() == 3212) && (gamma.motherMCPartId() == lambda.motherMCPartId()))
             fIsSigma = true;
-          
+
           v0MCSigmas(fIsSigma);
         }
       }
@@ -328,11 +327,11 @@ struct sigma0builder {
 
           nSigmaCandidates++;
           if (nSigmaCandidates % 5000 == 0) {
-          LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
+            LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
           }
-          v0Sigma0CollRefs(v0sigma0Coll.lastIndex());        
+          v0Sigma0CollRefs(v0sigma0Coll.lastIndex());
         }
-      } 
+      }
     }
   }
 
@@ -354,13 +353,12 @@ struct sigma0builder {
 
           nSigmaCandidates++;
           if (nSigmaCandidates % 5000 == 0) {
-          LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
+            LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
           }
-          v0Sigma0CollRefs(v0sigma0Coll.lastIndex());        
+          v0Sigma0CollRefs(v0sigma0Coll.lastIndex());
         }
-      } 
+      }
     }
-
   }
   PROCESS_SWITCH(sigma0builder, processMonteCarlo, "Fill sigma0 MC table", false);
   PROCESS_SWITCH(sigma0builder, processSTDSelection, "Select gammas and lambdas with standard cuts", true);
@@ -371,4 +369,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigma0builder>(cfgc)};
 }
-
