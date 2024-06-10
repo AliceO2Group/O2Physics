@@ -384,7 +384,7 @@ struct SGInclJpsi {
           }
       }
       }
-  }
+    }
   }
 };
 
