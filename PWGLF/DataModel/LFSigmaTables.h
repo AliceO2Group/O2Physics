@@ -212,4 +212,3 @@ DECLARE_SOA_TABLE(V0SigmaMCCandidates, "AOD", "V0MCSIGMAS",
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSIGMATABLES_H_
-
