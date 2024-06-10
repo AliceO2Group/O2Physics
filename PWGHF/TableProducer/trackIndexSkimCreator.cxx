@@ -318,23 +318,23 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
       // 2-prong histograms
       registry.add("hPtCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}});
-      registry.add("hDCAToPrimXYVsPtCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
+      registry.add("hDCAToPrimXYVsPtCuts2Prong", "tracks selected for 2-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2D, {{360, 0., 36.}, {400, -2., 2.}}});
       registry.add("hEtaCuts2Prong", "tracks selected for 2-prong vertexing;#it{#eta};entries", {HistType::kTH1D, {{static_cast<int>(0.6 * (etaMaxTrack2Prong - etaMinTrack2Prong) * 100), -1.2 * etaMinTrack2Prong, 1.2 * etaMaxTrack2Prong}}});
       // 3-prong histograms
       registry.add("hPtCuts3Prong", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}});
-      registry.add("hDCAToPrimXYVsPtCuts3Prong", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
+      registry.add("hDCAToPrimXYVsPtCuts3Prong", "tracks selected for 3-prong vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2D, {{360, 0., 36.}, {400, -2., 2.}}});
       registry.add("hEtaCuts3Prong", "tracks selected for 3-prong vertexing;#it{#eta};entries", {HistType::kTH1D, {{static_cast<int>(0.6 * (etaMaxTrack3Prong - etaMinTrack3Prong) * 100), -1.2 * etaMinTrack3Prong, 1.2 * etaMaxTrack3Prong}}});
       // bachelor (for V0 + bachelor decays) histograms
       registry.add("hPtCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}});
-      registry.add("hDCAToPrimXYVsPtCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
+      registry.add("hDCAToPrimXYVsPtCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2D, {{360, 0., 36.}, {400, -2., 2.}}});
       registry.add("hEtaCutsV0bachelor", "tracks selected for V0-bachelor vertexing;#it{#eta};entries", {HistType::kTH1D, {{static_cast<int>(0.6 * (etaMaxTrackBach - etaMinTrackBach) * 100), -1.2 * etaMinTrackBach, 1.2 * etaMaxTrackBach}}});
       // soft pion (for D*) histograms
       registry.add("hPtCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}});
-      registry.add("hDCAToPrimXYVsPtCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
+      registry.add("hDCAToPrimXYVsPtCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2D, {{360, 0., 36.}, {400, -2., 2.}}});
       registry.add("hEtaCutsSoftPionForDstar", "tracks selected for D* soft pion;#it{#eta};entries", {HistType::kTH1D, {{static_cast<int>(0.6 * (etaMaxSoftPionForDstar - etaMinSoftPionForDstar) * 100), -1.2 * etaMinSoftPionForDstar, 1.2 * etaMaxSoftPionForDstar}}});
       // bachelor (for cascade + bachelor decays) histograms
       registry.add("hPtCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});entries", {HistType::kTH1D, {{360, 0., 36.}}});
-      registry.add("hDCAToPrimXYVsPtCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2F, {{360, 0., 36.}, {400, -2., 2.}}});
+      registry.add("hDCAToPrimXYVsPtCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{p}_{T}^{track} (GeV/#it{c});DCAxy to prim. vtx. (cm);entries", {HistType::kTH2D, {{360, 0., 36.}, {400, -2., 2.}}});
       registry.add("hEtaCutsCascadeBachelor", "tracks selected for cascade-bachelor vertexing;#it{#eta};entries", {HistType::kTH1D, {{static_cast<int>(0.6 * (etaMaxTrackBachLfCasc - etaMinTrackBachLfCasc) * 100), -1.2 * etaMinTrackBachLfCasc, 1.2 * etaMaxTrackBachLfCasc}}});
 
       std::string cutNames[nCuts + 1] = {"selected", "rej pT", "rej eta", "rej track quality", "rej dca"};
@@ -364,13 +364,13 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         registry.get<TH1>(HIST("PvRefit/hVerticesPerTrack"))->GetXaxis()->SetBinLabel(1, "All PV");
         registry.get<TH1>(HIST("PvRefit/hVerticesPerTrack"))->GetXaxis()->SetBinLabel(2, "PV refit doable");
         registry.get<TH1>(HIST("PvRefit/hVerticesPerTrack"))->GetXaxis()->SetBinLabel(3, "PV refit #chi^{2}!=-1");
-        registry.add("PvRefit/hPvDeltaXvsNContrib", "", kTH2F, {axisCollisionNContrib, axisCollisionDeltaX});
-        registry.add("PvRefit/hPvDeltaYvsNContrib", "", kTH2F, {axisCollisionNContrib, axisCollisionDeltaY});
-        registry.add("PvRefit/hPvDeltaZvsNContrib", "", kTH2F, {axisCollisionNContrib, axisCollisionDeltaZ});
-        registry.add("PvRefit/hChi2vsNContrib", "", kTH2F, {axisCollisionNContrib, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
-        registry.add("PvRefit/hPvRefitXChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2F, {axisCollisionX, axisCollisionXOriginal});
-        registry.add("PvRefit/hPvRefitYChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2F, {axisCollisionY, axisCollisionYOriginal});
-        registry.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2F, {axisCollisionZ, axisCollisionZOriginal});
+        registry.add("PvRefit/hPvDeltaXvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaX});
+        registry.add("PvRefit/hPvDeltaYvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaY});
+        registry.add("PvRefit/hPvDeltaZvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaZ});
+        registry.add("PvRefit/hChi2vsNContrib", "", kTH2D, {axisCollisionNContrib, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
+        registry.add("PvRefit/hPvRefitXChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionX, axisCollisionXOriginal});
+        registry.add("PvRefit/hPvRefitYChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionY, axisCollisionYOriginal});
+        registry.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionZ, axisCollisionZOriginal});
         registry.add("PvRefit/hNContribPvRefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {axisCollisionNContrib});
         registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors original PV for PV refit #it{#chi}^{2}==#minus1", kTH1D, {axisCollisionNContrib});
       }
@@ -1334,7 +1334,7 @@ struct HfTrackIndexSkimCreator {
       registry.add("hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
       registry.add("hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -20., 20.}}});
       registry.add("hNCand2Prong", "2-prong candidates preselected;# of candidates;entries", {HistType::kTH1D, {axisNumCands}});
-      registry.add("hNCand2ProngVsNTracks", "2-prong candidates preselected;# of selected tracks;# of candidates;entries", {HistType::kTH2F, {axisNumTracks, axisNumCands}});
+      registry.add("hNCand2ProngVsNTracks", "2-prong candidates preselected;# of selected tracks;# of candidates;entries", {HistType::kTH2D, {axisNumTracks, axisNumCands}});
       registry.add("hMassD0ToPiK", "D^{0} candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hMassJpsiToEE", "J/#psi candidates;inv. mass (e^{#plus} e^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hMassJpsiToMuMu", "J/#psi candidates;inv. mass (#mu^{#plus} #mu^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
@@ -1343,7 +1343,7 @@ struct HfTrackIndexSkimCreator {
       registry.add("hVtx3ProngY", "3-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
       registry.add("hVtx3ProngZ", "3-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -20., 20.}}});
       registry.add("hNCand3Prong", "3-prong candidates preselected;# of candidates;entries", {HistType::kTH1D, {axisNumCands}});
-      registry.add("hNCand3ProngVsNTracks", "3-prong candidates preselected;# of selected tracks;# of candidates;entries", {HistType::kTH2F, {axisNumTracks, axisNumCands}});
+      registry.add("hNCand3ProngVsNTracks", "3-prong candidates preselected;# of selected tracks;# of candidates;entries", {HistType::kTH2D, {axisNumTracks, axisNumCands}});
       registry.add("hMassDPlusToPiKPi", "D^{#plus} candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hMassLcToPKPi", "#Lambda_{c}^{#plus} candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
       registry.add("hMassDsToKKPi", "D_{s}^{#plus} candidates;inv. mass (K K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
@@ -1369,13 +1369,13 @@ struct HfTrackIndexSkimCreator {
         registry.get<TH1>(HIST("PvRefit/verticesPerCandidate"))->GetXaxis()->SetBinLabel(4, "PV refit #it{#chi}^{2}==#minus1");
         registry.get<TH1>(HIST("PvRefit/verticesPerCandidate"))->GetXaxis()->SetBinLabel(5, "1 daughter contr.");
         registry.get<TH1>(HIST("PvRefit/verticesPerCandidate"))->GetXaxis()->SetBinLabel(6, "no PV refit");
-        registry.add("PvRefit/hPvDeltaXvsNContrib", "", kTH2F, {axisCollisionNContrib, axisCollisionDeltaX});
-        registry.add("PvRefit/hPvDeltaYvsNContrib", "", kTH2F, {axisCollisionNContrib, axisCollisionDeltaY});
-        registry.add("PvRefit/hPvDeltaZvsNContrib", "", kTH2F, {axisCollisionNContrib, axisCollisionDeltaZ});
-        registry.add("PvRefit/hChi2vsNContrib", "", kTH2F, {axisCollisionNContrib, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
-        registry.add("PvRefit/hPvRefitXChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2F, {axisCollisionX, axisCollisionXOriginal});
-        registry.add("PvRefit/hPvRefitYChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2F, {axisCollisionY, axisCollisionYOriginal});
-        registry.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2F, {axisCollisionZ, axisCollisionZOriginal});
+        registry.add("PvRefit/hPvDeltaXvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaX});
+        registry.add("PvRefit/hPvDeltaYvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaY});
+        registry.add("PvRefit/hPvDeltaZvsNContrib", "", kTH2D, {axisCollisionNContrib, axisCollisionDeltaZ});
+        registry.add("PvRefit/hChi2vsNContrib", "", kTH2D, {axisCollisionNContrib, {102, -1.5, 100.5, "#chi^{2} PV refit"}});
+        registry.add("PvRefit/hPvRefitXChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionX, axisCollisionXOriginal});
+        registry.add("PvRefit/hPvRefitYChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionY, axisCollisionYOriginal});
+        registry.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2D, {axisCollisionZ, axisCollisionZOriginal});
         registry.add("PvRefit/hNContribPvRefitNotDoable", "N. contributors for PV refit not doable", kTH1D, {axisCollisionNContrib});
         registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors original PV for PV refit #it{#chi}^{2}==#minus1", kTH1D, {axisCollisionNContrib});
       }
