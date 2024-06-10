@@ -120,7 +120,7 @@ struct meanPtFlucId {
     const AxisSpec axisTPCNsigma{500, -5., 5., "n #sigma_{TPC}"};
     const AxisSpec axisTOFNsigma{500, -5., 5., "n #sigma_{TOF}"};
     const AxisSpec axisTPCSignal{180, 20., 200., "#frac{dE}{dx}"};
-    const AxisSpec axisTOFSignal{100, 0.2, 1.2, "TOF #beta"};
+    const AxisSpec axisTOFSignal{200, 0.2, 1.2, "TOF #beta"};
     const AxisSpec axisChi2{40, 0., 40., "Chi2"};
     const AxisSpec axisCrossedTPC{300, 0, 300, "Crossed TPC"};
     const AxisSpec axisM2{100, 0., 1.4, "#it{m}^{2} (GeV/#it{c}^{2})^{2}"};
@@ -306,7 +306,7 @@ struct meanPtFlucId {
   template <typename T>
   bool rejectTracks(T const& track)
   {
-    if (track.tpcNSigmaEl() > -3. && track.tpcNSigmaEl() < 5. && (track.tpcNSigmaPi() - cfgMCPi) < -3. && (track.tpcNSigmaKa() - cfgMCKa) < -3 && (track.tpcNSigmaPr() - cfgMCPr) < -3 && track.tpcNSigmaPi() - 1 > 3 && track.tpcNSigmaKa() - cfgMCKa > 3 && track.tpcNSigmaPr() - cfgMCPr > 3) {
+    if (track.tpcNSigmaEl() > -3. && track.tpcNSigmaEl() < 5. && (track.tpcNSigmaPi() - cfgMCPi) < -3. && (track.tpcNSigmaKa() - cfgMCKa) < -3 && (track.tpcNSigmaPr() - cfgMCPr) < -3 && (track.tpcNSigmaPi() - cfgMCPi) > 3 && (track.tpcNSigmaKa() - cfgMCKa) > 3 && (track.tpcNSigmaPr() - cfgMCPr) > 3) {
       return true;
     }
     return false;
