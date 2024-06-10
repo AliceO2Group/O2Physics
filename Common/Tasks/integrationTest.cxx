@@ -227,7 +227,7 @@ struct integrationTest {
 
   void processBCs(aod::BC const&, aod::Collisions const& collisions)
   {
-    histos.fill(HIST("hCollisionsPerBC"), (float)collisions.size());
+    histos.fill(HIST("hCollisionsPerBC"), static_cast<float>(collisions.size()));
   }
   PROCESS_SWITCH(integrationTest, processBCs, "Check collisions per BC", true);
 
