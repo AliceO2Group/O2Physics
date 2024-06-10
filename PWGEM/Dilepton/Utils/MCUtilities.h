@@ -180,7 +180,8 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
           if (mid1 == mid2) {
             auto common_mp = mcparticles.iteratorAt(mid1);
             int mp_pdg = common_mp.pdgCode();
-            if (abs(mp_pdg) < 1e+9 && (std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 3] == '5' || std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 4] == '5')) {
+            bool is_mp_diquark = (1100 < abs(mp_pdg) && abs(mp_pdg) < 5600) && std::to_string(mp_pdg)[std::to_string(mp_pdg).length() - 2] == '0';
+            if (!is_mp_diquark && abs(mp_pdg) < 1e+9 && (std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 3] == '5' || std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 4] == '5')) {
               mothers_id1.clear();
               mothers_pdg1.clear();
               mothers_id2.clear();
@@ -201,7 +202,8 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
           if (mid1 == mid2) {
             auto common_mp = mcparticles.iteratorAt(mid1);
             int mp_pdg = common_mp.pdgCode();
-            if (abs(mp_pdg) < 1e+9 && (std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 3] == '5' || std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 4] == '5')) {
+            bool is_mp_diquark = (1100 < abs(mp_pdg) && abs(mp_pdg) < 5600) && std::to_string(mp_pdg)[std::to_string(mp_pdg).length() - 2] == '0';
+            if (!is_mp_diquark && abs(mp_pdg) < 1e+9 && (std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 3] == '5' || std::to_string(abs(mp_pdg))[std::to_string(abs(mp_pdg)).length() - 4] == '5')) {
               is_same_mother_found = true;
             }
           }
@@ -329,6 +331,46 @@ bool checkFromSameQuarkPair(T& p1, T& p2, U& mcParticles, int pdg)
   int id1 = findHFOrigin(p1, mcParticles, pdg);
   int id2 = findHFOrigin(p2, mcParticles, pdg);
   return id1 == id2 && id1 > -1 && id2 > -1;
+}
+//_______________________________________________________________________
+template <typename T>
+bool isCharmMeson(T const& track)
+{
+  if (400 < abs(track.pdgCode()) && abs(track.pdgCode()) < 500) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T>
+bool isCharmBaryon(T const& track)
+{
+  if (4000 < abs(track.pdgCode()) && abs(track.pdgCode()) < 5000) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T>
+bool isBeautyMeson(T const& track)
+{
+  if (500 < abs(track.pdgCode()) && abs(track.pdgCode()) < 600) {
+    return true;
+  } else {
+    return false;
+  }
+}
+//_______________________________________________________________________
+template <typename T>
+bool isBeautyBaryon(T const& track)
+{
+  if (5000 < abs(track.pdgCode()) && abs(track.pdgCode()) < 6000) {
+    return true;
+  } else {
+    return false;
+  }
 }
 //_______________________________________________________________________
 //_______________________________________________________________________

@@ -457,7 +457,10 @@ struct HfCandidateCreator3ProngExpressions {
   bool createDs{false};
   bool createLc{false};
   bool createXic{false};
-  float zPvPosMax{1000.f};
+
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext& initContext)
   {
@@ -466,6 +469,7 @@ struct HfCandidateCreator3ProngExpressions {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-3prong") == 0) {
+        hfEvSelMc.configureFromDevice(device);
         for (const auto& option : device.options) {
           if (option.name.compare("createDplus") == 0) {
             createDplus = option.defaultValue.get<bool>();
@@ -475,13 +479,13 @@ struct HfCandidateCreator3ProngExpressions {
             createLc = option.defaultValue.get<bool>();
           } else if (option.name.compare("createXic") == 0) {
             createXic = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            zPvPosMax = option.defaultValue.get<float>();
           }
         }
         break;
       }
     }
+
+    hfEvSelMc.addHistograms(registry); // particles monitoring
 
     LOGP(info, "Flags for candidate creation from the reco workflow:");
     LOGP(info, "    --> createDplus = {}", createDplus);
@@ -493,7 +497,8 @@ struct HfCandidateCreator3ProngExpressions {
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 aod::McCollisions const&)
+                 aod::McCollisions const&,
+                 BCsInfo const&)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
 
@@ -519,6 +524,7 @@ struct HfCandidateCreator3ProngExpressions {
       swapping = 0;
       channel = 0;
       arrDaughIndex.clear();
+      std::vector<int> idxBhadMothers{};
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>(), candidate.prong2_as<aod::TracksWMc>()};
 
       // D± → π± K∓ π±
@@ -597,10 +603,14 @@ struct HfCandidateCreator3ProngExpressions {
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
-      rowMcMatchRec(flag, origin, swapping, channel);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowMcMatchRec(flag, origin, swapping, channel, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0);
+      }
     }
 
     // Match generated particles.
@@ -609,11 +619,15 @@ struct HfCandidateCreator3ProngExpressions {
       origin = 0;
       channel = 0;
       arrDaughIndex.clear();
+      std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
-      float zPv = mcCollision.posZ();
-      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
-        rowMcMatchGen(flag, origin, channel);
+
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      hfEvSelMc.fillHistograms(rejectionMask);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the gen particle
+        rowMcMatchGen(flag, origin, channel, -1);
         continue;
       }
 
@@ -685,10 +699,13 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
-      rowMcMatchGen(flag, origin, channel);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
+      } else {
+        rowMcMatchGen(flag, origin, channel, -1);
+      }
     }
   }
 

@@ -51,6 +51,7 @@ struct qaTrackSplitting {
     histos.add("tracks", "tracsk", kTH1D, {{10, -0.5, 9.5, "Track selection"}});
     histos.add("numberOfRecoed", "recoed", kTH1D, {{10, -0.5, 9.5, "Number of tracks associated to a particle"}});
     histos.add("map", "map", kTH3D, {{100, -1, 1, "#Delta #eta"}, {100, -1, 1, "#Delta #varphi"}, {100, -1, 1, "#Delta #it{p}_{T}"}});
+    histos.add("mapMC", "mapMC", kTH3D, {{100, -1, 1, "#Delta #eta"}, {100, -1, 1, "#Delta #varphi"}, {100, -1, 1, "#Delta #it{p}_{T}"}});
 
     customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(cfgCustomTrackCuts.itsPattern);
     LOG(info) << "Customizing track cuts:";
@@ -107,6 +108,7 @@ struct qaTrackSplitting {
         for (const auto& track : tracks) {
           if (isFirst) {
             isFirst = false;
+            histos.fill(HIST("mapMC"), track->eta() - track->mcParticle().eta(), track->phi() - track->mcParticle().phi(), track->pt() - track->mcParticle().pt());
             continue;
           }
           histos.fill(HIST("map"), track->eta() - tracks[0]->eta(), track->phi() - tracks[0]->phi(), track->pt() - tracks[0]->pt());
