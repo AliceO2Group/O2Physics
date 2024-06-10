@@ -170,8 +170,9 @@ struct PhotonIsolationQA {
     for (const auto& match : matched_tracks) {
       double dEta = abs(match.track_as<myGlobTracks>().trackEtaEmcal() - cluster.eta());
       double dPhi = match.track_as<myGlobTracks>().trackPhiEmcal() - cluster.phi();
-      if (dPhi < 0){
-        dPhi = 2. * M_PI - dPhi;}
+      if (dPhi < 0) {
+        dPhi = 2. * M_PI - dPhi;
+      }
       double distance = sqrt(pow(dEta, 2) + pow(dPhi, 2));
       if (distance <= TrackMatchingRadius) {
         double abs_p = abs(match.track_as<myGlobTracks>().p());
@@ -189,8 +190,9 @@ struct PhotonIsolationQA {
     double sum_Pt = 0.;
     for (const auto& track : tracks) {
       double dphi = cluster.phi() - track.phi();
-      if (dphi < 0){
-        dphi = 2. * M_PI - dphi;}
+      if (dphi < 0) {
+        dphi = 2. * M_PI - dphi;
+      }
       double distance = sqrt(pow((cluster.eta() - track.eta()), 2) + pow(dphi, 2));
       if (distance < Cone_Radius) {
         sum_Pt += track.pt();
@@ -205,23 +207,29 @@ struct PhotonIsolationQA {
     double sum_Pt = 0.;
     double Perpendicular_Phi1 = cluster.phi() + (1. / 2.) * M_PI;
     double Perpendicular_Phi2 = cluster.phi() - (1. / 2.) * M_PI;
-    if (Perpendicular_Phi1 > 2 * M_PI){
-      Perpendicular_Phi1 = Perpendicular_Phi1 - 2 * M_PI;}
-    if (Perpendicular_Phi2 < 0.){
-      Perpendicular_Phi2 = 2 * M_PI + Perpendicular_Phi2;}
+    if (Perpendicular_Phi1 > 2 * M_PI) {
+      Perpendicular_Phi1 = Perpendicular_Phi1 - 2 * M_PI;
+    }
+    if (Perpendicular_Phi2 < 0.) {
+      Perpendicular_Phi2 = 2 * M_PI + Perpendicular_Phi2;
+    }
     for (const auto& track : tracks) {
       double dphi1 = Perpendicular_Phi1 - track.phi();
       double dphi2 = Perpendicular_Phi2 - track.phi();
-      if (dphi1 < 0){
-        dphi1 = 2. * M_PI - dphi1;}
-      if (dphi2 < 0){
-        dphi2 = 2. * M_PI - dphi2;}
+      if (dphi1 < 0) {
+        dphi1 = 2. * M_PI - dphi1;
+      }
+      if (dphi2 < 0) {
+        dphi2 = 2. * M_PI - dphi2;
+      }
       double distance1 = sqrt(pow((cluster.eta() - track.eta()), 2) + pow(dphi1, 2));
       double distance2 = sqrt(pow((cluster.eta() - track.eta()), 2) + pow(dphi2, 2));
-      if (distance1 < Perpendicular_Cone_Radius){
-        sum_Pt += track.pt();}
-      if (distance2 < Perpendicular_Cone_Radius){
-        sum_Pt += track.pt();}
+      if (distance1 < Perpendicular_Cone_Radius) {
+        sum_Pt += track.pt();
+      }
+      if (distance2 < Perpendicular_Cone_Radius) {
+        sum_Pt += track.pt();
+      }
     }
     double Rho = sum_Pt / (2 * M_PI * pow(Perpendicular_Cone_Radius, 2));
     return Rho;
