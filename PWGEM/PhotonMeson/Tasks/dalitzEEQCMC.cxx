@@ -332,6 +332,9 @@ struct DalitzEEQCMC {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+    if (abs(v12.Rapidity()) > maxY) {
+      return false;
+    }
     float dca_t1_3d = t1.dca3DinSigma();
     float dca_t2_3d = t2.dca3DinSigma();
     float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
@@ -531,6 +534,10 @@ struct DalitzEEQCMC {
         ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+        if (abs(v12.Rapidity()) > maxY) {
+          continue;
+        }
 
         if (mother_id > -1) {
           auto mcmother = mcparticles.iteratorAt(mother_id);

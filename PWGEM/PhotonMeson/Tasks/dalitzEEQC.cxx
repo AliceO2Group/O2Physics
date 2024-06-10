@@ -48,13 +48,7 @@ struct DalitzEEQC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
-  Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  Configurable<bool> cfgDoFlow{"cfgDoFlow", false, "flag to analyze vn"};
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
-  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
-  ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -123,6 +117,7 @@ struct DalitzEEQC {
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
+  bool cfgDoFlow = false;
 
   void init(InitContext& context)
   {
@@ -155,13 +150,10 @@ struct DalitzEEQC {
     }
     const AxisSpec axis_pt{ptbins, "p_{T,ee} (GeV/c)"};
 
-    fRegistry.add("Pair/hMvsPt_uls", "hs pair", kTH2F, {axis_mass, axis_pt}, true);
-    fRegistry.addClone("Pair/hMvsPt_uls", "Pair/hMvsPt_lspp");
-    fRegistry.addClone("Pair/hMvsPt_uls", "Pair/hMvsPt_lsmm");
-
-    fRegistry.add("Pair/hMvsPhiV_uls", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, false);
-    fRegistry.addClone("Pair/hMvsPhiV_uls", "Pair/hMvsPhiV_lspp");
-    fRegistry.addClone("Pair/hMvsPhiV_uls", "Pair/hMvsPhiV_lsmm");
+    fRegistry.add("Pair/same/uls/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {axis_mass, axis_pt}, true);
+    fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
+    fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
+    fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
 
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
@@ -285,17 +277,20 @@ struct DalitzEEQC {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+    if (abs(v12.Rapidity()) > maxY) {
+      return false;
+    }
     float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
 
     if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/hMvsPt_uls"), v12.M(), v12.Pt());
-      fRegistry.fill(HIST("Pair/hMvsPhiV_uls"), phiv, v12.M());
+      fRegistry.fill(HIST("Pair/same/uls/hMvsPt"), v12.M(), v12.Pt());
+      fRegistry.fill(HIST("Pair/same/uls/hMvsPhiV"), phiv, v12.M());
     } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-      fRegistry.fill(HIST("Pair/hMvsPt_lspp"), v12.M(), v12.Pt());
-      fRegistry.fill(HIST("Pair/hMvsPhiV_lspp"), phiv, v12.M());
+      fRegistry.fill(HIST("Pair/same/lspp/hMvsPt"), v12.M(), v12.Pt());
+      fRegistry.fill(HIST("Pair/same/lspp/hMvsPhiV"), phiv, v12.M());
     } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-      fRegistry.fill(HIST("Pair/hMvsPt_lsmm"), v12.M(), v12.Pt());
-      fRegistry.fill(HIST("Pair/hMvsPhiV_lsmm"), phiv, v12.M());
+      fRegistry.fill(HIST("Pair/same/lsmm/hMvsPt"), v12.M(), v12.Pt());
+      fRegistry.fill(HIST("Pair/same/lsmm/hMvsPhiV"), phiv, v12.M());
     }
 
     if (t1.sign() > 0) {
