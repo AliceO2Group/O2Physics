@@ -163,8 +163,8 @@ struct integrationTest {
       // general QA
       histos.add<TH2>("h2dPhiVsEtaAll", "h2dPhiVsEtaAll", HistType::kTH2D, {axisEta, axisPhi});
       histos.add<TH2>("h2dPhiVsEtaNoTPCOnly", "h2dPhiVsEtaNoTPCOnly", HistType::kTH2D, {axisEta, axisPhi});
-      histos.add<TH1>("hNCluAll", "hNCluAll", HistType::kTH2D, {axisNclu});
-      histos.add<TH1>("hNCluNoTPCOnly", "hNCluNoTPCOnly", HistType::kTH2D, {axisNclu});
+      histos.add<TH1>("hNCluAll", "hNCluAll", HistType::kTH1D, {axisNclu});
+      histos.add<TH1>("hNCluNoTPCOnly", "hNCluNoTPCOnly", HistType::kTH1D, {axisNclu});
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
