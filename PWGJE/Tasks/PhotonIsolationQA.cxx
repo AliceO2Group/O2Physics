@@ -361,4 +361,4 @@ struct PhotonIsolationQA {
 WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<PhotonIsolationQA>(cfgc, TaskName{"photon-isolation-qa"})};
-};
+}
