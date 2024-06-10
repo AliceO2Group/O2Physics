@@ -284,6 +284,46 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
 }
 
 /**
+ * return the jet flavor: 0 for lf-jet, 1 for c-jet, 2 for b-jet
+ *
+ * @param AnyJet the jet that we need to study its flavor
+ * @param AllMCParticles a vector of all the mc particles stack
+ */
+template <typename AnyJet, typename AllMCParticles>
+int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
+{
+  const int arraySize = 99;
+
+  std::array<int, arraySize> countpartcode;
+  int count = 0;
+
+  for (auto& mcpart : mcparticles) {
+    int pdgcode = mcpart.pdgCode();
+    if (TMath::Abs(pdgcode) == 21 || (TMath::Abs(pdgcode) >= 1 && TMath::Abs(pdgcode) <= 5)) {
+      double dR = jetutilities::deltaR(jet, mcpart);
+
+      if (dR < jet.r() / 100.f) {
+        if (TMath::Abs(pdgcode) == 5) {
+          return 2; // Beauty jet
+        } else {
+          if (count > arraySize - 1)
+            return 0;
+          countpartcode[count] = pdgcode;
+          count++;
+        }
+      }
+    }
+  }
+
+  for (int ij = 0; ij < count; ij++) {
+    if (TMath::Abs(countpartcode[ij]) == 4)
+      return 1; // Charm jet
+  }
+
+  return 0; // Light flavor jet
+}
+
+/**
  * return geometric sign which is calculated scalar product between jet axis with DCA (track propagated to PV )
  * positive and negative value are expected from primary vertex
  * positive value is expected from secondary vertex
