@@ -419,18 +419,25 @@ class FemtoDreamDetaDphiStar
     int charge = 0;
     float phi0, pt;
     if constexpr (isHF) {
-      if (prong == 0) {
-        charge = part.charge(); // chrage calculation according to 3-prong decay, Lc^+ --> P^+ + K^- + pi^+
-        phi0 = part.prong0Phi();
-        pt = part.prong0Pt();
-      } else if (prong == 1) {
-        charge = -part.charge();
-        phi0 = part.prong1Phi();
-        pt = part.prong1Pt();
-      } else {
-        charge = part.charge();
-        phi0 = part.prong2Phi();
-        pt = part.prong2Pt();
+      switch (prong) {
+        case prong0:
+          charge = part.charge(); // charge calculation according to 3-prong decay, Lc^+ --> P^+ + K^- + pi^+
+          phi0 = part.prong0Phi();
+          pt = part.prong0Pt();
+          break;
+        case prong1:
+          charge = -part.charge();
+          phi0 = part.prong1Phi();
+          pt = part.prong1Pt();
+          break;
+        case prong2:
+          charge = part.charge();
+          phi0 = part.prong2Phi();
+          pt = part.prong2Pt();
+          break;
+        default:
+          // Handle invalid prong value if necessary
+          break;
       }
     } else {
       phi0 = part.phi();
