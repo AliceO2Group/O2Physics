@@ -106,7 +106,7 @@ enum MomentumType {
 };
 
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes - 1] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy"};
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
@@ -202,14 +202,14 @@ DECLARE_SOA_COLUMN(Prong2Eta, prong2Eta, float);                    //! Track et
 DECLARE_SOA_COLUMN(Prong0Phi, prong0Phi, float);                    //! Track phi of charm hadron prong0
 DECLARE_SOA_COLUMN(Prong1Phi, prong1Phi, float);                    //! Track phi of charm hadron prong1
 DECLARE_SOA_COLUMN(Prong2Phi, prong2Phi, float);                    //! Track phi of charm hadron prong2
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);     //! Selection of mass hypothesis for charm hadron
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);     //! Selection of mass hypothesis for charm hadron (1 for Lc -> pkpi, 2 for Lc -> pikp)
 DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                          //! Background score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                    //! Prompt signal score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                            //! Feed-down score using Boosted Decision Tree for charm hadron
-DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! To select MC particle among charm hadrons
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! flag for reconstruction level matching
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! flag for generator level matching
-DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 0, LcToPKPi = 2, DsToKKPi = 4, XicToPKP = 8, N3ProngD = 2ecays };
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
+DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
 DECLARE_SOA_COLUMN(PtAssoc, ptAssoc, float);                        //! Transverse momentum of associate femto particle
 DECLARE_SOA_COLUMN(Kstar, kstar, float);                            //! Relative momentum in particles pair frame
 DECLARE_SOA_COLUMN(KT, kT, float);                                  //! kT distribution of particle pairs
@@ -218,8 +218,8 @@ DECLARE_SOA_COLUMN(CharmM, charmM, float);                          //! Charm ha
 DECLARE_SOA_COLUMN(CharmPt, charmPt, float);                        //! Transverse momentum of charm hadron for result task
 DECLARE_SOA_COLUMN(Mult, mult, int);                                //! Charge particle multiplicity
 DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);          //! Multiplicity precentile
-DECLARE_SOA_COLUMN(PartPairSign, partPairSign, int8_t);             //! Selection between ++ and -- pair
-DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);              //! Selection between same-event and mixed-event
+DECLARE_SOA_COLUMN(PartPairSign, partPairSign, int8_t);             //! Selection between ++ (1), and -- pair (2)
+DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);              //! Selection between same-event (1), and mixed-event (2)
 DECLARE_SOA_DYNAMIC_COLUMN(M, m,                                    //!
                            [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2, const std::array<double, 3>& m) -> float { return RecoDecay::m(std::array{
                                                                                                                                                                                                         RecoDecayPtEtaPhi::pVector(pt0, eta0, phi0),
