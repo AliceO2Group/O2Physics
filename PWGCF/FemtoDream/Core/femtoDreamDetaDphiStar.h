@@ -38,7 +38,8 @@ namespace femtoDream
 enum ProngCharmHadron {
   prong0 = 0,
   prong1 = 1,
-  prong2 = 2
+  prong2 = 2,
+  nprongs = 3
 };
 
 template <o2::aod::femtodreamparticle::ParticleType partOne, o2::aod::femtodreamparticle::ParticleType partTwo>
@@ -98,7 +99,7 @@ class FemtoDreamDetaDphiStar
       }
     }
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < nprongs; i++) {
         std::string dirName = static_cast<std::string>(dirNames[2]);
         histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
@@ -283,7 +284,7 @@ class FemtoDreamDetaDphiStar
 
       bool pass = false;
 
-      for (int i = 0; i < 3; ++i) {
+      for (int i = 0; i < nprongs; ++i) {
         double deta, dphiAvg, dphi_AT_PV, dphi_AT_SpecificRadii;
         bool sameCharge = false;
 
