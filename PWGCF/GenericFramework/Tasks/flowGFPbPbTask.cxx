@@ -284,12 +284,12 @@ struct flowAnalysisGF {
 
     if (cfgUseAdditionalTrackCut) {
       // 0.06
-      fPhiCutLow = new TF1("fPhiCutLow", TString::Format("0.06/x+pi/18.0-%f", float(cfgTrackCutSize)), 0, 100);
-      fPhiCutHigh = new TF1("fPhiCutHigh", TString::Format("0.1/x+pi/18.0+%f", float(cfgTrackCutSize)), 0, 100);
+      fPhiCutLow = new TF1("fPhiCutLow", TString::Format("0.06/x+pi/18.0-%f", static_cast<float>(cfgTrackCutSize)), 0, 100);
+      fPhiCutHigh = new TF1("fPhiCutHigh", TString::Format("0.1/x+pi/18.0+%f", static_cast<float>(cfgTrackCutSize)), 0, 100);
 
       if (cfgDoubleTrackFunction) {
-        fPhiCutLow2 = new TF1("fPhiCutLow2", TString::Format("0.06/x+pi/18.0-%f-pi/9", float(cfgTrackCutSize)), 0, 100); // for the lower part of the gap (pt<1)
-        fPhiCutHigh2 = new TF1("fPhiCutHigh2", TString::Format("0.1/x+pi/18.0+%f-pi/9", float(cfgTrackCutSize)), 0, 100);
+        fPhiCutLow2 = new TF1("fPhiCutLow2", TString::Format("0.06/x+pi/18.0-%f-pi/9", static_cast<float>(cfgTrackCutSize)), 0, 100); // for the lower part of the gap (pt<1)
+        fPhiCutHigh2 = new TF1("fPhiCutHigh2", TString::Format("0.1/x+pi/18.0+%f-pi/9", static_cast<float>(cfgTrackCutSize)), 0, 100);
       }
     }
   }
