@@ -1373,7 +1373,7 @@ struct tofSpectra {
       if (doprocessFullPi == true || doprocessLfFullPi == true) {
         return true;
       }
-    } else if constexpr (id == 2 || id == Np + 2) {
+    } else if constexpr (id == 3 || id == Np + 3) {
       if (doprocessFullKa == true || doprocessLfFullKa == true) {
         return true;
       }
@@ -1740,6 +1740,7 @@ struct tofSpectra {
 
     // Loop on generated collisions
     for (const auto& mcCollision : mcCollisions) {
+      histos.fill(HIST("MC/Multiplicity"), getMultiplicityMC(mcCollision));
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       bool hasParticleInFT0C = false;
       bool hasParticleInFT0A = false;
