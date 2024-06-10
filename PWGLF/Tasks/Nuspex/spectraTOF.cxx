@@ -1610,11 +1610,12 @@ struct tofSpectra {
       return;
     }
 
+    const float multiplicity = getMultiplicityMC(mcCollision);
     if (mcParticle.isPhysicalPrimary()) {
       if (abs(mcCollision.posZ()) < evselOptions.cfgCutVertex) {
-        histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt());
+        histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt(), multiplicity);
       } else {
-        histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt());
+        histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt(), multiplicity);
       }
     }
   }
