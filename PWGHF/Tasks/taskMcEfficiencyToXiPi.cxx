@@ -218,8 +218,8 @@ struct HfTaskMcEfficiencyToXiPi {
 
     for (const auto& mcParticle : genParticles) {
 
-      //auto coll = mcParticle.template mcCollision_as<aod::McCollisions>();
-      //auto bc = coll.template bc_as<BCsInfo>();
+      // auto coll = mcParticle.template mcCollision_as<aod::McCollisions>();
+      // auto bc = coll.template bc_as<BCsInfo>();
       auto mcColl = mcParticle.mcCollision();
       const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcColl);
       hfEvSelMc.fillHistograms(rejectionMask);
