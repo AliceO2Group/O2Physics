@@ -26,6 +26,7 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -34,6 +35,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct HfTaskMcEfficiencyToXiPi {
+
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+
   Configurable<float> rapidityCharmBaryonMax{"rapidityCharmBaryonMax", 0.5, "Max absolute value of rapidity for charm baryon"};
   Configurable<float> acceptanceEtaLf{"acceptanceEtaLf", 1.0, "Max absolute value of eta for LF daughters"};
   Configurable<float> acceptancePtPionFromCascade{"acceptancePtPionFromCascade", 0.2, "Min value of pt for pion <-- cascade"};
@@ -42,9 +46,6 @@ struct HfTaskMcEfficiencyToXiPi {
 
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement for pion <-- charm baryon"};
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pion <- charm baryon"};
-
-  Configurable<bool> rejGenTFBorders{"rejGenTFBorders", true, "Reject generated particles coming from bc close to TF borders"};
-  Configurable<bool> rejGenITSROFBorders{"rejGenITSROFBorders", true, "Reject generated particles coming from bc close to ITSROF borders"};
 
   ConfigurableAxis axisPt{"axisPt", {200, 0, 20}, "pT axis"};
   ConfigurableAxis axisMass{"axisMass", {900, 2.1, 3}, "m_inv axis"};
@@ -83,6 +84,8 @@ struct HfTaskMcEfficiencyToXiPi {
     } else if (doprocessOmegac0 && doprocessXic0) {
       LOGF(fatal, "Both processOmegac0 and processXic0 enabled, please choose ONLY one!");
     }
+
+    hfEvSelMc.addHistograms(registry); // particles monitoring
 
     auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
@@ -213,14 +216,13 @@ struct HfTaskMcEfficiencyToXiPi {
 
     for (const auto& mcParticle : genParticles) {
 
-      auto coll = mcParticle.template mcCollision_as<aod::McCollisions>();
-      auto bc = coll.template bc_as<BCsInfo>();
-
-      // accept only mc particles coming from bc that are far away from TF border and/or ITSROFrame
-      if (rejGenTFBorders && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        continue;
-      }
-      if (rejGenITSROFBorders && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      //auto coll = mcParticle.template mcCollision_as<aod::McCollisions>();
+      //auto bc = coll.template bc_as<BCsInfo>();
+      auto mcColl = mcParticle.mcCollision();
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcColl);
+      hfEvSelMc.fillHistograms(rejectionMask);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the gen particle
         continue;
       }
 
