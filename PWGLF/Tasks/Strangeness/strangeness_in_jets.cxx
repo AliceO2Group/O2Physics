@@ -705,15 +705,15 @@ struct strangeness_in_jets {
     return delta_phi;
   }
 
-  void get_perpendicular_cone(TVector3 p, TVector3& u, float sign)
+  void get_perpendicular_axis(TVector3 p, TVector3& u, double sign)
   {
     // Initialization
-    float ux(0), uy(0), uz(0);
+    double ux(0), uy(0), uz(0);
 
     // Components of Vector p
-    float px = p.X();
-    float py = p.Y();
-    float pz = p.Z();
+    double px = p.X();
+    double py = p.Y();
+    double pz = p.Z();
 
     // Protection 1
     if (px == 0 && py != 0) {
@@ -736,10 +736,10 @@ struct strangeness_in_jets {
     }
 
     // Equation Parameters
-    float a = px * px + py * py;
-    float b = 2.0 * px * pz * pz;
-    float c = pz * pz * pz * pz - py * py * py * py - px * px * py * py;
-    float delta = b * b - 4.0 * a * c;
+    double a = px * px + py * py;
+    double b = 2.0 * px * pz * pz;
+    double c = pz * pz * pz * pz - py * py * py * py - px * px * py * py;
+    double delta = b * b - 4.0 * a * c;
 
     // Protection agains delta<0
     if (delta < 0) {
@@ -878,8 +878,8 @@ struct strangeness_in_jets {
     // Perpendicular Cones for UE
     TVector3 ue_axis1(0.0, 0.0, 0.0);
     TVector3 ue_axis2(0.0, 0.0, 0.0);
-    get_perpendicular_cone(jet_axis, ue_axis1, +1.0);
-    get_perpendicular_cone(jet_axis, ue_axis2, -1.0);
+    get_perpendicular_axis(jet_axis, ue_axis1, +1.0);
+    get_perpendicular_axis(jet_axis, ue_axis2, -1.0);
 
     // Protection against delta<0
     if (ue_axis1.X() == 0 && ue_axis1.Y() == 0 && ue_axis1.Z() == 0)
@@ -1404,8 +1404,8 @@ struct strangeness_in_jets {
       // Perpendicular Cones for UE
       TVector3 ue_axis1(0.0, 0.0, 0.0);
       TVector3 ue_axis2(0.0, 0.0, 0.0);
-      get_perpendicular_cone(jet_axis, ue_axis1, +1.0);
-      get_perpendicular_cone(jet_axis, ue_axis2, -1.0);
+      get_perpendicular_axis(jet_axis, ue_axis1, +1.0);
+      get_perpendicular_axis(jet_axis, ue_axis2, -1.0);
 
       // Protection against delta<0
       if (ue_axis1.X() == 0 && ue_axis1.Y() == 0 && ue_axis1.Z() == 0)
