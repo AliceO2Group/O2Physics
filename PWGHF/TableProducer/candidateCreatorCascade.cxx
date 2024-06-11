@@ -431,9 +431,10 @@ struct HfCandidateCreatorCascadeMc {
   Produces<aod::HfCandCascadeMcRec> rowMcMatchRec;
   Produces<aod::HfCandCascadeMcGen> rowMcMatchGen;
 
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
   using MyTracksWMc = soa::Join<aod::TracksWCov, aod::McTrackLabels>;
-
-  float zPvPosMax{1000.f};
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  HistogramRegistry registry{"registry"};
 
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
@@ -441,20 +442,17 @@ struct HfCandidateCreatorCascadeMc {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-cascade") == 0) {
-        for (const auto& option : device.options) {
-          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            zPvPosMax = option.defaultValue.get<float>();
-            break;
-          }
-        }
+        hfEvSelMc.configureFromDevice(device);
         break;
       }
     }
+    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   void processMc(MyTracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 aod::McCollisions const&)
+                 aod::McCollisions const&,
+                 BCsInfo const&)
   {
     int8_t sign = 0;
     int8_t origin = 0;
@@ -502,8 +500,11 @@ struct HfCandidateCreatorCascadeMc {
       std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
-      float zPv = mcCollision.posZ();
-      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      hfEvSelMc.fillHistograms(rejectionMask);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the gen particle
         rowMcMatchGen(sign, origin, -1);
         continue;
       }

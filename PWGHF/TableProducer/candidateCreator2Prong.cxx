@@ -653,7 +653,9 @@ struct HfCandidateCreator2ProngExpressions {
   Produces<aod::HfCand2ProngMcRec> rowMcMatchRec;
   Produces<aod::HfCand2ProngMcGen> rowMcMatchGen;
 
-  float zPvPosMax{1000.f};
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  HistogramRegistry registry{"registry"};
 
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
@@ -661,21 +663,18 @@ struct HfCandidateCreator2ProngExpressions {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-2prong") == 0) {
-        for (const auto& option : device.options) {
-          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            zPvPosMax = option.defaultValue.get<float>();
-            break;
-          }
-        }
+        hfEvSelMc.configureFromDevice(device);
         break;
       }
     }
+    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 aod::McCollisions const&)
+                 aod::McCollisions const&,
+                 BCsInfo const&)
   {
     rowCandidateProng2->bindExternalIndices(&tracks);
 
@@ -734,8 +733,11 @@ struct HfCandidateCreator2ProngExpressions {
       std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
-      float zPv = mcCollision.posZ();
-      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      hfEvSelMc.fillHistograms(rejectionMask);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the gen particle
         rowMcMatchGen(flag, origin, -1);
         continue;
       }

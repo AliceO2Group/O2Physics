@@ -457,7 +457,10 @@ struct HfCandidateCreator3ProngExpressions {
   bool createDs{false};
   bool createLc{false};
   bool createXic{false};
-  float zPvPosMax{1000.f};
+
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext& initContext)
   {
@@ -466,6 +469,7 @@ struct HfCandidateCreator3ProngExpressions {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-3prong") == 0) {
+        hfEvSelMc.configureFromDevice(device);
         for (const auto& option : device.options) {
           if (option.name.compare("createDplus") == 0) {
             createDplus = option.defaultValue.get<bool>();
@@ -475,13 +479,13 @@ struct HfCandidateCreator3ProngExpressions {
             createLc = option.defaultValue.get<bool>();
           } else if (option.name.compare("createXic") == 0) {
             createXic = option.defaultValue.get<bool>();
-          } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            zPvPosMax = option.defaultValue.get<float>();
           }
         }
         break;
       }
     }
+
+    hfEvSelMc.addHistograms(registry); // particles monitoring
 
     LOGP(info, "Flags for candidate creation from the reco workflow:");
     LOGP(info, "    --> createDplus = {}", createDplus);
@@ -493,7 +497,8 @@ struct HfCandidateCreator3ProngExpressions {
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles,
-                 aod::McCollisions const&)
+                 aod::McCollisions const&,
+                 BCsInfo const&)
   {
     rowCandidateProng3->bindExternalIndices(&tracks);
 
@@ -617,8 +622,11 @@ struct HfCandidateCreator3ProngExpressions {
       std::vector<int> idxBhadMothers{};
 
       auto mcCollision = particle.mcCollision();
-      float zPv = mcCollision.posZ();
-      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcCollision);
+      hfEvSelMc.fillHistograms(rejectionMask);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the gen particle
         rowMcMatchGen(flag, origin, channel, -1);
         continue;
       }
