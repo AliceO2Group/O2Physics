@@ -758,7 +758,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
         if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
@@ -797,7 +797,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
         if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
@@ -836,7 +836,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
         if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
@@ -875,7 +875,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
         if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
@@ -946,7 +946,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         // Check whether the charm baryon is non-prompt (from a b quark)
         if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
         if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
           rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, idxBhadMothers[0]);
@@ -982,7 +982,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         // Check whether the charm baryon is non-prompt (from a b quark)
         if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
         if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
           rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, idxBhadMothers[0]);
@@ -1018,7 +1018,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         // Check whether the charm baryon is non-prompt (from a b quark)
         if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
         if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
           rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, idxBhadMothers[0]);
@@ -1054,7 +1054,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         // Check whether the charm baryon is non-prompt (from a b quark)
         if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
         if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
           rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, idxBhadMothers[0]);
