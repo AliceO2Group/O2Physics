@@ -162,9 +162,11 @@ struct phosNbar {
     hRePM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("RePiM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hMiPP = (std::get<std::shared_ptr<TH2>>(mHistManager.add("MiPiP", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
     hMiPM = (std::get<std::shared_ptr<TH2>>(mHistManager.add("MiPiM", "Inv mass", HistType::kTH2F, {massAxis, ptAxis}))).get();
-    hSignalSP = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSP", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
-    hSignalSM = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSM", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
-    hSignalOther = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalOther", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
+    if (mIsMC) {
+      hSignalSP = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSP", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
+      hSignalSM = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalSM", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
+      hSignalOther = (std::get<std::shared_ptr<TH3>>(mHistManager.add("SignalOther", "Inv mass", HistType::kTH3F, {massAxis, ptAxis, pidAxis}))).get();
+    }
 
     hRePPDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiPDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
     hRePMDCA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiMDCA", "DCA", HistType::kTH3F, {massAxis, ptAxis, dcaAxis}))).get();
@@ -175,6 +177,20 @@ struct phosNbar {
     hRePMCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("RePiMCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
     hMiPPCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("MiPiPCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
     hMiPMCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("MiPiMCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
+
+    if (mIsMC) {
+      mHistManager.add("hMCSigPSpAll", "Sigma spectrum inclusive", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigPSpPrim", "Sigma spectrum Primary", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigPRapPrim", "Sigma rapidity primary", HistType::kTH1F, {{100, -1., 1., "Rapidity"}});
+      mHistManager.add("hMCSigPPhiPrim", "Sigma phi primary", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
+      mHistManager.add("hMCSigPSecVtx", "Sigma secondary", HistType::kTH2F, {{100, 0., 500., "R (cm)"}, {100, -TMath::Pi(), TMath::Pi(), "#phi (rad)"}});
+
+      mHistManager.add("hMCSigMSpAll", "Sigma spectrum inclusive", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigMSpPrim", "Sigma spectrum Primary", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigMRapPrim", "Sigma rapidity primary", HistType::kTH1F, {{100, -1., 1., "Rapidity"}});
+      mHistManager.add("hMCSigMPhiPrim", "Sigma phi primary", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
+      mHistManager.add("hMCSigMSecVtx", "Sigma secondary", HistType::kTH2F, {{100, 0., 500., "R (cm)"}, {100, -TMath::Pi(), TMath::Pi(), "#phi (rad)"}});
+    }
 
     ccdb->setURL(o2::base::NameConf::getCCDBServer());
     ccdb->setCaching(true);
@@ -193,6 +209,51 @@ struct phosNbar {
     int ntr = tracks.size();
     int nclu = clusters.size();
     mHistManager.fill(HIST("evsel"), 10. + 2 * (ntr > 0) + (nclu > 0));
+
+    // Fill MC distributions
+    // Sigma rapidity, pt, phi
+    // secondary Sigmas
+    if constexpr (isMC) {
+      if (mcPart->begin() != mcPart->end()) {
+        if (mcPart->begin().mcCollisionId() != mPrevMCColId) {
+          mPrevMCColId = mcPart->begin().mcCollisionId(); // to avoid scanning full MC table each BC
+          for (auto part : *mcPart) {
+            if (collision.has_mcCollision() && (part.mcCollisionId() != collision.mcCollisionId())) {
+              continue;
+            }
+            if (part.pdgCode() ==-3112) { // Sigma+
+              if (abs(part.y()) < .5) {
+                double pt = part.pt();
+                mHistManager.fill(HIST("hMCSigPSpAll"), pt);
+                double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
+                double phiVtx = atan2(part.vy(), part.vx());
+                mHistManager.fill(HIST("hMCSigPSecVtx"), r, phiVtx);
+                if (r < 0.5) {
+                  mHistManager.fill(HIST("hMCSigPSpPrim"), pt);
+                  mHistManager.fill(HIST("hMCSigPRapPrim"), part.y());
+                  mHistManager.fill(HIST("hMCSigPPhiPrim"), part.phi());
+                }
+              }
+            }
+            if (part.pdgCode() ==-3222) { // Sigma-
+              if (abs(part.y()) < .5) {
+                double pt = part.pt();
+                mHistManager.fill(HIST("hMCSigMSpAll"), pt);
+                double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
+                double phiVtx = atan2(part.vy(), part.vx());
+                mHistManager.fill(HIST("hMCSigMSecVtx"), r, phiVtx);
+                if (r < 0.5) {
+                  mHistManager.fill(HIST("hMCSigMSpPrim"), pt);
+                  mHistManager.fill(HIST("hMCSigMRapPrim"), part.y());
+                  mHistManager.fill(HIST("hMCSigMPhiPrim"), part.phi());
+                }
+              }
+            }
+          }
+        }
+      }
+
+
 
     selectNbars<isMC>(clusters, mcParticles);
     selectTracks<isMC>(tracks, mcParticles);
@@ -357,6 +418,37 @@ struct phosNbar {
   template <bool isMC, typename TCollision>
   bool selectEvent(TCollision const& col, int& indx)
   {
+    bool isColSelected = false;
+
+    mHistManager.fill(HIST("eventsCol"), 0.);
+    if (col.selection_bit(kIsBBT0A) || col.selection_bit(kIsBBT0C)) {
+      mHistManager.fill(HIST("eventsCol"), 1.);
+    }
+    if (col.selection_bit(kIsBBT0A) && col.selection_bit(kIsBBT0C)) {
+      mHistManager.fill(HIST("eventsCol"), 2.);
+    }
+    if (col.alias_bit(kTVXinPHOS)) {
+      mHistManager.fill(HIST("eventsCol"), 3.);
+    }
+    if (col.selection_bit(kIsTriggerTVX)) {
+      mHistManager.fill(HIST("eventsCol"), 4.);
+    }
+    if (col.alias_bit(kTVXinPHOS)) {
+      mHistManager.fill(HIST("eventsCol"), 5.);
+    }
+    if (clusters.size() > 0) {
+      mHistManager.fill(HIST("eventsCol"), 6);
+      if (col.alias_bit(kTVXinPHOS)) {
+        mHistManager.fill(HIST("eventsCol"), 7);
+      }
+    }
+    isColSelected = col.alias_bit(mEvSelTrig);
+
+    if (!isColSelected) {
+      return false;
+    }
+
+
     mHistManager.fill(HIST("evsel"), 0.);
     mVtxZ = col.posZ();
     mHistManager.fill(HIST("vtxZ"), mVtxZ);
