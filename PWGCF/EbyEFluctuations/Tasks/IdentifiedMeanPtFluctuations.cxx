@@ -392,10 +392,11 @@ struct IdentifiedMeanPtFluctuations {
   template <class T>
   void SelTPCTOFProtons(const T& track1)
   {
-    if (track1.hasTPC() && track1.hasTOF() && track1.p() >= 1.1 && TMath::Hypot((track1.tofNSigmaPi() + 2) / 3.0, (track1.tpcNSigmaPi() - 6) / 4.0) > 3. && TMath::Hypot((track1.tofNSigmaKa() + 2) / 3.0, (track1.tpcNSigmaKa() - 6) / 4.0) > 3. && TMath::Hypot((track1.tofNSigmaPr() + 2) / 3.0, (track1.tpcNSigmaPr() - 6) / 4.0) < 3.) {};
+    if (track1.hasTPC() && track1.hasTOF() && track1.p() >= 1.1 && TMath::Hypot((track1.tofNSigmaPi() + 2) / 3.0, (track1.tpcNSigmaPi() - 6) / 4.0) > 3. && TMath::Hypot((track1.tofNSigmaKa() + 2) / 3.0, (track1.tpcNSigmaKa() - 6) / 4.0) > 3. && TMath::Hypot((track1.tofNSigmaPr() + 2) / 3.0, (track1.tpcNSigmaPr() - 6) / 4.0) < 3.) {
+    };
   }
 
-  void processMCReco(aod::MyMCRecoCollisions::iterator const& mccoll, aod::MyMCRecoTracks const& mcrectrack, aod::McParticles const&  /*mcParticles*/)
+  void processMCReco(aod::MyMCRecoCollisions::iterator const& mccoll, aod::MyMCRecoTracks const& mcrectrack, aod::McParticles const& /*mcParticles*/)
   {
     if (!mccoll.has_mcCollision()) {
       return;

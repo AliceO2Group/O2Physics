@@ -129,7 +129,7 @@ struct femtoDreamDebugTrack {
   /// \param col subscribe to FemtoDreamCollision table
   /// \param parts subscribe to the joined table of FemtoDreamParticles and FemtoDreamMCLabels table
   /// \param FemtoDramMCParticles subscribe to the table containing the Monte Carlo Truth information
-  void processMC(FemtoMCCollision& col, o2::aod::FDMCCollisions&, FemtoFullParticlesMC&  /*parts*/, aod::FDMCParticles&, aod::FDExtMCParticles&)
+  void processMC(FemtoMCCollision& col, o2::aod::FDMCCollisions&, FemtoFullParticlesMC& /*parts*/, aod::FDMCParticles&, aod::FDExtMCParticles&)
   {
     auto groupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     FillDebugHistos<true>(col, groupPartsOne);

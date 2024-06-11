@@ -182,7 +182,7 @@ struct FlowZDCtask {
     }
   }
 
-  void processQVector(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks, BCsRun3 const&  /*bcs*/, aod::Zdcs const&  /*zdcsData*/, aod::ZDCMults const&  /*zdcMults*/)
+  void processQVector(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::ZDCMults const& /*zdcMults*/)
   {
     histos.fill(HIST("eventCounter"), 0.5);
     histos.fill(HIST("centHistogram"), collision.centFT0C());
@@ -227,8 +227,8 @@ struct FlowZDCtask {
   }
   void processZdcCollAssoc(
     ColEvSels const& cols,
-    BCsRun3 const&  /*bcs*/,
-    aod::Zdcs const&  /*zdcs*/)
+    BCsRun3 const& /*bcs*/,
+    aod::Zdcs const& /*zdcs*/)
   {
     double sumCosPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     double sumSinPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging

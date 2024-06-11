@@ -127,7 +127,7 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t*  /*popt*/)
+void JFFlucAnalysis::UserExec(Option_t* /*popt*/)
 {
   TComplex corr[kNH][nKL];
   TComplex ncorr[kNH][nKL];
