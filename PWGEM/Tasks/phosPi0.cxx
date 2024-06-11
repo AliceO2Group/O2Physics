@@ -440,7 +440,7 @@ struct phosPi0 {
       }
     }
   }
-  void processBC(aod::BCs::iterator const&  /*bc*/,
+  void processBC(aod::BCs::iterator const& /*bc*/,
                  aod::CaloAmbiguousClusters const& clusters)
   {
     bool isSelected = true;

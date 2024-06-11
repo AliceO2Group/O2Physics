@@ -135,7 +135,7 @@ struct dielectronQC {
   std::vector<float> zvtx_bin_edges;
   std::vector<float> ep_bin_edges;
 
-  void init(InitContext&  /*context*/)
+  void init(InitContext& /*context*/)
   {
     zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
     zvtx_bin_edges.erase(zvtx_bin_edges.begin());
@@ -438,7 +438,7 @@ struct dielectronQC {
 
   std::vector<std::pair<int, int>> used_trackIds;
   int ndf = 0;
-  void processQC(FilteredMyCollisions const& collisions, FilteredMyTracks const&  /*tracks*/)
+  void processQC(FilteredMyCollisions const& collisions, FilteredMyTracks const& /*tracks*/)
   {
     for (auto& collision : collisions) {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};

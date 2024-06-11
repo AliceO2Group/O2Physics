@@ -219,7 +219,7 @@ struct PCMQC {
   }
 
   template <const int ev_id, typename TCollision>
-  void fillEventInfo(TCollision const& collision, const float  /*weight*/ = 1.f)
+  void fillEventInfo(TCollision const& collision, const float /*weight*/ = 1.f)
   {
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 1.0);
     if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
@@ -259,7 +259,7 @@ struct PCMQC {
   }
 
   template <typename TV0>
-  void fillV0Info(TV0 const& v0, const float  /*weight*/ = 1.f)
+  void fillV0Info(TV0 const& v0, const float /*weight*/ = 1.f)
   {
     fRegistry.fill(HIST("V0/hPt"), v0.pt());
     fRegistry.fill(HIST("V0/hEtaPhi"), v0.phi(), v0.eta());
@@ -281,7 +281,7 @@ struct PCMQC {
   }
 
   template <typename TLeg>
-  void fillV0LegInfo(TLeg const& leg, const float  /*weight*/ = 1.f)
+  void fillV0LegInfo(TLeg const& leg, const float /*weight*/ = 1.f)
   {
     fRegistry.fill(HIST("V0Leg/hPt"), leg.pt());
     fRegistry.fill(HIST("V0Leg/hQoverPt"), leg.sign() / leg.pt());

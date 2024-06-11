@@ -119,7 +119,7 @@ struct DalitzEEQC {
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
   bool cfgDoFlow = false;
 
-  void init(InitContext&  /*context*/)
+  void init(InitContext& /*context*/)
   {
     DefineEMEventCut();
     DefineDileptonCut();
@@ -363,7 +363,7 @@ struct DalitzEEQC {
   Partition<FilteredMyTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0);
 
   std::vector<int> used_trackIds;
-  void processQC(FilteredMyCollisions const& collisions, FilteredMyTracks const&  /*tracks*/)
+  void processQC(FilteredMyCollisions const& collisions, FilteredMyTracks const& /*tracks*/)
   {
     for (auto& collision : collisions) {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};

@@ -471,10 +471,10 @@ struct Pi0EtaToGammaGamma {
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2, typename TTracksMatchedWithEMC, typename TTracksMatchedWithPHOS>
   void runPairing(TCollisions const& collisions,
                   TPhotons1 const& photons1, TPhotons2 const& photons2,
-                  TSubInfos1 const&  /*subinfos1*/, TSubInfos2 const&  /*subinfos2*/,
+                  TSubInfos1 const& /*subinfos1*/, TSubInfos2 const& /*subinfos2*/,
                   TPreslice1 const& perCollision1, TPreslice2 const& perCollision2,
                   TCut1 const& cut1, TCut2 const& cut2,
-                  TTracksMatchedWithEMC const& tracks_emc, TTracksMatchedWithPHOS const&  /*tracks_phos*/)
+                  TTracksMatchedWithEMC const& tracks_emc, TTracksMatchedWithPHOS const& /*tracks_phos*/)
   {
     for (auto& collision : collisions) {
       int ndiphoton = 0;
