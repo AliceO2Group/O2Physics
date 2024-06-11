@@ -760,7 +760,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
           rowMCMatchRecXicToXiPi(flag, debug, origin, collisionMatched, bHadMother.pt(), bHadMother.pdgCode());
         } else {
