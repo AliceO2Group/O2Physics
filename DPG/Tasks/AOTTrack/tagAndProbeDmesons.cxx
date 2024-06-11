@@ -28,7 +28,7 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGHF/Utils/utilsAnalysis.h" 
+#include "PWGHF/Utils/utilsAnalysis.h"
 #include "Tools/ML/MlResponse.h"
 
 using namespace o2;
@@ -106,10 +106,10 @@ DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //!
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine of the pointing angle in XY of the tag
 DECLARE_SOA_COLUMN(DecChannel, decChannel, uint8_t);                         //! Flag the selected decay channel
 // MC info
-DECLARE_SOA_COLUMN(IsSignal, isSignal, uint8_t);                             //! Flag for a signal
-DECLARE_SOA_INDEX_COLUMN_FULL(Mother, mother, int, McParticles, "");         //! Index to MC particle mother of the tag tracks
+DECLARE_SOA_COLUMN(IsSignal, isSignal, uint8_t);                     //! Flag for a signal
+DECLARE_SOA_INDEX_COLUMN_FULL(Mother, mother, int, McParticles, ""); //! Index to MC particle mother of the tag tracks
 // ML scores
-DECLARE_SOA_COLUMN(MlScores, mlScores, std::vector<float>);                  //! ML scores (bkg, prompt, non-prompt)
+DECLARE_SOA_COLUMN(MlScores, mlScores, std::vector<float>); //! ML scores (bkg, prompt, non-prompt)
 } // namespace tagandprobe
 
 DECLARE_SOA_TABLE(PiPiFromDpTags, "AOD", "PIPIFROMDPTAG", //! Table for same sign 2-pion vertices used as tags
@@ -364,7 +364,7 @@ struct TagTwoProngDisplacedVertices {
   /// \param channel decay channel
   /// \param pdgDecayMothers vector pdg codes of possible mothers
   /// \param pdgResonances vector pdg codes of possible resonanced in the decays
-  /// \param motherIdx particle mother index 
+  /// \param motherIdx particle mother index
   /// \return a flag that contains the information of MC truth (see aod::tagandprobe::SignalFlags)
   template <typename PParticles, typename TTrack>
   uint8_t getTagOrigin(TTrack const& firsTrack,
@@ -651,7 +651,7 @@ struct TagTwoProngDisplacedVertices {
 
         std::vector<float> mlScoresTag{};
         if (applyMl[channel]) {
-          if(!mlResponse[channel].isSelectedMl(topoVars, ptTag, mlScoresTag)) { // for the time being all the topological variables used for all channels (decLen, decLenXy, normDecLen, normDecLenXy, cosp, cospXy, dcaXyTrack0, dcaXyTrack1, dcaProd)
+          if (!mlResponse[channel].isSelectedMl(topoVars, ptTag, mlScoresTag)) { // for the time being all the topological variables used for all channels (decLen, decLenXy, normDecLen, normDecLenXy, cosp, cospXy, dcaXyTrack0, dcaXyTrack1, dcaProd)
             continue;
           }
         }
@@ -747,7 +747,7 @@ struct TagTwoProngDisplacedVertices {
 
         std::vector<float> mlScoresTag{};
         if (applyMl[channel]) {
-          if(!mlResponse[channel].isSelectedMl(topoVars, ptTag, mlScoresTag)) { // for the time being all the topological variables used for all channels (decLen, decLenXy, normDecLen, normDecLenXy, cosp, cospXy, dcaXyTrack0, dcaXyTrack1, dcaProd)
+          if (!mlResponse[channel].isSelectedMl(topoVars, ptTag, mlScoresTag)) { // for the time being all the topological variables used for all channels (decLen, decLenXy, normDecLen, normDecLenXy, cosp, cospXy, dcaXyTrack0, dcaXyTrack1, dcaProd)
             continue;
           }
         }
@@ -773,7 +773,7 @@ struct TagTwoProngDisplacedVertices {
               invMassRefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
             }
             registry.fill(HIST("hMassKaPiVsPt"), ptTag, invMass, invMassRefl, isDzero);
-          } 
+          }
         } else if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
           if (!studyDzeroReflections) {
             registry.fill(HIST("hMassKaPiVsPt"), ptTag, invMass);
