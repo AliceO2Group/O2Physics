@@ -272,7 +272,7 @@ struct SecondaryVertexReconstruction {
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processDummy, "Dummy process", true);
 
-  void processData3Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const&  /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& jtracks, OriginalTracks const&  /*tracks*/, aod::BCsWithTimestamps const&  /*bcWithTimeStamps*/)
+  void processData3Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& jtracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     for (auto& jet : jets) {
       std::vector<int> svIndices;
@@ -282,7 +282,7 @@ struct SecondaryVertexReconstruction {
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processData3Prongs, "Reconstruct the data 3-prong secondary vertex", false);
 
-  void processData2Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const&  /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& jtracks, OriginalTracks const&  /*tracks*/, aod::BCsWithTimestamps const&  /*bcWithTimeStamps*/)
+  void processData2Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracksData const& jtracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     for (auto& jet : jets) {
       std::vector<int> svIndices;
@@ -292,7 +292,7 @@ struct SecondaryVertexReconstruction {
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processData2Prongs, "Reconstruct the data 2-prong secondary vertex", false);
 
-  void processMCD3Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const&  /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& jtracks, OriginalTracks const&  /*tracks*/, aod::BCsWithTimestamps const&  /*bcWithTimeStamps*/)
+  void processMCD3Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& jtracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     for (auto& jet : mcdjets) {
       std::vector<int> svIndices;
@@ -302,7 +302,7 @@ struct SecondaryVertexReconstruction {
   }
   PROCESS_SWITCH(SecondaryVertexReconstruction, processMCD3Prongs, "Reconstruct the MCD 3-prong secondary vertex", false);
 
-  void processMCD2Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const&  /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& jtracks, OriginalTracks const&  /*tracks*/, aod::BCsWithTimestamps const&  /*bcWithTimeStamps*/)
+  void processMCD2Prongs(JetCollisionwPIs::iterator const& collision, aod::Collisions const& /*realColl*/, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets, JetTracksMCDwPIs const& jtracks, OriginalTracks const& /*tracks*/, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     for (auto& jet : mcdjets) {
       std::vector<int> svIndices;

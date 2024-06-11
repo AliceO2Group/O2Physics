@@ -486,7 +486,7 @@ struct phiInJets {
   using myCompleteJetTracks = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
   int nJEEvents = 0;
   int nprocessRecEvents = 0;
-  void processRec(o2::aod::JCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const&  /*originalTracks*/)
+  void processRec(o2::aod::JCollision const& collision, myCompleteJetTracks const& tracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, aod::McParticles const&, myCompleteTracks const& /*originalTracks*/)
   {
     if (cDebugLevel > 0) {
       nprocessRecEvents++;
@@ -789,7 +789,7 @@ struct phiInJets {
   int nprocessSimJEEvents = 0;
   void processMatchedGen(aod::JMcCollision const& collision,
                          soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JCollisions>> const& recocolls,
-                         JetMCDTable const&  /*mcdjets*/,
+                         JetMCDTable const& /*mcdjets*/,
                          JetMCPTable const& mcpjets,
                          aod::JMcParticles const& mcParticles)
 

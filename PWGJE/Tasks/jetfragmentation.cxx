@@ -1346,7 +1346,7 @@ struct JetFragmentation {
   }
 
   template <typename V0DaughterType, typename ParticleDaughterType, typename V0Type, typename ParticleType>
-  void fillMatchingV0DauHistograms(V0Type const& v0, ParticleType const&  /*particle*/, double weight = 1.)
+  void fillMatchingV0DauHistograms(V0Type const& v0, ParticleType const& /*particle*/, double weight = 1.)
   {
     auto negTrack = v0.template negTrack_as<V0DaughterType>();
     auto posTrack = v0.template posTrack_as<V0DaughterType>();

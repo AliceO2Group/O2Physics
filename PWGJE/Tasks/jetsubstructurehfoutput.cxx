@@ -169,7 +169,7 @@ struct JetSubstructureHFOutputTask {
   }
 
   template <bool isMCD, bool isMCP, typename T, typename U>
-  void analyseCandidates(T const& jets, U const&  /*candidates*/, std::map<int32_t, int32_t>& candidateMap, float jetPtMin)
+  void analyseCandidates(T const& jets, U const& /*candidates*/, std::map<int32_t, int32_t>& candidateMap, float jetPtMin)
   {
     for (const auto& jet : jets) {
       if (jet.pt() < jetPtMin) {

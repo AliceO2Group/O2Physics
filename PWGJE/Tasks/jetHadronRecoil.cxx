@@ -122,7 +122,7 @@ struct hJetAnalysis {
   }
 
   template <typename T, typename U, typename W>
-  void fillHistograms(T const& jets, W const&  /*jetsWTA*/, U const& tracks)
+  void fillHistograms(T const& jets, W const& /*jetsWTA*/, U const& tracks)
   {
     bool is_sig_col;
     std::vector<double> phi_TT_ar;

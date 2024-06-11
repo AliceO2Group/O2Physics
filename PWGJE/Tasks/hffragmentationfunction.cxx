@@ -199,10 +199,10 @@ struct HfFragmentationFunctionTask {
                                JetCollisionsMCD const& collisions,
                                JetMCDTable const& mcdjets,
                                JetMCPTable const& mcpjets,
-                               CandidatesD0MCD const&  /*mcdd0cands*/,
-                               CandidatesD0MCP const&  /*mcpd0cands*/,
-                               JetTracks const&  /*tracks*/,
-                               JetParticles const&  /*particles*/)
+                               CandidatesD0MCD const& /*mcdd0cands*/,
+                               CandidatesD0MCP const& /*mcpd0cands*/,
+                               JetTracks const& /*tracks*/,
+                               JetParticles const& /*particles*/)
   {
     double axisDistance = 0;
 
