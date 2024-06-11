@@ -80,7 +80,7 @@ bool process(std::string outputName, int nevents = 100000)
   return gausOk && uniformOk;
 }
 
-int main(int  /*argc*/, char*  /*argv*/[])
+int main(int /*argc*/, char* /*argv*/[])
 {
 
   LOG(info) << "Checking the packing and unpacking of PID signals (nsigmas) in the TPC PID response.";
