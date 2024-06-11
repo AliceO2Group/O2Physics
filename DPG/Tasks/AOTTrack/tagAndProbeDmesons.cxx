@@ -86,7 +86,7 @@ constexpr double mlCuts[nBinsPt][3] = {{0.f, 0.f, 0.f},
                                        {0.f, 0.f, 0.f}};
 
 static const std::vector<std::string> labelsEmpty{};
-static const std::vector<std::string> labelsCutVar = {"min mass", "max mass", "min decayLength", "min decayLengthXY", "min normDecayLength", "min normDecayLengthXY", "min impParProd", "min cosPointing", "min cosPointingXY"};
+static const std::vector<std::string> labelsCutVar = {"min mass", "max mass", "min decayLength", "min decayLengthXY", "min normDecayLength", "min normDecayLengthXY", "max impParProd", "min cosPointing", "min cosPointingXY"};
 static const std::vector<std::string> labelsMlScores = {"max bkg score", "min prompt score", "min non-prompt score"};
 
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Collision index
