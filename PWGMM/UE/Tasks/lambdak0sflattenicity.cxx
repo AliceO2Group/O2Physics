@@ -337,8 +337,9 @@ struct lambdak0sflattenicity {
     return i_ring;
   }
 
-  float GetFlatenicity(float signals[], int entries)
+  float GetFlatenicity(std::span<float> signals)
   {
+    int entries = signals.size();
     float flat = 9999;
     float mRho = 0;
     for (int iCell = 0; iCell < entries; ++iCell) {
@@ -359,6 +360,46 @@ struct lambdak0sflattenicity {
     return flat;
   }
 
+  // V0A signal and flatenicity calculation
+  static constexpr float calib[48] = {1.01697, 1.122, 1.03854, 1.108, 1.11634, 1.14971, 1.19321, 1.06866, 0.954675, 0.952695, 0.969853, 0.957557, 0.989784, 1.01549, 1.02182, 0.976005, 1.01865, 1.06871, 1.06264, 1.02969, 1.07378, 1.06622, 1.15057, 1.0433, 0.83654, 0.847178, 0.890027, 0.920814, 0.888271, 1.04662, 0.8869, 0.856348, 0.863181, 0.906312, 0.902166, 1.00122, 1.03303, 0.887866, 0.892437, 0.906278, 0.884976, 0.864251, 0.917221, 1.10618, 1.04028, 0.893184, 0.915734, 0.892676};
+  // calibration T0C
+  static constexpr float calibT0C[28] = {0.949829, 1.05408, 1.00681, 1.00724, 0.990663, 0.973571, 0.9855, 1.03726, 1.02526, 1.00467, 0.983008, 0.979349, 0.952352, 0.985775, 1.013, 1.01721, 0.993948, 0.996421, 0.971871, 1.02921, 0.989641, 1.01885, 1.01259, 0.929502, 1.03969, 1.02496, 1.01385, 1.01711};
+  // calibration T0A
+  static constexpr float calibT0A[24] = {0.86041, 1.10607, 1.17724, 0.756397, 1.14954, 1.0879, 0.829438, 1.09014, 1.16515, 0.730077, 1.06722, 0.906344, 0.824167, 1.14716, 1.20692, 0.755034, 1.11734, 1.00556, 0.790522, 1.09138, 1.16225, 0.692458, 1.12428, 1.01127};
+  // calibration factor MFT vs vtx
+  static constexpr float biningVtxt[30] = {-14.5, -13.5, -12.5, -11.5, -10.5, -9.5, -8.5, -7.5, -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5, 13.5, 14.5};
+
+  // calibration factor FV0 vs vtx
+  static constexpr float calibFV0vtx[30] = {0.907962, 0.934607, 0.938929, 0.950987, 0.950817, 0.966362, 0.968509, 0.972741, 0.982412, 0.984872, 0.994543, 0.996003, 0.99435, 1.00266, 0.998245, 1.00584, 1.01078, 1.01003, 1.00726, 1.00872, 1.01726, 1.02015, 1.0193, 1.01106, 1.02229, 1.02104, 1.03435, 1.00822, 1.01921, 1.01736};
+  // calibration FT0A vs vtx
+  static constexpr float calibFT0Avtx[30] = {0.924334, 0.950988, 0.959604, 0.965607, 0.970016, 0.979057, 0.978384, 0.982005, 0.992825, 0.990048, 0.998588, 0.997338, 1.00102, 1.00385, 0.99492, 1.01083, 1.00703, 1.00494, 1.00063, 1.0013, 1.00777, 1.01238, 1.01179, 1.00577, 1.01028, 1.017, 1.02975, 1.0085, 1.00856, 1.01662};
+  // calibration FT0C vs vtx
+  static constexpr float calibFT0Cvtx[30] = {1.02096, 1.01245, 1.02148, 1.03605, 1.03561, 1.03667, 1.04229, 1.0327, 1.03674, 1.02764, 1.01828, 1.02331, 1.01864, 1.015, 1.01197, 1.00615, 0.996845, 0.993051, 0.985635, 0.982883, 0.981914, 0.964635, 0.967812, 0.95475, 0.956687, 0.932816, 0.92773, 0.914892, 0.891724, 0.872382};
+
+  static constexpr int nEta5 = 2; // FT0C + FT0A
+  static constexpr float weigthsEta5[nEta5] = {0.0490638, 0.010958415};
+  static constexpr float deltaEeta5[nEta5] = {1.1, 1.2};
+
+  static constexpr int nEta6 = 2; // FT0C + FV0
+  static constexpr float weigthsEta6[nEta6] = {0.0490638, 0.00353962};
+  static constexpr float deltaEeta6[nEta6] = {1.1, 2.9};
+
+  static constexpr int innerFV0 = 32;
+  static constexpr float maxEtaFV0 = 5.1;
+  static constexpr float minEtaFV0 = 2.2;
+  static constexpr float detaFV0 = (maxEtaFV0 - minEtaFV0) / 5.0;
+
+  static constexpr int nCells = 48; // 48 sectors in FV0
+  std::array<float, nCells> RhoLattice;
+  std::array<float, nCells> ampchannel;
+  std::array<float, nCells> ampchannelBefore;
+  static constexpr int nCellsT0A = 24;
+  std::array<float, nCellsT0A> RhoLatticeT0A;
+  static constexpr int nCellsT0C = 28;
+  std::array<float, nCellsT0C> RhoLatticeT0C;
+
+  std::array<float, 8> estimator;
+
   // Defining filters for events (event selection)
   // Processed events will be already fulfilling the event selection requirements
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
@@ -370,15 +411,11 @@ struct lambdak0sflattenicity {
                         nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
                         aod::v0data::dcaV0daughters < v0setting_dcav0dau);
 
-  // Defining the type of the daughter tracks
-  using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCPr>;
-
   Filter trackFilter = (nabs(aod::track::eta) < cfgTrkEtaCut);
-  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCPr>>;
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::BarrelMults>>::iterator const& collision,
-               soa::Filtered<aod::V0Datas> const& V0s,
-               /*DaughterTracks const &,*/ TrackCandidates const& tracks, soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
+               soa::Filtered<aod::V0Datas> const& V0s, TrackCandidates const& tracks, soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
                aod::MFTTracks const& /*mfttracks*/, aod::FT0s const& /*ft0s*/,
                aod::FV0As const& /*fv0s*/)
   {
@@ -429,35 +466,13 @@ struct lambdak0sflattenicity {
 
     // ============== Flattenicity estimation begins  =====================
 
-    const int nEta5 = 2; // FT0C + FT0A
-    float weigthsEta5[nEta5] = {0.0490638, 0.010958415};
-    float deltaEeta5[nEta5] = {1.1, 1.2};
-    float ampl5[nEta5] = {0, 0};
-
-    const int nEta6 = 2; // FT0C + FV0
-    float weigthsEta6[nEta6] = {0.0490638, 0.00353962};
-    float deltaEeta6[nEta6] = {1.1, 2.9};
-    float ampl6[nEta6] = {0, 0};
-
-    // V0A signal and flatenicity calculation
-    float calib[48] = {1.01697, 1.122, 1.03854, 1.108, 1.11634, 1.14971, 1.19321, 1.06866, 0.954675, 0.952695, 0.969853, 0.957557, 0.989784, 1.01549, 1.02182, 0.976005, 1.01865, 1.06871, 1.06264, 1.02969, 1.07378, 1.06622, 1.15057, 1.0433, 0.83654, 0.847178, 0.890027, 0.920814, 0.888271, 1.04662, 0.8869, 0.856348, 0.863181, 0.906312, 0.902166, 1.00122, 1.03303, 0.887866, 0.892437, 0.906278, 0.884976, 0.864251, 0.917221, 1.10618, 1.04028, 0.893184, 0.915734, 0.892676};
-    // calibration T0C
-    float calibT0C[28] = {0.949829, 1.05408, 1.00681, 1.00724, 0.990663, 0.973571, 0.9855, 1.03726, 1.02526, 1.00467, 0.983008, 0.979349, 0.952352, 0.985775, 1.013, 1.01721, 0.993948, 0.996421, 0.971871, 1.02921, 0.989641, 1.01885, 1.01259, 0.929502, 1.03969, 1.02496, 1.01385, 1.01711};
-    // calibration T0A
-    float calibT0A[24] = {0.86041, 1.10607, 1.17724, 0.756397, 1.14954, 1.0879, 0.829438, 1.09014, 1.16515, 0.730077, 1.06722, 0.906344, 0.824167, 1.14716, 1.20692, 0.755034, 1.11734, 1.00556, 0.790522, 1.09138, 1.16225, 0.692458, 1.12428, 1.01127};
-    // calibration factor MFT vs vtx
-    float biningVtxt[30] = {-14.5, -13.5, -12.5, -11.5, -10.5, -9.5, -8.5, -7.5, -6.5, -5.5, -4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5, 13.5, 14.5};
-
-    // calibration factor FV0 vs vtx
-    float calibFV0vtx[30] = {0.907962, 0.934607, 0.938929, 0.950987, 0.950817, 0.966362, 0.968509, 0.972741, 0.982412, 0.984872, 0.994543, 0.996003, 0.99435, 1.00266, 0.998245, 1.00584, 1.01078, 1.01003, 1.00726, 1.00872, 1.01726, 1.02015, 1.0193, 1.01106, 1.02229, 1.02104, 1.03435, 1.00822, 1.01921, 1.01736};
-    // calibration FT0A vs vtx
-    float calibFT0Avtx[30] = {0.924334, 0.950988, 0.959604, 0.965607, 0.970016, 0.979057, 0.978384, 0.982005, 0.992825, 0.990048, 0.998588, 0.997338, 1.00102, 1.00385, 0.99492, 1.01083, 1.00703, 1.00494, 1.00063, 1.0013, 1.00777, 1.01238, 1.01179, 1.00577, 1.01028, 1.017, 1.02975, 1.0085, 1.00856, 1.01662};
-    // calibration FT0C vs vtx
-    float calibFT0Cvtx[30] = {1.02096, 1.01245, 1.02148, 1.03605, 1.03561, 1.03667, 1.04229, 1.0327, 1.03674, 1.02764, 1.01828, 1.02331, 1.01864, 1.015, 1.01197, 1.00615, 0.996845, 0.993051, 0.985635, 0.982883, 0.981914, 0.964635, 0.967812, 0.95475, 0.956687, 0.932816, 0.92773, 0.914892, 0.891724, 0.872382};
-
     const int nDetVtx = 3;
     TGraph* gVtx[nDetVtx];
     const char* nameDet[nDetVtx] = {"AmpV0", "AmpT0A", "AmpT0C"};
+
+    float ampl5[nEta5] = {0, 0};
+    float ampl6[nEta6] = {0, 0};
+
     for (int i_d = 0; i_d < nDetVtx; ++i_d) {
       gVtx[i_d] = 0;
       gVtx[i_d] = new TGraph();
@@ -478,25 +493,10 @@ struct lambdak0sflattenicity {
 
     float sumAmpFV0 = 0;
     float sumAmpFV01to4Ch = 0;
-    int innerFV0 = 32;
-    float maxEtaFV0 = 5.1;
-    float minEtaFV0 = 2.2;
-    float detaFV0 = (maxEtaFV0 - minEtaFV0) / 5.0;
 
-    const int nCells = 48; // 48 sectors in FV0
-    float ampchannel[48];
-    for (int iCell = 0; iCell < nCells; ++iCell) {
-      ampchannel[iCell] = 0.0;
-    }
-    float ampchannelBefore[48];
-    for (int iCell = 0; iCell < nCells; ++iCell) {
-      ampchannelBefore[iCell] = 0.0;
-    }
-
-    float RhoLattice[nCells];
-    for (Int_t iCh = 0; iCh < nCells; iCh++) {
-      RhoLattice[iCh] = 0;
-    }
+    ampchannel.fill(0.0);
+    ampchannelBefore.fill(0.0);
+    RhoLattice.fill(0);
 
     if (collision.has_foundFV0()) {
 
@@ -540,7 +540,7 @@ struct lambdak0sflattenicity {
     }
 
     float flattenicityfv0 = 9999;
-    flattenicityfv0 = GetFlatenicity(RhoLattice, nCells);
+    flattenicityfv0 = GetFlatenicity({RhoLattice.data(), RhoLattice.size()});
 
     // global tracks
     float ptT = 0.;
@@ -558,16 +558,9 @@ struct lambdak0sflattenicity {
     // FT0
     float sumAmpFT0A = 0.f;
     float sumAmpFT0C = 0.f;
-    const int nCellsT0A = 24;
-    float RhoLatticeT0A[nCellsT0A];
-    for (int iCh = 0; iCh < nCellsT0A; iCh++) {
-      RhoLatticeT0A[iCh] = 0.0;
-    }
-    const int nCellsT0C = 28;
-    float RhoLatticeT0C[nCellsT0C];
-    for (int iCh = 0; iCh < nCellsT0C; iCh++) {
-      RhoLatticeT0C[iCh] = 0.0;
-    }
+
+    RhoLatticeT0A.fill(0);
+    RhoLatticeT0C.fill(0);
 
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
@@ -612,15 +605,15 @@ struct lambdak0sflattenicity {
       rFlattenicity.fill(HIST("hAmpT0CvsVtx"), vtxZ, sumAmpFT0C);
     }
     float flatenicity_t0a = 9999;
-    flatenicity_t0a = GetFlatenicity(RhoLatticeT0A, nCellsT0A);
+    flatenicity_t0a = GetFlatenicity({RhoLatticeT0A.data(), RhoLatticeT0A.size()});
     float flatenicity_t0c = 9999;
-    flatenicity_t0c = GetFlatenicity(RhoLatticeT0C, nCellsT0C);
+    flatenicity_t0c = GetFlatenicity({RhoLatticeT0C.data(), RhoLatticeT0C.size()});
 
     bool isOK_estimator5 = false;
     bool isOK_estimator6 = false;
     float combined_estimator5 = 0;
     float combined_estimator6 = 0;
-    float estimator[8];
+
     for (int i_e = 0; i_e < 8; ++i_e) {
       estimator[i_e] = 0;
     }
@@ -712,8 +705,9 @@ struct lambdak0sflattenicity {
       const auto& posDaughterTrack = v0.posTrack_as<TrackCandidates>();
       const auto& negDaughterTrack = v0.negTrack_as<TrackCandidates>();
 
-      if (TMath::Abs(posDaughterTrack.eta()) > 0.8 || TMath::Abs(negDaughterTrack.eta()) > 0.8)
+      if (TMath::Abs(posDaughterTrack.eta()) > 0.8 || TMath::Abs(negDaughterTrack.eta()) > 0.8) {
         continue;
+      }
       float massK0s = v0.mK0Short();
       float massLambda = v0.mLambda();
       float massAntiLambda = v0.mAntiLambda();
@@ -738,81 +732,56 @@ struct lambdak0sflattenicity {
 
       // Cut on dynamic columns for K0s
 
-      if (v0.v0cosPA() >= v0setting_cospaK0s) {                                       // cut on Cos of pointing angle
-        if (v0.v0radius() >= v0setting_radiusK0s) {                                   // V0radius cut
-          if (TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion) {          // Nsigma cut for positive daughter track
-            if (TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion) {        // Nsigma cut for negative daughter track
-              if (ctauK0s < v0setting_ctauK0s && TMath::Abs(v0.rapidity(0)) <= 0.5) { // lifetime and rapidity cut
+      if (v0.v0cosPA() >= v0setting_cospaK0s && v0.v0radius() >= v0setting_radiusK0s && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauK0s < v0setting_ctauK0s && TMath::Abs(v0.rapidity(0)) <= 0.5) {
+        rKzeroShort.fill(HIST("hMassK0sSelected"), massK0s);
+        rKzeroShort.fill(HIST("hDCAV0DaughtersK0s"), v0.dcaV0daughters());
+        rKzeroShort.fill(HIST("hV0CosPAK0s"), v0.v0cosPA());
+        rKzeroShort.fill(HIST("hrapidityK0s"), v0.rapidity(0));
+        rKzeroShort.fill(HIST("hctauK0s"), ctauK0s);
+        rKzeroShort.fill(HIST("h2DdecayRadiusK0s"), v0.v0radius());
+        rKzeroShort.fill(HIST("hMassK0sLambdapT"), massK0s, massLambda, v0.pt());
+        rKzeroShort.fill(HIST("hMassK0sAntiLambdapT"), massK0s, massAntiLambda, v0.pt());
 
-                rKzeroShort.fill(HIST("hMassK0sSelected"), massK0s);
-                rKzeroShort.fill(HIST("hDCAV0DaughtersK0s"), v0.dcaV0daughters());
-                rKzeroShort.fill(HIST("hV0CosPAK0s"), v0.v0cosPA());
-                rKzeroShort.fill(HIST("hrapidityK0s"), v0.rapidity(0));
-                rKzeroShort.fill(HIST("hctauK0s"), ctauK0s);
-                rKzeroShort.fill(HIST("h2DdecayRadiusK0s"), v0.v0radius());
-                rKzeroShort.fill(HIST("hMassK0sLambdapT"), massK0s, massLambda, v0.pt());
-                rKzeroShort.fill(HIST("hMassK0sAntiLambdapT"), massK0s, massAntiLambda, v0.pt());
-
-                // Filling the PID of the V0 daughters in the region of the K0s peak
-                if (0.45 < massK0s && massK0s < 0.55) {
-                  rKzeroShort.fill(HIST("hNSigmaPosPionFromK0s"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
-                  rKzeroShort.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
-                }
-              }
-            }
-          }
+        // Filling the PID of the V0 daughters in the region of the K0s peak
+        if (0.45 < massK0s && massK0s < 0.55) {
+          rKzeroShort.fill(HIST("hNSigmaPosPionFromK0s"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
+          rKzeroShort.fill(HIST("hNSigmaNegPionFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
         }
       }
 
       // Cut on dynamic columns for Lambda
-      if (v0.v0cosPA() >= v0setting_cospaLambda) {
-        if (v0.v0radius() >= v0setting_radiusLambda) {
-          if (TMath::Abs(posDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton) {
-            if (TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion) {
-              if (ctauLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(1)) <= 0.5) {
+      if (v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && TMath::Abs(negDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && ctauLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(1)) <= 0.5) {
 
-                rLambda.fill(HIST("hMassLambdaSelected"), massLambda);
-                rLambda.fill(HIST("hDCAV0DaughtersLambda"), v0.dcaV0daughters());
-                rLambda.fill(HIST("hV0CosPALambda"), v0.v0cosPA());
-                rLambda.fill(HIST("hrapidityLambda"), v0.rapidity(1));
-                rLambda.fill(HIST("hctauLambda"), ctauLambda);
-                rLambda.fill(HIST("h2DdecayRadiusLambda"), v0.v0radius());
-                rLambda.fill(HIST("hMassLambdapT"), massLambda, massK0s, v0.pt());
+        rLambda.fill(HIST("hMassLambdaSelected"), massLambda);
+        rLambda.fill(HIST("hDCAV0DaughtersLambda"), v0.dcaV0daughters());
+        rLambda.fill(HIST("hV0CosPALambda"), v0.v0cosPA());
+        rLambda.fill(HIST("hrapidityLambda"), v0.rapidity(1));
+        rLambda.fill(HIST("hctauLambda"), ctauLambda);
+        rLambda.fill(HIST("h2DdecayRadiusLambda"), v0.v0radius());
+        rLambda.fill(HIST("hMassLambdapT"), massLambda, massK0s, v0.pt());
 
-                // Filling the PID of the V0 daughters in the region of the Lambda peak
-                if (1.015 < massLambda && massLambda < 1.215) {
-                  rLambda.fill(HIST("hNSigmaPosPionFromLambda"), posDaughterTrack.tpcNSigmaPr(), posDaughterTrack.tpcInnerParam());
-                  rLambda.fill(HIST("hNSigmaNegPionFromLambda"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
-                }
-              }
-            }
-          }
+        // Filling the PID of the V0 daughters in the region of the Lambda peak
+        if (1.015 < massLambda && massLambda < 1.215) {
+          rLambda.fill(HIST("hNSigmaPosPionFromLambda"), posDaughterTrack.tpcNSigmaPr(), posDaughterTrack.tpcInnerParam());
+          rLambda.fill(HIST("hNSigmaNegPionFromLambda"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
         }
       }
 
       // Cut on dynamic columns for AntiLambda
-      if (v0.v0cosPA() >= v0setting_cospaLambda) {
-        if (v0.v0radius() >= v0setting_radiusLambda) {
-          if (TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion) {
-            if (TMath::Abs(negDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton) {
-              if (ctauAntiLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(2)) <= 0.5) {
+      if (v0.v0cosPA() >= v0setting_cospaLambda && v0.v0radius() >= v0setting_radiusLambda && TMath::Abs(posDaughterTrack.tpcNSigmaPi()) <= NSigmaTPCPion && TMath::Abs(negDaughterTrack.tpcNSigmaPr()) <= NSigmaTPCProton && ctauAntiLambda < v0setting_ctauLambda && TMath::Abs(v0.rapidity(2)) <= 0.5) {
 
-                rAntiLambda.fill(HIST("hMassAntiLambdaSelected"), massAntiLambda);
-                rAntiLambda.fill(HIST("hDCAV0DaughtersAntiLambda"), v0.dcaV0daughters());
-                rAntiLambda.fill(HIST("hV0CosPAAntiLambda"), v0.v0cosPA());
-                rAntiLambda.fill(HIST("hrapidityAntiLambda"), v0.rapidity(2));
-                rAntiLambda.fill(HIST("hctauAntiLambda"), ctauAntiLambda);
-                rAntiLambda.fill(HIST("h2DdecayRadiusAntiLambda"), v0.v0radius());
-                rAntiLambda.fill(HIST("hMassAntiLambdapT"), massAntiLambda, massK0s, v0.pt());
+        rAntiLambda.fill(HIST("hMassAntiLambdaSelected"), massAntiLambda);
+        rAntiLambda.fill(HIST("hDCAV0DaughtersAntiLambda"), v0.dcaV0daughters());
+        rAntiLambda.fill(HIST("hV0CosPAAntiLambda"), v0.v0cosPA());
+        rAntiLambda.fill(HIST("hrapidityAntiLambda"), v0.rapidity(2));
+        rAntiLambda.fill(HIST("hctauAntiLambda"), ctauAntiLambda);
+        rAntiLambda.fill(HIST("h2DdecayRadiusAntiLambda"), v0.v0radius());
+        rAntiLambda.fill(HIST("hMassAntiLambdapT"), massAntiLambda, massK0s, v0.pt());
 
-                // Filling the PID of the V0 daughters in the region of the AntiLambda peak
-                if (1.015 < massAntiLambda && massAntiLambda < 1.215) {
-                  rAntiLambda.fill(HIST("hNSigmaPosPionFromAntiLambda"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
-                  rAntiLambda.fill(HIST("hNSigmaNegPionFromAntiLambda"), negDaughterTrack.tpcNSigmaPr(), negDaughterTrack.tpcInnerParam());
-                }
-              }
-            }
-          }
+        // Filling the PID of the V0 daughters in the region of the AntiLambda peak
+        if (1.015 < massAntiLambda && massAntiLambda < 1.215) {
+          rAntiLambda.fill(HIST("hNSigmaPosPionFromAntiLambda"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
+          rAntiLambda.fill(HIST("hNSigmaNegPionFromAntiLambda"), negDaughterTrack.tpcNSigmaPr(), negDaughterTrack.tpcInnerParam());
         }
       }
     }
