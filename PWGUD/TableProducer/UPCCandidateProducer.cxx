@@ -1000,7 +1000,7 @@ struct UpcCandProducer {
   void createCandidatesSemiFwd(BarrelTracks const& barrelTracks,
                                o2::aod::AmbiguousTracks const& ambBarrelTracks,
                                ForwardTracks const& fwdTracks,
-                               o2::aod::FwdTrkCls const&  /*fwdTrkClusters*/,
+                               o2::aod::FwdTrkCls const& /*fwdTrkClusters*/,
                                o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                                BCsWithBcSels const& bcs,
                                o2::aod::Collisions const& collisions,
@@ -1402,7 +1402,7 @@ struct UpcCandProducer {
   }
 
   void createCandidatesFwdGlobal(ForwardTracks const& fwdTracks,
-                                 o2::aod::FwdTrkCls const&  /*fwdTrkClusters*/,
+                                 o2::aod::FwdTrkCls const& /*fwdTrkClusters*/,
                                  o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                                  o2::aod::BCs const& bcs,
                                  o2::aod::Collisions const& collisions,

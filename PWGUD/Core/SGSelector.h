@@ -32,7 +32,7 @@ class SGSelector
   SGSelector() : fPDG(TDatabasePDG::Instance()) {}
 
   template <typename CC, typename BCs, typename TCs, typename FWs>
-  int Print(SGCutParHolder  /*diffCuts*/, CC& collision, BCs&  /*bcRange*/, TCs&  /*tracks*/, FWs&  /*fwdtracks*/)
+  int Print(SGCutParHolder /*diffCuts*/, CC& collision, BCs& /*bcRange*/, TCs& /*tracks*/, FWs& /*fwdtracks*/)
   {
     LOGF(info, "Size of array %i", collision.size());
     return 1;
