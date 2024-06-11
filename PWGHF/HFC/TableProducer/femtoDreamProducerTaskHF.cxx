@@ -389,11 +389,6 @@ struct femtodreamproducertaskHF {
       auto trackPos1 = candidate.template prong0_as<o2::aod::FemtoHFTracks>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<o2::aod::FemtoHFTracks>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<o2::aod::FemtoHFTracks>(); // positive daughter (negative for the antiparticles)
-      bool isMcCandidateSignal = false;
-
-      if constexpr (isMC) {
-        isMcCandidateSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
-      }
 
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
