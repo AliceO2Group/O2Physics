@@ -454,7 +454,7 @@ class DalitzEECut : public TNamed
   float mMinPinTOF{0.0f};        // min pin cut for TOF.
   bool mMuonExclusionTPC{false}; // flag to reject muon in TPC for low B
   bool mApplyTOFbeta{false};     // flag to reject hadron contamination with TOF
-  float mMinTOFbeta{0.0}, mMaxTOFbeta{0.95};
+  float mMinTOFbeta{0.0}, mMaxTOFbeta{0.96};
   float mMinTPCNsigmaEl{-1e+10}, mMaxTPCNsigmaEl{+1e+10};
   float mMinTPCNsigmaMu{-1e+10}, mMaxTPCNsigmaMu{+1e+10};
   float mMinTPCNsigmaPi{-1e+10}, mMaxTPCNsigmaPi{+1e+10};

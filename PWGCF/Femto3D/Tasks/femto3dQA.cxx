@@ -100,10 +100,10 @@ struct QAHistograms {
     registry.add("p", "p", kTH1F, {{100, 0., 5., "p"}});
     registry.add("pt", "pt", kTH1F, {{100, 0., 5., "pt"}});
     registry.add("sign", "sign", kTH1F, {{3, -1.5, 1.5, "sign"}});
-    registry.add("dcaxy_to_p", "dcaxy_to_p", kTH2F, {{100, 0., 5.0, "p"}, {500, -0.5, 0.5, "dcaxy"}});
-    registry.add("dcaxy_to_pt", "dcaxy_to_pt", kTH2F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "dcaxy"}});
-    registry.add("dcaz_to_p", "dcaz_to_p", kTH2F, {{100, 0., 5., "p"}, {500, -0.5, 0.5, "dcaz"}});
-    registry.add("dcaz_to_pt", "dcaz_to_pt", kTH2F, {{100, 0., 5., "pt"}, {500, -0.5, 0.5, "dcaz"}});
+    registry.add("dcaxy_to_p", "dcaxy_to_p", kTH2F, {{100, 0., 5.0, "p"}, {501, -0.5, 0.5, "dcaxy"}});
+    registry.add("dcaxy_to_pt", "dcaxy_to_pt", kTH2F, {{100, 0., 5., "pt"}, {501, -0.5, 0.5, "dcaxy"}});
+    registry.add("dcaz_to_p", "dcaz_to_p", kTH2F, {{100, 0., 5., "p"}, {501, -0.5, 0.5, "dcaz"}});
+    registry.add("dcaz_to_pt", "dcaz_to_pt", kTH2F, {{100, 0., 5., "pt"}, {501, -0.5, 0.5, "dcaz"}});
     registry.add("TPCClusters", "TPCClusters", kTH1F, {{163, -0.5, 162.5, "NTPCClust"}});
     registry.add("TPCCrossedRowsOverFindableCls", "TPCCrossedRowsOverFindableCls", kTH1F, {{100, 0.0, 10.0, "NcrossedRowsOverFindable"}});
     registry.add("TPCFractionSharedCls", "TPCFractionSharedCls", kTH1F, {{100, 0.0, 1.0, "TPCsharedFraction"}});
