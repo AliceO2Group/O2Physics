@@ -66,7 +66,7 @@ struct midEfficiency {
   // Filter only for MCH-MID tracks
   Filter muonTrackType = aod::fwdtrack::trackType == uint8_t(3);
 
-  void init(o2::framework::InitContext const&  /*ic*/)
+  void init(o2::framework::InitContext const& /*ic*/)
   {
 
     LOGF(debug, "Initialization starting");

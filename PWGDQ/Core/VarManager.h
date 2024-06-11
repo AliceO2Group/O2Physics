@@ -806,7 +806,7 @@ class VarManager : public TObject
   }
 
   // Setup the 3 prong DCAFitterN
-  static void SetupThreeProngDCAFitter(float magField, bool propagateToPCA, float maxR, float  /*maxDZIni*/, float minParamChange, float minRelChi2Change, bool useAbsDCA)
+  static void SetupThreeProngDCAFitter(float magField, bool propagateToPCA, float maxR, float /*maxDZIni*/, float minParamChange, float minRelChi2Change, bool useAbsDCA)
   {
     fgFitterThreeProngBarrel.setBz(magField);
     fgFitterThreeProngBarrel.setPropagateToPCA(propagateToPCA);
