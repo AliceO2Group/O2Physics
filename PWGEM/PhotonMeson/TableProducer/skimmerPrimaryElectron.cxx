@@ -484,7 +484,7 @@ struct skimmerPrimaryElectron {
       negTracks_per_coll.reserve(trackIdsThisCollision.size());
 
       for (auto& trackId : trackIdsThisCollision) {
-        auto track = trackId.template track_as<MyTracks>();
+        auto track = trackId.template track_as<MyFilteredTracks>();
         if (!checkTrack<false>(collision, track) || !isElectron(track)) {
           continue;
         }
@@ -569,7 +569,7 @@ struct skimmerPrimaryElectron {
       negTracks_per_coll.reserve(trackIdsThisCollision.size());
 
       for (auto& trackId : trackIdsThisCollision) {
-        auto track = trackId.template track_as<MyTracksMC>();
+        auto track = trackId.template track_as<MyFilteredTracksMC>();
         if (!checkTrack<true>(collision, track) || !isElectron(track)) {
           continue;
         }
