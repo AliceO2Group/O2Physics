@@ -33,8 +33,8 @@ struct TrackCand {
 };
 
 struct SVCand {
-  unsigned int tr0Idx;
-  unsigned int tr1Idx;
+  int tr0Idx;
+  int tr1Idx;
   VBracket vBracket{};
 };
 
