@@ -685,7 +685,7 @@ struct HfTaskMcValidationRec {
                   aod::TracksWMc const&,
                   aod::McParticles const& mcParticles,
                   aod::McCollisions const&,
-                  CollisionsWithMCLabels const&  /*collisions*/)
+                  CollisionsWithMCLabels const& /*collisions*/)
   {
     // loop over 2-prong candidates
     for (const auto& cand2Prong : cand2Prongs) {

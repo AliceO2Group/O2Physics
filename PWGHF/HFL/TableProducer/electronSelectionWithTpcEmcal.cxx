@@ -160,7 +160,7 @@ struct HfElectronSelectionWithTpcEmcal {
 
   // Electron Identification
   template <bool isMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
-  void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, EmcClusterType const& emcClusters, MatchType const& matchedTracks, ParticleType const&  /*particlemc*/)
+  void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, EmcClusterType const& emcClusters, MatchType const& matchedTracks, ParticleType const& /*particlemc*/)
   {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
       return;

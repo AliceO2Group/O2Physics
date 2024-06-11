@@ -78,7 +78,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   // filter on selection of Dplus meson and decay channel Dplus->KPiPi
   Filter dplusFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) != static_cast<uint8_t>(0)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
-  void processDplusSelectionData(aod::Collision const&  /*collision*/,
+  void processDplusSelectionData(aod::Collision const& /*collision*/,
                                  CandidatesDplusData const& candidates)
   {
     bool isDplusFound = 0;
@@ -95,7 +95,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadronsDplusSelection, processDplusSelectionData, "Process Dplus Selection Data", false);
 
-  void processDplusSelectionMcRec(aod::Collision const&  /*collision*/,
+  void processDplusSelectionMcRec(aod::Collision const& /*collision*/,
                                   CandidatesDplusMcRec const& candidates)
   {
     bool isDplusFound = 0;

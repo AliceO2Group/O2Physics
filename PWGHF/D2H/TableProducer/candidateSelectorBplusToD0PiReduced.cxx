@@ -141,7 +141,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   /// \param configs config inherited from the D0pi data creator
   template <bool withDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsBp,
-                    TracksPion const&  /*pionTracks*/,
+                    TracksPion const& /*pionTracks*/,
                     HfCandBpConfigs const& configs)
   {
     // get D0Pi creator configurable
