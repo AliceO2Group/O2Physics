@@ -771,9 +771,11 @@ struct strangeness_in_jets {
     int leading_ID(0);
     float ptMax(0);
 
+    // Track Index
+    int i = -1;
     for (auto track : tracks) {
 
-      int i = track.globalIndex();
+      i++;
       if (!passedTrackSelectionForJets(track))
         continue;
 
