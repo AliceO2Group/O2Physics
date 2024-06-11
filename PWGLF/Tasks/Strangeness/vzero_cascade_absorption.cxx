@@ -175,7 +175,7 @@ struct vzero_cascade_absorption {
 
   // K0s Selections
   template <typename V, typename T1, typename T2, typename C>
-  bool passedK0Selection(const V& v0, const T1& ntrack, const T2& ptrack, const C&  /*collision*/)
+  bool passedK0Selection(const V& v0, const T1& ntrack, const T2& ptrack, const C& /*collision*/)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -224,7 +224,7 @@ struct vzero_cascade_absorption {
 
   // Lambda Selections
   template <typename V, typename T1, typename T2, typename C>
-  bool passedLambdaSelection(const V& v0, const T1& ntrack, const T2& ptrack, const C&  /*collision*/)
+  bool passedLambdaSelection(const V& v0, const T1& ntrack, const T2& ptrack, const C& /*collision*/)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -273,7 +273,7 @@ struct vzero_cascade_absorption {
 
   // AntiLambda Selections
   template <typename V, typename T1, typename T2, typename C>
-  bool passedAntiLambdaSelection(const V& v0, const T1& ntrack, const T2& ptrack, const C&  /*collision*/)
+  bool passedAntiLambdaSelection(const V& v0, const T1& ntrack, const T2& ptrack, const C& /*collision*/)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -418,7 +418,7 @@ struct vzero_cascade_absorption {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
 
   // Process MC Rec
-  void processMCrec(SimCollisions const& collisions, MCTracks const&  /*mcTracks*/, aod::V0Datas const& fullV0s, aod::McCollisions const&  /*mcCollisions*/, const aod::McParticles&  /*mcParticles*/)
+  void processMCrec(SimCollisions const& collisions, MCTracks const& /*mcTracks*/, aod::V0Datas const& fullV0s, aod::McCollisions const& /*mcCollisions*/, const aod::McParticles& /*mcParticles*/)
   {
 
     for (const auto& collision : collisions) {

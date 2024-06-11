@@ -321,7 +321,7 @@ struct nucleiEbye {
   }
 
   template <class C, class T, class V0>
-  int fillRecoEvent(C const&  /*collision*/, T const& tracks, V0 const& V0s, float const& centrality)
+  int fillRecoEvent(C const& /*collision*/, T const& tracks, V0 const& V0s, float const& centrality)
   {
     candidateTracks[0].clear();
     candidateTracks[1].clear();
@@ -607,7 +607,7 @@ struct nucleiEbye {
   }
 
   template <class C, class T, class V0>
-  void fillMcGen(C const&  /*collision*/, T const& tracks, V0 const& v0s, float const& centrality)
+  void fillMcGen(C const& /*collision*/, T const& tracks, V0 const& v0s, float const& centrality)
   {
 
     tempTracks[0]->Reset();

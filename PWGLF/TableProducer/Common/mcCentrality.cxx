@@ -69,7 +69,7 @@ struct mcCentrality {
 
   o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
 
-  void init(o2::framework::InitContext&  /*initContext*/)
+  void init(o2::framework::InitContext& /*initContext*/)
   {
     // Set up the CCDB
     ccdb->setURL(url.value);
@@ -114,7 +114,7 @@ struct mcCentrality {
   }
 
   // Full tables (independent on central calibrations)
-  void process(aod::McCollision const&  /*mcCollision*/,
+  void process(aod::McCollision const& /*mcCollision*/,
                aod::McParticles const& mcParticles)
   {
     const float nFT0M = mCounter.countFT0A(mcParticles) + mCounter.countFT0C(mcParticles);

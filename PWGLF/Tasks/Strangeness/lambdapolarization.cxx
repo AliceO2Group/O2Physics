@@ -558,7 +558,7 @@ struct lambdapolarization {
   }
 
   void processData(EventCandidates::iterator const& collision,
-                   TrackCandidates const&  /*tracks*/, aod::V0Datas const& V0s,
+                   TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s,
                    aod::BCsWithTimestamps const&)
   {
     if (cfgCentEst == 1) {

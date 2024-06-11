@@ -416,7 +416,7 @@ struct QCspectraTPC {
     }
   } // process_mc loop end
   using CollisionCandidateMCRec = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
-  void processTrackHistograms_MC(CollisionCandidateMCRec::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection> const& tracks, aod::McParticles const&  /*mcParticles*/, aod::McCollisions const&  /*mcCollisions*/)
+  void processTrackHistograms_MC(CollisionCandidateMCRec::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection> const& tracks, aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
     const float multiplicity = collision.centFT0C();
     for (auto& track : tracks) {
@@ -600,8 +600,8 @@ struct QCspectraTPC {
   PROCESS_SWITCH(QCspectraTPC, processTrackHistograms_MC, "process MC Reconstructed tracks", true);
 
   void processParticleHistograms_MC(CollisionCandidateMCRec::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection> const& tracks,
-                                    aod::McParticles const&  /*mcParticles*/,
-                                    aod::McCollisions const&  /*mcCollision*/)
+                                    aod::McParticles const& /*mcParticles*/,
+                                    aod::McCollisions const& /*mcCollision*/)
   {
 
     const float multiplicity = collision.centFT0C();
@@ -712,7 +712,7 @@ struct QCspectraTPC {
     }
   } // process_mc loop end
   PROCESS_SWITCH(QCspectraTPC, processParticleHistograms_MC, "process MC Generated tracks", true);
-  void processParticleGen(aod::McCollision const&  /*mcCollision*/, aod::McParticles& mcParticles)
+  void processParticleGen(aod::McCollision const& /*mcCollision*/, aod::McParticles& mcParticles)
   {
 
     for (auto& mcParticleGen : mcParticles) {

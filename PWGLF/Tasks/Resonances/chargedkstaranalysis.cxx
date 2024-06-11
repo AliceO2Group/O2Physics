@@ -700,8 +700,8 @@ struct chargedkstaranalysis {
 
   PROCESS_SWITCH(chargedkstaranalysis, processSE, "Process Same event", true);
 
-  void processME(EventCandidates const&  /*collisions*/,
-                 TrackCandidates const&  /*tracks*/, V0TrackCandidate const&  /*V0s*/)
+  void processME(EventCandidates const& /*collisions*/,
+                 TrackCandidates const& /*tracks*/, V0TrackCandidate const& /*V0s*/)
 
   /*
     void processME(EventCandidates const& collisions,
@@ -883,7 +883,7 @@ struct chargedkstaranalysis {
 
   void processRecMC(EventCandidatesMC::iterator const& collision,
                     TrackCandidatesMC const& tracks, V0TrackCandidatesMC const& V0s,
-                    aod::McParticles const&  /*mcParticles*/, aod::McCollisions const&  /*mcCollisions*/)
+                    aod::McParticles const& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
 
   {
 

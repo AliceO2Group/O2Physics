@@ -880,7 +880,7 @@ struct ebyeMaker {
   }
   PROCESS_SWITCH(ebyeMaker, processRun2, "process (Run 2)", false);
 
-  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const&  /*mcCollisions*/, TracksFullIU const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
+  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIU const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -948,7 +948,7 @@ struct ebyeMaker {
   }
   PROCESS_SWITCH(ebyeMaker, processMcRun3, "process MC (Run 3)", false);
 
-  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const&  /*mcCollisions*/, TracksFull const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
+  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFull const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();

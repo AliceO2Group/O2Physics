@@ -31,7 +31,7 @@ struct mcInelGt0 {
   Service<o2::framework::O2DatabasePDG> pdgDB;
   SliceCache cache;
   Preslice<o2::aod::Tracks> perCollision = o2::aod::track::collisionId;
-  void process(o2::aod::McCollision const&  /*collisionMC*/,
+  void process(o2::aod::McCollision const& /*collisionMC*/,
                o2::soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>> const& collisions,
                const soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::McTrackLabels>& tracks,
                o2::aod::McParticles const& mcParticles)

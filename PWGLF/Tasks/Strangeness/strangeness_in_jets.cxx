@@ -754,7 +754,7 @@ struct strangeness_in_jets {
     return;
   }
 
-  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::V0sLinked const&  /*V0linked*/, FullTracks const& tracks)
+  void processData(SelectedCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::V0sLinked const& /*V0linked*/, FullTracks const& tracks)
   {
     registryQC.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
@@ -1094,7 +1094,7 @@ struct strangeness_in_jets {
   Preslice<aod::CascDataExt> perCollisionCasc = o2::aod::cascade::collisionId;
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
 
-  void processMCefficiency(SimCollisions const& collisions, MCTracks const&  /*mcTracks*/, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::McCollisions const&  /*mcCollisions*/, const aod::McParticles& mcParticles)
+  void processMCefficiency(SimCollisions const& collisions, MCTracks const& /*mcTracks*/, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::McCollisions const& /*mcCollisions*/, const aod::McParticles& mcParticles)
   {
     for (const auto& collision : collisions) {
       registryQC.fill(HIST("number_of_events_mc"), 0.5);

@@ -211,7 +211,7 @@ struct NucleiEfficiencyTask {
   //****************************************************************************************************
 
   template <typename CollisionType, typename TracksType, typename mcParticlesType>
-  void process_MC_reco(const CollisionType& collision, const TracksType& tracks, const mcParticlesType&  /*mcParticles*/)
+  void process_MC_reco(const CollisionType& collision, const TracksType& tracks, const mcParticlesType& /*mcParticles*/)
   {
     if (event_selection_MC_sel8 && !collision.sel8())
       return;

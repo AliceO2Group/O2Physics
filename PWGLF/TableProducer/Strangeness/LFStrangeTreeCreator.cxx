@@ -659,7 +659,7 @@ struct LFStrangeTreeCreator {
   }
   PROCESS_SWITCH(LFStrangeTreeCreator, processRun3, "process (Run 3)", false);
 
-  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const&  /*mcCollisions*/, TracksFullIU const& tracks, aod::V0s const& V0s, aod::Cascades const& cascades, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
+  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIU const& tracks, aod::V0s const& V0s, aod::Cascades const& cascades, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();

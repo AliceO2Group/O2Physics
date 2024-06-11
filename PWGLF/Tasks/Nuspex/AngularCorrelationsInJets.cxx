@@ -166,7 +166,7 @@ struct AngularCorrelationsInJets {
   //****************************************************************************************************
 
   template <typename CollisionType, typename TracksType>
-  void angCorrData(const CollisionType&  /*collision*/, const TracksType& tracks)
+  void angCorrData(const CollisionType& /*collision*/, const TracksType& tracks)
   {
     registryData.fill(HIST("hNumberOfEvents"), 0);
     registryData.fill(HIST("hEventProtocol"), 0);

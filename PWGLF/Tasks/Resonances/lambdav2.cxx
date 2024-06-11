@@ -265,7 +265,7 @@ struct lambdav2 {
 
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate,
-                   float  /*multiplicity*/)
+                   float /*multiplicity*/)
   {
     if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
@@ -386,7 +386,7 @@ struct lambdav2 {
   ROOT::Math::PxPyPzMVector Lambda;
 
   void processSE(EventCandidates::iterator const& collision,
-                 TrackCandidates const&  /*tracks*/, aod::V0Datas const& V0s,
+                 TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s,
                  aod::BCs const&)
 
   {

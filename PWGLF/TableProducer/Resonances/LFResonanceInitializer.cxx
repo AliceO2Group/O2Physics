@@ -329,7 +329,7 @@ struct reso2initializer {
 
   // Check if the collision is INEL>0
   template <typename MCColl, typename MCPart>
-  bool IsTrueINEL0(MCColl const&  /*mccoll*/, MCPart const& mcparts)
+  bool IsTrueINEL0(MCColl const& /*mccoll*/, MCPart const& mcparts)
   {
     for (auto& mcparticle : mcparts) {
       if (!mcparticle.isPhysicalPrimary())
