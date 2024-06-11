@@ -24,6 +24,8 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -36,7 +38,7 @@ using namespace o2::framework::expressions;
 
 struct HfTaskMcEfficiencyToXiPi {
 
-  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+  o2::hf_evsel::HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
   Configurable<float> rapidityCharmBaryonMax{"rapidityCharmBaryonMax", 0.5, "Max absolute value of rapidity for charm baryon"};
   Configurable<float> acceptanceEtaLf{"acceptanceEtaLf", 1.0, "Max absolute value of eta for LF daughters"};
