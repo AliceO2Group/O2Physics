@@ -14,8 +14,3 @@ o2physics_add_dpl_workflow(flow-generic-framework
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
                     COMPONENT_NAME Analysis)
 
-
-o2physics_add_dpl_workflow(flow-gf-task
-                    SOURCES flowGFPbPBTask.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
-                    COMPONENT_NAME Analysis)

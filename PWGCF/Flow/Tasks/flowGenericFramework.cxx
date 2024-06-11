@@ -143,9 +143,6 @@ struct flowAnalysisGF {
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
 
-  //  Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
-  //  Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
-  //
   void init(InitContext const&)
   {
     LOGF(info, "flowAnalysisGF::init()");
@@ -315,7 +312,6 @@ struct flowAnalysisGF {
     // static o2::parameters::GRPObject* grpo = nullptr;
     static o2::parameters::GRPMagField* grpo = nullptr;
     if (grpo == nullptr) {
-      // grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>("GLO/GRP/GRP", timestamp);
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
       if (grpo == nullptr) {
         LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
@@ -460,7 +456,6 @@ struct flowAnalysisGF {
     registry.fill(HIST("pt_phi_aft"), track.pt(), phimodn);
     return true;
 
-    //    LOGF(info, "- - - - - - - - - - - - - - - - - phimodn is : ", phimodn);
   }
 
   enum datatype {
