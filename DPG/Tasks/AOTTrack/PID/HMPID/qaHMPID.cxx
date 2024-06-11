@@ -71,8 +71,8 @@ struct pidHmpidQa {
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
   void process(const aod::HMPIDs& hmpids,
-               const TrackCandidates&  /*tracks*/,
-               const aod::Collisions&  /*colls*/)
+               const TrackCandidates& /*tracks*/,
+               const aod::Collisions& /*colls*/)
   {
 
     for (const auto& t : hmpids) {

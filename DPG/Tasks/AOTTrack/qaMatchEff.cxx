@@ -289,7 +289,7 @@ struct qaMatchEff {
         LOG(info) << "### Changing analysis DCAZ cut to " << dcaMaxCut->get("TrVtx", "dcaZ");
       }
       if (customAnaTrkSel.isChangeAnalysisCutDcaXY) {
-        cutObject.SetMaxDcaXYPtDep([this](float  /*pt*/) { return dcaMaxCut->get("TrVtx", "dcaXY"); });
+        cutObject.SetMaxDcaXYPtDep([this](float /*pt*/) { return dcaMaxCut->get("TrVtx", "dcaXY"); });
         LOG(info) << "### Changing analysis DcaXY cut to " << dcaMaxCut->get("TrVtx", "dcaXY");
       }
       if (customAnaTrkSel.isChangeAnalysisCutNClustersTPC) {
