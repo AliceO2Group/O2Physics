@@ -43,7 +43,7 @@ JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : TNamed(),
 }
 
 //________________________________________________________________________
-JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : TNamed(),
+JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : TNamed(a),
                                                           fVertex(a.fVertex),
                                                           fCent(a.fCent),
                                                           fImpactParameter(a.fImpactParameter),
