@@ -455,7 +455,6 @@ struct flowAnalysisGF {
     }
     registry.fill(HIST("pt_phi_aft"), track.pt(), phimodn);
     return true;
-
   }
 
   enum datatype {
