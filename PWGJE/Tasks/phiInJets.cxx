@@ -140,6 +140,8 @@ struct phiInJets {
     JEhistos.add("nEvents_MCRec_MATCHED", "nEvents_MCRec_MATCHED", kTH1F, {{4, 0.0, 4.0}});
     JEhistos.add("nEvents_MCGen_MATCHED", "nEvents_MCGen_MATCHED", kTH1F, {{4, 0.0, 4.0}});
 
+    JEhistos.add("hMCRec_nonmatch_hUSS_INSID_pt_v_eta", "hMCRec_nonmatch_hUSS_INSID_pt_v_eta", kTH2F, {PtAxis, axisEta});
+    JEhistos.add("hMCGen_nonmatch_hUSS_INSID_pt_v_eta", "hMCGen_nonmatch_hUSS_INSID_pt_v_eta", kTH2F, {PtAxis, axisEta});
     JEhistos.add("JetVsPhi_GEN", "JetVsPhi_GEN", kTH2F, {{4000, 0., 200.}, {200, 0, 20.0}});
     JEhistos.add("JetVsPhi_REC", "JetVsPhi_REC", kTH2F, {{4000, 0., 200.}, {200, 0, 20.0}});
     JEhistos.add("nJetsPerEvent", "nJetsPerEvent", kTH1F, {{10, 0.0, 10.0}});
@@ -610,6 +612,7 @@ struct phiInJets {
           }
 
           if (jetFlag) {
+            JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSID_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
             JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D"), lResonance.M());
             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
               JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
@@ -742,6 +745,7 @@ struct phiInJets {
           }
 
           if (jetFlag) {
+            JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_INSID_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
             JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_INSIDE_1D"), lResonance.M());
             if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
               JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
