@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGLF_UTILS_SVCREATOR_H_
-#define PWGLF_UTILS_SVCREATOR_H_
+#ifndef PWGLF_UTILS_SVPOOLCREATOR_H_
+#define PWGLF_UTILS_SVPOOLCREATOR_H_
 
 #include <array>
 #include "Framework/AnalysisTask.h"
@@ -24,25 +24,25 @@ using namespace o2::constants;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
-using VBracket = o2::math_utils::Bracket<int>;
+using CollBracket = o2::math_utils::Bracket<int>;
 constexpr auto bOffsetMax = 241; // track compatibility can never go beyond 6 mus (ITS)
 
 struct TrackCand {
   int Idxtr;
-  VBracket vBracket{};
+  CollBracket collBracket{};
 };
 
 struct SVCand {
   int tr0Idx;
   int tr1Idx;
-  VBracket vBracket{};
+  CollBracket collBracket{};
 };
 
-class svCreator
+class svPoolCreator
 {
  public:
 
-  svCreator(int track0Pdg, int track1Pdg)
+  svPoolCreator(int track0Pdg, int track1Pdg)
     : track0Pdg(track0Pdg), track1Pdg(track1Pdg)
   {
   }
@@ -135,14 +135,14 @@ class svCreator
       const auto& tref = tmap.find(trackCand.globalIndex());
       if (tref != tmap.end()) {
         LOG(debug) << "Track: " << trackCand.globalIndex() << " already processed with other vertex";
-        trackCandPool[tref->second.second][tref->second.first].vBracket.setMax(static_cast<int>(collIdx)); // this track was already processed with other vertex, account the latter
+        trackCandPool[tref->second.second][tref->second.first].collBracket.setMax(static_cast<int>(collIdx)); // this track was already processed with other vertex, account the latter
         continue;
       }
 
       int poolIndex = (1 - isDau0) * 2 + (trackCand.sign() < 0);
       trForpool.Idxtr = trackCand.globalIndex();
-      trForpool.vBracket = {static_cast<int>(collIdx), static_cast<int>(collIdx)};
-      // LOG(info) << "Adding track to pool: " << trForpool.Idxtr << " with bracket: " << trForpool.vBracket.getMin() << " " << trForpool.vBracket.getMax() << " and pool index: " << poolIndex;
+      trForpool.collBracket = {static_cast<int>(collIdx), static_cast<int>(collIdx)};
+      // LOG(info) << "Adding track to pool: " << trForpool.Idxtr << " with bracket: " << trForpool.collBracket.getMin() << " " << trForpool.collBracket.getMax() << " and pool index: " << poolIndex;
       trackCandPool[poolIndex].emplace_back(trForpool);
       tmap[trackCand.globalIndex()] = {trackCandPool[poolIndex].size() - 1, poolIndex};
     }
@@ -166,8 +166,8 @@ class svCreator
       const auto& signTrack0Pool = track0Pool[pn];
       for (unsigned i = 0; i < signTrack0Pool.size(); i++) {
         const auto& track0Seed = signTrack0Pool[i];
-        LOG(debug) << "Processsing track0 with index: " << track0Seed.Idxtr << " min bracket: " << track0Seed.vBracket.getMin() << " max bracket: " << track0Seed.vBracket.getMax();
-        for (int j{track0Seed.vBracket.getMin()}; j <= track0Seed.vBracket.getMax(); ++j) {
+        LOG(debug) << "Processsing track0 with index: " << track0Seed.Idxtr << " min bracket: " << track0Seed.collBracket.getMin() << " max bracket: " << track0Seed.collBracket.getMax();
+        for (int j{track0Seed.collBracket.getMin()}; j <= track0Seed.collBracket.getMax(); ++j) {
           if (vtxFirstT[j] == -1) {
             vtxFirstT[j] = i;
           }
@@ -177,9 +177,9 @@ class svCreator
       auto& signTrack1 = track1Pool[track1sign];
       for (unsigned itp = 0; itp < signTrack1.size(); itp++) {
         auto& track1Seed = signTrack1[itp];
-        LOG(debug) << "Processing track1 with index: " << track1Seed.Idxtr << " min bracket: " << track1Seed.vBracket.getMin() << " max bracket: " << track1Seed.vBracket.getMax();
+        LOG(debug) << "Processing track1 with index: " << track1Seed.Idxtr << " min bracket: " << track1Seed.collBracket.getMin() << " max bracket: " << track1Seed.collBracket.getMax();
         int firsOverlapIdx = -1;
-        for (int j{track1Seed.vBracket.getMin()}; j <= track1Seed.vBracket.getMax(); ++j) {
+        for (int j{track1Seed.collBracket.getMin()}; j <= track1Seed.collBracket.getMax(); ++j) {
           LOG(debug) << "Checking vtxFirstT at position " << j << " with value " << vtxFirstT[j];
           if (vtxFirstT[j] != -1) {
             firsOverlapIdx = vtxFirstT[j];
@@ -192,15 +192,15 @@ class svCreator
         for (unsigned itn = firsOverlapIdx; itn < signTrack0Pool.size(); itn++) {
           auto& track0Seed = signTrack0Pool[itn];
 
-          if (track0Seed.vBracket.getMin() > track1Seed.vBracket.getMax()) {
+          if (track0Seed.collBracket.getMin() > track1Seed.collBracket.getMax()) {
             break;
           }
 
-          if (track0Seed.vBracket.isOutside(track1Seed.vBracket)) {
+          if (track0Seed.collBracket.isOutside(track1Seed.collBracket)) {
             LOG(debug) << "Brackets do not match";
             continue;
           }
-          auto overlapBracket = track0Seed.vBracket.getOverlap(track1Seed.vBracket);
+          auto overlapBracket = track0Seed.collBracket.getOverlap(track1Seed.collBracket);
 
           svCandPool.emplace_back(SVCand{track0Seed.Idxtr, track1Seed.Idxtr, overlapBracket});
         }
@@ -224,4 +224,4 @@ class svCreator
   TrackCand trForpool;
 };
 
-#endif // PWGLF_UTILS_SVCREATOR_H_
+#endif // PWGLF_UTILS_SVPOOLCREATOR_H_

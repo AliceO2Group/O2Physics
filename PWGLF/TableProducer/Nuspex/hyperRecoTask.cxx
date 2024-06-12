@@ -33,13 +33,14 @@
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DCAFitter/DCAFitterN.h"
-
+#include "PWGLF/Utils/svPoolCreator.h"
 #include "PWGLF/DataModel/LFHypernucleiTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+using CollBracket = o2::math_utils::Bracket<int>;
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
@@ -122,6 +123,10 @@ struct hyperRecoTask {
   Produces<aod::MCHypCands> outputMCTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  // PDG codes
+  Configurable<int> hyperPdg{"hyperPDG", 1010010030, "PDG code of the hyper-mother (could be 3LamH or 4LamH)"};
+  Configurable<int> heDauPdg{"heDauPDG", 1000020030, "PDG code of the helium (could be 3He or 4He)"};
+
   // Selection criteria
   Configurable<double> v0cospacut{"hypcospa", 0.95, "V0 CosPA"};
   Configurable<float> masswidth{"hypmasswidth", 0.06, "Mass width (GeV/c^2)"};
@@ -135,13 +140,14 @@ struct hyperRecoTask {
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
+  svPoolCreator svCreator{heDauPdg, 211};
 
   // daughter masses
   float he3Mass = o2::constants::physics::MassHelium3;
   float he4Mass = o2::constants::physics::MassAlpha;
   float piMass = o2::constants::physics::MassPionCharged;
 
-  // bethe bloch parameters
+  Configurable<bool> useCustomVertexer{"useCustomVertexer", false, "Use custom vertexer"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", true, "If true, divide tpcInnerParam by the electric charge"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
@@ -154,10 +160,6 @@ struct hyperRecoTask {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
-
-  // PDG codes
-  Configurable<int> hyperPdg{"hyperPDG", 1010010030, "PDG code of the hyper-mother (could be 3LamH or 4LamH)"};
-  Configurable<int> heDauPdg{"heDauPDG", 1000020030, "PDG code of the helium (could be 3He or 4He)"};
 
   // histogram axes
   ConfigurableAxis rigidityBins{"rigidityBins", {200, -10.f, 10.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
@@ -302,10 +304,9 @@ struct hyperRecoTask {
       initCCDB(bc);
       hEvents->Fill(0.);
 
- 
-        if (!collision.sel8() || std::abs(collision.posZ()) > 10) {
-          continue;
-        }
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10) {
+        continue;
+      }
 
       goodCollision[collision.globalIndex()] = true;
       hEvents->Fill(1.);
@@ -342,7 +343,7 @@ struct hyperRecoTask {
   }
 
   template <class Ttrack, class Tcolls>
-  void fillHyperCand(Ttrack& heTrack, Ttrack& piTrack, std::vector<uint64_t> collVecIds, const Tcolls& collisions, hyperCandidate& hypCand)
+  void fillHyperCand(Ttrack& heTrack, Ttrack& piTrack, CollBracket collBracket, const Tcolls& collisions, hyperCandidate& hypCand)
   {
 
     hypCand.isMatter = heTrack.sign() > 0;
@@ -424,21 +425,25 @@ struct hyperRecoTask {
     double cosPAmax = -2;
     unsigned int collIDmax = 0;
 
-    for (unsigned int i = 0; i < collVecIds.size(); i++) {
-      auto collision = collisions.rawIteratorAt(collVecIds[i]);
+    for (int collID = collBracket.getMin(); collID <= collBracket.getMax(); collID++) {
+      auto collision = collisions.rawIteratorAt(collID);
       std::array<float, 3> collVtx = {collision.posX(), collision.posY(), collision.posZ()};
       double cosPA = RecoDecay::cpa(collVtx, hypCand.decVtx, hypMom);
       if (cosPA > cosPAmax) {
         cosPAmax = cosPA;
-        collIDmax = i;
+        collIDmax = collID;
       }
+    }
+
+    if (!goodCollision[collIDmax]) {
+      return;
     }
 
     if (cosPAmax < v0cospacut) {
       return;
     }
 
-    auto collision = collisions.rawIteratorAt(collVecIds[collIDmax]);
+    auto collision = collisions.rawIteratorAt(collIDmax);
     std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
     for (int i = 0; i < 3; i++) {
       hypCand.decVtx[i] = hypCand.decVtx[i] - primVtx[i];
@@ -469,16 +474,10 @@ struct hyperRecoTask {
       LOG(fatal) << "Bethe-Bloch parameters for He3 not set, please check your CCDB and configuration";
     }
     for (auto& v0 : V0s) {
+      // if(v0.isStandardV0())
+      //   continue;
       auto posTrack = tracks.rawIteratorAt(v0.posTrackId());
       auto negTrack = tracks.rawIteratorAt(v0.negTrackId());
-      uint64_t collIdx = v0.collision_as<Tcolls>().globalIndex();
-      if (!goodCollision[collIdx]) {
-        continue;
-      }
-
-      // create a std vector of Tcoll with the current collision
-      std::vector<uint64_t> collVecIds;
-      collVecIds.push_back(collIdx);
 
       if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax)
         continue;
@@ -497,13 +496,44 @@ struct hyperRecoTask {
       if (heTrack.tpcNClsFound() < nTPCClusMinHe) {
         continue;
       }
+
       hyperCandidate hypCand;
       hypCand.v0ID = v0.globalIndex();
 
-      fillHyperCand(heTrack, piTrack, collVecIds, collisions, hypCand);
+      int collIdx = v0.collision_as<Tcolls>().globalIndex();
+      CollBracket collBracket{collIdx, collIdx};
+
+      fillHyperCand(heTrack, piTrack, collBracket, collisions, hypCand);
     }
   }
 
+  template <class Tcolls, class Ttracks>
+  void fillCustomV0s(const Tcolls& collisions, const Ttracks& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs)
+  {
+
+    svCreator.clearPools();
+
+    for (auto& track : tracks) {
+      if (track.tpcNClsFound() < 70 || track.itsNCls() < 2) {
+        continue;
+      }
+      auto nSigmaHe = computeNSigmaHe3(track);
+      bool isHe = nSigmaHe > -1 * nSigmaMaxHe;
+      int pdgHypo = isHe ? heDauPdg : 211;
+      svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
+    }
+    auto& svPool = svCreator.getSVCandPool(collisions);
+    LOG(debug) << "SV pool size: " << svPool.size();
+
+    for (auto& svCand : svPool) {
+      auto heTrack = tracks.rawIteratorAt(svCand.tr0Idx);
+      auto piTrack = tracks.rawIteratorAt(svCand.tr1Idx);
+      auto collIdxs = svCand.collBracket;
+      hyperCandidate hypCand;
+      hypCand.v0ID = -1;
+      fillHyperCand(heTrack, piTrack, collIdxs, collisions, hypCand);
+    }
+  }
   void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const&)
   {
     for (auto& hypCand : hyperCandidates) {
@@ -542,25 +572,25 @@ struct hyperRecoTask {
     }
   }
 
-  void processDataTracked(CollisionsFull const& collisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processDataTracked(CollisionsFull const& collisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
   {
     isTracked.clear();
     isTracked.resize(V0s.size(), false);
     for (const auto& tV0 : tV0s) {
       isTracked[tV0.v0Id()] = true;
     }
-    processData(collisions, V0s, tracks, bcs);
+    processData(collisions, V0s, tracks, ambiTracks, bcs);
   }
   PROCESS_SWITCH(hyperRecoTask, processDataTracked, "Data analysis wit tracked V0s information", false);
 
-  void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
+  void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
   {
     goodCollision.clear();
     goodCollision.resize(collisions.size(), false);
     hyperCandidates.clear();
 
     selectGoodCollisions(collisions);
-    fillV0s(collisions, tracks, V0s);
+    useCustomVertexer ? fillCustomV0s(collisions, tracks, ambiTracks, bcs) : fillV0s(collisions, tracks, V0s);
 
     for (auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
@@ -578,7 +608,7 @@ struct hyperRecoTask {
   }
   PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
 
-  void processDataWithFlow(CollisionsFullWithFlow const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
+  void processDataWithFlow(CollisionsFullWithFlow const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
   {
 
     goodCollision.clear();
@@ -586,7 +616,7 @@ struct hyperRecoTask {
     hyperCandidates.clear();
 
     selectGoodCollisions(collisions);
-    fillV0s(collisions, tracks, V0s);
+    useCustomVertexer ? fillCustomV0s(collisions, tracks, ambiTracks, bcs) : fillV0s(collisions, tracks, V0s);
 
     for (auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
@@ -607,7 +637,7 @@ struct hyperRecoTask {
   }
   PROCESS_SWITCH(hyperRecoTask, processDataWithFlow, "Data analysis with flow", false);
 
-  void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     filledMothers.clear();
     isRecoCollision.clear();
@@ -619,14 +649,14 @@ struct hyperRecoTask {
     hyperCandidates.clear();
 
     selectGoodCollisionsMC(collisions);
-    LOG(info) << "Good collision selection done";
-    // V0s.bindExternalIndices(&tracks);
-    fillV0s(collisions, tracks, V0s);
+    useCustomVertexer ? fillCustomV0s(collisions, tracks, ambiTracks, bcs) : fillV0s(collisions, tracks, V0s);
     fillMCinfo(trackLabelsMC, particlesMC);
+    int counterSig = 0;
     for (auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
       if (!hypCand.isSignal && mcSignalOnly)
         continue;
+      counterSig++;
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                     collision.posX(), collision.posY(), collision.posZ(),
@@ -709,14 +739,14 @@ struct hyperRecoTask {
   }
   PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", false);
 
-  void processMCTracked(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  void processMCTracked(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     isTracked.clear();
     isTracked.resize(V0s.size(), false);
     for (const auto& tV0 : tV0s) {
       isTracked[tV0.v0Id()] = true;
     }
-    processMC(collisions, mcCollisions, V0s, tracks, bcs, trackLabelsMC, particlesMC);
+    processMC(collisions, mcCollisions, V0s, tracks, ambiTracks, bcs, trackLabelsMC, particlesMC);
   }
   PROCESS_SWITCH(hyperRecoTask, processMCTracked, "MC analysis with tracked V0s", false);
 };
