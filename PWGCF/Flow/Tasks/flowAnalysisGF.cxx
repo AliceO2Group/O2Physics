@@ -45,11 +45,7 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
-
-using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
-using myCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs>>;
-
-namespace o2::analysis::genericframework
+namespace o2::analysis::flowanalysis
 {
 std::vector<double> ptbinning = {
   0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
@@ -73,9 +69,9 @@ std::vector<double> centbinning(90);
 int nBootstrap = 10;
 GFWRegions regions;
 GFWCorrConfigs configs;
-} // namespace o2::analysis::genericframework
+}
 
-using namespace o2::analysis::genericframework;
+using namespace o2::analysis::flowanalysis;
 
 struct flowAnalysisGF {
 
@@ -107,7 +103,7 @@ struct flowAnalysisGF {
 
   Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "poiP refP | olP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "poiFull refFull | olFull {2 -2}", "refFull {2 2 -2 -2}", "poiFull refFull | olFull {2 2 -2 -2}"}, {"ChGap22", "ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull22", "ChFull24", "ChFull24"}, {0, 0, 0, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 1, 0, 1}}, "Configurations for each correlation to calculate"};
 
-  // #include "PWGCF/TwoParticleCorrelations/TableProducer/Productions/skimmingconf_20221115.cxx" // NOLINT
+  
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
 
@@ -413,9 +409,7 @@ struct flowAnalysisGF {
       if (zRes > 0.25 && collision.numContrib() < 20)
         vtxz = -999;
     }
-    // auto multV0A = collision.multFV0A();
-    // auto multT0A = collision.multFT0A();
-    // auto multT0C = collision.multFT0C();
+
     auto multNTracksPV = collision.multNTracksPV();
 
     if (vtxz > vtxZup || vtxz < vtxZlow)
@@ -442,7 +436,7 @@ struct flowAnalysisGF {
     if (track.sign() < 0) // for negative charge
       phimodn = TMath::TwoPi() - phimodn;
     if (phimodn < 0)
-      LOGF(warning, "phi < 0: %g", phimodn);
+      LOGF(debug, "phi < 0: %g", phimodn);
 
     phimodn += TMath::Pi() / 18.0; // to center gap in the middle
     phimodn = fmod(phimodn, TMath::Pi() / 9.0);
@@ -567,6 +561,7 @@ struct flowAnalysisGF {
       FillGFW(track, weff, wacc);
     }
   }
+  
   template <typename TrackObject>
   inline void FillGFW(TrackObject track, float weff, float wacc)
   {
@@ -606,49 +601,48 @@ struct flowAnalysisGF {
     registry.fill(HIST("multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
     return;
   }
+  
+  template <typename CollisionObject, typename TracksObject>
+  inline void RunProcess(CollisionObject collision, TracksObject tracks)
+  {
+    
+    float centrality;
+    
+      if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns>){
+        if (!collision.sel7()) return;
+        centrality = collision.centRun2V0M();
+      }
+      else if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>){
+        registry.fill(HIST("hEventCount"), .5);
+        if (!collision.sel8()) return;
+        registry.fill(HIST("hEventCount"), 1.5);
+        centrality = collision.centFT0C();
+        if (cfgFillQA)
+          FillEventQA(collision, tracks);
+      }
+    
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality))
+        return;
+      loadCorrections(bc.timestamp());
+      auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
+      processCollision<kReco>(collision, tracks, centrality, field);
+  }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
+  
   using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
-
-  void processData(myCollisions::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
+  
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
   {
-    registry.fill(HIST("hEventCount"), .5);
-
-    if (!collision.sel8())
-      return;
-
-    int Ntot = tracks.size();
-    if (Ntot < 1)
-      return;
-
-    const auto centrality = collision.centFT0C();
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality))
-      return;
-    if (cfgFillQA)
-      FillEventQA(collision, tracks);
-    loadCorrections(bc.timestamp());
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-
-    processCollision<kReco>(collision, tracks, centrality, field);
+    RunProcess(collision, tracks);
   }
   PROCESS_SWITCH(flowAnalysisGF, processData, "Process analysis for non-derived data", true);
 
   void processMCReco(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>> const& tracks, aod::McParticles const&)
   {
-    if (!collision.sel8())
-      return;
-    const auto centrality = collision.centFT0C();
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality))
-      return;
-    if (cfgFillQA)
-      FillEventQA(collision, tracks);
-    loadCorrections(bc.timestamp());
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field);
+    RunProcess(collision, tracks);
   }
   PROCESS_SWITCH(flowAnalysisGF, processMCReco, "Process analysis for MC reconstructed events", false);
 
@@ -667,13 +661,7 @@ struct flowAnalysisGF {
 
   void processRun2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
   {
-    if (!collision.sel7())
-      return;
-    const auto centrality = collision.centRun2V0M();
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    loadCorrections(bc.timestamp());
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field);
+    RunProcess(collision, tracks);
   }
   PROCESS_SWITCH(flowAnalysisGF, processRun2, "Process analysis for Run 2 converted data", false);
 };
