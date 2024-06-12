@@ -113,13 +113,11 @@ struct SGExclOmega {
     gapSide = truegapSide;
     // if (gapSide!=2) return;
     int pvtracks = 0;
-    int sign = 0;
     int esign = 0;
     int nElec = 0;
     for (auto& t0 : tracks) {
       if (trackselector(t0, parameters) && t0.isPVContributor()) {
         pvtracks++;
-        sign += t0.sign();
         if (selectionPIDElec(t0, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
           nElec++;
           esign += t0.sign();
