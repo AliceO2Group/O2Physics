@@ -398,18 +398,15 @@ struct v2ellip {
           pn_sumsinA_pr[pt] += TMath::Sin(2 * track1.phi());
           pn_sumcosA_pr[pt] += TMath::Cos(2 * track1.phi());
           mpA_pr[pt]++;
-        } // for proton
-        else if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 0)) {
+        } else if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 0)) {
           pn_sumsinA_pi[pt] += TMath::Sin(2 * track1.phi());
           pn_sumcosA_pi[pt] += TMath::Cos(2 * track1.phi());
           mpA_pi[pt]++;
-        } // for pion
-        else if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 1)) {
+        } else if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 1)) {
           pn_sumsinA_k[pt] += TMath::Sin(2 * track1.phi());
           pn_sumcosA_k[pt] += TMath::Cos(2 * track1.phi());
           mpA_k[pt]++;
-        } // for kaon
-        else
+        } else
           continue;
       } // end of pt loop
     }   // track loop ends
@@ -442,18 +439,15 @@ struct v2ellip {
           pn_sumsinB_pr[pt] += TMath::Sin(2 * track2.phi());
           pn_sumcosB_pr[pt] += TMath::Cos(2 * track2.phi());
           mpB_pr[pt]++;
-        } // for proton
-        else if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 0)) {
+        } else if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 0)) {
           pn_sumsinB_pi[pt] += TMath::Sin(2 * track2.phi());
           pn_sumcosB_pi[pt] += TMath::Cos(2 * track2.phi());
           mpB_pi[pt]++;
-        } // for pion
-        else if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 1)) {
+        } else if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 1)) {
           pn_sumsinB_k[pt] += TMath::Sin(2 * track2.phi());
           pn_sumcosB_k[pt] += TMath::Cos(2 * track2.phi());
           mpB_k[pt]++;
-        } // for kaon
-        else
+        } else
           continue;
       } // end of pt loop
 
@@ -463,19 +457,19 @@ struct v2ellip {
 
     // reference flow
     if ((multA * multB) != 0) {
-      histos.fill(HIST("profv2ref"), 1, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / ((double)multA * multB)), multA * multB);
+      histos.fill(HIST("profv2ref"), 1, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
     }
 
     // pt wise differential flow
     for (auto pt = 0; pt < 14; pt++) {
       if ((mpA_pr[pt] * multB) != 0) {
-        histos.fill(HIST("profv2diff_pr"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / ((double)mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
+        histos.fill(HIST("profv2diff_pr"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
       } // for proton
       if ((mpA_pi[pt] * multB) != 0) {
-        histos.fill(HIST("profv2diff_pi"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / ((double)mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
+        histos.fill(HIST("profv2diff_pi"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
       } // for pion
       if ((mpA_k[pt] * multB) != 0) {
-        histos.fill(HIST("profv2diff_k"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / ((double)mpA_k[pt] * multB)), mpA_k[pt] * multB);
+        histos.fill(HIST("profv2diff_k"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
       } // for kaon
     }
 
