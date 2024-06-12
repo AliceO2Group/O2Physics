@@ -43,7 +43,7 @@ using namespace o2::aod::pwgem::photon;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit, aod::EMAmbiguousElectronSelfIds>;
 using MyTrack = MyTracks::iterator;
 
 struct dielectronQC {
@@ -283,9 +283,15 @@ struct dielectronQC {
   template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2>
   bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2)
   {
-    if (t1.trackId() == t2.trackId()) { // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
-      // LOGF(info, "event id = %d , same track is found. t1.trackId() = %d, t1.collisionId() = %d, t1.pt() = %f, t1.eta() = %f, t1.phi() = %f, t2.trackId() = %d, t2.collisionId() = %d, t2.pt() = %f, t2.eta() = %f, t2.phi() = %f", ev_id, t1.trackId(), t1.collisionId(), t1.pt(), t1.eta(), t1.phi(), t2.trackId(), t2.collisionId(),  t2.pt(), t2.eta(), t2.phi());
-      return false;
+    if constexpr (ev_id == 1) {
+      for (auto& possible_id1 : t1.ambiguousElectronsIds()) {
+        for (auto& possible_id2 : t2.ambiguousElectronsIds()) {
+          if (possible_id1 == possible_id2) {
+            // LOGF(info, "event id = %d , same track is found. t1.trackId() = %d, t1.collisionId() = %d, t1.pt() = %f, t1.eta() = %f, t1.phi() = %f, t2.trackId() = %d, t2.collisionId() = %d, t2.pt() = %f, t2.eta() = %f, t2.phi() = %f", ev_id, t1.trackId(), t1.collisionId(), t1.pt(), t1.eta(), t1.phi(), t2.trackId(), t2.collisionId(), t2.pt(), t2.eta(), t2.phi());
+            return false; // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
+          }
+        }
+      }
     }
 
     if constexpr (ev_id == 0) {
@@ -359,30 +365,27 @@ struct dielectronQC {
       std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, t1.globalIndex());
       std::pair<int, int> pair_tmp_id2 = std::make_pair(ndf, t2.globalIndex());
 
-      if (t1.sign() > 0) {
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id1) == used_trackIds.end()) {
-          emh_pos->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron, t1.sign(), t1.dca3DinSigma()));
-          used_trackIds.emplace_back(pair_tmp_id1);
-          fillTrackInfo(t1);
-        }
-      } else {
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id1) == used_trackIds.end()) {
-          emh_ele->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron, t1.sign(), t1.dca3DinSigma()));
-          used_trackIds.emplace_back(pair_tmp_id1);
-          fillTrackInfo(t1);
+      std::vector<int> possibleIds1;
+      std::vector<int> possibleIds2;
+      std::copy(t1.ambiguousElectronsIds().begin(), t1.ambiguousElectronsIds().end(), std::back_inserter(possibleIds1));
+      std::copy(t2.ambiguousElectronsIds().begin(), t2.ambiguousElectronsIds().end(), std::back_inserter(possibleIds2));
+
+      if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id1) == used_trackIds.end()) {
+        used_trackIds.emplace_back(pair_tmp_id1);
+        fillTrackInfo(t1);
+        if (t1.sign() > 0) {
+          emh_pos->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron, t1.sign(), t1.dca3DinSigma(), possibleIds1));
+        } else {
+          emh_ele->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t1.trackId(), t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron, t1.sign(), t1.dca3DinSigma(), possibleIds1));
         }
       }
-      if (t2.sign() > 0) {
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id2) == used_trackIds.end()) {
-          emh_pos->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron, t2.sign(), t2.dca3DinSigma()));
-          used_trackIds.emplace_back(pair_tmp_id2);
-          fillTrackInfo(t2);
-        }
-      } else {
-        if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id2) == used_trackIds.end()) {
-          emh_ele->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron, t2.sign(), t2.dca3DinSigma()));
-          used_trackIds.emplace_back(pair_tmp_id2);
-          fillTrackInfo(t2);
+      if (std::find(used_trackIds.begin(), used_trackIds.end(), pair_tmp_id2) == used_trackIds.end()) {
+        used_trackIds.emplace_back(pair_tmp_id2);
+        fillTrackInfo(t2);
+        if (t2.sign() > 0) {
+          emh_pos->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron, t2.sign(), t2.dca3DinSigma(), possibleIds2));
+        } else {
+          emh_ele->AddTrackToEventPool(key_df_collision, EMTrack(collision.globalIndex(), t2.trackId(), t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron, t2.sign(), t2.dca3DinSigma(), possibleIds2));
         }
       }
     }
