@@ -1146,15 +1146,16 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
 {
   using namespace o2::analysis::identifiedbffilter;
 
-  fhNSigmaTPC[kIdBfElectron]->Fill(track.tpcNSigmaEl(), track.p());
-  fhNSigmaTPC[kIdBfPion]->Fill(track.tpcNSigmaPi(), track.p());
-  fhNSigmaTPC[kIdBfKaon]->Fill(track.tpcNSigmaKa(), track.p());
-  fhNSigmaTPC[kIdBfProton]->Fill(track.tpcNSigmaPr(), track.p());
-
-  fhNSigmaTOF[kIdBfElectron]->Fill(track.tofNSigmaEl(), track.p());
-  fhNSigmaTOF[kIdBfPion]->Fill(track.tofNSigmaPi(), track.p());
-  fhNSigmaTOF[kIdBfKaon]->Fill(track.tofNSigmaKa(), track.p());
-  fhNSigmaTOF[kIdBfProton]->Fill(track.tofNSigmaPr(), track.p());
+  if(!onlyTOF){
+    fhNSigmaTPC[kIdBfElectron]->Fill(track.tpcNSigmaEl(), track.tpcInnerParam());
+    fhNSigmaTPC[kIdBfPion]->Fill(track.tpcNSigmaPi(), track.tpcInnerParam());
+    fhNSigmaTPC[kIdBfKaon]->Fill(track.tpcNSigmaKa(), track.tpcInnerParam());
+    fhNSigmaTPC[kIdBfProton]->Fill(track.tpcNSigmaPr(), track.tpcInnerParam());
+  }
+  fhNSigmaTOF[kIdBfElectron]->Fill(track.tofNSigmaEl(), track.tpcInnerParam());
+  fhNSigmaTOF[kIdBfPion]->Fill(track.tofNSigmaPi(), track.tpcInnerParam());
+  fhNSigmaTOF[kIdBfKaon]->Fill(track.tofNSigmaKa(), track.tpcInnerParam());
+  fhNSigmaTOF[kIdBfProton]->Fill(track.tofNSigmaPr(), track.tpcInnerParam());
 
   float nsigmas[kIdBfNoOfSpecies];
   if (track.p() < 0.8 && !reqTOF && !onlyTOF) {
@@ -1177,7 +1178,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
       nsigmas[kIdBfKaon] = track.tpcNSigmaKa();
       nsigmas[kIdBfProton] = track.tpcNSigmaPr();
 
-    } else if (onlyTOF) {
+    } else if (track.hasTOF() && onlyTOF) {
       nsigmas[kIdBfElectron] = track.tofNSigmaEl();
       nsigmas[kIdBfPion] = track.tofNSigmaPi();
       nsigmas[kIdBfKaon] = track.tofNSigmaKa();
@@ -1203,19 +1204,19 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   float min_nsigma = 999.0f;
   MatchRecoGenSpecies sp_min_nsigma = kWrongSpecies;
   for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
-    if (nsigmas[sp] < min_nsigma) {            // Check if species nsigma is less than current nsigma
+    if (abs(nsigmas[sp]) < min_nsigma) {            // Check if species nsigma is less than current nsigma
       min_nsigma = nsigmas[sp];                // If yes, set species nsigma to current nsigma
       sp_min_nsigma = MatchRecoGenSpecies(sp); // set current species sp number to current sp
     }
   }
   bool doublematch = false;
-  int spDouble = 0;
+  MatchRecoGenSpecies spDouble = kWrongSpecies;
   if (min_nsigma < minPIDSigma) {                                     // Check that current nsigma is less than required minimum
     for (int sp = 0; (sp < kIdBfNoOfSpecies) && !doublematch; ++sp) { // iterate over all species while there's no double match and we're in the list
       if (sp != sp_min_nsigma) {                                      // for species not current minimum nsigma species
-        if (nsigmas[sp] < minPIDSigma) {                              // If secondary species nsigma ALSO less than required minimum
+        if (abs(nsigmas[sp]) < minPIDSigma) {                         // If secondary species nsigma ALSO less than required minimum
           doublematch = true;                                         // Set double match true
-          spDouble = sp;
+          spDouble = MatchRecoGenSpecies(sp);
         }
       }
     }
@@ -1226,6 +1227,20 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
       fhDoublePID->Fill(sp_min_nsigma, spDouble);
       return kWrongSpecies; // Return wrong species value
     } else {
+      if(track.hasTOF() && onlyTOF){
+        if (sp_min_nsigma==0){
+          fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaEl(), track.tpcInnerParam());
+        }
+        if (sp_min_nsigma==1){
+          fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaPi(), track.tpcInnerParam());
+        }
+        if (sp_min_nsigma==2){
+          fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaKa(), track.tpcInnerParam());
+        }
+        if (sp_min_nsigma==3){
+          fhNSigmaTPC[sp_min_nsigma]->Fill(track.tpcNSigmaPr(), track.tpcInnerParam());
+        }
+      }
       return sp_min_nsigma;
     }
   } else {
