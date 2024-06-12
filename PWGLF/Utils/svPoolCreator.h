@@ -13,6 +13,9 @@
 #define PWGLF_UTILS_SVPOOLCREATOR_H_
 
 #include <array>
+#include <unordered_map>
+#include <vector>
+#include <utility>
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/Core/trackUtilities.h"
