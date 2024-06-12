@@ -133,11 +133,7 @@ struct SGExclOmega {
     }
     // Look for D0 and D0bar
     // if (pvtracks != 6) return;
-    if (nElec != 4 || esign != 0 || pvtracks < 6)
-      return;
-    //	    std::cout << nElec <<"\t" <<esign<<std::endl;
-    //	    return;
-    //}
+    if (nElec != 4 || esign != 0 || pvtracks < 6) return;
     // Apply pion hypothesis and create pairs
     v00 = els[0] + els[1] + els[2] + els[3];
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
@@ -146,7 +142,6 @@ struct SGExclOmega {
       v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
       v1.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
       v01 = v0 + v1 + v00;
-      //	if (v00.M() > 0.2) return;
       // Opposite sign pairs
       if (t0.sign() != t1.sign()) {
         registry.fill(HIST("os_O_pT"), v01.Pt());
