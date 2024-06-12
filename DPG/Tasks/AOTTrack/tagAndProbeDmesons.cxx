@@ -272,7 +272,7 @@ struct TagTwoProngDisplacedVertices {
 
   void init(InitContext&)
   {
-    if ((doprocessPiPiFromDplus && doprocessPiPiFromDplusMc) || (doprocessKaKaFromDsOrDplus && doprocessKaKaFromDsOrDplusMc) || (doprocessKaPiFromDstar && doprocessKaPiFromDstarMc) || (doprocessKaKaFromDzero && doprocessKaKaFromDzeroMc)) {
+    if ((doprocessPiPiFromDplus && doprocessPiPiFromDplusMc) || (doprocessKaKaFromDsOrDplus && doprocessKaKaFromDsOrDplusMc) || (doprocessKaPiFromDstar && doprocessKaPiFromDstarMc)) {
       LOGP(fatal, "The process functions for the same channel with and without MC truth cannot be enabled at the same time! Please check your configuration");
     }
 
@@ -314,7 +314,7 @@ struct TagTwoProngDisplacedVertices {
         registry.add<THnSparse>("hMassKaPiVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2}); #it{M}(#piK) (GeV/#it{c}^{2}); ReflFag", HistType::kTHnSparseF, {axisPtDzeroRefl, axisMassKaPi, axisMassKaPi, axisReflFlag});
       }
     }
-    if (doprocessKaKaFromDzero || doprocessKaKaFromDzeroMc) {
+    if (doprocessKaKaFromDzero) {
       registry.add<TH2>("hMassDzeroKaKaVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaPi});
     }
 
