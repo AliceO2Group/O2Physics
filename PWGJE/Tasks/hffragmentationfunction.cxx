@@ -73,8 +73,17 @@ DECLARE_SOA_COLUMN(HfEta, hfeta, float);
 DECLARE_SOA_COLUMN(HfPhi, hfphi, float);
 DECLARE_SOA_COLUMN(HfMass, hfmass, float);
 DECLARE_SOA_COLUMN(HfY, hfy, float);
-DECLARE_SOA_COLUMN(HfMatch, hfmatch, bool);
 DECLARE_SOA_COLUMN(HfPrompt, hfPrompt, bool);
+DECLARE_SOA_COLUMN(MCJetHfDist, mcjethfdist, float);
+DECLARE_SOA_COLUMN(MCJetPt, mcjetpt, float);
+DECLARE_SOA_COLUMN(MCJetEta, mcjeteta, float);
+DECLARE_SOA_COLUMN(MCJetPhi, mcjetphi, float);
+DECLARE_SOA_COLUMN(MCHfPt, mchfpt, float);
+DECLARE_SOA_COLUMN(MCHfEta, mchfeta, float);
+DECLARE_SOA_COLUMN(MCHfPhi, mchfphi, float);
+DECLARE_SOA_COLUMN(MCHfY, mchfy, float);
+DECLARE_SOA_COLUMN(MCHfPrompt, mchfPrompt, bool);
+DECLARE_SOA_COLUMN(MCHfMatch, mchfmatch, bool);
 } // namespace jet_distance
 DECLARE_SOA_TABLE(JetDistanceTable, "AOD", "JETDISTTABLE",
                   jet_distance::JetHfDist,
@@ -87,17 +96,26 @@ DECLARE_SOA_TABLE(JetDistanceTable, "AOD", "JETDISTTABLE",
                   jet_distance::HfMass,
                   jet_distance::HfY);
 DECLARE_SOA_TABLE(MCPJetDistanceTable, "AOD", "MCPJETDISTTABLE",
-                  jet_distance::JetHfDist,
-                  jet_distance::JetPt,
-                  jet_distance::JetEta,
-                  jet_distance::JetPhi,
-                  jet_distance::HfPt,
-                  jet_distance::HfEta,
-                  jet_distance::HfPhi,
-                  jet_distance::HfY,
-                  jet_distance::HfPrompt,
-                  jet_distance::HfMatch);
-DECLARE_SOA_TABLE(MCDJetDistanceTable, "AOD", "MCDJETDISTTABLE",
+                  jet_distance::MCJetHfDist,
+                  jet_distance::MCJetPt,
+                  jet_distance::MCJetEta,
+                  jet_distance::MCJetPhi,
+                  jet_distance::MCHfPt,
+                  jet_distance::MCHfEta,
+                  jet_distance::MCHfPhi,
+                  jet_distance::MCHfY,
+                  jet_distance::MCHfPrompt,
+                  jet_distance::MCHfMatch);
+DECLARE_SOA_TABLE(MatchJetDistanceTable, "AOD", "MATCHTABLE",
+                  jet_distance::MCJetHfDist,
+                  jet_distance::MCJetPt,
+                  jet_distance::MCJetEta,
+                  jet_distance::MCJetPhi,
+                  jet_distance::MCHfPt,
+                  jet_distance::MCHfEta,
+                  jet_distance::MCHfPhi,
+                  jet_distance::MCHfY,
+                  jet_distance::MCHfPrompt,
                   jet_distance::JetHfDist,
                   jet_distance::JetPt,
                   jet_distance::JetEta,
@@ -107,15 +125,14 @@ DECLARE_SOA_TABLE(MCDJetDistanceTable, "AOD", "MCDJETDISTTABLE",
                   jet_distance::HfPhi,
                   jet_distance::HfMass,
                   jet_distance::HfY,
-                  jet_distance::HfPrompt,
-                  jet_distance::HfMatch);
+                  jet_distance::HfPrompt);
 } // namespace o2::aod
 
 struct HfFragmentationFunctionTask {
   // producing new table
   Produces<aod::JetDistanceTable> distJetTable;
   Produces<aod::MCPJetDistanceTable> mcpdistJetTable;
-  Produces<aod::MCDJetDistanceTable> mcddistJetTable;
+  Produces<aod::MatchJetDistanceTable> matchJetTable;
 
   // Tables for MC jet matching
   using JetMCDTable = soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>;
@@ -133,6 +150,8 @@ struct HfFragmentationFunctionTask {
   {
 
     // create histograms
+    // collision system histograms
+    registry.add("h_collision_counter", ";# collisions;", {HistType::kTH1F, {{2, 0., 1.}}});
     // D0 candidate histograms from data
     registry.add("h_jet_counter", ";# jets;", {HistType::kTH1F, {{2, 0., 1.}}});
     registry.add("h_d0_jet_projection", ";z^{D^{0},jet}_{||};dN/dz^{D^{0},jet}_{||}", {HistType::kTH1F, {{1000, 0., 10.}}});
@@ -151,7 +170,6 @@ struct HfFragmentationFunctionTask {
 
   void processDataChargedSubstructure(JetCollision const&,
                                       soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
-                                      JetTracks const&,
                                       CandidatesD0Data const&)
   {
 
@@ -163,7 +181,7 @@ struct HfFragmentationFunctionTask {
       // obtaining jet 3-vector
       TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
-      for (auto& d0Candidate : jet.hfcandidates_as<CandidatesD0Data>()) { // for jet constituents use -> auto& jetConstituent : jet.tracks_as<JetTracks>()
+      for (auto& d0Candidate : jet.hfcandidates_as<CandidatesD0Data>()) {
 
         // obtaining jet 3-vector
         TVector3 d0Vector(d0Candidate.px(), d0Candidate.py(), d0Candidate.pz());
@@ -199,35 +217,16 @@ struct HfFragmentationFunctionTask {
                                JetCollisionsMCD const& collisions,
                                JetMCDTable const& mcdjets,
                                JetMCPTable const& mcpjets,
-                               CandidatesD0MCD const& /*mcdd0cands*/,
-                               CandidatesD0MCP const& /*mcpd0cands*/,
-                               JetTracks const& /*tracks*/,
-                               JetParticles const& /*particles*/)
+                               CandidatesD0MCD const&,
+                               CandidatesD0MCP const&)
   {
-    double axisDistance = 0;
+    double axisDistanceMCD = 0;
+    double axisDistanceMCP = 0;
 
     for (const auto& mccollision : mccollisions) {
-
-      // reconstructed collisions associated to same mccollision
-      const auto collisionsPerMCCollision = collisions.sliceBy(CollisionsPerMCCollision, mccollision.globalIndex());
-      for (const auto& collision : collisionsPerMCCollision) {
-        // d0 detector level jets associated to the current same collision
-        const auto d0mcdJetsPerCollision = mcdjets.sliceBy(D0MCDJetsPerCollision, collision.globalIndex());
-        for (const auto& mcdjet : d0mcdJetsPerCollision) {
-
-          // obtain leading HF candidate in jet (is this correct?)
-          auto mcdd0cand = mcdjet.template hfcandidates_first_as<CandidatesD0MCD>();
-
-          // calculating angular distance in eta-phi plane
-          axisDistance = RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi()));
-
-          // store data in MC detector level table
-          mcddistJetTable(axisDistance,
-                          mcdjet.pt(), mcdjet.eta(), mcdjet.phi(),                                                                                                    // detector level jet
-                          mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0 candidate
-                          mcdjet.has_matchedJetCand());
-        }
-      }
+      
+      // fill jet counter histogram
+      registry.fill(HIST("h_collision_counter"), 0.5);
 
       // d0 particle level jets associated to same mccollision
       const auto d0mcpJetsPerMCCollision = mcpjets.sliceBy(D0MCPJetsPerMCCollision, mccollision.globalIndex());
@@ -237,15 +236,33 @@ struct HfFragmentationFunctionTask {
         auto mcpd0cand = mcpjet.template hfcandidates_first_as<CandidatesD0MCP>();
 
         // calculating angular distance in eta-phi plane
-        axisDistance = RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi()));
+        axisDistanceMCP = RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi()));
 
-        // store data in MC detector level table
-        mcpdistJetTable(axisDistance,
+        // store data in MC particle level table
+        mcpdistJetTable(axisDistanceMCP,
                         mcpjet.pt(), mcpjet.eta(), mcpjet.phi(),                                                                                     // particle level jet
                         mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt), // particle level D0
                         mcpjet.has_matchedJetCand());
+        
+        // loop through detector level matched to current particle level
+        for (auto& mcdjet : mcpjet.template matchedJetCand_as<JetMCDTable>()) {
+          
+          // obtain leading HF candidate in jet
+          auto mcdd0cand = mcdjet.template hfcandidates_first_as<CandidatesD0MCD>();
+          
+          // calculating angular distance in eta-phi plane
+          axisDistanceMCD = RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi()));
+
+          // store matched particle and detector level data in one single table
+          matchJetTable(axisDistanceMCP, mcpjet.pt(), mcpjet.eta(), mcpjet.phi(),                                                                                     // particle level jet
+                        mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                  // particle level D0
+                        axisDistanceMCD, mcdjet.pt(), mcdjet.eta(), mcdjet.phi(),                                                                                     // detector level jet
+                        mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt));  // detector level
+        }
+        
       }
     }
+
   }
   PROCESS_SWITCH(HfFragmentationFunctionTask, processMcChargedMatched, "matched MC HF jets", false);
 };
