@@ -1203,7 +1203,8 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
 }
 
 template <typename T>
-void VarManager::FillBC(T const& bc, float* values) {
+void VarManager::FillBC(T const& bc, float* values)
+{
   if (!values) {
     values = fgValues;
   }

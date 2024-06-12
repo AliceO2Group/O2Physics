@@ -82,7 +82,6 @@ using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, ao
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
 using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::McCollisionLabels>;
 
-
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkEventFillMapWithMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult;
 constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
@@ -107,14 +106,14 @@ struct TableMakerMC {
   Produces<ReducedEventsExtended> eventExtended;
   Produces<ReducedEventsVtxCov> eventVtxCov;
   Produces<ReducedMCEventLabels> eventMClabels;
-  
+
   Produces<ReducedTracks> trackBasic;
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
   Produces<ReducedTracksBarrelPID> trackBarrelPID;
   Produces<ReducedTracksAssoc> trackBarrelAssoc;
   Produces<ReducedTracksBarrelLabels> trackBarrelLabels;
-  
+
   Produces<ReducedMuons> muonBasic;
   Produces<ReducedMuonsExtra> muonExtra;
   Produces<ReducedMuonsCov> muonCov;
@@ -133,7 +132,7 @@ struct TableMakerMC {
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiPID1", "barrel track cut"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
-  
+
   // MC signals to be skimmed
   Configurable<std::string> fConfigMCSignals{"cfgMCsignals", "", "Comma separated list of MC signals"};
 
@@ -155,7 +154,7 @@ struct TableMakerMC {
   Configurable<bool> fConfigBarrelRequireITS{"cfgBarrelRequireITS", true, "Require ITS for tracks in the barrel"};
   Configurable<float> fConfigBarrelMaxITSchi2{"cfgBarrelMaxITSchi2", 36.0f, "Maximum ITS chi2/ndf for tracks in the barrel"};
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 1.0f, "Low pt cut for muons"};
-  
+
   // CCDB connection configurables
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
@@ -276,7 +275,7 @@ struct TableMakerMC {
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        fCCDB->get<TGeoManager>(geoPath);
+      fCCDB->get<TGeoManager>(geoPath);
     }
   }
 
@@ -312,7 +311,8 @@ struct TableMakerMC {
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::MFTTrackAssoc> mfttrackIndicesPerCollision = aod::track_association::collisionId;
 
-  void skimMCCollisions(aod::McCollisions const& mcCollisions) {
+  void skimMCCollisions(aod::McCollisions const& mcCollisions)
+  {
     // skim MC collisions
     // NOTE: So far, all MC collisions are skimmed. In case there will be filtering based on MC collisions,
     //       one has to do a mapping of the old vs new indices so that the skimmed labels are properly updated.
@@ -329,14 +329,15 @@ struct TableMakerMC {
     LOG(info) << "skimMCCollisions lastIndex :: " << eventMC.lastIndex();
   }
 
-  void skimMCParticles(aod::McParticles const& mcTracks, aod::McCollisions const&) {
+  void skimMCParticles(aod::McParticles const& mcTracks, aod::McCollisions const&)
+  {
     // select MC particles which fulfill at least one of the specified MC signals
     fLabelsMap.clear();
     fLabelsMapReversed.clear();
     fMCFlags.clear();
 
     LOG(info) << "skimMCParticles IN";
-    
+
     uint16_t mcflags = 0;
     int trackCounter = 0;
 
@@ -551,8 +552,8 @@ struct TableMakerMC {
       //       However, in data analysis one should loop over associations, so this one should not be used.
       //      In the case of Run2-like analysis, there will be no associations, so this ID will be the one originally assigned in the AO2Ds (updated for the skims)
       uint32_t reducedEventIdx = -1;
-      if (track.has_collision() && 
-          fCollIndexMap.find(track.collisionId()) != fCollIndexMap.end()) {  // if the original track collisionId is from a not skimmed collision, keep -1 as coll index
+      if (track.has_collision() &&
+          fCollIndexMap.find(track.collisionId()) != fCollIndexMap.end()) { // if the original track collisionId is from a not skimmed collision, keep -1 as coll index
         reducedEventIdx = fCollIndexMap[track.collisionId()];
       }
       trackBasic(reducedEventIdx, trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), 0);
@@ -580,7 +581,7 @@ struct TableMakerMC {
       // Check whether the MCParticle corresponding to this reconstructed track was already selected for skimming
       // If not, add it to the skimming map
       if (!track.has_mcParticle()) {
-        trackBarrelLabels(-1, 0, 0);    // this is the case when there is no matched MCParticle 
+        trackBarrelLabels(-1, 0, 0); // this is the case when there is no matched MCParticle
       } else {
         auto mctrack = track.template mcParticle_as<aod::McParticles>();
         VarManager::FillTrackMC(mcTracks, mctrack);
@@ -620,7 +621,7 @@ struct TableMakerMC {
     } // end loop over associations
 
     LOG(info) << "skimTracks track.lastIndex() / trackAssoc.lastIndex() :: " << trackBasic.lastIndex() << " / " << trackBarrelAssoc.lastIndex();
-  }   // end skimTracks
+  } // end skimTracks
 
   template <uint32_t TMFTFillMap, typename TEvent>
   void skimMFT(TEvent const& collision, MFTTracks const& mfts, MFTTrackAssoc const& mftAssocs)
@@ -731,10 +732,10 @@ struct TableMakerMC {
                   }
                   j++;
                 }
-              }  // end if do detailed QA
+              } // end if do detailed QA
             }
             i++;
-          }  // end loop over MC signals
+          } // end loop over MC signals
 
           // if the MC truth particle corresponding to this reconstructed muon is not already written,
           //   add it to the skimmed stack
@@ -744,9 +745,9 @@ struct TableMakerMC {
             fMCFlags[mctrack.globalIndex()] = mcflags;
             trackCounter++;
           }
-          
-        }  // end if (has_mcParticle)
-      } else {  // if muon already in the map, make a bitwise OR with previous existing cuts
+
+        }      // end if (has_mcParticle)
+      } else { // if muon already in the map, make a bitwise OR with previous existing cuts
         fFwdTrackFilterMap[muon.globalIndex()] |= trackFilteringTag;
       }
       // write the association table
@@ -759,8 +760,8 @@ struct TableMakerMC {
       // get the muon
       auto muon = muons.rawIteratorAt(origIdx);
       uint32_t reducedEventIdx = -1;
-      if (muon.has_collision() && 
-          fCollIndexMap.find(muon.collisionId()) != fCollIndexMap.end()) {    // if the collisionId of this muon was not skimmed, leave the skimmed event index to -1
+      if (muon.has_collision() &&
+          fCollIndexMap.find(muon.collisionId()) != fCollIndexMap.end()) { // if the collisionId of this muon was not skimmed, leave the skimmed event index to -1
         reducedEventIdx = fCollIndexMap[muon.collisionId()];
       }
       // NOTE: Currently, one writes the original AO2D momentum-vector (pt, eta and phi) in the tables because we write only one instance of the muon track,
@@ -798,7 +799,7 @@ struct TableMakerMC {
       }
     } // end loop over selected muons
     LOG(info) << "skimMuons muonBasic.lastIndex()/muonAssoc.lastIndex() :: " << muonBasic.lastIndex() << " / " << muonAssoc.lastIndex();
-  }   // end skimMuons
+  } // end skimMuons
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, uint32_t TMFTFillMap, typename TEvents, typename TTracks,
             typename TMuons, typename TMFTTracks, typename TTrackAssoc, typename TFwdTrackAssoc, typename TMFTTrackAssoc>
@@ -871,7 +872,7 @@ struct TableMakerMC {
     }
 
     // loop over selected collisions and select the tracks and fwd tracks to be skimmed
-    if (fCollIndexMap.size()>0) {
+    if (fCollIndexMap.size() > 0) {
       for (auto const& [origIdx, skimIdx] : fCollIndexMap) {
         auto collision = collisions.rawIteratorAt(origIdx);
         // group the tracks and muons for this collision
@@ -1033,7 +1034,7 @@ struct TableMakerMC {
                  aod::TrackAssoc const& trackAssocs, aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
                  aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    LOG(info) << "processPP IN"; 
+    LOG(info) << "processPP IN";
     fullSkimming<gkEventFillMapWithMults, gkTrackFillMapWithCov, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, tracksBarrel, tracksMuon, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, mcCollisions, mcParticles);
   }
 
