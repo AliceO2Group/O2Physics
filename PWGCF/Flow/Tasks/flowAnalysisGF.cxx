@@ -69,7 +69,7 @@ std::vector<double> centbinning(90);
 int nBootstrap = 10;
 GFWRegions regions;
 GFWCorrConfigs configs;
-}
+} // namespace o2::analysis::flowanalysis
 
 using namespace o2::analysis::flowanalysis;
 
@@ -103,7 +103,6 @@ struct flowAnalysisGF {
 
   Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "poiP refP | olP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "poiFull refFull | olFull {2 -2}", "refFull {2 2 -2 -2}", "poiFull refFull | olFull {2 2 -2 -2}"}, {"ChGap22", "ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull22", "ChFull24", "ChFull24"}, {0, 0, 0, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 1, 0, 1}}, "Configurations for each correlation to calculate"};
 
-  
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
 
@@ -561,7 +560,7 @@ struct flowAnalysisGF {
       FillGFW(track, weff, wacc);
     }
   }
-  
+
   template <typename TrackObject>
   inline void FillGFW(TrackObject track, float weff, float wacc)
   {
@@ -601,39 +600,40 @@ struct flowAnalysisGF {
     registry.fill(HIST("multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
     return;
   }
-  
+
   template <typename CollisionObject, typename TracksObject>
   inline void RunProcess(CollisionObject collision, TracksObject tracks)
   {
-    
+
     float centrality;
-    
-      if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns>){
-        if (!collision.sel7()) return;
-        centrality = collision.centRun2V0M();
-      }
-      else if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>){
-        registry.fill(HIST("hEventCount"), .5);
-        if (!collision.sel8()) return;
-        registry.fill(HIST("hEventCount"), 1.5);
-        centrality = collision.centFT0C();
-        if (cfgFillQA)
-          FillEventQA(collision, tracks);
-      }
-    
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality))
+
+    if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns>) {
+      if (!collision.sel7())
         return;
-      loadCorrections(bc.timestamp());
-      auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-      processCollision<kReco>(collision, tracks, centrality, field);
+      centrality = collision.centRun2V0M();
+    } else if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>) {
+      registry.fill(HIST("hEventCount"), .5);
+      if (!collision.sel8())
+        return;
+      registry.fill(HIST("hEventCount"), 1.5);
+      centrality = collision.centFT0C();
+      if (cfgFillQA)
+        FillEventQA(collision, tracks);
+    }
+
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality))
+      return;
+    loadCorrections(bc.timestamp());
+    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
+    processCollision<kReco>(collision, tracks, centrality, field);
   }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
-  
+
   using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
-  
+
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
   {
     RunProcess(collision, tracks);
