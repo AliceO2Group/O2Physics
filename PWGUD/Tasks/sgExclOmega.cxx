@@ -38,7 +38,7 @@ struct SGExclOmega {
   Configurable<float> FDDA_cut{"FDDA", 10000., "FDDA threshold"};
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
-  //Track Selections
+  // Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 2.0, "dcaXY cut (0 for Pt-function)"};
@@ -47,7 +47,7 @@ struct SGExclOmega {
   Configurable<float> itsChi2_cut{"itsChi2_cut", 36, "Max itsChi2NCl"};
   Configurable<float> eta_cut{"eta_cut", 0.9, "Track Pseudorapidity"};
   Configurable<float> pt_cut{"pt_cut", 0.1, "Track Pt"};
-  //D0 Specific Cuts
+  // D0 Specific Cuts
   Configurable<float> nsigmatpc_cut{"nsigmatpc", 3.0, "nsigma tpc cut"};
   Configurable<float> nsigmatof_cut{"nsigmatof", 9.0, "nsigma tof cut"};
   Configurable<bool> use_tof{"Use_TOF", true, "TOF PID"};
@@ -64,14 +64,14 @@ struct SGExclOmega {
       {"ss_O_eTa", "eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -1., 1.}}}},
       {"ss_O_invm", "Mass (GeV/c^2); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
       {"pi0_invm", "Mass (GeV/c^2); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
-      {"os_O_pt_invm", " Nt vs Mass", {HistType::kTH2F, {{500, 0, 10.},{500, 0, 2.5}}}},
+      {"os_O_pt_invm", " Nt vs Mass", {HistType::kTH2F, {{500, 0, 10.}, {500, 0, 2.5}}}},
       {"os_O_pT_pid", "pT (GeV/c); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
       {"os_O_eTa_pid", "eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -1., 1.}}}},
       {"os_O_invm_pid", "Mass (GeV/c^2); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
       {"ss_O_pT_pid", "pT (GeV/c); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
       {"ss_O_eTa_pid", "eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -1., 1.}}}},
       {"ss_O_invm_pid", "Mass (GeV/c^2); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
-      {"os_O_pt_invm_pid", "pt vs Mass", {HistType::kTH2F, {{500, 0, 10.},{500, 0, 2.5}}}},
+      {"os_O_pt_invm_pid", "pt vs Mass", {HistType::kTH2F, {{500, 0, 10.}, {500, 0, 2.5}}}},
       {"pi0_invm_pid", "Mass (GeV/c^2); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
       {"os_O_pT_pid_pi0", "pT (GeV/c); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
       {"os_O_eTa_pid_pi0", "eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -1., 1.}}}},
@@ -79,7 +79,7 @@ struct SGExclOmega {
       {"ss_O_pT_pid_pi0", "pT (GeV/c); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
       {"ss_O_eTa_pid_pi0", "eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -1., 1.}}}},
       {"ss_O_invm_pid_pi0", "Mass (GeV/c^2); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
-      {"os_O_pt_invm_pid_pi0", "pt vs Mass", {HistType::kTH2F, {{500, 0, 10.},{500, 0, 2.5}}}},
+      {"os_O_pt_invm_pid_pi0", "pt vs Mass", {HistType::kTH2F, {{500, 0, 10.}, {500, 0, 2.5}}}},
     }};
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
@@ -111,79 +111,81 @@ struct SGExclOmega {
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
     gapSide = truegapSide;
-    //if (gapSide!=2) return;
-    int pvtracks=0;
+    // if (gapSide!=2) return;
+    int pvtracks = 0;
     int sign = 0;
     int esign = 0;
     int nElec = 0;
     for (auto& t0 : tracks) {
-	    if (trackselector(t0, parameters) && t0.isPVContributor()){
-		    pvtracks++;
-		    sign += t0.sign();
-		if (selectionPIDElec(t0, use_tof, nsigmatpc_cut, nsigmatof_cut)){
-		       nElec++;
-	               esign += t0.sign();
-		       a.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassElectron);
-		       els.push_back(a);
-		} else {
-		       a.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
-		       pis.push_back(a);
-		}
-	    }
+      if (trackselector(t0, parameters) && t0.isPVContributor()) {
+        pvtracks++;
+        sign += t0.sign();
+        if (selectionPIDElec(t0, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+          nElec++;
+          esign += t0.sign();
+          a.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassElectron);
+          els.push_back(a);
+        } else {
+          a.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
+          pis.push_back(a);
+        }
+      }
     }
     // Look for D0 and D0bar
-    //if (pvtracks != 6) return;
-    if (nElec!=4 || esign!= 0 || pvtracks < 6) return;
-//	    std::cout << nElec <<"\t" <<esign<<std::endl;
-//	    return;
+    // if (pvtracks != 6) return;
+    if (nElec != 4 || esign != 0 || pvtracks < 6)
+      return;
+    //	    std::cout << nElec <<"\t" <<esign<<std::endl;
+    //	    return;
     //}
-        // Apply pion hypothesis and create pairs
-        v00 = els[0]+els[1]+els[2]+els[3];
+    // Apply pion hypothesis and create pairs
+    v00 = els[0] + els[1] + els[2] + els[3];
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
-	    if (selectionPIDElec(t0, use_tof, nsigmatpc_cut, nsigmatof_cut)||selectionPIDElec(t1, use_tof, nsigmatpc_cut, nsigmatof_cut))continue;
-		       v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
-		       v1.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
-        v01 = v0+v1 + v00;
-//	if (v00.M() > 0.2) return;
-        // Opposite sign pairs
-        if (t0.sign() != t1.sign()) {
-          registry.fill(HIST("os_O_pT"), v01.Pt());
-          registry.fill(HIST("os_O_eTa"), v01.Eta());
-          registry.fill(HIST("os_O_invm"), v01.M());
-          registry.fill(HIST("os_O_pt_invm"), v01.Pt(), v01.M());
-          registry.fill(HIST("pi0_invm"), v00.M());
-	} else {
-          registry.fill(HIST("ss_O_pT"), v01.Pt());
-          registry.fill(HIST("ss_O_eTa"), v01.Eta());
-          registry.fill(HIST("ss_O_invm"), v01.M());
-	}
-    if (selectionPIDPion(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+      if (selectionPIDElec(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) || selectionPIDElec(t1, use_tof, nsigmatpc_cut, nsigmatof_cut))
+        continue;
+      v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
+      v1.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
+      v01 = v0 + v1 + v00;
+      //	if (v00.M() > 0.2) return;
+      // Opposite sign pairs
+      if (t0.sign() != t1.sign()) {
+        registry.fill(HIST("os_O_pT"), v01.Pt());
+        registry.fill(HIST("os_O_eTa"), v01.Eta());
+        registry.fill(HIST("os_O_invm"), v01.M());
+        registry.fill(HIST("os_O_pt_invm"), v01.Pt(), v01.M());
+        registry.fill(HIST("pi0_invm"), v00.M());
+      } else {
+        registry.fill(HIST("ss_O_pT"), v01.Pt());
+        registry.fill(HIST("ss_O_eTa"), v01.Eta());
+        registry.fill(HIST("ss_O_invm"), v01.M());
+      }
+      if (selectionPIDPion(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
         if (t0.sign() != t1.sign()) {
           registry.fill(HIST("os_O_pT_pid"), v01.Pt());
           registry.fill(HIST("os_O_eTa_pid"), v01.Eta());
           registry.fill(HIST("os_O_invm_pid"), v01.M());
           registry.fill(HIST("os_O_pt_invm_pid"), v01.Pt(), v01.M());
-	} else {
+        } else {
           registry.fill(HIST("ss_O_pT_pid_pi0"), v01.Pt());
           registry.fill(HIST("ss_O_eTa_pid_pi0"), v01.Eta());
           registry.fill(HIST("ss_O_invm_pid_pi0"), v01.M());
-	}
+        }
 
-		if (abs(v00.M() - o2::constants::physics::MassPionNeutral) < 0.1){
-        if (t0.sign() != t1.sign()) {
-          registry.fill(HIST("os_O_pT_pid_pi0"), v01.Pt());
-          registry.fill(HIST("os_O_eTa_pid_pi0"), v01.Eta());
-          registry.fill(HIST("os_O_invm_pid_pi0"), v01.M());
-          registry.fill(HIST("os_O_pt_invm_pid_pi0"), v01.Pt(), v01.M());
-	} else {
-          registry.fill(HIST("ss_O_pT_pid_pi0"), v01.Pt());
-          registry.fill(HIST("ss_O_eTa_pid_pi0"), v01.Eta());
-          registry.fill(HIST("ss_O_invm_pid_pi0"), v01.M());
-	}
-		}
+        if (abs(v00.M() - o2::constants::physics::MassPionNeutral) < 0.1) {
+          if (t0.sign() != t1.sign()) {
+            registry.fill(HIST("os_O_pT_pid_pi0"), v01.Pt());
+            registry.fill(HIST("os_O_eTa_pid_pi0"), v01.Eta());
+            registry.fill(HIST("os_O_invm_pid_pi0"), v01.M());
+            registry.fill(HIST("os_O_pt_invm_pid_pi0"), v01.Pt(), v01.M());
+          } else {
+            registry.fill(HIST("ss_O_pT_pid_pi0"), v01.Pt());
+            registry.fill(HIST("ss_O_eTa_pid_pi0"), v01.Eta());
+            registry.fill(HIST("ss_O_invm_pid_pi0"), v01.M());
+          }
+        }
+      }
+    }
   }
-     }
-}
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
