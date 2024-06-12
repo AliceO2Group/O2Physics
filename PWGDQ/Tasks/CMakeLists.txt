@@ -27,7 +27,7 @@ o2physics_add_dpl_workflow(efficiency
 o2physics_add_dpl_workflow(efficiency-with-assoc
                     SOURCES dqEfficiency_withAssoc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
-                    COMPONENT_NAME Analysis)                    
+                    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(filter-pp
                     SOURCES filterPP.cxx
