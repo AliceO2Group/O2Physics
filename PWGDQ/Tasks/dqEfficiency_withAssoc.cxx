@@ -187,7 +187,7 @@ struct AnalysisEventSelection {
       fHeader = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", events.begin().runNumber()), fMetadataRCT, -1);
       uint64_t sor = std::atol(fHeader["SOR"].c_str());
       uint64_t eor = std::atol(fHeader["EOR"].c_str());
-      cout << "=========================== SOR / EOR is " << sor << " / " << eor << endl;
+      cout << "=========================== SOR / EOR is " << sor << " / " << eor << endl;                                                                                                                                                                                                                                                                       
       // TODO: send SOR to VarManager and compute event times relative to SOR
     }
 
