@@ -76,7 +76,7 @@ struct meanPtFlucId {
   Configurable<bool> cfgSelPrInnerParam{"cfgSelPrInnerParam", false, "PID selection cut for Protons by using Momentum at inner wall of the TPC"};
   ConfigurableAxis multTPCBins{"multTPCBins", {150, 0, 150}, "TPC Multiplicity bins"};
   ConfigurableAxis multFT0CBins{"multFT0CBins", {200, 0, 2000}, "Forward Multiplicity bins"};
-  ConfigurableAxis multFT0CMCBins{"multFT0CMCBins", {250, 0, 250}, "Forward Multiplicity bins"}; // made change fore Gen
+  ConfigurableAxis multFT0CMCBins{"multFT0CMCBins", {250, 0, 250}, "Forward Multiplicity bins"};
   ConfigurableAxis dcaXYBins{"dcaXYBins", {100, -0.15, 0.15}, "dcaXY bins"};
   ConfigurableAxis dcaZBins{"dcaZBins", {100, -1.2, 1.2}, "dcaZ bins"};
 
