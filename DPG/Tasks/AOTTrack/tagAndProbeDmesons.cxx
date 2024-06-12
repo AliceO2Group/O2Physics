@@ -272,6 +272,10 @@ struct TagTwoProngDisplacedVertices {
 
   void init(InitContext&)
   {
+    if ((doprocessPiPiFromDplus && doprocessPiPiFromDplusMc) || (doprocessKaKaFromDsOrDplus && doprocessKaKaFromDsOrDplusMc) || (doprocessKaPiFromDstar && doprocessKaPiFromDstarMc)) {
+      LOGP(fatal, "The process functions for the same channel with and without MC truth cannot be enabled at the same time! Please check your configuration");
+    }
+
     std::string ccdbUrl = "http://alice-ccdb.cern.ch";
     ccdb->setURL(ccdbUrl.data());
     ccdb->setCaching(true);
@@ -297,13 +301,13 @@ struct TagTwoProngDisplacedVertices {
     const AxisSpec axisMassKaKa{200, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f};
     const AxisSpec axisMassKaPi{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f};
 
-    if (doprocessPiPiFromDplus) {
+    if (doprocessPiPiFromDplus || doprocessPiPiFromDplusMc) {
       registry.add<TH2>("hMassPiPiVsPt", ";#it{p}_{T}(#pi#pi) (GeV/#it{c}); #it{M}(#pi#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassPiPi});
     }
-    if (doprocessKaKaFromDsOrDplus) {
+    if (doprocessKaKaFromDsOrDplus || doprocessKaKaFromDsOrDplusMc) {
       registry.add<TH2>("hMassKaKaVsPt", ";#it{p}_{T}(KK) (GeV/#it{c}); #it{M}(KK) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaKa});
     }
-    if (doprocessKaPiFromDstar) {
+    if (doprocessKaPiFromDstar || doprocessKaPiFromDstarMc) {
       if (!studyDzeroReflections) {
         registry.add<TH2>("hMassKaPiVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaPi});
       } else {
