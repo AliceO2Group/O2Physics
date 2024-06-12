@@ -224,7 +224,7 @@ struct HfFragmentationFunctionTask {
     double axisDistanceMCP = 0;
 
     for (const auto& mccollision : mccollisions) {
-      
+
       // fill jet counter histogram
       registry.fill(HIST("h_collision_counter"), 0.5);
 
@@ -243,26 +243,24 @@ struct HfFragmentationFunctionTask {
                         mcpjet.pt(), mcpjet.eta(), mcpjet.phi(),                                                                                     // particle level jet
                         mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt), // particle level D0
                         mcpjet.has_matchedJetCand());
-        
+
         // loop through detector level matched to current particle level
         for (auto& mcdjet : mcpjet.template matchedJetCand_as<JetMCDTable>()) {
-          
+
           // obtain leading HF candidate in jet
           auto mcdd0cand = mcdjet.template hfcandidates_first_as<CandidatesD0MCD>();
-          
+
           // calculating angular distance in eta-phi plane
           axisDistanceMCD = RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi()));
 
           // store matched particle and detector level data in one single table
-          matchJetTable(axisDistanceMCP, mcpjet.pt(), mcpjet.eta(), mcpjet.phi(),                                                                                     // particle level jet
-                        mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                  // particle level D0
-                        axisDistanceMCD, mcdjet.pt(), mcdjet.eta(), mcdjet.phi(),                                                                                     // detector level jet
-                        mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt));  // detector level
+          matchJetTable(axisDistanceMCP, mcpjet.pt(), mcpjet.eta(), mcpjet.phi(),                                                                                    // particle level jet
+                        mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                 // particle level D0
+                        axisDistanceMCD, mcdjet.pt(), mcdjet.eta(), mcdjet.phi(),                                                                                    // detector level jet
+                        mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt)); // detector level
         }
-        
       }
     }
-
   }
   PROCESS_SWITCH(HfFragmentationFunctionTask, processMcChargedMatched, "matched MC HF jets", false);
 };
