@@ -50,9 +50,6 @@ constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNames{"3H"};
 
-Configurable<int> h3DauPdg{"h3DauPdg", 1000010030, "PDG Triton"}; // PDG Triton
-Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"};        // PDG Lnn
-
 std::shared_ptr<TH1> hEvents;
 std::shared_ptr<TH1> hZvtx;
 std::shared_ptr<TH1> hCentFT0A;
@@ -65,8 +62,7 @@ std::shared_ptr<TH2> hdEdxTot;
 std::shared_ptr<TH1> hDecayChannel;
 std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
-std::shared_ptr<TH2> hnSigmaTPCp_momentum;
-std::shared_ptr<TH2> hnSigmaTPCn_momentum;
+
 } // namespace
 
 struct lnnCandidate {
@@ -147,8 +143,12 @@ struct lnnRecoTask {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
 
+  // PDG codes
+  Configurable<int> h3DauPdg{"h3DauPdg", 1000010030, "PDG Triton"}; // PDG Triton
+  Configurable<int> lnnPdg{"lnnPdg", 1010000030, "PDG Lnn"};        // PDG Lnn
+
   // histogram axes
-  ConfigurableAxis rigidityBins{"rigidityBins", {1000, -10.f, 10.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
+  ConfigurableAxis rigidityBins{"rigidityBins", {200, -10.f, 10.f}, "Binning for rigidity #it{p}^{TPC}/#it{z}"};
   ConfigurableAxis dEdxBins{"dEdxBins", {1000, 0.f, 1000.f}, "Binning for dE/dx"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
   ConfigurableAxis zVtxBins{"zVtxBins", {100, -20.f, 20.f}, "Binning for n sigma"};
@@ -288,11 +288,9 @@ struct lnnRecoTask {
       hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
       hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
 
-      // Bethe-Bloch calcution for 3H
-      double expBethePos{o2::tpc::BetheBlochAleph(static_cast<float>(posRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
-      double expBetheNeg{o2::tpc::BetheBlochAleph(static_cast<float>(negRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
-
-      // nSigma calculation
+      // Bethe-Bloch calcution for 3H & nSigma calculation
+      double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
+      double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity / constants::physics::MassTriton), mBBparams3H[0], mBBparams3H[1], mBBparams3H[2], mBBparams3H[3], mBBparams3H[4])};
       double expSigmaPos{expBethePos * mBBparams3H[5]};
       double expSigmaNeg{expBetheNeg * mBBparams3H[5]};
       auto nSigmaTPCpos = static_cast<float>((posTrack.tpcSignal() - expBethePos) / expSigmaPos);
@@ -323,11 +321,6 @@ struct lnnRecoTask {
       lnnCand.clusterSizeITSPi = !lnnCand.isMatter ? posTrack.itsClusterSizes() : negTrack.itsClusterSizes();
       lnnCand.mom3HTPC = lnnCand.isMatter ? posRigidity : negRigidity;
       lnnCand.momPiTPC = !lnnCand.isMatter ? posRigidity : negRigidity;
-
-      int chargeFactor = -1 + 2 * lnnCand.isMatter;
-      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
-      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
-      lnnCandidates.push_back(lnnCand);
 
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
@@ -360,6 +353,7 @@ struct lnnRecoTask {
 
       // Building the mother particle: lnn
       std::array<float, 3> lnnMom;
+
       const auto& vtx = fitter.getPCACandidate();
       for (int i = 0; i < 3; i++) {
         lnnCand.decVtx[i] = vtx[i];
@@ -372,10 +366,12 @@ struct lnnRecoTask {
       }
 
       // Definition of lnn mass
+      float mLNN_HypHI = 2.99; // 2993.7 MeV/c**2
       float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
       bool isLNNMass = false;
-      if (massLNNL > o2::constants::physics::MassTriton - masswidth && massLNNL < o2::constants::physics::MassTriton + masswidth)
+      if (massLNNL > mLNN_HypHI - masswidth && massLNNL < mLNN_HypHI + masswidth) {
         isLNNMass = true;
+      }
       if (!isLNNMass) {
         continue;
       }
@@ -410,6 +406,11 @@ struct lnnRecoTask {
       lnnCand.isReco = true;
       lnnCand.posTrackID = posTrack.globalIndex();
       lnnCand.negTrackID = negTrack.globalIndex();
+
+      int chargeFactor = -1 + 2 * lnnCand.isMatter;
+      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
+      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
+      lnnCandidates.push_back(lnnCand);
     }
   }
 
@@ -427,27 +428,29 @@ struct lnnRecoTask {
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
           for (auto& negMother : mcTrackNeg.mothers_as<aod::McParticles>()) {
             for (auto& posMother : mcTrackPos.mothers_as<aod::McParticles>()) {
-              if (posMother.globalIndex() != negMother.globalIndex()) {
+              if (posMother.globalIndex() != negMother.globalIndex())
                 continue;
-              }
-              if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg))) {
+              if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -1 * h3DauPdg)))
                 continue;
-              }
-              if (std::abs(posMother.pdgCode()) != lnnPdg) {
+              if (std::abs(posMother.pdgCode()) != lnnPdg)
                 continue;
-              }
 
               // Checking primary and second vertex with MC simulations
               std::array<float, 3> posPrimVtx = {posMother.vx(), posMother.vy(), posMother.vz()};
+
               std::array<float, 3> secVtx = {mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
-              lnnCand.gMom = array{posMother.px(), posMother.py(), posMother.pz()};
-              lnnCand.gMom3H = mcTrackPos.pdgCode() == h3DauPdg ? array{posMother.px(), posMother.py(), posMother.pz()} : array{negMother.px(), negMother.py(), negMother.pz()};
+
+              lnnCand.gMom = posMother.pVector();
+
+              lnnCand.gMom3H = mcTrackPos.pdgCode() == h3DauPdg ? mcTrackPos.pVector() : mcTrackNeg.pVector();
+
               for (int i = 0; i < 3; i++) {
                 lnnCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
               }
               lnnCand.isSignal = true;
               lnnCand.pdgCode = posMother.pdgCode();
               lnnCand.survEvSelection = isGoodCollision[posMother.mcCollisionId()];
+
               filledMothers.push_back(posMother.globalIndex());
             }
           }
@@ -465,7 +468,7 @@ struct lnnRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (std::abs(collision.posZ()) > 10) {
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10) {
         continue;
       }
       hEvents->Fill(1.);
@@ -495,8 +498,6 @@ struct lnnRecoTask {
       }
     }
   }
-
-  // Data process
   PROCESS_SWITCH(lnnRecoTask, processData, "Data analysis", true);
 
   // MC process
@@ -522,7 +523,9 @@ struct lnnRecoTask {
       hCentFT0M->Fill(collision.centFT0M());
       hCentFV0A->Fill(collision.centFV0A());
 
-      isGoodCollision[collision.mcCollisionId()] = true;
+      if (collision.has_mcCollision()) {
+        isGoodCollision[collision.mcCollisionId()] = true;
+      }
 
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
@@ -560,7 +563,7 @@ struct lnnRecoTask {
       std::array<float, 3> secVtx;
       std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
 
-      std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
+      std::array<float, 3> momMother = mcPart.pVector();
 
       std::array<float, 3> mom3H;
       bool is3HFound = false;
@@ -568,7 +571,7 @@ struct lnnRecoTask {
         if (std::abs(mcDaught.pdgCode()) == h3DauPdg) {
           secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
 
-          mom3H = {mcDaught.px(), mcDaught.py(), mcDaught.pz()};
+          mom3H = mcDaught.pVector();
 
           is3HFound = true;
           break;
@@ -592,6 +595,7 @@ struct lnnRecoTask {
       if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
         continue;
       }
+
       lnnCandidate lnnCand;
       lnnCand.pdgCode = mcPart.pdgCode();
       lnnCand.survEvSelection = isGoodCollision[mcPart.mcCollisionId()];
@@ -605,8 +609,8 @@ struct lnnRecoTask {
       lnnCand.negTrackID = -1;
       lnnCand.isSignal = true;
       outputMCTable(-1, -1, -1,
-                    0,
                     -1, -1, -1,
+                    0,
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1,

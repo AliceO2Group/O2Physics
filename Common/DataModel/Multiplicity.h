@@ -113,7 +113,7 @@ DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
                   mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
-                  mult::BCNumber);
+                  mult::BCNumber, evsel::NumTracksInTimeRange);
 
 DECLARE_SOA_TABLE(MultNeighs, "AOD", "MULTNEIGH", //!
                   mult::TimeToPrePrevious, mult::TimeToPrevious,

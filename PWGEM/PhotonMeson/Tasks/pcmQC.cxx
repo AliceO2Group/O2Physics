@@ -219,7 +219,7 @@ struct PCMQC {
   }
 
   template <const int ev_id, typename TCollision>
-  void fillEventInfo(TCollision const& collision, const float weight = 1.f)
+  void fillEventInfo(TCollision const& collision, const float /*weight*/ = 1.f)
   {
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 1.0);
     if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
@@ -259,7 +259,7 @@ struct PCMQC {
   }
 
   template <typename TV0>
-  void fillV0Info(TV0 const& v0, const float weight = 1.f)
+  void fillV0Info(TV0 const& v0, const float /*weight*/ = 1.f)
   {
     fRegistry.fill(HIST("V0/hPt"), v0.pt());
     fRegistry.fill(HIST("V0/hEtaPhi"), v0.phi(), v0.eta());
@@ -281,7 +281,7 @@ struct PCMQC {
   }
 
   template <typename TLeg>
-  void fillV0LegInfo(TLeg const& leg, const float weight = 1.f)
+  void fillV0LegInfo(TLeg const& leg, const float /*weight*/ = 1.f)
   {
     fRegistry.fill(HIST("V0Leg/hPt"), leg.pt());
     fRegistry.fill(HIST("V0Leg/hQoverPt"), leg.sign() / leg.pt());
@@ -305,11 +305,12 @@ struct PCMQC {
   }
 
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
-  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
-  void processQC(MyCollisions const&, MyV0Photons const& v0photons, aod::V0Legs const&)
+  void processQC(FilteredMyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const&)
   {
-    for (auto& collision : grouped_collisions) {
+    for (auto& collision : collisions) {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;

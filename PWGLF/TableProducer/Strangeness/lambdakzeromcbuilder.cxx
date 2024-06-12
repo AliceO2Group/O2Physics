@@ -104,6 +104,12 @@ struct lambdakzeromcbuilder {
 
     for (auto& v0 : v0table) {
       thisInfo.packedMcParticleIndices = 0; // not de-referenced properly yet
+      thisInfo.label = -1;
+      thisInfo.motherLabel = -1;
+      thisInfo.pdgCode = 0;
+      thisInfo.pdgCodeMother = 0;
+      thisInfo.pdgCodePositive = 0;
+      thisInfo.pdgCodeNegative = 0;
       auto lNegTrack = v0.negTrack_as<aod::McTrackLabels>();
       auto lPosTrack = v0.posTrack_as<aod::McTrackLabels>();
 

@@ -26,14 +26,16 @@ using namespace o2::framework::expressions;
 
 struct JetDerivedDataProducerDummyD0Task {
 
-  Produces<aod::Hf3PCollBases> LcCollisionsTable;
-  Produces<aod::Hf3PBases> LcsTable;
-  Produces<aod::Hf3PPars> LcParsTable;
-  Produces<aod::Hf3PParEs> LcParExtrasTable;
-  Produces<aod::Hf3PSels> LcSelsTable;
-  Produces<aod::Hf3PMls> LcMlsTable;
-  Produces<aod::Hf3PMcs> LcMcsTable;
-  Produces<aod::Hf3PPBases> LcParticlesTable;
+  Produces<aod::Hf3PCollBases> lcCollisionsTable;
+  Produces<aod::Hf3PMcRCollIds> lcCollisionsMatchingTable;
+  Produces<aod::Hf3PBases> lcsTable;
+  Produces<aod::Hf3PPars> lcParsTable;
+  Produces<aod::Hf3PParEs> lcParExtrasTable;
+  Produces<aod::Hf3PSels> lcSelsTable;
+  Produces<aod::Hf3PMls> lcMlsTable;
+  Produces<aod::Hf3PMcs> lcMcsTable;
+  Produces<aod::Hf3PMcCollBases> lcMcCollisionsTable;
+  Produces<aod::Hf3PPBases> lcParticlesTable;
 
   void init(InitContext const&)
   {

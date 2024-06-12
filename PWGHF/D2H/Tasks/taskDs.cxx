@@ -23,6 +23,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -64,7 +65,7 @@ struct HfTaskDs {
 
   HfHelper hfHelper;
 
-  using CentralityEstimator = o2::aod::hf_collision_centrality::CentralityEstimator;
+  using CentralityEstimator = o2::hf_centrality::CentralityEstimator;
   using TH1_ptr = std::shared_ptr<TH1>;
   using TH2_ptr = std::shared_ptr<TH2>;
   using THnSparse_ptr = std::shared_ptr<THnSparse>;

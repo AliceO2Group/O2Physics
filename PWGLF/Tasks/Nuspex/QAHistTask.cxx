@@ -47,7 +47,7 @@ struct QAHistTask {
   HistogramRegistry QA_species_pos{"data_positive", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry QA_species_neg{"data_negative", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MC_recon_reg{"MC_particles_reco", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1F> histPDG{TH1F("PDG", "PDG;PDG code", 100, 0.0, 100.0)};
+  OutputObj<TH1D> histPDG{TH1D("PDG", "PDG;PDG code", 20, 0.0, 20.0)};
 
   void init(o2::framework::InitContext&)
   {
@@ -78,6 +78,7 @@ struct QAHistTask {
     std::vector<double> ptBinning_diff = {-14.0, -12.0, -10.0, -8.0, -6.0, -5.0, -4.0, -3.6, -3.2, -2.8, -2.4, -2.2, -2.0, -1.8, -1.6, -1.4, -1.3, -1.2, -1.1, -1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
     std::vector<double> etaBinning = {-1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+    std::vector<double> PDGBinning = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
 
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxis_short = {ptBinning_short, "Global #it{p}_{T} (GeV/#it{c})"};
@@ -86,7 +87,7 @@ struct QAHistTask {
     AxisSpec centralityAxis = {100, 0.0, 100.0, "VT0C (%)"};
     AxisSpec centralityAxis_extended = {105, 0.0, 105.0, "VT0C (%)"};
     AxisSpec etaAxis = {etaBinning, "#eta"};
-    AxisSpec PDGBINNING = {50, 0.0, 50.0, "PDG code"};
+    AxisSpec PDGBINNING = {PDGBinning, "PDG code"};
 
     // +++++++++++++++++++++ Data ++++++++++++++++++++++++
 
@@ -215,7 +216,7 @@ struct QAHistTask {
     MC_recon_reg.add("histChi2TOF", "chi^2 TOF vs Pt", HistType::kTH3F, {ptAxis, {75, 0.0, 15.0, "chi^2"}, PDGBINNING});
     MC_recon_reg.add("histTrackLength", "Track length", HistType::kTH2F, {{350, 0., 700., "length (cm)"}, PDGBINNING});
     MC_recon_reg.add("histGlobalpDist", "Global p distribution", HistType::kTH2F, {{150, -10, +10, "#it{p} (GeV/c)"}, PDGBINNING});
-    MC_recon_reg.add("histTPCpDist", "TPC p distribution", HistType::kTH2F, {{150, -10, +10, "#it{p} (GeV/c)"}, PDGBINNING});
+    MC_recon_reg.add("histTPCpDist", "TPC p distribution", HistType::kTH2F, {{500, -20, +20, "#it{p} (GeV/c)"}, PDGBINNING});
     MC_recon_reg.add("histTPCFractionSharedCls", "Fraction of shared TPC clusters", HistType::kTH2F, {{100, -2.0, 2.0, "Shared Cls"}, PDGBINNING});
     MC_recon_reg.add("histpTCorralation", "TPC-glo p vs glo p", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
     MC_recon_reg.add("histpTCorralation_PDG", "TPC-glo p vs glo p", HistType::kTH3F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}, PDGBINNING});
@@ -278,7 +279,7 @@ struct QAHistTask {
       QA_reg.fill(HIST("histRecVtxZData"), event.posZ());
     }
 
-    for (auto track : tracks) { // start loop over tracks
+    for (auto track : tracks) {
 
       QA_reg.fill(HIST("histDcaVsPID"), track.dcaXY(), track.pidForTracking());
       QA_reg.fill(HIST("histDcaZVsPID"), track.dcaZ(), track.pidForTracking());
@@ -334,7 +335,6 @@ struct QAHistTask {
         continue;
       }
 
-      // cut on rapidity
       TLorentzVector lorentzVector_proton{};
       TLorentzVector lorentzVector_deuteron{};
       TLorentzVector lorentzVector_triton{};
@@ -399,7 +399,6 @@ struct QAHistTask {
         QA_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
       }
 
-      // fill QA histograms
       if (TMath::Abs(nSigmaSpecies) < nsigmacut) {
 
         QA_species.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
@@ -495,7 +494,7 @@ struct QAHistTask {
           }
         }
       }
-    } // end loop over tracks
+    }
   }
 
   //*******************************************************************************************************
@@ -512,7 +511,7 @@ struct QAHistTask {
       QA_reg.fill(HIST("histCentrality"), event.centFT0C());
     }
 
-    for (auto track : tracks) { // start loop over tracks
+    for (auto track : tracks) {
 
       if (event_selection_sel8 && !event.sel8()) {
         continue;
@@ -561,13 +560,70 @@ struct QAHistTask {
 
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
-      const auto pdg = Form("%i", particle.pdgCode());
-
       if (!particle.isPhysicalPrimary())
         continue;
 
-      histPDG->Fill(pdg, 1);
-      const float pdgbin = histPDG->GetXaxis()->GetBinCenter(histPDG->GetXaxis()->FindBin(pdg));
+      int pdgbin = 0;
+      switch (particle.pdgCode()) {
+        case +211:
+          histPDG->AddBinContent(1);
+          pdgbin = 0;
+          break;
+        case -211:
+          histPDG->AddBinContent(2);
+          pdgbin = 1;
+          break;
+        case +321:
+          histPDG->AddBinContent(3);
+          pdgbin = 2;
+          break;
+        case -321:
+          histPDG->AddBinContent(4);
+          pdgbin = 3;
+          break;
+        case +2212:
+          histPDG->AddBinContent(5);
+          pdgbin = 4;
+          break;
+        case -2212:
+          histPDG->AddBinContent(6);
+          pdgbin = 5;
+          break;
+        case +1000010020:
+          histPDG->AddBinContent(7);
+          pdgbin = 6;
+          break;
+        case -1000010020:
+          histPDG->AddBinContent(8);
+          pdgbin = 7;
+          break;
+        case +1000010030:
+          histPDG->AddBinContent(9);
+          pdgbin = 8;
+          break;
+        case -1000010030:
+          histPDG->AddBinContent(10);
+          pdgbin = 9;
+          break;
+        case +1000020030:
+          histPDG->AddBinContent(11);
+          pdgbin = 10;
+          break;
+        case -1000020030:
+          histPDG->AddBinContent(12);
+          pdgbin = 11;
+          break;
+        case +1000020040:
+          histPDG->AddBinContent(13);
+          pdgbin = 12;
+          break;
+        case -1000020040:
+          histPDG->AddBinContent(14);
+          pdgbin = 13;
+          break;
+        default:
+          continue;
+      }
 
       MC_recon_reg.fill(HIST("histPhi"), track.phi(), pdgbin);
       MC_recon_reg.fill(HIST("histEta"), track.eta(), pdgbin);

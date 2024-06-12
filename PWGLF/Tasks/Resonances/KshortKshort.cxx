@@ -151,7 +151,9 @@ struct strangeness_tutorial {
     }
     hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis}, true);
     hglue.add("h3glueInvMassME", "h3glueInvMassME", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis}, true);
+    hglue.add("h3glueInvMassRot", "h3glueInvMassRot", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis}, true);
     hglue.add("heventscheck", "heventscheck", kTH1F, {{9, 0, 9}});
+    hglue.add("hmasscorrelation", "hmasscorrelation", kTH2F, {K0ShortMassAxis, K0ShortMassAxis});
 
     // K0s topological/PID cuts
     if (QAv0) {
@@ -200,12 +202,12 @@ struct strangeness_tutorial {
       fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
-      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
-      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
-      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
+      // fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
+      // fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+      // fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
+      // fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+      // fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
+      // fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
     }
   }
 
@@ -450,30 +452,34 @@ struct strangeness_tutorial {
       if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
         continue;
       }
-      double nTPCSigmaPos1[1]{postrack1.tpcNSigmaPi()};
-      double nTPCSigmaNeg1[1]{negtrack1.tpcNSigmaPi()};
-      double nTPCSigmaPos2[1]{postrack2.tpcNSigmaPi()};
-      double nTPCSigmaNeg2[1]{negtrack2.tpcNSigmaPi()};
+      double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
+      double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
+      double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
+      double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
 
-      if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0], v1)) {
+      if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, v1)) {
         continue;
       }
-      if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0], v2)) {
+      if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, v2)) {
         continue;
       }
-      if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0], v1)) {
+      if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1)) {
         continue;
       }
-      if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0], v2)) {
+      if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2)) {
         continue;
       }
 
       hglue.fill(HIST("heventscheck"), 3.5);
 
-      TLorentzVector lv1, lv2, lv3;
+      TLorentzVector lv1, lv2, lv3, lv4, lv5, lv6, lv7;
       lv1.SetPtEtaPhiM(v1.pt(), v1.eta(), v1.phi(), massK0s);
       lv2.SetPtEtaPhiM(v2.pt(), v2.eta(), v2.phi(), massK0s);
       lv3 = lv1 + lv2;
+      lv4.SetPtEtaPhiM(v1.pt(), v1.eta(), v1.phi() + TMath::Pi(), massK0s); // for rotated background
+      lv5.SetPtEtaPhiM(v2.pt(), v2.eta(), v2.phi() + TMath::Pi(), massK0s); // for rotated background
+      lv6 = lv1 + lv5;                                                      // rotating one of the daughters
+      lv7 = lv2 + lv4;
 
       if (TMath::Abs(lv3.Rapidity() < 0.5)) {
         if (inv_mass1D) {
@@ -481,6 +487,11 @@ struct strangeness_tutorial {
         }
 
         hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M());
+        hglue.fill(HIST("hmasscorrelation"), v1.mK0Short(), v2.mK0Short());
+        std::cout << "The value of mass of first daughter is: " << lv1.M() << std::endl;
+        std::cout << "The value of mass of second daughter is: " << lv2.M() << std::endl;
+        hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv6.Pt(), lv6.M()); // rotating one of the daughters
+        hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv7.Pt(), lv7.M()); // rotating one of the daughters
       }
     }
   }
@@ -541,21 +552,21 @@ struct strangeness_tutorial {
           if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
             continue;
           }
-          double nTPCSigmaPos1[1]{postrack1.tpcNSigmaPi()};
-          double nTPCSigmaNeg1[1]{negtrack1.tpcNSigmaPi()};
-          double nTPCSigmaPos2[1]{postrack2.tpcNSigmaPi()};
-          double nTPCSigmaNeg2[1]{negtrack2.tpcNSigmaPi()};
+          double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
+          double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
+          double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
+          double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
 
-          if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0], t1)) {
+          if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, t1)) {
             continue;
           }
-          if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0], t2)) {
+          if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, t2)) {
             continue;
           }
-          if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0], t1)) {
+          if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, t1)) {
             continue;
           }
-          if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0], t2)) {
+          if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
             continue;
           }
 
@@ -603,21 +614,21 @@ struct strangeness_tutorial {
           if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
             continue;
           }
-          double nTPCSigmaPos1[1]{postrack1.tpcNSigmaPi()};
-          double nTPCSigmaNeg1[1]{negtrack1.tpcNSigmaPi()};
-          double nTPCSigmaPos2[1]{postrack2.tpcNSigmaPi()};
-          double nTPCSigmaNeg2[1]{negtrack2.tpcNSigmaPi()};
+          double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
+          double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
+          double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
+          double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
 
-          if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0], t1)) {
+          if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, t1)) {
             continue;
           }
-          if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0], t2)) {
+          if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, t2)) {
             continue;
           }
-          if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0], t1)) {
+          if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, t1)) {
             continue;
           }
-          if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0], t2)) {
+          if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
             continue;
           }
 
