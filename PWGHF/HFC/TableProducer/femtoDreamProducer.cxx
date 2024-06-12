@@ -22,7 +22,7 @@
 
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h" 
+#include "DetectorsBase/Propagator.h"
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
@@ -108,7 +108,7 @@ struct femtoDreamProducer {
   using FemtoFullMCgenCollision = FemtoFullMCgenCollisions::iterator;
   using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FemtoHFTrack = FemtoHFTracks::iterator;
-  
+
   using GeneratedMC = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
   FemtoDreamCollisionSelection colCuts;
@@ -467,8 +467,8 @@ struct femtoDreamProducer {
   }
 
   void processDataCharmHad(FemtoFullCollision const& col, aod::BCsWithTimestamps const&,
-                        FemtoHFTracks const& tracks,
-                        soa::Filtered<CandidateLc> const& candidates)
+                           FemtoHFTracks const& tracks,
+                           soa::Filtered<CandidateLc> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -479,8 +479,8 @@ struct femtoDreamProducer {
                  "Provide experimental data for charm hadron femto", false);
 
   void processDataCharmHadWithML(FemtoFullCollision const& col, aod::BCsWithTimestamps const&,
-                              FemtoHFTracks const& tracks,
-                              soa::Filtered<soa::Join<CandidateLc, aod::HfMlLcToPKPi>> const& candidates)
+                                 FemtoHFTracks const& tracks,
+                                 soa::Filtered<soa::Join<CandidateLc, aod::HfMlLcToPKPi>> const& candidates)
   {
 
     // get magnetic field for run
