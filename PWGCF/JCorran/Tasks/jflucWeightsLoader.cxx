@@ -11,6 +11,7 @@
 /// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \since May 2024
 
+#include <experimental/type_traits>
 #include <TFile.h>
 #include <THn.h>
 
@@ -56,13 +57,12 @@ struct jflucWeightsLoader {
     }
   }
 
-  Produces<aod::JWeights> output;
   void init(InitContext const&)
   {
     if (!doprocessLoadWeights && !doprocessLoadWeightsCF)
       return;
     if (doprocessLoadWeights && doprocessLoadWeightsCF)
-      LOGF(fatal, "Only one weights loader process switch can be enabled at a time.");
+      LOGF(fatal, "Only one of JTracks or CFTracks processing can be enabled at a time.");
     if (pathPhiWeights.value.substr(0, 8) == "local://") {
       pf = new TFile(pathPhiWeights.value.substr(8).c_str(), "read");
       if (!pf->IsOpen()) {
@@ -73,8 +73,11 @@ struct jflucWeightsLoader {
     }
   }
 
-  template <class CollisionT, class TrackT>
-  void loadWeights(CollisionT const& collision, TrackT const& tracks)
+  template <class T>
+  using hasDecay = decltype(std::declval<T&>().decay());
+
+  template <class ProducesT, class CollisionT, class TrackT>
+  void loadWeights(Produces<ProducesT>& outputT, CollisionT const& collision, TrackT const& tracks)
   {
     if (!pf)
       LOGF(fatal, "NUA correction weights file has not been opened.");
@@ -90,7 +93,18 @@ struct jflucWeightsLoader {
     for (auto& track : tracks) {
       float phiWeight, effWeight;
       if (ph) {
-        const Double_t coords[] = {collision.multiplicity(), track.phi(), track.eta(), collision.posZ()};
+        UInt_t partType = 0; // partType 0 = all charged hadrons
+        if constexpr (std::experimental::is_detected<hasDecay, typename TrackT::iterator>::value) {
+          switch (track.decay()) {
+            case aod::cf2prongtrack::D0ToPiK:
+            case aod::cf2prongtrack::D0barToKPi:
+              partType = 1;
+              break;
+            default:
+              break;
+          }
+        }
+        const Double_t coords[] = {collision.multiplicity(), static_cast<Double_t>(partType), track.phi(), track.eta(), collision.posZ()};
         phiWeight = ph->GetBinContent(ph->GetBin(coords));
       } else {
         phiWeight = 1.0f;
@@ -98,21 +112,29 @@ struct jflucWeightsLoader {
 
       effWeight = 1.0f; //<--- todo
 
-      output(phiWeight, effWeight);
+      outputT(phiWeight, effWeight);
     }
   }
 
+  Produces<aod::JWeights> output;
   void processLoadWeights(aod::JCollision const& collision, aod::JTracks const& tracks)
   {
-    loadWeights(collision, tracks);
+    loadWeights(output, collision, tracks);
   }
   PROCESS_SWITCH(jflucWeightsLoader, processLoadWeights, "Load weights histograms for derived data table", false);
 
   void processLoadWeightsCF(aod::CFCollision const& collision, aod::CFTracks const& tracks)
   {
-    loadWeights(collision, tracks);
+    loadWeights(output, collision, tracks);
   }
   PROCESS_SWITCH(jflucWeightsLoader, processLoadWeightsCF, "Load weights histograms for CF derived data table", true);
+
+  Produces<aod::J2ProngWeights> output2p;
+  void processLoadWeightsCF2Prong(aod::CFCollision const& collision, aod::CF2ProngTracks const& tracks2p)
+  {
+    loadWeights(output2p, collision, tracks2p);
+  }
+  PROCESS_SWITCH(jflucWeightsLoader, processLoadWeightsCF2Prong, "Load weights histograms for CF derived 2-prong tracks data table", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

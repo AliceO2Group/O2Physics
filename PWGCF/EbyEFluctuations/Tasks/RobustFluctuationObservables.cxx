@@ -68,7 +68,6 @@ using namespace o2::framework::expressions;
   {                                                                                                                              \
     string str = hName;                                                                                                          \
     string fullName = str + "/" + cutName;                                                                                       \
-    cout << "fullName = " << fullName << endl;                                                                                   \
     mPtStudyCuts[fullName] = pHistPtStudy1D.size();                                                                              \
     pHistPtStudy1D.push_back(histosDetailedPt.add<TH1>(TString::Format("%s", fullName.c_str()).Data(), hTitle, kTH1D, {axisX})); \
   }
@@ -184,8 +183,6 @@ struct RobustFluctuationObservables {
 
   // QA for pt vs various cuts
   map<string, int> mPtStudyCuts;
-  // map<string, int> mTrackType;
-  // vector<vector<std::shared_ptr<TH1>>> pHistPtStudy1D;
   vector<std::shared_ptr<TH1>> pHistPtStudy1D;
 
   //
@@ -457,6 +454,9 @@ struct RobustFluctuationObservables {
     histosEvent.add("hOccupancyInTimeRange", "hOccupancyInTimeRange", kTH1D, {{400, 0, 20000, "occupancy (nITStracks nCls>=5)"}});
     histosEvent.add("hOccupancyInTimeRangeIsAvailable", "hOccupancyInTimeRangeIsAvailable", kTH1D, {{203, -2.5, 200.5, "occupancy zoomed (nITStracks nCls>=5)"}});
 
+    AxisSpec axisCentrForOccupQA{20, 0, 100, "centrality, %"};
+    histosEvent.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2D, {{400, 0, 20000, "occupancy zoomed (nITStracks nCls>=5)"}, axisCentrForOccupQA});
+
     // ##### tracks for All collisions
     if (flagIncludeQATracksInFoundBC) {
       histosEventTracksFoundBC.add("hFoundBC_nAllTracks", "hFoundBC_nAllTracks", kTH1D, {axisBC});
@@ -683,77 +683,8 @@ struct RobustFluctuationObservables {
     histosTracks.add("etaAfter08cut", "etaAfter08cut", kTH1D, {axisEta});
 
     // ### detailed pt study
-    // int LogBinsX = 200;        // 581;
-    // double StartValueX = 0.05; //
-    // double StopValueX = 40;    // 8;//4;//20;//
-    // double LogWidthX[LogBinsX + 1];
-    // for (int i = 0; i <= LogBinsX; i++)
-    //   LogWidthX[i] = pow(10, log10(StartValueX) + (log10(StopValueX) - log10(StartValueX)) / double(LogBinsX) * double(i));
-    // AxisSpec axisLogPt{LogBinsX, LogWidthX, "p_{T}"};
-    // AxisSpec axisLogPt{ LogWidthX, "p_{T}"};
     AxisSpec axisLogPt{100, 0.05, 40, "p_{T}"};
     axisLogPt.makeLogarithmic();
-
-    // histosDetailedPt.add("pt_eta08_All", "pt_eta08_All", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_Global", "pt_eta08_Global", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_ITS7cls", "pt_eta08_ITS7cls", kTH1D, {axisLogPt});
-
-    // histosDetailedPt.add("pt_eta08_pos_All", "pt_eta08_pos_All", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_pos_Global", "pt_eta08_pos_Global", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_pos_ITS7cls", "pt_eta08_pos_ITS7cls", kTH1D, {axisLogPt});
-
-    // histosDetailedPt.add("pt_eta08_neg_All", "pt_eta08_neg_All", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_neg_Global", "pt_eta08_neg_Global", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_neg_ITS7cls", "pt_eta08_neg_ITS7cls", kTH1D, {axisLogPt});
-
-    // // .. weighted with nTPCcls
-    // histosDetailedPt.add("pt_eta08_All_w_nTPCcls", "pt_eta08_All_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_Global_w_nTPCcls", "pt_eta08_Global_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_ITS7cls_w_nTPCcls", "pt_eta08_ITS7cls_w_nTPCcls", kTH1D, {axisLogPt});
-
-    // histosDetailedPt.add("pt_eta08_pos_All_w_nTPCcls", "pt_eta08_pos_All_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_pos_Global_w_nTPCcls", "pt_eta08_pos_Global_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_pos_ITS7cls_w_nTPCcls", "pt_eta08_pos_ITS7cls_w_nTPCcls", kTH1D, {axisLogPt});
-
-    // histosDetailedPt.add("pt_eta08_neg_All_w_nTPCcls", "pt_eta08_neg_All_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_neg_Global_w_nTPCcls", "pt_eta08_neg_Global_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_neg_ITS7cls_w_nTPCcls", "pt_eta08_neg_ITS7cls_w_nTPCcls", kTH1D, {axisLogPt});
-
-    // // in/out TF border
-    // histosDetailedPt.add("pt_eta08_All_TFborder", "pt_eta08_All_TFborder", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_Global_TFborder", "pt_eta08_Global_TFborder", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_ITS7cls_TFborder", "pt_eta08_ITS7cls_TFborder", kTH1D, {axisLogPt});
-
-    // histosDetailedPt.add("pt_eta08_All_noTFborder", "pt_eta08_All_noTFborder", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_Global_noTFborder", "pt_eta08_Global_noTFborder", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_ITS7cls_noTFborder", "pt_eta08_ITS7cls_noTFborder", kTH1D, {axisLogPt});
-
-    // // .. weighted with nTPCcls
-    // histosDetailedPt.add("pt_eta08_All_TFborder_w_nTPCcls", "pt_eta08_All_TFborder_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_Global_TFborder_w_nTPCcls", "pt_eta08_Global_TFborder_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_ITS7cls_TFborder_w_nTPCcls", "pt_eta08_ITS7cls_TFborder_w_nTPCcls", kTH1D, {axisLogPt});
-
-    // histosDetailedPt.add("pt_eta08_All_noTFborder_w_nTPCcls", "pt_eta08_All_noTFborder_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_Global_noTFborder_w_nTPCcls", "pt_eta08_Global_noTFborder_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_ITS7cls_noTFborder_w_nTPCcls", "pt_eta08_ITS7cls_noTFborder_w_nTPCcls", kTH1D, {axisLogPt});
-
-    // // in/out ROF border
-    // histosDetailedPt.add("pt_eta08_All_ROFborder", "pt_eta08_All_ROFborder", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_Global_ROFborder", "pt_eta08_Global_ROFborder", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_ITS7cls_ROFborder", "pt_eta08_ITS7cls_ROFborder", kTH1D, {axisLogPt});
-
-    // histosDetailedPt.add("pt_eta08_All_noROFborder", "pt_eta08_All_noROFborder", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_Global_noROFborder", "pt_eta08_Global_noROFborder", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_ITS7cls_noROFborder", "pt_eta08_ITS7cls_noROFborder", kTH1D, {axisLogPt});
-
-    // // .. weighted with nTPCcls
-    // histosDetailedPt.add("pt_eta08_All_ROFborder_w_nTPCcls", "pt_eta08_All_ROFborder_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_Global_ROFborder_w_nTPCcls", "pt_eta08_Global_ROFborder_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_ITS7cls_ROFborder_w_nTPCcls", "pt_eta08_ITS7cls_ROFborder_w_nTPCcls", kTH1D, {axisLogPt});
-
-    // histosDetailedPt.add("pt_eta08_All_noROFborder_w_nTPCcls", "pt_eta08_All_noROFborder_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_Global_noROFborder_w_nTPCcls", "pt_eta08_Global_noROFborder_w_nTPCcls", kTH1D, {axisLogPt});
-    // histosDetailedPt.add("pt_eta08_ITS7cls_noROFborder_w_nTPCcls", "pt_eta08_ITS7cls_noROFborder_w_nTPCcls", kTH1D, {axisLogPt});
 
     // #### add pt QA histos via loop
     int nFolderPt = sizeof(strPtSelFolderNames) / sizeof(*strPtSelFolderNames);
@@ -763,11 +694,8 @@ struct RobustFluctuationObservables {
       for (int j = 0; j < nCutsPtQA; j++) {
         // add this cut name and id to map
         string cutName = (strPtSelFolderNames[i] + "/" + strPtSelNames[j]).c_str();
-        // mPtStudyCuts[cutName] = counterPtCuts;
 
         // now add 1D histograms:
-        // vector<std::shared_ptr<TH1>> v1D;
-
         ADD_PT_HIST_1D("All", cutName, "", axisLogPt);
         ADD_PT_HIST_1D("Global", cutName, "", axisLogPt);
 
@@ -782,9 +710,6 @@ struct RobustFluctuationObservables {
 
         ADD_PT_HIST_1D("ITS67", cutName, "", axisLogPt);
         ADD_PT_HIST_1D("ITS67_TPC80cl", cutName, "", axisLogPt);
-
-        // add vector with pointers to histos for a given cut to an "external" vector
-        // pHistPtStudy1D.push_back(v1D);
       }
     }
     // ### end of detailed pt study
@@ -875,12 +800,8 @@ struct RobustFluctuationObservables {
       histosK0S.add("hK0Sradius", "hK0Sradius", kTH1D, {{800, 0, 100, "hK0Sradius"}});
       histosK0S.add("hMassK0Short", "hMassK0Short", {HistType::kTH1F, {K0ShortMassAxis}});
       histosK0S.add("hMassK0ShortAfterSelection", "hMassK0ShortAfterSelection", {HistType::kTH1F, {K0ShortMassAxis}});
-      // for(int iPt=0; iPt<nPtRangesK0S; iPt++)
-      // {
-      // string hName = "hMassK0Short_pT"+to_string(iPt);
-      // arrHistPtK0Snames[iPt] = hName;
-      // AxisSpec axisK0SptBins{{0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0}, "p_{T}"};
-      AxisSpec axisK0SptBins{{0.2, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0}, "p_{T}"};
+
+      AxisSpec axisK0SptBins{{0.2, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 8.0, 10.0}, "p_{T}"};
       histosK0S.add("hMassK0ShortAfterSelectionVsPt", "hMassK0ShortAfterSelectionVsPt", kTH2D, {axisK0SptBins, K0ShortMassAxis});
       histosK0S.add("hMassK0ShortAfterSelectionVsPtEta01_08", "hMassK0ShortAfterSelectionVsPtEta01_08", kTH2D, {axisK0SptBins, K0ShortMassAxis});
       histosK0S.add("hMassK0ShortAfterSelectionVsPtEta08_01", "hMassK0ShortAfterSelectionVsPtEta08_01", kTH2D, {axisK0SptBins, K0ShortMassAxis});
@@ -891,15 +812,27 @@ struct RobustFluctuationObservables {
       histosK0S.add("hMassK0S_nVertexContributorsWithTRDorTOF_Above2", "hMassK0S_nVertexContributorsWithTRDorTOF_Above2", kTH2D, {axisK0SptBins, K0ShortMassAxis});
       histosK0S.add("hMassK0S_nVertexContributorsWithTRDorTOF_ITS7hits_Above2", "hMassK0S_nVertexContributorsWithTRDorTOF_ITS7hits_Above2", kTH2D, {axisK0SptBins, K0ShortMassAxis});
 
-      AxisSpec axisCentrality{5, 0, 100, "p_{T}"};
+      AxisSpec axisCentrality{5, 0, 100, "centrality, %"};
 
       histosK0S.add("hMassK0ShortAfterSelectionVsPt_AllOccupancies", "hMassK0ShortAfterSelectionVsPt_AllOccupancies", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
       histosK0S.add("hMassK0ShortAfterSelectionVsPtAfterOccupCut_0_250", "hMassK0ShortAfterSelectionVsPtAfterOccupCut_0_250", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
-      histosK0S.add("hMassK0ShortAfterSelectionVsPtAfterOccupCut_250_750", "hMassK0ShortAfterSelectionVsPtAfterOccupCut_250_750", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
+      histosK0S.add("hMassK0ShortAfterSelectionVsPtAfterOccupCut_250_500", "hMassK0ShortAfterSelectionVsPtAfterOccupCut_250_500", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
+      histosK0S.add("hMassK0ShortAfterSelectionVsPtAfterOccupCut_500_750", "hMassK0ShortAfterSelectionVsPtAfterOccupCut_500_750", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
       histosK0S.add("hMassK0ShortAfterSelectionVsPtAfterOccupCut_750_1500", "hMassK0ShortAfterSelectionVsPtAfterOccupCut_750_1500", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
       histosK0S.add("hMassK0ShortAfterSelectionVsPtAfterOccupCut_1500_3000", "hMassK0ShortAfterSelectionVsPtAfterOccupCut_1500_3000", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
       histosK0S.add("hMassK0ShortAfterSelectionVsPtAfterOccupCut_3000_4500", "hMassK0ShortAfterSelectionVsPtAfterOccupCut_3000_4500", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
-      histosK0S.add("hMassK0ShortAfterSelectionVsPtAfterOccupCut_above_4500", "hMassK0ShortAfterSelectionVsPtAfterOccupCut_above_4500", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
+      histosK0S.add("hMassK0ShortAfterSelectionVsPtAfterOccupCut_4500_6000", "hMassK0ShortAfterSelectionVsPtAfterOccupCut_4500_6000", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
+      histosK0S.add("hMassK0ShortAfterSelectionVsPtAfterOccupCut_above_6000", "hMassK0ShortAfterSelectionVsPtAfterOccupCut_above_6000", kTH3D, {axisK0SptBins, K0ShortMassAxis, axisCentrality});
+
+      histosK0S.add("nEventsVsCentrAllOccupancies", "nEventsVsCentrAllOccupancies", kTH1D, {axisCentrality});
+      histosK0S.add("nEventsVsCentrAfterOccupCut_0_250", "nEventsVsCentrAfterOccupCut_0_250", kTH1D, {axisCentrality});
+      histosK0S.add("nEventsVsCentrAfterOccupCut_250_500", "nEventsVsCentrAfterOccupCut_250_500", kTH1D, {axisCentrality});
+      histosK0S.add("nEventsVsCentrAfterOccupCut_500_750", "nEventsVsCentrAfterOccupCut_500_750", kTH1D, {axisCentrality});
+      histosK0S.add("nEventsVsCentrAfterOccupCut_750_1500", "nEventsVsCentrAfterOccupCut_750_1500", kTH1D, {axisCentrality});
+      histosK0S.add("nEventsVsCentrAfterOccupCut_1500_3000", "nEventsVsCentrAfterOccupCut_1500_3000", kTH1D, {axisCentrality});
+      histosK0S.add("nEventsVsCentrAfterOccupCut_3000_4500", "nEventsVsCentrAfterOccupCut_3000_4500", kTH1D, {axisCentrality});
+      histosK0S.add("nEventsVsCentrAfterOccupCut_4500_6000", "nEventsVsCentrAfterOccupCut_4500_6000", kTH1D, {axisCentrality});
+      histosK0S.add("nEventsVsCentrAfterOccupCut_above_6000", "nEventsVsCentrAfterOccupCut_above_6000", kTH1D, {axisCentrality});
 
       histosK0S.add("hMassK0S_cutsOnDaughters", "hMassK0S_cutsOnDaughters", kTH2D, {axisK0SptBins, K0ShortMassAxis});
       histosK0S.add("hMassK0S_cutsOnDaughters_bothTOF", "hMassK0S_cutsOnDaughters_bothTOF", kTH2D, {axisK0SptBins, K0ShortMassAxis});
@@ -1523,7 +1456,6 @@ struct RobustFluctuationObservables {
     }
 
     // ### event selection cuts
-    // if (!collision.sel8()) {
     if (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       prevBC = collBC;
       prevBcInTF = bcInTF;
@@ -1603,17 +1535,7 @@ struct RobustFluctuationObservables {
       // auto nextCollBC = bcNext.globalBC() % 3564;
       int64_t nextBcInTF = (bcNext.globalBC() - bcSOR) % nBCsPerTF;
 
-      // found BC
-      // uint64_t globalNextFoundBC = 9999; //-1;
-      // if (nextColl.has_foundFT0() && nextColl.has_foundBC() && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && nextColl.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      if (nextColl.selection_bit(o2::aod::evsel::kIsTriggerTVX) && nextColl.has_foundBC() && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && nextColl.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        // auto nextBcFound = nextColl.foundBC_as<BCsRun3>(); // collision.foundBC();
-        // globalNextFoundBC = nextBcFound.globalBC() % 3564;
-      }
-
       // check if Found BC is NOT the same for prev, current and next events:
-      // if (globalFoundBC >= 0 && globalNextFoundBC >= 0 && prevGlobalFoundBC >= 0 && globalFoundBC != globalNextFoundBC && globalFoundBC != prevGlobalFoundBC) {
-      // if (globalFoundBC != 9999 && globalNextFoundBC != 9999 && prevGlobalFoundBC != 9999 && globalFoundBC != globalNextFoundBC && globalFoundBC != prevGlobalFoundBC) {
       if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         flagNotTheSameFoundBC = true;
 
@@ -1622,8 +1544,6 @@ struct RobustFluctuationObservables {
           int diffWrtPrev = bcInTF - prevBcInTF;
           int diffWrtNext = nextBcInTF - bcInTF;
 
-          // if (TFid < 3 && (bcInTF < 50 && bcInTF > 3564 * 31 - 200))
-          //   cout << "   --> QA: diffWrtPrev = " << diffWrtPrev << ",  diffWrtNext = " << diffWrtNext << endl;
           if (diffWrtPrev >= 10 && diffWrtNext >= 10)
             flagDiffBnBcIs10 = true;
           // if (diffWrtPrev >= 20 && diffWrtNext >= 20)
@@ -1844,8 +1764,6 @@ struct RobustFluctuationObservables {
 
       // in addition: TF border cuts:
       if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        // fillHistForThisCut("ITSROF_TF_cuts", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
-
         if (isFT0) {
           histosFT0.fill(HIST("hVertex_T0_PV_after_ITSROF_and_TFcut"), ft0_posZ, collision.posZ());
           histosFT0.fill(HIST("hT0vertexDiff_after_ITSROF_and_TFcut"), diff_PV_ft0_tracks);
@@ -1855,10 +1773,6 @@ struct RobustFluctuationObservables {
       // look into what is within the ITSROF cut borders
       fillHistForThisCut("antiITSROFcut", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
     }
-
-    // global PV contributors
-    // if (nTracksGlobalPVAccepted >= 1) // 2)
-    // fillHistForThisCut("1globalPVcontrib", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
 
     // global PV contributors with 7 ITS hits
     if (nTracksGlobalPVwithITS7hits >= 1) // 2)
@@ -1872,12 +1786,7 @@ struct RobustFluctuationObservables {
     if (diffFoundBC_vs_BC == 0)
       fillHistForThisCut("diffFoundBC_vs_BC_0", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
 
-    // FT0 present
-    // if (isFT0)
-    // fillHistForThisCut("hasFT0_CorrectedValid", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
-
     // cut on diff b/n vertex from FT0 and track-based
-    // if (isFT0 && cutVzTrackT0diffLower < diff_PV_ft0_tracks && diff_PV_ft0_tracks < cutVzTrackT0diffUpper) {
     if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       fillHistForThisCut("PV_FT0_diff_cut", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
 
@@ -1920,15 +1829,6 @@ struct RobustFluctuationObservables {
       fillHistForThisCut("isITSonlyVertex", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
     else
       fillHistForThisCut("antiIsITSonlyVertex", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
-
-    // cut on diff b/n vertex from FT0 and track-based - TIGHTER
-    // if (isFT0 && diff_PV_ft0_tracks > -0.8 && diff_PV_ft0_tracks < 0.6) {
-    //   fillHistForThisCut("PV_FT0_diff_cut_TIGHT", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
-
-    // ALL OTHER CUTS TIGHTER:
-    //   if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && flagNotTheSameFoundBC && !isITSonlyVertex) //&& nTracksGlobalPVAccepted >= 1)
-    //     fillHistForThisCut("ALL_CUTS_Tighter", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
-    // }
 
     if (collision.alias_bit(kTVXinTRD))
       fillHistForThisCut("kTVXinTRD", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
@@ -2194,6 +2094,29 @@ struct RobustFluctuationObservables {
     int occupancy = collision.trackOccupancyInTimeRange();
     histosEvent.fill(HIST("hOccupancyInTimeRange"), occupancy);
     histosEvent.fill(HIST("hOccupancyInTimeRangeIsAvailable"), occupancy);
+    histosEvent.fill(HIST("hCentralityVsOccupancy"), occupancy, t0cCentr);
+
+    // n events in occupancy classes
+    if (occupancy >= 0 && t0cCentr < 95 && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      histosK0S.fill(HIST("nEventsVsCentrAllOccupancies"), t0cCentr);
+
+      if (occupancy < 250)
+        histosK0S.fill(HIST("nEventsVsCentrAfterOccupCut_0_250"), t0cCentr);
+      else if (occupancy >= 250 && occupancy < 500)
+        histosK0S.fill(HIST("nEventsVsCentrAfterOccupCut_250_500"), t0cCentr);
+      else if (occupancy >= 500 && occupancy < 750)
+        histosK0S.fill(HIST("nEventsVsCentrAfterOccupCut_500_750"), t0cCentr);
+      else if (occupancy >= 750 && occupancy < 1500)
+        histosK0S.fill(HIST("nEventsVsCentrAfterOccupCut_750_1500"), t0cCentr);
+      else if (occupancy >= 1500 && occupancy < 3000)
+        histosK0S.fill(HIST("nEventsVsCentrAfterOccupCut_1500_3000"), t0cCentr);
+      else if (occupancy >= 3000 && occupancy < 4500)
+        histosK0S.fill(HIST("nEventsVsCentrAfterOccupCut_3000_4500"), t0cCentr);
+      else if (occupancy >= 4500 && occupancy < 6000)
+        histosK0S.fill(HIST("nEventsVsCentrAfterOccupCut_4500_6000"), t0cCentr);
+      else
+        histosK0S.fill(HIST("nEventsVsCentrAfterOccupCut_above_6000"), t0cCentr);
+    }
 
     // ##### v0 analysis
     if (flagIncludeQAHistK0S && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
@@ -2226,21 +2149,25 @@ struct RobustFluctuationObservables {
         histosK0S.fill(HIST("hMassK0ShortAfterSelection"), v0.mK0Short());
         histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPt"), v0.pt(), v0.mK0Short());
 
-        if (occupancy >= 0 && t0cCentr < 95 && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && posDaughterTrack.tpcNClsFound() > 80 && negDaughterTrack.tpcNClsFound() > 80) {
+        if (occupancy >= 0 && t0cCentr < 95 && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && posDaughterTrack.tpcNClsFound() > 80 && negDaughterTrack.tpcNClsFound() > 80 && posDaughterTrack.itsNCls() >= 4 && negDaughterTrack.itsNCls() >= 4) {
           histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPt_AllOccupancies"), v0.pt(), v0.mK0Short(), t0cCentr);
 
           if (occupancy < 250)
             histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtAfterOccupCut_0_250"), v0.pt(), v0.mK0Short(), t0cCentr);
-          else if (occupancy >= 250 && occupancy < 750)
-            histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtAfterOccupCut_250_750"), v0.pt(), v0.mK0Short(), t0cCentr);
+          else if (occupancy >= 250 && occupancy < 500)
+            histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtAfterOccupCut_250_500"), v0.pt(), v0.mK0Short(), t0cCentr);
+          else if (occupancy >= 500 && occupancy < 750)
+            histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtAfterOccupCut_500_750"), v0.pt(), v0.mK0Short(), t0cCentr);
           else if (occupancy >= 750 && occupancy < 1500)
             histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtAfterOccupCut_750_1500"), v0.pt(), v0.mK0Short(), t0cCentr);
           else if (occupancy >= 1500 && occupancy < 3000)
             histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtAfterOccupCut_1500_3000"), v0.pt(), v0.mK0Short(), t0cCentr);
           else if (occupancy >= 3000 && occupancy < 4500)
             histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtAfterOccupCut_3000_4500"), v0.pt(), v0.mK0Short(), t0cCentr);
+          else if (occupancy >= 4500 && occupancy < 6000)
+            histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtAfterOccupCut_4500_6000"), v0.pt(), v0.mK0Short(), t0cCentr);
           else
-            histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtAfterOccupCut_above_4500"), v0.pt(), v0.mK0Short(), t0cCentr);
+            histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtAfterOccupCut_above_6000"), v0.pt(), v0.mK0Short(), t0cCentr);
         }
 
         if (TMath::Abs(posDaughterTrack.tpcNSigmaPi()) > 3) // NSigmaTPCPion)
@@ -2367,7 +2294,7 @@ struct RobustFluctuationObservables {
   }     // end of processRobustFluctuationObservables()
 
   // shortcut function to fill 2D histograms
-  void fillHistForThisCut(string cutName, int multNTracksPV, int multTrk, int nTracksGlobalAccepted, double multT0A, double multT0C, double multV0A, double t0cCentr, int bc)
+  void fillHistForThisCut(string cutName, int multNTracksPV, int multTrk, int nTracksGlobalAccepted, double multT0A, double multT0C, double multV0A, double /*t0cCentr*/, int bc)
   {
     // registry.get<TH1>(HIST("eta"))->Fill(track.eta());
     // arrPointers[histId][cutId]->Fill(xval, yval, weight);
@@ -2504,24 +2431,11 @@ struct RobustFluctuationBunchCrossingQA {
     histos.add("hBC_kTVXinTRD_nITSTPCTRDtracks", "hBC_kTVXinTRD_nITSTPCTRDtracks", kTH1D, {axisBC});
     histos.add("hBC_kTVXinTRD_nITSTPCTOFtracks", "hBC_kTVXinTRD_nITSTPCTOFtracks", kTH1D, {axisBC});
     histos.add("hBC_kTVXinTRD_nITSTPCTRDTOFtracks", "hBC_kTVXinTRD_nITSTPCTRDTOFtracks", kTH1D, {axisBC});
-
-    // histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
-    // histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
-    // histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
-    // histos.add("hLumiTVX", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
-    // histos.add("hLumiTCE", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
-    // histos.add("hLumiZEM", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
-    // histos.add("hLumiZNC", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
   }
 
   using BCsWithBcSelsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
-  using Colls = soa::Join<aod::Collisions, aod::EvSels>; //, aod::Mults, aod::FT0sCorrected>;
-  // void processRobustFluctuationBunchCrossingQA(BCsWithRun3Matchings const& bcs,
-  //                  aod::Zdcs const& zdcs,
-  //                  aod::FV0As const&,
-  //                  aod::FT0s const&,
-  //                  aod::FDDs const&)
+  using Colls = soa::Join<aod::Collisions, aod::EvSels>;
 
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
   void processRobustFluctuationBunchCrossingQA(

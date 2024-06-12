@@ -194,7 +194,7 @@ struct tofEventTime {
   bool enableTable = false;
   bool enableTableTOFOnly = false;
   // Detector response and input parameters
-  o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<bool> inheritFromBaseTask{"inheritFromBaseTask", true, "Flag to iherit all common configurables from the TOF base task"};
   // CCDB configuration (inherited from TOF signal task)
@@ -291,36 +291,36 @@ struct tofEventTime {
         o2::tof::ParameterCollection paramCollection;
         paramCollection.loadParamFromFile(fname, parametrizationPath.value);
         LOG(info) << "+++ Loaded parameter collection from file +++";
-        if (!paramCollection.retrieveParameters(mRespParamsV2, passName.value)) {
+        if (!paramCollection.retrieveParameters(mRespParamsV3, passName.value)) {
           if (fatalOnPassNotAvailable) {
             LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
           } else {
             LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
           }
         } else {
-          mRespParamsV2.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
-          mRespParamsV2.printMomentumChargeShiftParameters();
+          mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
+          mRespParamsV3.printMomentumChargeShiftParameters();
         }
       } else {
-        mRespParamsV2.loadParamFromFile(fname.data(), parametrizationPath.value);
+        mRespParamsV3.loadParamFromFile(fname.data(), parametrizationPath.value);
       }
     } else if (loadResponseFromCCDB) { // Loading it from CCDB
       LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
 
       o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
       paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) {
+      if (!paramCollection->retrieveParameters(mRespParamsV3, passName.value)) {
         if (fatalOnPassNotAvailable) {
           LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         } else {
           LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         }
       } else {
-        mRespParamsV2.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
-        mRespParamsV2.printMomentumChargeShiftParameters();
+        mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
+        mRespParamsV3.printMomentumChargeShiftParameters();
       }
     }
-    mRespParamsV2.print();
+    mRespParamsV3.print();
     o2::tof::eventTimeContainer::setMaxNtracksInSet(maxNtracksInSet.value);
     o2::tof::eventTimeContainer::printConfig();
   }
@@ -389,7 +389,7 @@ struct tofEventTime {
       const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
 
       // First make table for event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
+      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
       int nGoodTracksForTOF = 0;
       float et = evTimeTOF.mEventTime;
       float erret = evTimeTOF.mEventTimeError;
@@ -452,7 +452,7 @@ struct tofEventTime {
       const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
       // Compute the TOF event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
+      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
 
       float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC
       float t0TOF[2] = {static_cast<float_t>(evTimeTOF.mEventTime), static_cast<float_t>(evTimeTOF.mEventTimeError)}; // Value and error of TOF
@@ -602,7 +602,7 @@ struct tofPidMerge {
   Produces<o2::aod::pidTOFFullAl> tablePIDFullAl;
 
   // Detector response parameters
-  o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<bool> inheritFromBaseTask{"inheritFromBaseTask", true, "Flag to iherit all common configurables from the TOF base task"};
   // CCDB configuration (inherited from TOF base task)
@@ -721,42 +721,42 @@ struct tofPidMerge {
         o2::tof::ParameterCollection paramCollection;
         paramCollection.loadParamFromFile(fname, parametrizationPath.value);
         LOG(info) << "+++ Loaded parameter collection from file +++";
-        if (!paramCollection.retrieveParameters(mRespParamsV2, passName.value)) {
+        if (!paramCollection.retrieveParameters(mRespParamsV3, passName.value)) {
           if (fatalOnPassNotAvailable) {
             LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
           } else {
             LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
           }
         } else {
-          mRespParamsV2.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
-          mRespParamsV2.printMomentumChargeShiftParameters();
+          mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
+          mRespParamsV3.printMomentumChargeShiftParameters();
         }
       } else {
-        mRespParamsV2.loadParamFromFile(fname.data(), parametrizationPath.value);
+        mRespParamsV3.loadParamFromFile(fname.data(), parametrizationPath.value);
       }
     } else if (loadResponseFromCCDB) { // Loading it from CCDB
       LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
       o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
       paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) { // Attempt at loading the parameters with the pass defined
+      if (!paramCollection->retrieveParameters(mRespParamsV3, passName.value)) { // Attempt at loading the parameters with the pass defined
         if (fatalOnPassNotAvailable) {
           LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         } else {
           LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         }
       } else { // Pass is available, load non standard parameters
-        mRespParamsV2.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
-        mRespParamsV2.printMomentumChargeShiftParameters();
+        mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
+        mRespParamsV3.printMomentumChargeShiftParameters();
       }
     }
-    mRespParamsV2.print();
+    mRespParamsV3.print();
     if (timeShiftCCDBPath.value != "") {
       if (timeShiftCCDBPath.value.find(".root") != std::string::npos) {
-        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
-        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
+        mRespParamsV3.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
+        mRespParamsV3.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
       } else {
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
+        mRespParamsV3.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
+        mRespParamsV3.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
       }
     }
   }
@@ -947,7 +947,7 @@ struct tofPidMerge {
       timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
       if (enableTimeDependentResponse) {
         LOG(debug) << "Updating parametrization from path '" << parametrizationPath.value << "' and timestamp " << timestamp.value;
-        if (!ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value)->retrieveParameters(mRespParamsV2, passName.value)) {
+        if (!ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value)->retrieveParameters(mRespParamsV3, passName.value)) {
           if (fatalOnPassNotAvailable) {
             LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
           } else {
@@ -982,47 +982,47 @@ struct tofPidMerge {
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
           case idxEl: {
-            nsigma = responseEl.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDEl);
             break;
           }
           case idxMu: {
-            nsigma = responseMu.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDMu);
             break;
           }
           case idxPi: {
-            nsigma = responsePi.GetSeparation(mRespParamsV2, trk);
+            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPi);
             break;
           }
           case idxKa: {
-            nsigma = responseKa.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDKa);
             break;
           }
           case idxPr: {
-            nsigma = responsePr.GetSeparation(mRespParamsV2, trk);
+            nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPr);
             break;
           }
           case idxDe: {
-            nsigma = responseDe.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDDe);
             break;
           }
           case idxTr: {
-            nsigma = responseTr.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDTr);
             break;
           }
           case idxHe: {
-            nsigma = responseHe.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDHe);
             break;
           }
           case idxAl: {
-            nsigma = responseAl.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDAl);
             break;
           }
@@ -1037,56 +1037,56 @@ struct tofPidMerge {
       for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
         switch (pidId) {
           case idxEl: {
-            resolution = responseEl.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseEl.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseEl.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseEl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullEl(resolution, nsigma);
             break;
           }
           case idxMu: {
-            resolution = responseMu.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseMu.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseMu.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseMu.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullMu(resolution, nsigma);
             break;
           }
           case idxPi: {
-            resolution = responsePi.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responsePi.GetSeparation(mRespParamsV2, trk);
+            resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             tablePIDFullPi(resolution, nsigma);
             break;
           }
           case idxKa: {
-            resolution = responseKa.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseKa.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullKa(resolution, nsigma);
             break;
           }
           case idxPr: {
-            resolution = responsePr.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responsePr.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullPr(resolution, nsigma);
             break;
           }
           case idxDe: {
-            resolution = responseDe.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseDe.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullDe(resolution, nsigma);
             break;
           }
           case idxTr: {
-            resolution = responseTr.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseTr.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseTr.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseTr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullTr(resolution, nsigma);
             break;
           }
           case idxHe: {
-            resolution = responseHe.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseHe.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseHe.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseHe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullHe(resolution, nsigma);
             break;
           }
           case idxAl: {
-            resolution = responseAl.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseAl.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseAl.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseAl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullAl(resolution, nsigma);
             break;
           }
@@ -1102,10 +1102,123 @@ struct tofPidMerge {
   }
 };
 
+struct tofPidBeta {
+  Produces<aod::pidTOFbeta> tablePIDBeta;
+  Produces<aod::pidTOFmass> tablePIDTOFMass;
+  Configurable<float> expreso{"tof-expreso", 80, "Expected resolution for the computation of the expected beta"};
+  // Detector response and input parameters
+  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
+  Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
+  Configurable<bool> enableTOFParams{"enableTOFParams", false, "Flag to use TOF parameters"};
+
+  bool enableTableBeta = false;
+  bool enableTableMass = false;
+  void init(o2::framework::InitContext& initContext)
+  {
+    if (isTableRequiredInWorkflow(initContext, "pidTOFbeta")) {
+      enableTableBeta = true;
+    }
+    if (isTableRequiredInWorkflow(initContext, "pidTOFmass")) {
+      enableTableMass = true;
+    }
+    responseBeta.mExpectedResolution = expreso.value;
+    if (!enableTOFParams) {
+      return;
+    }
+    // Getting the parametrization parameters
+    ccdb->setURL(url.value);
+    ccdb->setTimestamp(timestamp.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    // Not later than now objects
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    //
+
+    // TODO: implement the automatic pass name detection from metadata
+    if (passName.value == "") {
+      passName.value = "unanchored"; // temporary default
+      LOG(warning) << "Passed autodetect mode for pass, not implemented yet, waiting for metadata. Taking '" << passName.value << "'";
+    }
+    LOG(info) << "Using parameter collection, starting from pass '" << passName.value << "'";
+
+    const std::string fname = paramFileName.value;
+    if (!fname.empty()) { // Loading the parametrization from file
+      LOG(info) << "Loading exp. sigma parametrization from file " << fname << ", using param: " << parametrizationPath.value;
+      if (1) {
+        o2::tof::ParameterCollection paramCollection;
+        paramCollection.loadParamFromFile(fname, parametrizationPath.value);
+        LOG(info) << "+++ Loaded parameter collection from file +++";
+        if (!paramCollection.retrieveParameters(mRespParamsV3, passName.value)) {
+          if (fatalOnPassNotAvailable) {
+            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+          } else {
+            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+          }
+        } else {
+          mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
+          mRespParamsV3.printMomentumChargeShiftParameters();
+        }
+      } else {
+        mRespParamsV3.loadParamFromFile(fname.data(), parametrizationPath.value);
+      }
+    } else { // Loading it from CCDB
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
+
+      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
+      paramCollection->print();
+      if (!paramCollection->retrieveParameters(mRespParamsV3, passName.value)) {
+        if (fatalOnPassNotAvailable) {
+          LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+        } else {
+          LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+        }
+      } else {
+        mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
+        mRespParamsV3.printMomentumChargeShiftParameters();
+      }
+    }
+    mRespParamsV3.print();
+  }
+
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  o2::pid::tof::Beta<Trks::iterator> responseBeta;
+  template <o2::track::PID::ID pid>
+  using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
+  void process(Trks const& tracks)
+  {
+    if (!enableTableBeta && !enableTableMass) {
+      return;
+    }
+    float beta = 0.f;
+    tablePIDBeta.reserve(tracks.size());
+    for (auto const& trk : tracks) {
+      beta = responseBeta.GetBeta(trk);
+      if (enableTableBeta) {
+        tablePIDBeta(beta,
+                     responseBeta.GetExpectedSigma(trk));
+      }
+      if (enableTableMass) {
+        if (enableTOFParams) {
+          tablePIDTOFMass(o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+        } else {
+          tablePIDTOFMass(o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, beta));
+        }
+      }
+    }
+  }
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc)};
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
   workflow.push_back(adaptAnalysisTask<tofPidMerge>(cfgc));
+  workflow.push_back(adaptAnalysisTask<tofPidBeta>(cfgc));
   return workflow;
 }

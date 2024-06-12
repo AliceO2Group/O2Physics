@@ -63,8 +63,13 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JClusters> jClustersTable;
   Produces<aod::JClusterPIs> jClustersParentIndexTable;
   Produces<aod::JClusterTracks> jClustersMatchedTracksTable;
+  Produces<aod::JMcClusterLbs> jMcClustersLabelTable;
+  Produces<aod::JD0CollisionIds> jD0CollisionIdsTable;
+  Produces<aod::JD0McCollisionIds> jD0McCollisionIdsTable;
   Produces<aod::JD0Ids> jD0IdsTable;
   Produces<aod::JD0PIds> jD0ParticleIdsTable;
+  Produces<aod::JLcCollisionIds> jLcCollisionIdsTable;
+  Produces<aod::JLcMcCollisionIds> jLcMcCollisionIdsTable;
   Produces<aod::JLcIds> jLcIdsTable;
   Produces<aod::JLcPIds> jLcParticleIdsTable;
   Produces<aod::JV0Ids> jV0IdsTable;
@@ -210,6 +215,31 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processClusters, "produces derived cluster tables", false);
 
+  void processMcClusterLabels(aod::EMCALMCCluster const& cluster)
+  {
+    std::vector<int> particleIds;
+    for (auto particleId : cluster.mcParticleIds()) {
+      particleIds.push_back(particleId);
+    }
+    std::vector<float> amplitudeA;
+    auto amplitudeASpan = cluster.amplitudeA();
+    std::copy(amplitudeASpan.begin(), amplitudeASpan.end(), std::back_inserter(amplitudeA));
+    jMcClustersLabelTable(particleIds, amplitudeA);
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processMcClusterLabels, "produces derived cluster particle label table", false);
+
+  void processD0Collisions(aod::HfD0CollIds::iterator const& D0Collision)
+  {
+    jD0CollisionIdsTable(D0Collision.collisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0Collisions, "produces derived index for D0 collisions", false);
+
+  void processD0McCollisions(aod::HfD0McCollIds::iterator const& D0McCollision)
+  {
+    jD0McCollisionIdsTable(D0McCollision.mcCollisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0McCollisions, "produces derived index for D0 MC collisions", false);
+
   void processD0(aod::HfD0Ids::iterator const& D0)
   {
     jD0IdsTable(D0.collisionId(), D0.prong0Id(), D0.prong1Id());
@@ -221,6 +251,18 @@ struct JetDerivedDataProducerTask {
     jD0ParticleIdsTable(D0.mcCollisionId(), D0.mcParticleId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processD0MC, "produces derived index for D0 particles", false);
+
+  void processLcCollisions(aod::Hf3PCollIds::iterator const& LcCollision)
+  {
+    jLcCollisionIdsTable(LcCollision.collisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processLcCollisions, "produces derived index for Lc collisions", false);
+
+  void processLcMcCollisions(aod::Hf3PMcCollIds::iterator const& LcMcCollision)
+  {
+    jLcMcCollisionIdsTable(LcMcCollision.mcCollisionId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMcCollisions, "produces derived index for Lc MC collisions", false);
 
   void processLc(aod::Hf3PIds::iterator const& Lc)
   {

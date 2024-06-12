@@ -228,8 +228,8 @@ struct FemtoCorrelations {
             continue;
 
           for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
-            auto hDblTrk_SE = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/SE_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{628, -M_PI / 2.0, M_PI / 2.0, "dphi*"}, {200, -0.5, 0.5, "deta"}});
-            auto hDblTrk_ME = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/ME_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{628, -M_PI / 2.0, M_PI / 2.0, "dphi*"}, {200, -0.5, 0.5, "deta"}});
+            auto hDblTrk_SE = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/SE_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{101, -0.2, 0.2, "dphi*"}, {101, -0.2, 0.2, "deta"}});
+            auto hDblTrk_ME = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects/ME_cent%i_kT%i", i, i, j) + suffix[f], Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j) + suffix[f], kTH2F, {{101, -0.2, 0.2, "dphi*"}, {101, -0.2, 0.2, "deta"}});
 
             DoubleTrack_SE_histos_perMult.push_back(std::move(hDblTrk_SE));
             DoubleTrack_ME_histos_perMult.push_back(std::move(hDblTrk_ME));
