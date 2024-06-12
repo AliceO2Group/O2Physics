@@ -651,12 +651,10 @@ struct hyperRecoTask {
     selectGoodCollisionsMC(collisions);
     useCustomVertexer ? fillCustomV0s(collisions, tracks, ambiTracks, bcs) : fillV0s(collisions, tracks, V0s);
     fillMCinfo(trackLabelsMC, particlesMC);
-    int counterSig = 0;
     for (auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
       if (!hypCand.isSignal && mcSignalOnly)
         continue;
-      counterSig++;
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                     collision.posX(), collision.posY(), collision.posZ(),
