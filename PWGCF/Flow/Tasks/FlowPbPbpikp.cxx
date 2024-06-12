@@ -406,8 +406,9 @@ struct v2ellip {
           pn_sumsinA_k[pt] += TMath::Sin(2 * track1.phi());
           pn_sumcosA_k[pt] += TMath::Cos(2 * track1.phi());
           mpA_k[pt]++;
-        } else
+        } else {
           continue;
+        }
       } // end of pt loop
     }   // track loop ends
 
@@ -447,8 +448,9 @@ struct v2ellip {
           pn_sumsinB_k[pt] += TMath::Sin(2 * track2.phi());
           pn_sumcosB_k[pt] += TMath::Cos(2 * track2.phi());
           mpB_k[pt]++;
-        } else
+        } else {
           continue;
+        }
       } // end of pt loop
 
     } // track loop ends
