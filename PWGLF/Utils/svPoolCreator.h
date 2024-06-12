@@ -41,7 +41,6 @@ struct SVCand {
 class svPoolCreator
 {
  public:
-
   svPoolCreator(int track0Pdg, int track1Pdg)
     : track0Pdg(track0Pdg), track1Pdg(track1Pdg)
   {
@@ -59,7 +58,6 @@ class svPoolCreator
   void setFitter(const o2::vertexing::DCAFitterN<2>& fitter) { this->fitter = fitter; }
   o2::vertexing::DCAFitterN<2>* getFitter() { return &fitter; }
   std::array<std::vector<TrackCand>, 4> getTrackCandPool() { return trackCandPool; }
-
 
   template <typename T, typename C>
   void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const&)
@@ -79,12 +77,12 @@ class svPoolCreator
         if (ambTrack.trackId() != trackCand.globalIndex()) {
           continue;
         }
-            if (!ambTrack.has_bc() || ambTrack.bc_as<aod::BCsWithTimestamps>().size() == 0) {
-              globalBC = -1;
-              break;
-            }
-            globalBC = ambTrack.bc_as<aod::BCsWithTimestamps>().begin().globalBC();
-            break;
+        if (!ambTrack.has_bc() || ambTrack.bc_as<aod::BCsWithTimestamps>().size() == 0) {
+          globalBC = -1;
+          break;
+        }
+        globalBC = ambTrack.bc_as<aod::BCsWithTimestamps>().begin().globalBC();
+        break;
       }
     }
 
@@ -107,7 +105,7 @@ class svPoolCreator
       float trackTimeRes{0.};
       if (trackCand.isPVContributor()) {
         trackTime = trackCand.template collision_as<C>().collisionTime(); // if PV contributor, we assume the time to be the one of the collision
-        trackTimeRes = constants::lhc::LHCBunchSpacingNS;    // 1 BC
+        trackTimeRes = constants::lhc::LHCBunchSpacingNS;                 // 1 BC
       } else {
         trackTime = trackCand.trackTime();
         trackTimeRes = trackCand.trackTimeRes();
@@ -220,7 +218,7 @@ class svPoolCreator
   std::unordered_map<int, std::pair<int, int>> tmap;
 
   std::array<std::vector<TrackCand>, 4> trackCandPool; // Sorting: dau0 pos, dau0 neg, dau1 pos, dau1 neg
-  std::vector<SVCand> svCandPool; // index of the two tracks in the track table
+  std::vector<SVCand> svCandPool;                      // index of the two tracks in the track table
   TrackCand trForpool;
 };
 
