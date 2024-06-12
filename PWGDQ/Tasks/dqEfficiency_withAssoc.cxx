@@ -115,10 +115,6 @@ constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | Va
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
 // constexpr static uint32_t gkMuonFillMapWithColl = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCollInfo;
 
-constexpr static int pairTypeEE = VarManager::kDecayToEE;
-constexpr static int pairTypeMuMu = VarManager::kDecayToMuMu;
-// constexpr static int pairTypeEMu = VarManager::kElectronMuon;
-
 // Global function used to define needed histogram classes
 void DefineHistograms(HistogramManager* histMan, TString histClasses, const char* histGroups); // defines histograms for all tasks
 
@@ -1356,7 +1352,7 @@ struct AnalysisSameEventPairing {
     std::map<int, std::vector<TString>> histNames = fTrackHistNames;
     std::map<int, std::vector<TString>> histNamesMC = fBarrelHistNamesMCmatched;
     int ncuts = fNCutsBarrel;
-    if constexpr (TPairType == pairTypeMuMu) {
+    if constexpr (TPairType == VarManager::kDecayToMuMu) {
       cutNames = fConfigMuonCuts.value;
       histNames = fMuonHistNames;
       histNamesMC = fMuonHistNamesMCmatched;
