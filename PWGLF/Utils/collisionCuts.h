@@ -64,6 +64,8 @@ class CollisonCuts
     }
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/posZ_sel8", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
+    
     if (mCheckIsRun3) {
       mHistogramRegistry->add("Event/CentFV0A", "; vCentV0A; Entries", kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", kTH1F, {{110, 0, 110}});
@@ -71,6 +73,17 @@ class CollisonCuts
       mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/posZ_ITSOnly", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
       mHistogramRegistry->add("Event/posZ_ITSTPC", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
+      
+      mHistogramRegistry->add("CollCutCounts", "; ; Entries", kTH1F, {{10, 0., 10.}});
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(1, "all"); //label
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(2, "sel8"); //label
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(3, "IsTriggerTVX"); //label
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(4, "NoTimeFrameBorder"); //label
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(5, "IsVertexITSTPC"); //label
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(6, "IsGoodZvtxFT0vsPV)"); //label
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(7, "NoSameBunchPileup)"); //label
+      mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(8, "NoITSROFrameBorder)"); //label
+
     } else {
       mHistogramRegistry->add("Event/CentRun2V0M", "; vCentV0M; Entries", kTH1F, {{110, 0, 110}});
     }
@@ -116,34 +129,43 @@ class CollisonCuts
       return false;
     }
     if (mCheckIsRun3) { // Run3 case
+      mHistogramRegistry->fill(HIST("CollCutCounts"), 0.5); 
       if (mCheckOffline && !col.sel8()) {
         LOGF(debug, "Offline selection failed (Run3)");
         return false;
       }
+      mHistogramRegistry->fill(HIST("Event/posZ_sel8"), col.posZ());
+      mHistogramRegistry->fill(HIST("CollCutCounts"), 1.5);
       if (mTriggerTVXselection && !col.selection_bit(aod::evsel::kIsTriggerTVX)) {
         LOGF(debug, "Offline selection TVX failed (Run3)");
         return false;
       }
+      mHistogramRegistry->fill(HIST("CollCutCounts"), 2.5);
       if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) && mApplyTFBorderCut) {
         LOGF(debug, "Time frame border cut failed");
         return false;
       }
+      mHistogramRegistry->fill(HIST("CollCutCounts"), 3.5);
       if (!col.selection_bit(o2::aod::evsel::kIsVertexITSTPC) && mApplyITSTPCvertex) {
         LOGF(debug, "ITS-TPC matching cut failed");
         return false;
       }
+      mHistogramRegistry->fill(HIST("CollCutCounts"), 4.5);
       if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && mApplyZvertexTimedifference) {
         LOGF(debug, "Z-vertex time difference cut failed");
         return false;
       }
+      mHistogramRegistry->fill(HIST("CollCutCounts"), 5.5);
       if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && mApplyPileupRejection) {
         LOGF(debug, "Pileup rejection failed");
         return false;
       }
+      mHistogramRegistry->fill(HIST("CollCutCounts"), 6.5);
       if (!col.selection_bit(aod::evsel::kNoITSROFrameBorder) && mApplyNoITSROBorderCut) {
         LOGF(debug, "NoITSRO frame border cut failed");
         return false;
       }
+      mHistogramRegistry->fill(HIST("CollCutCounts"), 7.5);
     } else { // Run2 case
       if (mCheckOffline && !col.sel7()) {
         LOGF(debug, "Offline selection failed (sel7)");
