@@ -27,7 +27,7 @@ using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-enum Channels : uint8_t {
+enum Channel : uint8_t {
   DplusToKPiPi = 0,
   DzeroToKPi,
   NChannels
