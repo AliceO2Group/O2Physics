@@ -133,7 +133,8 @@ struct SGExclOmega {
     }
     // Look for D0 and D0bar
     // if (pvtracks != 6) return;
-    if (nElec != 4 || esign != 0 || pvtracks < 6) return;
+    if (nElec != 4 || esign != 0 || pvtracks < 6)
+      return;
     // Apply pion hypothesis and create pairs
     v00 = els[0] + els[1] + els[2] + els[3];
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
