@@ -69,7 +69,7 @@ struct HfTaskCharmHadImpactPar {
 
   // Fill THnSparses for the ML analysis
   /// \param candidate is a particle candidate
-  template <uint8_t channel, bool withMl, typename CCands>
+  template <Channel channel, bool withMl, typename CCands>
   void fillSparse(const CCands& candidate)
   {
     std::vector<float> outputMl = {-999., -999., -999.};
