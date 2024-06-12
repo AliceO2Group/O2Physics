@@ -47,7 +47,7 @@ struct HfTaskCharmHadImpactPar {
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using CandDplusDataWithMl = soa::Filtered<soa::Join<CandDplusData, aod::HfMlDplusToPiKPi>>;
   using CandDzeroData = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-  using CandDzeroDataWithMl = soa::Filtered<CandDzeroData, aod::HfMlD0>>;
+  using CandDzeroDataWithMl = soa::soa::Join<Filtered<CandDzeroData, aod::HfMlD0>>;
 
   Filter filterDplusFlag = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterDzeroFlag = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
