@@ -212,12 +212,12 @@ struct UpcJpsiCentralBarrel {
     TG.add("TG/PID/hTOFVsPt", "hTOFVsPt", {HistType::kTH2F, {axispt, axisTOF}});
     TG.add("TG/PID/hTOFVsPhi", "hTOFVsPhi", {HistType::kTH2F, {axisPhi, axisTOF}});
     TG.add("TG/PID/hTOFVsEta", "hTOFVsEta", {HistType::kTH2F, {axiseta, axisTOF}});
-    TG.add("TG/TPC/hNsigmaMu", "hNsigmaMu", {HistType::kTH1F}, {axisSigma});
-    TG.add("TG/TPC/hNsigmaEl", "hNsigmaEl", {HistType::kTH1F}, {axisSigma});
-    TG.add("TG/TPC/hNsigmaPr", "hNsigmaPr", {HistType::kTH1F}, {axisSigma});
-    TG.add("TG/TOF/hNsigmaMu", "hNsigmaMu", {HistType::kTH1F}, {axisSigma});
-    TG.add("TG/TOF/hNsigmaEl", "hNsigmaEl", {HistType::kTH1F}, {axisSigma});
-    TG.add("TG/TOF/hNsigmaPr", "hNsigmaPr", {HistType::kTH1F}, {axisSigma});
+    TG.add("TG/TPC/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
+    TG.add("TG/TPC/hNsigmaEl", "hNsigmaEl", HistType::kTH1F, {axisSigma});
+    TG.add("TG/TPC/hNsigmaPr", "hNsigmaPr", HistType::kTH1F, {axisSigma});
+    TG.add("TG/TOF/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
+    TG.add("TG/TOF/hNsigmaEl", "hNsigmaEl", HistType::kTH1F, {axisSigma});
+    TG.add("TG/TOF/hNsigmaPr", "hNsigmaPr", HistType::kTH1F, {axisSigma});
 
     // TGmu histograms
     TGmu.add("TGmu/hTrackPt1", "hTrackPt1", {HistType::kTH1F, {axispt}});
@@ -226,8 +226,8 @@ struct UpcJpsiCentralBarrel {
     TGmu.add("TGmu/hTrackPt2", "hTrackPt2", {HistType::kTH1F, {axispt}});
     TGmu.add("TGmu/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axiseta}});
     TGmu.add("TGmu/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
-    TGmu.add("TGmu/hNsigmaMu", "hNsigmaMu", {HistType::kTH1F}, {axisSigma});
-    TGmu.add("TGmu/hNsigmaMuTOF", "hNsigmaMuTOF", {HistType::kTH1F}, {axisSigma});
+    TGmu.add("TGmu/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
+    TGmu.add("TGmu/hNsigmaMuTOF", "hNsigmaMuTOF", HistType::kTH1F, {axisSigma});
     TGmu.add("TGmu/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisp, axisTPC}});
     TGmu.add("TGmu/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axispt, axisTPC}});
     TGmu.add("TGmu/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
@@ -268,8 +268,8 @@ struct UpcJpsiCentralBarrel {
     TGel.add("TGel/hTrackPt2", "hTrackPt2", {HistType::kTH1F, {axispt}});
     TGel.add("TGel/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axiseta}});
     TGel.add("TGel/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
-    TGel.add("TGel/hNsigmaEl", "hNsigmaEl", {HistType::kTH1F}, {axisSigma});
-    TGel.add("TGel/hNsigmaElTOF", "hNsigmaElTOF", {HistType::kTH1F}, {axisSigma});
+    TGel.add("TGel/hNsigmaEl", "hNsigmaEl", HistType::kTH1F, {axisSigma});
+    TGel.add("TGel/hNsigmaElTOF", "hNsigmaElTOF", HistType::kTH1F, {axisSigma});
     TGel.add("TGel/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisp, axisTPC}});
     TGel.add("TGel/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axispt, axisTPC}});
     TGel.add("TGel/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
@@ -310,8 +310,8 @@ struct UpcJpsiCentralBarrel {
     TGp.add("TGp/hTrackPt2", "hTrackPt2", {HistType::kTH1F, {axispt}});
     TGp.add("TGp/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axiseta}});
     TGp.add("TGp/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
-    TGp.add("TGp/hNsigmaMu", "hNsigmaMu", {HistType::kTH1F}, {axisSigma});
-    TGp.add("TGp/hNsigmaMuTOF", "hNsigmaMuTOF", {HistType::kTH1F}, {axisSigma});
+    TGp.add("TGp/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
+    TGp.add("TGp/hNsigmaMuTOF", "hNsigmaMuTOF", HistType::kTH1F, {axisSigma});
     TGp.add("TGp/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisp, axisTPC}});
     TGp.add("TGp/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axispt, axisTPC}});
     TGp.add("TGp/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
