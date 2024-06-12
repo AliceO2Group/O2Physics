@@ -111,7 +111,7 @@ struct HfTaskCharmHadImpactPar {
   }
 
   /// \param candidates are reconstructed candidates
-  template <uint8_t channel, bool withMl, typename CCands>
+  template <Channel channel, bool withMl, typename CCands>
   void runAnalysis(const CCands& candidates)
   {
     for (auto const& candidate : candidates) {
