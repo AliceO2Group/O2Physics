@@ -36,10 +36,10 @@ namespace femtoDream
 /// \tparam partTwo Type of particle 2 (Track/V0/Cascade/...)
 
 enum ProngCharmHadron {
-  prong0 = 0,
-  prong1 = 1,
-  prong2 = 2,
-  nprongs = 3
+  Prong0 = 0,
+  Prong1 = 1,
+  Prong2 = 2,
+  Nprongs = 3
 };
 
 template <o2::aod::femtodreamparticle::ParticleType partOne, o2::aod::femtodreamparticle::ParticleType partTwo>
@@ -99,7 +99,7 @@ class FemtoDreamDetaDphiStar
       }
     }
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
-      for (int i = 0; i < nprongs; i++) {
+      for (int i = 0; i < Nprongs; i++) {
         std::string dirName = static_cast<std::string>(dirNames[2]);
         histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
@@ -284,26 +284,26 @@ class FemtoDreamDetaDphiStar
 
       bool pass = false;
 
-      for (int i = 0; i < nprongs; ++i) {
+      for (int i = 0; i < Nprongs; ++i) {
         double deta, dphiAvg, dphi_AT_PV, dphi_AT_SpecificRadii;
         bool sameCharge = false;
 
         switch (i) {
-          case prong0:
+          case Prong0:
             deta = part1.eta() - part2.prong0Eta();
             dphi_AT_PV = part1.phi() - part2.prong0Phi();
             dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 0>(part2, radiiTPC);
             dphiAvg = AveragePhiStar<true>(part1, part2, 0, &sameCharge);
             histdetadpi[0][0]->Fill(deta, dphiAvg);
             break;
-          case prong1:
+          case Prong1:
             deta = part1.eta() - part2.prong1Eta();
             dphi_AT_PV = part1.phi() - part2.prong1Phi();
             dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 1>(part2, radiiTPC);
             dphiAvg = AveragePhiStar<true>(part1, part2, 1, &sameCharge);
             histdetadpi[1][0]->Fill(deta, dphiAvg);
             break;
-          case prong2:
+          case Prong2:
             deta = part1.eta() - part2.prong2Eta();
             dphi_AT_PV = part1.phi() - part2.prong2Phi();
             dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 2>(part2, radiiTPC);
@@ -421,17 +421,17 @@ class FemtoDreamDetaDphiStar
     float phi0, pt;
     if constexpr (isHF) {
       switch (prong) {
-        case prong0:
+        case Prong0:
           charge = part.charge(); // charge calculation according to 3-prong decay, Lc^+ --> P^+ + K^- + pi^+
           phi0 = part.prong0Phi();
           pt = part.prong0Pt();
           break;
-        case prong1:
+        case Prong1:
           charge = -part.charge();
           phi0 = part.prong1Phi();
           pt = part.prong1Pt();
           break;
-        case prong2:
+        case Prong2:
           charge = part.charge();
           phi0 = part.prong2Phi();
           pt = part.prong2Pt();
@@ -479,17 +479,17 @@ class FemtoDreamDetaDphiStar
     float pt = -999.;
     float phi0 = -999.;
     switch (prong) {
-      case prong0:
+      case Prong0:
         pt = part.prong0Pt();
         phi0 = part.prong0Phi();
         charge = part.charge();
         break;
-      case prong1:
+      case Prong1:
         pt = part.prong1Pt();
         phi0 = part.prong1Phi();
         charge = -part.charge();
         break;
-      case prong2:
+      case Prong2:
         pt = part.prong2Pt();
         phi0 = part.prong2Phi();
         charge = part.charge();
