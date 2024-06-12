@@ -47,7 +47,7 @@ struct HfTaskCharmHadImpactPar {
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using CandDplusDataWithMl = soa::Filtered<soa::Join<CandDplusData, aod::HfMlDplusToPiKPi>>;
   using CandDzeroData = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-  using CandDzeroDataWithMl = soa::soa::Join<Filtered<CandDzeroData, aod::HfMlD0>>;
+  using CandDzeroDataWithMl = soa::Filtered<soa::Join<CandDzeroData, aod::HfMlD0>>;
 
   Filter filterDplusFlag = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterDzeroFlag = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
@@ -74,7 +74,7 @@ struct HfTaskCharmHadImpactPar {
   {
     std::vector<float> outputMl = {-999., -999., -999.};
     float invMass{-1.f};
-    if constexpr (channel == Channels::DplusToKPiPi) { // D+ -> Kpipi
+    if constexpr (channel == Channel::DplusToKPiPi) { // D+ -> Kpipi
       invMass = hfHelper.invMassDplusToPiKPi(candidate);
       if constexpr (withMl) {
         for (auto iScore{0u}; iScore < candidate.mlProbDplusToPiKPi().size(); ++iScore) {
@@ -84,7 +84,7 @@ struct HfTaskCharmHadImpactPar {
       } else {
         registry.fill(HIST("hMassPtImpPar"), invMass, candidate.pt(), candidate.impactParameterXY());
       }
-    } else if constexpr (channel == Channels::DzeroToKPi) {
+    } else if constexpr (channel == Channel::DzeroToKPi) {
       if (candidate.isSelD0()) { // D0 -> Kpi
         invMass = hfHelper.invMassD0ToPiK(candidate);
         if constexpr (withMl) {
@@ -122,25 +122,25 @@ struct HfTaskCharmHadImpactPar {
   // process functions
   void processDplus(CandDplusData const& candidates)
   {
-    runAnalysis<Channels::DplusToKPiPi, false>(candidates);
+    runAnalysis<Channel::DplusToKPiPi, false>(candidates);
   }
   PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDplus, "Process D+ w/o ML", false);
 
   void processDplusWithMl(CandDplusDataWithMl const& candidates)
   {
-    runAnalysis<Channels::DplusToKPiPi, true>(candidates);
+    runAnalysis<Channel::DplusToKPiPi, true>(candidates);
   }
   PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDplusWithMl, "Process D+ with ML", true);
 
   void processDzero(CandDzeroData const& candidates)
   {
-    runAnalysis<Channels::DzeroToKPi, false>(candidates);
+    runAnalysis<Channel::DzeroToKPi, false>(candidates);
   }
   PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDzero, "Process D0 w/o ML", false);
 
   void processDzeroWithMl(CandDzeroDataWithMl const& candidates)
   {
-    runAnalysis<Channels::DzeroToKPi, true>(candidates);
+    runAnalysis<Channel::DzeroToKPi, true>(candidates);
   }
   PROCESS_SWITCH(HfTaskCharmHadImpactPar, processDzeroWithMl, "Process D0 with ML", false);
 };
