@@ -488,6 +488,8 @@ class VarManager : public TObject
     kMftNClusters,
     kMftClusterSize,
     kMftMeanClusterSize,
+    kMuonNAssocsInBunch,
+    kMuonNAssocsOutOfBunch,
     kNMuonTrackVariables,
 
     // MC particle variables
@@ -843,6 +845,8 @@ class VarManager : public TObject
   static void FillMuonPDca(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillPropagateMuon(const T& muon, const C& collision, float* values = nullptr);
+  template <typename T>
+  static void FillBC(T const& bc, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
   template <typename T>
@@ -1196,6 +1200,18 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     values[kMuonC1Pt2Tgl] = cov(4, 3);
     values[kMuonC1Pt21Pt2] = cov(4, 4);
   }
+}
+
+template <typename T>
+void VarManager::FillBC(T const& bc, float* values) {
+  if (!values) {
+    values = fgValues;
+  }
+  values[VarManager::kRunNo] = bc.runNumber();
+  values[VarManager::kBC] = bc.globalBC();
+  values[kBCOrbit] = bc.globalBC() % o2::constants::lhc::LHCMaxBunches;
+  values[VarManager::kTimestamp] = bc.timestamp();
+  values[VarManager::kRunIndex] = GetRunIndex(bc.runNumber());
 }
 
 template <uint32_t fillMap, typename T>
