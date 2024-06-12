@@ -302,12 +302,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // 2-prong signals
   if (!nameStr.compare("dielectron")) {
     MCProng prong(1, {11}, {true}, {false}, {0}, {0}, {false});
-    signal = new MCSignal("dielectron", "Electron pair", {prong, prong}, {-1, -1});
+    signal = new MCSignal(name, "Electron pair", {prong, prong}, {-1, -1});
     return signal;
   }
   if (!nameStr.compare("dimuon")) {
     MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});
-    signal = new MCSignal("dielectron", "Electron pair", {prong, prong}, {-1, -1});
+    signal = new MCSignal(name, "Muon pair", {prong, prong}, {-1, -1});
     return signal;
   }
   if (!nameStr.compare("electronMuonPair")) {

@@ -78,7 +78,7 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool doFlow, bool isMC, const
 }
 
 template <int ev_id, PairType pairtype, typename TCollision, typename TDiphoton>
-void fillPairInfo(HistogramRegistry* fRegistry, TCollision const& collision, TDiphoton const& diphoton, const bool doFlow, const float weight = 1.f)
+void fillPairInfo(HistogramRegistry* fRegistry, TCollision const& collision, TDiphoton const& diphoton, const bool doFlow, const float /*weight*/ = 1.f)
 {
   static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
   if (doFlow) {

@@ -218,6 +218,7 @@ struct Alice3CDeuteron {
           break;
         case 211:
           histos.fill(HIST("event/trackspdg"), 3);
+          break;
         default:
           histos.fill(HIST("event/trackspdg"), 4);
       }
