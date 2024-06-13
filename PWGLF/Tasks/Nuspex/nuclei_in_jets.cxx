@@ -32,6 +32,8 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -46,9 +48,9 @@ using std::array;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
-using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe>;
+using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe>;
 
-using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::McTrackLabels>;
+using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::McTrackLabels>;
 
 struct nuclei_in_jets {
 
