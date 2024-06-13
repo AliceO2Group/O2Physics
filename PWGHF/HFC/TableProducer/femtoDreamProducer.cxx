@@ -483,7 +483,7 @@ struct femtoDreamProducer {
                                  aod::BCsWithTimestamps const&,
                                  FemtoHFTracks const& tracks,
                                  soa::Filtered<soa::Join<CandidateLc,
-                                 aod::HfMlLcToPKPi>> const& candidates)
+                                                         aod::HfMlLcToPKPi>> const& candidates)
   {
 
     // get magnetic field for run
@@ -497,7 +497,7 @@ struct femtoDreamProducer {
   void processMCCharmHad(FemtoFullCollisionMC const& col,
                          aod::BCsWithTimestamps const&,
                          soa::Join<FemtoHFTracks,
-                         aod::McTrackLabels> const& tracks,
+                                   aod::McTrackLabels> const& tracks,
                          soa::Filtered<CandidateLcMC> const& candidates,
                          GeneratedMC const& particles)
   {
@@ -511,9 +511,9 @@ struct femtoDreamProducer {
   void processMCCharmHadWithML(FemtoFullCollisionMC const& col,
                                aod::BCsWithTimestamps const&,
                                soa::Join<FemtoHFTracks,
-                               aod::McTrackLabels> const& tracks,
+                                         aod::McTrackLabels> const& tracks,
                                soa::Filtered<soa::Join<CandidateLcMC,
-                               aod::HfMlLcToPKPi>> const& candidates,
+                                                       aod::HfMlLcToPKPi>> const& candidates,
                                GeneratedMC const& particles)
   {
     // get magnetic field for run
@@ -533,6 +533,5 @@ struct femtoDreamProducer {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<femtoDreamProducer>(cfgc)};
-  return workflow;
+  return WorkflowSpec{adaptAnalysisTask<femtoDreamProducer>(cfgc)};
 }
