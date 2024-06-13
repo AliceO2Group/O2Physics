@@ -38,8 +38,6 @@ using namespace o2::framework::expressions;
 
 struct HfTaskMcEfficiencyToXiPi {
 
-  o2::hf_evsel::HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
-
   Configurable<float> rapidityCharmBaryonMax{"rapidityCharmBaryonMax", 0.5, "Max absolute value of rapidity for charm baryon"};
   Configurable<float> acceptanceEtaLf{"acceptanceEtaLf", 1.0, "Max absolute value of eta for LF daughters"};
   Configurable<float> acceptancePtPionFromCascade{"acceptancePtPionFromCascade", 0.2, "Min value of pt for pion <-- cascade"};
@@ -86,8 +84,6 @@ struct HfTaskMcEfficiencyToXiPi {
     } else if (doprocessOmegac0 && doprocessXic0) {
       LOGF(fatal, "Both processOmegac0 and processXic0 enabled, please choose ONLY one!");
     }
-
-    hfEvSelMc.addHistograms(registry); // particles monitoring
 
     auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
@@ -217,16 +213,6 @@ struct HfTaskMcEfficiencyToXiPi {
     }
 
     for (const auto& mcParticle : genParticles) {
-
-      // auto coll = mcParticle.template mcCollision_as<aod::McCollisions>();
-      // auto bc = coll.template bc_as<BCsInfo>();
-      auto mcColl = mcParticle.mcCollision();
-      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo>(mcColl);
-      hfEvSelMc.fillHistograms(rejectionMask);
-      if (rejectionMask != 0) {
-        /// at least one event selection not satisfied --> reject the gen particle
-        continue;
-      }
 
       // check if I am treating the desired charm baryon
       if (std::abs(mcParticle.pdgCode()) != pdgCode) {
