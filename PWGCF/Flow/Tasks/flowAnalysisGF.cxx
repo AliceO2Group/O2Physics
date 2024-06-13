@@ -69,7 +69,7 @@ std::vector<double> centbinning(90);
 int nBootstrap = 10;
 GFWRegions regions;
 GFWCorrConfigs configs;
-} // namespace o2::analysis::flowanalysis
+}
 
 using namespace o2::analysis::flowanalysis;
 
@@ -103,6 +103,7 @@ struct flowAnalysisGF {
 
   Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "poiP refP | olP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "poiFull refFull | olFull {2 -2}", "refFull {2 2 -2 -2}", "poiFull refFull | olFull {2 2 -2 -2}"}, {"ChGap22", "ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull22", "ChFull24", "ChFull24"}, {0, 0, 0, 0, 0, 0, 0, 0}, {0, 1, 0, 0, 0, 1, 0, 1}}, "Configurations for each correlation to calculate"};
 
+  
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
 
@@ -455,8 +456,7 @@ struct flowAnalysisGF {
     kGen
   };
 
-  template <datatype dt>
-  void FillOutputContainers(const float& centmult, const double& rndm)
+  void FillOutputContainers(datatype dt, const float& centmult, const double& rndm)
   {
     fFCpt->CalculateCorrelations();
     fFCpt->FillPtProfiles(centmult, rndm);
@@ -485,8 +485,8 @@ struct flowAnalysisGF {
     return;
   }
 
-  template <datatype dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int& field)
+  template <typename TCollision, typename TTracks>
+  void processCollision(datatype dt, TCollision collision, TTracks tracks, const float& centrality, const int& field)
   {
 
     if (tracks.size() < 1)
@@ -503,13 +503,33 @@ struct flowAnalysisGF {
       ProcessTrack(track, centrality, vtxz, field);
     }
 
-    FillOutputContainers<dt>((cfgUseNch) ? tracks.size() : centrality, l_Random);
+    FillOutputContainers(dt, (cfgUseNch) ? tracks.size() : centrality, l_Random);
   }
 
   template <typename TrackObject>
   inline void ProcessTrack(TrackObject const& track, const float& centrality, const float& vtxz, const int& field)
   {
     float weff = 1, wacc = 1;
+
+    auto handleReco = [&](auto const& particle) -> bool {
+      if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
+        return false;
+
+      if (cfgFillWeights)
+        fWeights->Fill(particle.phi(), particle.eta(), vtxz, particle.pt(), centrality, 0);
+
+      if (!setCurrentParticleWeights(weff, wacc, particle.phi(), particle.eta(), particle.pt(), vtxz))
+        return false;
+
+      if (cfgFillQA) {
+        FillTrackQA(track, vtxz);
+      }
+
+      FillGFW(particle, weff, wacc);
+      
+      return true;
+    };
+
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
       if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
         return;
@@ -518,49 +538,29 @@ struct flowAnalysisGF {
       if (!mcParticle.isPhysicalPrimary() || mcParticle.eta() < etalow || mcParticle.eta() > etaup || mcParticle.pt() < ptlow || mcParticle.pt() > ptup || track.tpcNClsFound() < cfgNcls)
         return;
 
-      if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
-        return;
+      if(!handleReco(mcParticle)) return;
+      
+     registry.fill(HIST("phi_eta_vtxZ_corrected"), mcParticle.phi(), mcParticle.eta(), vtxz, wacc);
 
-      if (cfgFillWeights)
-        fWeights->Fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), centrality, 0);
-
-      if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
-        return;
-
-      registry.fill(HIST("phi_eta_vtxZ_corrected"), mcParticle.phi(), mcParticle.eta(), vtxz, wacc);
-      if (cfgFillQA)
-        FillTrackQA<kReco>(track, vtxz);
-
-      FillGFW(mcParticle, weff, wacc);
     } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
       if (!track.isPhysicalPrimary() || track.eta() < etalow || track.eta() > etaup || track.pt() < ptlow || track.pt() > ptup)
         return;
 
       if (cfgFillQA)
-        FillTrackQA<kGen>(track, vtxz);
+        FillTrackQA(track, vtxz);
 
       FillGFW(track, 1., 1.);
     } else {
       if (track.tpcNClsFound() < cfgNcls)
         return;
 
-      if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
-        return;
-
-      if (cfgFillWeights)
-        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
-
-      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
-        return;
-
+      if(!handleReco(track)) return;
+      
       registry.fill(HIST("phi_eta_vtxZ_corrected"), track.phi(), track.eta(), vtxz, wacc);
-      if (cfgFillQA)
-        FillTrackQA<kReco>(track, vtxz);
-
-      FillGFW(track, weff, wacc);
+      
     }
   }
-
+  
   template <typename TrackObject>
   inline void FillGFW(TrackObject track, float weff, float wacc)
   {
@@ -576,10 +576,10 @@ struct flowAnalysisGF {
     return;
   }
 
-  template <datatype dt, typename TrackObject>
+  template <typename TrackObject>
   inline void FillTrackQA(TrackObject track, const float vtxz)
   {
-    if constexpr (dt == kGen) {
+    if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>){
       registry.fill(HIST("phi_eta_vtxZ_gen"), track.phi(), track.eta(), vtxz);
       registry.fill(HIST("pt_gen"), track.pt());
     } else {
@@ -600,40 +600,39 @@ struct flowAnalysisGF {
     registry.fill(HIST("multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
     return;
   }
-
+  
   template <typename CollisionObject, typename TracksObject>
   inline void RunProcess(CollisionObject collision, TracksObject tracks)
   {
-
+    
     float centrality;
-
-    if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns>) {
-      if (!collision.sel7())
+    
+      if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns>){
+        if (!collision.sel7()) return;
+        centrality = collision.centRun2V0M();
+      }
+      else if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>){
+        registry.fill(HIST("hEventCount"), .5);
+        if (!collision.sel8()) return;
+        registry.fill(HIST("hEventCount"), 1.5);
+        centrality = collision.centFT0C();
+        if (cfgFillQA)
+          FillEventQA(collision, tracks);
+      }
+    
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality))
         return;
-      centrality = collision.centRun2V0M();
-    } else if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>) {
-      registry.fill(HIST("hEventCount"), .5);
-      if (!collision.sel8())
-        return;
-      registry.fill(HIST("hEventCount"), 1.5);
-      centrality = collision.centFT0C();
-      if (cfgFillQA)
-        FillEventQA(collision, tracks);
-    }
-
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality))
-      return;
-    loadCorrections(bc.timestamp());
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field);
+      loadCorrections(bc.timestamp());
+      auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
+      processCollision(kReco, collision, tracks, centrality, field);
   }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
-
+  
   using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
-
+  
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, myTracks const& tracks)
   {
     RunProcess(collision, tracks);
@@ -655,7 +654,7 @@ struct flowAnalysisGF {
     for (auto& collision : collisions) {
       centrality = collision.centFT0C();
     }
-    processCollision<kGen>(mcCollision, particles, centrality, -999);
+    processCollision(kGen, mcCollision, particles, centrality, -999);
   }
   PROCESS_SWITCH(flowAnalysisGF, processMCGen, "Process analysis for MC generated events", false);
 
