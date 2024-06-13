@@ -3651,7 +3651,7 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
   for (int i = 0; i < 4; i++) {
     if (zncEnergy[i] > 0.) {
       float wZNC = std::pow(zncEnergy[i], alpha);
-      //sumZNC += intcalibZNC[i] * wZNC;
+      // sumZNC += intcalibZNC[i] * wZNC;
       sumZNC += wZNC;
       numXZNC -= x[i] * wZNC;
       numYZNC += y[i] * wZNC;
@@ -3659,7 +3659,7 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
     }
     if (znaEnergy[i] > 0.) {
       float wZNA = std::pow(znaEnergy[i], alpha);
-      //sumZNA += intcalibZNA[i] * wZNA;
+      // sumZNA += intcalibZNA[i] * wZNA;
       sumZNA += wZNA;
       numXZNA += x[i] * wZNA;
       numYZNA += y[i] * wZNA;
