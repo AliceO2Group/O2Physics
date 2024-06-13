@@ -14,25 +14,24 @@
 // This code runs loop over v0 photons for PCM QC.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <array>
+// #include <array>
 #include "TString.h"
 #include "THashList.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/LorentzRotation.h"
-#include "Math/Rotation3D.h"
-#include "Math/AxisAngle.h"
+// #include "Math/Vector4D.h"
+// #include "Math/Vector3D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
+
+// #include "ReconstructionDataFormats/Track.h"
+// #include "Common/Core/trackUtilities.h"
+// #include "Common/Core/TrackSelection.h"
+// #include "Common/DataModel/TrackSelectionTables.h"
+// #include "Common/DataModel/EventSelection.h"
+// #include "Common/DataModel/Centrality.h"
+// #include "Common/DataModel/PIDResponse.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
@@ -48,10 +47,13 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
-using std::array;
+// using std::array;
 
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
+
+using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
+using MyMCCollision = MyMCCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
@@ -73,6 +75,8 @@ struct PCMQCMC {
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
   EMEventCut fEMEventCut;
   static constexpr std::string_view event_types[2] = {"before", "after"};
+
+  HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputV0Leg{"V0Leg"};
@@ -122,6 +126,24 @@ struct PCMQCMC {
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("V0")->FindObject(cutname.data()));
       o2::aod::pwgem::photon::histogram::DefineHistograms(list, "V0", "mc");
     }
+
+    std::vector<double> ptbins;
+    for (int i = 0; i < 2; i++) {
+      ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.1 GeV/c, every 0.05 GeV/c
+    }
+    for (int i = 2; i < 52; i++) {
+      ptbins.emplace_back(0.1 * (i - 2) + 0.1); // from 0.1 to 5 GeV/c, every 0.1 GeV/c
+    }
+    for (int i = 52; i < 62; i++) {
+      ptbins.emplace_back(0.5 * (i - 52) + 5.0); // from 5 to 10 GeV/c, evety 0.5 GeV/c
+    }
+    for (int i = 62; i < 73; i++) {
+      ptbins.emplace_back(1.0 * (i - 62) + 10.0); // from 10 to 20 GeV/c, evety 1 GeV/c
+    }
+    const AxisSpec axis_pt{ptbins, "p_{T} (GeV/c)"};
+    const AxisSpec axis_rapidity{{0.0, +0.8, +0.9}, "rapidity |y|"};
+    fRegistry.add("Generated_dir/Photon/hPt", "pT;p_{T} (GeV/c)", kTH1F, {axis_pt}, true);
+    fRegistry.add("Generated_dir/Photon/hPtY", "Generated info", kTH2F, {axis_pt, axis_rapidity}, true);
   }
 
   void DefineCuts()
@@ -151,17 +173,18 @@ struct PCMQCMC {
     fOutputGen.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Generated")));
   }
 
-  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
+  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
-  void processQCMC(MyCollisions const&, MyV0Photons const& v0photons, MyMCV0Legs const&, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
+  void processQCMC(FilteredMyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const&, aod::EMMCParticles const& mcparticles, MyMCCollisions const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
     THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_v0 = static_cast<THashList*>(fMainList->FindObject("V0"));
     THashList* list_v0leg = static_cast<THashList*>(fMainList->FindObject("V0Leg"));
 
-    for (auto& collision : grouped_collisions) {
+    for (auto& collision : collisions) {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -233,7 +256,7 @@ struct PCMQCMC {
                 }
               }
 
-            } else if (IsFromWD(mcphoton.emmcevent(), mcphoton, mcparticles)) {
+            } else if (IsFromWD(mcphoton.template emmcevent_as<MyMCCollisions>(), mcphoton, mcparticles) > 0) {
               reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_FromWD"))->Fill(v0.pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaPhi_Photon_FromWD"))->Fill(v0.phi(), v0.eta());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hCosPA_Rxy_Photon_FromWD"))->Fill(v0.v0radius(), v0.cospa());
@@ -263,23 +286,49 @@ struct PCMQCMC {
     }   // end of collision loop
   }     // end of process
 
+  template <typename TBinnedData>
+  void fillBinnedData(TBinnedData const& binned_data, const float weight = 1.f)
+  {
+    int xbin = 0, ybin = 0, zbin = 0;
+    auto hPtY = fRegistry.get<TH2>(HIST("Generated_dir/Photon/hPtY")); // 2D
+    auto hPt = fRegistry.get<TH1>(HIST("Generated_dir/Photon/hPt"));   // 1D
+
+    for (int ibin = 0; ibin < hPtY->GetNcells(); ibin++) {
+      int nentry = binned_data[ibin];
+      hPtY->GetBinXYZ(ibin, xbin, ybin, zbin);
+      float pt = hPtY->GetXaxis()->GetBinCenter(xbin);
+      float y = hPtY->GetYaxis()->GetBinCenter(ybin);
+      if (y > maxY) {
+        continue;
+      }
+
+      for (int j = 0; j < nentry; j++) {
+        hPtY->Fill(pt, y, weight);
+        hPt->Fill(pt, weight);
+      }
+    }
+  }
+
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
-  void processGen(MyCollisions const&, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
+  void processGen(FilteredMyCollisions const& collisions, MyMCCollisions const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
-    for (auto& collision : grouped_collisions) {
+    for (auto& collision : collisions) {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-      auto mccollision = collision.emmcevent();
-      // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
 
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+
+      auto mccollision = collision.template emmcevent_as<MyMCCollisions>();
+      auto binned_data_gamma_gen = mccollision.generatedGamma();
+      fillBinnedData(binned_data_gamma_gen, 1.f);
+      // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
 
       auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
       for (auto& mctrack : mctracks_coll) {
@@ -288,10 +337,6 @@ struct PCMQCMC {
         }
 
         if (abs(mctrack.pdgCode()) == 22 && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
-          reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPt_Photon"))->Fill(mctrack.pt());
-          reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hY_Photon"))->Fill(mctrack.y());
-          reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhi_Photon"))->Fill(mctrack.phi());
-
           bool is_ele_fromPC = false;
           bool is_pos_fromPC = false;
           auto daughtersIds = mctrack.daughtersIds();
@@ -331,10 +376,7 @@ struct PCMQCMC {
     }   // end of collision loop
   }
 
-  void processDummy(MyCollisions const&)
-  {
-    // do nothing
-  }
+  void processDummy(MyCollisions const&) {}
 
   PROCESS_SWITCH(PCMQCMC, processQCMC, "run PCM QC in MC", false);
   PROCESS_SWITCH(PCMQCMC, processGen, "run generated information", false);

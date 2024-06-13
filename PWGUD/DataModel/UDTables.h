@@ -362,6 +362,7 @@ DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
                   fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2,
                   fwdtrack::Chi2MatchMCHMID,
+                  fwdtrack::Chi2MatchMCHMFT,
                   fwdtrack::MCHBitMap,
                   fwdtrack::MIDBitMap,
                   fwdtrack::MIDBoards);

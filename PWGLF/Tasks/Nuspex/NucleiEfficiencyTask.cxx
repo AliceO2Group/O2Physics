@@ -51,6 +51,7 @@ struct NucleiEfficiencyTask {
     std::vector<double> PDGBinning = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0};
 
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec pAxis = {ptBinning, "#it{p} (GeV/#it{c})"};
     AxisSpec centralityAxis = {100, 0.0, 100.0, "VT0C (%)"};
     AxisSpec centralityAxis_extended = {105, 0.0, 105.0, "VT0C (%)"};
     AxisSpec etaAxis = {etaBinning, "#eta"};
@@ -61,11 +62,13 @@ struct NucleiEfficiencyTask {
     // Generated
     MC_truth_reg.add("histGenVtxMC", "MC generated vertex z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
     MC_truth_reg.add("histCentrality", "Impact parameter", HistType::kTH1F, {centralityAxis_extended});
+    MC_truth_reg.add("hist_gen_p", "generated p distribution", HistType::kTH2F, {pAxis, PDGBINNING});
     MC_truth_reg.add("hist_gen_pT", "generated p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
     MC_truth_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_truth_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_truth_reg.add("histRapid", "#gamma", HistType::kTH2F, {{1000, -5.0, 5.0}, PDGBINNING});
     // Centrality
+    MC_truth_reg_cent.add("hist_gen_p_cent", "generated p distribution vs impact param", HistType::kTH3F, {pAxis, PDGBINNING, ImPaAxis});
     MC_truth_reg_cent.add("hist_gen_pT_cent", "generated p_{T} distribution vs impact param", HistType::kTH3F, {ptAxis, PDGBINNING, ImPaAxis});
 
     // Reconstructed
@@ -73,10 +76,16 @@ struct NucleiEfficiencyTask {
     MC_recon_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
     MC_recon_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_recon_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
+    MC_recon_reg.add("hist_rec_ITS_vs_p", "ITS reconstructed p distribution", HistType::kTH2F, {pAxis, PDGBINNING});
+    MC_recon_reg.add("hist_rec_ITS_TPC_vs_p", "ITS_TPC reconstructed p distribution", HistType::kTH2F, {pAxis, PDGBINNING});
+    MC_recon_reg.add("hist_rec_ITS_TPC_TOF_vs_p", "ITS_TPC_TOF reconstructed p distribution", HistType::kTH2F, {pAxis, PDGBINNING});
     MC_recon_reg.add("hist_rec_ITS_vs_pT", "ITS reconstructed p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
     MC_recon_reg.add("hist_rec_ITS_TPC_vs_pT", "ITS_TPC reconstructed p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
     MC_recon_reg.add("hist_rec_ITS_TPC_TOF_vs_pT", "ITS_TPC_TOF reconstructed p_{T} distribution", HistType::kTH2F, {ptAxis, PDGBINNING});
     // Centrality
+    MC_recon_reg_cent.add("hist_rec_ITS_vs_p_cent", "ITS reconstructed p distribution vs centrality", HistType::kTH3F, {pAxis, PDGBINNING, centAxis});
+    MC_recon_reg_cent.add("hist_rec_ITS_TPC_vs_p_cent", "ITS_TPC reconstructed p distribution vs centrality", HistType::kTH3F, {pAxis, PDGBINNING, centAxis});
+    MC_recon_reg_cent.add("hist_rec_ITS_TPC_TOF_vs_p_cent", "ITS_TPC_TOF reconstructed p distribution vs centrality", HistType::kTH3F, {pAxis, PDGBINNING, centAxis});
     MC_recon_reg_cent.add("hist_rec_ITS_vs_pT_cent", "ITS reconstructed p_{T} distribution vs centrality", HistType::kTH3F, {ptAxis, PDGBINNING, centAxis});
     MC_recon_reg_cent.add("hist_rec_ITS_TPC_vs_pT_cent", "ITS_TPC reconstructed p_{T} distribution vs centrality", HistType::kTH3F, {ptAxis, PDGBINNING, centAxis});
     MC_recon_reg_cent.add("hist_rec_ITS_TPC_TOF_vs_pT_cent", "ITS_TPC_TOF reconstructed p_{T} distribution vs centrality", HistType::kTH3F, {ptAxis, PDGBINNING, centAxis});
@@ -86,12 +95,15 @@ struct NucleiEfficiencyTask {
   Configurable<bool> calc_cent{"calc_cent", false, "Enable centrality processing"};
   Configurable<bool> y_cut_MC_gen{"y_cut_MC_gen", true, "Enable rapidity cut for generated MC"};
   Configurable<bool> eta_cut_MC_gen{"eta_cut_MC_gen", true, "Enable eta cut for generated MC"};
+  Configurable<bool> use_pT_cut{"use_pT_cut", true, "0: p is used | 1: pT is used"};
   Configurable<float> yMin_gen{"yMin_gen", -0.5, "Maximum rapidity (generated)"};
   Configurable<float> yMax_gen{"yMax_gen", 0.5, "Minimum rapidity (generated)"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
   Configurable<float> yMin_reco{"yMin_reco", -0.5, "Maximum rapidity (reconstructed)"};
   Configurable<float> yMax_reco{"yMax_reco", 0.5, "Minimum rapidity (reconstructed)"};
+  Configurable<float> pmin_reco{"pmin_reco", 0.1f, "min p (reconstructed)"};
+  Configurable<float> pmax_reco{"pmax_reco", 1e+10f, "max p (reconstructed)"};
   Configurable<float> pTmin_reco{"pTmin_reco", 0.1f, "min pT (reconstructed)"};
   Configurable<float> pTmax_reco{"pTmax_reco", 1e+10f, "max pT (reconstructed)"};
   Configurable<float> minReqClusterITS{"minReqClusterITS", 1.0, "min number of clusters required in ITS"};
@@ -186,9 +198,11 @@ struct NucleiEfficiencyTask {
       MC_truth_reg.fill(HIST("histPhi"), MCparticle.phi(), pdgbin);
       MC_truth_reg.fill(HIST("histEta"), MCparticle.eta(), pdgbin);
       MC_truth_reg.fill(HIST("histRapid"), MCparticle.y(), pdgbin);
+      MC_truth_reg.fill(HIST("hist_gen_p"), MCparticle.p(), pdgbin);
       MC_truth_reg.fill(HIST("hist_gen_pT"), MCparticle.pt(), pdgbin);
 
       if (calc_cent) {
+        MC_truth_reg_cent.fill(HIST("hist_gen_p_cent"), MCparticle.p(), pdgbin, mcCollision.impactParameter());
         MC_truth_reg_cent.fill(HIST("hist_gen_pT_cent"), MCparticle.pt(), pdgbin, mcCollision.impactParameter());
       }
     }
@@ -197,7 +211,7 @@ struct NucleiEfficiencyTask {
   //****************************************************************************************************
 
   template <typename CollisionType, typename TracksType, typename mcParticlesType>
-  void process_MC_reco(const CollisionType& collision, const TracksType& tracks, const mcParticlesType& mcParticles)
+  void process_MC_reco(const CollisionType& collision, const TracksType& tracks, const mcParticlesType& /*mcParticles*/)
   {
     if (event_selection_MC_sel8 && !collision.sel8())
       return;
@@ -302,28 +316,42 @@ struct NucleiEfficiencyTask {
       float Chi2perClusterTPC = track.tpcChi2NCl();
       float Chi2perClusterITS = track.itsChi2NCl();
 
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z || track.pt() < pTmin_reco || track.pt() > pTmax_reco)
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z)
         continue;
+
+      if (use_pT_cut) {
+        if (track.pt() < pTmin_reco || track.pt() > pTmax_reco)
+          continue;
+      } else {
+        if (track.p() < pmin_reco || track.p() > pmax_reco)
+          continue;
+      }
 
       MC_recon_reg.fill(HIST("histPhi"), track.phi(), pdgbin);
       MC_recon_reg.fill(HIST("histEta"), track.eta(), pdgbin);
 
       if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
         if (track.hasITS()) {
+          MC_recon_reg.fill(HIST("hist_rec_ITS_vs_p"), track.p() * 2, pdgbin);
           MC_recon_reg.fill(HIST("hist_rec_ITS_vs_pT"), track.pt() * 2, pdgbin);
           if (track.hasTPC()) {
+            MC_recon_reg.fill(HIST("hist_rec_ITS_TPC_vs_p"), track.p() * 2, pdgbin);
             MC_recon_reg.fill(HIST("hist_rec_ITS_TPC_vs_pT"), track.pt() * 2, pdgbin);
             if (track.hasTOF()) {
+              MC_recon_reg.fill(HIST("hist_rec_ITS_TPC_TOF_vs_p"), track.p() * 2, pdgbin);
               MC_recon_reg.fill(HIST("hist_rec_ITS_TPC_TOF_vs_pT"), track.pt() * 2, pdgbin);
             }
           }
         }
       } else {
         if (track.hasITS()) {
+          MC_recon_reg.fill(HIST("hist_rec_ITS_vs_p"), track.p(), pdgbin);
           MC_recon_reg.fill(HIST("hist_rec_ITS_vs_pT"), track.pt(), pdgbin);
           if (track.hasTPC()) {
+            MC_recon_reg.fill(HIST("hist_rec_ITS_TPC_vs_p"), track.p(), pdgbin);
             MC_recon_reg.fill(HIST("hist_rec_ITS_TPC_vs_pT"), track.pt(), pdgbin);
             if (track.hasTOF()) {
+              MC_recon_reg.fill(HIST("hist_rec_ITS_TPC_TOF_vs_p"), track.p(), pdgbin);
               MC_recon_reg.fill(HIST("hist_rec_ITS_TPC_TOF_vs_pT"), track.pt(), pdgbin);
             }
           }
@@ -332,20 +360,26 @@ struct NucleiEfficiencyTask {
       if (calc_cent) {
         if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
           if (track.hasITS()) {
+            MC_recon_reg_cent.fill(HIST("hist_rec_ITS_vs_p_cent"), track.p() * 2, pdgbin, collision.centFT0C());
             MC_recon_reg_cent.fill(HIST("hist_rec_ITS_vs_pT_cent"), track.pt() * 2, pdgbin, collision.centFT0C());
             if (track.hasTPC()) {
+              MC_recon_reg_cent.fill(HIST("hist_rec_ITS_TPC_vs_p_cent"), track.p() * 2, pdgbin, collision.centFT0C());
               MC_recon_reg_cent.fill(HIST("hist_rec_ITS_TPC_vs_pT_cent"), track.pt() * 2, pdgbin, collision.centFT0C());
               if (track.hasTOF()) {
+                MC_recon_reg_cent.fill(HIST("hist_rec_ITS_TPC_TOF_vs_p_cent"), track.p() * 2, pdgbin, collision.centFT0C());
                 MC_recon_reg_cent.fill(HIST("hist_rec_ITS_TPC_TOF_vs_pT_cent"), track.pt() * 2, pdgbin, collision.centFT0C());
               }
             }
           }
         } else {
           if (track.hasITS()) {
+            MC_recon_reg_cent.fill(HIST("hist_rec_ITS_vs_p_cent"), track.p(), pdgbin, collision.centFT0C());
             MC_recon_reg_cent.fill(HIST("hist_rec_ITS_vs_pT_cent"), track.pt(), pdgbin, collision.centFT0C());
             if (track.hasTPC()) {
+              MC_recon_reg_cent.fill(HIST("hist_rec_ITS_TPC_vs_p_cent"), track.p(), pdgbin, collision.centFT0C());
               MC_recon_reg_cent.fill(HIST("hist_rec_ITS_TPC_vs_pT_cent"), track.pt(), pdgbin, collision.centFT0C());
               if (track.hasTOF()) {
+                MC_recon_reg_cent.fill(HIST("hist_rec_ITS_TPC_TOF_vs_p_cent"), track.p(), pdgbin, collision.centFT0C());
                 MC_recon_reg_cent.fill(HIST("hist_rec_ITS_TPC_TOF_vs_pT_cent"), track.pt(), pdgbin, collision.centFT0C());
               }
             }
