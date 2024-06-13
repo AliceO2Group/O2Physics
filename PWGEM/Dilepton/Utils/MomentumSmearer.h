@@ -21,8 +21,8 @@
 #include <TObjArray.h>
 #include <TFile.h>
 #include <TKey.h>
-#include "Framework/Logger.h"
 #include <CCDB/BasicCCDBManager.h>
+#include "Framework/Logger.h"
 
 using namespace o2::framework;
 using namespace o2;
@@ -349,7 +349,7 @@ class MomentumSmearer
     fCcdb = ccdb;
     fFromCcdb = true;
   }
-  void setTimestamp(long timestamp) { fTimestamp = timestamp; }
+  void setTimestamp(int64_t timestamp) { fTimestamp = timestamp; }
 
   // getters
   TString getResFileName() { return fResFileName; }
@@ -385,7 +385,7 @@ class MomentumSmearer
   TObjArray* fArrResoPhi_Pos;
   TObjArray* fArrResoPhi_Neg;
   TObject* fArrEff;
-  long fTimestamp;
+  int64_t fTimestamp;
   bool fFromCcdb = false;
   Service<ccdb::BasicCCDBManager> fCcdb;
 };

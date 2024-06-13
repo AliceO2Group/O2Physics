@@ -13,6 +13,8 @@
 // Analysis task to produce smeared pt,eta,phi for electrons/muons in dilepton analysis
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <CCDB/BasicCCDBManager.h>
+#include <chrono>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -22,8 +24,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGEM/Dilepton/Utils/MomentumSmearer.h"
-#include <CCDB/BasicCCDBManager.h>
-#include <chrono>
 
 using namespace o2;
 using namespace o2::framework;
@@ -47,7 +47,7 @@ struct ApplySmearing {
   Configurable<std::string> fConfigCcdbPathRes{"cfgCcdbPathRes", "", "path to the ccdb object for resolution"};
   Configurable<std::string> fConfigCcdbPathEff{"cfgCcdbPahtEff", "", "path to the ccdb object for efficiency"};
   Configurable<std::string> fConfigCcdbUrl{"cfgCcdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<long> fConfigCcdbNoLaterThan{"cfgCcdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> fConfigCcdbNoLaterThan{"cfgCcdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   MomentumSmearer smearer;
   Service<ccdb::BasicCCDBManager> ccdb;
