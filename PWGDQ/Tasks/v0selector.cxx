@@ -91,7 +91,7 @@ struct v0selector {
     Configurable<float> cutAPL1{"cutAPL1", 0.107, "cutAPL1"};
     Configurable<float> cutAPL2{"cutAPL2", -0.69, "cutAPL2"};
     Configurable<float> cutAPL3{"cutAPL3", 0.5, "cutAPL3"};
-  
+
     // // Gamma cuts
     // const float cutAlphaG = 0.4;
     // const float cutQTG = 0.03;
