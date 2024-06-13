@@ -217,8 +217,8 @@ struct HfFragmentationFunctionTask {
         registry.fill(HIST("h_d0_phi"), d0Candidate.phi());
 
         // filling table
-        distJetTable(axisDistance, 
-                     jet.pt(), jet.eta(), jet.phi(), 
+        distJetTable(axisDistance,
+                     jet.pt(), jet.eta(), jet.phi(),
                      d0Candidate.pt(), d0Candidate.eta(), d0Candidate.phi(), d0Candidate.m(), d0Candidate.y());
 
         break; // get out of candidates' loop after first HF particle is found in jet
@@ -295,10 +295,10 @@ struct HfFragmentationFunctionTask {
         auto mcdd0cand = mcdjet.hfcandidates_first_as<CandidatesD0MCD>();
 
         // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
-        matchJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(),// particle level jet
-                      mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                  // particle level D0
-                      RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi())), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(),// detector level jet
-                      mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt));  // detector level D0
+        matchJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), // particle level jet
+                      mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                   // particle level D0
+                      RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi())), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), // detector level jet
+                      mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt));   // detector level D0
       }
     }
   }
