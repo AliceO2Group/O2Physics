@@ -595,6 +595,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQ1ZNCX] = "";
   fgVariableNames[kQ1ZNCY] = "Q_{1,y}^{ZNC} ";
   fgVariableUnits[kQ1ZNCY] = "";
+  fgVariableNames[KIntercalibZNA] = "ZNA^{common} - (ZNA1 + ZNA2 + ZNA3 + ZNA4)";
+  fgVariableUnits[KIntercalibZNA] = "";
+  fgVariableNames[KIntercalibZNC] = "ZNC^{common} - (ZNC1 + ZNC2 + ZNC3 + ZNC4)";
+  fgVariableUnits[KIntercalibZNC] = "";
   fgVariableNames[kQ1ZNACXX] = "Q_{1,x}^{ZNC} #dot Q_{1,x}^{ZNA} ";
   fgVariableUnits[kQ1ZNACXX] = "";
   fgVariableNames[kQ1ZNACYY] = "Q_{1,y}^{ZNC} #dot Q_{1,y}^{ZNA} ";
