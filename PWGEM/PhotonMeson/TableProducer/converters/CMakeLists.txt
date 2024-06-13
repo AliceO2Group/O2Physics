@@ -14,3 +14,8 @@ o2physics_add_dpl_workflow(emevents-converter
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(ambiguous-electronid-converter
+                    SOURCES ambElectronIdconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+

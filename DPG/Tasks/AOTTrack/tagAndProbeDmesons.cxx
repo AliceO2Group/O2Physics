@@ -188,6 +188,8 @@ struct TagTwoProngDisplacedVertices {
 
   SliceCache cache;
   Configurable<int> fillTopoVarsTable{"fillTopoVarsTable", 0, "flag to fill tag table with topological variables (0 -> disabled, 1 -> signal only, 2 -> bkg only, 3 -> both)"};
+  Configurable<float> downsamplingForTopoVarTable{"downsamplingForTopoVarTable", 1.1, "fraction of tag candidates to downscale in filling table with topological variables"};
+  Configurable<float> ptTagMaxForDownsampling{"ptTagMaxForDownsampling", 5., "maximum pT for downscaling of tag candidates in filling table with topological variables"};
   Configurable<bool> applyTofPid{"applyTofPid", true, "flag to enable TOF PID selection"};
   Configurable<bool> studyDzeroReflections{"studyDzeroReflections", false, "flag to study Dzero reflections"};
   Configurable<float> trackNumSigmaTof{"trackNumSigmaTof", 3.f, "number of sigma for TOF PID compatibility"};
@@ -272,6 +274,10 @@ struct TagTwoProngDisplacedVertices {
 
   void init(InitContext&)
   {
+    if ((doprocessPiPiFromDplus && doprocessPiPiFromDplusMc) || (doprocessKaKaFromDsOrDplus && doprocessKaKaFromDsOrDplusMc) || (doprocessKaPiFromDstar && doprocessKaPiFromDstarMc)) {
+      LOGP(fatal, "The process functions for the same channel with and without MC truth cannot be enabled at the same time! Please check your configuration");
+    }
+
     std::string ccdbUrl = "http://alice-ccdb.cern.ch";
     ccdb->setURL(ccdbUrl.data());
     ccdb->setCaching(true);
@@ -297,13 +303,13 @@ struct TagTwoProngDisplacedVertices {
     const AxisSpec axisMassKaKa{200, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f};
     const AxisSpec axisMassKaPi{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f};
 
-    if (doprocessPiPiFromDplus) {
+    if (doprocessPiPiFromDplus || doprocessPiPiFromDplusMc) {
       registry.add<TH2>("hMassPiPiVsPt", ";#it{p}_{T}(#pi#pi) (GeV/#it{c}); #it{M}(#pi#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassPiPi});
     }
-    if (doprocessKaKaFromDsOrDplus) {
+    if (doprocessKaKaFromDsOrDplus || doprocessKaKaFromDsOrDplusMc) {
       registry.add<TH2>("hMassKaKaVsPt", ";#it{p}_{T}(KK) (GeV/#it{c}); #it{M}(KK) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaKa});
     }
-    if (doprocessKaPiFromDstar) {
+    if (doprocessKaPiFromDstar || doprocessKaPiFromDstarMc) {
       if (!studyDzeroReflections) {
         registry.add<TH2>("hMassKaPiVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaPi});
       } else {
@@ -808,6 +814,10 @@ struct TagTwoProngDisplacedVertices {
           if (fillTopoVarsTable == 1 && !(TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Prompt) || TESTBIT(isSignal, aod::tagandprobe::SignalFlags::NonPrompt))) { // only signal
             fillTable = false;
           } else if (fillTopoVarsTable == 2 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) { // only background
+            fillTable = false;
+          }
+          float pseudoRndm = trackPos.pt() * 1000. - (int64_t)(trackPos.pt() * 1000);
+          if (ptTag < ptTagMaxForDownsampling && pseudoRndm >= downsamplingForTopoVarTable) {
             fillTable = false;
           }
           if (fillTable) {
