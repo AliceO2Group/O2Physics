@@ -57,17 +57,6 @@ struct femtoDreamPairTaskCharmHadrons {
   Configurable<bool> ConfOptUse4D{"ConfOptUse4D", false, "Enable four dimensional histogramms (to be used only for analysis with high statistics): k* vs multiplicity vs multiplicity percentil vs mT"};
   ConfigurableAxis ConfOptDummy{"ConfOptDummy", {1, 0, 1}, "Dummy axis"};
 
-  // Configurable<bool> ConfOptisMc{"ConfOptisMc", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
-  // Configurable<bool> ConfOptUse4D{"ConfOptUse4D", false, "Enable four dimensional histogramms (to be used only for analysis with high statistics): k* vs multiplicity vs multiplicity percentil vs mT"};
-  // Configurable<bool> ConfOptExtendedPlots{"ConfOptExtendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
-  // Configurable<float> ConfOptHighkstarCut{"ConfOptHighkstarCut", 100000., "Set a cut for high k*, above which the pairs are rejected"};
-  // Configurable<bool> ConfOptUseCPR{"ConfOptCPR", false, "Close Pair Rejection"};
-  // Configurable<bool> ConfOptCPRPlotPerRadii{"ConfOptCPRPlotPerRadii", false, "Plot CPR per radii"};
-  // Configurable<float> ConfOptCPRdeltaPhiMax{"ConfOptCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  // Configurable<float> ConfOptCPRdeltaEtaMax{"ConfOptCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
-  // Configurable<bool> ConfOptsmearingByOrigin{"ConfOptsmearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption. Use with care!"};
-  // ConfigurableAxis ConfOptDummy{"ConfOptDummy", {1, 0, 1}, "Dummy axis"};
-
   /// Event selection
   Configurable<int> ConfEvent_maxMult{"ConfEvent_maxMult", 99999, "Maximum Multiplicity (MultNtr)"};
   Configurable<float> ConfEvent_maxMultPercentile{"ConfEvent_maxMultPercentile", 100, "Maximum Multiplicity Percentile"};
@@ -96,48 +85,6 @@ struct femtoDreamPairTaskCharmHadrons {
   Configurable<int> ConfHF_PDGCode{"ConfHF_PDGCode", 4122, "PDG code of particle 2 Charm Hadron"};
   Configurable<float> ConfHF_promptBDT{"ConfHF_promptBDT", 0., "Minimum prompt bdt score Charm Hadron (particle 2)"};
 
-  // Configurable<int> ConfHF_PDGCode{"ConfHF_PDGCode", 4122, "PDG code of particle 2 Charm Hadron"};
-  // Configurable<int8_t> ConfHF_CandSel{"ConfHF_CandSel", 1, "candidate selection for charm hadron"};
-  // Configurable<float> ConfHF_minInvMass{"ConfHF_minInvMass", 2.15, "Minimum invariant mass of Charm Hadron (particle 2)"};
-  // Configurable<float> ConfHF_maxInvMass{"ConfHF_maxInvMass", 2.45, "Maximum invariant mass of Charm Hadron (particle 2)"};
-  // Configurable<float> ConfHF_minPt{"ConfHF_minPt", 0., "Minimum pT of Charm Hadron (particle 2)"};
-  // Configurable<float> ConfHF_maxPt{"ConfHF_maxPt", 999., "Maximum pT of Charm Hadron (particle 2)"};
-  // Configurable<float> ConfHF_promptBDT{"ConfHF_promptBDT", 0., "Minimum prompt bdt score Charm Hadron (particle 2)"};
-  // Configurable<float> ConfHF_fdBDT{"ConfHF_fdBDT", 0., "Minimum feed-down bdt score Charm Hadron (particle 2)"};
-  // Configurable<float> ConfHF_bkgBDT{"ConfHF_bkgBDT", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
-
-  // Configurable<int> ConfTrk1_PDGCode{"ConfTrk1_PDGCode", 2212, "PDG code of Particle 1 (Track)"};
-  // Configurable<femtodreamparticle::cutContainerType> ConfTrk1_CutBit{"ConfTrk1_CutBit", 5542474, "Particle 1 (Track) - Selection bit from cutCulator"};
-  // Configurable<femtodreamparticle::cutContainerType> ConfTrk1_TPCBit{"ConfTrk1_TPCBit", 4, "PID TPC bit from cutCulator for particle 1 (Track)"};
-  // Configurable<femtodreamparticle::cutContainerType> ConfTrk1_TPCTOFBit{"ConfTrk1_TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 1 (Track)"};
-  // Configurable<float> ConfTrk1_PIDThres{"ConfTrk1_PIDThres", 0.75, "Momentum threshold for PID selection for particle 1 (Track)"};
-  // Configurable<float> ConfTrk1_minPt{"ConfTrk1_minPt", 0., "Minimum pT of partricle 1 (Track)"};
-  // Configurable<float> ConfTrk1_maxPt{"ConfTrk1_maxPt", 999., "Maximum pT of partricle 1 (Track)"};
-  // Configurable<float> ConfTrk1_minEta{"ConfTrk1_minEta", -10., "Minimum eta of partricle 1 (Track)"};
-  // Configurable<float> ConfTrk1_maxEta{"ConfTrk1_maxEta", 10., "Maximum eta of partricle 1 (Track)"};
-
-  // Configurable<int> ConfEvent_minMult{"ConfEvent_minMult", 0, "Minimum Multiplicity (MultNtr)"};
-  // Configurable<int> ConfEvent_maxMult{"ConfEvent_maxMult", 99999, "Maximum Multiplicity (MultNtr)"};
-  // Configurable<float> ConfEvent_minMultPercentile{"ConfEvent_minMultPercentile", 0, "Minimum Multiplicity Percentile"};
-  // Configurable<float> ConfEvent_maxMultPercentile{"ConfEvent_maxMultPercentile", 100, "Maximum Multiplicity Percentile"};
-
-  // Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= ConfEvent_minMult && aod::femtodreamcollision::multNtr <= ConfEvent_maxMult;
-  // Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= ConfEvent_minMultPercentile && aod::femtodreamcollision::multV0M <= ConfEvent_maxMultPercentile;
-
-  // using FilteredColisions = FDCollisions;
-  // using FilteredColision = FilteredColisions::iterator;
-  //
-  // using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex>>;
-  // using FilteredFDParticle = FilteredFDParticles::iterator;
-  //
-  // using FilteredCharmCands = soa::Filtered<aod::FDHfCand>;
-  // using FilteredCharmCand = FilteredCharmCands::iterator;
-  //
-  // using FilteredCharmMCCands = soa::Filtered<soa::Join<aod::FDHfCand, aod::FDHfCandMC, aod::FDHfCandMCGen>>;
-  // using FilteredCharmMCCand = FilteredCharmMCCands::iterator;
-  // using FilteredFDMCParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDMCLabels>>;
-  // using FilteredFDMCPart = FilteredFDMCParts::iterator;
-
   /// Binning configurables
   ConfigurableAxis ConfBin4Dkstar{"ConfBin4Dkstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
   ConfigurableAxis ConfBin4DMult{"ConfBin4Dmult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
@@ -156,36 +103,12 @@ struct femtoDreamPairTaskCharmHadrons {
   ConfigurableAxis ConfBinkT{"ConfBinkT", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfBinkstar{"ConfBinkstar", {1500, 0., 6.}, "binning kstar"};
 
-  //  ConfigurableAxis ConfBinTempFitVarTrack{"ConfBinTempFitVarTrack", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (Track)"};
-  //  ConfigurableAxis ConfBinTempFitVarHF{"ConfBinTempFitVarHF", {300, 0.9, 1}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0)"};
-  //  ConfigurableAxis ConfBinTempFitVarHFChild{"ConfBinTempFitVarHFChild", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0 child)"};
-  //  ConfigurableAxis ConfBinInvMass{"ConfBinInvMass", {300, 2.15, 2.45}, "InvMass binning"};
-  //  ConfigurableAxis ConfBinpTTrack{"ConfBinpTTrack", {50, 0.5, 10.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
-  //  ConfigurableAxis ConfBinpTHF{"ConfBinpTHF", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
-  //  ConfigurableAxis ConfBinpTHFChild{"ConfBinpTHFChild", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
-  //  ConfigurableAxis ConfBinpT{"ConfBinpT", {20, 0.5, 4.05}, "pT binning"};
-  //  ConfigurableAxis ConfBinkstar{"ConfBinkstar", {1500, 0., 6.}, "binning kstar"};
-  //  ConfigurableAxis ConfBinkT{"ConfBinkT", {150, 0., 9.}, "binning kT"};
-  //  ConfigurableAxis ConfBinmT{"ConfBinmT", {225, 0., 7.5}, "binning mT"};
-  //  ConfigurableAxis ConfBinmultTempFit{"ConfBinmultTempFit", {1, 0, 1}, "multiplicity Binning for the TempFitVar plot"};
-  //
-  //  ConfigurableAxis ConfBin4Dkstar{"ConfBin4Dkstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
-  //  ConfigurableAxis ConfBin4DmT{"ConfBin4DmT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
-  //  ConfigurableAxis ConfBin4DMult{"ConfBin4Dmult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
-  //  ConfigurableAxis ConfBin4DmultPercentile{"ConfBin4DmultPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
-
   // Mixing configurables
   ConfigurableAxis ConfMixingBinMult{"ConfMixingBinMult", {VARIABLE_WIDTH, 0.0f, 200.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis ConfMixingBinMultPercentile{"ConfMixingBinMultPercentile", {VARIABLE_WIDTH, 0.0f, 100.f}, "Mixing bins - multiplicity percentile"};
   ConfigurableAxis ConfMixingBinVztx{"ConfMixingBinVztx", {VARIABLE_WIDTH, -10.0f, -4.f, 0.f, 4.f, 10.f}, "Mixing bins - z-vertex"};
   Configurable<int> ConfMixingDepth{"ConfMixingDepth", 5, "Number of events for mixing"};
   Configurable<int> ConfMixingPolicy{"ConfMixingBinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
-
-  //  ConfigurableAxis ConfMixingBinMult{"ConfMixingBinMult", {VARIABLE_WIDTH, 0.0f, 200.0f}, "Mixing bins - multiplicity"};
-  //  ConfigurableAxis ConfMixingBinMultPercentile{"ConfMixingBinMultPercentile", {VARIABLE_WIDTH, 0.0f, 100.f}, "Mixing bins - multiplicity percentile"};
-  //  ConfigurableAxis ConfMixingBinVztx{"ConfMixingBinVztx", {VARIABLE_WIDTH, -10.0f, -4.f, 0.f, 4.f, 10.f}, "Mixing bins - z-vertex"};
-  //  Configurable<int> ConfMixingDepth{"ConfMixingDepth", 5, "Number of events for mixing"};
-  //  Configurable<int> ConfMixingPolicy{"ConfMixingBinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
 
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{ConfMixingBinVztx, ConfMixingBinMult}, true};
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{ConfMixingBinVztx, ConfMixingBinMultPercentile}, true};
