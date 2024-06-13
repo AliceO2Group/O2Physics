@@ -326,17 +326,25 @@ struct femtoDreamProducerTask {
       auto particleMC = particle.mcParticle();
       auto pdgCode = particleMC.pdgCode();
       int particleOrigin = 99;
-      auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
-
+      int pdgCodeMother = -1;
+      // get list of mothers
+      // could be empty (for example in case of injected light nuclei)
+      auto motherparticlesMC = particleMC.template mothers_as<aod::McParticles>();
+      // check pdg code
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
         if ((col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
         } else if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
-        } else if (motherparticleMC.isPhysicalPrimary() && particleMC.getProcess() == 4) {
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
         } else if (particleMC.getGenStatusCode() == -1) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+        } else if (!motherparticlesMC.empty()) {
+          // get direct mother of the particle
+          auto motherparticleMC = motherparticlesMC.front();
+          pdgCodeMother = motherparticleMC.pdgCode();
+          if (motherparticleMC.isPhysicalPrimary() && particleMC.getProcess() == 4) {
+            particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+          }
         } else {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kElse;
         }
@@ -348,7 +356,7 @@ struct femtoDreamProducerTask {
       outputPartsMCLabels(outputPartsMC.lastIndex());
       if (ConfIsDebug) {
         outputPartsExtMCLabels(outputPartsMC.lastIndex());
-        outputDebugPartsMC(motherparticleMC.pdgCode());
+        outputDebugPartsMC(pdgCodeMother);
       }
     } else {
       outputPartsMCLabels(-1);

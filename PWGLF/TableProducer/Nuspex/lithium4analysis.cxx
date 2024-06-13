@@ -77,17 +77,17 @@ enum Selections {
 
 struct lithium4Candidate {
 
-  float recoPtHe3() const { return std::hypot(momHe3[0], momHe3[1]); }
+  float sign = 0.f;
+
+  float recoPtHe3() const { return sign * std::hypot(momHe3[0], momHe3[1]); }
   float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
   float recoEtaHe3() const { return std::asinh(momHe3[2] / recoPtHe3()); }
-  float recoPtPr() const { return std::hypot(momPr[0], momPr[1]); }
+  float recoPtPr() const { return sign * std::hypot(momPr[0], momPr[1]); }
   float recoPhiPr() const { return std::atan2(momPr[1], momPr[0]); }
   float recoEtaPr() const { return std::asinh(momPr[2] / recoPtPr()); }
 
   std::array<float, 3> momHe3 = {99.f, 99.f, 99.f};
   std::array<float, 3> momPr = {99.f, 99.f, 99.f};
-
-  bool isMatter = false;
 
   uint32_t PIDtrkHe3 = 0xFFFFF; // PID in tracking
   uint32_t PIDtrkPr = 0xFFFFF;
@@ -133,6 +133,7 @@ struct lithium4analysis {
 
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   // track
@@ -162,6 +163,7 @@ struct lithium4analysis {
     histos.add("hLitInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", kTH1F, {{50, 3.74f, 3.85f}});
     histos.add("hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", kTH1F, {{200, 0.0f, 6.0f}});
     histos.add("hProtonPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", kTH1F, {{200, 0.0f, 3.0f}});
+    histos.add("h2dEdxHe3candidates", "dEdx distribution; Signed #it{p} (GeV/#it{c}); dE/dx (a.u.)", kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}});
     histos.add("h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}({}^{3}He)", kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}});
     histos.add("h2NsigmaProtonTPC", "NsigmaProton TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}(p)", kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}});
     histos.add("h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}});
@@ -183,7 +185,7 @@ struct lithium4analysis {
   {
 
     if (candidate.itsNCls() < 5 ||
-        candidate.tpcNClsFound() < 100 || // candidate.tpcNClsFound() < 70 ||
+        candidate.tpcNClsFound() < 90 || // candidate.tpcNClsFound() < 70 ||
         candidate.tpcNClsCrossedRows() < 70 ||
         candidate.tpcNClsCrossedRows() < 0.8 * candidate.tpcNClsFindable() ||
         candidate.tpcChi2NCl() > 4.f ||
@@ -213,7 +215,11 @@ struct lithium4analysis {
   template <typename T>
   float computeNSigmaHe3(const T& candidate)
   {
-    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(candidate.tpcInnerParam() * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
+    bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
+
+    float correctedTPCinnerParam = (heliumPID && cfgCompensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
+    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(correctedTPCinnerParam * 2.f / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
+
     double resoTPC{expTPCSignal * mBBparamsHe[5]};
     return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resoTPC);
   }
@@ -245,16 +251,21 @@ struct lithium4analysis {
     l4Cand.PIDtrkHe3 = candidateHe3.pidForTracking();
     l4Cand.PIDtrkPr = candidatePr.pidForTracking();
 
+    l4Cand.sign = candidateHe3.sign();
+
     l4Cand.isBkgUS = candidateHe3.sign() * candidatePr.sign() < 0;
     l4Cand.isBkgEM = mix;
-    l4Cand.isMatter = candidateHe3.sign() > 0;
+
     l4Cand.DCAxyHe3 = candidateHe3.dcaXY();
     l4Cand.DCAzHe3 = candidateHe3.dcaZ();
     l4Cand.DCAxyPr = candidatePr.dcaXY();
     l4Cand.DCAzPr = candidatePr.dcaZ();
 
+    bool heliumPID = candidateHe3.pidForTracking() == o2::track::PID::Helium3 || candidateHe3.pidForTracking() == o2::track::PID::Alpha;
+    float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? candidateHe3.tpcInnerParam() / 2.f : candidateHe3.tpcInnerParam();
+
     l4Cand.tpcSignalHe3 = candidateHe3.tpcSignal();
-    l4Cand.momHe3TPC = candidateHe3.tpcInnerParam();
+    l4Cand.momHe3TPC = correctedTPCinnerParamHe3;
     l4Cand.tpcSignalPr = candidatePr.tpcSignal();
     l4Cand.momPrTPC = candidatePr.tpcInnerParam();
     l4Cand.invMass = invMass;
@@ -277,7 +288,7 @@ struct lithium4analysis {
   template <typename T>
   void fillHistograms(const T& l4cand)
   {
-    int candSign = l4cand.isMatter ? 1 : -1;
+    int candSign = l4cand.sign;
     histos.fill(HIST("hHe3Pt"), l4cand.recoPtHe3());
     histos.fill(HIST("hProtonPt"), l4cand.recoPtPr());
     histos.fill(HIST("hLitInvMass"), l4cand.invMass);
@@ -325,6 +336,10 @@ struct lithium4analysis {
       for (auto track1 : TrackTable_thisCollision) {
 
         histos.fill(HIST("hTrackSel"), Selections::kNoCuts);
+        bool heliumPID = track1.pidForTracking() == o2::track::PID::Helium3 || track1.pidForTracking() == o2::track::PID::Alpha;
+
+        float correctedTPCinnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track1.tpcInnerParam() / 2.f : track1.tpcInnerParam();
+        histos.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, track1.tpcSignal());
 
         if (!track1.isGlobalTrackWoDCA()) {
           continue;
@@ -373,7 +388,9 @@ struct lithium4analysis {
           if (track1.hasTOF()) {
             float beta = responseBeta.GetBeta(track1);
             beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-            cand.massTOFHe3 = track1.tpcInnerParam() * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+            bool heliumPID = track1.pidForTracking() == o2::track::PID::Helium3 || track1.pidForTracking() == o2::track::PID::Alpha;
+            float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? track1.tpcInnerParam() / 2.f : track1.tpcInnerParam();
+            cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
           }
           if (track2.hasTOF()) {
             float beta = responseBeta.GetBeta(track2);
@@ -444,6 +461,10 @@ struct lithium4analysis {
           continue;
         }
 
+        bool heliumPID = he3Cand.pidForTracking() == o2::track::PID::Helium3 || he3Cand.pidForTracking() == o2::track::PID::Alpha;
+        float correctedTPCinnerParam = (heliumPID && cfgCompensatePIDinTracking) ? he3Cand.tpcInnerParam() / 2.f : he3Cand.tpcInnerParam();
+        histos.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, he3Cand.tpcSignal());
+
         if (!FillCandidateInfo(he3Cand, protonCand, true)) {
           continue;
         }
@@ -452,7 +473,10 @@ struct lithium4analysis {
         if (he3Cand.hasTOF()) {
           float beta = responseBeta.GetBeta(he3Cand);
           beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-          cand.massTOFHe3 = he3Cand.tpcInnerParam() * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+
+          bool heliumPID = t1.pidForTracking() == o2::track::PID::Helium3 || he3Cand.pidForTracking() == o2::track::PID::Alpha;
+          float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? he3Cand.tpcInnerParam() / 2.f : he3Cand.tpcInnerParam();
+          cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
         }
         if (protonCand.hasTOF()) {
           float beta = responseBeta.GetBeta(protonCand);
@@ -566,7 +590,9 @@ struct lithium4analysis {
               if (track1.hasTOF()) {
                 float beta = responseBetaMC.GetBeta(track1);
                 beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-                cand.massTOFHe3 = track1.tpcInnerParam() * 2 * std::sqrt(1.f / (beta * beta) - 1.f);
+                bool heliumPID = track1.pidForTracking() == o2::track::PID::Helium3 || track1.pidForTracking() == o2::track::PID::Alpha;
+                float correctedTPCinnerParamHe3 = (heliumPID && cfgCompensatePIDinTracking) ? track1.tpcInnerParam() / 2.f : track1.tpcInnerParam();
+                cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
               }
               if (track2.hasTOF()) {
                 float beta = responseBetaMC.GetBeta(track2);

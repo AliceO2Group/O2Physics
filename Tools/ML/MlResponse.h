@@ -91,6 +91,15 @@ class MlResponse
       LOG(fatal) << "Number of expected models (" << mNModels << ") different from the number of CCDB paths (" << pathsCCDB.size() << ")! Please check your configurables.";
     }
 
+    // check that the path is unique for each BDT model (otherwise CCDB download does not work as expected)
+    for (auto iThisFile{0}; iThisFile < mNModels; ++iThisFile) {
+      for (auto iOtherFile{iThisFile + 1}; iOtherFile < mNModels; ++iOtherFile) {
+        if ((pathsCCDB[iThisFile] == pathsCCDB[iOtherFile]) && (onnxFiles[iThisFile] != onnxFiles[iOtherFile])) {
+          LOGP(fatal, "More than one model ({} and {}) in the same CCDB directory ({})! Each directory in CCDB can contain only one model. Please check your configurables.", onnxFiles[iThisFile], onnxFiles[iOtherFile], pathsCCDB[iThisFile]);
+        }
+      }
+    }
+
     for (auto iFile{0}; iFile < mNModels; ++iFile) {
       std::map<std::string, std::string> metadata;
       bool retrieveSuccess = ccdbApi.retrieveBlob(pathsCCDB[iFile], ".", metadata, timestampCCDB, false, onnxFiles[iFile]);

@@ -8,18 +8,21 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "TableHelper.h"
-#include "iostream"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "TableHelper.h"
+#include "iostream"
+#include "THashList.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,6 +43,13 @@ static constexpr int kFDDMultZeqs = 11;
 static constexpr int kPVMultZeqs = 12;
 static constexpr int kMultsExtraMC = 13;
 static constexpr int nTables = 14;
+
+// Checking that the Zeq tables are after the normal ones
+static_assert(kFV0Mults < kFV0MultZeqs);
+static_assert(kFT0Mults < kFT0MultZeqs);
+static_assert(kFDDMults < kFDDMultZeqs);
+static_assert(kPVMults < kPVMultZeqs);
+
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "FT0Mults",       // 1
@@ -99,6 +109,7 @@ struct MultiplicityTable {
 
   Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
   Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+  Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
 
   int mRunNumber;
   bool lCalibLoaded;
@@ -110,6 +121,10 @@ struct MultiplicityTable {
   TProfile* hVtxZFDDC;
   TProfile* hVtxZNTracks;
   std::vector<int> mEnabledTables; // Vector of enabled tables
+
+  // Debug output
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  OutputObj<THashList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
 
   unsigned int randomSeed = 0;
   void init(InitContext& context)
@@ -151,6 +166,7 @@ struct MultiplicityTable {
       mEnabledTables.push_back(kPVMults);
       LOG(info) << "Cannot have the " << tableNames[kPVMultZeqs] << " table enabled and not the one on " << tableNames[kPVMults] << ". Enabling it.";
     }
+    std::sort(mEnabledTables.begin(), mEnabledTables.end());
 
     mRunNumber = 0;
     lCalibLoaded = false;
@@ -166,6 +182,16 @@ struct MultiplicityTable {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
+
+    if (!produceHistograms.value) {
+      return;
+    }
+    histos.add("FT0A", "FT0A vs FT0A eq.", HistType::kTH2D, {{1000, 0, 1000, "FT0A multiplicity"}, {1000, 0, 1000, "FT0A multiplicity eq."}});
+    histos.add("FT0C", "FT0C vs FT0C eq.", HistType::kTH2D, {{1000, 0, 1000, "FT0C multiplicity"}, {1000, 0, 1000, "FT0C multiplicity eq."}});
+    histos.add("FT0CMultvsPV", "FT0C vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0C mult."}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0AMultvsPV", "FT0A vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0A mult."}, {100, 0, 100, "PV mult."}});
+
+    listCalib.setObject(new THashList);
   }
 
   void processRun2(aod::Run2MatchedSparse::iterator const& collision,
@@ -329,6 +355,10 @@ struct MultiplicityTable {
           mRunNumber = bc.runNumber(); // mark this run as at least tried
           lCalibObjects = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
           if (lCalibObjects) {
+            if (produceHistograms) {
+              listCalib->Add(lCalibObjects->Clone(Form("%i", bc.runNumber())));
+            }
+
             hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
             hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
             hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
@@ -499,7 +529,7 @@ struct MultiplicityTable {
             tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                        mRunNumber, collision.posZ(), collision.sel8(),
                        nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
-                       nAllTracksTPCOnly, nAllTracksITSTPC, bcNumber);
+                       nAllTracksTPCOnly, nAllTracksITSTPC, bcNumber, collision.trackOccupancyInTimeRange());
           } break;
           case kMultSelections: // Multiplicity selections
           {
@@ -517,6 +547,12 @@ struct MultiplicityTable {
             if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
               multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
               multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
+            }
+            if (produceHistograms.value) {
+              histos.fill(HIST("FT0A"), multFT0A, multZeqFT0A);
+              histos.fill(HIST("FT0C"), multFT0C, multZeqFT0C);
+              histos.fill(HIST("FT0AMultvsPV"), multZeqFT0A, multNContribs);
+              histos.fill(HIST("FT0CMultvsPV"), multZeqFT0C, multNContribs);
             }
             tableFT0Zeqs(multZeqFT0A, multZeqFT0C);
           } break;

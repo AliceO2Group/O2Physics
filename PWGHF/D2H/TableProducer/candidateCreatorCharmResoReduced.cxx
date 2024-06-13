@@ -76,14 +76,18 @@ struct HfCandidateCreatorCharmResoReduced {
   using reducedDWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
 
   // Partition of V0 candidates based on v0Type
-  Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_cand_reduced::v0Type == (uint8_t)1 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)3 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)5;
-  Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_cand_reduced::v0Type == (uint8_t)2 || aod::hf_reso_cand_reduced::v0Type == (uint8_t)4;
+  Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_2_prong::v0Type == (uint8_t)1 || aod::hf_reso_2_prong::v0Type == (uint8_t)3 || aod::hf_reso_2_prong::v0Type == (uint8_t)5;
+  Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_2_prong::v0Type == (uint8_t)2 || aod::hf_reso_2_prong::v0Type == (uint8_t)4;
 
+  Preslice<aod::HfRedVzeros> candsV0PerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
+  Preslice<aod::HfRed3PrNoTrks> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
+  // aod::HfRedVzeros
   // Useful constants
   double massK0{0.};
   double massLambda{0.};
   double massDplus{0.};
   double massDstar{0.};
+  double massD0{0.};
 
   // Histogram registry: if task make it with a THNsparse with all variables you want to save
   HistogramRegistry registry{"registry"};
@@ -118,6 +122,7 @@ struct HfCandidateCreatorCharmResoReduced {
     massLambda = o2::constants::physics::MassLambda;
     massDplus = o2::constants::physics::MassDPlus;
     massDstar = o2::constants::physics::MassDStar;
+    massD0 = o2::constants::physics::MassD0;
   }
   /// Basic selection of D candidates
   /// \param candD is the reduced D meson candidate
@@ -126,13 +131,19 @@ struct HfCandidateCreatorCharmResoReduced {
   bool isDSelected(DRedTable const& candD)
   {
     float massD{0.};
+    float invMassD{0.};
     // slection on D candidate mass
     if (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::XcToDplusLambda || channel == DecayChannel::LambdaDminus) {
       massD = massDplus;
+      invMassD = candD.invMassDplus();
     } else if (channel == DecayChannel::Ds1ToDstarK0s) {
-      massD = massDstar;
+      massD = massDstar - massD0;
+      if (candD.dType() > 0)
+        invMassD = candD.invMassDstar();
+      else
+        invMassD = candD.invMassAntiDstar();
     }
-    if (std::fabs(candD.invMass() - massD) > invMassWindowD) {
+    if (std::fabs(invMassD - massD) > invMassWindowD) {
       return false;
     }
     return true;
@@ -147,8 +158,6 @@ struct HfCandidateCreatorCharmResoReduced {
   {
     float massV0{0.};
     float invMassV0{0.};
-
-    // slection on V0 candidate mass
     if (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::Ds1ToDstarK0s) {
       massV0 = massK0;
       invMassV0 = candV0.invMassK0s();
@@ -169,6 +178,7 @@ struct HfCandidateCreatorCharmResoReduced {
         return false;
       }
     }
+    // slection on V0 candidate mass
     if (std::fabs(invMassV0 - massV0) > invMassWindowV0) {
       return false;
     }
@@ -176,7 +186,7 @@ struct HfCandidateCreatorCharmResoReduced {
   }
 
   template <bool fillMl, DecayChannel channel, typename Coll, typename DRedTable, typename V0RedTable>
-  void runCandidateCreation(Coll const& collisions,
+  void runCandidateCreation(Coll const& collision,
                             DRedTable const& candsD,
                             V0RedTable const& candsV0)
   {
@@ -192,8 +202,14 @@ struct HfCandidateCreatorCharmResoReduced {
       if (activateQA) {
         registry.fill(HIST("hSelections"), 1 + Selections::DSel);
       }
-      float invMassD = candD.invMass();
-      std::array<float, 3> pVecD = candD.pVector();
+      float invMassD{0.};
+      if (std::abs(candD.dType()) == 1)
+        invMassD = candD.invMassDplus();
+      if (candD.dType() == 2)
+        invMassD = candD.invMassDstar();
+      if (candD.dType() == -2)
+        invMassD = candD.invMassAntiDstar();
+      std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
       float ptD = RecoDecay::pt(pVecD);
       ;
       // loop on V0 candidates
@@ -208,7 +224,7 @@ struct HfCandidateCreatorCharmResoReduced {
         }
         float invMassReso{0.};
         float invMassV0{0.};
-        std::array<float, 3> pVecV0 = candV0.pVector();
+        std::array<float, 3> pVecV0 = {candV0.px(), candV0.py(), candV0.pz()};
         float ptV0 = RecoDecay::pt(pVecV0);
         float ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0, pVecD));
         switch (channel) {
@@ -244,7 +260,7 @@ struct HfCandidateCreatorCharmResoReduced {
             break;
         }
         // Filling Output table
-        rowCandidateReso(collisions.globalIndex(),
+        rowCandidateReso(collision.globalIndex(),
                          invMassReso,
                          ptReso,
                          invMassD,
@@ -253,7 +269,7 @@ struct HfCandidateCreatorCharmResoReduced {
                          ptV0,
                          candV0.cpa(),
                          candV0.dca(),
-                         candV0.radius());
+                         candV0.v0radius());
         if constexpr (fillMl) {
           mlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
         }
@@ -261,67 +277,107 @@ struct HfCandidateCreatorCharmResoReduced {
     }
   } // main function
 
-  void processDs2StarToDplusK0s(aod::HfRedCollisions::iterator const& collision,
+  void processDs2StarToDplusK0s(aod::HfRedCollisions const& collisions,
                                 aod::HfRed3PrNoTrks const& candsD,
                                 aod::HfRedVzeros const&)
   {
-    runCandidateCreation<false, DecayChannel::Ds2StarToDplusK0s>(collision, candsD, candidatesK0s);
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto k0sThisColl = candidatesK0s.sliceBy(candsV0PerCollision, thisCollId);
+      runCandidateCreation<false, DecayChannel::Ds2StarToDplusK0s>(collision, candsDThisColl, k0sThisColl);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs2StarToDplusK0s, "Process Ds2* candidates without ML info", true);
 
-  void processDs2StarToDplusK0sWithMl(aod::HfRedCollisions::iterator const& collision,
+  void processDs2StarToDplusK0sWithMl(aod::HfRedCollisions const& collisions,
                                       soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
                                       aod::HfRedVzeros const&)
   {
-    runCandidateCreation<true, DecayChannel::Ds2StarToDplusK0s>(collision, candsD, candidatesK0s);
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto k0sThisColl = candidatesK0s.sliceBy(candsV0PerCollision, thisCollId);
+      runCandidateCreation<true, DecayChannel::Ds2StarToDplusK0s>(collision, candsDThisColl, k0sThisColl);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs2StarToDplusK0sWithMl, "Process Ds2* candidates with Ml info", false);
 
-  void processDs1ToDstarK0s(aod::HfRedCollisions::iterator const& collision,
+  void processDs1ToDstarK0s(aod::HfRedCollisions const& collisions,
                             aod::HfRed3PrNoTrks const& candsD,
                             aod::HfRedVzeros const&)
   {
-    runCandidateCreation<false, DecayChannel::Ds1ToDstarK0s>(collision, candsD, candidatesK0s);
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto k0sThisColl = candidatesK0s.sliceBy(candsV0PerCollision, thisCollId);
+      runCandidateCreation<false, DecayChannel::Ds1ToDstarK0s>(collision, candsDThisColl, k0sThisColl);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs1ToDstarK0s, "Process Ds1 candidates without Ml info", false);
 
-  void processDs1ToDstarK0sWithMl(aod::HfRedCollisions::iterator const& collision,
-                                  soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
+  void processDs1ToDstarK0sWithMl(aod::HfRedCollisions const& collisions,
+                                  reducedDWithMl const& candsD,
                                   aod::HfRedVzeros const&)
   {
-    runCandidateCreation<true, DecayChannel::Ds1ToDstarK0s>(collision, candsD, candidatesK0s);
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto k0sThisColl = candidatesK0s.sliceBy(candsV0PerCollision, thisCollId);
+      runCandidateCreation<true, DecayChannel::Ds1ToDstarK0s>(collision, candsDThisColl, k0sThisColl);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs1ToDstarK0sWithMl, "Process Ds1 candidates with Ml info", false);
 
-  void processXcToDplusLambda(aod::HfRedCollisions::iterator const& collision,
+  void processXcToDplusLambda(aod::HfRedCollisions const& collisions,
                               aod::HfRed3PrNoTrks const& candsD,
                               aod::HfRedVzeros const&)
   {
-    runCandidateCreation<false, DecayChannel::XcToDplusLambda>(collision, candsD, candidatesLambda);
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto lambdaThisColl = candidatesLambda.sliceBy(candsV0PerCollision, thisCollId);
+      runCandidateCreation<false, DecayChannel::XcToDplusLambda>(collision, candsDThisColl, lambdaThisColl);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processXcToDplusLambda, "Process Xc candidates without Ml info", false);
 
-  void processXcToDplusLambdaWithMl(aod::HfRedCollisions::iterator const& collision,
+  void processXcToDplusLambdaWithMl(aod::HfRedCollisions const& collisions,
                                     soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
                                     aod::HfRedVzeros const&)
   {
-    runCandidateCreation<true, DecayChannel::XcToDplusLambda>(collision, candsD, candidatesLambda);
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto lambdaThisColl = candidatesLambda.sliceBy(candsV0PerCollision, thisCollId);
+      runCandidateCreation<true, DecayChannel::XcToDplusLambda>(collision, candsDThisColl, lambdaThisColl);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processXcToDplusLambdaWithMl, "Process Xc candidates with Ml info", false);
 
-  void processLambdaDminus(aod::HfRedCollisions::iterator const& collision,
+  void processLambdaDminus(aod::HfRedCollisions const& collisions,
                            aod::HfRed3PrNoTrks const& candsD,
                            aod::HfRedVzeros const&)
   {
-    runCandidateCreation<false, DecayChannel::LambdaDminus>(collision, candsD, candidatesLambda);
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto lambdaThisColl = candidatesLambda.sliceBy(candsV0PerCollision, thisCollId);
+      runCandidateCreation<false, DecayChannel::LambdaDminus>(collision, candsDThisColl, lambdaThisColl);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processLambdaDminus, "Process LambdaDminus candidates without Ml info", false);
 
-  void processLambdaDminusWithMl(aod::HfRedCollisions::iterator const& collision,
+  void processLambdaDminusWithMl(aod::HfRedCollisions const& collisions,
                                  soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
                                  aod::HfRedVzeros const&)
   {
-    runCandidateCreation<true, DecayChannel::LambdaDminus>(collision, candsD, candidatesLambda);
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto lambdaThisColl = candidatesLambda.sliceBy(candsV0PerCollision, thisCollId);
+      runCandidateCreation<true, DecayChannel::LambdaDminus>(collision, candsDThisColl, lambdaThisColl);
+    }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processLambdaDminusWithMl, "Process LambdaDminus candidates with Ml info", false);
 

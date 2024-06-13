@@ -203,6 +203,7 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
 DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);
+DECLARE_SOA_COLUMN(Sigma1Pt, sigma1Pt, float);
 DECLARE_SOA_COLUMN(TrackSel, trackSel, uint8_t);
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -253,11 +254,13 @@ using StoredJTrack = StoredJTracks::iterator;
 
 DECLARE_SOA_TABLE(JTrackExtras, "AOD", "JTRACKEXTRA",
                   jtrack::DCAXY,
-                  jtrack::DCAZ);
+                  jtrack::DCAZ,
+                  jtrack::Sigma1Pt);
 
 DECLARE_SOA_TABLE(StoredJTrackExtras, "AOD1", "JTRACKEXTRA",
                   jtrack::DCAXY,
                   jtrack::DCAZ,
+                  jtrack::Sigma1Pt,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(JTrackPIs, "AOD", "JTRACKPI",
@@ -415,6 +418,19 @@ DECLARE_SOA_TABLE(JClusterTracks, "AOD", "JCLUSTERTRACK", //!
 
 DECLARE_SOA_TABLE(StoredJClusterTracks, "AOD1", "JCLUSTERTRACK", //!
                   jcluster::JTrackIds,
+                  o2::soa::Marker<1>);
+
+namespace jmcclusterlb
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(JMcParticle, mcParticle);
+DECLARE_SOA_COLUMN(AmplitudeA, amplitudeA, std::vector<float>);
+} // namespace jmcclusterlb
+
+DECLARE_SOA_TABLE(JMcClusterLbs, "AOD", "JMCCLUSTERLB", //!
+                  jmcclusterlb::JMcParticleIds, jmcclusterlb::AmplitudeA);
+
+DECLARE_SOA_TABLE(StoredJMcClusterLbs, "AOD1", "JMCCLUSTERLB", //!
+                  jmcclusterlb::JMcParticleIds, jmcclusterlb::AmplitudeA,
                   o2::soa::Marker<1>);
 
 namespace jdummy

@@ -15,18 +15,27 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_EMTRACK_H_
 #define PWGEM_PHOTONMESON_UTILS_EMTRACK_H_
 
+#include <vector>
+
 class EMTrack
 {
  public:
-  EMTrack(int collisionId, int trackId, float pt, float eta, float phi, int8_t charge, float dca_3d)
+  EMTrack(int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge, float dca_3d, std::vector<int> amb_ele_self_ids)
   {
     fCollisionId = collisionId;
     fTrackId = trackId;
     fPt = pt;
     fEta = eta;
     fPhi = phi;
+    fMass = mass;
     fCharge = charge;
     fDCA3D = dca_3d;
+    fAmbEleSelfIds = amb_ele_self_ids;
+    if (fAmbEleSelfIds.size() > 0) {
+      fIsAmbiguous = true;
+    } else {
+      fIsAmbiguous = false;
+    }
   }
 
   ~EMTrack() {}
@@ -36,11 +45,14 @@ class EMTrack
   float pt() const { return fPt; }
   float eta() const { return fEta; }
   float phi() const { return fPhi; }
+  float mass() const { return fMass; }
   int8_t sign() const { return fCharge; }
   float dca3DinSigma() const { return fDCA3D; }
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
   float pz() const { return fPt * std::sinh(fEta); }
+  bool has_ambiguousElectrons() const { return fIsAmbiguous; }
+  std::vector<int> ambiguousElectronsIds() const { return fAmbEleSelfIds; }
 
  private:
   int fCollisionId;
@@ -48,8 +60,11 @@ class EMTrack
   float fPt;
   float fEta;
   float fPhi;
+  float fMass;
   int8_t fCharge;
   float fDCA3D;
+  bool fIsAmbiguous;
+  std::vector<int> fAmbEleSelfIds;
 };
 
 #endif // PWGEM_PHOTONMESON_UTILS_EMTRACK_H_

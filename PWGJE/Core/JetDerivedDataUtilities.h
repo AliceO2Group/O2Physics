@@ -29,8 +29,9 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 enum JCollisionSel {
   sel8 = 0,
   sel8Full = 1,
-  sel8ForUnanchoredMC = 2,
-  sel7 = 3
+  sel7 = 2,
+  selMC = 3,
+  selUnanchoredMC = 4
 };
 
 template <typename T>
@@ -50,11 +51,14 @@ int initialiseEventSelection(std::string eventSelection)
   if (eventSelection == "sel8Full") {
     return JCollisionSel::sel8Full;
   }
-  if (eventSelection == "sel8ForUnanchoredMC") {
-    return JCollisionSel::sel8ForUnanchoredMC;
-  }
   if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
+  }
+  if (eventSelection == "selMC") {
+    return JCollisionSel::selMC;
+  }
+  if (eventSelection == "selUnanchoredMC") {
+    return JCollisionSel::selUnanchoredMC;
   }
   return -1;
 }
@@ -69,11 +73,14 @@ uint8_t setEventSelectionBit(T const& collision)
       SETBIT(bit, JCollisionSel::sel8Full);
     }
   }
-  if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) { // we can look to add kNoSameBunchPileup and kIsGoodZvtxFT0vsPV if deemed suitable
-    SETBIT(bit, JCollisionSel::sel8ForUnanchoredMC);
-  }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    SETBIT(bit, JCollisionSel::selUnanchoredMC);
+    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      SETBIT(bit, JCollisionSel::selMC);
+    }
   }
   return bit;
 }
@@ -359,9 +366,9 @@ uint8_t setTrackSelectionBit(T const& track)
   if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrack);
   }
-  if ((track.passedGoldenChi2()) &&
+  if ((track.passedGoldenChi2() && track.passedDCAxy()) &&
       (track.passedITSNCls() && track.passedITSChi2NDF() && track.passedITSHits()) &&
-      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAxy() && track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
+      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
     SETBIT(bit, JTrackSel::uniformTrack);
   }
 
@@ -381,6 +388,12 @@ template <typename T>
 float trackEnergy(T const& track, float mass = mPion)
 {
   return std::sqrt((track.p() * track.p()) + (mass * mass));
+}
+
+template <typename T>
+bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
+{
+  return abs(track.dcaZ()) < dcaZmax;
 }
 
 } // namespace jetderiveddatautilities
