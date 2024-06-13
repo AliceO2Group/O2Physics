@@ -204,8 +204,8 @@ struct FactorialMoments {
       h->Reset();
     }
     countTracks = {0, 0, 0, 0, 0};
-    fqEvent = {0, 0, 0, 0, 0, 0};
-    binConEvent = {0, 0, 0, 0, 0};
+    fqEvent = {{{0, 0, 0, 0, 0, 0}}};
+    binConEvent = {{0, 0, 0, 0, 0}};
 
     for (auto const& track : tracks) {
       if ((track.pt() < confPtMin) || (!track.isGlobalTrack()) || (track.tpcNClsFindable() < confMinTPCCls)) {
@@ -260,8 +260,8 @@ struct FactorialMoments {
     }
 
     countTracks = {0, 0, 0, 0, 0};
-    fqEvent = {0, 0, 0, 0, 0, 0};
-    binConEvent = {0, 0, 0, 0, 0};
+    fqEvent = {{{0, 0, 0, 0, 0, 0}}};
+    binConEvent = {{0, 0, 0, 0, 0}};
 
     for (auto const& track : tracks) {
       if ((track.pt() < confPtMin) || (!track.isGlobalTrack()) || (track.tpcNClsFindable() < confMinTPCCls)) {

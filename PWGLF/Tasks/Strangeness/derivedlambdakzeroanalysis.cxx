@@ -1157,6 +1157,8 @@ struct derivedlambdakzeroanalysis {
 
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
+    histos.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
+
     // __________________________________________
     // perform main analysis
     for (auto& v0 : fullV0s) {
