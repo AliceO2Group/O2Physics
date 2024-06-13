@@ -285,37 +285,92 @@ class FemtoDreamDetaDphiStar
       bool pass = false;
 
       for (int i = 0; i < Nprongs; ++i) {
-        double deta, dphiAvg, dphi_AT_PV, dphi_AT_SpecificRadii;
+        double deta, dphiAvg, dphi_AT_PV, dphi_AT_SpecificRadii, daughterEta, daughterPhi;
         bool sameCharge = false;
+        daughterEta = -999.;
+        daughterPhi = -999.;
 
         switch (i) {
           case Prong0:
-            deta = part1.eta() - part2.prong0Eta();
-            dphi_AT_PV = part1.phi() - part2.prong0Phi();
+            daughterEta = part2.prong0Eta();
+            daughterPhi = part2.prong0Phi();
+            deta = part1.eta() - daughterEta;
+            dphi_AT_PV = part1.phi() - daughterPhi;
             dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 0>(part2, radiiTPC);
             dphiAvg = AveragePhiStar<true>(part1, part2, 0, &sameCharge);
-            histdetadpi[0][0]->Fill(deta, dphiAvg);
+            // histdetadpi[0][0]->Fill(deta, dphiAvg);
             break;
           case Prong1:
-            deta = part1.eta() - part2.prong1Eta();
-            dphi_AT_PV = part1.phi() - part2.prong1Phi();
+            daughterEta = part2.prong1Eta();
+            daughterPhi = part2.prong1Phi();
+            deta = part1.eta() - daughterEta;
+            dphi_AT_PV = part1.phi() - daughterPhi;
             dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 1>(part2, radiiTPC);
             dphiAvg = AveragePhiStar<true>(part1, part2, 1, &sameCharge);
-            histdetadpi[1][0]->Fill(deta, dphiAvg);
+            // histdetadpi[1][0]->Fill(deta, dphiAvg);
             break;
           case Prong2:
-            deta = part1.eta() - part2.prong2Eta();
-            dphi_AT_PV = part1.phi() - part2.prong2Phi();
+            daughterEta = part2.prong2Eta();
+            daughterPhi = part2.prong2Phi();
+            deta = part1.eta() - daughterEta;
+            dphi_AT_PV = part1.phi() - daughterPhi;
             dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(part1, radiiTPC) - PhiAtSpecificRadiiTPC<true, 2>(part2, radiiTPC);
             dphiAvg = AveragePhiStar<true>(part1, part2, 2, &sameCharge);
-            histdetadpi[2][0]->Fill(deta, dphiAvg);
+            // histdetadpi[2][0]->Fill(deta, dphiAvg);
             break;
         }
+        if (Q3 == 999) {
+          histdetadpi[i][0]->Fill(deta, dphiAvg);
+          histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
+          if (fillQA) {
+            histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughterEta);
+            histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughterPhi);
+          }
+        } else if (Q3 < upperQ3LimitForPlotting) {
+          histdetadpi[i][0]->Fill(deta, dphiAvg);
+          histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
+          if (fillQA) {
+            histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughterEta);
+            histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughterPhi);
+          }
+        }
 
-        if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-          pass = true;
-        } else {
-          histdetadpi[i][1]->Fill(deta, dphiAvg);
+        if (atWhichRadiiToSelect == 1) {
+          if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            pass = true;
+          } else {
+            if (Q3 == 999) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            } else if (Q3 < upperQ3LimitForPlotting) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            }
+          }
+        } else if (atWhichRadiiToSelect == 0) {
+          if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            pass = true;
+          } else {
+            if (Q3 == 999) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            } else if (Q3 < upperQ3LimitForPlotting) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            }
+          }
+        } else if (atWhichRadiiToSelect == 2) {
+          if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            pass = true;
+          } else {
+            if (Q3 == 999) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            } else if (Q3 < upperQ3LimitForPlotting) {
+              histdetadpi[i][1]->Fill(deta, dphiAvg);
+              histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
+            }
+          }
         }
       }
 
