@@ -10,14 +10,13 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   pidTPCFull.cxx
+/// \file   pidTPC.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \author Christian Sonnabend christian.sonnabend@cern.ch
 /// \author Annalena Kalteyer annalena.sophie.kalteyer@cern.ch
 /// \author Jeremy Wilkinson jeremy.wilkinson@cern.ch
 /// \brief  Task to produce PID tables for TPC split for each particle.
-///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
-///         QA histograms for the TPC PID can be produced by adding `--add-qa 1` to the workflow
+///         Only the tables for the mass hypotheses requested are filled, and only for the requested table size ("Full" or "Tiny"). The others are sent empty.
 ///
 
 // ROOT includes
