@@ -120,8 +120,8 @@ struct femtoDreamProducer {
   HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   HfHelper hfHelper;
-  int mRunNumber;
-  float mMagField;
+  int runNumber;
+  float magField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
   o2::base::MatLayerCylSet* lut;
   // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
@@ -156,8 +156,8 @@ struct femtoDreamProducer {
     trackCuts.setnSigmaPIDOffset(trkPIDnSigmaOffsetTPC, trkPIDnSigmaOffsetTOF);
     trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &TrackRegistry);
 
-    mRunNumber = 0;
-    mMagField = 0.0;
+    runNumber = 0;
+    magField = 0.0;
     /// Initializing CCDB
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -171,11 +171,11 @@ struct femtoDreamProducer {
   void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
   {
     // auto bc = col.bc_as<o2::aod::BCsWithTimestamps>();
-    initCCDB(bc, mRunNumber, ccdb, !isRun3 ? ccdbPathGrp : ccdbPathGrpMag, lut, !isRun3);
+    initCCDB(bc, runNumber, ccdb, !isRun3 ? ccdbPathGrp : ccdbPathGrpMag, lut, !isRun3);
 
     //    // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     //    // get magnetic field for run
-    //    if (mRunNumber == bc.runNumber())
+    //    if (runNumber == bc.runNumber())
     //      return;
     //    auto timestamp = bc.timestamp();
     //    float output = -999;
@@ -203,8 +203,8 @@ struct femtoDreamProducer {
     //      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
     //      output = 0.1 * (grpo->getNominalL3Field());
     //    }
-    //    mMagField = output;
-    //    mRunNumber = bc.runNumber();
+    //    magField = output;
+    //    runNumber = bc.runNumber();
   }
 
   template <typename ParticleType>
@@ -410,7 +410,7 @@ struct femtoDreamProducer {
 
                 // If track filling was successful, fill the collision table
                 if (isTrackFilled) {
-                    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+                    outputCollision(vtxZ, mult, multNtr, spher, magField);
                 }
             }
 
@@ -466,7 +466,8 @@ struct femtoDreamProducer {
     }
   }
 
-  void processDataCharmHad(FemtoFullCollision const& col, aod::BCsWithTimestamps const&,
+  void processDataCharmHad(FemtoFullCollision const& col,
+                           aod::BCsWithTimestamps const&,
                            FemtoHFTracks const& tracks,
                            soa::Filtered<CandidateLc> const& candidates)
   {
@@ -478,9 +479,11 @@ struct femtoDreamProducer {
   PROCESS_SWITCH(femtoDreamProducer, processDataCharmHad,
                  "Provide experimental data for charm hadron femto", false);
 
-  void processDataCharmHadWithML(FemtoFullCollision const& col, aod::BCsWithTimestamps const&,
+  void processDataCharmHadWithML(FemtoFullCollision const& col,
+                                 aod::BCsWithTimestamps const&,
                                  FemtoHFTracks const& tracks,
-                                 soa::Filtered<soa::Join<CandidateLc, aod::HfMlLcToPKPi>> const& candidates)
+                                 soa::Filtered<soa::Join<CandidateLc,
+                                 aod::HfMlLcToPKPi>> const& candidates)
   {
 
     // get magnetic field for run
@@ -491,8 +494,10 @@ struct femtoDreamProducer {
   PROCESS_SWITCH(femtoDreamProducer, processDataCharmHadWithML,
                  "Provide experimental data for charm hadron femto with ml", false);
 
-  void processMCCharmHad(FemtoFullCollisionMC const& col, aod::BCsWithTimestamps const&,
-                         soa::Join<FemtoHFTracks, aod::McTrackLabels> const& tracks,
+  void processMCCharmHad(FemtoFullCollisionMC const& col,
+                         aod::BCsWithTimestamps const&,
+                         soa::Join<FemtoHFTracks,
+                         aod::McTrackLabels> const& tracks,
                          soa::Filtered<CandidateLcMC> const& candidates,
                          GeneratedMC const& particles)
   {
@@ -503,9 +508,12 @@ struct femtoDreamProducer {
   }
   PROCESS_SWITCH(femtoDreamProducer, processMCCharmHad, "Provide MC for charm hadron", false);
 
-  void processMCCharmHadWithML(FemtoFullCollisionMC const& col, aod::BCsWithTimestamps const&,
-                               soa::Join<FemtoHFTracks, aod::McTrackLabels> const& tracks,
-                               soa::Filtered<soa::Join<CandidateLcMC, aod::HfMlLcToPKPi>> const& candidates,
+  void processMCCharmHadWithML(FemtoFullCollisionMC const& col,
+                               aod::BCsWithTimestamps const&,
+                               soa::Join<FemtoHFTracks,
+                               aod::McTrackLabels> const& tracks,
+                               soa::Filtered<soa::Join<CandidateLcMC,
+                               aod::HfMlLcToPKPi>> const& candidates,
                                GeneratedMC const& particles)
   {
     // get magnetic field for run
