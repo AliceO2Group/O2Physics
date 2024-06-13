@@ -44,6 +44,7 @@
 /// - Count rate in 2D representation
 
 using namespace o2;
+using namespace o2::aod::evsel;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -56,6 +57,7 @@ struct phosNbar {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   using SelCollision = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  using SelCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi>;
   using mcClusters = soa::Join<aod::CaloClusters, aod::PHOSCluLabels>;
   using mcTracks = soa::Join<TrackCandidates, aod::McTrackLabels>;
@@ -63,6 +65,7 @@ struct phosNbar {
   // using MatchedClusters = soa::Join<aod::CaloClusters, aod::PHOSMatchedTrack>;
 
   Configurable<int> mPairingMethod{"mPairingMethod", 0, "0:max CPA, 1: min DCA"};
+  Configurable<bool> mIsMC{"isMC", false, "to fill MC histograms"};
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
   // nbar selection
   Configurable<double> mMinCluE{"minCluE", 0.3, "Minimum cluster energy"};
@@ -81,6 +84,7 @@ struct phosNbar {
   Configurable<uint> mNmix{"nMix", 5, "depth of mixing buffer"};
   Configurable<bool> mStrictParentCut{"StrictParent", true, "parent with largest Edep or any parent"};
 
+  int mPrevMCColId = -1;                    // mark MC collissions already scanned
   static constexpr double c = 29979245800.; // speed of light in cm/sec
   static constexpr double mNbar = 0.939485; // neutron mass
   static constexpr double mpi = 0.13957039; // pion mass
@@ -179,14 +183,20 @@ struct phosNbar {
     hMiPMCPA = (std::get<std::shared_ptr<TH3>>(mHistManager.add("MiPiMCPA", "CPA", HistType::kTH3F, {massAxis, ptAxis, cpaAxis}))).get();
 
     if (mIsMC) {
+      mHistManager.add("hMCSigPSp", "Sigma spectrum inclusive", HistType::kTH1F, {ptAxis});
       mHistManager.add("hMCSigPSpAll", "Sigma spectrum inclusive", HistType::kTH1F, {ptAxis});
       mHistManager.add("hMCSigPSpPrim", "Sigma spectrum Primary", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigPRap", "Sigma rapidity", HistType::kTH1F, {{100, -3., 3., "Rapidity"}});
+      mHistManager.add("hMCSigPPhi", "Sigma phi", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
       mHistManager.add("hMCSigPRapPrim", "Sigma rapidity primary", HistType::kTH1F, {{100, -1., 1., "Rapidity"}});
       mHistManager.add("hMCSigPPhiPrim", "Sigma phi primary", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
       mHistManager.add("hMCSigPSecVtx", "Sigma secondary", HistType::kTH2F, {{100, 0., 500., "R (cm)"}, {100, -TMath::Pi(), TMath::Pi(), "#phi (rad)"}});
 
+      mHistManager.add("hMCSigMSp", "Sigma spectrum inclusive", HistType::kTH1F, {ptAxis});
       mHistManager.add("hMCSigMSpAll", "Sigma spectrum inclusive", HistType::kTH1F, {ptAxis});
       mHistManager.add("hMCSigMSpPrim", "Sigma spectrum Primary", HistType::kTH1F, {ptAxis});
+      mHistManager.add("hMCSigMRap", "Sigma rapidity", HistType::kTH1F, {{100, -3., 3., "Rapidity"}});
+      mHistManager.add("hMCSigMPhi", "Sigma phi", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
       mHistManager.add("hMCSigMRapPrim", "Sigma rapidity primary", HistType::kTH1F, {{100, -1., 1., "Rapidity"}});
       mHistManager.add("hMCSigMPhiPrim", "Sigma phi primary", HistType::kTH1F, {{100, 0., TMath::TwoPi(), "#phi (rad)"}});
       mHistManager.add("hMCSigMSecVtx", "Sigma secondary", HistType::kTH2F, {{100, 0., 500., "R (cm)"}, {100, -TMath::Pi(), TMath::Pi(), "#phi (rad)"}});
@@ -214,16 +224,19 @@ struct phosNbar {
     // Sigma rapidity, pt, phi
     // secondary Sigmas
     if constexpr (isMC) {
-      if (mcPart->begin() != mcPart->end()) {
-        if (mcPart->begin().mcCollisionId() != mPrevMCColId) {
-          mPrevMCColId = mcPart->begin().mcCollisionId(); // to avoid scanning full MC table each BC
-          for (auto part : *mcPart) {
+      if (mcParticles->begin() != mcParticles->end()) {
+        if (mcParticles->begin().mcCollisionId() != mPrevMCColId) {
+          mPrevMCColId = mcParticles->begin().mcCollisionId(); // to avoid scanning full MC table each BC
+          for (auto part : *mcParticles) {
             if (collision.has_mcCollision() && (part.mcCollisionId() != collision.mcCollisionId())) {
               continue;
             }
-            if (part.pdgCode() ==-3112) { // Sigma+
+            if (part.pdgCode() == -3112) { // Sigma+
+              double pt = part.pt();
+              mHistManager.fill(HIST("hMCSigPSp"), pt);
+              mHistManager.fill(HIST("hMCSigPRap"), part.y());
+              mHistManager.fill(HIST("hMCSigPPhi"), part.phi());
               if (abs(part.y()) < .5) {
-                double pt = part.pt();
                 mHistManager.fill(HIST("hMCSigPSpAll"), pt);
                 double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
                 double phiVtx = atan2(part.vy(), part.vx());
@@ -235,9 +248,12 @@ struct phosNbar {
                 }
               }
             }
-            if (part.pdgCode() ==-3222) { // Sigma-
+            if (part.pdgCode() == -3222) { // Sigma-
+              double pt = part.pt();
+              mHistManager.fill(HIST("hMCSigMSp"), pt);
+              mHistManager.fill(HIST("hMCSigMRap"), part.y());
+              mHistManager.fill(HIST("hMCSigMPhi"), part.phi());
               if (abs(part.y()) < .5) {
-                double pt = part.pt();
                 mHistManager.fill(HIST("hMCSigMSpAll"), pt);
                 double r = sqrt(pow(part.vx(), 2) + pow(part.vy(), 2));
                 double phiVtx = atan2(part.vy(), part.vx());
@@ -252,8 +268,7 @@ struct phosNbar {
           }
         }
       }
-
-
+    }
 
     selectNbars<isMC>(clusters, mcParticles);
     selectTracks<isMC>(tracks, mcParticles);
@@ -420,27 +435,24 @@ struct phosNbar {
   {
     bool isColSelected = false;
 
-    mHistManager.fill(HIST("eventsCol"), 0.);
+    mHistManager.fill(HIST("evsel"), 0.);
     if (col.selection_bit(kIsBBT0A) || col.selection_bit(kIsBBT0C)) {
-      mHistManager.fill(HIST("eventsCol"), 1.);
+      mHistManager.fill(HIST("evsel"), 1.);
     }
     if (col.selection_bit(kIsBBT0A) && col.selection_bit(kIsBBT0C)) {
-      mHistManager.fill(HIST("eventsCol"), 2.);
+      mHistManager.fill(HIST("evsel"), 2.);
     }
     if (col.alias_bit(kTVXinPHOS)) {
-      mHistManager.fill(HIST("eventsCol"), 3.);
+      mHistManager.fill(HIST("evsel"), 3.);
     }
     if (col.selection_bit(kIsTriggerTVX)) {
-      mHistManager.fill(HIST("eventsCol"), 4.);
+      mHistManager.fill(HIST("evsel"), 4.);
     }
     if (col.alias_bit(kTVXinPHOS)) {
-      mHistManager.fill(HIST("eventsCol"), 5.);
+      mHistManager.fill(HIST("evsel"), 5.);
     }
-    if (clusters.size() > 0) {
-      mHistManager.fill(HIST("eventsCol"), 6);
-      if (col.alias_bit(kTVXinPHOS)) {
-        mHistManager.fill(HIST("eventsCol"), 7);
-      }
+    if (col.alias_bit(kTVXinPHOS)) {
+      mHistManager.fill(HIST("evsel"), 6);
     }
     isColSelected = col.alias_bit(mEvSelTrig);
 
@@ -448,21 +460,19 @@ struct phosNbar {
       return false;
     }
 
-
-    mHistManager.fill(HIST("evsel"), 0.);
     mVtxZ = col.posZ();
     mHistManager.fill(HIST("vtxZ"), mVtxZ);
     if (std::abs(mVtxZ) > 10.f) {
       return false;
     }
-    mHistManager.fill(HIST("evsel"), 1.);
+    mHistManager.fill(HIST("evsel"), 7.);
     if constexpr (!isMC) {
       if (!col.alias_bit(mEvSelTrig)) {
         return false;
       }
     }
     // Remove pileup???
-    mHistManager.fill(HIST("evsel"), 2.);
+    mHistManager.fill(HIST("evsel"), 8.);
 
     // so far only binning according to zvtx is implemented
     indx = (mVtxZ + 10.) / 20. * mNZbins;
@@ -952,7 +962,7 @@ struct phosNbar {
   }
   PROCESS_SWITCH(phosNbar, processData, "process data", false);
 
-  void processMc(SelCollision const& coll,
+  void processMC(SelCollisionMC const& coll,
                  aod::BCsWithTimestamps const&, mcClusters const& clusters, mcTracks const& tracks, aod::McParticles const& mcPart)
   {
     // Initialize B-field
@@ -963,7 +973,7 @@ struct phosNbar {
     }
     processAll<true>(coll, tracks, clusters, &mcPart);
   }
-  PROCESS_SWITCH(phosNbar, processMc, "process MC", true);
+  PROCESS_SWITCH(phosNbar, processMC, "process MC", true);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
