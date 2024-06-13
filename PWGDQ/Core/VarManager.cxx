@@ -349,7 +349,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kTrackOccupancyInTimeRange] = "track occupancy in TPC drift time (PV tracks)";
   fgVariableUnits[kTrackOccupancyInTimeRange] = "";
   fgVariableNames[kMultAllTracksITSTPC] = "# ITS-TPC tracks";
-  fgVariableUnits[kMultAllTracksITSTPC] = "";  
+  fgVariableUnits[kMultAllTracksITSTPC] = "";
   fgVariableNames[kMultAllTracksTPCOnly] = "# TPC only tracks";
   fgVariableUnits[kMultAllTracksTPCOnly] = "";
   fgVariableNames[kNTPCpileupContribA] = "# TPC pileup contributors on A side";
@@ -359,11 +359,11 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kNTPCpileupZA] = "# TPC pileup mean-Z on A side";
   fgVariableUnits[kNTPCpileupZA] = "";
   fgVariableNames[kNTPCpileupZC] = "# TPC pileup mean-Z on C side";
-  fgVariableUnits[kNTPCpileupZC] = "";  
+  fgVariableUnits[kNTPCpileupZC] = "";
   fgVariableNames[kNTPCtracksInPast] = "# TPC tracks in past";
-  fgVariableUnits[kNTPCtracksInPast] = "";  
+  fgVariableUnits[kNTPCtracksInPast] = "";
   fgVariableNames[kNTPCtracksInFuture] = "# TPC tracks in future";
-  fgVariableUnits[kNTPCtracksInFuture] = "";  
+  fgVariableUnits[kNTPCtracksInFuture] = "";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kInvPt] = "1/p_{T}";

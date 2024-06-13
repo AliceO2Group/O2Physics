@@ -556,7 +556,7 @@ struct TableMaker {
       if constexpr ((TEventFillMap & VarManager::ObjTypes::Zdc) > 0) {
         if (bcEvSel.has_zdc()) {
           auto bc_zdc = bcEvSel.zdc();
-          zdc(bc_zdc.energyCommonZNA(), bc_zdc.energyCommonZNC(), bc_zdc.energyCommonZPA(), bc_zdc.energyCommonZPC(), 
+          zdc(bc_zdc.energyCommonZNA(), bc_zdc.energyCommonZNC(), bc_zdc.energyCommonZPA(), bc_zdc.energyCommonZPC(),
               bc_zdc.timeZNA(), bc_zdc.timeZNC(), bc_zdc.timeZPA(), bc_zdc.timeZPC());
         }
       }

@@ -44,12 +44,12 @@ DECLARE_SOA_BITMAP_COLUMN(Tag, tag, 64);       //!  Bit-field for storing event 
 DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);     //!  MC event position X
 DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);     //!  MC event position Y
 DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);     //!  MC event position Z
-DECLARE_SOA_COLUMN(NTPCpileupContribA, nTPCpileupContribA, int);     //!  Number of TPC pileup tracks on A side
-DECLARE_SOA_COLUMN(NTPCpileupContribC, nTPCpileupContribC, int);     //!  Number of TPC pileup tracks on C side
-DECLARE_SOA_COLUMN(NTPCpileupZA, nTPCpileupZA, float);     //!  Median Z position of pileup tracks on A side
-DECLARE_SOA_COLUMN(NTPCpileupZC, nTPCpileupZC, float);     //!  Median Z position of pileup tracks on C side
+DECLARE_SOA_COLUMN(NTPCpileupContribA, nTPCpileupContribA, int); //!  Number of TPC pileup tracks on A side
+DECLARE_SOA_COLUMN(NTPCpileupContribC, nTPCpileupContribC, int); //!  Number of TPC pileup tracks on C side
+DECLARE_SOA_COLUMN(NTPCpileupZA, nTPCpileupZA, float);           //!  Median Z position of pileup tracks on A side
+DECLARE_SOA_COLUMN(NTPCpileupZC, nTPCpileupZC, float);           //!  Median Z position of pileup tracks on C side
 DECLARE_SOA_COLUMN(NTPCtracksInPast, nTPCtracksInPast, int);     //!  Number of TPC tracks in the past events (configurable, but e.g. one drift time)
-DECLARE_SOA_COLUMN(NTPCtracksInFuture, nTPCtracksInFuture, int);     //!  Number of TPC tracks in the future events (configurable, but e.g. one drift time)
+DECLARE_SOA_COLUMN(NTPCtracksInFuture, nTPCtracksInFuture, int); //!  Number of TPC tracks in the future events (configurable, but e.g. one drift time)
 
 DECLARE_SOA_COLUMN(Q1X0A, q1x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 1 and power 1)
 DECLARE_SOA_COLUMN(Q1Y0A, q1y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 1 and power 1)

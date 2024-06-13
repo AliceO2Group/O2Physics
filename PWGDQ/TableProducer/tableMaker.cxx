@@ -442,10 +442,10 @@ struct TableMaker {
     }
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
-        multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
-               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
-        multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-                0, 0, 0.0, 0.0, 0, 0);
+      multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
+             collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
+      multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
+              0, 0, 0.0, 0.0, 0, 0);
     }
 
     uint64_t trackFilteringTag = 0;
