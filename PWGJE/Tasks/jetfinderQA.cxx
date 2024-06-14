@@ -65,7 +65,11 @@ struct JetFinderQATask {
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
+<<<<<<< HEAD
   Configurable<bool> checkMcCollisionIsMatched{"checkMcCollisionIsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
+=======
+  Configurable<bool> checkMcCollisionsMatched{"checkMcCollisionsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
+>>>>>>> d644cf1f510e3b83705471e213ba42f373239c9c
 
   std::vector<bool> filledJetR_Both;
   std::vector<bool> filledJetR_Low;
@@ -625,6 +629,10 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCDWeighted, "jet finder QA mcd with weighted events", false);
 
+<<<<<<< HEAD
+=======
+  PresliceUnsorted<soa::Filtered<JetCollisionsMCD>> CollisionsPerMcpJets = aod::jmccollisionlb::mcCollisionId;
+>>>>>>> d644cf1f510e3b83705471e213ba42f373239c9c
   void processJetsMCP(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, JetParticles const&, JetMcCollisions const&, soa::Filtered<JetCollisionsMCD> const& collisions)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -633,6 +641,7 @@ struct JetFinderQATask {
     if (!isAcceptedJet<JetParticles>(jet)) {
       return;
     }
+<<<<<<< HEAD
     if (checkMcCollisionIsMatched) {
       auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
       if (collisionspermcpjet.size() >= 1) {
@@ -641,6 +650,22 @@ struct JetFinderQATask {
     } else {
       fillMCPHistograms(jet);
     }
+=======
+    if (checkMcCollisionsMatched) {
+      bool isMatchFound = false;
+      auto collisionspermcpejt = collisions.sliceBy(CollisionsPerMcpJets, jet.mcCollision().globalIndex());
+      for (auto const& collision : collisionspermcpejt) {
+        if (collision.mcCollision().globalIndex() == jet.mcCollision().globalIndex()) {
+          isMatchFound = true;
+          break;
+        }
+      }
+      if (!isMatchFound) {
+        return;
+      }
+    }
+    fillMCPHistograms(jet);
+>>>>>>> d644cf1f510e3b83705471e213ba42f373239c9c
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCP, "jet finder QA mcp", false);
 
@@ -658,6 +683,7 @@ struct JetFinderQATask {
         registry.fill(HIST("h_jet_ptcut_part"), jet.pt(), N * 0.25, jet.eventWeight());
       }
     }
+<<<<<<< HEAD
     if (checkMcCollisionIsMatched) {
       auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
       if (collisionspermcpjet.size() >= 1) {
@@ -666,6 +692,22 @@ struct JetFinderQATask {
     } else {
       fillMCPHistograms(jet, jet.eventWeight());
     }
+=======
+    if (checkMcCollisionsMatched) {
+      bool isMatchFound = false;
+      auto collisionspermcpejt = collisions.sliceBy(CollisionsPerMcpJets, jet.mcCollision().globalIndex());
+      for (auto const& collision : collisionspermcpejt) {
+        if (collision.mcCollision().globalIndex() == jet.mcCollision().globalIndex()) {
+          isMatchFound = true;
+          break;
+        }
+      }
+      if (!isMatchFound) {
+        return;
+      }
+    }
+    fillMCPHistograms(jet, jet.eventWeight());
+>>>>>>> d644cf1f510e3b83705471e213ba42f373239c9c
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCPWeighted, "jet finder QA mcp with weighted events", false);
 
