@@ -223,7 +223,7 @@ class FemtoPair
   float _magfield1 = 0.0, _magfield2 = 0.0;
   int _PDG1 = 0, _PDG2 = 0;
   bool _isidentical = true;
-  float TPCradii[9] = {0.85, 1.05, 1.25, 1.45, 1.65, 1.85, 2.05, 2.25, 2.45};
+  std::array<float, 9> TPCradii = {0.85, 1.05, 1.25, 1.45, 1.65, 1.85, 2.05, 2.25, 2.45};
 };
 
 template <typename TrackType>
@@ -275,7 +275,7 @@ float FemtoPair<TrackType>::GetAvgSep() const
     res += sqrt(pow(2.0 * radius * sin(0.5 * GetPhiStarDiff(radius)), 2) + pow(2.0 * radius * sin(0.5 * dtheta), 2));
   }
 
-  return 100.0 * res / 9;
+  return 100.0 * res / TPCradii.size();
 }
 
 template <typename TrackType>
