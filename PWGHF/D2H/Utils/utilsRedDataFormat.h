@@ -40,7 +40,7 @@ void checkEvSel(Coll const& collision, BC const& bc, o2::hf_evsel::HfEventSelect
   if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) {
     zvtxAndSel8Coll++;
   }
-  if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::SoftwareTrigger) ) {
+  if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::SoftwareTrigger)) {
     zvtxAndSel8CollAndSoftTrig++;
   }
   if (rejectionMask == 0) {
