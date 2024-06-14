@@ -1550,6 +1550,19 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ4Y0B] = -999;
     values[kQ4X0C] = -999;
     values[kQ4Y0C] = -999;
+
+    EventPlaneHelper epHelper;
+    float Psi2A = epHelper.GetEventPlane(values[kQ2X0A], values[kQ2Y0A], 2);
+    float Psi2APOS = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2);
+    float Psi2ANEG = epHelper.GetEventPlane(values[kQ2X0ANEG], values[kQ2Y0ANEG], 2);
+    float Psi2B = epHelper.GetEventPlane(values[kQ2X0B], values[kQ2Y0B], 2);
+    float Psi2C = epHelper.GetEventPlane(values[kQ2X0C], values[kQ2Y0C], 2);
+
+    values[kPsi2A] = Psi2A;
+    values[kPsi2APOS] = Psi2APOS;
+    values[kPsi2ANEG] = Psi2ANEG;
+    values[kPsi2B] = Psi2B;
+    values[kPsi2C] = Psi2C;
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {
