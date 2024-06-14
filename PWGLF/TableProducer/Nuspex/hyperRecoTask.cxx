@@ -208,6 +208,8 @@ struct hyperRecoTask {
     int mat{static_cast<int>(cfgMaterialCorrection)};
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
+    svCreator.setTimeMargin(customVertexerTimeMargin);
+
     const AxisSpec rigidityAxis{rigidityBins, "#it{p}^{TPC}/#it{z}"};
     const AxisSpec dedxAxis{dedxBins, "d#it{E}/d#it{x}"};
     const AxisSpec nSigma3HeAxis{nSigmaBins, "n_{#sigma}({}^{3}He)"};
