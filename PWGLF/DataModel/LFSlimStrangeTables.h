@@ -22,59 +22,101 @@ namespace SlimLambdaTables
 {
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
-DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);
 DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
+DECLARE_SOA_COLUMN(Len, len, float);
 DECLARE_SOA_COLUMN(Radius, radius, float);
 DECLARE_SOA_COLUMN(DcaV0PV, dcaV0Pv, float);
-DECLARE_SOA_COLUMN(DcaPiPV, dcaPiPv, float);
-DECLARE_SOA_COLUMN(DcaPrPV, dcaPrPv, float);
+DECLARE_SOA_COLUMN(DcaPosPV, dcaPosPv, float);
+DECLARE_SOA_COLUMN(DcaNegPV, dcaNegPv, float);
 DECLARE_SOA_COLUMN(DcaV0Tracks, dcaV0tracks, float);
 DECLARE_SOA_COLUMN(CosPA, cosPa, double);
-DECLARE_SOA_COLUMN(TpcNsigmaPi, tpcNsigmaPi, float);
-DECLARE_SOA_COLUMN(TpcNsigmaPr, tpcNsigmaPr, float);
+DECLARE_SOA_COLUMN(TpcNsigmaPos, tpcNsigmaPos, float);
+DECLARE_SOA_COLUMN(TpcNsigmaNeg, tpcNsigmaNeg, float);
+DECLARE_SOA_COLUMN(PxPos, pxPos, float);
+DECLARE_SOA_COLUMN(PyPos, pyPos, float);
+DECLARE_SOA_COLUMN(PzPos, pzPos, float);
+DECLARE_SOA_COLUMN(PxNeg, pxNeg, float);
+DECLARE_SOA_COLUMN(PyNeg, pyNeg, float);
+DECLARE_SOA_COLUMN(PzNeg, pzNeg, float);
 DECLARE_SOA_COLUMN(GenPt, gentPt, float);
 DECLARE_SOA_COLUMN(GenEta, genEta, float);
 DECLARE_SOA_COLUMN(GenCt, genCt, float);
+DECLARE_SOA_COLUMN(GenLen, genLen, float);
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);
+DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
+DECLARE_SOA_COLUMN(IsFD, isFD, uint8_t);
 } // namespace SlimLambdaTables
 
 DECLARE_SOA_TABLE(LambdaTableML, "AOD", "LAMBDATABLEML",
                   SlimLambdaTables::Pt,
                   SlimLambdaTables::Eta,
-                  SlimLambdaTables::CentFT0C,
-                  SlimLambdaTables::IsMatter,
                   SlimLambdaTables::Mass,
                   SlimLambdaTables::Ct,
                   SlimLambdaTables::Radius,
                   SlimLambdaTables::DcaV0PV,
-                  SlimLambdaTables::DcaPiPV,
-                  SlimLambdaTables::DcaPrPV,
+                  SlimLambdaTables::DcaPosPV,
+                  SlimLambdaTables::DcaNegPV,
                   SlimLambdaTables::DcaV0Tracks,
                   SlimLambdaTables::CosPA,
-                  SlimLambdaTables::TpcNsigmaPi,
-                  SlimLambdaTables::TpcNsigmaPr);
+                  SlimLambdaTables::TpcNsigmaPos,
+                  SlimLambdaTables::TpcNsigmaNeg,
+                  SlimLambdaTables::IsFD);
 
 DECLARE_SOA_TABLE(McLambdaTableML, "AOD", "MCLAMBDATABLEML",
                   SlimLambdaTables::Pt,
                   SlimLambdaTables::Eta,
-                  SlimLambdaTables::CentFT0C,
-                  SlimLambdaTables::IsMatter,
                   SlimLambdaTables::Mass,
                   SlimLambdaTables::Ct,
                   SlimLambdaTables::Radius,
                   SlimLambdaTables::DcaV0PV,
-                  SlimLambdaTables::DcaPiPV,
-                  SlimLambdaTables::DcaPrPV,
+                  SlimLambdaTables::DcaPosPV,
+                  SlimLambdaTables::DcaNegPV,
                   SlimLambdaTables::DcaV0Tracks,
                   SlimLambdaTables::CosPA,
-                  SlimLambdaTables::TpcNsigmaPi,
-                  SlimLambdaTables::TpcNsigmaPr,
+                  SlimLambdaTables::TpcNsigmaPos,
+                  SlimLambdaTables::TpcNsigmaNeg,
                   SlimLambdaTables::GenPt,
                   SlimLambdaTables::GenEta,
                   SlimLambdaTables::GenCt,
+                  SlimLambdaTables::PDGCode,
+                  SlimLambdaTables::PDGCodeMother,
+                  SlimLambdaTables::IsReco);
+
+DECLARE_SOA_TABLE(V0TableAP, "AOD", "V0TABLEAP",
+                  SlimLambdaTables::Eta,
+                  SlimLambdaTables::Len,
+                  SlimLambdaTables::PxPos,
+                  SlimLambdaTables::PyPos,
+                  SlimLambdaTables::PzPos,
+                  SlimLambdaTables::PxNeg,
+                  SlimLambdaTables::PyNeg,
+                  SlimLambdaTables::PzNeg,
+                  SlimLambdaTables::Radius,
+                  SlimLambdaTables::DcaV0PV,
+                  SlimLambdaTables::DcaPosPV,
+                  SlimLambdaTables::DcaNegPV,
+                  SlimLambdaTables::DcaV0Tracks,
+                  SlimLambdaTables::CosPA);
+
+DECLARE_SOA_TABLE(McV0TableAP, "AOD", "MCV0TABLEAP",
+                  SlimLambdaTables::Eta,
+                  SlimLambdaTables::Len,
+                  SlimLambdaTables::PxPos,
+                  SlimLambdaTables::PyPos,
+                  SlimLambdaTables::PzPos,
+                  SlimLambdaTables::PxNeg,
+                  SlimLambdaTables::PyNeg,
+                  SlimLambdaTables::PzNeg,
+                  SlimLambdaTables::Radius,
+                  SlimLambdaTables::DcaV0PV,
+                  SlimLambdaTables::DcaPosPV,
+                  SlimLambdaTables::DcaNegPV,
+                  SlimLambdaTables::DcaV0Tracks,
+                  SlimLambdaTables::CosPA,
+                  SlimLambdaTables::GenEta,
+                  SlimLambdaTables::GenLen,
                   SlimLambdaTables::PDGCode,
                   SlimLambdaTables::IsReco);
 

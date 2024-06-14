@@ -338,7 +338,7 @@ struct SinglePhotonMC {
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_Primary"))->Fill(photon.pt());
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_Primary"))->Fill(photon.eta());
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_Primary"))->Fill(photon.phi());
-          } else if (IsFromWD(mcphoton.emmcevent(), mcphoton, mcparticles)) {
+          } else if (IsFromWD(mcphoton.emmcevent(), mcphoton, mcparticles) > 0) {
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_FromWD"))->Fill(photon.pt());
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_FromWD"))->Fill(photon.eta());
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_FromWD"))->Fill(photon.phi());

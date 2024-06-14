@@ -70,6 +70,6 @@ o2physics_add_dpl_workflow(threebody-reco-task
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(ebye-maker
-SOURCES ebyeMaker.cxx
-PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
-COMPONENT_NAME Analysis)
+    SOURCES ebyeMaker.cxx
+    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

@@ -75,10 +75,17 @@ DECLARE_SOA_DYNAMIC_COLUMN(EP2FV0A, ep2fv0a, [](float q2x, float q2y) -> float {
 DECLARE_SOA_DYNAMIC_COLUMN(EP2BPos, ep2bpos, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
 DECLARE_SOA_DYNAMIC_COLUMN(EP2BNeg, ep2bneg, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
 } // namespace emevent
-DECLARE_SOA_TABLE(EMEvents, "AOD", "EMEVENT", //!   Main event information table
+DECLARE_SOA_TABLE(EMEvents_000, "AOD", "EMEVENT", //!   Main event information table
                   o2::soa::Index<>, emevent::CollisionId, bc::GlobalBC, bc::RunNumber, evsel::Sel8, evsel::Alias, evsel::Selection, emevent::NcollsPerBC,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes, emevent::Bz);
+
+DECLARE_SOA_TABLE_VERSIONED(EMEvents_001, "AOD", "EMEVENT", 1, //!   Main event information table
+                            o2::soa::Index<>, emevent::CollisionId, bc::GlobalBC, bc::RunNumber, evsel::Sel8, evsel::Alias, evsel::Selection, emevent::NcollsPerBC,
+                            collision::PosX, collision::PosY, collision::PosZ,
+                            collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes, emevent::Bz, evsel::NumTracksInTimeRange);
+
+using EMEvents = EMEvents_001;
 using EMEvent = EMEvents::iterator;
 
 DECLARE_SOA_TABLE(EMEventsBz, "AOD", "EMEVENTBZ", emevent::Bz); // joinable to EMEvents
@@ -128,7 +135,7 @@ using EMEventNmumu = EMEventsNmumu::iterator;
 namespace emmcevent
 {
 DECLARE_SOA_COLUMN(McCollisionId, mcCollisionId, int);
-}
+} // namespace emmcevent
 
 DECLARE_SOA_TABLE(EMMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
                   o2::soa::Index<>, emmcevent::McCollisionId, mccollision::GeneratorsID,
@@ -191,6 +198,51 @@ DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
 using EMMCParticle = EMMCParticles::iterator;
+
+namespace emmcbinnedgen
+{
+DECLARE_SOA_COLUMN(GeneratedGamma, generatedGamma, std::vector<uint16_t>);             //! gamma binned generated data
+DECLARE_SOA_COLUMN(GeneratedPi0, generatedPi0, std::vector<uint16_t>);                 //! pi0 binned generated data
+DECLARE_SOA_COLUMN(GeneratedEta, generatedEta, std::vector<uint16_t>);                 //! eta binned generated data
+DECLARE_SOA_COLUMN(GeneratedOmega, generatedOmega, std::vector<uint16_t>);             //! omega(782) binned generated data
+DECLARE_SOA_COLUMN(GeneratedPhi, generatedPhi, std::vector<uint16_t>);                 //! phi(1020) binned generated data
+DECLARE_SOA_COLUMN(GeneratedChargedPion, generatedChargedPion, std::vector<uint16_t>); //! charged pion binned generated data
+DECLARE_SOA_COLUMN(GeneratedChargedKaon, generatedChargedKaon, std::vector<uint16_t>); //! charged kaon binned generated data
+DECLARE_SOA_COLUMN(GeneratedK0S, generatedK0S, std::vector<uint16_t>);                 //! K0S binned generated data
+DECLARE_SOA_COLUMN(GeneratedLambda, generatedLambda, std::vector<uint16_t>);           //! Lambda binned generated data
+
+DECLARE_SOA_COLUMN(GeneratedPi0_Acc_gg, generatedPi0_acc_gg, std::vector<uint16_t>);       //! pi0 -> gg binned generated data
+DECLARE_SOA_COLUMN(GeneratedPi0_Acc_eeg, generatedPi0_acc_eeg, std::vector<uint16_t>);     //! pi0 -> eeg binned generated data
+DECLARE_SOA_COLUMN(GeneratedEta_Acc_gg, generatedEta_acc_gg, std::vector<uint16_t>);       //! eta -> gg binned generated data
+DECLARE_SOA_COLUMN(GeneratedEta_Acc_eeg, generatedEta_acc_eeg, std::vector<uint16_t>);     //! eta -> eeg binned generated data
+DECLARE_SOA_COLUMN(GeneratedEta_Acc_mumug, generatedEta_acc_mumug, std::vector<uint16_t>); //! eta -> mumug binned generated data
+DECLARE_SOA_COLUMN(GeneratedEta_Acc_pipig, generatedEta_acc_pipig, std::vector<uint16_t>); //! eta -> pipig binned generated data
+DECLARE_SOA_COLUMN(GeneratedOmega_Acc_ee, generatedOmega_acc_ee, std::vector<uint16_t>);   //! omega(782) -> ee binned generated data
+DECLARE_SOA_COLUMN(GeneratedPhi_Acc_ee, generatedPhi_acc_ee, std::vector<uint16_t>);       //! phi(1020) -> ee binned generated data
+} // namespace emmcbinnedgen
+
+DECLARE_SOA_TABLE(BinnedGenPts, "AOD", "BINNEDGENPT", // To be joined with EMMCEvents table at analysis level.
+                  emmcbinnedgen::GeneratedGamma,
+                  emmcbinnedgen::GeneratedPi0,
+                  emmcbinnedgen::GeneratedEta,
+                  emmcbinnedgen::GeneratedOmega,
+                  emmcbinnedgen::GeneratedPhi,
+                  emmcbinnedgen::GeneratedChargedPion,
+                  emmcbinnedgen::GeneratedChargedKaon,
+                  emmcbinnedgen::GeneratedK0S,
+                  emmcbinnedgen::GeneratedLambda);
+using BinnedGenPt = BinnedGenPts::iterator;
+
+DECLARE_SOA_TABLE(BinnedGenPtAccs, "AOD", "BINNEDGENPTACC", // To be joined with EMMCEvents table at analysis level.
+                  emmcbinnedgen::GeneratedPi0_Acc_gg,
+                  emmcbinnedgen::GeneratedPi0_Acc_eeg,
+                  emmcbinnedgen::GeneratedEta_Acc_gg,
+                  emmcbinnedgen::GeneratedEta_Acc_eeg,
+                  emmcbinnedgen::GeneratedEta_Acc_mumug,
+                  emmcbinnedgen::GeneratedEta_Acc_pipig,
+                  emmcbinnedgen::GeneratedOmega_Acc_ee,
+                  emmcbinnedgen::GeneratedPhi_Acc_ee);
+using BinnedGenPtAcc = BinnedGenPtAccs::iterator;
 
 namespace v0legmclabel
 {
@@ -393,8 +445,9 @@ namespace emprimaryelectron
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
-DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);    //!
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousElectrons, ambiguousElectrons);
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);         //!
+DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t); //!
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
@@ -493,6 +546,10 @@ using EMPrimaryElectronEMEventId = EMPrimaryElectronEMEventIds::iterator;
 DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBit, "AOD", "PRMELEPFB", emprimaryelectron::PrefilterBit); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
 using EMPrimaryElectronPrefilterBit = EMPrimaryElectronsPrefilterBit::iterator;
+
+DECLARE_SOA_TABLE(EMAmbiguousElectronSelfIds, "AOD", "EMAMBELESELFID", emprimaryelectron::AmbiguousElectronsIds); // To be joined with EMPrimaryElectrons table at analysis level.
+// iterators
+using EMAmbiguousElectronSelfId = EMAmbiguousElectronSelfIds::iterator;
 
 namespace dalitzee
 {
