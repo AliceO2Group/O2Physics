@@ -117,6 +117,10 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 
 struct cascadeFlow {
 
+  // axes
+  ConfigurableAxis axisQVs{"axisQVs", {500, -10.f, 10.f}, "axisQVs"};
+  ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
+
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
@@ -297,8 +301,6 @@ struct cascadeFlow {
     const AxisSpec ptAxis{static_cast<int>((MaxPt - MinPt) / 0.2), MinPt, MaxPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
     const AxisSpec CentAxis{18, 0., 90., "FT0C centrality percentile"};
-    ConfigurableAxis axisQVs{"axisQVs", {500, -10.f, 10.f}, "axisQVs"};
-    ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
     TString hNEventsLabels[6] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kIsGoodEventEP"};
 
     resolution.add("QVectorsT0CTPCA", "QVectorsT0CTPCA", HistType::kTH2F, {axisQVs, CentAxis});
