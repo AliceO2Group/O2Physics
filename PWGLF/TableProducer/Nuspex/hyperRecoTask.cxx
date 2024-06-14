@@ -520,7 +520,7 @@ struct hyperRecoTask {
 
       if (std::abs(track.eta()) > etaMax)
         continue;
-      
+
       if (!track.hasITS())
         continue;
 
