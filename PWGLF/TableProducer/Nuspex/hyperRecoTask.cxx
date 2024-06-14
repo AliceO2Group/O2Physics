@@ -148,6 +148,7 @@ struct hyperRecoTask {
   float piMass = o2::constants::physics::MassPionCharged;
 
   Configurable<bool> useCustomVertexer{"useCustomVertexer", false, "Use custom vertexer"};
+  Configurable<float> customVertexerTimeMargin{"customVertexerTimeMargin", 800, "Time margin for custom vertexer (ns)"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", true, "If true, divide tpcInnerParam by the electric charge"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
@@ -206,6 +207,8 @@ struct hyperRecoTask {
     fitter.setUseAbsDCA(true);
     int mat{static_cast<int>(cfgMaterialCorrection)};
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
+
+    svCreator.setTimeMargin(customVertexerTimeMargin);
 
     const AxisSpec rigidityAxis{rigidityBins, "#it{p}^{TPC}/#it{z}"};
     const AxisSpec dedxAxis{dedxBins, "d#it{E}/d#it{x}"};
@@ -514,12 +517,21 @@ struct hyperRecoTask {
     svCreator.clearPools();
 
     for (auto& track : tracks) {
-      if (track.tpcNClsFound() < 70 || track.itsNCls() < 2) {
+
+      if (std::abs(track.eta()) > etaMax)
         continue;
-      }
+
+      if (!track.hasITS())
+        continue;
+
       auto nSigmaHe = computeNSigmaHe3(track);
       bool isHe = nSigmaHe > -1 * nSigmaMaxHe;
       int pdgHypo = isHe ? heDauPdg : 211;
+
+      if (isHe && track.tpcNClsFound() < nTPCClusMinHe) {
+        continue;
+      }
+
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
     auto& svPool = svCreator.getSVCandPool(collisions);

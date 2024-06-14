@@ -678,6 +678,10 @@ struct TagTwoProngDisplacedVertices {
           } else if (fillTopoVarsTable == 2 && !TESTBIT(isSignal, aod::tagandprobe::SignalFlags::Bkg)) { // only background
             fillTable = false;
           }
+          float pseudoRndm = trackFirst.pt() * 1000. - (int64_t)(trackFirst.pt() * 1000);
+          if (ptTag < ptTagMaxForDownsampling && pseudoRndm >= downsamplingForTopoVarTable) {
+            fillTable = false;
+          }
           if (fillTable) {
             tagVarsTable(ptTag, invMass, topoVars[0], topoVars[1], topoVars[2], topoVars[3], trackDcaXy[0], trackDcaXy[1], topoVars[6], topoVars[7], topoVars[8], isSignal, channel);
           }
