@@ -32,7 +32,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h" // for creating XicPlus track with DCA fitter
 
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/Core/trackUtilities.h"
@@ -226,9 +225,6 @@ struct HfCandidateCreatorXic {
       }
 
       //----------------------------calculate physical properties-----------------------
-      // set hfFlag
-      int hfFlag = BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
-
       // Charge of charm baryon
       int signXic = casc.sign() < 0 ? +1 : -1;
 
@@ -251,13 +247,6 @@ struct HfCandidateCreatorXic {
       // get invariant mass of Xic candidate
       auto arrayMomenta = std::array{pVecXi, pVecPi0, pVecPi1};
       massXiPiPi = RecoDecay::m(std::move(arrayMomenta), std::array{massXiMinusFromPdg, massPionFromPdg, massPionFromPdg});
-
-      /* get parent track necessary?
-      std::array<float, 3> pVec2Pi = RecoDecay::pVec(pVecPi0, pVecPi1);
-      std::array<float, 3> pVecXicPlus = RecoDecay::pVec(pVecXi, pVecPi0, pVecPi1);
-      auto trackParCov2Pi = o2::dataformats::V0(df.getPCACandidatePos(), pVec2Pi, df.calcPCACovMatrixFlat(), trackParCovCharmBachelor0, trackParCovCharmBachelor1);
-      auto trackParCovXicPlus = o2::dataformats::V0(df.getPCACandidatePos(), pVecXicPlus, df.calcPCACovMatrixFlat(), trackParCov2Pi, trackCasc);
-      trackParCovXicPlus.getPxPyPzGlo(pVecXicPlus);*/
 
       // get track impact parameters
       // This modifies track momenta!
@@ -329,7 +318,6 @@ struct HfCandidateCreatorXic {
                        pVecPi1[0], pVecPi1[1], pVecPi1[2],
                        impactParameterCasc.getY(), impactParameter0.getY(), impactParameter1.getY(),
                        std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
-                       hfFlag,
                        /*cascade specific columns*/
                        vertexCasc[0], vertexCasc[1], vertexCasc[2],
                        vertexV0[0], vertexV0[1], vertexV0[2],
@@ -435,9 +423,6 @@ struct HfCandidateCreatorXic {
       // sign of charm baryon
       int signXic = casc.sign() < 0 ? +1 : -1;
 
-      // set hfFlag
-      int hfFlag = BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
-
       // get impact parameters of XicPlus daughters
       float impactParameterPi0XY = 0., errImpactParameterPi0XY = 0.;
       float impactParameterPi1XY = 0., errImpactParameterPi1XY = 0.;
@@ -516,7 +501,6 @@ struct HfCandidateCreatorXic {
                        kfCharmBachelor1.GetPx(), kfCharmBachelor1.GetPy(), kfCharmBachelor1.GetPz(),
                        impactParameterXiXY, impactParameterPi0XY, impactParameterPi1XY,
                        errImpactParameterXiXY, errImpactParameterPi0XY, errImpactParameterPi1XY,
-                       hfFlag,
                        /*cascade specific columns*/
                        casc.x(), casc.y(), casc.z(),
                        casc.xlambda(), casc.ylambda(), casc.zlambda(),
@@ -676,10 +660,7 @@ struct HfCandidateCreatorXic {
             kfCharmBachelor1.TransportToParticle(kfXicPlus);
             kfXi.TransportToParticle(kfXicPlus);
 
-            //---------------------calculate physical parameters of XicPlus candidate----------------------
-            // set hfFlag
-            int hfFlag = BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
-            
+            //---------------------calculate physical parameters of XicPlus candidate----------------------            
             // sign of charm baryon
             int signXic = casc.sign() < 0 ? +1 : -1;
 
@@ -761,7 +742,6 @@ struct HfCandidateCreatorXic {
                              kfCharmBachelor1.GetPx(), kfCharmBachelor1.GetPy(), kfCharmBachelor1.GetPz(),
                              impactParameterXiXY, impactParameterPi0XY, impactParameterPi1XY,
                              errImpactParameterXiXY, errImpactParameterPi0XY, errImpactParameterPi1XY,
-                             hfFlag,
                              /*cascade specific columns*/
                              casc.x(), casc.y(), casc.z(),
                              casc.xlambda(), casc.ylambda(), casc.zlambda(),
@@ -792,15 +772,16 @@ struct HfCandidateCreatorXicExpressions {
 
     int indexRec = -1;
     int indexRecXicPlus = -1;
-    int indexRes = -1;
-    int8_t sign = -9;
+    int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
     int8_t debug = 0;
+    std::vector<int> arrDaughIndex;
+    std::array<int, 2> arrPDGDaugh;
 
+    std::array<int, 2> arrXiResonance = {3324, kPiPlus}; // 3324: Ξ(1530)
     int pdgCodeXicPlus = Pdg::kXiCPlus; // 4232
     int pdgCodeXiMinus = kXiMinus;      // 3312
-    int pdgCodeXiRes = 3324;            // 3324
     int pdgCodeLambda = kLambda0;       // 3122
     int pdgCodePiPlus = kPiPlus;        // 211
     int pdgCodePiMinus = kPiMinus;      // -211
@@ -809,19 +790,16 @@ struct HfCandidateCreatorXicExpressions {
     // Match reconstructed candidates.
     for (const auto& candidate : *rowCandidateXic) {
       flag = 0;
-      sign = -9;
+      sign = 0;
       origin = RecoDecay::OriginType::None;
       debug = 0;
+      arrDaughIndex.clear();
 
       auto arrayDaughters = std::array{candidate.pi0_as<aod::TracksWMc>(),       // pi <- Xic
                                        candidate.pi1_as<aod::TracksWMc>(),       // pi <- Xic
                                        candidate.bachelor_as<aod::TracksWMc>(),  // pi <- cascade
                                        candidate.posTrack_as<aod::TracksWMc>(),  // p <- lambda
                                        candidate.negTrack_as<aod::TracksWMc>()}; // pi <- lambda
-      auto arrayDaughtersResPi0 = std::array{candidate.cascade_as<aod::TracksWMc>(),
-                                             candidate.pi0_as<aod::TracksWMc>()};
-      auto arrayDaughtersResPi1 = std::array{candidate.cascade_as<aod::TracksWMc>(),
-                                             candidate.pi1_as<aod::TracksWMc>()};
       auto arrayDaughtersCasc = std::array{candidate.bachelor_as<aod::TracksWMc>(),
                                            candidate.posTrack_as<aod::TracksWMc>(),
                                            candidate.negTrack_as<aod::TracksWMc>()};
@@ -847,17 +825,19 @@ struct HfCandidateCreatorXicExpressions {
             debug = 3;
           }
           if (indexRec > -1) {
-            // Xic → Xi(1530) pi
-            indexRes = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersResPi0, pdgCodeXicPlus, std::array{pdgCodeXiRes, pdgCodePiMinus}, true, &sign, 1);
-            if (indexRes > -1) {
-              flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiResPiToXiPiPi);
-            } else if (indexRes == -1) {
-              indexRes = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersResPi1, pdgCodeXicPlus, std::array{pdgCodeXiRes, pdgCodePiMinus}, true, &sign, 1);
-              if (indexRes > -1) {
-                flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiResPiToXiPiPi);
-              } else if (indexRes == -1) {
-                flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
+            RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRecXicPlus), &arrDaughIndex, std::array{0}, 1);
+            if (arrDaughIndex.size() == 2) {
+              for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+                auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+                arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
               }
+              if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
+                flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiResPiToXiPiPi);
+              } else {
+                debug = 4;
+              }
+            } else {
+              flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
             }
           }
         }
@@ -875,9 +855,10 @@ struct HfCandidateCreatorXicExpressions {
     // Match generated particles.
     for (const auto& particle : mcParticles) {
       flag = 0;
-      sign = -9;
+      sign = 0;
       debug = 0;
       origin = RecoDecay::OriginType::None;
+      arrDaughIndex.clear();
 
       //  Xic → Xi pi pi
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeXicPlus, std::array{pdgCodeXiMinus, pdgCodePiPlus, pdgCodePiPlus}, true, &sign, 2)) {
@@ -890,10 +871,20 @@ struct HfCandidateCreatorXicExpressions {
           auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
           if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
             debug = 3;
-            if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeXicPlus, std::array{pdgCodeXiRes, pdgCodePiMinus}, true)) {
-              flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiResPiToXiPiPi);
+
+            RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
+            if (arrDaughIndex.size() == 2) {
+              for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+                  auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+                  arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
+                }
+                if ((arrPDGDaugh[0] == arrXiResonance[0] && arrPDGDaugh[1] == arrXiResonance[1]) || (arrPDGDaugh[0] == arrXiResonance[1] && arrPDGDaugh[1] == arrXiResonance[0])) {
+                  flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiResPiToXiPiPi);
+                } else {
+                  debug = 4;
+                }
             } else {
-              flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
+                flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
             }
           }
         }
