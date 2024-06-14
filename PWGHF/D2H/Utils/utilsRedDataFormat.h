@@ -27,7 +27,7 @@ namespace o2::hf_evsel
 /// \tparam centEstimator centrality estimator
 /// \param collision collision to test against the selection criteria
 template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename BC>
-void checkEvSel(Coll const& collision, BC const& bc, o2::hf_evsel::HfEventSelection& hfEvSel, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& allSelColl, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb)
+void checkEvSel(Coll const& collision, BC const& bc, o2::hf_evsel::HfEventSelection& hfEvSel, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& zvtxAndSel8CollAndSoftTrig, int& allSelColl, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb)
 {
   float centrality{-1.f};
   const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<useEvSel, o2::hf_centrality::CentralityEstimator::None>(collision, centrality, bc, ccdb);
@@ -39,6 +39,9 @@ void checkEvSel(Coll const& collision, BC const& bc, o2::hf_evsel::HfEventSelect
   }
   if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) {
     zvtxAndSel8Coll++;
+  }
+  if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::PositionZ) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger) && !TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::SoftwareTrigger) ) {
+    zvtxAndSel8CollAndSoftTrig++;
   }
   if (rejectionMask == 0) {
     allSelColl++;
