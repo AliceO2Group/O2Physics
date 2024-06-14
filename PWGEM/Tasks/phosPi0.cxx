@@ -276,9 +276,9 @@ struct phosPi0 {
     int mult = 1.; // multiplicity TODO!!!
     mixedEventBin = findMixedEventBin(vtxZ, mult);
 
-    if constexpr (isMC) {
-      isColSelected = true; // aliaces do not work in MC???
-    }
+    // if constexpr (isMC) {
+    //   isColSelected = true; // aliaces do not work in MC???
+    // }
 
     if (!isColSelected) {
       return;
@@ -440,7 +440,7 @@ struct phosPi0 {
       }
     }
   }
-  void processBC(aod::BCs::iterator const& bc,
+  void processBC(aod::BCs::iterator const& /*bc*/,
                  aod::CaloAmbiguousClusters const& clusters)
   {
     bool isSelected = true;

@@ -319,7 +319,6 @@ struct skimmerPrimaryElectron {
   template <typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
-
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
       gpu::gpustd::array<float, 2> dcaInfo;
       auto track_par_cov_recalc = getTrackParCov(track);
@@ -932,9 +931,34 @@ struct prefilterPrimaryElectron {
   PROCESS_SWITCH(prefilterPrimaryElectron, processDummy, "process dummy", true);
 };
 
+struct associateAmbiguousElectron {
+  Produces<aod::EMAmbiguousElectronSelfIds> em_amb_ele_ids;
+
+  SliceCache cache;
+  PresliceUnsorted<aod::EMPrimaryElectrons> perTrack = o2::aod::emprimaryelectron::trackId;
+  std::vector<int> ambele_self_Ids;
+
+  void process(aod::EMPrimaryElectrons const& electrons)
+  {
+    for (auto& electron : electrons) {
+      auto electrons_with_same_trackId = electrons.sliceBy(perTrack, electron.trackId());
+      ambele_self_Ids.reserve(electrons_with_same_trackId.size());
+      for (auto& amp_ele : electrons_with_same_trackId) {
+        if (amp_ele.globalIndex() == electron.globalIndex()) { // don't store myself.
+          continue;
+        }
+        ambele_self_Ids.emplace_back(amp_ele.globalIndex());
+      }
+      em_amb_ele_ids(ambele_self_Ids);
+      ambele_self_Ids.clear();
+      ambele_self_Ids.shrink_to_fit();
+    }
+  }
+};
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<skimmerPrimaryElectron>(cfgc, TaskName{"skimmer-primary-electron"}),
-    adaptAnalysisTask<prefilterPrimaryElectron>(cfgc, TaskName{"prefilter-primary-electron"})};
+    adaptAnalysisTask<prefilterPrimaryElectron>(cfgc, TaskName{"prefilter-primary-electron"}),
+    adaptAnalysisTask<associateAmbiguousElectron>(cfgc, TaskName{"associate-ambiguous-electron"})};
 }

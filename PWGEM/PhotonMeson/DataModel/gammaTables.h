@@ -445,8 +445,9 @@ namespace emprimaryelectron
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
-DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);    //!
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousElectrons, ambiguousElectrons);
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);         //!
+DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t); //!
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
@@ -545,6 +546,10 @@ using EMPrimaryElectronEMEventId = EMPrimaryElectronEMEventIds::iterator;
 DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBit, "AOD", "PRMELEPFB", emprimaryelectron::PrefilterBit); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
 using EMPrimaryElectronPrefilterBit = EMPrimaryElectronsPrefilterBit::iterator;
+
+DECLARE_SOA_TABLE(EMAmbiguousElectronSelfIds, "AOD", "EMAMBELESELFID", emprimaryelectron::AmbiguousElectronsIds); // To be joined with EMPrimaryElectrons table at analysis level.
+// iterators
+using EMAmbiguousElectronSelfId = EMAmbiguousElectronSelfIds::iterator;
 
 namespace dalitzee
 {

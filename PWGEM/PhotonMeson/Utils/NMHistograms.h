@@ -67,18 +67,18 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool doFlow, bool isMC, const
     if (doFlow) {
       std::string_view sp_names[4] = {"FT0M", "FT0A", "FT0C", "FV0A"};
       for (int i = 0; i < 4; i++) {
-        fRegistry->add(Form("Pair/same/hs_same_SPQ2%s", sp_names[i].data()), "2photon", kTHnSparseF, {axis_mass, axis_pt, axis_sp2}, true);
+        fRegistry->add(Form("Pair/same/hs_same_SPQ2%s", sp_names[i].data()), "2photon", kTHnSparseD, {axis_mass, axis_pt, axis_sp2}, true);
       }
-      fRegistry->add("Pair/mix/hMggPt", "2photon", kTH2F, {axis_mass, axis_pt}, true);
+      fRegistry->add("Pair/mix/hMggPt", "2photon", kTH2D, {axis_mass, axis_pt}, true);
     } else {
-      fRegistry->add("Pair/same/hMggPt", "2photon", kTH2F, {axis_mass, axis_pt}, true);
+      fRegistry->add("Pair/same/hMggPt", "2photon", kTH2D, {axis_mass, axis_pt}, true);
       fRegistry->addClone("Pair/same/", "Pair/mix/");
     }
   }
 }
 
 template <int ev_id, PairType pairtype, typename TCollision, typename TDiphoton>
-void fillPairInfo(HistogramRegistry* fRegistry, TCollision const& collision, TDiphoton const& diphoton, const bool doFlow, const float weight = 1.f)
+void fillPairInfo(HistogramRegistry* fRegistry, TCollision const& collision, TDiphoton const& diphoton, const bool doFlow, const float /*weight*/ = 1.f)
 {
   static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
   if (doFlow) {
