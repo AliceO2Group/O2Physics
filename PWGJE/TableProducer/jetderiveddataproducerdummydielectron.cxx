@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// temporary task to produce HF and DQ tables needed when making Lc jet derived data - should become obsolete when tables are able to be prouduced based on a configurable
+// temporary task to produce HF tables needed when making dielectron jet derived data - should become obsolete when tables are able to be prouduced based on a configurable
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
@@ -25,7 +25,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct JetDerivedDataProducerDummyLcTask {
+struct JetDerivedDataProducerDummyDielectronTask {
 
   Produces<aod::HfD0CollBases> d0CollisionsTable;
   Produces<aod::HfD0McRCollIds> d0CollisionsMatchingTable;
@@ -38,8 +38,16 @@ struct JetDerivedDataProducerDummyLcTask {
   Produces<aod::HfD0McCollBases> d0McCollisionsTable;
   Produces<aod::HfD0PBases> d0ParticlesTable;
 
-  Produces<aod::ReducedEvents> dielectronCollisionsTable;
-  Produces<aod::Dielectrons> dielectronTable;
+  Produces<aod::Hf3PCollBases> lcCollisionsTable;
+  Produces<aod::Hf3PMcRCollIds> lcCollisionsMatchingTable;
+  Produces<aod::Hf3PBases> lcsTable;
+  Produces<aod::Hf3PPars> lcParsTable;
+  Produces<aod::Hf3PParEs> lcParExtrasTable;
+  Produces<aod::Hf3PSels> lcSelsTable;
+  Produces<aod::Hf3PMls> lcMlsTable;
+  Produces<aod::Hf3PMcs> lcMcsTable;
+  Produces<aod::Hf3PMcCollBases> lcMcCollisionsTable;
+  Produces<aod::Hf3PPBases> lcParticlesTable;
 
   void init(InitContext const&)
   {
@@ -48,11 +56,11 @@ struct JetDerivedDataProducerDummyLcTask {
   void processDummy(aod::JDummys const&)
   {
   }
-  PROCESS_SWITCH(JetDerivedDataProducerDummyLcTask, processDummy, "leaves all tables empty", true);
+  PROCESS_SWITCH(JetDerivedDataProducerDummyDielectronTask, processDummy, "leaves all tables empty", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetDerivedDataProducerDummyLcTask>(cfgc, TaskName{"jet-deriveddata-producer-dummy-lc"})};
+    adaptAnalysisTask<JetDerivedDataProducerDummyDielectronTask>(cfgc, TaskName{"jet-deriveddata-producer-dummy-dielectron"})};
 }

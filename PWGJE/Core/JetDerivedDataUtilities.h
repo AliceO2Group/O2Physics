@@ -313,7 +313,8 @@ enum JTrackSel {
   globalTrack = 1,
   qualityTrack = 2,
   hybridTrack = 3,
-  uniformTrack = 4
+  uniformTrack = 4,
+  uniformTrackWoDCA = 5
 };
 
 template <typename T>
@@ -344,6 +345,8 @@ int initialiseTrackSelection(std::string trackSelection)
     return JTrackSel::hybridTrack;
   } else if (trackSelection == "uniformTracks") {
     return JTrackSel::uniformTrack;
+  } else if (trackSelection == "uniformTracksWoDCA") {
+    return JTrackSel::uniformTrackWoDCA;
   }
   return -1;
 }
@@ -371,7 +374,11 @@ uint8_t setTrackSelectionBit(T const& track)
       (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
     SETBIT(bit, JTrackSel::uniformTrack);
   }
-
+  if (track.passedGoldenChi2() &&
+      (track.passedITSNCls() && track.passedITSChi2NDF() && track.passedITSHits()) &&
+      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) {
+    SETBIT(bit, JTrackSel::uniformTrackWoDCA);
+  }
   return bit;
 }
 

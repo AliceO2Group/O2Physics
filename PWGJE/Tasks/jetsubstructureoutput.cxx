@@ -86,22 +86,31 @@ struct JetSubstructureOutputTask {
   }
 
   template <typename T, typename U, typename V>
-  void fillTables(T const& jet, int32_t collisionIndex, U& jetOutputTable, V& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMapping)
+  void fillJetTables(T const& jet, int32_t collisionIndex, U& jetOutputTable, V& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMapping)
   {
     std::vector<float> energyMotherVec;
     std::vector<float> ptLeadingVec;
     std::vector<float> ptSubLeadingVec;
     std::vector<float> thetaVec;
+    std::vector<float> pairPtVec;
+    std::vector<float> pairEnergyVec;
+    std::vector<float> pairThetaVec;
     auto energyMotherSpan = jet.energyMother();
     auto ptLeadingSpan = jet.ptLeading();
     auto ptSubLeadingSpan = jet.ptSubLeading();
     auto thetaSpan = jet.theta();
+    auto pairPtSpan = jet.pairPt();
+    auto pairEnergySpan = jet.pairEnergy();
+    auto pairThetaSpan = jet.pairTheta();
     std::copy(energyMotherSpan.begin(), energyMotherSpan.end(), std::back_inserter(energyMotherVec));
     std::copy(ptLeadingSpan.begin(), ptLeadingSpan.end(), std::back_inserter(ptLeadingVec));
     std::copy(ptSubLeadingSpan.begin(), ptSubLeadingSpan.end(), std::back_inserter(ptSubLeadingVec));
     std::copy(thetaSpan.begin(), thetaSpan.end(), std::back_inserter(thetaVec));
+    std::copy(pairPtSpan.begin(), pairPtSpan.end(), std::back_inserter(pairPtVec));
+    std::copy(pairEnergySpan.begin(), pairEnergySpan.end(), std::back_inserter(pairEnergyVec));
+    std::copy(pairThetaSpan.begin(), pairThetaSpan.end(), std::back_inserter(pairThetaVec));
     jetOutputTable(collisionIndex, collisionIndex, jet.pt(), jet.phi(), jet.eta(), jet.y(), jet.r(), jet.tracksIds().size()); // second collision index is a dummy coloumn mirroring the hf candidate
-    jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, jet.nSub2DR(), jet.nSub1(), jet.nSub2());
+    jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, jet.nSub2DR(), jet.nSub1(), jet.nSub2(), pairPtVec, pairEnergyVec, pairThetaVec);
     jetMapping.insert(std::make_pair(jet.globalIndex(), jetOutputTable.lastIndex()));
   }
 
@@ -126,7 +135,7 @@ struct JetSubstructureOutputTask {
             }
             nJetInCollision++;
           }
-          fillTables(jet, collisionIndex, jetOutputTable, jetSubstructureOutputTable, jetMapping);
+          fillJetTables(jet, collisionIndex, jetOutputTable, jetSubstructureOutputTable, jetMapping);
         }
       }
     }

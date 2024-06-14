@@ -151,13 +151,14 @@ struct TableMaker {
   Produces<ReducedEvents> event;
   Produces<ReducedEventsExtended> eventExtended;
   Produces<ReducedEventsVtxCov> eventVtxCov;
+  Produces<ReducedEventsInfo> eventInfo;
   Produces<ReducedEventsMultPV> multPV;
   Produces<ReducedEventsMultAll> multAll;
+  Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
   Produces<ReducedTracks> trackBasic;
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
   Produces<ReducedTracksBarrelPID> trackBarrelPID;
-  Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
   Produces<ReducedMuons> muonBasic;
   Produces<ReducedMuonsExtra> muonExtra;
   Produces<ReducedMuonsCov> muonCov;
@@ -462,6 +463,7 @@ struct TableMaker {
       eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
     }
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+    eventInfo(collision.globalIndex());
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
       multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
              collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
@@ -474,9 +476,9 @@ struct TableMaker {
     uint8_t trackTempFilterMap = 0;
     int isAmbiguous = 0;
     if constexpr (static_cast<bool>(TTrackFillMap)) {
+      trackBarrelInfo.reserve(tracksBarrel.size());
       trackBasic.reserve(tracksBarrel.size());
       trackBarrel.reserve(tracksBarrel.size());
-      trackBarrelInfo.reserve(tracksBarrel.size());
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
         trackBarrelCov.reserve(tracksBarrel.size());
       }
@@ -565,6 +567,7 @@ struct TableMaker {
         }
 
         // create the track tables
+        trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
         trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), isAmbiguous);
         trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                     track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
@@ -574,7 +577,6 @@ struct TableMaker {
                     track.length(), track.dcaXY(), track.dcaZ(),
                     track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
                     track.detectorMap());
-        trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
           trackBarrelCov(track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
                          track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
@@ -914,9 +916,9 @@ struct TableMaker {
     uint8_t trackTempFilterMap = 0;
     int isAmbiguous = 0;
     if constexpr (static_cast<bool>(TTrackFillMap)) {
+      trackBarrelInfo.reserve(tracksBarrel.size());
       trackBasic.reserve(tracksBarrel.size());
       trackBarrel.reserve(tracksBarrel.size());
-      trackBarrelInfo.reserve(tracksBarrel.size());
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
         trackBarrelCov.reserve(tracksBarrel.size());
       }
@@ -993,6 +995,7 @@ struct TableMaker {
         trackFilteringTag |= (uint64_t(trackTempFilterMap) << 15); // BIT15-...:  user track filters
 
         // create the track tables
+        trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
         trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), isAmbiguous);
         trackBarrel(track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
                     track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
@@ -1001,7 +1004,6 @@ struct TableMaker {
                     track.length(), track.dcaXY(), track.dcaZ(),
                     track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
                     track.detectorMap());
-        trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
           trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
                          track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
