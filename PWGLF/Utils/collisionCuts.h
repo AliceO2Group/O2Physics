@@ -233,5 +233,4 @@ class CollisonCuts
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
 };
 } // namespace o2::analysis
-
 #endif // PWGLF_UTILS_COLLISIONCUTS_H_
