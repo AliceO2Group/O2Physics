@@ -602,10 +602,12 @@ struct HfCorrelatorDsHadrons {
         std::array<int, 3> prongsId;
         listDaughters.clear();
         RecoDecay::getDaughters(particle, &listDaughters, arrDaughDsPDG, 2);
+        int counterDaughters = 0;
         if (listDaughters.size() == 3) {
-          for (auto iProng = 0; iProng < listDaughters.size(); ++iProng) {
-            auto daughI = mcParticles.rawIteratorAt(listDaughters[iProng]);
-            prongsId[iProng] = daughI.globalIndex();
+          for (const auto& dauIdx : listDaughters) {
+            auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
+            counterDaughters += 1;
+            prongsId[counterDaughters - 1] = daughI.globalIndex();
           }
         }
         // Ds Hadron correlation dedicated section

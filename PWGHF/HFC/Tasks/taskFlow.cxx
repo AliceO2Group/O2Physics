@@ -66,8 +66,8 @@ struct HfTaskFlow {
   HfHelper hfHelper;
   SliceCache cache;
 
-  using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
-  using MyTracks = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
+  using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
+  using TracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
   using HfCandidatesSel = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
 
   //  Collision filters
@@ -96,7 +96,7 @@ struct HfTaskFlow {
   //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
   //        either 1) add invariant mass axis or 2) define several containers for different inv. mass regions
   //        Note: don't forget to check inv. mass separately for D0 and D0bar candidate
-  ConfigurableAxis axisMass{"axisMass", {30, 1.7, 2.0}, "axis of invariant mass of HF candidates"};
+  ConfigurableAxis axisMass{"axisMass", {2, 1.7, 2.0}, "axis of invariant mass of HF candidates"};
 
   HistogramRegistry registry{"registry"};
 
@@ -105,6 +105,7 @@ struct HfTaskFlow {
   OutputObj<CorrelationContainer> sameHF{"sameEventHFHadrons"};
   OutputObj<CorrelationContainer> mixedTPCTPCCh{"mixedEventTPCTPCChHadrons"};
   OutputObj<CorrelationContainer> mixedHF{"mixedEventHFHadrons"};
+  OutputObj<CorrelationContainer> mixedMFT{"mixedEventTPCMFTChHadrons"};
 
   //  =========================
   //      init()
@@ -113,74 +114,74 @@ struct HfTaskFlow {
   {
     //  EVENT HISTOGRAMS
     constexpr int kNBinsEvents = 3;
-    registry.add("hEventCounter", "hEventCounter", {HistType::kTH1F, {{kNBinsEvents, 0.5, 0.5 + kNBinsEvents}}});
+    registry.add("Data/hEventCounter", "hEventCounter", {HistType::kTH1F, {{kNBinsEvents, 0.5, 0.5 + kNBinsEvents}}});
     //  set axes of the event counter histogram
     std::string labels[kNBinsEvents];
     labels[0] = "all";
     labels[1] = "after trigger selection (Run 2)";
     labels[2] = "after Physics selection";
     for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
-      registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+      registry.get<TH1>(HIST("Data/hEventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
-    registry.add("hMultiplicity", "hMultiplicity", {HistType::kTH1F, {{500, 0, 500}}});
-    registry.add("hVtxZ", "hVtxZ", {HistType::kTH1F, {{400, -50, 50}}});
-    registry.add("hNtracks", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/HadronHadron/SameEvent/hMultiplicity", "hMultiplicity", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/HadronHadron/SameEvent/hVtxZ", "hVtxZ", {HistType::kTH1F, {{400, -50, 50}}});
+    registry.add("Data/HadronHadron/SameEvent/hNtracks", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
 
     //  histograms for event mixing
     const int maxMixBin = axisMultiplicity->size() * 14; // 14 bins for z-vertex
-    registry.add("hEventCountMixing", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
-    registry.add("hEventCountHFMixing", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
-    registry.add("hEventCountSame", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
-    registry.add("hMultiplicityMixing", "hMultiplicityMixing", {HistType::kTH1F, {{500, 0, 500}}});
-    registry.add("hVtxZMixing", "hVtxZMixing", {HistType::kTH1F, {{100, -10, 10}}});
-    registry.add("hNtracksMixing", "hNtracksMixing", {HistType::kTH1F, {{500, 0, 500}}});
-    registry.add("hMultiplicityHFMixing", "hMultiplicityHFMixing", {HistType::kTH1F, {{500, 0, 500}}});
-    registry.add("hVtxZHFMixing", "hVtxZHFMixing", {HistType::kTH1F, {{100, -10, 10}}});
-    registry.add("hNtracksHFMixing", "hNtracksHFMixing", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/HadronHadron/MixedEvent/hEventCountMixing", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    registry.add("Data/HadronHf/MixedEvent/hEventCountHFMixing", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    registry.add("Data/HadronHadron/SameEvent/hEventCountSame", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    registry.add("Data/HadronHadron/MixedEvent/hMultiplicityMixing", "hMultiplicityMixing", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/HadronHadron/MixedEvent/hVtxZMixing", "hVtxZMixing", {HistType::kTH1F, {{100, -10, 10}}});
+    registry.add("Data/HadronHadron/MixedEvent/hNtracksMixing", "hNtracksMixing", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/HadronHf/MixedEvent/hMultiplicityHFMixing", "hMultiplicityHFMixing", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/HadronHf/MixedEvent/hVtxZHFMixing", "hVtxZHFMixing", {HistType::kTH1F, {{100, -10, 10}}});
+    registry.add("Data/HadronHf/MixedEvent/hNtracksHFMixing", "hNtracksHFMixing", {HistType::kTH1F, {{500, 0, 500}}});
 
     //  TRACK HISTOGRAMS
     //  histograms for associated particles
-    registry.add("hYields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    registry.add("hEtaPhi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}}});
-    registry.add("hPt", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
-    registry.add("hEta", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
-    registry.add("hPhi", "phi", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
+    registry.add("Data/HadronHadron/SameEvent/hYields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
+    registry.add("Data/HadronHadron/SameEvent/hEtaPhi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}}});
+    registry.add("Data/HadronHadron/SameEvent/hPt", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
+    registry.add("Data/HadronHadron/SameEvent/hEta", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
+    registry.add("Data/HadronHadron/SameEvent/hPhi", "phi", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
 
     //  histograms for particles in event mixing
-    registry.add("hPtMixing", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
-    registry.add("hEtaMixing", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
-    registry.add("hPhiMixing", "phi", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
+    registry.add("Data/HadronHadron/MixedEvent/hPtMixing", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
+    registry.add("Data/HadronHadron/MixedEvent/hEtaMixing", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
+    registry.add("Data/HadronHadron/MixedEvent/hPhiMixing", "phi", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
 
     //  histograms for MFT tracks
-    registry.add("hEtaPhiMFT", "multiplicity vs eta vs phi in MFT", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}}});
-    registry.add("hEtaMFT", "etaMFT", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
-    registry.add("hPhiMFT", "phiMFT", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
+    registry.add("Data/HadronMft/hEtaPhiMFT", "multiplicity vs eta vs phi in MFT", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}}});
+    registry.add("Data/HadronMft/hEtaMFT", "etaMFT", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
+    registry.add("Data/HadronMft/hPhiMFT", "phiMFT", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
 
     //  histograms for candidates
     auto vbins = (std::vector<double>)binsPt;
 
-    registry.add("hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLengthXY", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong0", "2-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0Prong1", "2-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hd0d0", "2-prong candidates;product of DCAxy to prim. vertex (cm^{2});entries", {HistType::kTH2F, {{500, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCTS", "2-prong candidates;cos #it{#theta}* (D^{0});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCt", "2-prong candidates;proper lifetime (D^{0}) * #it{c} (cm);entries", {HistType::kTH2F, {{120, -20., 100.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCPA", "2-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hEtaCand", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hSelectionStatus", "2-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hImpParErr", "2-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("Data/HadronHf/hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("Data/HadronHf/hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("Data/HadronHf/hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hDecLengthXY", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hd0Prong0", "2-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hd0Prong1", "2-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hd0d0", "2-prong candidates;product of DCAxy to prim. vertex (cm^{2});entries", {HistType::kTH2F, {{500, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hCTS", "2-prong candidates;cos #it{#theta}* (D^{0});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hCt", "2-prong candidates;proper lifetime (D^{0}) * #it{c} (cm);entries", {HistType::kTH2F, {{120, -20., 100.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hCPA", "2-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hEtaCand", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hSelectionStatus", "2-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hImpParErr", "2-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/HadronHf/hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
     //  histograms for candidates in event mixing
-    registry.add("hPtHFMixing", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
-    registry.add("hEtaHFMixing", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
-    registry.add("hPhiHFMixing", "phi", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
+    registry.add("Data/HadronHf/MixedEvent/hPtHFMixing", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
+    registry.add("Data/HadronHf/MixedEvent/hEtaHFMixing", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
+    registry.add("Data/HadronHf/MixedEvent/hPhiHFMixing", "phi", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
 
     //  set axes of the correlation container
     std::vector<AxisSpec> corrAxis = {{axisDeltaEta, "#Delta#eta"},
@@ -199,6 +200,7 @@ struct HfTaskFlow {
     sameHF.setObject(new CorrelationContainer("sameEventHFHadrons", "sameEventHFHadrons", corrAxis, effAxis, userAxis));
     mixedTPCTPCCh.setObject(new CorrelationContainer("mixedEventTPCTPCChHadrons", "mixedEventTPCTPCChHadrons", corrAxis, effAxis, {}));
     mixedHF.setObject(new CorrelationContainer("mixedEventHFHadrons", "mixedEventHFHadrons", corrAxis, effAxis, userAxis));
+    mixedMFT.setObject(new CorrelationContainer("mixedEventTPCMFTChHadrons", "mixedEventTPCMFTChHadrons", corrAxis, effAxis, {}));
   }
 
   //  ---------------
@@ -211,7 +213,7 @@ struct HfTaskFlow {
     if (processRun2 == true) {
       //  Run 2: trigger selection for data case
       if (fillHistograms)
-        registry.fill(HIST("hEventCounter"), 1);
+        registry.fill(HIST("Data/hEventCounter"), 1);
       if (!processMc) {
         if (!collision.alias_bit(kINT7)) {
           return false;
@@ -219,21 +221,21 @@ struct HfTaskFlow {
       }
       //  Run 2: further offline selection
       if (fillHistograms)
-        registry.fill(HIST("hEventCounter"), 2);
+        registry.fill(HIST("Data/hEventCounter"), 2);
       if (!collision.sel7()) {
         return false;
       }
       if (fillHistograms)
-        registry.fill(HIST("hEventCounter"), 3);
+        registry.fill(HIST("Data/hEventCounter"), 3);
     } else {
       //  Run 3: selection
       if (fillHistograms)
-        registry.fill(HIST("hEventCounter"), 1);
+        registry.fill(HIST("Data/hEventCounter"), 1);
       if (!collision.sel8()) {
         return false;
       }
       if (fillHistograms)
-        registry.fill(HIST("hEventCounter"), 3);
+        registry.fill(HIST("Data/hEventCounter"), 3);
     }
     return true;
   }
@@ -244,56 +246,56 @@ struct HfTaskFlow {
     int Ntracks = 0;
     for (const auto& track1 : tracks) {
       Ntracks++;
-      registry.fill(HIST("hPt"), track1.pt());
-      registry.fill(HIST("hEta"), track1.eta());
-      registry.fill(HIST("hPhi"), track1.phi());
-      registry.fill(HIST("hYields"), multiplicity, track1.pt(), track1.eta());
-      registry.fill(HIST("hEtaPhi"), multiplicity, track1.eta(), track1.phi());
+      registry.fill(HIST("Data/HadronHadron/SameEvent/hPt"), track1.pt());
+      registry.fill(HIST("Data/HadronHadron/SameEvent/hEta"), track1.eta());
+      registry.fill(HIST("Data/HadronHadron/SameEvent/hPhi"), track1.phi());
+      registry.fill(HIST("Data/HadronHadron/SameEvent/hYields"), multiplicity, track1.pt(), track1.eta());
+      registry.fill(HIST("Data/HadronHadron/SameEvent/hEtaPhi"), multiplicity, track1.eta(), track1.phi());
     }
-    registry.fill(HIST("hNtracks"), Ntracks);
+    registry.fill(HIST("Data/HadronHadron/SameEvent/hNtracks"), Ntracks);
   }
 
   template <typename TTracks>
   void fillMixingQA(float multiplicity, float vz, TTracks const& tracks)
   {
-    registry.fill(HIST("hMultiplicityMixing"), multiplicity);
-    registry.fill(HIST("hVtxZMixing"), vz);
+    registry.fill(HIST("Data/HadronHadron/MixedEvent/hMultiplicityMixing"), multiplicity);
+    registry.fill(HIST("Data/HadronHadron/MixedEvent/hVtxZMixing"), vz);
 
     int Ntracks = 0;
     for (const auto& track1 : tracks) {
       Ntracks++;
-      registry.fill(HIST("hPtMixing"), track1.pt());
-      registry.fill(HIST("hEtaMixing"), track1.eta());
-      registry.fill(HIST("hPhiMixing"), track1.phi());
+      registry.fill(HIST("Data/HadronHadron/MixedEvent/hPtMixing"), track1.pt());
+      registry.fill(HIST("Data/HadronHadron/MixedEvent/hEtaMixing"), track1.eta());
+      registry.fill(HIST("Data/HadronHadron/MixedEvent/hPhiMixing"), track1.phi());
     }
-    registry.fill(HIST("hNtracksMixing"), Ntracks);
+    registry.fill(HIST("Data/HadronHadron/MixedEvent/hNtracksMixing"), Ntracks);
   }
 
   template <typename TTracks>
   void fillHFMixingQA(float multiplicity, float vz, TTracks const& tracks)
   {
-    registry.fill(HIST("hMultiplicityHFMixing"), multiplicity);
-    registry.fill(HIST("hVtxZHFMixing"), vz);
+    registry.fill(HIST("Data/HadronHf/MixedEvent/hMultiplicityHFMixing"), multiplicity);
+    registry.fill(HIST("Data/HadronHf/MixedEvent/hVtxZHFMixing"), vz);
 
     int Ntracks = 0;
     for (const auto& track1 : tracks) {
       Ntracks++;
-      registry.fill(HIST("hPtHFMixing"), track1.pt());
-      registry.fill(HIST("hEtaHFMixing"), track1.eta());
-      registry.fill(HIST("hPhiHFMixing"), track1.phi());
+      registry.fill(HIST("Data/HadronHf/MixedEvent/hPtHFMixing"), track1.pt());
+      registry.fill(HIST("Data/HadronHf/MixedEvent/hEtaHFMixing"), track1.eta());
+      registry.fill(HIST("Data/HadronHf/MixedEvent/hPhiHFMixing"), track1.phi());
     }
-    registry.fill(HIST("hNtracksHFMixing"), Ntracks);
+    registry.fill(HIST("Data/HadronHf/MixedEvent/hNtracksHFMixing"), Ntracks);
   }
 
   template <typename TTracks>
   void fillMFTQA(float multiplicity, TTracks const& tracks)
   {
     for (const auto& track1 : tracks) {
-      registry.fill(HIST("hEtaMFT"), track1.eta());
+      registry.fill(HIST("Data/HadronMft/hEtaMFT"), track1.eta());
       float phi = track1.phi();
       o2::math_utils::bringTo02Pi(phi);
-      registry.fill(HIST("hPhiMFT"), phi);
-      registry.fill(HIST("hEtaPhiMFT"), multiplicity, track1.eta(), phi);
+      registry.fill(HIST("Data/HadronMft/hPhiMFT"), phi);
+      registry.fill(HIST("Data/HadronMft/hEtaPhiMFT"), multiplicity, track1.eta(), phi);
     }
   }
 
@@ -320,29 +322,29 @@ struct HfTaskFlow {
       }
 
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("Data/HadronHf/hMass"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("Data/HadronHf/hMass"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
       }
 
-      registry.fill(HIST("hPtCand"), candidate.pt());
-      registry.fill(HIST("hPtProng0"), candidate.ptProng0());
-      registry.fill(HIST("hPtProng1"), candidate.ptProng1());
-      registry.fill(HIST("hDecLength"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
-      registry.fill(HIST("hd0Prong0"), candidate.impactParameter0(), candidate.pt());
-      registry.fill(HIST("hd0Prong1"), candidate.impactParameter1(), candidate.pt());
-      registry.fill(HIST("hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("hCt"), hfHelper.ctD0(candidate), candidate.pt());
-      registry.fill(HIST("hCPA"), candidate.cpa(), candidate.pt());
-      registry.fill(HIST("hEtaCand"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
-      registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
-      registry.fill(HIST("hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
-      registry.fill(HIST("hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
-      registry.fill(HIST("hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hPtCand"), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hPtProng0"), candidate.ptProng0());
+      registry.fill(HIST("Data/HadronHf/hPtProng1"), candidate.ptProng1());
+      registry.fill(HIST("Data/HadronHf/hDecLength"), candidate.decayLength(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hd0Prong0"), candidate.impactParameter0(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hd0Prong1"), candidate.impactParameter1(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hd0d0"), candidate.impactParameterProduct(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hCt"), hfHelper.ctD0(candidate), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hCPA"), candidate.cpa(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hEtaCand"), candidate.eta(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
+      registry.fill(HIST("Data/HadronHf/hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
     }
   }
 
@@ -418,6 +420,7 @@ struct HfTaskFlow {
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                       triggerWeight * associatedWeight);
         } else {
+
           target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
                                       eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
@@ -427,13 +430,12 @@ struct HfTaskFlow {
   }
 
   template <typename TTracksTrig, typename TTracksAssoc, typename TLambda>
-  void mixCollisions(MyCollisions const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
+  void mixCollisions(FilteredCollisionsWSelMult const& collisions, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TLambda getPartsSize, OutputObj<CorrelationContainer>& corrContainer)
   {
     using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::collision::PosZ, decltype(getPartsSize)>;
     BinningType binningWithTracksSize{{getPartsSize}, {axisVertex, axisMultiplicity}, true};
-
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<MyCollisions, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    Pair<FilteredCollisionsWSelMult, TTracksTrig, TTracksAssoc, BinningType> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -451,10 +453,10 @@ struct HfTaskFlow {
       const auto vz = collision1.posZ();
 
       if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
-        registry.fill(HIST("hEventCountHFMixing"), bin);
+        registry.fill(HIST("Data/HadronHf/MixedEvent/hEventCountHFMixing"), bin);
         fillHFMixingQA(multiplicity, vz, tracks1);
       } else {
-        registry.fill(HIST("hEventCountMixing"), bin);
+        registry.fill(HIST("Data/HadronHadron/MixedEvent/hEventCountMixing"), bin);
         fillMixingQA(multiplicity, vz, tracks1);
       }
 
@@ -466,8 +468,8 @@ struct HfTaskFlow {
   // =====================================
   //    process same event correlations: h-h case
   // =====================================
-  void processSameTpcTpcHH(MyCollisions::iterator const& collision,
-                           MyTracks const& tracks)
+  void processSameTpcTpcHH(FilteredCollisionsWSelMult::iterator const& collision,
+                           TracksWDcaSel const& tracks)
   {
     if (!(isCollisionSelected(collision, true))) {
       return;
@@ -479,14 +481,15 @@ struct HfTaskFlow {
     //  temporary solution, since other correlation options always have to be ran with h-h, too
     //  TODO: rewrite it in a more intelligent way
     const auto multiplicity = tracks.size();
-    registry.fill(HIST("hMultiplicity"), multiplicity);
-    registry.fill(HIST("hVtxZ"), collision.posZ());
+    registry.fill(HIST("Data/HadronHadron/SameEvent/hMultiplicity"), multiplicity);
+    registry.fill(HIST("Data/HadronHadron/SameEvent/hVtxZ"), collision.posZ());
 
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicity));
-    registry.fill(HIST("hEventCountSame"), bin);
+    registry.fill(HIST("Data/HadronHadron/SameEvent/hEventCountSame"), bin);
 
     sameTPCTPCCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+
     fillQA(multiplicity, tracks);
     fillCorrelations(sameTPCTPCCh, tracks, tracks, multiplicity, collision.posZ());
   }
@@ -495,17 +498,17 @@ struct HfTaskFlow {
   // =====================================
   //    process same event correlations: HF-h case
   // =====================================
-  void processSameHfHadrons(MyCollisions::iterator const& collision,
-                            MyTracks const& tracks,
+  void processSameHfHadrons(FilteredCollisionsWSelMult::iterator const& collision,
+                            TracksWDcaSel const& tracks,
                             HfCandidatesSel const& candidates)
   {
-    if (!(isCollisionSelected(collision, false))) {
+    if (!(isCollisionSelected(collision, true))) {
       return;
     }
-
     const auto multiplicity = tracks.size();
 
     sameHF->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+
     fillCandidateQA(candidates);
     fillCorrelations(sameHF, candidates, tracks, multiplicity, collision.posZ());
   }
@@ -514,11 +517,11 @@ struct HfTaskFlow {
   // =====================================
   //    process same event correlations: h-MFT case
   // =====================================
-  void processSameTpcMftHH(MyCollisions::iterator const& collision,
-                           MyTracks const& tracks,
+  void processSameTpcMftHH(FilteredCollisionsWSelMult::iterator const& collision,
+                           TracksWDcaSel const& tracks,
                            aod::MFTTracks const& mfttracks)
   {
-    if (!(isCollisionSelected(collision, false))) {
+    if (!(isCollisionSelected(collision, true))) {
       return;
     }
 
@@ -530,15 +533,14 @@ struct HfTaskFlow {
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftHH, "Process same-event correlations for h-MFT case", true);
 
-  //  TODO: add also MFT option
   // =====================================
   //    process mixed event correlations: h-h case
   // =====================================
-  void processMixedTpcTpcHH(MyCollisions const& collisions,
-                            MyTracks const& tracks)
+  void processMixedTpcTpcHH(FilteredCollisionsWSelMult const& collisions,
+                            TracksWDcaSel const& tracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](MyCollisions::iterator const& col) {
+    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
       auto size = associatedTracks.size();
       return size;
@@ -549,14 +551,14 @@ struct HfTaskFlow {
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcHH, "Process mixed-event correlations for h-h case", true);
 
   // =====================================
-  //    process mixed event correlations: h-h case
+  //    process mixed event correlations: h-HF case
   // =====================================
-  void processMixedHfHadrons(MyCollisions const& collisions,
-                             MyTracks const& tracks,
+  void processMixedHfHadrons(FilteredCollisionsWSelMult const& collisions,
+                             TracksWDcaSel const& tracks,
                              HfCandidatesSel const& candidates)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](MyCollisions::iterator const& col) {
+    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
       auto size = associatedTracks.size();
       return size;
@@ -565,7 +567,25 @@ struct HfTaskFlow {
     mixCollisions(collisions, candidates, tracks, getTracksSize, mixedHF);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedHfHadrons, "Process mixed-event correlations for HF-h case", true);
-};
+
+  // =====================================
+  //    process mixed event correlations: h-MFT case
+  // =====================================
+  void processMixedTpcMftHH(FilteredCollisionsWSelMult const& collisions,
+                            TracksWDcaSel const& tracks,
+                            aod::MFTTracks const& mfttracks)
+  {
+    //  we want to group collisions based on charged-track multiplicity
+    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
+      auto size = associatedTracks.size();
+      return size;
+    };
+
+    mixCollisions(collisions, tracks, mfttracks, getTracksSize, mixedMFT);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftHH, "Process mixed-event correlations for h-MFT case", true);
+}; // End of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

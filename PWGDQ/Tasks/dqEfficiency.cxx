@@ -355,14 +355,14 @@ struct AnalysisMuonSelection {
 
     // Configure histogram classes for each track cut;
     // Add histogram classes for each track cut and for each requested MC signal (reconstructed tracks with MC truth)
-    TString histClasses = "Muon_BeforeCuts;";
+    TString histClasses = "TrackMuon_BeforeCuts;";
     for (auto& cut : fTrackCuts) {
-      TString nameStr = Form("Muon_%s", cut.GetName());
+      TString nameStr = Form("TrackMuon_%s", cut.GetName());
       fHistNamesReco.push_back(nameStr);
       histClasses += Form("%s;", nameStr.Data());
       std::vector<TString> mcnames;
       for (auto& sig : fMCSignals) {
-        TString nameStr2 = Form("Muon_%s_%s", cut.GetName(), sig.GetName());
+        TString nameStr2 = Form("TrackMuon_%s_%s", cut.GetName(), sig.GetName());
         printf("Adding my histogram class %s\n", nameStr2.Data());
         mcnames.push_back(nameStr2);
         histClasses += Form("%s;", nameStr2.Data());
@@ -410,7 +410,7 @@ struct AnalysisMuonSelection {
       }
 
       if (fConfigQA) {
-        fHistMan->FillHistClass("Muon_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("TrackMuon_BeforeCuts", VarManager::fgValues);
       }
 
       // compute the cut selections and publish the filter bit map
@@ -497,14 +497,15 @@ struct AnalysisSameEventPairing {
   Filter filterMuonSelected = aod::dqanalysisflags::isMuonSelected > 0;
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of barrel track cuts"};
-  Configurable<std::string> fConfigMCRecSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
-  Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
+  Configurable<std::string> fConfigMCRecSignals{"cfgMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
+  Configurable<std::string> fConfigMCGenSignals{"cfgMCGenSignals", "", "Comma separated list of MC signals (generated)"};
   Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
   Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
   Configurable<bool> fUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
   Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> fConfigAmbiguousHist{"cfgAmbiHist", false, "Enable Ambiguous histograms for time association studies"};
   Configurable<bool> fUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
   Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
   Configurable<bool> fCorrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
@@ -607,7 +608,11 @@ struct AnalysisSameEventPairing {
             Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())};
-          histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          if (fConfigAmbiguousHist) {
+            histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
+          } else {
+            histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          }
           fMuonHistNames.push_back(names);
           std::vector<TString> mcSigClasses;
           if (!sigNamesStr.IsNull()) {
@@ -833,16 +838,28 @@ struct AnalysisSameEventPairing {
         if (twoTrackFilter & (uint8_t(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+            if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
+              fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][0].Data()), VarManager::fgValues);
+            }
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
               if (mcDecision & (uint32_t(1) << isig)) {
                 fHistMan->FillHistClass(histNamesMCmatched[icut][isig].Data(), VarManager::fgValues);
+                if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNamesMCmatched[icut][isig].Data()), VarManager::fgValues);
+                }
               }
             }
           } else {
             if (t1.sign() > 0) {
               fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+              if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][1].Data()), VarManager::fgValues);
+              }
             } else {
               fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+              if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[icut][2].Data()), VarManager::fgValues);
+              }
             }
           }
         }
