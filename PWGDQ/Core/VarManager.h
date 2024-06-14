@@ -1220,11 +1220,8 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
     values[kPz] = pz;
     values[kEta] = mfttrack.eta();
     values[kPhi] = mfttrack.phi();
-
   }
 }
-
-
 
 template <uint32_t fillMap, typename T>
 void VarManager::FillEvent(T const& event, float* values)
