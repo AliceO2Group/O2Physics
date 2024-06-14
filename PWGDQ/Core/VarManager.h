@@ -99,6 +99,8 @@ class VarManager : public TObject
     ReducedEventRefFlow = BIT(15),
     Zdc = BIT(16),
     ReducedZdc = BIT(17),
+    CollisionMultExtra = BIT(18),
+    ReducedEventMultExtra = BIT(19),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -221,6 +223,22 @@ class VarManager : public TObject
     kMultZNC,
     kMultTracklets,
     kMultDimuons,
+    kMultNTracksHasITS,
+    kMultNTracksHasTPC,
+    kMultNTracksHasTOF,
+    kMultNTracksHasTRD,
+    kMultNTracksITSOnly,
+    kMultNTracksTPCOnly,
+    kMultNTracksITSTPC,
+    kTrackOccupancyInTimeRange,
+    kMultAllTracksTPCOnly,
+    kMultAllTracksITSTPC,
+    kNTPCpileupContribA,
+    kNTPCpileupContribC,
+    kNTPCpileupZA,
+    kNTPCpileupZC,
+    kNTPCtracksInPast,
+    kNTPCtracksInFuture,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
@@ -1321,6 +1339,27 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultZNC] = event.multZNC();
     values[kMultTracklets] = event.multTracklets();
     values[kVtxNcontribReal] = event.multNTracksPV();
+  }
+
+  if constexpr ((fillMap & CollisionMultExtra) > 0 || (fillMap & ReducedEventMultExtra) > 0) {
+    values[kMultNTracksHasITS] = event.multNTracksHasITS();
+    values[kMultNTracksHasTPC] = event.multNTracksHasTPC();
+    values[kMultNTracksHasTOF] = event.multNTracksHasTOF();
+    values[kMultNTracksHasTRD] = event.multNTracksHasTRD();
+    values[kMultNTracksITSOnly] = event.multNTracksITSOnly();
+    values[kMultNTracksTPCOnly] = event.multNTracksTPCOnly();
+    values[kMultNTracksITSTPC] = event.multNTracksITSTPC();
+    values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
+    values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
+    values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
+    if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
+      values[kNTPCpileupContribA] = event.nTPCpileupContribA();
+      values[kNTPCpileupContribC] = event.nTPCpileupContribC();
+      values[kNTPCpileupZA] = event.nTPCpileupZA();
+      values[kNTPCpileupZC] = event.nTPCpileupZC();
+      values[kNTPCtracksInPast] = event.nTPCtracksInPast();
+      values[kNTPCtracksInFuture] = event.nTPCtracksInFuture();
+    }
   }
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
 
