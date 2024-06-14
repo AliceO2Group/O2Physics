@@ -43,7 +43,6 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-
 MetadataHelper metadataInfo;
 struct TOFCalibConfig : ConfigurableGroup {
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
