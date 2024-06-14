@@ -71,17 +71,22 @@ struct EventByEventQuantities {
 // *) QA:
 //    Remark: I keep new histograms in this group, until I need them permanently in the analysis. Then, they are moved to EventHistograms or ParticleHistograms (yes, even if they are 2D).
 struct QualityAssurance {
-  TList* fQAList = NULL;                                                    //!<! base list to hold all QA output object
-  TProfile* fQAHistogramsPro = NULL;                                        //!<! keeps flags relevant for the QA histograms
-  Bool_t fCheckUnderflowAndOverflow = kFALSE;                               // check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins
-  TH2D* fQAEventHistograms2D[eQAEventHistograms2D_N][2][2] = {{{NULL}}};    //! [ type - see enum eQAEventHistograms2D ][reco,sim][before, after particle cuts]
-  Bool_t fFillQAEventHistograms2D = kTRUE;                                  // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled
-  Bool_t fBookQAEventHistograms2D[eQAEventHistograms2D_N] = {kTRUE};        // book or not this 2D histogram, see configurable cfBookQAEventHistograms2D
-  Double_t fEventHistogramsBins2D[eQAEventHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
-
-  Double_t fCentrality[eCentralityEstimators_N] = {0.};             // used mostly in QA correlation plots
-  TString fCentralityEstimatorName[eCentralityEstimators_N] = {""}; //
-} qa;                                                               // "qa" is a common label for objects in this struct
+  TList* fQAList = NULL;                                                          //!<! base list to hold all QA output object
+  TProfile* fQAHistogramsPro = NULL;                                              //!<! keeps flags relevant for the QA histograms
+  Bool_t fCheckUnderflowAndOverflow = kFALSE;                                     // check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins
+  TH2D* fQAEventHistograms2D[eQAEventHistograms2D_N][2][2] = {{{NULL}}};          //! [ type - see enum eQAEventHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillQAEventHistograms2D = kTRUE;                                        // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookQAEventHistograms2D[eQAEventHistograms2D_N] = {kTRUE};              // book or not this 2D histogram, see configurable cfBookQAEventHistograms2D
+  Double_t fEventHistogramsBins2D[eQAEventHistograms2D_N][2][3] = {{{0.}}};       // [type - see enum][x,y][nBins,min,max]
+  TString fEventHistogramsName2D[eQAEventHistograms2D_N] = {""};                  // name of fQAEventHistograms2D, determined programatically from other 1D names, to ease bookkeeping
+  TH2D* fQAParticleHistograms2D[eQAParticleHistograms2D_N][2][2] = {{{NULL}}};    //! [ type - see enum eQAParticleHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillQAParticleHistograms2D = kTRUE;                                     // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookQAParticleHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookQAParticleHistograms2D[eQAParticleHistograms2D_N] = {kTRUE};        // book or not this 2D histogram, see configurable cfBookQAParticleHistograms2D
+  Double_t fParticleHistogramsBins2D[eQAParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
+  TString fParticleHistogramsName2D[eQAParticleHistograms2D_N] = {""};            // name of fQAParticleHistograms2D, determined programatically from other 1D names, to ease bookkeeping
+  Double_t fCentrality[eCentralityEstimators_N] = {0.};                           // used mostly in QA correlation plots
+  TString fCentralityEstimatorName[eCentralityEstimators_N] = {""};               //
+} qa;                                                                             // "qa" is a common label for objects in this struct
 
 // *) Event histograms:
 struct EventHistograms {
@@ -103,7 +108,7 @@ struct EventCuts {
   Bool_t fUseEventCutCounterSequential = kFALSE;           // profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy
   Bool_t fEventCutCounterBinLabelingIsDone = kFALSE;       // this flag ensures that ordered labeling of bins, to resemble ordering of cut implementation, is done only once.
   Bool_t fPrintCutCounterContent = kFALSE;                 // if true, prints on the screen content of fEventCutCounterHist[][] (all which were booked)
-  const char* fEventCutName[eEventCuts_N] = {""};          // event cut name, with default ordering
+  TString fEventCutName[eEventCuts_N] = {""};              // event cut name, with default ordering defined by ordering in enum eEventCuts
   TExMap* fEventCutCounterMap[2] = {NULL};                 // map (key, value) = (enum eEventCuts, ordered bin number)
   TExMap* fEventCutCounterMapInverse[2] = {NULL};          // inverse of above fEventCutCounterMap, i.e. (ordered bin number, enum eEventCuts)
   Int_t fEventCutCounterBinNumber[2] = {1, 1};             // bin counter for set bin labels in fEventCutCounterHist
@@ -126,6 +131,7 @@ struct ParticleHistograms {
   Bool_t fFillParticleHistograms2D = kTRUE;                                     // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled
   Bool_t fBookParticleHistograms2D[eParticleHistograms2D_N] = {kTRUE};          // book or not this 2D histogram, see configurable cfBookParticleHistograms2D
   Double_t fParticleHistogramsBins2D[eParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
+  TString fParticleHistogramsName2D[eParticleHistograms2D_N] = {""};            // name of particle histogram 2D, determined programatically from two 1D
 } ph;                                                                           // "ph" labels an instance of group of histograms "ParticleHistograms"
 
 // *) Particle cuts:
@@ -136,7 +142,7 @@ struct ParticleCuts {
   Bool_t fUseParticleCutCounterAbsolute = kFALSE;             // profile and save how many times each particle cut counter triggered (absolute). Use with care, as this is computationally heavy
   Bool_t fUseParticleCutCounterSequential = kFALSE;           // profile and save how many times each particle cut counter triggered (sequential). Use with care, as this is computationally heavy
   Bool_t fParticleCutCounterBinLabelingIsDone = kFALSE;       // this flag ensures that ordered labeling of bins, to resemble ordering of cut implementation, is done only once.
-  const char* fParticleCutName[eParticleCuts_N] = {""};       // particle cut name, as used in bin labels, etc.
+  TString fParticleCutName[eParticleCuts_N] = {""};           // particle cut name, as used in bin labels, etc.
   TExMap* fParticleCutCounterMap[2] = {NULL};                 // map (key, value) = (enum eParticleCuts, ordered bin number)
   TExMap* fParticleCutCounterMapInverse[2] = {NULL};          // inverse of above fParticleCutCounterMap, i.e. (ordered bin number, enum eParticleCuts)
   Int_t fParticleCutCounterBinNumber[2] = {1, 1};             // bin counter for set bin labels in fParticleCutCounterHist

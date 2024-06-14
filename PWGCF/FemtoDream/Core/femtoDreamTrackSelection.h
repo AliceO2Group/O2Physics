@@ -154,7 +154,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   /// \tparam tracktype Type of track (track, positive child, negative child) for proper naming of the folders for QA
   /// \tparam T Data type of the track
   /// \param track Track
-  template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::TrackType tracktype, typename T>
+  template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::TrackType tracktype, bool isHF = false, typename T>
   void fillQA(T const& track);
 
   /// Helper function to obtain the name of a given selection criterion for consistent naming of the configurables
@@ -371,18 +371,7 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* QAregistry, HistogramRegi
 template <typename T>
 auto FemtoDreamTrackSelection::getNsigmaTPC(T const& track, o2::track::PID pid)
 {
-  if (pid == o2::track::PID::Electron)
-    return track.tpcNSigmaEl();
-  else if (pid == o2::track::PID::Pion)
-    return track.tpcNSigmaPi();
-  else if (pid == o2::track::PID::Kaon)
-    return track.tpcNSigmaKa();
-  else if (pid == o2::track::PID::Proton)
-    return track.tpcNSigmaPr();
-  else if (pid == o2::track::PID::Deuteron)
-    return track.tpcNSigmaDe();
-  else
-    return 999.f;
+  return o2::aod::pidutils::tpcNSigma(pid, track);
 }
 
 template <typename T>
@@ -392,18 +381,7 @@ auto FemtoDreamTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pid)
   if (!track.hasTOF()) {
     return 999.f;
   }
-  if (pid == o2::track::PID::Electron)
-    return track.tofNSigmaEl();
-  else if (pid == o2::track::PID::Pion)
-    return track.tofNSigmaPi();
-  else if (pid == o2::track::PID::Kaon)
-    return track.tofNSigmaKa();
-  else if (pid == o2::track::PID::Proton)
-    return track.tofNSigmaPr();
-  else if (pid == o2::track::PID::Deuteron)
-    return track.tofNSigmaDe();
-  else
-    return 999.f;
+  return o2::aod::pidutils::tofNSigma(pid, track);
 }
 
 template <typename T>
@@ -568,7 +546,7 @@ std::array<cutContainerType, 2> FemtoDreamTrackSelection::getCutContainer(T cons
   return {output, outputPID};
 }
 
-template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::TrackType tracktype, typename T>
+template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::TrackType tracktype, bool isHF, typename T>
 void FemtoDreamTrackSelection::fillQA(T const& track)
 {
   if (mQAHistogramRegistry) {
@@ -587,21 +565,25 @@ void FemtoDreamTrackSelection::fillQA(T const& track)
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/hDCAz"), track.pt(), track.dcaZ());
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/hDCA"), track.pt(), std::sqrt(pow(track.dcaXY(), 2.) + pow(track.dcaZ(), 2.)));
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/hTPCdEdX"), track.p(), track.tpcSignal());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTPC_el"), track.p(), track.tpcNSigmaEl());
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTPC_pi"), track.p(), track.tpcNSigmaPi());
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTPC_K"), track.p(), track.tpcNSigmaKa());
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTPC_p"), track.p(), track.tpcNSigmaPr());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTPC_d"), track.p(), track.tpcNSigmaDe());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTOF_el"), track.p(), track.tofNSigmaEl());
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTOF_pi"), track.p(), track.tofNSigmaPi());
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTOF_K"), track.p(), track.tofNSigmaKa());
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTOF_p"), track.p(), track.tofNSigmaPr());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTOF_d"), track.p(), track.tofNSigmaDe());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaComb_el"), track.p(), std::sqrt(track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl()));
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaComb_pi"), track.p(), std::sqrt(track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi()));
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaComb_K"), track.p(), std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa()));
     mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaComb_p"), track.p(), std::sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr()));
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaComb_d"), track.p(), std::sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + track.tofNSigmaDe() * track.tofNSigmaDe()));
+
+    if constexpr (!isHF) {
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaComb_el"), track.p(), std::sqrt(track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl()));
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTOF_el"), track.p(), track.tofNSigmaEl());
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTPC_el"), track.p(), track.tpcNSigmaEl());
+
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTPC_d"), track.p(), track.tpcNSigmaDe());
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaComb_d"), track.p(), std::sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + track.tofNSigmaDe() * track.tofNSigmaDe()));
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/nSigmaTOF_d"), track.p(), track.tofNSigmaDe());
+    }
   }
 }
 

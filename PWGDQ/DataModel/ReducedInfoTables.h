@@ -41,6 +41,16 @@ namespace reducedevent
 
 // basic event information
 DECLARE_SOA_BITMAP_COLUMN(Tag, tag, 64);       //!  Bit-field for storing event information (e.g. high level info, cut decisions)
+DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);     //!  MC event position X
+DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);     //!  MC event position Y
+DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);     //!  MC event position Z
+DECLARE_SOA_COLUMN(NTPCpileupContribA, nTPCpileupContribA, int); //!  Number of TPC pileup tracks on A side
+DECLARE_SOA_COLUMN(NTPCpileupContribC, nTPCpileupContribC, int); //!  Number of TPC pileup tracks on C side
+DECLARE_SOA_COLUMN(NTPCpileupZA, nTPCpileupZA, float);           //!  Median Z position of pileup tracks on A side
+DECLARE_SOA_COLUMN(NTPCpileupZC, nTPCpileupZC, float);           //!  Median Z position of pileup tracks on C side
+DECLARE_SOA_COLUMN(NTPCtracksInPast, nTPCtracksInPast, int);     //!  Number of TPC tracks in the past events (configurable, but e.g. one drift time)
+DECLARE_SOA_COLUMN(NTPCtracksInFuture, nTPCtracksInFuture, int); //!  Number of TPC tracks in the future events (configurable, but e.g. one drift time)
+
 DECLARE_SOA_COLUMN(Q1X0A, q1x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 1 and power 1)
 DECLARE_SOA_COLUMN(Q1Y0A, q1y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 1 and power 1)
 DECLARE_SOA_COLUMN(Q1X0B, q1x0b, float);       //!  Q-vector x component, with event eta gap B (harmonic 1 and power 1)
@@ -80,9 +90,6 @@ DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float); //!  Ref Flow correlator <2>
 DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float); //!  Ref Flow correlator <4>
 DECLARE_SOA_COLUMN(M11REF, m11ref, float);     //!  Weighted multiplicity of <<2>> for reference flow
 DECLARE_SOA_COLUMN(M1111REF, m1111ref, float); //!  Weighted multiplicity of <<4>> for reference flow
-DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);     //!
-DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);     //!
-DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);     //!
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE(ReducedEvents, "AOD", "REDUCEDEVENT", //!   Main event information table
@@ -96,6 +103,16 @@ DECLARE_SOA_TABLE(ReducedEventsExtended, "AOD", "REEXTENDED", //!  Extended even
                   mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
                   mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV,
                   cent::CentFT0C);
+
+DECLARE_SOA_TABLE(ReducedEventsMultPV, "AOD", "REMULTPV", //!  Multiplicity information for primary vertex
+                  mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
+                  mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
+                  evsel::NumTracksInTimeRange);
+
+DECLARE_SOA_TABLE(ReducedEventsMultAll, "AOD", "REMULTALL", //!  Multiplicity information for all tracks in the event
+                  mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
+                  reducedevent::NTPCpileupContribA, reducedevent::NTPCpileupContribC, reducedevent::NTPCpileupZA, reducedevent::NTPCpileupZC,
+                  reducedevent::NTPCtracksInPast, reducedevent::NTPCtracksInFuture);
 
 DECLARE_SOA_TABLE(ReducedEventsVtxCov, "AOD", "REVTXCOV", //!    Event vertex covariance matrix
                   collision::CovXX, collision::CovXY, collision::CovXZ,
@@ -131,6 +148,8 @@ DECLARE_SOA_TABLE(ReducedMCEvents, "AOD", "REDUCEDMCEVENT", //!   Event level MC
 using ReducedEvent = ReducedEvents::iterator;
 using ReducedEventExtended = ReducedEventsExtended::iterator;
 using ReducedEventVtxCov = ReducedEventsVtxCov::iterator;
+using ReducedEventMultPV = ReducedEventsMultPV::iterator;
+using ReducedEventMultAll = ReducedEventsMultAll::iterator;
 using ReducedEventQvector = ReducedEventsQvector::iterator;
 using ReducedEventQvectorExtra = ReducedEventsQvectorExtra::iterator;
 using ReducedEventQvectorCentr = ReducedEventsQvectorCentr::iterator;
@@ -683,7 +702,6 @@ DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
                   reducedpair::CollisionId, collision::PosX, collision::PosY, collision::PosZ);
 
 DECLARE_SOA_TABLE(DielectronsAll, "AOD", "RTDIELECTRONALL", //!
-                  reducedpair::ReducedEventId,
                   reducedpair::Mass,
                   reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
                   reducedpair::FilterMap,

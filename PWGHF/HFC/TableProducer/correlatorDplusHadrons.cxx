@@ -78,7 +78,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   // filter on selection of Dplus meson and decay channel Dplus->KPiPi
   Filter dplusFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) != static_cast<uint8_t>(0)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
-  void processDplusSelectionData(aod::Collision const& collision,
+  void processDplusSelectionData(aod::Collision const& /*collision*/,
                                  CandidatesDplusData const& candidates)
   {
     bool isDplusFound = 0;
@@ -95,7 +95,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadronsDplusSelection, processDplusSelectionData, "Process Dplus Selection Data", false);
 
-  void processDplusSelectionMcRec(aod::Collision const& collision,
+  void processDplusSelectionMcRec(aod::Collision const& /*collision*/,
                                   CandidatesDplusMcRec const& candidates)
   {
     bool isDplusFound = 0;
@@ -141,6 +141,8 @@ struct HfCorrelatorDplusHadrons {
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for efficiency"};
+  Configurable<std::vector<float>> efficiencyD{"efficiencyD", {1., 1., 1., 1., 1., 1.}, "efficiency values for D+ meson"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
@@ -151,7 +153,6 @@ struct HfCorrelatorDplusHadrons {
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson}, "Efficiency values for Dplus meson"};
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
   ConfigurableAxis binsMultiplicityMc{"binsMultiplicityMc", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
@@ -254,9 +255,10 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(hfHelper.yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptTrackMax) {
           continue;
         }
+        int effBinD = o2::analysis::findBin(binsPtEfficiencyD, candidate.pt());
         double efficiencyWeight = 1.;
         if (applyEfficiency) {
-          efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate.pt()));
+          efficiencyWeight = 1. / efficiencyD->at(effBinD);
         }
         // fill invariant mass plots and generic info from all Dplus candidates
         registry.fill(HIST("hMassDplus_2D"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), efficiencyWeight);
@@ -327,9 +329,10 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(hfHelper.yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptTrackMax) {
           continue;
         }
+        int effBinD = o2::analysis::findBin(binsPtEfficiencyD, candidate.pt());
         double efficiencyWeight = 1.;
         if (applyEfficiency) {
-          efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate.pt()));
+          efficiencyWeight = 1. / efficiencyD->at(effBinD);
         }
 
         if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {

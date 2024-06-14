@@ -34,11 +34,11 @@ bool IsPhysicalPrimary(TTrack const& mctrack)
 }
 //_______________________________________________________________________
 template <typename TCollision, typename T, typename TMCs>
-bool IsFromWD(TCollision const&, T const& mctrack, TMCs const& mcTracks)
+int IsFromWD(TCollision const&, T const& mctrack, TMCs const& mcTracks)
 {
   // is this particle from weak decay?
   if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
-    return false;
+    return -1;
   }
 
   if (mctrack.has_mothers()) {
@@ -50,7 +50,7 @@ bool IsFromWD(TCollision const&, T const& mctrack, TMCs const& mcTracks)
         int pdg_mother = mp.pdgCode();
         if (abs(pdg_mother) == 310 || abs(pdg_mother) == 130 || abs(pdg_mother) == 3122) {
           // LOGF(info, "mctrack.globalIndex() = %d, mp.globalIndex() = %d , pdg_mother = %d", mctrack.globalIndex(), mp.globalIndex(), pdg_mother);
-          return true;
+          return motherid;
         }
         if (mp.has_mothers()) {
           motherid = mp.mothersIds()[0]; // first mother index
@@ -60,9 +60,9 @@ bool IsFromWD(TCollision const&, T const& mctrack, TMCs const& mcTracks)
       }
     }
   } else {
-    return false;
+    return -1;
   }
-  return false;
+  return -1;
 }
 //_______________________________________________________________________
 template <typename T, typename TMCs>
@@ -218,7 +218,58 @@ int FindCommonMotherFrom3Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, 
 }
 //_______________________________________________________________________
 template <typename TMCParticle, typename TMCParticles, typename TTargetPDGs>
-bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticles, TTargetPDGs const& target_pdgs, const float ymin, const float ymax, const float phimin, const float phimax)
+bool IsInAcceptanceNonDerived(TMCParticle const& mcparticle, TMCParticles const& mcparticles, TTargetPDGs target_pdgs, const float ymin, const float ymax, const float phimin, const float phimax)
+{
+  // contents in vector of daughter ID is different.
+
+  if (mcparticle.y() < ymin || ymax < mcparticle.y()) {
+    return false; // mother rapidity is out of acceptance
+  }
+  if (mcparticle.phi() < phimin || phimax < mcparticle.phi()) {
+    return false; // mother rapidity is out of acceptance
+  }
+  // auto daughtersIds = mcparticle.daughtersIds(); // always size = 2. first and last index. one should run loop from the first index to the last index.
+  int ndau = mcparticle.daughtersIds()[1] - mcparticle.daughtersIds()[0] + 1;
+
+  if (ndau != static_cast<int>(target_pdgs.size())) {
+    return false;
+  }
+  std::vector<int> pdgs;
+  pdgs.reserve(target_pdgs.size());
+  for (int daughterId = mcparticle.daughtersIds()[0]; daughterId <= mcparticle.daughtersIds()[1]; ++daughterId) {
+    if (daughterId < 0) {
+      pdgs.clear();
+      pdgs.shrink_to_fit();
+      return false;
+    }
+    auto daughter = mcparticles.iteratorAt(daughterId);
+    pdgs.emplace_back(daughter.pdgCode());
+
+    if (daughter.eta() < ymin || ymax < daughter.eta()) {
+      pdgs.clear();
+      pdgs.shrink_to_fit();
+      return false;
+    }
+    if (daughter.phi() < phimin || phimax < daughter.phi()) {
+      pdgs.clear();
+      pdgs.shrink_to_fit();
+      return false;
+    }
+  } // end of daughter loop
+
+  sort(target_pdgs.begin(), target_pdgs.end());
+  sort(pdgs.begin(), pdgs.end());
+  bool is_equal = std::equal(pdgs.cbegin(), pdgs.cend(), target_pdgs.cbegin());
+  pdgs.clear();
+  pdgs.shrink_to_fit();
+  if (!is_equal) {
+    return false; // garantee daughter is in acceptance.
+  }
+  return true;
+}
+//_______________________________________________________________________
+template <typename TMCParticle, typename TMCParticles, typename TTargetPDGs>
+bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticles, TTargetPDGs target_pdgs, const float ymin, const float ymax, const float phimin, const float phimax)
 {
   if (mcparticle.y() < ymin || ymax < mcparticle.y()) {
     return false; // mother rapidity is out of acceptance
@@ -226,9 +277,8 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
   if (mcparticle.phi() < phimin || phimax < mcparticle.phi()) {
     return false; // mother rapidity is out of acceptance
   }
-  auto daughtersIds = mcparticle.daughtersIds(); // always size = 2. first and last index. one should run loop from the first index to the last index.
+  auto daughtersIds = mcparticle.daughtersIds();
 
-  // if (daughtersIds.size() != static_cast<int>(target_pdgs.size())) {
   if (daughtersIds.size() != target_pdgs.size()) {
     return false;
   }
@@ -255,6 +305,7 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
     }
   } // end of daughter loop
 
+  sort(target_pdgs.begin(), target_pdgs.end());
   sort(pdgs.begin(), pdgs.end());
   bool is_equal = std::equal(pdgs.cbegin(), pdgs.cend(), target_pdgs.cbegin());
   pdgs.clear();

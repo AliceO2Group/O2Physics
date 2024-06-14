@@ -58,6 +58,17 @@ DECLARE_SOA_TABLE_VERSIONED(StraRawCents_003, "AOD", "STRARAWCENTS", 3,     //! 
                             mult::MultAllTracksITSTPC,                      // ITSTPC track multiplicities, all, no eta cut
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC);
+DECLARE_SOA_TABLE_VERSIONED(StraRawCents_004, "AOD", "STRARAWCENTS", 4,     //! debug information
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                            mult::MultNTracksPVeta1,                        // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors,                  // number of PV contribs total
+                            mult::MultNTracksGlobal,                        // global track multiplicities
+                            mult::MultNTracksITSTPC,                        // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,                     // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,                      // ITSTPC track multiplicities, all, no eta cut
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
+                            mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                            evsel::NumTracksInTimeRange); // add occupancy as extra
 DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selection: sel8
                   evsel::Sel8, evsel::Selection);
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
@@ -68,12 +79,15 @@ DECLARE_SOA_TABLE(StraFT0MQVs, "AOD", "STRAFT0MQVS", //! t0m Qvec
                   qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::SumAmplFT0M);
 DECLARE_SOA_TABLE(StraFV0AQVs, "AOD", "STRAFV0AQVS", //! v0a Qvec
                   qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::SumAmplFV0A);
+DECLARE_SOA_TABLE(StraTPCQVs, "AOD", "STRATPCQVS", //! tpc Qvec
+                  qvec::QvecBNegRe, qvec::QvecBNegIm, epcalibrationtable::QTPCL,
+                  qvec::QvecBPosRe, qvec::QvecBPosIm, epcalibrationtable::QTPCR);
 DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to compute t0c Qvec
                   epcalibrationtable::TriggerEventEP);
 DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
 
-using StraRawCents = StraRawCents_003;
+using StraRawCents = StraRawCents_004;
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;
 
@@ -132,6 +146,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTRD, hasTRD, //! Flag to check if track has a TRD 
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TRD; });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF, //! Flag to check if track has a TOF measurement
                            [](uint8_t detectorMap) -> bool { return detectorMap & o2::aod::track::TOF; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasITSTracker, hasITSTracker, //! Flag to check if track is from ITS tracker
+                           [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl > -1e-3f) : false; });
+DECLARE_SOA_DYNAMIC_COLUMN(HasITSAfterburner, hasITSAfterburner, //! Flag to check if track is from ITS AB
+                           [](uint8_t detectorMap, float itsChi2PerNcl) -> bool { return (detectorMap & o2::aod::track::ITS) ? (itsChi2PerNcl < -1e-3f) : false; });
 } // namespace dautrack
 
 DECLARE_SOA_TABLE(DauTrackExtras_000, "AOD", "DAUTRACKEXTRA", //! detector properties of decay daughters
@@ -144,7 +162,9 @@ DECLARE_SOA_TABLE(DauTrackExtras_000, "AOD", "DAUTRACKEXTRA", //! detector prope
                   dautrack::HasITS<dautrack::DetectorMap>,
                   dautrack::HasTPC<dautrack::DetectorMap>,
                   dautrack::HasTRD<dautrack::DetectorMap>,
-                  dautrack::HasTOF<dautrack::DetectorMap>);
+                  dautrack::HasTOF<dautrack::DetectorMap>,
+                  dautrack::HasITSTracker<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>,
+                  dautrack::HasITSAfterburner<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>);
 
 DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_001, "AOD", "DAUTRACKEXTRA", 1, //! detector properties of decay daughters
                             dautrack::ITSChi2PerNcl,
@@ -157,7 +177,9 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackExtras_001, "AOD", "DAUTRACKEXTRA", 1, //! d
                             dautrack::HasITS<dautrack::DetectorMap>,
                             dautrack::HasTPC<dautrack::DetectorMap>,
                             dautrack::HasTRD<dautrack::DetectorMap>,
-                            dautrack::HasTOF<dautrack::DetectorMap>);
+                            dautrack::HasTOF<dautrack::DetectorMap>,
+                            dautrack::HasITSTracker<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>,
+                            dautrack::HasITSAfterburner<dautrack::DetectorMap, dautrack::ITSChi2PerNcl>);
 
 DECLARE_SOA_TABLE(DauTrackMCIds, "AOD", "DAUTRACKMCID", // index table when using AO2Ds
                   dautrack::ParticleMCId);
