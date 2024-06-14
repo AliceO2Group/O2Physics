@@ -355,14 +355,14 @@ struct AnalysisMuonSelection {
 
     // Configure histogram classes for each track cut;
     // Add histogram classes for each track cut and for each requested MC signal (reconstructed tracks with MC truth)
-    TString histClasses = "Muon_BeforeCuts;";
+    TString histClasses = "TrackMuon_BeforeCuts;";
     for (auto& cut : fTrackCuts) {
-      TString nameStr = Form("Muon_%s", cut.GetName());
+      TString nameStr = Form("TrackMuon_%s", cut.GetName());
       fHistNamesReco.push_back(nameStr);
       histClasses += Form("%s;", nameStr.Data());
       std::vector<TString> mcnames;
       for (auto& sig : fMCSignals) {
-        TString nameStr2 = Form("Muon_%s_%s", cut.GetName(), sig.GetName());
+        TString nameStr2 = Form("TrackMuon_%s_%s", cut.GetName(), sig.GetName());
         printf("Adding my histogram class %s\n", nameStr2.Data());
         mcnames.push_back(nameStr2);
         histClasses += Form("%s;", nameStr2.Data());
@@ -410,7 +410,7 @@ struct AnalysisMuonSelection {
       }
 
       if (fConfigQA) {
-        fHistMan->FillHistClass("Muon_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("TrackMuon_BeforeCuts", VarManager::fgValues);
       }
 
       // compute the cut selections and publish the filter bit map
@@ -497,8 +497,8 @@ struct AnalysisSameEventPairing {
   Filter filterMuonSelected = aod::dqanalysisflags::isMuonSelected > 0;
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "", "Comma separated list of barrel track cuts"};
-  Configurable<std::string> fConfigMCRecSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
-  Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
+  Configurable<std::string> fConfigMCRecSignals{"cfgMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
+  Configurable<std::string> fConfigMCGenSignals{"cfgMCGenSignals", "", "Comma separated list of MC signals (generated)"};
   Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
   Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
   Configurable<bool> fUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};

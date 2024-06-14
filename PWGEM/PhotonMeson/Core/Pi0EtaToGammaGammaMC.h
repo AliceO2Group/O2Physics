@@ -43,10 +43,7 @@
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/PairCut.h"
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
-#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
-#include "PWGEM/PhotonMeson/Utils/EMTrack.h"
+#include "PWGEM/PhotonMeson/Core/EMEventCut.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -89,11 +86,6 @@ struct Pi0EtaToGammaGammaMC {
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
   // Configurable<bool> cfgDoFlow{"cfgDoFlow", false, "flag to analyze vn"};
   Configurable<float> maxY_rec{"maxY_rec", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
-  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
-  ConfigurableAxis ConfEPBins{"ConfEPBins", {VARIABLE_WIDTH, -M_PI / 2, -M_PI / 4, 0.0f, +M_PI / 4, +M_PI / 2}, "Mixing bins - event plane angle"};
   Configurable<std::string> fd_k0s_to_pi0{"fd_k0s_pi0", "1.0", "feed down correction to pi0"};
 
   EMEventCut fEMEventCut;
@@ -413,10 +405,10 @@ struct Pi0EtaToGammaGammaMC {
   template <typename TCollisions, typename TPhotons1, typename TPhotons2, typename TSubInfos1, typename TSubInfos2, typename TPreslice1, typename TPreslice2, typename TCut1, typename TCut2, typename TTracksMatchedWithEMC, typename TTracksMatchedWithPHOS, typename TMCCollisions, typename TMCParticles>
   void runTruePairing(TCollisions const& collisions,
                       TPhotons1 const& photons1, TPhotons2 const& photons2,
-                      TSubInfos1 const& subinfos1, TSubInfos2 const& subinfos2,
+                      TSubInfos1 const& /*subinfos1*/, TSubInfos2 const& /*subinfos2*/,
                       TPreslice1 const& perCollision1, TPreslice2 const& perCollision2,
                       TCut1 const& cut1, TCut2 const& cut2,
-                      TTracksMatchedWithEMC const& tracks_emc, TTracksMatchedWithPHOS const& tracks_phos,
+                      TTracksMatchedWithEMC const& /*tracks_emc*/, TTracksMatchedWithPHOS const& /*tracks_phos*/,
                       TMCCollisions const& mccollisions, TMCParticles const& mcparticles)
   {
     for (auto& collision : collisions) {

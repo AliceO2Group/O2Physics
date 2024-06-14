@@ -42,6 +42,45 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
+struct MetaDataInfo {
+  std::string aodmetadataDataType;
+  std::string aodmetadataRecoPassName;
+  std::string aodmetadataRun;
+  std::string aodmetadataAnchorPassName;
+  std::string aodmetadataAnchorProduction;
+
+  void initMetadata(ConfigContext const& cfgc)
+  {
+    if (cfgc.options().hasOption("aod-metadata-DataType")) {
+      aodmetadataDataType = cfgc.options().get<std::string>("aod-metadata-DataType");
+      LOG(info) << "Setting metadata DataType to '" << aodmetadataDataType << "'";
+    }
+    if (cfgc.options().hasOption("aod-metadata-RecoPassName")) {
+      aodmetadataRecoPassName = cfgc.options().get<std::string>("aod-metadata-RecoPassName");
+      LOG(info) << "Setting metadata RecoPassName to '" << aodmetadataRecoPassName << "'";
+    }
+    if (cfgc.options().hasOption("aod-metadata-Run")) {
+      aodmetadataRun = cfgc.options().get<std::string>("aod-metadata-Run");
+      LOG(info) << "Setting metadata Run to '" << aodmetadataRun << "'";
+    }
+    if (cfgc.options().hasOption("aod-metadata-AnchorPassName")) {
+      aodmetadataAnchorPassName = cfgc.options().get<std::string>("aod-metadata-AnchorPassName");
+      LOG(info) << "Setting metadata AnchorPassName to '" << aodmetadataAnchorPassName << "'";
+    }
+    if (cfgc.options().hasOption("aod-metadata-AnchorProduction")) {
+      aodmetadataAnchorProduction = cfgc.options().get<std::string>("aod-metadata-AnchorProduction");
+      LOG(info) << "Setting metadata AnchorProduction to '" << aodmetadataAnchorProduction << "'";
+    }
+  }
+
+  bool isRun3() const
+  {
+    const bool b = aodmetadataDataType == "3";
+    LOG(info) << "From metadata this data is from " << (b ? "Run 3" : "Run 2");
+    return b;
+  }
+} metadataInfo;
+
 // Part 1 event time definition
 
 /// Selection criteria for tracks used for TOF event time
@@ -80,6 +119,27 @@ struct tofSignal {
 
   void init(o2::framework::InitContext& initContext)
   {
+    // Checking that the table is requested in the workflow and enabling it
+    enableTable = isTableRequiredInWorkflow(initContext, "TOFSignal");
+    if (enableTable) {
+      LOG(info) << "Table TOFSignal enabled!";
+    }
+    enableTableFlags = isTableRequiredInWorkflow(initContext, "pidTOFFlags");
+    if (enableTableFlags) {
+      LOG(info) << "Table pidTOFFlags enabled!";
+    }
+
+    // Checking that the table is requested in the workflow and enabling it
+    if (!enableTable && !enableTableFlags && !doprocessRun2 && !doprocessRun3) {
+      LOG(info) << "No table or process is enabled. Disabling task";
+      return;
+    }
+    if (!metadataInfo.isRun3()) {
+      doprocessRun2.value = true;
+    } else {
+      doprocessRun3.value = false;
+    }
+
     if (doprocessRun2 && doprocessRun3) {
       LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
     }
@@ -87,17 +147,6 @@ struct tofSignal {
       LOG(fatal) << "Neither processRun2 nor processRun3 are enabled. Pick one of the two";
     }
 
-    // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFSignal");
-    enableTable = true;
-    if (enableTable) {
-      LOG(info) << "Table TOFSignal enabled!";
-    }
-    enableTableFlags = isTableRequiredInWorkflow(initContext, "pidTOFFlags");
-    enableTableFlags = true;
-    if (enableTableFlags) {
-      LOG(info) << "Table pidTOFFlags enabled!";
-    }
     trackDistanceForGoodMatch = distanceForGoodMatch;
     trackDistanceForGoodMatchLowMult = distanceForGoodMatchLowMult;
     multiplicityThreshold = multThreshold;
@@ -110,6 +159,9 @@ struct tofSignal {
       histos.add("goodForPIDFlags", "goodForPIDFlags", kTH1D, {{3, 0, 3, "flags"}});
     }
   }
+
+  void process(aod::BCs const&) {}
+
   void processRun3(Run3Trks const& tracks, Run3Cols const& collisions)
   {
     if (!enableTable) {
@@ -135,7 +187,7 @@ struct tofSignal {
       tableFlags(b);
     }
   }
-  PROCESS_SWITCH(tofSignal, processRun3, "Process Run3 data i.e. input is TrackIU", true);
+  PROCESS_SWITCH(tofSignal, processRun3, "Process Run3 data i.e. input is TrackIU", false);
 
   using TrksRun2 = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
   void processRun2(TrksRun2 const& tracks)
@@ -216,6 +268,31 @@ struct tofEventTime {
 
   void init(o2::framework::InitContext& initContext)
   {
+    // Checking that the table is requested in the workflow and enabling it
+    enableTable = isTableRequiredInWorkflow(initContext, "TOFEvTime");
+
+    if (!enableTable) {
+      LOG(info) << "Table for TOF Event time (TOFEvTime) is not required, disabling it";
+      doprocessRun2.value = false;
+      doprocessNoFT0.value = false;
+      doprocessFT0.value = false;
+      doprocessOnlyFT0.value = false;
+      return;
+    }
+    LOG(info) << "Table TOFEvTime enabled!";
+
+    enableTableTOFOnly = isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
+    if (enableTableTOFOnly) {
+      LOG(info) << "Table EvTimeTOFOnly enabled!";
+    }
+
+    if (metadataInfo.isRun3()) {
+      doprocessRun2.value = true;
+      doprocessNoFT0.value = false;
+      doprocessFT0.value = false;
+      doprocessOnlyFT0.value = false;
+    }
+
     if (inheritFromBaseTask.value) {
       if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
         LOG(fatal) << "Could not get ccdb-url from tof-signal task";
@@ -248,21 +325,6 @@ struct tofEventTime {
     }
     if (nEnabled > 1) {
       LOGF(fatal, "Cannot enable more process functions at the same time. Please choose one.");
-    }
-    // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFEvTime");
-    enableTable = true;
-
-    if (!enableTable) {
-      LOG(info) << "Table for TOF Event time (TOFEvTime) is not required, disabling it";
-      return;
-    }
-    LOG(info) << "Table TOFEvTime enabled!";
-
-    enableTableTOFOnly = isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
-    enableTableTOFOnly = true;
-    if (enableTableTOFOnly) {
-      LOG(info) << "Table EvTimeTOFOnly enabled!";
     }
 
     if (sel8TOFEvTime.value == true) {
@@ -324,6 +386,8 @@ struct tofEventTime {
     o2::tof::eventTimeContainer::setMaxNtracksInSet(maxNtracksInSet.value);
     o2::tof::eventTimeContainer::printConfig();
   }
+
+  void process(aod::BCs const&) {}
 
   ///
   /// Process function to prepare the event for each track on Run 2 data
@@ -413,7 +477,7 @@ struct tofEventTime {
       }
     }
   }
-  PROCESS_SWITCH(tofEventTime, processNoFT0, "Process without FT0", true);
+  PROCESS_SWITCH(tofEventTime, processNoFT0, "Process without FT0", false);
 
   ///
   /// Process function to prepare the event for each track on Run 3 data with the FT0
@@ -633,6 +697,47 @@ struct tofPidMerge {
   std::vector<int> mEnabledParticlesFull; // Vector of enabled PID hypotheses to loop on when making full tables
   void init(o2::framework::InitContext& initContext)
   {
+    // Checking the tables are requested in the workflow and enabling them
+    for (int i = 0; i < nSpecies; i++) {
+      // First checking tiny
+      int f = enableParticle->get(particleNames[i].c_str(), "Enable");
+      enableFlagIfTableRequired(initContext, "pidTOF" + particleNames[i], f);
+      if (f == 1) {
+        mEnabledParticles.push_back(i);
+      }
+
+      // Then checking full tables
+      f = enableParticle->get(particleNames[i].c_str(), "EnableFull");
+      enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[i], f);
+      if (f == 1) {
+        mEnabledParticlesFull.push_back(i);
+      }
+    }
+    if (mEnabledParticlesFull.size() == 0 && mEnabledParticles.size() == 0) {
+      LOG(info) << "No PID tables are required, disabling the task";
+      doprocessData.value = false;
+      return;
+    }
+
+    // Printing enabled tables and enabling QA histograms if needed
+    LOG(info) << "++ Enabled tables:";
+    const AxisSpec pAxis{100, 0, 5, "#it{p} (GeV/#it{c})"};
+    const AxisSpec nSigmaAxis{100, -10, 10, "N_{#sigma}^{TOF}"};
+    for (const int& i : mEnabledParticles) {
+      LOG(info) << "++  pidTOF" << particleNames[i] << " is enabled";
+      if (!enableQaHistograms) {
+        continue;
+      }
+      hnsigma[i] = histos.add<TH2>(Form("nsigma/%s", particleNames[i].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[i].c_str()), kTH2F, {pAxis, nSigmaAxis});
+    }
+    for (const int& i : mEnabledParticlesFull) {
+      LOG(info) << "++  pidTOFFull" << particleNames[i] << " is enabled";
+      if (!enableQaHistograms) {
+        continue;
+      }
+      hnsigmaFull[i] = histos.add<TH2>(Form("nsigmaFull/%s", particleNames[i].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[i].c_str()), kTH2F, {pAxis, nSigmaAxis});
+    }
+
     if (inheritFromBaseTask.value) { // Inheriting from base task
       if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
         LOG(fatal) << "Could not get ccdb-url from tof-signal task";
@@ -661,41 +766,6 @@ struct tofPidMerge {
       if (!getTaskOptionValue(initContext, "tof-event-time", "fatalOnPassNotAvailable", fatalOnPassNotAvailable.value, true)) {
         LOG(fatal) << "Could not get fatalOnPassNotAvailable from tof-event-time task";
       }
-    }
-
-    // Checking the tables are requested in the workflow and enabling them
-    for (int i = 0; i < nSpecies; i++) {
-      // First checking tiny
-      int f = enableParticle->get(particleNames[i].c_str(), "Enable");
-      enableFlagIfTableRequired(initContext, "pidTOF" + particleNames[i], f);
-      if (f == 1) {
-        mEnabledParticles.push_back(i);
-      }
-
-      // Then checking full tables
-      f = enableParticle->get(particleNames[i].c_str(), "EnableFull");
-      enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[i], f);
-      if (f == 1) {
-        mEnabledParticlesFull.push_back(i);
-      }
-    }
-    // Printing enabled tables and enabling QA histograms if needed
-    LOG(info) << "++ Enabled tables:";
-    const AxisSpec pAxis{100, 0, 5, "#it{p} (GeV/#it{c})"};
-    const AxisSpec nSigmaAxis{100, -10, 10, "N_{#sigma}^{TOF}"};
-    for (const int& i : mEnabledParticles) {
-      LOG(info) << "++  pidTOF" << particleNames[i] << " is enabled";
-      if (!enableQaHistograms) {
-        continue;
-      }
-      hnsigma[i] = histos.add<TH2>(Form("nsigma/%s", particleNames[i].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[i].c_str()), kTH2F, {pAxis, nSigmaAxis});
-    }
-    for (const int& i : mEnabledParticlesFull) {
-      LOG(info) << "++  pidTOFFull" << particleNames[i] << " is enabled";
-      if (!enableQaHistograms) {
-        continue;
-      }
-      hnsigmaFull[i] = histos.add<TH2>(Form("nsigmaFull/%s", particleNames[i].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[i].c_str()), kTH2F, {pAxis, nSigmaAxis});
     }
 
     // Getting the parametrization parameters
@@ -925,10 +995,12 @@ struct tofPidMerge {
     }
   }
 
+  void process(aod::BCs const&) {}
+
   using Trks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
-  void process(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processData(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -1100,6 +1172,7 @@ struct tofPidMerge {
       }
     }
   }
+  PROCESS_SWITCH(tofPidMerge, processData, "Process data i.e. input is TrackIU", false);
 };
 
 struct tofPidBeta {
@@ -1121,12 +1194,18 @@ struct tofPidBeta {
   bool enableTableMass = false;
   void init(o2::framework::InitContext& initContext)
   {
-    if (isTableRequiredInWorkflow(initContext, "pidTOFbeta")) {
-      enableTableBeta = true;
+    enableTableBeta = isTableRequiredInWorkflow(initContext, "pidTOFbeta");
+    enableTableMass = isTableRequiredInWorkflow(initContext, "pidTOFmass");
+    if (!enableTableBeta && !enableTableMass && !doprocessRun2 && !doprocessRun3) {
+      LOG(info) << "No table or process is enabled. Disabling task";
+      return;
     }
-    if (isTableRequiredInWorkflow(initContext, "pidTOFmass")) {
-      enableTableMass = true;
+    if (metadataInfo.isRun3()) {
+      doprocessRun3.value = true;
+    } else {
+      doprocessRun2.value = true;
     }
+
     responseBeta.mExpectedResolution = expreso.value;
     if (!enableTOFParams) {
       return;
@@ -1186,11 +1265,36 @@ struct tofPidBeta {
     mRespParamsV3.print();
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  void process(aod::BCs const&) {}
+
+  using TrksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  o2::pid::tof::Beta<TrksRun2::iterator> responseBetaRun2;
+  void processRun2(TrksRun2 const& tracks)
+  {
+    if (!enableTableBeta && !enableTableMass) {
+      return;
+    }
+    float beta = 0.f;
+    tablePIDBeta.reserve(tracks.size());
+    for (auto const& trk : tracks) {
+      beta = responseBetaRun2.GetBeta(trk);
+      if (enableTableBeta) {
+        tablePIDBeta(beta, responseBetaRun2.GetExpectedSigma(trk));
+      }
+      if (enableTableMass) {
+        if (enableTOFParams) {
+          tablePIDTOFMass(o2::pid::tof::TOFMass<TrksRun2::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+        } else {
+          tablePIDTOFMass(o2::pid::tof::TOFMass<TrksRun2::iterator>::GetTOFMass(trk, beta));
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(tofPidBeta, processRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", false);
+
+  using Trks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   o2::pid::tof::Beta<Trks::iterator> responseBeta;
-  template <o2::track::PID::ID pid>
-  using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
-  void process(Trks const& tracks)
+  void processRun3(Trks const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
       return;
@@ -1212,10 +1316,13 @@ struct tofPidBeta {
       }
     }
   }
+  PROCESS_SWITCH(tofPidBeta, processRun3, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  // Parse the metadata
+  metadataInfo.initMetadata(cfgc);
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc)};
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
   workflow.push_back(adaptAnalysisTask<tofPidMerge>(cfgc));

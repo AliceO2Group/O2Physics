@@ -302,12 +302,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   // 2-prong signals
   if (!nameStr.compare("dielectron")) {
     MCProng prong(1, {11}, {true}, {false}, {0}, {0}, {false});
-    signal = new MCSignal("dielectron", "Electron pair", {prong, prong}, {-1, -1});
+    signal = new MCSignal(name, "Electron pair", {prong, prong}, {-1, -1});
     return signal;
   }
   if (!nameStr.compare("dimuon")) {
     MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});
-    signal = new MCSignal("dielectron", "Electron pair", {prong, prong}, {-1, -1});
+    signal = new MCSignal(name, "Muon pair", {prong, prong}, {-1, -1});
     return signal;
   }
   if (!nameStr.compare("electronMuonPair")) {
@@ -501,7 +501,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eFromPromptHc")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "Electrons from open charmed hadron decays", {prong}, {-1});
+    signal = new MCSignal(name, "Electrons from open charmed hadron decays without beauty in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromHbtoHc")) {
