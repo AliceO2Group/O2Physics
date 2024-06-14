@@ -187,14 +187,11 @@ struct HfCandidateSelectorXicToXiPiPi {
       int statusXicToXiPiPi = 0;
       auto ptCandXic = hfCandXic.pt();
 
-      // check if flagged as Ξc± → Ξ∓ π± π± 
-      if (!TESTBIT(hfCandXic.hfflag(), hf_cand_xictoxipipi::DecayType::XicToXiPiPi)) {
-        hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 1, ptCandXic);
-        }
-        continue;
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 1, ptCandXic);
       }
+
+      // No hfFlag -> by default skim selected
       SETBIT(statusXicToXiPiPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusXicToXiPiPi = 1
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandXic);

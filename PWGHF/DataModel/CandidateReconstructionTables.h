@@ -1379,7 +1379,6 @@ DECLARE_SOA_TABLE(HfCandXicBase, "AOD", "HFCANDXICBASE",
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
-                  hf_track_index::HFflag,
                   // cascade specific columns
                   hf_cand_xictoxipipi::XDecayVtxXi, hf_cand_xictoxipipi::YDecayVtxXi, hf_cand_xictoxipipi::ZDecayVtxXi,
                   hf_cand_xictoxipipi::XDecayVtxLambda, hf_cand_xictoxipipi::YDecayVtxLambda, hf_cand_xictoxipipi::ZDecayVtxLambda,

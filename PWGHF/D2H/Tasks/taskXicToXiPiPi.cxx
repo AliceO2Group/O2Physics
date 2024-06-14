@@ -85,12 +85,12 @@ struct HfTaskXicToXiPiPi {
     registry.add("hPtGenSig", "#Xi^{#plus}_{c} candidates (gen+rec);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtRecSig", "#Xi^{#plus}_{c} candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
     registry.add("hPtRecBg", "#Xi^{#plus}_{c} candidates (unmatched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
-    registry.add("hPtProng0RecSig", "#Xi^{#plus}_{c} candidates (matched);prong 0 (#Xi^{#mp}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 30.}, axisPt}});
-    registry.add("hPtProng0RecBg", "#Xi^{#plus}_{c} candidates (unmatched);prong 0 (#Xi^{#mp}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 30.}, axisPt}});
-    registry.add("hPtProng1RecSig", "#Xi^{#plus}_{c} candidates (matched);prong 1 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
-    registry.add("hPtProng1RecBg", "#Xi^{#plus}_{c} candidates (unmatched);prong 1 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
-    registry.add("hPtProng2RecSig", "#Xi^{#plus}_{c} candidates (matched);prong 2 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
-    registry.add("hPtProng2RecBg", "#Xi^{#plus}_{c} candidates (unmatched);prong 2 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH2F, {{200, 0., 20.}, axisPt}});
+    registry.add("hPtProng0RecSig", "#Xi^{#plus}_{c} candidates (matched);prong 0 (#Xi^{#mp}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
+    registry.add("hPtProng0RecBg", "#Xi^{#plus}_{c} candidates (unmatched);prong 0 (#Xi^{#mp}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
+    registry.add("hPtProng1RecSig", "#Xi^{#plus}_{c} candidates (matched);prong 1 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 20.}}});
+    registry.add("hPtProng1RecBg", "#Xi^{#plus}_{c} candidates (unmatched);prong 1 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 20.}}});
+    registry.add("hPtProng2RecSig", "#Xi^{#plus}_{c} candidates (matched);prong 2 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 20.}}});
+    registry.add("hPtProng2RecBg", "#Xi^{#plus}_{c} candidates (unmatched);prong 2 (#pi^{#pm}) #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 20.}}});
     registry.add("hEtaRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#plus}_{c} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
     registry.add("hEtaRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#plus}_{c} candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
     registry.add("hRapidityRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#plus}_{c} candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, axisPt}});
@@ -177,9 +177,6 @@ struct HfTaskXicToXiPiPi {
   void process(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>> const& candidates)
   {
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_xictoxipipi::DecayType::XicToXiPiPi)) {
-        continue;
-      }
       auto yCandXic = candidate.y(o2::constants::physics::MassXiCPlus);
       if (yCandRecoMax >= 0. && std::abs(yCandXic) > yCandRecoMax) {
         continue;
@@ -221,11 +218,12 @@ struct HfTaskXicToXiPiPi {
                  soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                  aod::TracksWMc const&)
   {
+    std::vector<int> arrDaughIndex;
+    int pdgCodeXiMinus = kXiMinus;    // 3312
+    int pdgCodePiPlus = kPiPlus;      // 211
+
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_xictoxipipi::DecayType::XicToXiPiPi)) {
-        continue;
-      }
       auto yCandXic = candidate.y(o2::constants::physics::MassXiCPlus);
       if (yCandRecoMax >= 0. && std::abs(yCandXic) > yCandRecoMax) {
         continue;
@@ -303,22 +301,26 @@ struct HfTaskXicToXiPiPi {
 
     // MC gen. level
     for (const auto& particle : mcParticles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_xictoxipipi::DecayType::XicToXiPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_xictoxipipi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_xictoxipipi::DecayType::XicToXiResPiToXiPiPi)) {
+        arrDaughIndex.clear();
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCPlus);
+        auto yParticle = RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus);
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }
 
+        // get kinematic variables of Ξ π π
         std::array<float, 3> ptProngs;
         std::array<float, 3> yProngs;
         std::array<float, 3> etaProngs;
         int counter = 0;
-        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
-          ptProngs[counter] = daught.pt();
-          etaProngs[counter] = daught.eta();
-          yProngs[counter] = RecoDecay::y(std::array{daught.px(), daught.py(), daught.pz()}, pdg->Mass(daught.pdgCode()));
+        RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{pdgCodeXiMinus, pdgCodePiPlus, pdgCodePiPlus}, 2);
+        for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+          auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+          ptProngs[counter] = daughI.pt();
+          etaProngs[counter] = daughI.eta();
+          yProngs[counter] = RecoDecay::y(daughI.pVector(), pdg->Mass(daughI.pdgCode()));
           counter++;
         }
 
