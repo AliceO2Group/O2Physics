@@ -1509,7 +1509,8 @@ struct NucleiHistTask {
           pdgbin = 13;
           break;
         default:
-          continue;
+          pdgbin = -1;
+          break;
       }
 
       TLorentzVector lorentzVector_pion{};
@@ -1629,8 +1630,8 @@ struct NucleiHistTask {
             MC_recon_reg.fill(HIST("histTofNsigmaDataPr"), track.p(), track.tofNSigmaPr());
           MC_recon_reg.fill(HIST("histTofNsigmaDataPr_pT"), track.pt(), track.tofNSigmaPr());
           if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
-            MC_recon_reg.fill(HIST("histTofNsigmaDataPr"), track.p(), track.tofNSigmaPr());
-          MC_recon_reg.fill(HIST("histTofNsigmaDataPr_pT"), track.pt(), track.tofNSigmaPr());
+            MC_recon_reg.fill(HIST("histTofNsigmaDataDe"), track.p(), track.tofNSigmaDe());
+          MC_recon_reg.fill(HIST("histTofNsigmaDataDe_pT"), track.pt(), track.tofNSigmaDe());
           if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
             MC_recon_reg.fill(HIST("histTofNsigmaDataTr"), track.p(), track.tofNSigmaTr());
           MC_recon_reg.fill(HIST("histTofNsigmaDataTr_pT"), track.pt(), track.tofNSigmaTr());

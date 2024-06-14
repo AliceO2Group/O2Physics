@@ -99,6 +99,8 @@ class VarManager : public TObject
     ReducedEventRefFlow = BIT(15),
     Zdc = BIT(16),
     ReducedZdc = BIT(17),
+    CollisionMultExtra = BIT(18),
+    ReducedEventMultExtra = BIT(19),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -221,6 +223,22 @@ class VarManager : public TObject
     kMultZNC,
     kMultTracklets,
     kMultDimuons,
+    kMultNTracksHasITS,
+    kMultNTracksHasTPC,
+    kMultNTracksHasTOF,
+    kMultNTracksHasTRD,
+    kMultNTracksITSOnly,
+    kMultNTracksTPCOnly,
+    kMultNTracksITSTPC,
+    kTrackOccupancyInTimeRange,
+    kMultAllTracksTPCOnly,
+    kMultAllTracksITSTPC,
+    kNTPCpileupContribA,
+    kNTPCpileupContribC,
+    kNTPCpileupZA,
+    kNTPCpileupZC,
+    kNTPCtracksInPast,
+    kNTPCtracksInFuture,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
@@ -232,6 +250,8 @@ class VarManager : public TObject
     kQ1ZNAY,
     kQ1ZNCX,
     kQ1ZNCY,
+    KIntercalibZNA,
+    KIntercalibZNC,
     kQ1ZNACXX,
     kQ1ZNACYY,
     kQ1ZNACYX,
@@ -488,6 +508,8 @@ class VarManager : public TObject
     kMftNClusters,
     kMftClusterSize,
     kMftMeanClusterSize,
+    kMuonNAssocsInBunch,
+    kMuonNAssocsOutOfBunch,
     kNMuonTrackVariables,
 
     // MC particle variables
@@ -843,6 +865,8 @@ class VarManager : public TObject
   static void FillMuonPDca(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillPropagateMuon(const T& muon, const C& collision, float* values = nullptr);
+  template <typename T>
+  static void FillBC(T const& bc, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
   template <typename T>
@@ -1198,6 +1222,19 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
   }
 }
 
+template <typename T>
+void VarManager::FillBC(T const& bc, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  values[VarManager::kRunNo] = bc.runNumber();
+  values[VarManager::kBC] = bc.globalBC();
+  values[kBCOrbit] = bc.globalBC() % o2::constants::lhc::LHCMaxBunches;
+  values[VarManager::kTimestamp] = bc.timestamp();
+  values[VarManager::kRunIndex] = GetRunIndex(bc.runNumber());
+}
+
 template <uint32_t fillMap, typename T>
 void VarManager::FillEvent(T const& event, float* values)
 {
@@ -1302,6 +1339,27 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultZNC] = event.multZNC();
     values[kMultTracklets] = event.multTracklets();
     values[kVtxNcontribReal] = event.multNTracksPV();
+  }
+
+  if constexpr ((fillMap & CollisionMultExtra) > 0 || (fillMap & ReducedEventMultExtra) > 0) {
+    values[kMultNTracksHasITS] = event.multNTracksHasITS();
+    values[kMultNTracksHasTPC] = event.multNTracksHasTPC();
+    values[kMultNTracksHasTOF] = event.multNTracksHasTOF();
+    values[kMultNTracksHasTRD] = event.multNTracksHasTRD();
+    values[kMultNTracksITSOnly] = event.multNTracksITSOnly();
+    values[kMultNTracksTPCOnly] = event.multNTracksTPCOnly();
+    values[kMultNTracksITSTPC] = event.multNTracksITSTPC();
+    values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
+    values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
+    values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
+    if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
+      values[kNTPCpileupContribA] = event.nTPCpileupContribA();
+      values[kNTPCpileupContribC] = event.nTPCpileupContribC();
+      values[kNTPCpileupZA] = event.nTPCpileupZA();
+      values[kNTPCpileupZC] = event.nTPCpileupZC();
+      values[kNTPCtracksInPast] = event.nTPCtracksInPast();
+      values[kNTPCtracksInFuture] = event.nTPCtracksInFuture();
+    }
   }
   // TODO: need to add EvSels and Cents tables, etc. in case of the central data model
 
@@ -3636,20 +3694,29 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
   constexpr float beamEne = 5.36 * 0.5;
   constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
   constexpr float y[4] = {-1.75, -1.75, 1.75, 1.75};
+  // constexpr float intcalibZNA[4] = {0.7997028, 0.8453715, 0.7879917, 0.7695486};
+  // constexpr float intcalibZNC[4] = {0.7631577, 0.8408003, 0.7083920, 0.7731769};
   // constexpr float alpha = 0.395; // WARNING: Run 2 coorection, to be checked
   constexpr float alpha = 1.;
   float numXZNC = 0., numYZNC = 0., denZNC = 0.;
   float numXZNA = 0., numYZNA = 0., denZNA = 0.;
 
+  float sumZNA = 0;
+  float sumZNC = 0;
+
   for (int i = 0; i < 4; i++) {
     if (zncEnergy[i] > 0.) {
       float wZNC = std::pow(zncEnergy[i], alpha);
+      // sumZNC += intcalibZNC[i] * wZNC;
+      sumZNC += wZNC;
       numXZNC -= x[i] * wZNC;
       numYZNC += y[i] * wZNC;
       denZNC += wZNC;
     }
     if (znaEnergy[i] > 0.) {
       float wZNA = std::pow(znaEnergy[i], alpha);
+      // sumZNA += intcalibZNA[i] * wZNA;
+      sumZNA += wZNA;
       numXZNA += x[i] * wZNA;
       numYZNA += y[i] * wZNA;
       denZNA += wZNA;
@@ -3683,6 +3750,11 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
     values[kQ1ZNACXY] = values[kQ1ZNAX] * values[kQ1ZNCY];
   } else {
     values[kQ1ZNACXX] = values[kQ1ZNACYY] = values[kQ1ZNACYX] = values[kQ1ZNACXY] = 999.;
+  }
+
+  if (znaCommon != 0 && sumZNA != 0 && zncCommon != 0 && sumZNC) {
+    values[KIntercalibZNA] = znaCommon - sumZNA;
+    values[KIntercalibZNC] = zncCommon - sumZNC;
   }
 }
 

@@ -143,6 +143,12 @@ constexpr int FlowHistDefault[5][1]{
   {0},
   {0},
   {0}};
+constexpr int DCAHistDefault[5][1]{
+  {0},
+  {0},
+  {0},
+  {0},
+  {0}};
 constexpr double DownscalingDefault[5][1]{
   {1.},
   {1.},
@@ -159,6 +165,7 @@ static const std::vector<std::string> pidName{"TPC", "TOF"};
 static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
 static const std::vector<std::string> flowConfigNames{"Save flow hists"};
+static const std::vector<std::string> DCAConfigNames{"Save DCA hists"};
 static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};
 static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};
 static const std::vector<std::string> DownscalingConfigName{"Fraction of kept candidates"};
@@ -236,6 +243,7 @@ struct nucleiSpectra {
   Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::DownscalingConfigName}, "Fraction of kept candidates for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
   Configurable<LabeledArray<int>> cfgFlowHist{"cfgFlowHist", {nuclei::FlowHistDefault[0], 5, 1, nuclei::names, nuclei::flowConfigNames}, "Flow hist configuration"};
+  Configurable<LabeledArray<int>> cfgDCAHist{"cfgDCAHist", {nuclei::DCAHistDefault[0], 5, 1, nuclei::names, nuclei::DCAConfigNames}, "DCA hist configuration"};
 
   ConfigurableAxis cfgDCAxyBinsProtons{"cfgDCAxyBinsProtons", {1500, -1.5f, 1.5f}, "DCAxy binning for Protons"};
   ConfigurableAxis cfgDCAxyBinsDeuterons{"cfgDCAxyBinsDeuterons", {1500, -1.5f, 1.5f}, "DCAxy binning for Deuterons"};
@@ -568,7 +576,9 @@ struct nucleiSpectra {
                     nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMass, v2, track.itsNCls(), track.tpcNClsFound());
                   }
                 }
-                nuclei::hDCAHists[iC][iS]->Fill(fvector.pt(), dcaInfo[0], dcaInfo[1], nSigma[0][iS], tofMass, track.itsNCls(), track.tpcNClsFound());
+                if (cfgDCAHist->get(iS)) {
+                  nuclei::hDCAHists[iC][iS]->Fill(fvector.pt(), dcaInfo[0], dcaInfo[1], nSigma[0][iS], tofMass, track.itsNCls(), track.tpcNClsFound());
+                }
               }
             }
           }

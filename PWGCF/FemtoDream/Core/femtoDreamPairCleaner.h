@@ -52,8 +52,8 @@ class FemtoDreamPairCleaner
   /// \param part2 Particle 2
   /// \param particles Collection of all particles passed to the task
   /// \return Whether the pair has shared tracks
-  template <typename Part, typename Parts>
-  bool isCleanPair(Part const& part1, Part const& part2, Parts const& particles)
+  template <typename Part1, typename Part2, typename Parts>
+  bool isCleanPair(Part1 const& part1, Part2 const& part2, Parts const& particles)
   {
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
       /// Track-Track combination
@@ -71,6 +71,17 @@ class FemtoDreamPairCleaner
       const auto& posChild = particles.iteratorAt(part2.index() - 2);
       const auto& negChild = particles.iteratorAt(part2.index() - 1);
       if (part1.globalIndex() != posChild.globalIndex() || part1.globalIndex() != negChild.globalIndex()) {
+        return true;
+      }
+      return false;
+    } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
+      /// Track-CharmHadron combination
+      if (part2.candidateSelFlag() < o2::aod::fdhf::lcToPKPi) {
+        LOG(fatal) << "FemtoDreamPairCleaner: passed arguments don't agree with FemtoDreamPairCleaner instantiation! Please provide second argument Charm candidate.";
+        return false;
+      }
+
+      if (part1.trackId() != part2.prong0Id() && part1.trackId() != part2.prong1Id() && part1.trackId() != part2.prong2Id()) {
         return true;
       }
       return false;

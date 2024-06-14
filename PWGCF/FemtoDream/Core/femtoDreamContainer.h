@@ -35,7 +35,6 @@ using namespace o2::framework;
 
 namespace o2::analysis::femtoDream
 {
-
 namespace femtoDreamContainer
 {
 /// Femtoscopic observable to be computed
@@ -70,12 +69,17 @@ class FemtoDreamContainer
   /// \param multAxis axis object for the multiplicity axis
   /// \param kTAxis axis object for the kT axis
   /// \param mTAxis axis object for the mT axis
-  template <typename T>
+
+  template <bool isHF = false, typename T>
   void init_base(std::string folderName, std::string femtoObs,
                  T& femtoObsAxis, T& pTAxis, T& kTAxis, T& mTAxis, T& multAxis, T& multPercentileAxis,
                  T& /*kstarAxis4D*/, T& mTAxis4D, T& multAxis4D, T& multPercentileAxis4D,
-                 bool use4dplots, bool extendedplots)
+                 bool use4dplots, bool extendedplots, T& mP2Axis)
   {
+
+    if constexpr (isHF) {
+      mHistogramRegistry->add((folderName + "/relPairkstarmP2").c_str(), ("; " + femtoObs + "; Mass (GeV)").c_str(), kTH2F, {femtoObsAxis, mP2Axis});
+    }
 
     mHistogramRegistry->add((folderName + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
     mHistogramRegistry->add((folderName + "/relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
@@ -131,13 +135,13 @@ class FemtoDreamContainer
   /// \param kTBins kT binning for the histograms
   /// \param mTBins mT binning for the histograms
   /// \param isMC add Monte Carlo truth histograms to the output file
-  template <typename T>
+  template <bool isHF = false, typename T>
   void init(HistogramRegistry* registry,
             T& kstarBins, T& pTBins, T& kTBins, T& mTBins, T& multBins, T& /*multPercentileBins*/,
             T& kstarBins4D, T& mTBins4D, T& multBins4D, T& multPercentileBins4D,
             bool isMC, bool use4dplots, bool extendedplots,
             float highkstarCut,
-            bool smearingByOrigin = false)
+            bool smearingByOrigin = false, ConfigurableAxis invMassBin = {"invMassBin", {250, 2.0, 2.5}, "InvMass binning"})
   {
     mHistogramRegistry = registry;
     std::string femtoObs;
@@ -157,18 +161,21 @@ class FemtoDreamContainer
     framework::AxisSpec multAxis4D = {multBins4D, "Multiplicity"};
     framework::AxisSpec multPercentileAxis4D = {multPercentileBins4D, "Multiplicity Percentile (%)"};
 
+    framework::AxisSpec mP2Axis = {invMassBin, "Mass (GeV)"};
+
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]);
 
-    init_base(folderName, femtoObs,
-              femtoObsAxis, pTAxis, kTAxis, mTAxis, multAxis, multPercentileAxis,
-              kstarAxis4D, mTAxis4D, multAxis4D, multPercentileAxis4D,
-              use4dplots, extendedplots);
+    init_base<isHF>(folderName, femtoObs,
+                    femtoObsAxis, pTAxis, kTAxis, mTAxis, multAxis, multPercentileAxis,
+                    kstarAxis4D, mTAxis4D, multAxis4D, multPercentileAxis4D,
+                    use4dplots, extendedplots, mP2Axis);
+
     if (isMC) {
       folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]);
-      init_base(folderName, femtoObs,
-                femtoObsAxis, pTAxis, kTAxis, mTAxis, multAxis, multPercentileAxis,
-                kstarAxis4D, mTAxis4D, multAxis4D, multPercentileAxis4D,
-                use4dplots, extendedplots);
+      init_base<isHF>(folderName, femtoObs,
+                      femtoObsAxis, pTAxis, kTAxis, mTAxis, multAxis, multPercentileAxis,
+                      kstarAxis4D, mTAxis4D, multAxis4D, multPercentileAxis4D,
+                      use4dplots, extendedplots, mP2Axis);
       init_MC(folderName, femtoObs, femtoObsAxis, multAxis, mTAxis, smearingByOrigin);
     }
   }
@@ -190,10 +197,19 @@ class FemtoDreamContainer
   /// \param part1 Particle one
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
-  template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void setPair_base(const float femtoObs, const float mT, T const& part1, T const& part2, const int mult, const float multPercentile, bool use4dplots, bool extendedplots)
+  template <o2::aod::femtodreamMCparticle::MCType mc, bool isHF = false, typename T1, typename T2>
+  void setPair_base(const float femtoObs, const float mT, T1 const& part1, T2 const& part2, const int mult, const float multPercentile, bool use4dplots, bool extendedplots)
   {
     const float kT = FemtoDreamMath::getkT(part1, mMassOne, part2, mMassTwo);
+    if constexpr (isHF) {
+      float mP2;
+      if (part2.candidateSelFlag() == o2::aod::fdhf::lcToPKPi) {
+        mP2 = part2.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+      } else {
+        mP2 = part2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
+      }
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmP2"), femtoObs, mP2);
+    }
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairDist"), femtoObs);
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkT"), kT);
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarkT"), femtoObs, kT);
@@ -245,8 +261,8 @@ class FemtoDreamContainer
   /// \param part1 Particle one
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
-  template <bool isMC, typename T>
-  void setPair(T const& part1, T const& part2, const int mult, const float multPercentile, bool use4dplots, bool extendedplots, bool smearingByOrigin = false)
+  template <bool isMC, bool isHF = false, typename T1, typename T2>
+  void setPair(T1 const& part1, T2 const& part2, const int mult, const float multPercentile, bool use4dplots, bool extendedplots, bool smearingByOrigin = false)
   {
     float femtoObs, femtoObsMC;
     // Calculate femto observable and the mT with reconstructed information
@@ -261,7 +277,7 @@ class FemtoDreamContainer
     const float mT = FemtoDreamMath::getmT(part1, mMassOne, part2, mMassTwo);
 
     if (mHistogramRegistry) {
-      setPair_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(femtoObs, mT, part1, part2, mult, multPercentile, use4dplots, extendedplots);
+      setPair_base<o2::aod::femtodreamMCparticle::MCType::kRecon, isHF>(femtoObs, mT, part1, part2, mult, multPercentile, use4dplots, extendedplots);
 
       if constexpr (isMC) {
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
@@ -272,7 +288,7 @@ class FemtoDreamContainer
           const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
 
           if (abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne && abs(part2.fdMCParticle().pdgMCTruth()) == mPDGTwo) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPair_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, multPercentile, use4dplots, extendedplots);
+            setPair_base<o2::aod::femtodreamMCparticle::MCType::kTruth, isHF>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, multPercentile, use4dplots, extendedplots);
             setPair_MC(femtoObsMC, femtoObs, mT, mult, part1.fdMCParticle().partOriginMCTruth(), part2.fdMCParticle().partOriginMCTruth(), smearingByOrigin);
           } else {
             mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);

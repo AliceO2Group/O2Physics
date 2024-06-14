@@ -87,7 +87,7 @@ using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, ao
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
-using MyEventsWithMultsAndFilter = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::DQEventFilter>;
+using MyEventsWithMultsAndFilter = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::DQEventFilter>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
@@ -109,7 +109,7 @@ DECLARE_SOA_TABLE(AmbiguousTracksFwd, "AOD", "AMBIGUOUSFWDTR", //! Table for Fwd
 // constexpr static uint32_t gkEventFillMapWithFilter = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::EventFilter;
 
 // constexpr static uint32_t gkEventFillMapWithMult = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult;
-constexpr static uint32_t gkEventFillMapWithMultsAndEventFilter = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::EventFilter;
+constexpr static uint32_t gkEventFillMapWithMultsAndEventFilter = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::EventFilter;
 constexpr static uint32_t gkEventFillMapWithMultsEventFilterZdc = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::EventFilter | VarManager::ObjTypes::Zdc;
 // constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
 constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult;
@@ -132,6 +132,8 @@ struct TableMaker {
   Produces<ReducedEventsExtended> eventExtended;
   Produces<ReducedEventsVtxCov> eventVtxCov;
   Produces<ReducedZdcs> zdc;
+  Produces<ReducedEventsMultPV> multPV;
+  Produces<ReducedEventsMultAll> multAll;
   Produces<ReducedTracks> trackBasic;
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
@@ -439,14 +441,14 @@ struct TableMaker {
     int multTracklets = -1.0;
     int multTracksPV = -1.0;
     float centFT0C = -1.0;
-    float energyCommonZNA = -1.0;
+    /*float energyCommonZNA = -1.0;
     float energyCommonZNC = -1.0;
     float energyCommonZPA = -1.0;
     float energyCommonZPC = -1.0;
     float timeZNA = -1.0;
     float timeZNC = -1.0;
     float timeZPA = -1.0;
-    float timeZPC = -1.0;
+    float timeZPC = -1.0;*/
 
     for (const auto& collision : collisions) {
 
@@ -479,26 +481,21 @@ struct TableMaker {
       }
 
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
-      // TODO: These variables cannot be filled in the VarManager for the moment as long as BCsWithTimestamps are used.
-      //       So temporarily, we filled them here, in order to be available for eventual QA of the skimming
-      VarManager::fgValues[VarManager::kRunNo] = bc.runNumber();
-      VarManager::fgValues[VarManager::kBC] = bc.globalBC();
-      VarManager::fgValues[VarManager::kTimestamp] = bc.timestamp();
-      VarManager::fgValues[VarManager::kRunIndex] = VarManager::GetRunIndex(bc.runNumber());
+      VarManager::FillBC(bc);
       VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
       if constexpr ((TEventFillMap & VarManager::ObjTypes::Zdc) > 0) {
         if (bcEvSel.has_zdc()) {
           auto bc_zdc = bcEvSel.zdc();
           VarManager::FillZDC(bc_zdc);
-          energyCommonZNA = bc_zdc.energyCommonZNA();
+          /*energyCommonZNA = bc_zdc.energyCommonZNA();
           energyCommonZNC = bc_zdc.energyCommonZNC();
           energyCommonZPA = bc_zdc.energyCommonZPA();
           energyCommonZPC = bc_zdc.energyCommonZPC();
           timeZNA = bc_zdc.timeZNA();
           timeZNC = bc_zdc.timeZNC();
           timeZPA = bc_zdc.timeZPA();
-          timeZPC = bc_zdc.timeZPC();
-        } else {
+          timeZPC = bc_zdc.timeZPC();*/
+        } /*else {
           energyCommonZNA = -1.0;
           energyCommonZNC = -1.0;
           energyCommonZPA = -1.0;
@@ -507,7 +504,7 @@ struct TableMaker {
           timeZNC = -1.0;
           timeZPA = -1.0;
           timeZPC = -1.0;
-        }
+        }*/
       }
       if (fDoDetailedQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -556,7 +553,19 @@ struct TableMaker {
       eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                     multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C);
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
-      zdc(energyCommonZNA, energyCommonZNC, energyCommonZPA, energyCommonZPC, timeZNA, timeZNC, timeZPA, timeZPC);
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::Zdc) > 0) {
+        if (bcEvSel.has_zdc()) {
+          auto bc_zdc = bcEvSel.zdc();
+          zdc(bc_zdc.energyCommonZNA(), bc_zdc.energyCommonZNC(), bc_zdc.energyCommonZPA(), bc_zdc.energyCommonZPC(),
+              bc_zdc.timeZNA(), bc_zdc.timeZNC(), bc_zdc.timeZPA(), bc_zdc.timeZPC());
+        }
+      }
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
+        multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
+               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
+        multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
+                0, 0, 0.0, 0.0, 0, 0);
+      }
 
       fCollIndexMap[collision.globalIndex()] = event.lastIndex();
     }
