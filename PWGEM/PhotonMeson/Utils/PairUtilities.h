@@ -29,7 +29,8 @@ enum PairType {
   kPCMDalitzEE = 5,
   kPCMDalitzMuMu = 6,
   kPHOSEMC = 7,
-  kPCMPCMibw = 8,
+  kDalitzEEDalitzEE = 8,
+  kNpair,
 };
 
 template <typename U1, typename U2, typename TG1, typename TG2, typename TCut1, typename TCut2>

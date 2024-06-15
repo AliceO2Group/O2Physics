@@ -28,3 +28,8 @@ o2physics_add_dpl_workflow(twopartcorr-filter
                            SOURCES twoParticleCorrelationsFiltering.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(identifiedbf-filter
+                           SOURCES identifiedBfFilter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)

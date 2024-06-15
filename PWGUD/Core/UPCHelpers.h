@@ -92,6 +92,7 @@ struct FITInfo {
   int32_t distClosestBcTSC = 999;
   int32_t distClosestBcTVX = 999;
   int32_t distClosestBcV0A = 999;
+  int32_t distClosestBcT0A = 999;
 };
 
 template <typename T, typename TSelectorsArray>

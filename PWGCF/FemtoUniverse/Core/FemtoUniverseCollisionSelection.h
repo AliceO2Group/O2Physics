@@ -12,7 +12,8 @@
 /// \file FemtoUniverseCollisionSelection.h
 /// \brief FemtoUniverseCollisionSelection - event selection within the o2femtouniverse framework
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
+/// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
@@ -38,10 +39,14 @@ class FemtoUniverseCollisionSelection
 
   /// Pass the selection criteria to the class
   /// \param zvtxMax Maximal value of the z-vertex
-  /// \param checkTrigger whether or not to check for the trigger alias
+  /// \param checkTrigger Whether or not to check for the trigger alias
   /// \param trig Requested trigger alias
-  /// \param checkOffline whether or not to check for offline selection criteria
-  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3)
+  /// \param checkOffline Whether or not to check for offline selection criteria
+  /// \param checkRun3 To check for the Run3 data
+  /// \param centmin Minimum value of centrality selection
+  /// \param centmax Maximum value of centrality selection
+  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3, float centmin, float centmax)
+  // void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3)
   {
     mCutsSet = true;
     mZvtxMax = zvtxMax;
@@ -49,6 +54,8 @@ class FemtoUniverseCollisionSelection
     mTrigger = static_cast<triggerAliases>(trig);
     mCheckOffline = checkOffline;
     mCheckIsRun3 = checkRun3;
+    mCentMin = centmin;
+    mCentMax = centmax;
   }
 
   /// Initializes histograms for the task
@@ -65,6 +72,7 @@ class FemtoUniverseCollisionSelection
     mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", kTH1F, {{120, 0, 120}});
     mHistogramRegistry->add("Event/MultNTracklets", "; vMultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
     mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1I, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/Sphericity", "; Sphericity; Entries", kTH1I, {{200, 0, 3}});
   }
 
   /// Print some debug information
@@ -75,6 +83,8 @@ class FemtoUniverseCollisionSelection
     LOG(info) << "Check trigger: " << mCheckTrigger;
     LOG(info) << "Trigger: " << mTrigger;
     LOG(info) << " Check offline: " << mCheckOffline;
+    LOG(info) << " Minimum Centrality: " << mCentMin;
+    LOG(info) << " Maximum Centrality: " << mCentMax;
   }
 
   /// Check whether the collisions fulfills the specified selections
@@ -102,6 +112,25 @@ class FemtoUniverseCollisionSelection
     return true;
   }
 
+  /// Check whether the collisions fulfills the specified selections for Run3
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \return whether or not the collisions fulfills the specified selections
+  template <typename T>
+  bool isSelectedRun3(T const& col)
+  {
+    if (std::abs(col.posZ()) > mZvtxMax) {
+      return false;
+    }
+    if (mCheckOffline && !col.sel8()) {
+      return false;
+    }
+    if ((col.centFT0C() < mCentMin) || (col.centFT0C() > mCentMax)) {
+      return false;
+    }
+    return true;
+  }
+
   /// Some basic QA of the event
   /// \tparam T type of the collision
   /// \param col Collision
@@ -122,19 +151,57 @@ class FemtoUniverseCollisionSelection
     }
   }
 
-  /// \todo to be implemented!
   /// Compute the sphericity of an event
-  /// Important here is that the filter on tracks does not interfere here!
-  /// In Run 2 we used here global tracks within |eta| < 0.8
   /// \tparam T1 type of the collision
   /// \tparam T2 type of the tracks
   /// \param col Collision
   /// \param tracks All tracks
   /// \return value of the sphericity of the event
   template <typename T1, typename T2>
-  float computeSphericity(T1 const& col, T2 const& tracks)
+  float computeSphericity(T1 const& /*col*/, T2 const& tracks)
   {
-    return 2.f;
+    double S00 = 0;
+    double S11 = 0;
+    double S10 = 0;
+    double sumPt = 0;
+    int partNumber = 0;
+    double spher = 0;
+
+    for (auto& p : tracks) {
+      double phi = p.phi();
+      double pT = p.pt();
+      double px = pT * TMath::Cos(phi);
+      double py = pT * TMath::Sin(phi);
+
+      S00 = S00 + px * px / pT;
+      S11 = S11 + py * py / pT;
+      S10 = S10 + px * py / pT;
+      sumPt = sumPt + pT;
+      partNumber++;
+    }
+
+    if (sumPt != 0) {
+      S00 = S00 / sumPt;
+      S11 = S11 / sumPt;
+      S10 = S10 / sumPt;
+
+      double lambda1 = (S00 + S11 + TMath::Sqrt((S00 + S11) * (S00 + S11) - 4.0 * (S00 * S11 - S10 * S10))) / 2.0;
+      double lambda2 = (S00 + S11 - TMath::Sqrt((S00 + S11) * (S00 + S11) - 4.0 * (S00 * S11 - S10 * S10))) / 2.0;
+
+      if ((lambda1 + lambda2) != 0 && partNumber > 2) {
+        spher = 2 * lambda2 / (lambda1 + lambda2);
+      } else {
+        spher = 2;
+      }
+    } else {
+      spher = 2;
+    }
+
+    if (mHistogramRegistry) {
+      mHistogramRegistry->fill(HIST("Event/Sphericity"), spher);
+    }
+
+    return spher;
   }
 
  private:
@@ -145,6 +212,8 @@ class FemtoUniverseCollisionSelection
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
+  float mCentMin = 0.0;                            ///< Minimum centrality value
+  float mCentMax = 100.0;                          ///< Maximum centrality value
 };
 } // namespace o2::analysis::femtoUniverse
 

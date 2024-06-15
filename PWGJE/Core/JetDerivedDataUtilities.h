@@ -18,16 +18,20 @@
 #define PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 
 #include <string>
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/EventSelectionParams.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "PWGJE/Core/JetFinder.h"
-
-namespace JetDerivedDataUtilities
+namespace jetderiveddatautilities
 {
+
+static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
 
 enum JCollisionSel {
   sel8 = 0,
-  sel7 = 1
+  sel8Full = 1,
+  sel7 = 2,
+  selMC = 3,
+  selUnanchoredMC = 4
 };
 
 template <typename T>
@@ -36,16 +40,25 @@ bool selectCollision(T const& collision, int eventSelection = -1)
   if (eventSelection == -1) {
     return true;
   }
-
-  return (collision.eventSel() >> eventSelection) & 1;
+  return (collision.eventSel() & (1 << eventSelection));
 }
 
 int initialiseEventSelection(std::string eventSelection)
 {
   if (eventSelection == "sel8") {
     return JCollisionSel::sel8;
-  } else if (eventSelection == "sel7") {
+  }
+  if (eventSelection == "sel8Full") {
+    return JCollisionSel::sel8Full;
+  }
+  if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
+  }
+  if (eventSelection == "selMC") {
+    return JCollisionSel::selMC;
+  }
+  if (eventSelection == "selUnanchoredMC") {
+    return JCollisionSel::selUnanchoredMC;
   }
   return -1;
 }
@@ -53,14 +66,21 @@ int initialiseEventSelection(std::string eventSelection)
 template <typename T>
 uint8_t setEventSelectionBit(T const& collision)
 {
-
   uint8_t bit = 0;
-
   if (collision.sel8()) {
     SETBIT(bit, JCollisionSel::sel8);
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      SETBIT(bit, JCollisionSel::sel8Full);
+    }
   }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
+  }
+  if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    SETBIT(bit, JCollisionSel::selUnanchoredMC);
+    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      SETBIT(bit, JCollisionSel::selMC);
+    }
   }
   return bit;
 }
@@ -83,7 +103,9 @@ bool eventEMCAL(T const& collision)
 enum JTrigSelCh {
   noChargedTigger = 0,
   chargedLow = 1,
-  chargedHigh = 2
+  chargedHigh = 2,
+  trackLowPt = 3,
+  trackHighPt = 4
 };
 
 template <typename T>
@@ -92,7 +114,7 @@ bool selectChargedTrigger(T const& collision, int triggerSelection)
   if (triggerSelection == -1) {
     return true;
   }
-  return (collision.chargedTriggerSel() >> triggerSelection) & 1;
+  return (collision.chargedTriggerSel() & (1 << triggerSelection));
 }
 
 int initialiseChargedTriggerSelection(std::string triggerSelection)
@@ -103,6 +125,13 @@ int initialiseChargedTriggerSelection(std::string triggerSelection)
   if (triggerSelection == "chargedHigh") {
     return JTrigSelCh::chargedHigh;
   }
+  if (triggerSelection == "trackLowPt") {
+    return JTrigSelCh::trackLowPt;
+  }
+  if (triggerSelection == "trackHighPt") {
+    return JTrigSelCh::trackHighPt;
+  }
+
   return -1;
 }
 
@@ -117,6 +146,13 @@ uint8_t setChargedTriggerSelectionBit(T const& collision)
   if (collision.hasJetChHighPt()) {
     SETBIT(bit, JTrigSelCh::chargedHigh);
   }
+  if (collision.hasTrackLowPt()) {
+    SETBIT(bit, JTrigSelCh::trackLowPt);
+  }
+  if (collision.hasTrackHighPt()) {
+    SETBIT(bit, JTrigSelCh::trackHighPt);
+  }
+
   return bit;
 }
 
@@ -142,7 +178,7 @@ bool selectFullTrigger(T const& collision, int triggerSelection)
   if (triggerSelection == -1) {
     return true;
   }
-  return (collision.fullTriggerSel() >> triggerSelection) & 1;
+  return (collision.fullTriggerSel() & (1 << triggerSelection));
 }
 
 int initialiseFullTriggerSelection(std::string triggerSelection)
@@ -176,9 +212,9 @@ int initialiseFullTriggerSelection(std::string triggerSelection)
 }
 
 template <typename T>
-uint8_t setFullTriggerSelectionBit(T const& collision)
+uint32_t setFullTriggerSelectionBit(T const& collision)
 {
-  uint8_t bit = 0;
+  uint32_t bit = 0;
   if (collision.hasJetFullHighPt()) {
     SETBIT(bit, JTrigSelFull::fullHigh);
   }
@@ -218,10 +254,66 @@ uint8_t setFullTriggerSelectionBit(T const& collision)
   return bit;
 }
 
+enum JTrigSelChHF {
+  noChargedHFTigger = 0,
+  chargedD0Low = 1,
+  chargedD0High = 2,
+  chargedLcLow = 3,
+  chargedLcHigh = 4
+};
+
+template <typename T>
+bool selectChargedHFTrigger(T const& collision, int triggerSelection)
+{
+  if (triggerSelection == -1) {
+    return true;
+  }
+  return (collision.chargedHFTriggerSel() & (1 << triggerSelection));
+}
+
+int initialiseChargedHFTriggerSelection(std::string triggerSelection)
+{
+  if (triggerSelection == "chargedD0Low") {
+    return JTrigSelChHF::chargedD0Low;
+  }
+  if (triggerSelection == "chargedD0High") {
+    return JTrigSelChHF::chargedD0High;
+  }
+  if (triggerSelection == "chargedLcLow") {
+    return JTrigSelChHF::chargedLcLow;
+  }
+  if (triggerSelection == "chargedLcHigh") {
+    return JTrigSelChHF::chargedLcHigh;
+  }
+  return -1;
+}
+
+template <typename T>
+uint8_t setChargedHFTriggerSelectionBit(T const& collision)
+{
+
+  uint8_t bit = 0;
+  if (collision.hasJetD0ChLowPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedD0Low);
+  }
+  if (collision.hasJetD0ChHighPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedD0High);
+  }
+  if (collision.hasJetLcChLowPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedLcLow);
+  }
+  if (collision.hasJetLcChHighPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedLcHigh);
+  }
+  return bit;
+}
+
 enum JTrackSel {
-  globalTrack = 0,
-  qualityTrack = 1,
-  hybridTrack = 2
+  trackSign = 0, // warning : this number is hardcoded in the sign coloumn in the JTracks table so should not be changed without changing it there too
+  globalTrack = 1,
+  qualityTrack = 2,
+  hybridTrack = 3,
+  uniformTrack = 4
 };
 
 template <typename T>
@@ -239,7 +331,7 @@ bool selectTrack(T const& track, int trackSelection)
   if (trackSelection == -1) {
     return true;
   }
-  return (track.trackSel() >> trackSelection) & 1;
+  return (track.trackSel() & (1 << trackSelection));
 }
 
 int initialiseTrackSelection(std::string trackSelection)
@@ -248,8 +340,10 @@ int initialiseTrackSelection(std::string trackSelection)
     return JTrackSel::globalTrack;
   } else if (trackSelection == "QualityTracks") {
     return JTrackSel::qualityTrack;
-  } else if (trackSelection == "hybridTracksJE") {
+  } else if (trackSelection == "hybridTracks") {
     return JTrackSel::hybridTrack;
+  } else if (trackSelection == "uniformTracks") {
+    return JTrackSel::uniformTrack;
   }
   return -1;
 }
@@ -260,6 +354,9 @@ uint8_t setTrackSelectionBit(T const& track)
 
   uint8_t bit = 0;
 
+  if (track.sign() == 1) {
+    SETBIT(bit, JTrackSel::trackSign);
+  }
   if (track.isGlobalTrackWoPtEta()) {
     SETBIT(bit, JTrackSel::globalTrack);
   }
@@ -269,18 +366,36 @@ uint8_t setTrackSelectionBit(T const& track)
   if (track.trackCutFlagFb5()) {
     SETBIT(bit, JTrackSel::hybridTrack);
   }
+  if ((track.passedGoldenChi2() && track.passedDCAxy()) &&
+      (track.passedITSNCls() && track.passedITSChi2NDF() && track.passedITSHits()) &&
+      (!track.hasTPC() || (track.passedTPCNCls() && track.passedTPCChi2NDF() && track.passedTPCCrossedRowsOverNCls()))) { // removing track.passedDCAz() so aimeric can test. Needs to be added into the bracket with passedGoldenChi2
+    SETBIT(bit, JTrackSel::uniformTrack);
+  }
 
   return bit;
 }
 
+uint8_t setSingleTrackSelectionBit(int trackSelection)
+{
+  uint8_t bit = 0;
+  if (trackSelection != -1) {
+    SETBIT(bit, trackSelection);
+  }
+  return bit;
+}
+
 template <typename T>
-float trackEnergy(T const& track, float mass = JetFinder::mPion)
+float trackEnergy(T const& track, float mass = mPion)
 {
   return std::sqrt((track.p() * track.p()) + (mass * mass));
 }
 
-} // namespace JetDerivedDataUtilities
+template <typename T>
+bool selectTrackDcaZ(T const& track, double dcaZmax = 99.)
+{
+  return abs(track.dcaZ()) < dcaZmax;
+}
 
-// namespace JetDerivedDataUtilities
+} // namespace jetderiveddatautilities
 
 #endif // PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_

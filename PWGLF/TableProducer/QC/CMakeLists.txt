@@ -10,6 +10,11 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(strangenessqc
-                    SOURCES strangenessQC.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES strangenessQC.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-qc
+    SOURCES flowQC.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

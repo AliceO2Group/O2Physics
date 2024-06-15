@@ -27,6 +27,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 
 #include "DetectorsBase/Propagator.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -52,52 +53,67 @@ struct singleTrackSelector {
   Configurable<int> centTableToUse{"centTableToUse", 1, "Flag to choose cent./mult.perc. estimator (Run3 only [FTOC for PbPb; FTOM for pp], for Run2 the V0M is used): 0 -> CentFV0As, 1 -> CentFT0Ms, 2 -> CentFT0As, 3 -> CentFT0Cs, 4 -> CentFDDMs, 5 -> CentNTPVs"};
   Configurable<int> multTableToUse{"multTableToUse", 1, "Flag to choose mult. estimator (Run3 only): 0 -> TPCMults, 1 -> MultNTracksPV, 2 -> MultNTracksPVeta1"};
   Configurable<bool> rejectNotPropagatedTrks{"rejectNotPropagatedTrks", true, "rejects tracks that are not propagated to the primary vertex"};
+  Configurable<bool> enable_gen_info{"enable_gen_info", false, "Enable MC true info"};
+  Configurable<bool> fetchRate{"fetchRate", true, "Fetch the hadronic rate from the CCDB"};
 
   Configurable<std::vector<int>> _particlesToKeep{"particlesToKeepPDGs", std::vector<int>{2212, 1000010020}, "PDG codes of perticles for which the 'singletrackselector' tables will be created (only proton and deurton are supported now)"};
   Configurable<std::vector<float>> keepWithinNsigmaTPC{"keepWithinNsigmaTPC", std::vector<float>{-4.0f, 4.0f}, "TPC range for preselection of particles specified with PDG"};
-  Configurable<std::vector<int>> _particlesToReject{"particlesToRejectPDGs", std::vector<int>{211, 321}, "PDG codes of particles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
+  Configurable<std::vector<int>> _particlesToReject{"particlesToRejectPDGs", std::vector<int>{211, 321, 1000020030}, "PDG codes of particles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-5.0f, 5.0f}, "TOF rejection Nsigma range for particles specified with PDG to be rejected"};
+
+  Configurable<float> _pRemoveTofOutOfRange{"pRemoveTofOutOfRange", 100.f, "momentum starting from which request TOF nSigma to be within the stored range (-10 < Nsigma < 10)"};
 
   Configurable<float> _min_P{"min_P", 0.f, "lower mometum limit"};
   Configurable<float> _max_P{"max_P", 100.f, "upper mometum limit"};
   Configurable<float> _eta{"eta", 100.f, "abs eta value limit"};
   Configurable<float> _dcaXY{"dcaXY", 1000.f, "Maximum dca of track in xy"};
   Configurable<float> _dcaZ{"dcaZ", 1000.f, "Maximum dca of track in xy"};
+  Configurable<float> _dcaXYmin{"dcaXYmin", -1000.f, "Minimum dca of track in xy"};
+  Configurable<float> _dcaZmin{"dcaZmin", -1000.f, "Minimum dca of track in xy"};
   Configurable<float> _maxTofChi2{"maxTofChi2", 10.f, "Maximum TOF Chi2 value -> to remove mismatched tracks"};
+  Configurable<float> _vertexZ{"VertexZ", 15.0, "abs vertexZ value limit"};
+  Configurable<std::pair<float, float>> _centCut{"centCut", std::pair<float, float>{0.f, 100.f}, "[min., max.] centrality range to keep events within"};
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidEvTimeFlags, aod::TracksDCA,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
-                         aod::pidTPCFullPr, aod::pidTPCFullDe,
+                         aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa,
-                         aod::pidTOFFullPr, aod::pidTOFFullDe,
+                         aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe,
                          aod::TrackSelection, aod::pidTOFbeta>;
 
   using CollRun2 = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>;
   using CollRun3 = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::CentNTPVs>;
+  using CollRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs, aod::CentNTPVs>;
 
-  Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleCollSels> tableRowColl;
+  Produces<o2::aod::SingleCollExtras> tableRowCollExtra;
+  Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleTrkExtras> tableRowExtra;
   Produces<o2::aod::SingleTrkMCs> tableRowMC;
 
   Filter eventFilter = (applyEvSel.node() == 0) ||
                        ((applyEvSel.node() == 1) && (aod::evsel::sel7 == true)) ||
                        ((applyEvSel.node() == 2) && (aod::evsel::sel8 == true));
-  Filter vertexFilter = ((o2::aod::collision::posZ < 15.f) && (o2::aod::collision::posZ > -15.f));
+  Filter vertexFilter = nabs(o2::aod::collision::posZ) < _vertexZ;
   Filter trackFilter = ((o2::aod::track::itsChi2NCl <= 36.f) && (o2::aod::track::itsChi2NCl >= 0.f) && (o2::aod::track::tpcChi2NCl >= 0.f) && (o2::aod::track::tpcChi2NCl <= 4.f));
 
   Filter pFilter = o2::aod::track::p > _min_P&& o2::aod::track::p < _max_P;
   Filter etaFilter = nabs(o2::aod::track::eta) < _eta;
-  Filter dcaFilter = (o2::aod::track::dcaXY <= _dcaXY) && (o2::aod::track::dcaZ <= _dcaZ);
+  Filter dcaFilter = ((nabs(o2::aod::track::dcaXY) <= _dcaXY) && (nabs(o2::aod::track::dcaZ) <= _dcaZ)) &&
+                     ((o2::aod::track::dcaXY >= _dcaXYmin) && (o2::aod::track::dcaZ >= _dcaZmin));
   Filter tofChi2Filter = o2::aod::track::tofChi2 < _maxTofChi2;
 
+  ctpRateFetcher mRateFetcher; // inspired by zdcSP.cxx in PWGLF
   int mRunNumber = 0;
   float d_bz = 0.f;
 
   std::vector<int> particlesToKeep;
   std::vector<int> particlesToReject;
 
-  void init(InitContext& context)
+  HistogramRegistry registry{"registry"};
+  SliceCache cache;
+
+  void init(InitContext&)
   {
 
     particlesToKeep = _particlesToKeep;
@@ -107,6 +123,16 @@ struct singleTrackSelector {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    if (enable_gen_info) {
+      registry.add("hNEvents_MCGen", "hNEvents_MCGen", {HistType::kTH1F, {{1, 0.f, 1.f}}});
+      registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hGen_EtaPhiPt_Helium3", "Gen (anti)Helium3 in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Proton", "Gen (anti)protons in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Deuteron", "Gen (anti)deuteron in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Helium3", "Gen (anti)Helium3 in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // inspired by PWGLF/TableProducer/lambdakzerobuilder.cxx
@@ -166,6 +192,8 @@ struct singleTrackSelector {
 
       for (auto ii : particlesToKeep)
         if (o2::aod::singletrackselector::TPCselection(track, std::make_pair(ii, keepWithinNsigmaTPC))) {
+          if (track.p() > _pRemoveTofOutOfRange && !o2::aod::singletrackselector::TOFselection(track, std::make_pair(ii, std::vector<float>{-10.0, 10.0}), std::vector<float>{-10.0, 10.0}))
+            continue;
 
           tableRow(tableRowColl.lastIndex(),
                    track.p(),
@@ -174,7 +202,9 @@ struct singleTrackSelector {
                    track.sign(),
                    track.tpcNClsFound(),
                    track.tpcNClsShared(),
-                   track.itsNCls(),
+                   track.itsClusterMap(),
+                   track.itsClusterSizes(),
+
                    singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaXY()),
                    singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaZ()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.tpcChi2NCl()),
@@ -187,7 +217,9 @@ struct singleTrackSelector {
                    singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaPr()),
                    singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()),
                    singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()));
+                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()),
+                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
+                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
 
           tableRowExtra(track.tpcInnerParam(),
                         track.tpcSignal(),
@@ -195,12 +227,14 @@ struct singleTrackSelector {
 
           if constexpr (isMC) {
             int origin = -1;
-            if (track.mcParticle().isPhysicalPrimary())
-              origin = 0;
-            if (!track.mcParticle().isPhysicalPrimary() && track.mcParticle().producedByGenerator())
-              origin = 1;
-            if (!track.mcParticle().isPhysicalPrimary() && !track.mcParticle().producedByGenerator())
-              origin = 2;
+            if (track.mcParticle().isPhysicalPrimary()) {
+              origin = 0; // primary
+            } else {
+              if (track.mcParticle().getProcess() == 4)
+                origin = 1; // weak
+              else
+                origin = 2; // material
+            }
 
             if (origin == -1)
               LOGF(fatal, "Could not define the origin (primary/weak decay/material) of the track!!!");
@@ -211,7 +245,6 @@ struct singleTrackSelector {
                        track.mcParticle().eta(),
                        track.mcParticle().phi());
           }
-
           break; // break the loop with particlesToKeep after the 'if' condition is satisfied -- don't want double entries
         }
     }
@@ -222,29 +255,33 @@ struct singleTrackSelector {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    int multValue = -1;
+    float centValue = collision.centRun2V0M();
+    if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
 
-    switch (multTableToUse) {
-      case 0:
-        multValue = collision.multTPC();
-        break;
-      case 1:
-        multValue = collision.multNTracksPV();
-        break;
-      case 2:
-        multValue = collision.multNTracksPVeta1();
-        break;
-      default:
-        LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
-        break;
+      int multValue = -1;
+
+      switch (multTableToUse) {
+        case 0:
+          multValue = collision.multTPC();
+          break;
+        case 1:
+          multValue = collision.multNTracksPV();
+          break;
+        case 2:
+          multValue = collision.multNTracksPVeta1();
+          break;
+        default:
+          LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
+          break;
+      }
+
+      tableRowColl(multValue,
+                   centValue,
+                   collision.posZ(),
+                   d_bz);
+
+      fillTrackTables<false>(tracks);
     }
-
-    tableRowColl(multValue,
-                 collision.centRun2V0M(),
-                 collision.posZ(),
-                 d_bz);
-
-    fillTrackTables<false>(tracks);
   }
   PROCESS_SWITCH(singleTrackSelector, processDataRun2, "process data Run2", false);
 
@@ -252,9 +289,12 @@ struct singleTrackSelector {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+    double hadronicRate = 0.;
+    if (fetchRate) {
+      hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+    }
 
     float centValue = -100.0f;
-    int multValue = -1;
 
     switch (centTableToUse) {
       case 0:
@@ -279,28 +319,36 @@ struct singleTrackSelector {
         LOGF(fatal, "Invalid flag for cent./mult.perc. estimator has been choosen. Please check.");
         break;
     }
+    if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
+      int multValue = -1;
 
-    switch (multTableToUse) {
-      case 0:
-        multValue = collision.multTPC();
-        break;
-      case 1:
-        multValue = collision.multNTracksPV();
-        break;
-      case 2:
-        multValue = collision.multNTracksPVeta1();
-        break;
-      default:
-        LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
-        break;
+      switch (multTableToUse) {
+        case 0:
+          multValue = collision.multTPC();
+          break;
+        case 1:
+          multValue = collision.multNTracksPV();
+          break;
+        case 2:
+          multValue = collision.multNTracksPVeta1();
+          break;
+        default:
+          LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
+          break;
+      }
+
+      tableRowColl(multValue,
+                   centValue,
+                   collision.posZ(),
+                   d_bz);
+
+      tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
+                        collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
+                        collision.selection_bit(aod::evsel::kIsVertexITSTPC),
+                        hadronicRate);
+
+      fillTrackTables<false>(tracks);
     }
-
-    tableRowColl(multValue,
-                 centValue,
-                 collision.posZ(),
-                 d_bz);
-
-    fillTrackTables<false>(tracks);
   }
   PROCESS_SWITCH(singleTrackSelector, processDataRun3, "process data Run3", true);
 
@@ -309,39 +357,41 @@ struct singleTrackSelector {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    int multValue = -1;
+    float centValue = collision.centRun2V0M();
+    if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
+      int multValue = -1;
 
-    switch (multTableToUse) {
-      case 0:
-        multValue = collision.multTPC();
-        break;
-      case 1:
-        multValue = collision.multNTracksPV();
-        break;
-      case 2:
-        multValue = collision.multNTracksPVeta1();
-        break;
-      default:
-        LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
-        break;
+      switch (multTableToUse) {
+        case 0:
+          multValue = collision.multTPC();
+          break;
+        case 1:
+          multValue = collision.multNTracksPV();
+          break;
+        case 2:
+          multValue = collision.multNTracksPVeta1();
+          break;
+        default:
+          LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
+          break;
+      }
+
+      tableRowColl(multValue,
+                   centValue,
+                   collision.posZ(),
+                   d_bz);
+
+      fillTrackTables<true>(tracks);
     }
-
-    tableRowColl(multValue,
-                 collision.centRun2V0M(),
-                 collision.posZ(),
-                 d_bz);
-
-    fillTrackTables<true>(tracks);
   }
   PROCESS_SWITCH(singleTrackSelector, processMCRun2, "process MC Run2", false);
 
-  void processMCRun3(soa::Filtered<CollRun3>::iterator const& collision, soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
+  void processMCRun3(soa::Filtered<CollRun3MC>::iterator const& collision, aod::McCollisions const&, soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks, aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
     float centValue = -100.0f;
-    int multValue = -1;
 
     switch (centTableToUse) {
       case 0:
@@ -367,29 +417,108 @@ struct singleTrackSelector {
         break;
     }
 
-    switch (multTableToUse) {
-      case 0:
-        multValue = collision.multTPC();
-        break;
-      case 1:
-        multValue = collision.multNTracksPV();
-        break;
-      case 2:
-        multValue = collision.multNTracksPVeta1();
-        break;
-      default:
-        LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
-        break;
+    if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
+      int multValue = -1;
+
+      switch (multTableToUse) {
+        case 0:
+          multValue = collision.multTPC();
+          break;
+        case 1:
+          multValue = collision.multNTracksPV();
+          break;
+        case 2:
+          multValue = collision.multNTracksPVeta1();
+          break;
+        default:
+          LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
+          break;
+      }
+
+      tableRowColl(multValue,
+                   centValue,
+                   collision.posZ(),
+                   d_bz);
+
+      tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
+                        collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
+                        collision.selection_bit(aod::evsel::kIsVertexITSTPC),
+                        0.);
+
+      fillTrackTables<true>(tracks);
+
+      if (!enable_gen_info) {
+        return;
+      }
+
+      const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
+
+      for (auto& mcParticle : particlesInCollision) { // loop over generated particles
+
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+
+        if (mcParticle.pdgCode() == 1000010020) {
+          registry.fill(HIST("hReco_EtaPhiPt_Deuteron"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+        } else if (mcParticle.pdgCode() == -1000010020) {
+          registry.fill(HIST("hReco_EtaPhiPt_Deuteron"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+        }
+
+        if (mcParticle.pdgCode() == 2212) {
+          registry.fill(HIST("hReco_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+        } else if (mcParticle.pdgCode() == -2212) {
+          registry.fill(HIST("hReco_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+        }
+
+        if (mcParticle.pdgCode() == 1000020030) {
+          registry.fill(HIST("hReco_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+        } else if (mcParticle.pdgCode() == -1000020030) {
+          registry.fill(HIST("hReco_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+        }
+      }
     }
-
-    tableRowColl(multValue,
-                 centValue,
-                 collision.posZ(),
-                 d_bz);
-
-    fillTrackTables<true>(tracks);
   }
   PROCESS_SWITCH(singleTrackSelector, processMCRun3, "process MC Run3", false);
+
+  void processGenRun3(aod::McCollisions::iterator const& mcCollision,
+                      aod::McParticles const& mcParticles)
+  {
+    if (!enable_gen_info) {
+      return;
+    }
+
+    if (abs(mcCollision.posZ()) > _vertexZ) {
+      return;
+    }
+
+    registry.fill(HIST("hNEvents_MCGen"), 0.5);
+
+    for (auto& mcParticle : mcParticles) { // loop over generated particles
+
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+      if (mcParticle.pdgCode() == 1000010020) {
+        registry.fill(HIST("hGen_EtaPhiPt_Deuteron"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+      } else if (mcParticle.pdgCode() == -1000010020) {
+        registry.fill(HIST("hGen_EtaPhiPt_Deuteron"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+      }
+
+      if (mcParticle.pdgCode() == 2212) {
+        registry.fill(HIST("hGen_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+      } else if (mcParticle.pdgCode() == -2212) {
+        registry.fill(HIST("hGen_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+      }
+
+      if (mcParticle.pdgCode() == 1000020030) {
+        registry.fill(HIST("hGen_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+      } else if (mcParticle.pdgCode() == -1000020030) {
+        registry.fill(HIST("hGen_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+      }
+    }
+  }
+  PROCESS_SWITCH(singleTrackSelector, processGenRun3, "process MC Gen collisions Run3", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -168,7 +168,7 @@ Double_t multCalibrator::GetBoundaryForPercentile(TH1* histo, Double_t lPercenti
 
   // Anchor point changes: if anchored, start at the first bin that includes that
   Long_t lFirstBin = 1;
-  Double_t lHadronicTotal = histo->GetEntries();
+  Double_t lHadronicTotal = histo->Integral(1, histo->GetNbinsX()); // histo->GetEntries();
   if (fAnchorPointValue > 0) {
     lFirstBin = histo->FindBin(fAnchorPointValue + 1e-6);
     Double_t lAbove = histo->Integral(lFirstBin, histo->GetNbinsX());

@@ -403,7 +403,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOFT0AC, isEvTimeTOFT0AC, //! True if the Eve
 
 namespace pidtofsignal
 {
-DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! TOF signal from track time
+DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);                   //! TOF signal from track time
+DECLARE_SOA_DYNAMIC_COLUMN(EventCollisionTime, eventCollisionTime, //! Event collision time used for the track. Needs the TOF
+                           [](float signal, float tMinusTexp, float texp) -> float { return texp + tMinusTexp - signal; });
+
 } // namespace pidtofsignal
 
 namespace pidtofbeta
@@ -528,7 +531,8 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //! Unwrapped (float) nsi
 } // namespace pidtof_tiny
 
 DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
-                  pidtofsignal::TOFSignal);
+                  pidtofsignal::TOFSignal,
+                  pidtofsignal::EventCollisionTime<pidtofsignal::TOFSignal>);
 
 DECLARE_SOA_TABLE(pidTOFFlags, "AOD", "pidTOFFlags", //! Table of the flags for TOF signal quality on the track level
                   pidflags::GoodTOFMatch);
@@ -603,6 +607,15 @@ DECLARE_SOA_TABLE(pidTOFHe, "AOD", "pidTOFHe", //! Table of the TOF response wit
                   pidtof_tiny::TOFNSigmaStoreHe, pidtof_tiny::TOFNSigmaHe<pidtof_tiny::TOFNSigmaStoreHe>);
 DECLARE_SOA_TABLE(pidTOFAl, "AOD", "pidTOFAl", //! Table of the TOF response with binned Nsigma for alpha
                   pidtof_tiny::TOFNSigmaStoreAl, pidtof_tiny::TOFNSigmaAl<pidtof_tiny::TOFNSigmaStoreAl>);
+
+namespace mcpidtpc
+{
+// Tuned MC on data
+DECLARE_SOA_COLUMN(DeDxTunedMc, mcTunedTPCSignal, float); //! TPC signal after TuneOnData application for MC
+} // namespace mcpidtpc
+
+DECLARE_SOA_TABLE(mcTPCTuneOnData, "AOD", "MCTPCTUNEONDATA", mcpidtpc::DeDxTunedMc);
+DECLARE_SOA_TABLE(mcTPCTuneOnDataTiny, "AOD", "MCTPCTODATATINY", mcpidtpc::DeDxTunedMc, o2::soa::Marker<1>);
 
 namespace pidtpc
 {

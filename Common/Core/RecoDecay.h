@@ -23,6 +23,7 @@
 #include <utility>   // std::move
 #include <vector>    // std::vector
 
+#include "TMCProcess.h" // for VMC Particle Production Process
 #include "CommonConstants/MathConstants.h"
 
 /// Base class for calculating properties of reconstructed decays
@@ -33,19 +34,13 @@
 /// - calculation of topological properties of secondary vertices
 /// - Monte Carlo matching of decays at track and particle level
 
-class RecoDecay
-{
- public:
-  /// Default constructor
-  RecoDecay() = default;
-
-  /// Default destructor
-  ~RecoDecay() = default;
-
+struct RecoDecay {
   // mapping of charm-hadron origin type
   enum OriginType { None = 0,
                     Prompt,
                     NonPrompt };
+
+  static constexpr int8_t PdgStatusCodeAfterFlavourOscillation = 92; // decay products after B0(s) flavour oscillation
 
   // Auxiliary functions
 
@@ -522,7 +517,7 @@ class RecoDecay
   /// \param sign  antiparticle indicator of the found mother w.r.t. PDGMother; 1 if particle, -1 if antiparticle, 0 if mother not found
   /// \param depthMax  maximum decay tree level to check; Mothers up to this level will be considered. If -1, all levels are considered.
   /// \return index of the mother particle if found, -1 otherwise
-  template <typename T>
+  template <bool acceptFlavourOscillation = false, typename T>
   static int getMother(const T& particlesMC,
                        const typename T::iterator& particle,
                        int PDGMother,
@@ -581,6 +576,11 @@ class RecoDecay
       stage--;
     }
     if (sign) {
+      if constexpr (acceptFlavourOscillation) {
+        if (std::abs(particle.getGenStatusCode()) == PdgStatusCodeAfterFlavourOscillation) { // take possible flavour oscillation of B0(s) mother into account
+          sgn *= -1;                                                                         // select the sign of the mother after oscillation (and not before)
+        }
+      }
       *sign = sgn;
     }
 
@@ -588,6 +588,7 @@ class RecoDecay
   }
 
   /// Gets the complete list of indices of final-state daughters of an MC particle.
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particle  MC particle
   /// \param list  vector where the indices of final-state daughters will be added
   /// \param arrPDGFinal  array of PDG codes of particles to be considered final if found
@@ -595,7 +596,7 @@ class RecoDecay
   /// \param stage  decay tree level; If different from 0, the particle itself will be added in the list in case it has no daughters.
   /// \note Final state is defined as particles from arrPDGFinal plus final daughters of any other decay branch.
   /// \note Antiparticles of particles in arrPDGFinal are accepted as well.
-  template <std::size_t N, typename T>
+  template <bool checkProcess = false, std::size_t N, typename T>
   static void getDaughters(const T& particle,
                            std::vector<int>* list,
                            const std::array<int, N>& arrPDGFinal,
@@ -606,6 +607,13 @@ class RecoDecay
       // Printf("getDaughters: Error: No list!");
       return;
     }
+    if constexpr (checkProcess) {
+      // If the particle is neither the original particle nor coming from a decay, we do nothing and exit.
+      if (stage != 0 && particle.getProcess() != TMCProcess::kPDecay && particle.getProcess() != TMCProcess::kPPrimary) { // decay products of HF hadrons are labeled as kPPrimary
+        return;
+      }
+    }
+
     bool isFinal = false;                     // Flag to indicate the end of recursion
     if (depthMax > -1 && stage >= depthMax) { // Maximum depth has been reached (or exceeded).
       isFinal = true;
@@ -648,11 +656,12 @@ class RecoDecay
     // Call itself to get daughters of daughters recursively.
     stage++;
     for (auto& dau : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
-      getDaughters(dau, list, arrPDGFinal, depthMax, stage);
+      getDaughters<checkProcess>(dau, list, arrPDGFinal, depthMax, stage);
     }
   }
 
   /// Checks whether the reconstructed decay candidate is the expected decay.
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param arrDaughters  array of candidate daughters
   /// \param PDGMother  expected mother PDG code
@@ -661,7 +670,7 @@ class RecoDecay
   /// \param sign  antiparticle indicator of the found mother w.r.t. PDGMother; 1 if particle, -1 if antiparticle, 0 if mother not found
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
-  template <std::size_t N, typename T, typename U>
+  template <bool acceptFlavourOscillation = false, bool checkProcess = false, std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
                              const std::array<U, N>& arrDaughters,
                              int PDGMother,
@@ -671,12 +680,26 @@ class RecoDecay
                              int depthMax = 1)
   {
     // Printf("MC Rec: Expected mother PDG: %d", PDGMother);
+    int8_t coefFlavourOscillation = 1;     // 1 if no B0(s) flavour oscillation occured, -1 else
     int8_t sgn = 0;                        // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
     int indexMother = -1;                  // index of the mother particle
     std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
     std::array<int, N> arrDaughtersIndex;  // array of indices of provided daughters
     if (sign) {
       *sign = sgn;
+    }
+    if constexpr (acceptFlavourOscillation) {
+      // Loop over decay candidate prongs to spot possible oscillation decay product
+      for (std::size_t iProng = 0; iProng < N; ++iProng) {
+        if (!arrDaughters[iProng].has_mcParticle()) {
+          return -1;
+        }
+        auto particleI = arrDaughters[iProng].mcParticle();                                   // ith daughter particle
+        if (std::abs(particleI.getGenStatusCode()) == PdgStatusCodeAfterFlavourOscillation) { // oscillation decay product spotted
+          coefFlavourOscillation = -1;                                                        // select the sign of the mother after oscillation (and not before)
+          break;
+        }
+      }
     }
     // Loop over decay candidate prongs
     for (std::size_t iProng = 0; iProng < N; ++iProng) {
@@ -703,12 +726,14 @@ class RecoDecay
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
-          // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
-          return -1;
+        if constexpr (!checkProcess) {
+          if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
+            // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
+            return -1;
+          }
         }
         // Get the list of actual final daughters.
-        getDaughters(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+        getDaughters<checkProcess>(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
         // printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
         // for (auto i : arrAllDaughtersIndex) {
         //   printf(" %d", i);
@@ -739,7 +764,7 @@ class RecoDecay
       // Printf("MC Rec: Daughter %d PDG: %d", iProng, PDGParticleI);
       bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
       for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
-        if (PDGParticleI == sgn * arrPDGDaughters[iProngCp]) {
+        if (PDGParticleI == coefFlavourOscillation * sgn * arrPDGDaughters[iProngCp]) {
           arrPDGDaughters[iProngCp] = 0; // Remove this PDG code from the array of expected ones.
           isPDGFound = true;
           break;
@@ -758,13 +783,14 @@ class RecoDecay
   }
 
   /// Checks whether the MC particle is the expected one.
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param candidate  candidate MC particle
   /// \param PDGParticle  expected particle PDG code
   /// \param acceptAntiParticles  switch to accept the antiparticle
   /// \param sign  antiparticle indicator of the candidate w.r.t. PDGParticle; 1 if particle, -1 if antiparticle, 0 if not matched
   /// \return true if PDG code of the particle is correct, false otherwise
-  template <typename T, typename U>
+  template <bool acceptFlavourOscillation = false, bool checkProcess = false, typename T, typename U>
   static int isMatchedMCGen(const T& particlesMC,
                             const U& candidate,
                             int PDGParticle,
@@ -772,10 +798,11 @@ class RecoDecay
                             int8_t* sign = nullptr)
   {
     std::array<int, 0> arrPDGDaughters;
-    return isMatchedMCGen(particlesMC, candidate, PDGParticle, std::move(arrPDGDaughters), acceptAntiParticles, sign);
+    return isMatchedMCGen<acceptFlavourOscillation, checkProcess>(particlesMC, candidate, PDGParticle, std::move(arrPDGDaughters), acceptAntiParticles, sign);
   }
 
   /// Check whether the MC particle is the expected one and whether it decayed via the expected decay channel.
+  /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param particlesMC  table with MC particles
   /// \param candidate  candidate MC particle
   /// \param PDGParticle  expected particle PDG code
@@ -785,7 +812,7 @@ class RecoDecay
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
   /// \param listIndexDaughters  vector of indices of found daughter
   /// \return true if PDG codes of the particle and its daughters are correct, false otherwise
-  template <std::size_t N, typename T, typename U>
+  template <bool acceptFlavourOscillation = false, bool checkProcess = false, std::size_t N, typename T, typename U>
   static bool isMatchedMCGen(const T& particlesMC,
                              const U& candidate,
                              int PDGParticle,
@@ -796,6 +823,7 @@ class RecoDecay
                              std::vector<int>* listIndexDaughters = nullptr)
   {
     // Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
+    int8_t coefFlavourOscillation = 1; // 1 if no B0(s) flavour oscillation occured, -1 else
     int8_t sgn = 0; // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGParticle)
     if (sign) {
       *sign = sgn;
@@ -821,12 +849,14 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > static_cast<int>(N)) {
-        // Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
-        return false;
+      if constexpr (!checkProcess) {
+        if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > static_cast<int>(N)) {
+          // Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
+          return false;
+        }
       }
       // Get the list of actual final daughters.
-      getDaughters(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
+      getDaughters<checkProcess>(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
       // printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
       // for (auto i : arrAllDaughtersIndex) {
       //   printf(" %d", i);
@@ -837,6 +867,16 @@ class RecoDecay
         // Printf("MC Gen: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
         return false;
       }
+      if constexpr (acceptFlavourOscillation) {
+        // Loop over decay candidate prongs to spot possible oscillation decay product
+        for (auto indexDaughterI : arrAllDaughtersIndex) {
+          auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset());    // ith daughter particle
+          if (std::abs(candidateDaughterI.getGenStatusCode()) == PdgStatusCodeAfterFlavourOscillation) { // oscillation decay product spotted
+            coefFlavourOscillation = -1;                                                                 // select the sign of the mother after oscillation (and not before)
+            break;
+          }
+        }
+      }
       // Check daughters' PDG codes.
       for (auto indexDaughterI : arrAllDaughtersIndex) {
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
@@ -844,7 +884,7 @@ class RecoDecay
         // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
         bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
-          if (PDGCandidateDaughterI == sgn * arrPDGDaughters[iProngCp]) {
+          if (PDGCandidateDaughterI == coefFlavourOscillation * sgn * arrPDGDaughters[iProngCp]) {
             arrPDGDaughters[iProngCp] = 0; // Remove this PDG code from the array of expected ones.
             isPDGFound = true;
             break;
@@ -870,11 +910,13 @@ class RecoDecay
   /// \param particlesMC  table with MC particles
   /// \param particle  MC particle
   /// \param searchUpToQuark if true tag origin based on charm/beauty quark otherwise on the presence of a b-hadron or c-hadron, with c-hadrons themselves marked as prompt
+  /// \param idxBhadMothers optional vector of b-hadron indices (might be more than one in case of searchUpToQuark in case of beauty resonances)
   /// \return an integer corresponding to the origin (0: none, 1: prompt, 2: nonprompt) as in OriginType
   template <typename T>
   static int getCharmHadronOrigin(const T& particlesMC,
                                   const typename T::iterator& particle,
-                                  const bool searchUpToQuark = false)
+                                  const bool searchUpToQuark = false,
+                                  std::vector<int>* idxBhadMothers = nullptr)
   {
     int stage = 0; // mother tree level (just for debugging)
 
@@ -906,6 +948,13 @@ class RecoDecay
             // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
 
             if (searchUpToQuark) {
+              if (idxBhadMothers) {
+                if (PDGParticleIMother / 100 == 5 || // b mesons
+                    PDGParticleIMother / 1000 == 5)  // b baryons
+                {
+                  idxBhadMothers->push_back(iMother);
+                }
+              }
               if (PDGParticleIMother == 5) { // b quark
                 return OriginType::NonPrompt;
               }
@@ -917,6 +966,9 @@ class RecoDecay
                 (PDGParticleIMother / 100 == 5 || // b mesons
                  PDGParticleIMother / 1000 == 5)  // b baryons
               ) {
+                if (idxBhadMothers) {
+                  idxBhadMothers->push_back(iMother);
+                }
                 return OriginType::NonPrompt;
               }
               if (
@@ -941,5 +993,251 @@ class RecoDecay
     return OriginType::None;
   }
 };
+
+/// Calculations using (pT, η, φ) coordinates, aka (transverse momentum, pseudorapidity, azimuth)
+/// \tparam indexPt  index of pT element
+/// \tparam indexEta  index of η element
+/// \tparam indexPhi  index of φ element
+/// \tparam indexM  index of mass element (optional for (pT, η, φ, m) vectors)
+template <std::size_t indexPt = 0, std::size_t indexEta = 1, std::size_t indexPhi = 2, std::size_t indexM = 3>
+struct RecoDecayPtEtaPhiBase {
+  // Variable-based calculations
+
+  /// Sets a vector from pT, η, φ variables
+  /// \param vecTo  vector to store pT, η, φ elements
+  /// \param ptFrom  variable with pT
+  /// \param etaFrom  variable with η
+  /// \param phiFrom  variable with φ
+  template <typename TVec, typename TPt, typename TEta, typename TPhi>
+  static void setVectorFromVariables(TVec& vecTo, TPt ptFrom, TEta etaFrom, TPhi phiFrom)
+  {
+    vecTo[indexPt] = ptFrom;
+    vecTo[indexEta] = etaFrom;
+    vecTo[indexPhi] = phiFrom;
+  }
+
+  /// px as a function of pT, φ
+  /// \param pt  pT
+  /// \param phi  φ
+  template <typename TPt, typename TPhi>
+  static auto px(TPt pt, TPhi phi)
+  {
+    return pt * std::cos(phi);
+  }
+
+  /// py as a function of pT, φ
+  /// \param pt  pT
+  /// \param phi  φ
+  template <typename TPt, typename TPhi>
+  static auto py(TPt pt, TPhi phi)
+  {
+    return pt * std::sin(phi);
+  }
+
+  /// pz as a function of pT, η
+  /// \param pt  pT
+  /// \param eta  η
+  template <typename TPt, typename TEta>
+  static auto pz(TPt pt, TEta eta)
+  {
+    return pt * std::sinh(eta);
+  }
+
+  /// p as a function of pT, η
+  /// \param pt  pT
+  /// \param eta  η
+  template <typename TPt, typename TEta>
+  static auto p(TPt pt, TEta eta)
+  {
+    return pt * std::cosh(eta);
+  }
+
+  /// Energy as a function of pT, η, mass
+  /// \param pt  pT
+  /// \param eta  η
+  /// \param m  mass
+  template <typename TPt, typename TEta, typename TM>
+  static auto e(TPt pt, TEta eta, TM m)
+  {
+    return RecoDecay::e(p(pt, eta), m);
+  }
+
+  /// Rapidity as a function of pT, η, mass
+  /// \param pt  pT
+  /// \param eta  η
+  /// \param m  mass
+  template <typename TPt, typename TEta, typename TM>
+  static auto y(TPt pt, TEta eta, TM m)
+  {
+    // ln[(E + pz) / √(m^2 + pT^2)]
+    return std::log((e(pt, eta, m) + pz(pt, eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
+  }
+
+  /// Momentum vector in (px, py, pz) coordinates from pT, η, φ variables
+  /// \param pt  pT
+  /// \param eta  η
+  /// \param phi  φ
+  /// \return std::array with px, py, pz elements
+  template <typename TPt, typename TEta, typename TPhi>
+  static auto pVector(TPt pt, TEta eta, TPhi phi)
+  {
+    return std::array{px(pt, phi), py(pt, phi), pz(pt, eta)};
+  }
+
+  // Vector-based calculations
+
+  /// pt
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto pt(const TVec& vec)
+  {
+    return vec[indexPt];
+  }
+
+  /// η
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto eta(const TVec& vec)
+  {
+    return vec[indexEta];
+  }
+
+  /// φ
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto phi(const TVec& vec)
+  {
+    return vec[indexPhi];
+  }
+
+  /// Sets pT, η, φ variables from a vector
+  /// \param vecFrom  vector with pT, η, φ elements
+  /// \param ptTo  variable to store pT
+  /// \param etaTo  variable to store η
+  /// \param phiTo  variable to store φ
+  template <typename TVec, typename TPt, typename TEta, typename TPhi>
+  static void setVariablesFromVector(const TVec& vecFrom, TPt& ptTo, TEta& etaTo, TPhi& phiTo)
+  {
+    ptTo = pt(vecFrom);
+    etaTo = eta(vecFrom);
+    phiTo = phi(vecFrom);
+  }
+
+  /// px as a function of pT, φ
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto px(const TVec& vec)
+  {
+    return px(pt(vec), phi(vec));
+  }
+
+  /// py as a function of pT, φ
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto py(const TVec& vec)
+  {
+    return py(pt(vec), phi(vec));
+  }
+
+  /// pz as a function of pT, η
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto pz(const TVec& vec)
+  {
+    return pz(pt(vec), eta(vec));
+  }
+
+  /// p as a function of pT, η
+  /// \param vec  vector with pT, η, φ elements
+  template <typename TVec>
+  static auto p(const TVec& vec)
+  {
+    return p(pt(vec), eta(vec));
+  }
+
+  /// Energy as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ elements
+  /// \param m  mass
+  template <typename TVec, typename TM>
+  static auto e(const TVec& vec, TM m)
+  {
+    return e(pt(vec), eta(vec), m);
+  }
+
+  /// Rapidity as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ elements
+  /// \param m  mass
+  template <typename TVec, typename TM>
+  static auto y(const TVec& vec, TM m)
+  {
+    return y(pt(vec), eta(vec), m);
+  }
+
+  /// Momentum vector in (px, py, pz) coordinates from a (pT, η, φ) vector
+  /// \param vec  vector with pT, η, φ elements
+  /// \return std::array with px, py, pz elements
+  template <typename TVec>
+  static auto pVector(const TVec& vec)
+  {
+    return std::array{px(vec), py(vec), pz(vec)};
+  }
+
+  // Calculations for (pT, η, φ, m) vectors
+
+  /// Energy as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ, m elements
+  template <typename TVec>
+  static auto e(const TVec& vec)
+  {
+    return e(vec, vec[indexM]);
+  }
+
+  /// Rapidity as a function of pT, η, mass
+  /// \param vec  vector with pT, η, φ, m elements
+  /// \param m  mass
+  template <typename TVec>
+  static auto y(const TVec& vec)
+  {
+    return y(vec, vec[indexM]);
+  }
+
+  /// Test consistency of calculations of kinematic quantities
+  /// \param pxIn  px
+  /// \param pyIn  py
+  /// \param pzIn  pz
+  /// \param mIn  mass
+  template <typename T, typename TM>
+  static void test(T pxIn, T pyIn, T pzIn, TM mIn)
+  {
+    std::array<T, 3> vecXYZ{pxIn, pyIn, pzIn};
+    std::array<T, 3> vecXYZ0{0, 0, 0};
+    std::array<T, 3> vecPtEtaPhi;
+    std::array<T, 4> vecPtEtaPhiM;
+    setVectorFromVariables(vecPtEtaPhi, RecoDecay::pt(vecXYZ), RecoDecay::eta(vecXYZ), RecoDecay::phi(vecXYZ));
+    setVectorFromVariables(vecPtEtaPhiM, RecoDecay::pt(vecXYZ), RecoDecay::eta(vecXYZ), RecoDecay::phi(vecXYZ));
+    vecPtEtaPhiM[3] = mIn;
+    auto vecXYZFromVec = pVector(vecPtEtaPhi);
+    auto vecXYZFromVars = pVector(pt(vecPtEtaPhi), eta(vecPtEtaPhi), phi(vecPtEtaPhi));
+    // Test px, py, pz, pt, p, eta, phi, e, y, m
+    printf("RecoDecay test\n");
+    printf("px: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pxIn, vecXYZ[0], vecXYZFromVec[0], vecXYZFromVars[0], px(vecPtEtaPhi), px(vecPtEtaPhiM));
+    printf("py: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pyIn, vecXYZ[1], vecXYZFromVec[1], vecXYZFromVars[1], py(vecPtEtaPhi), py(vecPtEtaPhiM));
+    printf("pz: In: %g, XYZ: %g, XYZ from vec: %g, XYZ from vars: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", pzIn, vecXYZ[2], vecXYZFromVec[2], vecXYZFromVars[2], pz(vecPtEtaPhi), pz(vecPtEtaPhiM));
+    printf("pt: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::pt(vecXYZ), pt(vecPtEtaPhi), pt(vecPtEtaPhiM));
+    printf("p: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::p(vecXYZ), p(vecPtEtaPhi), p(vecPtEtaPhiM));
+    printf("eta: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::eta(vecXYZ), eta(vecPtEtaPhi), eta(vecPtEtaPhiM));
+    printf("phi: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::phi(vecXYZ), phi(vecPtEtaPhi), phi(vecPtEtaPhiM));
+    printf("e: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::e(vecXYZ, mIn), e(vecPtEtaPhi, mIn), e(vecPtEtaPhiM));
+    printf("y: XYZ: %g, PtEtaPhi: %g, PtEtaPhiM: %g\n", RecoDecay::y(vecXYZ, mIn), y(vecPtEtaPhi, mIn), y(vecPtEtaPhiM));
+    printf("m: In: %g, XYZ(p, E): %g, XYZ(pVec, E): %g, XYZ(arr): %g, PtEtaPhiM: %g\n",
+           mIn,
+           RecoDecay::m(RecoDecay::p(vecXYZ), RecoDecay::e(vecXYZ, mIn)),
+           RecoDecay::m(vecXYZ, RecoDecay::e(vecXYZ, mIn)),
+           RecoDecay::m(std::array{vecXYZ, vecXYZ0}, std::array{mIn, 0.}),
+           vecPtEtaPhiM[indexM]);
+  }
+};
+
+using RecoDecayPtEtaPhi = RecoDecayPtEtaPhiBase<>; // alias for instance with default parameters
 
 #endif // COMMON_CORE_RECODECAY_H_
