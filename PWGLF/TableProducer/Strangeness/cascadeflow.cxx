@@ -35,7 +35,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraRawCents, aod::StraFT0CQVsEv>::iterator;
+using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraRawCents, aod::StraFT0CQVsEv, aod::StraTPCQVs>::iterator;
 
 namespace cascadev2
 {
@@ -116,6 +116,10 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 } // namespace cascade_flow_cuts_ml
 
 struct cascadeFlow {
+
+  // axes
+  ConfigurableAxis axisQVs{"axisQVs", {500, -10.f, 10.f}, "axisQVs"};
+  ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
 
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -228,6 +232,7 @@ struct cascadeFlow {
   }
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Tables to produce
   Produces<aod::CascTraining> trainingSample;
@@ -270,8 +275,7 @@ struct cascadeFlow {
   }
 
   template <class collision_t, class cascade_t>
-  //  void fillAnalisedTable(collision_t coll, cascade_t casc, float BDTresponse)
-  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2C, float PsiT0C, float BDTresponseXi, float BDTresponseOmega)
+  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2CSP, float v2CEP, float PsiT0C, float BDTresponseXi, float BDTresponseOmega)
   {
     analysisSample(coll.centFT0C(),
                    casc.sign(),
@@ -280,7 +284,8 @@ struct cascadeFlow {
                    casc.phi(),
                    casc.mXi(),
                    casc.mOmega(),
-                   v2C,
+                   v2CSP,
+                   v2CEP,
                    PsiT0C,
                    BDTresponseXi,
                    BDTresponseOmega);
@@ -297,6 +302,13 @@ struct cascadeFlow {
     const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
     const AxisSpec CentAxis{18, 0., 90., "FT0C centrality percentile"};
     TString hNEventsLabels[6] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kIsGoodEventEP"};
+
+    resolution.add("QVectorsT0CTPCA", "QVectorsT0CTPCA", HistType::kTH2F, {axisQVs, CentAxis});
+    resolution.add("QVectorsT0CTPCC", "QVectorsT0CTPCC", HistType::kTH2F, {axisQVs, CentAxis});
+    resolution.add("QVectorsTPCAC", "QVectorsTPCAC", HistType::kTH2F, {axisQVs, CentAxis});
+    resolution.add("QVectorsNormT0CTPCA", "QVectorsNormT0CTPCA", HistType::kTH2F, {axisQVsNorm, CentAxis});
+    resolution.add("QVectorsNormT0CTPCC", "QVectorsNormT0CTPCC", HistType::kTH2F, {axisQVsNorm, CentAxis});
+    resolution.add("QVectorsNormTPCAC", "QVectorsNormTPCCB", HistType::kTH2F, {axisQVsNorm, CentAxis});
 
     histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{6, 0.f, 6.f}}});
     for (Int_t n = 1; n <= histos.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
@@ -451,10 +463,19 @@ struct cascadeFlow {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
     ROOT::Math::XYZVector eventplaneVecT0C{coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecBPosRe(), coll.qvecBPosIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecBNegRe(), coll.qvecBNegIm(), 0};
 
     const float PsiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     histos.fill(HIST("hPsiT0C"), PsiT0C);
     histos.fill(HIST("hPsiT0CvsCentFT0C"), coll.centFT0C(), PsiT0C);
+
+    resolution.fill(HIST("QVectorsT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA), coll.centFT0C());
+    resolution.fill(HIST("QVectorsT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC), coll.centFT0C());
+    resolution.fill(HIST("QVectorsTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC), coll.centFT0C());
+    resolution.fill(HIST("QVectorsNormT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA) / (coll.qTPCR() * coll.sumAmplFT0C()), coll.centFT0C());
+    resolution.fill(HIST("QVectorsNormT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC) / (coll.qTPCL() * coll.sumAmplFT0C()), coll.centFT0C());
+    resolution.fill(HIST("QVectorsNormTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC) / (coll.qTPCR() * coll.qTPCL()), coll.centFT0C());
 
     std::vector<float> bdtScore[2];
     for (auto& casc : Cascades) {
@@ -517,7 +538,7 @@ struct cascadeFlow {
       }
 
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
-      auto v2CSP = cascQvec.Dot(eventplaneVecT0C) / std::sqrt(eventplaneVecT0C.mag2());
+      auto v2CSP = cascQvec.Dot(eventplaneVecT0C); // not normalised by amplitude
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
       auto v2CEP = TMath::Cos(2.0 * cascminuspsiT0C);
 
@@ -540,7 +561,7 @@ struct cascadeFlow {
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, casc, v2CSP, PsiT0C, BDTresponse[0], BDTresponse[1]);
+        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1]);
     }
   }
 

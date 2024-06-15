@@ -108,7 +108,7 @@ struct HfTaskDstarToD0Pi {
     registry.add("QA/hPtVsYSkimNonPromptDstarRecSig", "MC Matched Skimed Non-Prompt D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtVsYRecoTopolNonPromptDstarRecSig", "MC Matched RecoTopol Non-Prompt D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtVsYRecoPidNonPromptDstarRecSig", "MC Matched RecoPid Non-Prompt D*  Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
-    registry.add("QA/hPtVsYFullRecoNonPromptDstarRecSig", "MC Matched FullReco Non-Prompt D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c})", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hPtFullRecoNonPromptDstarRecSig", "MC Matched FullReco Non-Prompt D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c})", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
     // MC Matching UnSuccessful
     registry.add("QA/hCPASkimD0RecBg", "MC UnMatched Skimmed D0 Candidates at Reconstruction Level; cosine of pointing angle", {HistType::kTH1F, {{110, -1., 1.}}});
     registry.add("QA/hEtaSkimD0RecBg", "MC UnMatched Skimmed D0 Candidates at Reconstruction Level; #it{#eta} of D0 Prong", {HistType::kTH1F, {{100, -2., 2.}}});
@@ -199,8 +199,8 @@ struct HfTaskDstarToD0Pi {
       if (TESTBIT(std::abs(candDstarMcRec.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // if MC matching is successful at Reconstruction Level
         // get MC Mother particle
         auto indexMother = RecoDecay::getMother(rowsMcPartilces, candDstarMcRec.prong0_as<aod::TracksWMc>().mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
-        auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother); // What is difference between rawIterator() or iteratorAt() methods?
-        registry.fill(HIST("QA/hPtDstarGenSig"), particleMother.pt());    // generator level pt
+        auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother);  // What is difference between rawIterator() or iteratorAt() methods?
+        registry.fill(HIST("QA/hPtSkimDstarGenSig"), particleMother.pt()); // generator level pt
 
         registry.fill(HIST("QA/hPtVsYSkimDstarRecSig"), ptDstarRecSig, yDstarRecSig); // Skimed at level of trackIndexSkimCreator
         if (candDstarMcRec.isRecoTopol()) {                                           // if Topological selection are passed
@@ -235,10 +235,10 @@ struct HfTaskDstarToD0Pi {
             registry.fill(HIST("QA/hPtVsYRecoTopolNonPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
           }
           if (candDstarMcRec.isRecoPid()) {
-            registry.fill(HIST("QA/PtVsYRecoPidNonPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
+            registry.fill(HIST("QA/hPtVsYRecoPidNonPromptDstarRecSig"), ptDstarRecSig, yDstarRecSig);
           }
           if (candDstarMcRec.isRecoCand()) {
-            registry.fill(HIST("QA/PtFullRecoPromptDstarRecSig"), ptDstarRecSig);
+            registry.fill(HIST("QA/hPtFullRecoNonPromptDstarRecSig"), ptDstarRecSig);
           }
         }
       } else { // MC Unmatched (Baground at Reconstruction Level)

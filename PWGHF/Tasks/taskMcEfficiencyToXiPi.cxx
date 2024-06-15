@@ -34,6 +34,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct HfTaskMcEfficiencyToXiPi {
+
   Configurable<float> rapidityCharmBaryonMax{"rapidityCharmBaryonMax", 0.5, "Max absolute value of rapidity for charm baryon"};
   Configurable<float> acceptanceEtaLf{"acceptanceEtaLf", 1.0, "Max absolute value of eta for LF daughters"};
   Configurable<float> acceptancePtPionFromCascade{"acceptancePtPionFromCascade", 0.2, "Min value of pt for pion <-- cascade"};
@@ -42,8 +43,6 @@ struct HfTaskMcEfficiencyToXiPi {
 
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement for pion <-- charm baryon"};
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pion <- charm baryon"};
-
-  Configurable<bool> rejGenTFAndITSROFBorders{"rejGenTFAndITSROFBorders", true, "Reject generated particles coming from bc close to TF and ITSROF borders"};
 
   ConfigurableAxis axisPt{"axisPt", {200, 0, 20}, "pT axis"};
   ConfigurableAxis axisMass{"axisMass", {900, 2.1, 3}, "m_inv axis"};
@@ -69,7 +68,8 @@ struct HfTaskMcEfficiencyToXiPi {
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
   using Xic0CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfXicToXiPiMCRec, aod::HfSelToXiPi>;
   using Omegac0CandidateInfo = soa::Join<aod::HfCandToXiPi, aod::HfOmegacToXiPiMCRec, aod::HfSelToXiPi>;
-  using ParticleInfo = soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>;
+  using ParticleInfoXic0 = soa::Join<aod::McParticles, aod::HfXicToXiPiMCGen>;
+  using ParticleInfoOmegac0 = soa::Join<aod::McParticles, aod::HfOmegacToXiPiMCGen>;
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   HistogramRegistry registry{"registry"};
@@ -210,15 +210,6 @@ struct HfTaskMcEfficiencyToXiPi {
     }
 
     for (const auto& mcParticle : genParticles) {
-
-      // accept only mc particles coming from bc that are far away from TF border and ITSROFrame
-      if (rejGenTFAndITSROFBorders) {
-        auto coll = mcParticle.template mcCollision_as<aod::McCollisions>();
-        auto bc = coll.template bc_as<BCsInfo>();
-        if (!bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-          continue;
-        }
-      }
 
       // check if I am treating the desired charm baryon
       if (std::abs(mcParticle.pdgCode()) != pdgCode) {
@@ -381,7 +372,7 @@ struct HfTaskMcEfficiencyToXiPi {
 
   // process functions
   void processXic0(Xic0CandidateInfo const& candidates,
-                   ParticleInfo const& genParticles,
+                   ParticleInfoXic0 const& genParticles,
                    BCsInfo const& bcs,
                    TracksWithSelectionMC const& tracks,
                    aod::McCollisions const& colls)
@@ -391,7 +382,7 @@ struct HfTaskMcEfficiencyToXiPi {
   PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processXic0, "Enable Xic0 efficiency process", true);
 
   void processOmegac0(Omegac0CandidateInfo const& candidates,
-                      ParticleInfo const& genParticles,
+                      ParticleInfoOmegac0 const& genParticles,
                       BCsInfo const& bcs,
                       TracksWithSelectionMC const& tracks,
                       aod::McCollisions const& colls)
