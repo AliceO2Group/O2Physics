@@ -609,17 +609,17 @@ struct phiInJets {
             double phidiff = TVector2::Phi_mpi_pi(mcd_phi[i] - lResonance.Phi());
             double etadiff = mcd_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
-	    
-	    double phidiff_K1 = TVector2::Phi_mpi_pi(mcd_phi[i] - lDecayDaughter1.Phi());
-	    double etadiff_K1 = mcd_eta[i] - lDecayDaughter1.Eta();
-	    double R_K1 = TMath::Sqrt((etadiff_K1 * etadiff_K1) + (phidiff_K1 * phidiff_K1));
-	    double phidiff_K2 = TVector2::Phi_mpi_pi(mcd_phi[i] - lDecayDaughter2.Phi());
-	    double etadiff_K2 = mcd_eta[i] - lDecayDaughter2.Eta();
-	    double R_K2 = TMath::Sqrt((etadiff_K2 * etadiff_K2) + (phidiff_K2 * phidiff_K2));
-	    if(R < cfgjetR){
-	      JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_Kangle_v_pt"), R_K1, lResonance.Pt());
-	      JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_Kangle_v_pt"), R_K2, lResonance.Pt());
-	    }  
+
+            double phidiff_K1 = TVector2::Phi_mpi_pi(mcd_phi[i] - lDecayDaughter1.Phi());
+            double etadiff_K1 = mcd_eta[i] - lDecayDaughter1.Eta();
+            double R_K1 = TMath::Sqrt((etadiff_K1 * etadiff_K1) + (phidiff_K1 * phidiff_K1));
+            double phidiff_K2 = TVector2::Phi_mpi_pi(mcd_phi[i] - lDecayDaughter2.Phi());
+            double etadiff_K2 = mcd_eta[i] - lDecayDaughter2.Eta();
+            double R_K2 = TMath::Sqrt((etadiff_K2 * etadiff_K2) + (phidiff_K2 * phidiff_K2));
+            if (R < cfgjetR) {
+              JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_Kangle_v_pt"), R_K1, lResonance.Pt());
+              JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_Kangle_v_pt"), R_K2, lResonance.Pt());
+            }
             if (R < cfgjetR)
               jetFlag = true;
           }
@@ -753,15 +753,15 @@ struct phiInJets {
             double phidiff = TVector2::Phi_mpi_pi(mcp_phi[i] - lResonance.Phi());
             double etadiff = mcp_eta[i] - lResonance.Eta();
             double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
-	    if (mcParticle.has_daughters()){
-	      for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>()){
-		double phidiff_K = TVector2::Phi_mpi_pi(mcp_phi[i] - dgth.phi());
-		double etadiff_K = mcp_eta[i] - dgth.eta();
-		double R_K = TMath::Sqrt((etadiff_K * etadiff_K) + (phidiff_K * phidiff_K));
-		if(R < cfgjetR)
-		  JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_Kangle_v_pt"), R_K, lResonance.Pt());
-	      }
-	    }			    
+            if (mcParticle.has_daughters()) {
+              for (auto& dgth : mcParticle.daughters_as<aod::JMcParticles>()) {
+                double phidiff_K = TVector2::Phi_mpi_pi(mcp_phi[i] - dgth.phi());
+                double etadiff_K = mcp_eta[i] - dgth.eta();
+                double R_K = TMath::Sqrt((etadiff_K * etadiff_K) + (phidiff_K * phidiff_K));
+                if (R < cfgjetR)
+                  JEhistos.fill(HIST("hMCTrue_nonmatch_hUSS_Kangle_v_pt"), R_K, lResonance.Pt());
+              }
+            }
             if (R < cfgjetR)
               jetFlag = true;
           }
