@@ -1035,7 +1035,7 @@ struct strangeness_in_jets {
   PROCESS_SWITCH(strangeness_in_jets, processData, "Process data", true);
 
   Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
-  Preslice<aod::Cascades> perCollisionCasc = o2::aod::cascade::collisionId;
+  Preslice<aod::CascDataExt> perCollisionCasc = o2::aod::cascade::collisionId;
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
 
   void processMCefficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::McCollisions const& mcCollisions, const aod::McParticles& mcParticles)
