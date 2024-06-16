@@ -539,9 +539,9 @@ struct phiInJets {
       auto originalTrack = track.track_as<myCompleteTracks>();
       if (!trackSelection(originalTrack))
         continue;
-      if(cfgSimPID)
-	if (!trackPID(originalTrack))
-	  continue;
+      if (cfgSimPID)
+        if (!trackPID(originalTrack))
+          continue;
 
       if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
@@ -559,9 +559,9 @@ struct phiInJets {
         auto originalTrack2 = track2.track_as<myCompleteTracks>();
         if (!trackSelection(originalTrack2))
           continue;
-	if(cfgSimPID)
-	  if (!trackPID(originalTrack2))
-	    continue;
+        if (cfgSimPID)
+          if (!trackPID(originalTrack2))
+            continue;
 
         if (originalTrack.index() >= originalTrack2.index())
           continue;
@@ -1023,12 +1023,12 @@ struct phiInJets {
         if ((trk1.sign() * trk2.sign()) > 0)
           continue; // Not K+K-
         if (trackSelection(trk1) && trackSelection(trk2)) {
-	  if(cfgSimPID){
-	    if (!trackPID(trk1))
-	      continue;
-	    if (!trackPID(trk2))
-	      continue;
-	  }
+          if (cfgSimPID) {
+            if (!trackPID(trk1))
+              continue;
+            if (!trackPID(trk2))
+              continue;
+          }
           if (track1.has_mcParticle() && track2.has_mcParticle()) {
             auto part1 = track1.mcParticle();
             auto part2 = track2.mcParticle();
