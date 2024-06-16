@@ -86,7 +86,6 @@ struct phiInJets {
   Configurable<int> cDebugLevel{"cDebugLevel", 0, "Resolution of Debug"};
   Configurable<bool> cfgBR{"cfgBR", false, "Forces Gen. Charged BR Only"};
   Configurable<bool> cfgSimPID{"cfgSimPID", false, "Enforces PID on the Gen. Rec level"};
-
   // CONFIG DONE
   /////////////////////////////////////////  //INIT
 

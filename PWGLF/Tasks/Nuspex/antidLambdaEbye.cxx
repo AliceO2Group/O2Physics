@@ -444,6 +444,8 @@ struct antidLambdaEbye {
     histos.add<TH2>("QA/nRecPerEvAntip", ";Centrality (%);#it{N}_{#bar{p}};#it{N}_{ev}", HistType::kTH2D, {centAxis, nGenRecAxis});
     histos.add<TH2>("QA/nRecPerEvAntiL", ";Centrality (%);#it{N}_{#bar{#Lambda}};#it{N}_{ev}", HistType::kTH2D, {centAxis, nGenRecAxis});
     histos.add<TH2>("QA/nRecPerEvL", ";Centrality (%);#it{N}_{#Lambda};#it{N}_{ev}", HistType::kTH2D, {centAxis, nGenRecAxis});
+    histos.add<TH2>("QA/nTrklCorrelation", ";Tracklets |#eta| > 0.6; Tracklets |#eta| < 0.6", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
+    histos.add<TH1>("QA/TrklEta", ";Tracklets #eta; Entries", HistType::kTH1D, {{100, -3., 3.}});
 
     nAntid = histos.add<THnSparse>("nAntid", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#bar{d}) (GeV/#it{c});", HistType::kTHnSparseD, {subsampleAxis, centAxis, deltaEtaAxis, ptAntidAxis});
     nAntip = histos.add<THnSparse>("nAntip", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#bar{p}) (GeV/#it{c});", HistType::kTHnSparseD, {subsampleAxis, centAxis, deltaEtaAxis, ptAntipAxis});
@@ -582,10 +584,16 @@ struct antidLambdaEbye {
     auto subsample = static_cast<int>(rnd * nSubsamples);
 
     gpu::gpustd::array<float, 2> dcaInfo;
+    int nTracklets[2]{0, 0};
     for (const auto& track : tracks) {
 
       histos.fill(HIST("QA/nClsTPCBeforeCut"), track.tpcNClsFound());
       histos.fill(HIST("QA/nCrossedRowsTPCBeforeCut"), track.tpcNClsCrossedRows());
+
+      if (track.trackType() == 255 && std::abs(track.eta()) < 1.2) { // tracklet
+        nTracklets[std::abs(track.eta()) < 0.6]++;
+        histos.fill(HIST("QA/TrklEta"), track.eta());
+      }
 
       if (!selectTrack(track)) {
         continue;
@@ -667,6 +675,7 @@ struct antidLambdaEbye {
         }
       }
     }
+    histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
 
     std::vector<int64_t> trkId;
     for (const auto& v0 : V0s) {

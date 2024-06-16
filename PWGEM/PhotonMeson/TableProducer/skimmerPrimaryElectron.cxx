@@ -319,7 +319,6 @@ struct skimmerPrimaryElectron {
   template <typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
-
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
       gpu::gpustd::array<float, 2> dcaInfo;
       auto track_par_cov_recalc = getTrackParCov(track);
@@ -433,7 +432,7 @@ struct skimmerPrimaryElectron {
 
   std::vector<std::pair<int64_t, int64_t>> stored_trackIds;
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
-  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((0.95f < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < 1.05f) || o2::aod::pidtofbeta::beta < 0.f);
+  Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((0.96f < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < 1.04f) || o2::aod::pidtofbeta::beta < 0.f);
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -468,7 +467,7 @@ struct skimmerPrimaryElectron {
   PROCESS_SWITCH(skimmerPrimaryElectron, processRec_SA, "process reconstructed info only", true); // standalone
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  void processRec_TTCA(aod::Collisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::TrackAssoc const& trackIndices)
+  void processRec_TTCA(aod::Collisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks, aod::TrackAssoc const& trackIndices)
   {
     stored_trackIds.reserve(tracks.size() * 2);
 
@@ -484,7 +483,7 @@ struct skimmerPrimaryElectron {
       negTracks_per_coll.reserve(trackIdsThisCollision.size());
 
       for (auto& trackId : trackIdsThisCollision) {
-        auto track = trackId.template track_as<MyTracks>();
+        auto track = trackId.template track_as<MyFilteredTracks>();
         if (!checkTrack<false>(collision, track) || !isElectron(track)) {
           continue;
         }
@@ -550,7 +549,7 @@ struct skimmerPrimaryElectron {
   }
   PROCESS_SWITCH(skimmerPrimaryElectron, processMC_SA, "process reconstructed and MC info ", false);
 
-  void processMC_TTCA(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, aod::TrackAssoc const& trackIndices)
+  void processMC_TTCA(soa::Join<aod::McCollisionLabels, aod::Collisions> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks, aod::TrackAssoc const& trackIndices)
   {
     stored_trackIds.reserve(tracks.size() * 2);
 
@@ -569,7 +568,7 @@ struct skimmerPrimaryElectron {
       negTracks_per_coll.reserve(trackIdsThisCollision.size());
 
       for (auto& trackId : trackIdsThisCollision) {
-        auto track = trackId.template track_as<MyTracksMC>();
+        auto track = trackId.template track_as<MyFilteredTracksMC>();
         if (!checkTrack<true>(collision, track) || !isElectron(track)) {
           continue;
         }
@@ -932,9 +931,34 @@ struct prefilterPrimaryElectron {
   PROCESS_SWITCH(prefilterPrimaryElectron, processDummy, "process dummy", true);
 };
 
+struct associateAmbiguousElectron {
+  Produces<aod::EMAmbiguousElectronSelfIds> em_amb_ele_ids;
+
+  SliceCache cache;
+  PresliceUnsorted<aod::EMPrimaryElectrons> perTrack = o2::aod::emprimaryelectron::trackId;
+  std::vector<int> ambele_self_Ids;
+
+  void process(aod::EMPrimaryElectrons const& electrons)
+  {
+    for (auto& electron : electrons) {
+      auto electrons_with_same_trackId = electrons.sliceBy(perTrack, electron.trackId());
+      ambele_self_Ids.reserve(electrons_with_same_trackId.size());
+      for (auto& amp_ele : electrons_with_same_trackId) {
+        if (amp_ele.globalIndex() == electron.globalIndex()) { // don't store myself.
+          continue;
+        }
+        ambele_self_Ids.emplace_back(amp_ele.globalIndex());
+      }
+      em_amb_ele_ids(ambele_self_Ids);
+      ambele_self_Ids.clear();
+      ambele_self_Ids.shrink_to_fit();
+    }
+  }
+};
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<skimmerPrimaryElectron>(cfgc, TaskName{"skimmer-primary-electron"}),
-    adaptAnalysisTask<prefilterPrimaryElectron>(cfgc, TaskName{"prefilter-primary-electron"})};
+    adaptAnalysisTask<prefilterPrimaryElectron>(cfgc, TaskName{"prefilter-primary-electron"}),
+    adaptAnalysisTask<associateAmbiguousElectron>(cfgc, TaskName{"associate-ambiguous-electron"})};
 }
