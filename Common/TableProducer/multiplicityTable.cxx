@@ -22,7 +22,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "TableHelper.h"
 #include "iostream"
-#include "THashList.h"
+#include "TList.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -124,7 +124,7 @@ struct MultiplicityTable {
 
   // Debug output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
-  OutputObj<THashList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
+  OutputObj<TList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
 
   unsigned int randomSeed = 0;
   void init(InitContext& context)
@@ -191,7 +191,7 @@ struct MultiplicityTable {
     histos.add("FT0CMultvsPV", "FT0C vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0C mult."}, {100, 0, 100, "PV mult."}});
     histos.add("FT0AMultvsPV", "FT0A vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0A mult."}, {100, 0, 100, "PV mult."}});
 
-    listCalib.setObject(new THashList);
+    listCalib.setObject(new TList);
   }
 
   void processRun2(aod::Run2MatchedSparse::iterator const& collision,
