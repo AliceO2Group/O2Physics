@@ -44,7 +44,7 @@ const char* selectionLabels[kNsel] = {
   "kNoV0C012vsTklBG",
   "kNoInconsistentVtx",
   "kNoPileupInMultBins",
-  "kNoPilupMV",
+  "kNoPileupMV",
   "kNoPileupTPC",
   "kIsTriggerTVX",
   "kIsINT1",
