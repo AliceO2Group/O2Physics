@@ -16,80 +16,92 @@
 ///
 
 #include "Common/Core/MetadataHelper.h"
+
 #include "Framework/InitContext.h"
 #include "Framework/RunningWorkflowInfo.h"
 
+MetadataHelper::MetadataHelper()
+{
+  const std::array<std::string, 5> keyList = {"DataType",
+                                              "RecoPassName",
+                                              "Run",
+                                              "AnchorPassName",
+                                              "AnchorProduction"};
+  for (const auto& key : keyList) {
+    mMetadata[key] = "undefined";
+  }
+}
+
 void MetadataHelper::initMetadata(o2::framework::ConfigContext const& cfgc)
 {
-  if (cfgc.options().hasOption("aod-metadata-DataType")) {
-    aodmetadataDataType = cfgc.options().get<std::string>("aod-metadata-DataType");
-    LOG(info) << "Setting metadata DataType to '" << aodmetadataDataType << "'";
+  if (mIsInitialized) {
+    LOG(fatal) << "Metadata already initialized. Cannot reinitialize";
   }
-  if (cfgc.options().hasOption("aod-metadata-RecoPassName")) {
-    aodmetadataRecoPassName = cfgc.options().get<std::string>("aod-metadata-RecoPassName");
-    LOG(info) << "Setting metadata RecoPassName to '" << aodmetadataRecoPassName << "'";
+  for (const auto& key : mMetadata) {
+    const std::string cfgKey = "aod-metadata-" + key.first;
+    if (cfgc.options().hasOption(cfgKey.c_str())) {
+      mMetadata[key.first] = cfgc.options().get<std::string>(cfgKey.c_str());
+      LOG(info) << "Setting metadata " << key.first << " to '" << mMetadata[key.first] << "'";
+    }
   }
-  if (cfgc.options().hasOption("aod-metadata-Run")) {
-    aodmetadataRun = cfgc.options().get<std::string>("aod-metadata-Run");
-    LOG(info) << "Setting metadata Run to '" << aodmetadataRun << "'";
-  }
-  if (cfgc.options().hasOption("aod-metadata-AnchorPassName")) {
-    aodmetadataAnchorPassName = cfgc.options().get<std::string>("aod-metadata-AnchorPassName");
-    LOG(info) << "Setting metadata AnchorPassName to '" << aodmetadataAnchorPassName << "'";
-  }
-  if (cfgc.options().hasOption("aod-metadata-AnchorProduction")) {
-    aodmetadataAnchorProduction = cfgc.options().get<std::string>("aod-metadata-AnchorProduction");
-    LOG(info) << "Setting metadata AnchorProduction to '" << aodmetadataAnchorProduction << "'";
-  }
+  mIsInitialized = true;
 }
 
 void MetadataHelper::print() const
 {
-  LOG(info) << "Metadata DataType: " << aodmetadataDataType;
-  LOG(info) << "Metadata RecoPassName: " << aodmetadataRecoPassName;
-  LOG(info) << "Metadata Run: " << aodmetadataRun;
-  LOG(info) << "Metadata AnchorPassName: " << aodmetadataAnchorPassName;
-  LOG(info) << "Metadata AnchorProduction: " << aodmetadataAnchorProduction;
+  if (!mIsInitialized) {
+    LOG(fatal) << "Metadata not initialized";
+  }
+  for (const auto& key : mMetadata) {
+    LOG(info) << "Metadata " << key.first << ": " << key.second;
+  }
+}
+
+bool MetadataHelper::isKeyDefined(const std::string& key) const
+{
+  if (!mIsInitialized) {
+    LOG(fatal) << "Metadata not initialized";
+  }
+  if (mMetadata.find(key) == mMetadata.end()) {
+    LOG(fatal) << "Key " << key << " not found in metadata";
+  }
+  return mMetadata.at(key) != "undefined";
 }
 
 bool MetadataHelper::isFullyDefined() const
 {
-  if (aodmetadataDataType == "undefined") {
-    return false;
+  if (!mIsInitialized) {
+    LOG(fatal) << "Metadata not initialized";
   }
-  if (aodmetadataRecoPassName == "undefined") {
-    return false;
-  }
-  if (aodmetadataRun == "undefined") {
-    return false;
-  }
-  if (aodmetadataAnchorPassName == "undefined") {
-    return false;
-  }
-  if (aodmetadataAnchorProduction == "undefined") {
-    return false;
+  for (const auto& key : mMetadata) {
+    if (!isKeyDefined(key.first)) {
+      return false;
+    }
   }
   return true;
 }
 
-int MetadataHelper::isRun3() const
+std::string MetadataHelper::get(std::string const& key) const
 {
-  if (aodmetadataRun == "undefined") {
-    LOG(error) << "Metadata Run is undefined";
-    return -1;
+  if (!mIsInitialized) {
+    LOG(fatal) << "Metadata not initialized";
   }
-  const bool b = (aodmetadataRun == "3");
+  if (mMetadata.find(key) == mMetadata.end()) {
+    LOG(fatal) << "Key " << key << " not found in metadata";
+  }
+  return mMetadata.at(key);
+}
+
+bool MetadataHelper::isRun3() const
+{
+  const bool b = (get("Run") == "3");
   LOG(info) << "From metadata this data is from " << (b ? "Run 3" : "Run 2");
   return b;
 }
 
-int MetadataHelper::isMC() const
+bool MetadataHelper::isMC() const
 {
-  if (aodmetadataDataType == "undefined") {
-    LOG(error) << "Metadata DataType is undefined";
-    return -1;
-  }
-  const bool b = (aodmetadataDataType == "MC");
+  const bool b = (get("DataType") == "MC");
   LOG(info) << "From metadata this data is from " << (b ? "MC" : "Data");
   return b;
 }
@@ -97,9 +109,9 @@ int MetadataHelper::isMC() const
 bool MetadataHelper::isInitialized() const
 {
   if (mIsInitialized) {
-    LOG(info) << "Metadata is initialized";
+    LOG(debug) << "Metadata is initialized";
   } else {
-    LOG(info) << "Metadata is not initialized";
+    LOG(debug) << "Metadata is not initialized";
   }
   return mIsInitialized;
 }
