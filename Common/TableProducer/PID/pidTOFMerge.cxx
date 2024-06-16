@@ -30,6 +30,7 @@
 
 // O2Physics includes
 #include "TableHelper.h"
+#include "MetadataHelper.h"
 #include "pidTOFBase.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -42,44 +43,12 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-struct MetaDataInfo {
-  std::string aodmetadataDataType;
-  std::string aodmetadataRecoPassName;
-  std::string aodmetadataRun;
-  std::string aodmetadataAnchorPassName;
-  std::string aodmetadataAnchorProduction;
-
-  void initMetadata(ConfigContext const& cfgc)
-  {
-    if (cfgc.options().hasOption("aod-metadata-DataType")) {
-      aodmetadataDataType = cfgc.options().get<std::string>("aod-metadata-DataType");
-      LOG(info) << "Setting metadata DataType to '" << aodmetadataDataType << "'";
-    }
-    if (cfgc.options().hasOption("aod-metadata-RecoPassName")) {
-      aodmetadataRecoPassName = cfgc.options().get<std::string>("aod-metadata-RecoPassName");
-      LOG(info) << "Setting metadata RecoPassName to '" << aodmetadataRecoPassName << "'";
-    }
-    if (cfgc.options().hasOption("aod-metadata-Run")) {
-      aodmetadataRun = cfgc.options().get<std::string>("aod-metadata-Run");
-      LOG(info) << "Setting metadata Run to '" << aodmetadataRun << "'";
-    }
-    if (cfgc.options().hasOption("aod-metadata-AnchorPassName")) {
-      aodmetadataAnchorPassName = cfgc.options().get<std::string>("aod-metadata-AnchorPassName");
-      LOG(info) << "Setting metadata AnchorPassName to '" << aodmetadataAnchorPassName << "'";
-    }
-    if (cfgc.options().hasOption("aod-metadata-AnchorProduction")) {
-      aodmetadataAnchorProduction = cfgc.options().get<std::string>("aod-metadata-AnchorProduction");
-      LOG(info) << "Setting metadata AnchorProduction to '" << aodmetadataAnchorProduction << "'";
-    }
-  }
-
-  bool isRun3() const
-  {
-    const bool b = aodmetadataDataType == "3";
-    LOG(info) << "From metadata this data is from " << (b ? "Run 3" : "Run 2");
-    return b;
-  }
-} metadataInfo;
+MetadataHelper metadataInfo;
+struct TOFCalibConfig : ConfigurableGroup {
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
+};
 
 // Part 1 event time definition
 
@@ -109,9 +78,7 @@ struct tofSignal {
   bool enableTable = false;      // Flag to check if the TOF signal table is requested or not
   bool enableTableFlags = false; // Flag to check if the TOF signal flags table is requested or not
   // CCDB configuration
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
-  Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
+  TOFCalibConfig mTOFCalibConfig;
   Configurable<float> distanceForGoodMatch{"distanceForGoodMatch", 999.f, "Maximum distance to consider a good match"};
   Configurable<float> distanceForGoodMatchLowMult{"distanceForGoodMatchLowMult", 999.f, "Maximum distance to consider a good match for low multiplicity events"};
   Configurable<int> multThreshold{"multThreshold", 0, "Multiplicity threshold to consider a low multiplicity event"};
