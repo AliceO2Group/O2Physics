@@ -468,6 +468,7 @@ struct EventSelectionTask {
     histos.add("hColCounterAll", "", kTH1D, {{1, 0., 1.}});
     histos.add("hColCounterTVX", "", kTH1D, {{1, 0., 1.}});
     histos.add("hColCounterAcc", "", kTH1D, {{1, 0., 1.}});
+    // histos.add("hOccupancy", "", kTH1D, {{200, 0., 10000}});
   }
 
   void process(aod::Collisions const& collisions)
@@ -788,9 +789,9 @@ struct EventSelectionTask {
           continue;
         float dt = vCollsTimeDeltaWrtGivenColl[iCol] / 1e3; // ns -> us
 
-        if (!confUseWeightsForOccupancyVariable)
+        if (!confUseWeightsForOccupancyVariable) {
           nITS567tracksInFullTimeWindow += vTracksITS567perColl[thisColIndex];
-        else {
+        } else {
           // weighted occupancy
           float wOccup = 0;
           if (dt >= -40 && dt < -5) // collisions in the past
@@ -880,6 +881,7 @@ struct EventSelectionTask {
       }
 
       int nTracksITS567inFullTimeWin = vNumTracksITS567inFullTimeWin[colIndex];
+      // histos.get<TH1>(HIST("hOccupancy"))->Fill(nTracksITS567inFullTimeWin);
 
       evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, nTracksITS567inFullTimeWin);
     }
