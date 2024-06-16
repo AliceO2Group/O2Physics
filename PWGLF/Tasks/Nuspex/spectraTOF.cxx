@@ -606,7 +606,7 @@ struct tofSpectra {
     histos.print();
   }
 
-  void processBC(aod::BC const& bc,
+  void processBC(soa::Join<aod::BCs, aod::BcSels>::iterator const& bc,
                  aod::FT0s const&)
   {
     const bool sel8 = bc.selection_bit(aod::evsel::kIsTriggerTVX) && bc.selection_bit(aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(aod::evsel::kNoITSROFrameBorder);
