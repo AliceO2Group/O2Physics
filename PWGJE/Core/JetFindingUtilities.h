@@ -51,6 +51,24 @@ namespace jetfindingutilities
 {
 
 /**
+ * returns true if the cluster is from an EMCAL table
+ */
+template <typename T>
+constexpr bool isEMCALCluster()
+{
+  return std::is_same_v<std::decay_t<T>, JetClusters::iterator> || std::is_same_v<std::decay_t<T>, JetClusters::filtered_iterator> || std::is_same_v<std::decay_t<T>, JetClustersMCD::iterator> || std::is_same_v<std::decay_t<T>, JetClustersMCD::filtered_iterator>;
+}
+
+/**
+ * returns true if the table is an EMCAL table
+ */
+template <typename T>
+constexpr bool isEMCALTable()
+{
+  return isEMCALCluster<typename T::iterator>() || isEMCALCluster<typename T::filtered_iterator>();
+}
+
+/**
  * Adds tracks to a fastjet inputParticles list
  *
  * @param inputParticles fastjet container

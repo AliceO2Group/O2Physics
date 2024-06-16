@@ -732,6 +732,28 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pionPosPrimaryNoPID")) {
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCA"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionNegPrimaryNoPID")) {
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCA"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("posTrack")) {
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    return cut;
+  }
+
+  if (!nameStr.compare("negTrack")) {
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    return cut;
+  }
+
   // NOTE Below there are several TPC pid cuts used for studies of the Run3 TPC post PID calib.
   if (!nameStr.compare("Jpsi_TPCPost_calib_debug1")) {
     cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug"));
@@ -1199,14 +1221,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   std::vector<TString> vecTypetrack;
-  vecTypetrack.emplace_back("");               // default TightGlobalTrackRun3
-  vecTypetrack.emplace_back("_7ITSncls");      // default TightGlobalTrackRun3 but with 7 ITS clusters
-  vecTypetrack.emplace_back("_ITS");           // Ask only for ITS requirements
-  vecTypetrack.emplace_back("_ITSalone");      // Ask only for ITS requirements + ITSalone (no TPC matching)
-  vecTypetrack.emplace_back("_TPC");           // Ask only for TPC requirements
-  vecTypetrack.emplace_back("_TPCalone");      // Ask only for TPC requirements + TPCalone (no ITS matching)
-  vecTypetrack.emplace_back("_TPCnoTRD");      // Ask only for TPC requirements no TRD matching
-  vecTypetrack.emplace_back("_TPCstrongncls"); // default TightGlobalTrackRun3 but with 130 TPC clusters
+  vecTypetrack.emplace_back("");                  // default TightGlobalTrackRun3
+  vecTypetrack.emplace_back("_7ITSncls");         // default TightGlobalTrackRun3 but with 7 ITS clusters
+  vecTypetrack.emplace_back("_ITS");              // Ask only for ITS requirements
+  vecTypetrack.emplace_back("_ITSalone");         // Ask only for ITS requirements + ITSalone (no TPC matching)
+  vecTypetrack.emplace_back("_TPC");              // Ask only for TPC requirements
+  vecTypetrack.emplace_back("_TPCalone");         // Ask only for TPC requirements + TPCalone (no ITS matching)
+  vecTypetrack.emplace_back("_TPCnoTRD");         // Ask only for TPC requirements no TRD matching
+  vecTypetrack.emplace_back("_TPCstrongncls");    // default TightGlobalTrackRun3 but with 130 TPC clusters
   vecTypetrack.emplace_back("_ITSanyfirsttwo");   // default TightGlobalTrackRun3 but with a cluster in any of the first two layers
   vecTypetrack.emplace_back("_ITSanyfirstthree"); // default TightGlobalTrackRun3 but with a cluster in any of the first three layers
 
@@ -1342,6 +1364,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   // loop to define PID cuts with and without post calibration
   for (size_t icase = 0; icase < vecPIDcase.size(); icase++) {
+    if (!nameStr.compare(Form("lmee_onlyTPCPID%s", vecPIDcase.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut(Form("electronPIDOnly%s", vecPIDcase.at(icase).Data())));
+      return cut;
+    }
+
     if (!nameStr.compare(Form("ITSTPC_TPCPID%s_prefilter", vecPIDcase.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("lmeePrefilterKine"));
       cut->AddCut(GetAnalysisCut("electronStandardQualityITSOnly"));
@@ -3058,6 +3085,61 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
     cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     return cut;
+  }
+
+  if (!nameStr.compare("eventStandardSel8PbPbQualityTightTrackOccupancy")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+    cut->AddCut(VarManager::kCentFT0C, 0.0, 90.0);
+    cut->AddCut(VarManager::kTrackOccupancyInTimeRange, 0., 1000);
+
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardSel8PbPbQualityLooseTrackOccupancy")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+    cut->AddCut(VarManager::kCentFT0C, 0.0, 90.0);
+    cut->AddCut(VarManager::kTrackOccupancyInTimeRange, 0., 5000);
+
+    return cut;
+  }
+
+  std::vector<double> vecOccupancies = {0.,
+                                        250.,
+                                        500.,
+                                        750.,
+                                        1000.,
+                                        1500.,
+                                        2000.,
+                                        3000.,
+                                        4500.,
+                                        6000.,
+                                        8000.,
+                                        10000.,
+                                        50000.};
+
+  for (size_t icase = 0; icase < vecOccupancies.size() - 1; icase++) {
+    if (!nameStr.compare(Form("eventStandardSel8PbPbQualityTrackOccupancySlice%i", icase))) {
+      cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+      cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+      cut->AddCut(VarManager::kCentFT0C, 0.0, 90.0);
+      cut->AddCut(VarManager::kTrackOccupancyInTimeRange, vecOccupancies[icase], vecOccupancies[icase + 1]);
+
+      return cut;
+    }
   }
 
   if (!nameStr.compare("eventStandardSel8ppQuality")) {

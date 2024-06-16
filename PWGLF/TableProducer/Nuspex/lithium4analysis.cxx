@@ -185,7 +185,7 @@ struct lithium4analysis {
   {
 
     if (candidate.itsNCls() < 5 ||
-        candidate.tpcNClsFound() < 100 || // candidate.tpcNClsFound() < 70 ||
+        candidate.tpcNClsFound() < 90 || // candidate.tpcNClsFound() < 70 ||
         candidate.tpcNClsCrossedRows() < 70 ||
         candidate.tpcNClsCrossedRows() < 0.8 * candidate.tpcNClsFindable() ||
         candidate.tpcChi2NCl() > 4.f ||

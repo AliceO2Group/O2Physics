@@ -147,6 +147,7 @@ o2physics_add_dpl_workflow(candidate-selector-lc-to-k0s-p
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+
 o2physics_add_dpl_workflow(candidate-selector-omegac-to-omega-pi-with-kfp
                     SOURCES candidateSelectorOmegacToOmegaPiWithKFP.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
@@ -154,6 +155,10 @@ o2physics_add_dpl_workflow(candidate-selector-omegac-to-omega-pi-with-kfp
 
 o2physics_add_dpl_workflow(candidate-selector-to-xi-pi
                     SOURCES candidateSelectorToXiPi.cxx
+
+o2physics_add_dpl_workflow(candidate-selector-omegac0-to-omega-ka
+                    SOURCES candidateSelectorOmegac0ToOmegaKa.cxx
+
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -162,8 +167,8 @@ o2physics_add_dpl_workflow(candidate-selector-omegac0-to-omega-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(candidate-selector-omegac0-to-omega-ka
-                    SOURCES candidateSelectorOmegac0ToOmegaKa.cxx
+o2physics_add_dpl_workflow(candidate-selector-to-xi-pi
+                    SOURCES candidateSelectorToXiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -229,6 +234,7 @@ o2physics_add_dpl_workflow(tree-creator-omegac-st
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
+
 o2physics_add_dpl_workflow(tree-creator-omegac-to-omega-pi-with-kfp
                     SOURCES treeCreatorOmegacToOmegaPiWithKFP.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -236,6 +242,10 @@ o2physics_add_dpl_workflow(tree-creator-omegac-to-omega-pi-with-kfp
 
 o2physics_add_dpl_workflow(tree-creator-to-xi-pi
                     SOURCES treeCreatorToXiPi.cxx
+
+o2physics_add_dpl_workflow(tree-creator-omegac0-to-omega-ka
+                    SOURCES treeCreatorOmegacToOmegaKa.cxx
+
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -244,8 +254,8 @@ o2physics_add_dpl_workflow(tree-creator-omegac0-to-omega-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(tree-creator-omegac0-to-omega-ka
-                    SOURCES treeCreatorOmegacToOmegaKa.cxx
+o2physics_add_dpl_workflow(tree-creator-to-xi-pi
+                    SOURCES treeCreatorToXiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

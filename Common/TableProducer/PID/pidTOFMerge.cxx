@@ -30,6 +30,7 @@
 
 // O2Physics includes
 #include "TableHelper.h"
+#include "MetadataHelper.h"
 #include "pidTOFBase.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -41,6 +42,13 @@ using namespace o2::framework;
 using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
+
+MetadataHelper metadataInfo;
+struct TOFCalibConfig : ConfigurableGroup {
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
+};
 
 // Part 1 event time definition
 
@@ -70,9 +78,7 @@ struct tofSignal {
   bool enableTable = false;      // Flag to check if the TOF signal table is requested or not
   bool enableTableFlags = false; // Flag to check if the TOF signal flags table is requested or not
   // CCDB configuration
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
-  Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
+  TOFCalibConfig mTOFCalibConfig;
   Configurable<float> distanceForGoodMatch{"distanceForGoodMatch", 999.f, "Maximum distance to consider a good match"};
   Configurable<float> distanceForGoodMatchLowMult{"distanceForGoodMatchLowMult", 999.f, "Maximum distance to consider a good match for low multiplicity events"};
   Configurable<int> multThreshold{"multThreshold", 0, "Multiplicity threshold to consider a low multiplicity event"};
@@ -80,6 +86,27 @@ struct tofSignal {
 
   void init(o2::framework::InitContext& initContext)
   {
+    // Checking that the table is requested in the workflow and enabling it
+    enableTable = isTableRequiredInWorkflow(initContext, "TOFSignal");
+    if (enableTable) {
+      LOG(info) << "Table TOFSignal enabled!";
+    }
+    enableTableFlags = isTableRequiredInWorkflow(initContext, "pidTOFFlags");
+    if (enableTableFlags) {
+      LOG(info) << "Table pidTOFFlags enabled!";
+    }
+
+    // Checking that the table is requested in the workflow and enabling it
+    if (!enableTable && !enableTableFlags && !doprocessRun2 && !doprocessRun3) {
+      LOG(info) << "No table or process is enabled. Disabling task";
+      return;
+    }
+    if (!metadataInfo.isRun3()) {
+      doprocessRun2.value = true;
+    } else {
+      doprocessRun3.value = false;
+    }
+
     if (doprocessRun2 && doprocessRun3) {
       LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
     }
@@ -87,17 +114,6 @@ struct tofSignal {
       LOG(fatal) << "Neither processRun2 nor processRun3 are enabled. Pick one of the two";
     }
 
-    // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFSignal");
-    enableTable = true;
-    if (enableTable) {
-      LOG(info) << "Table TOFSignal enabled!";
-    }
-    enableTableFlags = isTableRequiredInWorkflow(initContext, "pidTOFFlags");
-    enableTableFlags = true;
-    if (enableTableFlags) {
-      LOG(info) << "Table pidTOFFlags enabled!";
-    }
     trackDistanceForGoodMatch = distanceForGoodMatch;
     trackDistanceForGoodMatchLowMult = distanceForGoodMatchLowMult;
     multiplicityThreshold = multThreshold;
@@ -110,6 +126,9 @@ struct tofSignal {
       histos.add("goodForPIDFlags", "goodForPIDFlags", kTH1D, {{3, 0, 3, "flags"}});
     }
   }
+
+  void process(aod::BCs const&) {}
+
   void processRun3(Run3Trks const& tracks, Run3Cols const& collisions)
   {
     if (!enableTable) {
@@ -135,7 +154,7 @@ struct tofSignal {
       tableFlags(b);
     }
   }
-  PROCESS_SWITCH(tofSignal, processRun3, "Process Run3 data i.e. input is TrackIU", true);
+  PROCESS_SWITCH(tofSignal, processRun3, "Process Run3 data i.e. input is TrackIU", false);
 
   using TrksRun2 = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
   void processRun2(TrksRun2 const& tracks)
@@ -194,7 +213,7 @@ struct tofEventTime {
   bool enableTable = false;
   bool enableTableTOFOnly = false;
   // Detector response and input parameters
-  o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<bool> inheritFromBaseTask{"inheritFromBaseTask", true, "Flag to iherit all common configurables from the TOF base task"};
   // CCDB configuration (inherited from TOF signal task)
@@ -216,6 +235,31 @@ struct tofEventTime {
 
   void init(o2::framework::InitContext& initContext)
   {
+    // Checking that the table is requested in the workflow and enabling it
+    enableTable = isTableRequiredInWorkflow(initContext, "TOFEvTime");
+
+    if (!enableTable) {
+      LOG(info) << "Table for TOF Event time (TOFEvTime) is not required, disabling it";
+      doprocessRun2.value = false;
+      doprocessNoFT0.value = false;
+      doprocessFT0.value = false;
+      doprocessOnlyFT0.value = false;
+      return;
+    }
+    LOG(info) << "Table TOFEvTime enabled!";
+
+    enableTableTOFOnly = isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
+    if (enableTableTOFOnly) {
+      LOG(info) << "Table EvTimeTOFOnly enabled!";
+    }
+
+    if (metadataInfo.isRun3()) {
+      doprocessRun2.value = true;
+      doprocessNoFT0.value = false;
+      doprocessFT0.value = false;
+      doprocessOnlyFT0.value = false;
+    }
+
     if (inheritFromBaseTask.value) {
       if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
         LOG(fatal) << "Could not get ccdb-url from tof-signal task";
@@ -249,21 +293,6 @@ struct tofEventTime {
     if (nEnabled > 1) {
       LOGF(fatal, "Cannot enable more process functions at the same time. Please choose one.");
     }
-    // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFEvTime");
-    enableTable = true;
-
-    if (!enableTable) {
-      LOG(info) << "Table for TOF Event time (TOFEvTime) is not required, disabling it";
-      return;
-    }
-    LOG(info) << "Table TOFEvTime enabled!";
-
-    enableTableTOFOnly = isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
-    enableTableTOFOnly = true;
-    if (enableTableTOFOnly) {
-      LOG(info) << "Table EvTimeTOFOnly enabled!";
-    }
 
     if (sel8TOFEvTime.value == true) {
       LOG(info) << "TOF event time will be computed for collisions that pass the event selection only!";
@@ -291,39 +320,41 @@ struct tofEventTime {
         o2::tof::ParameterCollection paramCollection;
         paramCollection.loadParamFromFile(fname, parametrizationPath.value);
         LOG(info) << "+++ Loaded parameter collection from file +++";
-        if (!paramCollection.retrieveParameters(mRespParamsV2, passName.value)) {
+        if (!paramCollection.retrieveParameters(mRespParamsV3, passName.value)) {
           if (fatalOnPassNotAvailable) {
             LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
           } else {
             LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
           }
         } else {
-          mRespParamsV2.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
-          mRespParamsV2.printMomentumChargeShiftParameters();
+          mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
+          mRespParamsV3.printMomentumChargeShiftParameters();
         }
       } else {
-        mRespParamsV2.loadParamFromFile(fname.data(), parametrizationPath.value);
+        mRespParamsV3.loadParamFromFile(fname.data(), parametrizationPath.value);
       }
     } else if (loadResponseFromCCDB) { // Loading it from CCDB
       LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
 
       o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
       paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) {
+      if (!paramCollection->retrieveParameters(mRespParamsV3, passName.value)) {
         if (fatalOnPassNotAvailable) {
           LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         } else {
           LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         }
       } else {
-        mRespParamsV2.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
-        mRespParamsV2.printMomentumChargeShiftParameters();
+        mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
+        mRespParamsV3.printMomentumChargeShiftParameters();
       }
     }
-    mRespParamsV2.print();
+    mRespParamsV3.print();
     o2::tof::eventTimeContainer::setMaxNtracksInSet(maxNtracksInSet.value);
     o2::tof::eventTimeContainer::printConfig();
   }
+
+  void process(aod::BCs const&) {}
 
   ///
   /// Process function to prepare the event for each track on Run 2 data
@@ -389,7 +420,7 @@ struct tofEventTime {
       const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
 
       // First make table for event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
+      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
       int nGoodTracksForTOF = 0;
       float et = evTimeTOF.mEventTime;
       float erret = evTimeTOF.mEventTimeError;
@@ -413,7 +444,7 @@ struct tofEventTime {
       }
     }
   }
-  PROCESS_SWITCH(tofEventTime, processNoFT0, "Process without FT0", true);
+  PROCESS_SWITCH(tofEventTime, processNoFT0, "Process without FT0", false);
 
   ///
   /// Process function to prepare the event for each track on Run 3 data with the FT0
@@ -452,7 +483,7 @@ struct tofEventTime {
       const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
       // Compute the TOF event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
+      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
 
       float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC
       float t0TOF[2] = {static_cast<float_t>(evTimeTOF.mEventTime), static_cast<float_t>(evTimeTOF.mEventTimeError)}; // Value and error of TOF
@@ -602,7 +633,7 @@ struct tofPidMerge {
   Produces<o2::aod::pidTOFFullAl> tablePIDFullAl;
 
   // Detector response parameters
-  o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<bool> inheritFromBaseTask{"inheritFromBaseTask", true, "Flag to iherit all common configurables from the TOF base task"};
   // CCDB configuration (inherited from TOF base task)
@@ -633,6 +664,47 @@ struct tofPidMerge {
   std::vector<int> mEnabledParticlesFull; // Vector of enabled PID hypotheses to loop on when making full tables
   void init(o2::framework::InitContext& initContext)
   {
+    // Checking the tables are requested in the workflow and enabling them
+    for (int i = 0; i < nSpecies; i++) {
+      // First checking tiny
+      int f = enableParticle->get(particleNames[i].c_str(), "Enable");
+      enableFlagIfTableRequired(initContext, "pidTOF" + particleNames[i], f);
+      if (f == 1) {
+        mEnabledParticles.push_back(i);
+      }
+
+      // Then checking full tables
+      f = enableParticle->get(particleNames[i].c_str(), "EnableFull");
+      enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[i], f);
+      if (f == 1) {
+        mEnabledParticlesFull.push_back(i);
+      }
+    }
+    if (mEnabledParticlesFull.size() == 0 && mEnabledParticles.size() == 0) {
+      LOG(info) << "No PID tables are required, disabling the task";
+      doprocessData.value = false;
+      return;
+    }
+
+    // Printing enabled tables and enabling QA histograms if needed
+    LOG(info) << "++ Enabled tables:";
+    const AxisSpec pAxis{100, 0, 5, "#it{p} (GeV/#it{c})"};
+    const AxisSpec nSigmaAxis{100, -10, 10, "N_{#sigma}^{TOF}"};
+    for (const int& i : mEnabledParticles) {
+      LOG(info) << "++  pidTOF" << particleNames[i] << " is enabled";
+      if (!enableQaHistograms) {
+        continue;
+      }
+      hnsigma[i] = histos.add<TH2>(Form("nsigma/%s", particleNames[i].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[i].c_str()), kTH2F, {pAxis, nSigmaAxis});
+    }
+    for (const int& i : mEnabledParticlesFull) {
+      LOG(info) << "++  pidTOFFull" << particleNames[i] << " is enabled";
+      if (!enableQaHistograms) {
+        continue;
+      }
+      hnsigmaFull[i] = histos.add<TH2>(Form("nsigmaFull/%s", particleNames[i].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[i].c_str()), kTH2F, {pAxis, nSigmaAxis});
+    }
+
     if (inheritFromBaseTask.value) { // Inheriting from base task
       if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
         LOG(fatal) << "Could not get ccdb-url from tof-signal task";
@@ -663,41 +735,6 @@ struct tofPidMerge {
       }
     }
 
-    // Checking the tables are requested in the workflow and enabling them
-    for (int i = 0; i < nSpecies; i++) {
-      // First checking tiny
-      int f = enableParticle->get(particleNames[i].c_str(), "Enable");
-      enableFlagIfTableRequired(initContext, "pidTOF" + particleNames[i], f);
-      if (f == 1) {
-        mEnabledParticles.push_back(i);
-      }
-
-      // Then checking full tables
-      f = enableParticle->get(particleNames[i].c_str(), "EnableFull");
-      enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[i], f);
-      if (f == 1) {
-        mEnabledParticlesFull.push_back(i);
-      }
-    }
-    // Printing enabled tables and enabling QA histograms if needed
-    LOG(info) << "++ Enabled tables:";
-    const AxisSpec pAxis{100, 0, 5, "#it{p} (GeV/#it{c})"};
-    const AxisSpec nSigmaAxis{100, -10, 10, "N_{#sigma}^{TOF}"};
-    for (const int& i : mEnabledParticles) {
-      LOG(info) << "++  pidTOF" << particleNames[i] << " is enabled";
-      if (!enableQaHistograms) {
-        continue;
-      }
-      hnsigma[i] = histos.add<TH2>(Form("nsigma/%s", particleNames[i].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[i].c_str()), kTH2F, {pAxis, nSigmaAxis});
-    }
-    for (const int& i : mEnabledParticlesFull) {
-      LOG(info) << "++  pidTOFFull" << particleNames[i] << " is enabled";
-      if (!enableQaHistograms) {
-        continue;
-      }
-      hnsigmaFull[i] = histos.add<TH2>(Form("nsigmaFull/%s", particleNames[i].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[i].c_str()), kTH2F, {pAxis, nSigmaAxis});
-    }
-
     // Getting the parametrization parameters
     ccdb->setURL(url.value);
     ccdb->setTimestamp(timestamp.value);
@@ -721,42 +758,42 @@ struct tofPidMerge {
         o2::tof::ParameterCollection paramCollection;
         paramCollection.loadParamFromFile(fname, parametrizationPath.value);
         LOG(info) << "+++ Loaded parameter collection from file +++";
-        if (!paramCollection.retrieveParameters(mRespParamsV2, passName.value)) {
+        if (!paramCollection.retrieveParameters(mRespParamsV3, passName.value)) {
           if (fatalOnPassNotAvailable) {
             LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
           } else {
             LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
           }
         } else {
-          mRespParamsV2.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
-          mRespParamsV2.printMomentumChargeShiftParameters();
+          mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
+          mRespParamsV3.printMomentumChargeShiftParameters();
         }
       } else {
-        mRespParamsV2.loadParamFromFile(fname.data(), parametrizationPath.value);
+        mRespParamsV3.loadParamFromFile(fname.data(), parametrizationPath.value);
       }
     } else if (loadResponseFromCCDB) { // Loading it from CCDB
       LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
       o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
       paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) { // Attempt at loading the parameters with the pass defined
+      if (!paramCollection->retrieveParameters(mRespParamsV3, passName.value)) { // Attempt at loading the parameters with the pass defined
         if (fatalOnPassNotAvailable) {
           LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         } else {
           LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         }
       } else { // Pass is available, load non standard parameters
-        mRespParamsV2.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
-        mRespParamsV2.printMomentumChargeShiftParameters();
+        mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
+        mRespParamsV3.printMomentumChargeShiftParameters();
       }
     }
-    mRespParamsV2.print();
+    mRespParamsV3.print();
     if (timeShiftCCDBPath.value != "") {
       if (timeShiftCCDBPath.value.find(".root") != std::string::npos) {
-        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
-        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
+        mRespParamsV3.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
+        mRespParamsV3.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
       } else {
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
+        mRespParamsV3.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
+        mRespParamsV3.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
       }
     }
   }
@@ -925,10 +962,12 @@ struct tofPidMerge {
     }
   }
 
+  void process(aod::BCs const&) {}
+
   using Trks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
-  void process(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processData(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -947,7 +986,7 @@ struct tofPidMerge {
       timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
       if (enableTimeDependentResponse) {
         LOG(debug) << "Updating parametrization from path '" << parametrizationPath.value << "' and timestamp " << timestamp.value;
-        if (!ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value)->retrieveParameters(mRespParamsV2, passName.value)) {
+        if (!ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value)->retrieveParameters(mRespParamsV3, passName.value)) {
           if (fatalOnPassNotAvailable) {
             LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
           } else {
@@ -982,47 +1021,47 @@ struct tofPidMerge {
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
           case idxEl: {
-            nsigma = responseEl.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDEl);
             break;
           }
           case idxMu: {
-            nsigma = responseMu.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDMu);
             break;
           }
           case idxPi: {
-            nsigma = responsePi.GetSeparation(mRespParamsV2, trk);
+            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPi);
             break;
           }
           case idxKa: {
-            nsigma = responseKa.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDKa);
             break;
           }
           case idxPr: {
-            nsigma = responsePr.GetSeparation(mRespParamsV2, trk);
+            nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPr);
             break;
           }
           case idxDe: {
-            nsigma = responseDe.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDDe);
             break;
           }
           case idxTr: {
-            nsigma = responseTr.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDTr);
             break;
           }
           case idxHe: {
-            nsigma = responseHe.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDHe);
             break;
           }
           case idxAl: {
-            nsigma = responseAl.GetSeparation(mRespParamsV2, trk);
+            nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDAl);
             break;
           }
@@ -1037,56 +1076,56 @@ struct tofPidMerge {
       for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
         switch (pidId) {
           case idxEl: {
-            resolution = responseEl.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseEl.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseEl.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseEl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullEl(resolution, nsigma);
             break;
           }
           case idxMu: {
-            resolution = responseMu.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseMu.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseMu.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseMu.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullMu(resolution, nsigma);
             break;
           }
           case idxPi: {
-            resolution = responsePi.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responsePi.GetSeparation(mRespParamsV2, trk);
+            resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
             tablePIDFullPi(resolution, nsigma);
             break;
           }
           case idxKa: {
-            resolution = responseKa.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseKa.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullKa(resolution, nsigma);
             break;
           }
           case idxPr: {
-            resolution = responsePr.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responsePr.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullPr(resolution, nsigma);
             break;
           }
           case idxDe: {
-            resolution = responseDe.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseDe.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullDe(resolution, nsigma);
             break;
           }
           case idxTr: {
-            resolution = responseTr.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseTr.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseTr.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseTr.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullTr(resolution, nsigma);
             break;
           }
           case idxHe: {
-            resolution = responseHe.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseHe.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseHe.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseHe.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullHe(resolution, nsigma);
             break;
           }
           case idxAl: {
-            resolution = responseAl.GetExpectedSigma(mRespParamsV2, trk);
-            nsigma = responseAl.GetSeparation(mRespParamsV2, trk, resolution);
+            resolution = responseAl.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseAl.GetSeparation(mRespParamsV3, trk, resolution);
             tablePIDFullAl(resolution, nsigma);
             break;
           }
@@ -1100,12 +1139,160 @@ struct tofPidMerge {
       }
     }
   }
+  PROCESS_SWITCH(tofPidMerge, processData, "Process data i.e. input is TrackIU", false);
+};
+
+struct tofPidBeta {
+  Produces<aod::pidTOFbeta> tablePIDBeta;
+  Produces<aod::pidTOFmass> tablePIDTOFMass;
+  Configurable<float> expreso{"tof-expreso", 80, "Expected resolution for the computation of the expected beta"};
+  // Detector response and input parameters
+  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
+  Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
+  Configurable<bool> enableTOFParams{"enableTOFParams", false, "Flag to use TOF parameters"};
+
+  bool enableTableBeta = false;
+  bool enableTableMass = false;
+  void init(o2::framework::InitContext& initContext)
+  {
+    enableTableBeta = isTableRequiredInWorkflow(initContext, "pidTOFbeta");
+    enableTableMass = isTableRequiredInWorkflow(initContext, "pidTOFmass");
+    if (!enableTableBeta && !enableTableMass && !doprocessRun2 && !doprocessRun3) {
+      LOG(info) << "No table or process is enabled. Disabling task";
+      return;
+    }
+    if (metadataInfo.isRun3()) {
+      doprocessRun3.value = true;
+    } else {
+      doprocessRun2.value = true;
+    }
+
+    responseBeta.mExpectedResolution = expreso.value;
+    if (!enableTOFParams) {
+      return;
+    }
+    // Getting the parametrization parameters
+    ccdb->setURL(url.value);
+    ccdb->setTimestamp(timestamp.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    // Not later than now objects
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    //
+
+    // TODO: implement the automatic pass name detection from metadata
+    if (passName.value == "") {
+      passName.value = "unanchored"; // temporary default
+      LOG(warning) << "Passed autodetect mode for pass, not implemented yet, waiting for metadata. Taking '" << passName.value << "'";
+    }
+    LOG(info) << "Using parameter collection, starting from pass '" << passName.value << "'";
+
+    const std::string fname = paramFileName.value;
+    if (!fname.empty()) { // Loading the parametrization from file
+      LOG(info) << "Loading exp. sigma parametrization from file " << fname << ", using param: " << parametrizationPath.value;
+      if (1) {
+        o2::tof::ParameterCollection paramCollection;
+        paramCollection.loadParamFromFile(fname, parametrizationPath.value);
+        LOG(info) << "+++ Loaded parameter collection from file +++";
+        if (!paramCollection.retrieveParameters(mRespParamsV3, passName.value)) {
+          if (fatalOnPassNotAvailable) {
+            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+          } else {
+            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+          }
+        } else {
+          mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
+          mRespParamsV3.printMomentumChargeShiftParameters();
+        }
+      } else {
+        mRespParamsV3.loadParamFromFile(fname.data(), parametrizationPath.value);
+      }
+    } else { // Loading it from CCDB
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
+
+      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
+      paramCollection->print();
+      if (!paramCollection->retrieveParameters(mRespParamsV3, passName.value)) {
+        if (fatalOnPassNotAvailable) {
+          LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+        } else {
+          LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+        }
+      } else {
+        mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
+        mRespParamsV3.printMomentumChargeShiftParameters();
+      }
+    }
+    mRespParamsV3.print();
+  }
+
+  void process(aod::BCs const&) {}
+
+  using TrksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  o2::pid::tof::Beta<TrksRun2::iterator> responseBetaRun2;
+  void processRun2(TrksRun2 const& tracks)
+  {
+    if (!enableTableBeta && !enableTableMass) {
+      return;
+    }
+    float beta = 0.f;
+    tablePIDBeta.reserve(tracks.size());
+    for (auto const& trk : tracks) {
+      beta = responseBetaRun2.GetBeta(trk);
+      if (enableTableBeta) {
+        tablePIDBeta(beta, responseBetaRun2.GetExpectedSigma(trk));
+      }
+      if (enableTableMass) {
+        if (enableTOFParams) {
+          tablePIDTOFMass(o2::pid::tof::TOFMass<TrksRun2::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+        } else {
+          tablePIDTOFMass(o2::pid::tof::TOFMass<TrksRun2::iterator>::GetTOFMass(trk, beta));
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(tofPidBeta, processRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", false);
+
+  using Trks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  o2::pid::tof::Beta<Trks::iterator> responseBeta;
+  void processRun3(Trks const& tracks)
+  {
+    if (!enableTableBeta && !enableTableMass) {
+      return;
+    }
+    float beta = 0.f;
+    tablePIDBeta.reserve(tracks.size());
+    for (auto const& trk : tracks) {
+      beta = responseBeta.GetBeta(trk);
+      if (enableTableBeta) {
+        tablePIDBeta(beta,
+                     responseBeta.GetExpectedSigma(trk));
+      }
+      if (enableTableMass) {
+        if (enableTOFParams) {
+          tablePIDTOFMass(o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+        } else {
+          tablePIDTOFMass(o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, beta));
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(tofPidBeta, processRun3, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  // Parse the metadata
+  metadataInfo.initMetadata(cfgc);
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc)};
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
   workflow.push_back(adaptAnalysisTask<tofPidMerge>(cfgc));
+  workflow.push_back(adaptAnalysisTask<tofPidBeta>(cfgc));
   return workflow;
 }

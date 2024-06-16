@@ -93,11 +93,11 @@ using MyBarrelTracksWithV0AndDalitzBits = soa::Join<aod::Tracks, aod::TracksExtr
                                                     aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                     aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits, aod::DalitzBits>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
-using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
-using MyEventsWithMultsAndFilter = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::DQEventFilter>;
+using MyEventsWithMultsAndFilter = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::DQEventFilter>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>;
+using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::MultsExtra>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA>;
 using MyMuonsColl = soa::Join<aod::FwdTracks, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
@@ -113,10 +113,10 @@ DECLARE_SOA_TABLE(AmbiguousTracksFwd, "AOD", "AMBIGUOUSFWDTR", //! Table for Fwd
 } // namespace o2::aod
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
-constexpr static uint32_t gkEventFillMapWithMult = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult;
-constexpr static uint32_t gkEventFillMapWithMultsAndEventFilter = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::EventFilter;
+constexpr static uint32_t gkEventFillMapWithMult = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
+constexpr static uint32_t gkEventFillMapWithMultsAndEventFilter = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra | VarManager::ObjTypes::EventFilter;
 constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
-constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult;
+constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 // constexpr static uint32_t gkEventFillMapWithCentRun2 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2; // Unused variable
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
@@ -136,6 +136,8 @@ struct TableMaker {
   Produces<ReducedEvents> event;
   Produces<ReducedEventsExtended> eventExtended;
   Produces<ReducedEventsVtxCov> eventVtxCov;
+  Produces<ReducedEventsMultPV> multPV;
+  Produces<ReducedEventsMultAll> multAll;
   Produces<ReducedTracks> trackBasic;
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
@@ -439,6 +441,12 @@ struct TableMaker {
       eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
     }
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+    if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
+      multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
+             collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
+      multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
+              0, 0, 0.0, 0.0, 0, 0);
+    }
 
     uint64_t trackFilteringTag = 0;
     uint8_t fwdFilteringTag = 0;
@@ -666,12 +674,7 @@ struct TableMaker {
         VarManager::FillTrack<TMuonFillMap>(muon);
 
         // recalculte pDca for global muon tracks
-        if (static_cast<int>(muon.trackType()) < 2) {
-          auto const& matchMCH = muon.template matchMCHTrack_as<TMuons>();
-          VarManager::FillTrackCollision<TMuonFillMap>(matchMCH, collision);
-        } else if (static_cast<int>(muon.trackType()) > 2) {
-          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
-        }
+        VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
 
         if (fPropMuon) {
           VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
@@ -1037,12 +1040,7 @@ struct TableMaker {
         VarManager::FillTrack<TMuonFillMap>(muon);
 
         // recalculte pDca for global muon tracks
-        if (static_cast<int>(muon.trackType()) < 2) {
-          auto const& matchMCH = tracksMuon.rawIteratorAt(static_cast<int>(muon.matchMCHTrackId()));
-          VarManager::FillTrackCollision<TMuonFillMap>(matchMCH, collision);
-        } else if (static_cast<int>(muon.trackType()) > 2) {
-          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
-        }
+        VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
 
         if (fPropMuon) {
           VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
@@ -1545,7 +1543,7 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
@@ -1554,7 +1552,7 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMapWithCent, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMapWithCent, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
@@ -1563,7 +1561,7 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMapWithMult, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMapWithMult, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
