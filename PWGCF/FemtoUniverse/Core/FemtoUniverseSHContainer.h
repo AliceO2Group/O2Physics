@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FEMTOUNIVERSESHCONTAINER.h
-/// \brief Definition of the FEMTOUNIVERSESHCONTAINER
+/// \file FemtoUniverseSHContainer..h
+/// \brief FemtoUniverseSHContainer - Fills the Spherical Harmonics components
 /// \remark This file is inherited from ~/FemtoUniverse/Core/FemtoUniverse3DContainer.h on 17/06/2024
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl8
 
@@ -85,8 +85,8 @@ class FemtoUniverseSHContainer
 
       fels[il] = el;
       fems[il] = em;
-      felsi[il] = static_cast<int>el;
-      femsi[il] = static_cast<int>em;
+      felsi[il] = static_cast<int>(el);
+      femsi[il] = static_cast<int>(em);
       em++;
       il++;
       if (em > el) {
