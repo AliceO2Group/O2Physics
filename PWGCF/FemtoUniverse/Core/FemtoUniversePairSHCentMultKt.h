@@ -20,7 +20,6 @@
 #include <string>
 #include <complex>
 #include <memory>
-#include <fairlogger/Logger.h>
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2;
