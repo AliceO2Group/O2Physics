@@ -563,6 +563,25 @@ struct QAHistTask {
       if (!particle.isPhysicalPrimary())
         continue;
 
+      MC_recon_reg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
+      MC_recon_reg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
+      MC_recon_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
+      MC_recon_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
+      MC_recon_reg.fill(HIST("histpTCorralation"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
+
+      if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+        MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * 2.0 * track.sign(), track.tpcSignal());
+      } else {
+        MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * track.sign(), track.tpcSignal());
+      }
+      if (track.hasTOF()) {
+        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+          MC_recon_reg.fill(HIST("histTofSignalData_all_species"), track.pt() * 2.0 * track.sign(), track.beta());
+        } else {
+          MC_recon_reg.fill(HIST("histTofSignalData_all_species"), track.pt() * track.sign(), track.beta());
+        }
+      }
+
       int pdgbin = 0;
       switch (particle.pdgCode()) {
         case +211:
@@ -629,13 +648,8 @@ struct QAHistTask {
       MC_recon_reg.fill(HIST("histEta"), track.eta(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls(), pdgbin);
-      MC_recon_reg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
-      MC_recon_reg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-      MC_recon_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
-      MC_recon_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
       MC_recon_reg.fill(HIST("histTrackLength"), track.length(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls(), pdgbin);
-      MC_recon_reg.fill(HIST("histpTCorralation"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
       MC_recon_reg.fill(HIST("histpTCorralation_PDG"), track.sign() * track.p(), track.tpcInnerParam() - track.p(), pdgbin);
       MC_recon_reg.fill(HIST("histGlobalpDist"), track.p(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCpDist"), track.tpcInnerParam(), pdgbin);
@@ -645,7 +659,6 @@ struct QAHistTask {
         MC_recon_reg.fill(HIST("histDCA"), track.pt() * 2.0, track.dcaXY(), pdgbin);
         MC_recon_reg.fill(HIST("histDCAz"), track.pt() * 2.0, track.dcaZ(), pdgbin);
         MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * 2.0 * track.sign(), track.tpcSignal(), pdgbin);
-        MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * 2.0 * track.sign(), track.tpcSignal());
         MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsCrossedRows(), pdgbin);
         MC_recon_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls(), pdgbin);
         MC_recon_reg.fill(HIST("histNClusterITSib"), track.pt() * 2.0, track.itsNClsInnerBarrel(), pdgbin);
@@ -661,7 +674,6 @@ struct QAHistTask {
         MC_recon_reg.fill(HIST("histDCA"), track.pt(), track.dcaXY(), pdgbin);
         MC_recon_reg.fill(HIST("histDCAz"), track.pt(), track.dcaZ(), pdgbin);
         MC_recon_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal(), pdgbin);
-        MC_recon_reg.fill(HIST("histTpcSignalData_all_species"), track.pt() * track.sign(), track.tpcSignal());
         MC_recon_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows(), pdgbin);
         MC_recon_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls(), pdgbin);
         MC_recon_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel(), pdgbin);
@@ -678,11 +690,9 @@ struct QAHistTask {
         if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
           MC_recon_reg.fill(HIST("histTOFm2"), track.pt() * 2.0, TOFmass2, pdgbin);
           MC_recon_reg.fill(HIST("histTofSignalData"), track.pt() * 2.0 * track.sign(), track.beta(), pdgbin);
-          MC_recon_reg.fill(HIST("histTofSignalData_all_species"), track.pt() * 2.0 * track.sign(), track.beta());
         } else {
           MC_recon_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2, pdgbin);
           MC_recon_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta(), pdgbin);
-          MC_recon_reg.fill(HIST("histTofSignalData_all_species"), track.pt() * track.sign(), track.beta());
         }
       }
     }
