@@ -195,7 +195,7 @@ struct correlateStrangeness {
         static_for<0, 2>([&](auto i) {
           constexpr int index = i.value;
           float efficiency = 1.0f;
-          if(applyEfficiencyCorrection){
+          if (applyEfficiencyCorrection) {
             efficiency = hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyV0[index]->GetYaxis()->FindBin(assoc.eta()));
           }
           float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
@@ -269,7 +269,7 @@ struct correlateStrangeness {
         static_for<0, 3>([&](auto i) {
           constexpr int index = i.value;
           float efficiency = 1.0f;
-          if(applyEfficiencyCorrection){
+          if (applyEfficiencyCorrection) {
             efficiency = hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(ptassoc), hEfficiencyCascade[index]->GetYaxis()->FindBin(assoc.eta()));
           }
           float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
@@ -664,7 +664,7 @@ struct correlateStrangeness {
       histos.fill(HIST("EventQA/hPvz"), collision.posZ());
     }
     // Do basic QA
-    if(applyEfficiencyCorrection){
+    if (applyEfficiencyCorrection) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initEfficiencyFromCCDB(bc);
     }
@@ -677,8 +677,8 @@ struct correlateStrangeness {
       auto v0Data = v0.v0Core_as<V0DatasWithoutTrackX>();
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
-          float efficiency = 1.0f;
-        if(applyEfficiencyCorrection){
+        float efficiency = 1.0f;
+        if (applyEfficiencyCorrection) {
           efficiency = hEfficiencyV0[index]->GetBinContent(hEfficiencyV0[index]->GetXaxis()->FindBin(v0Data.pt()), hEfficiencyV0[index]->GetYaxis()->FindBin(v0Data.eta()));
         }
         float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
@@ -741,7 +741,7 @@ struct correlateStrangeness {
       static_for<0, 3>([&](auto i) {
         constexpr int index = i.value;
         float efficiency = 1.0f;
-        if(applyEfficiencyCorrection){
+        if (applyEfficiencyCorrection) {
           efficiency = hEfficiencyCascade[index]->GetBinContent(hEfficiencyCascade[index]->GetXaxis()->FindBin(cascData.pt()), hEfficiencyCascade[index]->GetYaxis()->FindBin(cascData.eta()));
         }
         float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
@@ -809,8 +809,10 @@ struct correlateStrangeness {
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       // ________________________________________________
-      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-      initEfficiencyFromCCDB(bc);
+      if (applyEfficiencyCorrection) {
+        auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+        initEfficiencyFromCCDB(bc);
+      }
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
         continue;
@@ -844,8 +846,10 @@ struct correlateStrangeness {
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
       // ________________________________________________
-      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-      initEfficiencyFromCCDB(bc);
+      if (applyEfficiencyCorrection) {
+        auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+        initEfficiencyFromCCDB(bc);
+      }
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
         continue;
