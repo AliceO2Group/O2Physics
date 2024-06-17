@@ -97,9 +97,7 @@ struct HfCandidateSelectorLc {
 
   using TracksSel = soa::Join<aod::TracksWExtra,
                               aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
-  using TracksSelBayesPid = soa::Join<aod::TracksWExtra,
-                                      aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr,
-                                      aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+  using TracksSelBayesPid = soa::Join<TracksSel, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
   HistogramRegistry registry{"registry"};
 
@@ -266,11 +264,11 @@ struct HfCandidateSelectorLc {
     return true;
   }
 
-  /// @brief process function w/o Bayes PID
+  /// \brief process function w/o Bayes PID
   /// \param candidates Lc candidate table
   /// \param tracks track table
-  template <bool useBayesPid = false, typename T>
-  void runSelectLc(aod::HfCand3Prong const& candidates, T const&)
+  template <bool useBayesPid = false, typename TTracks>
+  void runSelectLc(aod::HfCand3Prong const& candidates, TTracks const&)
   {
     // looping over 3-prong candidates
     for (const auto& candidate : candidates) {
@@ -299,9 +297,9 @@ struct HfCandidateSelectorLc {
         registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
       }
 
-      auto trackPos1 = candidate.template prong0_as<T>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.template prong1_as<T>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.template prong2_as<T>(); // positive daughter (negative for the antiparticles)
+      auto trackPos1 = candidate.template prong0_as<TTracks>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.template prong1_as<TTracks>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.template prong2_as<TTracks>(); // positive daughter (negative for the antiparticles)
 
       // implement filter bit 4 cut - should be done before this task at the track selection level
 
@@ -442,7 +440,7 @@ struct HfCandidateSelectorLc {
     }
   }
 
-  /// @brief process function w/o Bayes PID
+  /// \brief process function w/o Bayes PID
   /// \param candidates Lc candidate table
   /// \param tracks track table
   void processNoBayesPid(aod::HfCand3Prong const& candidates,
@@ -452,7 +450,7 @@ struct HfCandidateSelectorLc {
   }
   PROCESS_SWITCH(HfCandidateSelectorLc, processNoBayesPid, "Process Lc selection w/o Bayes PID", true);
 
-  /// @brief process function with Bayes PID
+  /// \brief process function with Bayes PID
   /// \param candidates Lc candidate table
   /// \param tracks track table with Bayes PID information
   void processBayesPid(aod::HfCand3Prong const& candidates,
