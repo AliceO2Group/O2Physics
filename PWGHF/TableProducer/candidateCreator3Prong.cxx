@@ -163,7 +163,7 @@ struct HfCandidateCreator3Prong {
   void runCreator3Prong(Coll const&,
                         Cand const& rowsTrackIndexProng3,
                         aod::TracksWCovExtra const&,
-                        aod::BCsWithTimestamps const& aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+                        aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
