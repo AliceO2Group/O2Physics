@@ -1236,7 +1236,7 @@ struct strangeness_in_jets {
         if (abs(particle.pdgCode()) != 211)
           continue;
 
-        if (particle.isPhysicalPrimary())  {
+        if (particle.isPhysicalPrimary()) {
           if (track.sign() > 0)
             registryMC.fill(HIST("piplus_dcaxy_prim"), multiplicity, track.pt(), track.dcaXY());
           if (track.sign() < 0)
