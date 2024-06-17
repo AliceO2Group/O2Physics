@@ -1,6 +1,6 @@
 // Copyright 2019-2022 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
-// All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright
+// holders. All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -16,11 +16,11 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRSHCENTMULTKT_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRSHCENTMULTKT_H_
 
-#include <vector>
-#include <string>
+#include "Framework/HistogramRegistry.h"
 #include <complex>
 #include <memory>
-#include "Framework/HistogramRegistry.h"
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -35,9 +35,8 @@ namespace o2::analysis::femtoUniverse {
 /// \tparam obs Observable to be computed (k*/Q_inv/...)
 template <femtoUniverseSHContainer::EventType eventType,
           femtoUniverseSHContainer::Observable obs>
-class PairSHCentMultKt
-{
- public:
+class PairSHCentMultKt {
+public:
   virtual ~PairSHCentMultKt() = default;
   /// @brief
   /// \tparam t1
@@ -364,7 +363,7 @@ class PairSHCentMultKt
     }
   }
 
- private:
+private:
   std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
       fnumsreal{};
   std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
@@ -388,7 +387,7 @@ class PairSHCentMultKt
   std::array<std::array<std::shared_ptr<TH3>, 10>, 10> fcovnum{};
   std::array<std::array<std::shared_ptr<TH3>, 10>, 10> fcovden{};
 
- protected:
+protected:
   HistogramRegistry *PairSHCentMultKtRegistry = nullptr;
   static constexpr std::string_view mFolderSuffix[2] = {
       "SameEvent",
