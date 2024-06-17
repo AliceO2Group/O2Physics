@@ -51,6 +51,10 @@ DECLARE_SOA_COLUMN(NTPCpileupZC, nTPCpileupZC, float);           //!  Median Z p
 DECLARE_SOA_COLUMN(NTPCtracksInPast, nTPCtracksInPast, int);     //!  Number of TPC tracks in the past events (configurable, but e.g. one drift time)
 DECLARE_SOA_COLUMN(NTPCtracksInFuture, nTPCtracksInFuture, int); //!  Number of TPC tracks in the future events (configurable, but e.g. one drift time)
 
+DECLARE_SOA_COLUMN(Q1ZNAX, q1znax, float);     //!  Q-vector x component, evaluated with ZNA (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1ZNAY, q1znay, float);     //!  Q-vector y component, evaluated with ZNA (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1ZNCX, q1zncx, float);     //!  Q-vector x component, evaluated with ZNC (harmonic 1 and power 1)
+DECLARE_SOA_COLUMN(Q1ZNCY, q1zncy, float);     //!  Q-vector y component, evaluated with ZNC (harmonic 1 and power 1)
 DECLARE_SOA_COLUMN(Q1X0A, q1x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 1 and power 1)
 DECLARE_SOA_COLUMN(Q1Y0A, q1y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 1 and power 1)
 DECLARE_SOA_COLUMN(Q1X0B, q1x0b, float);       //!  Q-vector x component, with event eta gap B (harmonic 1 and power 1)
@@ -136,6 +140,9 @@ DECLARE_SOA_TABLE(ReducedEventsQvectorCentr, "AOD", "REQVECTORCTR", //!    Event
 DECLARE_SOA_TABLE(ReducedEventsRefFlow, "AOD", "REREFFLOW", //!    Event Ref Flow information
                   reducedevent::M11REF, reducedevent::M1111REF, reducedevent::CORR2REF, reducedevent::CORR4REF, cent::CentFT0C);
 
+DECLARE_SOA_TABLE(ReducedEventsQvectorZN, "AOD", "REQVECTORZN", //!    Event Q-vector information from ZNs detectors
+                  reducedevent::Q1ZNAX, reducedevent::Q1ZNAY, reducedevent::Q1ZNCX, reducedevent::Q1ZNCY);
+
 // TODO and NOTE: This table is just an extension of the ReducedEvents table
 //       There is no explicit accounting for MC events which were not reconstructed!!!
 //       However, for analysis which will require these events, a special skimming process function
@@ -154,6 +161,7 @@ using ReducedEventQvector = ReducedEventsQvector::iterator;
 using ReducedEventQvectorExtra = ReducedEventsQvectorExtra::iterator;
 using ReducedEventQvectorCentr = ReducedEventsQvectorCentr::iterator;
 using ReducedEventRefFlow = ReducedEventsRefFlow::iterator;
+using ReducedEventQvectorZN = ReducedEventsQvectorZN::iterator;
 using ReducedMCEvent = ReducedMCEvents::iterator;
 
 namespace reducedeventlabel
