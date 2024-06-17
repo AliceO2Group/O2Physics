@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include <complex>
+#include <memory>
 
 #include "Framework/HistogramRegistry.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
@@ -84,8 +85,8 @@ class FemtoUniverseSHContainer
 
       fels[il] = el;
       fems[il] = em;
-      felsi[il] = (int)el;
-      femsi[il] = (int)em;
+      felsi[il] = static_cast<int>el;
+      femsi[il] = static_cast<int>em;
       em++;
       il++;
       if (em > el) {
