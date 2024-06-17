@@ -264,7 +264,7 @@ struct HfCandidateSelectorLc {
     return true;
   }
 
-  /// \brief process function w/o Bayes PID
+  /// \brief function to apply Lc selections
   /// \param candidates Lc candidate table
   /// \param tracks track table
   template <bool useBayesPid = false, typename TTracks>
