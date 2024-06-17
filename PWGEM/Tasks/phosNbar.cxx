@@ -215,10 +215,16 @@ struct phosNbar {
     if (!selectEvent<isMC>(collision, mixIndex)) {
       return;
     }
+    if constexpr (isMC) {
+      if (clusters.size() == 0) {
+        return;
+      }
+    }
     // count events
     int ntr = tracks.size();
     int nclu = clusters.size();
     mHistManager.fill(HIST("evsel"), 10. + 2 * (ntr > 0) + (nclu > 0));
+    mHistManager.fill(HIST("evsel"), 8.);
 
     // Fill MC distributions
     // Sigma rapidity, pt, phi
@@ -454,8 +460,12 @@ struct phosNbar {
     if (col.alias_bit(kTVXinPHOS)) {
       mHistManager.fill(HIST("evsel"), 6);
     }
-    isColSelected = col.alias_bit(mEvSelTrig);
-
+    isColSelected = false;
+    if constexpr (isMC) {
+      isColSelected = col.selection_bit(kIsTriggerTVX);
+    } else {
+      isColSelected = col.alias_bit(mEvSelTrig);
+    }
     if (!isColSelected) {
       return false;
     }
@@ -471,9 +481,6 @@ struct phosNbar {
         return false;
       }
     }
-    // Remove pileup???
-    mHistManager.fill(HIST("evsel"), 8.);
-
     // so far only binning according to zvtx is implemented
     indx = (mVtxZ + 10.) / 20. * mNZbins;
     if (indx >= mNZbins) {
