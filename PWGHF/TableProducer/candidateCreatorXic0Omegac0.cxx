@@ -168,7 +168,7 @@ struct HfCandidateCreatorXic0Omegac0 {
 
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
   void runXic0Omegac0Creator(Coll const&,
-                             aod::BCsWithTimestamps const&,
+                             aod::BCsWithTimestamps const& bcWithTimeStamps,
                              TracksWCovDca const&,
                              MyCascTable const&, CascadesLinked const&,
                              aod::HfCascLf2Prongs const& candidates,
@@ -204,7 +204,7 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       auto collision = cand.collision_as<Coll>();
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -598,14 +598,14 @@ struct HfCandidateCreatorXic0Omegac0 {
   ///////////////////////////////////////////////////////////
 
   /// @brief process function to monitor collisions - no centrality
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask);
@@ -615,14 +615,14 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCollisions, "Collision monitoring - no centrality", true);
 
   /// @brief process function to monitor collisions - FT0C centrality
-  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions)
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask);
@@ -632,14 +632,14 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
   /// @brief process function to monitor collisions - FT0M centrality
-  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions)
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     /// loop over collisions
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb);
 
       /// monitor the satisfied event selections
       hfEvSel.fillHistograms(collision, rejectionMask);
@@ -687,7 +687,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                         BCsInfo const&)
   {
     float ptCharmBaryonGen = -999.;
-    float etaCharmBaryonGen = -999.;
+    float rapidityCharmBaryonGen = -999.;
     int indexRec = -1;
     int indexRecCharmBaryon = -1;
     int8_t sign = -9;
@@ -758,9 +758,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
           rowMCMatchRecXicToXiPi(flag, debug, origin, collisionMatched, bHadMother.pt(), bHadMother.pdgCode());
         } else {
@@ -797,9 +797,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
           rowMCMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched, bHadMother.pt(), bHadMother.pdgCode());
         } else {
@@ -836,9 +836,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
           rowMCMatchRecToOmegaPi(flag, debug, origin, collisionMatched, bHadMother.pt(), bHadMother.pdgCode());
         } else {
@@ -875,9 +875,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
+        if (origin == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
           rowMCMatchRecToOmegaK(flag, debug, origin, collisionMatched, bHadMother.pt(), bHadMother.pdgCode());
         } else {
@@ -892,7 +892,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     // Match generated particles.
     for (const auto& particle : mcParticles) {
       ptCharmBaryonGen = -999.;
-      etaCharmBaryonGen = -999.;
+      rapidityCharmBaryonGen = -999.;
       flag = 0;
       sign = -9;
       debugGenCharmBar = 0;
@@ -907,13 +907,13 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the gen particle
         if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
-          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, -1);
+          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
         } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
-          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, -1);
+          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
         } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
-          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, -1);
+          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
         } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
-          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, -1);
+          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
         }
         continue;
       }
@@ -923,7 +923,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
           ptCharmBaryonGen = particle.pt();
-          etaCharmBaryonGen = particle.eta();
+          rapidityCharmBaryonGen = particle.y();
           for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
             if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
               continue;
@@ -946,12 +946,12 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         // Check whether the charm baryon is non-prompt (from a b quark)
         if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
-          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, idxBhadMothers[0]);
+        if (origin == RecoDecay::OriginType::NonPrompt) {
+          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
         } else {
-          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, -1);
+          rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
         }
 
       } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
@@ -959,7 +959,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
           ptCharmBaryonGen = particle.pt();
-          etaCharmBaryonGen = particle.eta();
+          rapidityCharmBaryonGen = particle.y();
           for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
             if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
               continue;
@@ -982,12 +982,12 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         // Check whether the charm baryon is non-prompt (from a b quark)
         if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
-          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, idxBhadMothers[0]);
+        if (origin == RecoDecay::OriginType::NonPrompt) {
+          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
         } else {
-          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, -1);
+          rowMCMatchGenOmegacToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
         }
 
       } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
@@ -995,7 +995,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeOmegaMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
           ptCharmBaryonGen = particle.pt();
-          etaCharmBaryonGen = particle.eta();
+          rapidityCharmBaryonGen = particle.y();
           for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
             if (std::abs(daughterCharm.pdgCode()) != pdgCodeOmegaMinus) {
               continue;
@@ -1018,12 +1018,12 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         // Check whether the charm baryon is non-prompt (from a b quark)
         if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
-          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, idxBhadMothers[0]);
+        if (origin == RecoDecay::OriginType::NonPrompt) {
+          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
         } else {
-          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, -1);
+          rowMCMatchGenToOmegaPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
         }
 
       } else if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK) {
@@ -1031,7 +1031,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeOmegaMinus, pdgCodeKaonPlus}, true, &sign)) {
           debugGenCharmBar = 1;
           ptCharmBaryonGen = particle.pt();
-          etaCharmBaryonGen = particle.eta();
+          rapidityCharmBaryonGen = particle.y();
           for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
             if (std::abs(daughterCharm.pdgCode()) != pdgCodeOmegaMinus) {
               continue;
@@ -1054,12 +1054,12 @@ struct HfCandidateCreatorXic0Omegac0Mc {
         }
         // Check whether the charm baryon is non-prompt (from a b quark)
         if (flag != 0) {
-          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true, &idxBhadMothers);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (origin == RecoDecay::OriginType::NonPrompt && idxBhadMothers.size() > 0) {
-          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, idxBhadMothers[0]);
+        if (origin == RecoDecay::OriginType::NonPrompt) {
+          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
         } else {
-          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin, -1);
+          rowMCMatchGenToOmegaK(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
         }
       }
     } // close loop on MCParticles

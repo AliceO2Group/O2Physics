@@ -112,6 +112,7 @@ struct strangederivedbuilder {
   Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
   Produces<aod::StraFT0MQVs> StraFT0MQVs;     // FT0M Q-vector
   Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
+  Produces<aod::StraTPCQVs> StraTPCQVs;       // TPC Q-vector
   Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
 
   //__________________________________________________
@@ -832,7 +833,7 @@ struct strangederivedbuilder {
   }
   void processFT0CQVectorsLF(soa::Join<aod::Collisions, aod::EPCalibrationTables>::iterator const& collision)
   {
-    StraFT0CQVs(collision.qFT0C() * std::cos(2 * collision.psiFT0C()), collision.qFT0C() * std::sin(2 * collision.psiFT0C()), 1.f);
+    StraFT0CQVs(collision.qFT0C() * std::cos(2 * collision.psiFT0C()), collision.qFT0C() * std::sin(2 * collision.psiFT0C()), collision.qFT0C());
     StraFT0CQVsEv(collision.triggereventep());
   }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
@@ -842,6 +843,14 @@ struct strangederivedbuilder {
   void processFV0AQVectors(soa::Join<aod::Collisions, aod::QvectorFV0As>::iterator const& collision)
   {
     StraFV0AQVs(collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A());
+  }
+  void processTPCQVectors(soa::Join<aod::Collisions, aod::QvectorBPoss, aod::QvectorBNegs>::iterator const& collision)
+  {
+    StraTPCQVs(collision.qvecBNegRe(), collision.qvecBNegIm(), collision.nTrkBNeg(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.nTrkBPos());
+  }
+  void processTPCQVectorsLF(soa::Join<aod::Collisions, aod::EPCalibrationTables>::iterator const& collision)
+  {
+    StraTPCQVs(collision.qTPCL() * std::cos(2 * collision.psiTPCL()), collision.qTPCL() * std::sin(2 * collision.psiTPCL()), collision.qTPCL(), collision.qTPCR() * std::cos(2 * collision.psiTPCR()), collision.qTPCR() * std::sin(2 * collision.psiTPCR()), collision.qTPCR());
   }
 
   uint64_t combineProngIndices(uint32_t low, uint32_t high)
@@ -917,6 +926,8 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectorsLF, "Produce FT0C Q-vectors table using LF temporary calibration", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0MQVectors, "Produce FT0M Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
+  PROCESS_SWITCH(strangederivedbuilder, processTPCQVectors, "Produce TPC Q-vectors table", false);
+  PROCESS_SWITCH(strangederivedbuilder, processTPCQVectorsLF, "Produce TPC Q-vectors table using LF temporary calibration", false);
 
   // dedicated findable functionality
   PROCESS_SWITCH(strangederivedbuilder, processV0FoundTags, "Produce FoundV0Tags for findable exercise", false);

@@ -128,6 +128,8 @@ struct FemtoCorrelationsMC {
   std::vector<std::vector<std::shared_ptr<TH2>>> Resolution_histos;
   std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_SE_histos;
   std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_ME_histos;
+  std::vector<std::vector<std::shared_ptr<TH1>>> AvgSep_SE_histos;
+  std::vector<std::vector<std::shared_ptr<TH1>>> AvgSep_ME_histos;
 
   void init(o2::framework::InitContext&)
   {
@@ -199,22 +201,30 @@ struct FemtoCorrelationsMC {
       std::vector<std::shared_ptr<TH2>> Resolution_histos_perMult;
       std::vector<std::shared_ptr<TH2>> DoubleTrack_SE_histos_perMult;
       std::vector<std::shared_ptr<TH2>> DoubleTrack_ME_histos_perMult;
+      std::vector<std::shared_ptr<TH1>> AvgSep_SE_histos_perMult;
+      std::vector<std::shared_ptr<TH1>> AvgSep_ME_histos_perMult;
 
       for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
         auto kT_tmp = registry.add<TH1>(Form("Cent%i/kT_cent%i_kT%i", i, i, j), Form("kT_cent%i_kT%i", i, j), kTH1F, {{500, 0., 5., "kT"}});
         auto Res_tmp = registry.add<TH2>(Form("Cent%i/ResolutionMatrix_cent%i_kT%i", i, i, j), Form("ResolutionMatrix_rec(gen)_cent%i_kT%i", i, j), kTH2F, {{CFkStarBinning, "k*_gen (GeV/c)"}, {CFkStarBinning, "k*_rec (GeV/c)"}});
         auto DblTrk_SE_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_SE_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_SE_cent%i_kT%i", i, j), kTH2F, {{101, -0.2, 0.2, "dphi*"}, {101, -0.2, 0.2, "deta"}});
         auto DblTrk_ME_tmp = registry.add<TH2>(Form("Cent%i/DoubleTrackEffects_ME_cent%i_kT%i", i, i, j), Form("DoubleTrackEffects_deta(dphi*)_ME_cent%i_kT%i", i, j), kTH2F, {{101, -0.2, 0.2, "dphi*"}, {101, -0.2, 0.2, "deta"}});
+        auto AvgSep_SE_tmp = registry.add<TH1>(Form("Cent%i/AvgSep_SE_cent%i_kT%i", i, i, j), Form("AvgSep_SE_cent%i_kT%i", i, j), kTH1F, {{100, 0.0, 100.0, "avg. sep. (cm)"}});
+        auto AvgSep_ME_tmp = registry.add<TH1>(Form("Cent%i/AvgSep_ME_cent%i_kT%i", i, i, j), Form("AvgSep_ME_cent%i_kT%i", i, j), kTH1F, {{100, 0.0, 100.0, "avg. sep. (cm)"}});
         kThistos_perMult.push_back(std::move(kT_tmp));
         Resolution_histos_perMult.push_back(std::move(Res_tmp));
         DoubleTrack_SE_histos_perMult.push_back(std::move(DblTrk_SE_tmp));
         DoubleTrack_ME_histos_perMult.push_back(std::move(DblTrk_ME_tmp));
+        AvgSep_SE_histos_perMult.push_back(std::move(AvgSep_SE_tmp));
+        AvgSep_ME_histos_perMult.push_back(std::move(AvgSep_ME_tmp));
       }
 
       kThistos.push_back(std::move(kThistos_perMult));
       Resolution_histos.push_back(std::move(Resolution_histos_perMult));
       DoubleTrack_SE_histos.push_back(std::move(DoubleTrack_SE_histos_perMult));
       DoubleTrack_ME_histos.push_back(std::move(DoubleTrack_ME_histos_perMult));
+      AvgSep_SE_histos.push_back(std::move(AvgSep_SE_histos_perMult));
+      AvgSep_ME_histos.push_back(std::move(AvgSep_ME_histos_perMult));
     }
   }
 
@@ -236,6 +246,7 @@ struct FemtoCorrelationsMC {
 
         kThistos[centBin][kTbin]->Fill(pair_kT);
         DoubleTrack_SE_histos[centBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        AvgSep_SE_histos[centBin][kTbin]->Fill(Pair->GetAvgSep());
         Pair->ResetPair();
       }
     }
@@ -259,6 +270,7 @@ struct FemtoCorrelationsMC {
 
         kThistos[centBin][kTbin]->Fill(pair_kT);
         DoubleTrack_SE_histos[centBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        AvgSep_SE_histos[centBin][kTbin]->Fill(Pair->GetAvgSep());
         Pair->ResetPair();
       }
     }
@@ -289,6 +301,7 @@ struct FemtoCorrelationsMC {
 
         Resolution_histos[centBin][kTbin]->Fill(o2::aod::singletrackselector::GetKstarFrom4vectors(first4momentumGen, second4momentumGen, IsIdentical), Pair->GetKstar());
         DoubleTrack_ME_histos[centBin][kTbin]->Fill(Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
+        AvgSep_ME_histos[centBin][kTbin]->Fill(Pair->GetAvgSep());
         Pair->ResetPair();
       }
     }

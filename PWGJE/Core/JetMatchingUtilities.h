@@ -471,7 +471,7 @@ float getPtSum(T const& tracksBase, U const& clustersBase, V const& tracksTag, O
 }
 
 template <typename T, typename U>
-auto getConstituents(T const& jet, U const& constituents)
+auto getConstituents(T const& jet, U const& /*constituents*/)
 {
   if constexpr (jetfindingutilities::isEMCALTable<U>()) {
     return jet.template clusters_as<U>();

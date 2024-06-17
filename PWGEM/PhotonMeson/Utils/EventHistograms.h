@@ -82,7 +82,7 @@ void addEventHistograms(HistogramRegistry* fRegistry, bool doFlow)
 }
 
 template <const int ev_id, typename TCollision>
-void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, const bool doFlow, const float weight = 1.f)
+void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, const bool doFlow, const float /*weight*/ = 1.f)
 {
   static constexpr std::string_view event_types[2] = {"before/", "after/"};
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 1.0);
